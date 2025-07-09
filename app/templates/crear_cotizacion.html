@@ -167,9 +167,11 @@
                     <div>
                         <label for="id_cliente" class="block text-sm font-medium text-gray-300 mb-1">Cliente</label>
                         <select id="id_cliente" name="cliente" class="input-field" required>
-                            <!-- Options will be populated by JavaScript -->
+                            <option value="">Seleccione un cliente</option>
+                            {% for c in clientes %}
+                                <option value="{{ c.id }}">{{ c.nombre_empresa }}</option>
+                            {% endfor %}
                         </select>
-                        <input type="hidden" id="selected_client_id" name="cliente_hidden" value="">
                         {% if form.cliente.errors %}
                             <ul class="errorlist">{% for error in form.cliente.errors %}<li>{{ error }}</li>{% endfor %}</ul>
                         {% endif %}

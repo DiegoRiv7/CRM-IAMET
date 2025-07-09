@@ -2,20 +2,32 @@
 {% load static %}
 
 {% block content %}
-<div class="min-h-screen w-full flex flex-col justify-start items-center py-12 px-0">
+<style>
+    .bg-animated {
+        position: fixed; inset: 0; z-index: 0;
+        pointer-events: none;
+        background: radial-gradient(circle at 20% 20%, #00cfff33 0%, transparent 60%),
+                    radial-gradient(circle at 80% 80%, #ff00c833 0%, transparent 60%),
+                    linear-gradient(120deg, #181c24 0%, #232946 100%);
+        animation: bgMove 16s linear infinite alternate;
+    }
+    @keyframes bgMove {
+        0% { background-position: 0% 0%, 100% 100%, 0 0; }
+        100% { background-position: 20% 10%, 80% 90%, 0 0; }
+    }
+</style>
+<div class="bg-animated"></div>
+<div class="min-h-screen w-full flex flex-col justify-start items-center py-12 px-0 relative" style="z-index:1;">
     <div class="flex flex-col items-center justify-center mb-8 w-full">
         <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight drop-shadow-lg text-center">Cotizaciones</h1>
         <p class="text-lg text-cyan-100 mt-2 text-center max-w-2xl">Gestiona y visualiza todas las cotizaciones ligadas a tus clientes asignados. Descarga, consulta o crea nuevas cotizaciones fácilmente.</p>
     </div>
     <div class="w-full max-w-6xl mx-auto">
-        <div class="flex justify-center items-center mb-6">
-            <h2 class="text-2xl font-bold text-white text-center w-full">Acciones</h2>
-        </div>
         <table class="min-w-full divide-y divide-cyan-200/30 bg-transparent text-base md:text-lg">
             <thead>
                 <tr>
                     <th class="px-6 py-4 text-left font-semibold text-cyan-200 uppercase">Cliente</th>
-                    <th class="px-6 py-4 text-center font-semibold text-cyan-200 uppercase">Acciones</th>
+                    <th class="px-6 py-4 text-center font-semibold text-cyan-200 uppercase"></th>
                 </tr>
             </thead>
             <tbody>

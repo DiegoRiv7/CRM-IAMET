@@ -2,11 +2,26 @@
 {% load app_filters %}
 {% block title %}Perfil de {{ usuario.username }}{% endblock %}
 {% block content %}
-<div class="bg-gray-900 text-gray-100 p-8 rounded-lg shadow-2xl border border-gray-700 mt-8">
-    <h1 class="text-3xl font-extrabold text-white mb-8 text-center tracking-wide">Perfil de {{ usuario.username }}</h1>
-    <div class="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<style>
+    .bg-animated {
+        position: fixed; inset: 0; z-index: 0;
+        pointer-events: none;
+        background: radial-gradient(circle at 20% 20%, #00cfff33 0%, transparent 60%),
+                    radial-gradient(circle at 80% 80%, #ff00c833 0%, transparent 60%),
+                    linear-gradient(120deg, #181c24 0%, #232946 100%);
+        animation: bgMove 16s linear infinite alternate;
+    }
+    @keyframes bgMove {
+        0% { background-position: 0% 0%, 100% 100%, 0 0; }
+        100% { background-position: 20% 10%, 80% 90%, 0 0; }
+    }
+</style>
+<div class="bg-animated"></div>
+<div class="min-h-screen w-full flex flex-col justify-start items-center py-12 px-0 relative" style="z-index:1;">
+    <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-8 text-center tracking-wide drop-shadow-lg">Perfil de {{ usuario.username }}</h1>
+    <div class="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-7xl mx-auto">
         <!-- Oportunidad más grande -->
-        <div class="bg-gray-800 p-6 rounded-lg shadow border border-blue-600 flex flex-col justify-between">
+        <div class="bg-gray-800/80 p-6 rounded-2xl shadow border border-blue-600 flex flex-col justify-between">
             <h2 class="text-lg font-bold text-blue-300 mb-2">Oportunidad más grande</h2>
             {% if oportunidad_mayor %}
                 <p class="text-xl font-extrabold text-white mb-1">{{ oportunidad_mayor.oportunidad }}</p>
@@ -18,7 +33,7 @@
             {% endif %}
         </div>
         <!-- Total cobrado del mes actual -->
-        <div class="bg-gray-800 p-6 rounded-lg shadow border border-indigo-600 flex flex-col justify-between">
+        <div class="bg-gray-800/80 p-6 rounded-2xl shadow border border-indigo-600 flex flex-col justify-between">
             <h2 class="text-lg font-bold text-indigo-300 mb-2">Total cobrado ({{ mes_actual }})</h2>
             <p class="text-indigo-200 mb-2">Monto total cobrado: <span class="font-bold text-indigo-400">${{ monto_total_cobrado_mes|floatformat:2 }}</span></p>
             {% if oportunidades_cobradas_mes %}
@@ -28,7 +43,7 @@
             {% endif %}
         </div>
         <!-- Oportunidades por cobrar -->
-        <div class="bg-gray-800 p-6 rounded-lg shadow border border-green-600 flex flex-col justify-between">
+        <div class="bg-gray-800/80 p-6 rounded-2xl shadow border border-green-600 flex flex-col justify-between">
             <h2 class="text-lg font-bold text-green-300 mb-2">Oportunidades por cobrar ({{ mes_actual }})</h2>
             <p class="text-green-200 mb-2">Monto total por cobrar: <span class="font-bold text-green-400">${{ monto_total_por_cobrar_mes|floatformat:2 }}</span></p>
             {% if oportunidades_por_cobrar_mes %}
@@ -45,7 +60,7 @@
             {% endif %}
         </div>
         <!-- Oportunidades creadas en el mes actual -->
-        <div class="bg-gray-800 p-6 rounded-lg shadow border border-yellow-600 flex flex-col justify-between">
+        <div class="bg-gray-800/80 p-6 rounded-2xl shadow border border-yellow-600 flex flex-col justify-between">
             <h2 class="text-lg font-bold text-yellow-300 mb-2">Oportunidades creadas ({{ mes_actual }})</h2>
             <p class="text-2xl font-extrabold text-white mb-1">{{ oportunidades_creadas_mes_count }}</p>
             {% if oportunidades_creadas_mes_count > 0 %}
@@ -64,7 +79,7 @@
     </div>
     <!-- Tabla de oportunidades registradas -->
     <h2 id="oportunidades" class="text-2xl font-bold text-blue-300 mb-4 mt-10">Oportunidades Registradas</h2>
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto w-full max-w-7xl mx-auto">
         <table class="min-w-full divide-y divide-gray-700 rounded-lg overflow-hidden">
             <thead class="bg-gray-800">
                 <tr>

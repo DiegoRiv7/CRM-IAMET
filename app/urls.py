@@ -56,6 +56,9 @@ urlpatterns = [
     # Recibe el ID de la cotización y lo pasa a la vista generate_cotizacion_pdf.
     path('cotizacion/pdf/<int:cotizacion_id>/', views.generate_cotizacion_pdf, name='generate_cotizacion_pdf'),
 
+    # Visualización embebida de PDF de cotización
+    path('cotizacion/visualizar/<int:cotizacion_id>/', views.visualizar_cotizacion, name='visualizar_cotizacion'),
+
     # Reporte de usuarios (solo para supervisores)
     path('reporte-usuarios/', views.reporte_usuarios, name='reporte_usuarios'),
     path('perfil-usuario/<int:usuario_id>/', views.perfil_usuario, name='perfil_usuario'),

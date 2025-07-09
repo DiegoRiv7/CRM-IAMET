@@ -12,9 +12,10 @@ from dateutil.relativedelta import relativedelta
 from decimal import Decimal # Importa Decimal para manejar números con precisión
 from django.utils.html import json_script
 import json
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse, Http404
 from django.urls import reverse # Importar reverse para construir URLs
 from django.utils import timezone
+import os
 
 # Importaciones para generación de PDF
 from weasyprint import HTML
@@ -26,7 +27,6 @@ from .models import Cotizacion, DetalleCotizacion
 
 # Importaciones para el logo Base64 (asegúrate de que estas líneas estén al inicio del archivo si no lo están)
 import base64
-import os
 
 # Función auxiliar para comprobar si el usuario es supervisor
 def is_supervisor(user):
@@ -452,7 +452,7 @@ def editar_venta_todoitem(request, pk):
             todo_item.delete()
             return redirect('todos')
 
-        # Al guardar, si es supervisor, el form no necesita el 'user' para el queryset de Cliente
+        # Al guardar, si es supervisor, el form no necesita el 'user'
         form = VentaForm(request.POST, instance=todo_item, user=request.user if not is_supervisor(request.user) else None) # Asegúrate de que usa VentaForm
         if form.is_valid():
             form.save()
@@ -748,317 +748,19 @@ def generate_quote_pdf(request, pk):
     return response
 
 
-# This view seems to be duplicated in your original code.
-# If you have two functions with the same name 'editar_venta_todoitem',
-# Django will use the last one defined. It is recommended to have only one.
-# I have kept it as it was in your original file.
 @login_required
-def editar_venta_todoitem(request, pk):
-    # Get the TodoItem (opportunity) instance to edit by its primary key (pk)
-    # If not found, returns a 404 error.
-    oportunidad = get_object_or_404(TodoItem, pk=pk)
-
-    if request.method == 'POST':
-        # If the request is POST, it means the user has submitted the form with changes.
-        # Instantiate the VentaForm with the submitted data (request.POST)
-        # and, crucially, with the existing opportunity instance (instance=oportunidad).
-        # We also pass the current user (request.user) to the form.
-        form = VentaForm(request.POST, instance=oportunidad, user=request.user)
-        if form.is_valid():
-            form.save()
-            # Redirect the user to the 'todos' page (where the opportunities table is listed)
-            # after successful editing.
-            return redirect('todos')
-    else:
-        # If the request is GET, the user is asking to view the edit form.
-        # Instantiate the VentaForm with the existing opportunity instance.
-        # We also pass the current user (request.user) to the form.
-        # This preloads all form fields with the current opportunity values,
-        # allowing the user to view and modify existing data.
-        form = VentaForm(instance=oportunidad, user=request.user)
-
-    # Render the 'ingresar_venta.html' template.
-    # This template is used for both creating new sales and editing them,
-    # as the form (VentaForm) is the same.
-    # The form (preloaded or empty) and the opportunity instance (useful for the template) are passed.
-    return render(request, 'ingresar_venta.html', {'form': form, 'oportunidad': oportunidad})
-
-
-# --- NEW/CORRECTED VIEWS ADDED ---
-
-@login_required
-def oportunidades_por_cliente_view(request, cliente_id):
-    """
-    View to display sales opportunities for a specific client.
-    """
-    cliente = get_object_or_404(Cliente, pk=cliente_id)
-
-    if is_supervisor(request.user):
-        oportunidades = TodoItem.objects.filter(cliente=cliente).order_by('-fecha_creacion')
-    else:
-        oportunidades = TodoItem.objects.filter(cliente=cliente, usuario=request.user).order_by('-fecha_creacion')
-
-    context = {
-        'cliente_id': cliente_id,
-        'cliente_nombre': cliente.nombre_empresa, # Use nombre_empresa
-        'oportunidades': oportunidades,
-    }
-    return render(request, 'oportunidades_por_cliente.html', context)
-
-
-@login_required
-def crear_cotizacion_view(request, cliente_id=None):
-    """
-    View to create a new quote.
-    Handles the creation of the quote and its product details,
-    then returns a JSON response with the PDF URL.
-    """
-    cliente_seleccionado = None
-    if cliente_id:
-        cliente_seleccionado = get_object_or_404(Cliente, pk=cliente_id)
-
-    if request.method == 'POST':
-        # Instantiate the form with POST data
-        form = CotizacionForm(request.POST)
-
-        if form.is_valid():
-            cotizacion = form.save(commit=False)
-            cotizacion.save()
-            print(f"DEBUG: Quote saved with ID: {cotizacion.id}")
-
-            # Collect product data sent from JavaScript
-            productos_data = {}
-            # Iterate through request.POST.items() to correctly parse product data
-            # The keys will look like 'productos[1][nombre]', 'productos[1][cantidad]', etc.
-            # We need to group them by index.
-            for key, value in request.POST.items():
-                if key.startswith('productos['):
-                    # Extract the index and the field name
-                    # Example: 'productos[1][nombre]' -> index '1', field 'nombre'
-                    parts = key.split('[')
-                    index = parts[1].split(']')[0]
-                    field = parts[2].split(']')[0]
-
-                    if index not in productos_data:
-                        productos_data[index] = {}
-                    productos_data[index][field] = value
-
-            # Convert the dictionary of dictionaries into a list of dictionaries,
-            # sorted by their original numerical index to maintain order.
-            productos_list = [productos_data[key] for key in sorted(productos_data.keys(), key=int)]
-            print(f"DEBUG: productos_list before saving details: {productos_list}") # NEW DEBUG PRINT FOR DUPLICATION ISSUE
-
-            # Calculate subtotal and quote totals
-            calculated_subtotal = Decimal('0.00')
-            for item_data in productos_list:
-                try:
-                    cantidad = int(item_data.get('cantidad', 0))
-                    precio = Decimal(item_data.get('precio', '0.00'))
-                    descuento = Decimal(item_data.get('descuento', '0.00'))
-                    
-                    item_total = cantidad * precio
-                    item_total -= item_total * (descuento / Decimal('100.00'))
-                    calculated_subtotal += item_total.quantize(Decimal('0.01')) # Round each item to 2 decimal places before summing
-                    print(f"DEBUG_CALC: Item: {item_data.get('nombre')}, Quantity: {cantidad}, Price: {precio}, Discount: {descuento}, Item Total (rounded): {item_total.quantize(Decimal('0.01'))}")
-                except (ValueError, TypeError) as e:
-                    print(f"Warning: Invalid product data found: {item_data} - Error: {e}")
-                    # Consider returning an error here or logging more severely
-                    # If a detail is invalid, it's better to delete the entire quote
-                    cotizacion.delete()
-                    return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Invalid product data in row. Error: {e}'}]}}, status=400)
-
-            # Round the subtotal before calculating IVA
-            cotizacion.subtotal = calculated_subtotal.quantize(Decimal('0.01'))
-            
-            try:
-                cotizacion.iva_rate = Decimal(request.POST.get('iva_rate', '0.00'))
-            except (ValueError, TypeError):
-                cotizacion.iva_rate = Decimal('0.00') # Default to 0 if conversion fails
-
-            cotizacion.iva_amount = (cotizacion.subtotal * cotizacion.iva_rate).quantize(Decimal('0.01')) # Round IVA amount
-            cotizacion.total = (cotizacion.subtotal + cotizacion.iva_amount).quantize(Decimal('0.01')) # Round final total
-            
-            cotizacion.tipo_cotizacion = request.POST.get('tipo_cotizacion') # Use tipo_cotizacion
-            cotizacion.created_by = request.user  # Asigna el usuario creador
-            cotizacion.save(update_fields=['subtotal', 'iva_rate', 'iva_amount', 'total', 'tipo_cotizacion', 'created_by']) # Incluye created_by
-            print(f"DEBUG: Quote totals updated. Subtotal: {cotizacion.subtotal}, IVA: {cotizacion.iva_amount}, Total: {cotizacion.total}, Quote Type: {cotizacion.tipo_cotizacion}")
-            
-
-            # Save product details after the quote has been saved and its totals calculated
-            for item_data in productos_list:
-                try:
-                    DetalleCotizacion.objects.create(
-                        cotizacion=cotizacion,
-                        nombre_producto=item_data.get('nombre', ''),
-                        descripcion=item_data.get('descripcion', ''),
-                        cantidad=int(item_data.get('cantidad', 1)),
-                        precio_unitario=Decimal(item_data.get('precio', '0.00')),
-                        descuento_porcentaje=Decimal(item_data.get('descuento', '0.00'))
-                    )
-                    print(f"DEBUG: Product detail created: {item_data.get('nombre')}")
-                except (ValueError, TypeError) as e:
-                    print(f"Error saving DetalleCotizacion: {e} for data {item_data}")
-                    # If a detail fails, it's better to delete the entire quote
-                    cotizacion.delete() # Revert the quote if details are invalid
-                    return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Error saving product details. Error: {e}'}]}}, status=400)
-
-            
-            pdf_url = reverse('generate_cotizacion_pdf', args=[cotizacion.id])
-            print(f"DEBUG: PDF URL generated: {pdf_url}")
-            
-            return JsonResponse({'success': True, 'pdf_url': pdf_url})
-
-        else:
-            # If the form is not valid, return a JSON response with errors
-            errors_dict = {}
-            for field, field_errors in form.errors.items():
-                errors_dict[field] = [{'message': str(e), 'code': e.code if hasattr(e, 'code') else 'invalid'} for e in field_errors]
-            print(f"DEBUG: Form errors: {errors_dict}")
-            return JsonResponse({'success': False, 'errors': errors_dict}, status=400)
-
-    else: # If the request is GET
-        form = CotizacionForm() # Create an empty form for GET requests
-
-    # Get clients for the frontend selector, filtering by user if not supervisor
-    if is_supervisor(request.user):
-        clientes_queryset = Cliente.objects.all()
-    else:
-        clientes_queryset = Cliente.objects.filter(asignado_a=request.user)
-
-    # Use .values() to get dictionaries and map field names
-    clientes_para_frontend = clientes_queryset.values(
-        'id', 'nombre_empresa', 'direccion', 'email'
-    )
-
-    # Convert the QuerySet to a list of dictionaries with the field names expected by the frontend
-    clientes_data_json = []
-    for c in clientes_para_frontend:
-        clientes_data_json.append({
-            'id': str(c['id']),
-            'name': c['nombre_empresa'],
-            'address': c['direccion'],
-            'taxId': c['email'] # Or the field you use for Tax ID
-        })
-
-    context = {
-        'form': form,
-        'cliente_seleccionado': cliente_seleccionado, # Pass the client object if it comes from the URL
-        'clientes_data_json': json.dumps(clientes_data_json), # Pass the JSON of clients for JS
-        'cliente_id_inicial': cliente_id, # Pass the initial ID for JS to pre-select
-    }
-    return render(request, 'crear_cotizacion.html', context)
-
-
-@login_required
-def generate_cotizacion_pdf(request, cotizacion_id):
-    """
-    View to generate the PDF of a specific quote.
-    """
-    print(f"DEBUG: Starting generate_cotizacion_pdf for quote ID: {cotizacion_id}")
-    cotizacion = get_object_or_404(Cotizacion, pk=cotizacion_id)
-    print(f"DEBUG: Quote found: {cotizacion.id} - Quote Type: {cotizacion.tipo_cotizacion}")
-    
-    # Ensure that the user has permission to view this quote
-    if not is_supervisor(request.user) and cotizacion.created_by != request.user:
-        print(f"DEBUG: Access denied for user {request.user.username} to quote {cotizacion.id}")
-        return HttpResponse("Access denied.", status=403)
-
-    detalles_cotizacion = DetalleCotizacion.objects.filter(cotizacion=cotizacion)
-    print(f"DEBUG: Quote details found: {detalles_cotizacion.count()}")
-
-    # Calculate IVA as a percentage to display in the PDF
-    # cotizacion.iva_rate is already the decimal value (e.g., 0.08 or 0.16)
-    iva_rate_percentage = (cotizacion.iva_rate * Decimal('100')).quantize(Decimal('1'))
-    print(f"DEBUG: IVA rate: {iva_rate_percentage}%")
-
-    # --- Get the name for the PDF ---
-    pdf_name_raw = ""
-    if hasattr(cotizacion, 'nombre_cotizacion') and cotizacion.nombre_cotizacion:
-        pdf_name_raw = cotizacion.nombre_cotizacion
-    elif hasattr(cotizacion, 'titulo') and cotizacion.titulo:
-        pdf_name_raw = cotizacion.titulo
-    else:
-        pdf_name_raw = f"Cotizacion_{cotizacion.id}"
-
-    pdf_name = "".join(c if c.isalnum() or c in ('_', '-') else '_' for c in pdf_name_raw).strip()
-    pdf_name = pdf_name.replace(' ', '_')
-
-    if not pdf_name:
-        pdf_name = f"Cotizacion_{cotizacion.id}"
-    print(f"DEBUG: PDF file name: {pdf_name}.pdf")
-
-    # --- Logic to handle logo and company information based on quote type ---
-    tipo_cotizacion = cotizacion.tipo_cotizacion 
-    logo_base64 = ""
-    company_name = ""
-    company_address = ""
-    company_phone = ""
-    company_email = ""
-    template_name = 'cotizacion_pdf_template.html' # Default template
-
-    if tipo_cotizacion == 'Bajanet':
-        try:
-            logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'img', 'bajanet_logo.png')
-            with open(logo_path, "rb") as image_file:
-                logo_base64 = base64.b64encode(image_file.read()).decode('utf-8')
-            print(f"DEBUG: BAJANET logo loaded from: {logo_path}")
-        except FileNotFoundError:
-            print(f"Warning: BAJANET logo not found in {logo_path}")
-            logo_base64 = ""
-        company_name = 'BAJANET S.A. de C.V.'
-        company_address = 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México'
-        company_phone = '+52 55 1234 5678'
-        company_email = 'ventas@bajanet.com'
-        template_name = 'cotizacion_pdf_template.html'
-    elif tipo_cotizacion == 'Iamet':
-        logo_base64 = "" 
-        company_name = 'IAMET S.A. de C.V.'
-        company_address = 'Av. Principal #456, Col. Centro, Guadalajara, Jalisco'
-        company_phone = '+52 33 9876 5432'
-        company_email = 'contacto@iamet.com'
-        template_name = 'iamet_cotizacion_pdf_template.html'
-        print(f"DEBUG: Configuration for IAMET. Using template: {template_name}")
-    else:
-        print(f"DEBUG: Unknown or null quote type: '{tipo_cotizacion}'. Using default configuration.")
-        logo_base64 = ""
-        company_name = 'Tu Empresa de Ventas S.A. de C.V.'
-        company_address = 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México'
-        company_phone = '+52 55 1234 5678'
-        company_email = 'ventas@tuempresa.com'
-        template_name = 'cotizacion_pdf_template.html'
-
-    context = {
-        'cotizacion': cotizacion,
-        'detalles_cotizacion': detalles_cotizacion,
-        'request_user': request.user,
-        'current_date': date.today(),
-        'company_name': company_name,
-        'company_address': company_address,
-        'company_phone': company_phone,
-        'company_email': company_email,
-        'logo_base64': logo_base64,
-        'iva_rate_percentage': iva_rate_percentage,
-    }
-
-    try:
-        print(f"DEBUG: Attempting to render template: {template_name}")
-        html_string = render_to_string(template_name, context)
-        print("DEBUG: Template rendered to HTML string.")
-    except Exception as e:
-        print(f"ERROR: Error rendering template '{template_name}': {e}")
-        return HttpResponse(f"Internal server error rendering PDF: {e}", status=500)
-
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="{pdf_name}.pdf"'
-
-    try:
-        print("DEBUG: Attempting to generate PDF with WeasyPrint.")
-        HTML(string=html_string).write_pdf(response)
-        print("DEBUG: PDF generated successfully.")
-    except Exception as e:
-        print(f"ERROR: Error generating PDF with WeasyPrint: {e}")
-        return HttpResponse(f"Internal server error generating PDF: {e}", status=500)
-        
+def visualizar_cotizacion(request, cotizacion_id):
+    cotizacion = get_object_or_404(Cotizacion, id=cotizacion_id)
+    # Si tienes un campo FileField, usa cotizacion.archivo_pdf.path
+    # Si no, usa la lógica de tu botón de descarga para obtener la ruta
+    # Aquí se asume que el PDF se genera y guarda en una ruta conocida
+    pdf_path = os.path.join('ruta/a/tus/pdfs', f'cotizacion_{cotizacion_id}.pdf')  # Ajusta esta ruta
+    if hasattr(cotizacion, 'archivo_pdf') and cotizacion.archivo_pdf:
+        pdf_path = cotizacion.archivo_pdf.path
+    if not os.path.exists(pdf_path):
+        raise Http404('PDF no encontrado')
+    response = FileResponse(open(pdf_path, 'rb'), content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="cotizacion_{cotizacion_id}.pdf"'
     return response
 
 
@@ -1165,7 +867,8 @@ def cotizaciones_por_cliente_view(request, cliente_id):
         {
             'id': c.id,
             'nombre_cotizacion': c.nombre_cotizacion or c.titulo or f'Cotización #{c.id}',
-            'descargar_url': f"/cotizacion/pdf/{c.id}/"
+            'descargar_url': f"/cotizacion/pdf/{c.id}/",
+            'visualizar_url': reverse('visualizar_cotizacion', args=[c.id])
         }
         for c in cotizaciones
     ]
@@ -1240,3 +943,48 @@ def actualizar_probabilidad(request, id):
         return JsonResponse({'error': 'Oportunidad no encontrada'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from .models import Cliente, Cotizacion
+from .forms import CotizacionForm
+
+@login_required
+def crear_cotizacion_view(request, cliente_id=None):
+    # Mostrar solo los clientes asignados al usuario, o todos si es supervisor
+    if is_supervisor(request.user):
+        clientes = Cliente.objects.all()
+    else:
+        clientes = Cliente.objects.filter(usuario=request.user)
+    if request.method == 'POST':
+        form = CotizacionForm(request.POST, request.FILES)
+        if form.is_valid():
+            cotizacion = form.save(commit=False)
+            cotizacion.cliente = get_object_or_404(Cliente, id=request.POST.get('cliente'))
+            cotizacion.created_by = request.user
+            cotizacion.save()
+            # Lógica de PDF y redirección ya implementada
+            return redirect('cotizaciones_por_cliente', cliente_id=cotizacion.cliente.id)
+    else:
+        form = CotizacionForm()
+    return render(request, 'crear_cotizacion.html', {'form': form, 'clientes': clientes})
+
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from .models import Cotizacion
+
+# Genera y sirve el PDF de la cotización para descarga
+from django.contrib.auth.decorators import login_required
+@login_required
+def generate_cotizacion_pdf(request, cotizacion_id):
+    cotizacion = get_object_or_404(Cotizacion, id=cotizacion_id)
+    # Aquí deberías generar el PDF real. Por ahora, sirve un PDF de ejemplo o un archivo existente.
+    # Ajusta la ruta según tu lógica real:
+    pdf_path = f"ruta/a/tus/pdfs/cotizacion_{cotizacion_id}.pdf"  # Cambia esto por la ruta real
+    try:
+        with open(pdf_path, 'rb') as pdf_file:
+            response = HttpResponse(pdf_file.read(), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="cotizacion_{cotizacion_id}.pdf"'
+            return response
+    except FileNotFoundError:
+        return HttpResponse('PDF no encontrado', status=404)
