@@ -3,20 +3,40 @@
 
 {% block content %}
 <style>
-    .bg-animated {
-        position: fixed; inset: 0; z-index: 0;
-        pointer-events: none;
-        background: radial-gradient(circle at 20% 20%, #00cfff33 0%, transparent 60%),
-                    radial-gradient(circle at 80% 80%, #ff00c833 0%, transparent 60%),
-                    linear-gradient(120deg, #181c24 0%, #232946 100%);
-        animation: bgMove 16s linear infinite alternate;
+    main {
+        width: 100vw;
+        min-height: 100vh;
+        max-width: 100vw;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        overflow-x: hidden;
     }
-    @keyframes bgMove {
-        0% { background-position: 0% 0%, 100% 100%, 0 0; }
-        100% { background-position: 20% 10%, 80% 90%, 0 0; }
+    section {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        box-sizing: border-box;
     }
+    @media (max-width: 1800px) {
+        section { max-width: 1400px; }
+    }
+    @media (max-width: 1400px) {
+        section { max-width: 1000px; }
+    }
+    @media (max-width: 1100px) {
+        section { max-width: 800px; }
+    }
+    @media (max-width: 900px) {
+        section { max-width: 98vw; }
+    }
+    @media (max-width: 600px) {
+        section { max-width: 100vw; padding: 0 0.5rem; }
+    }
+    .float { animation: none !important; }
 </style>
-<div class="bg-animated"></div>
 <div class="min-h-screen w-full flex flex-col justify-start items-center py-12 px-0 relative" style="z-index:1;">
     <div class="flex flex-col items-center justify-center mb-8 w-full">
         <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight drop-shadow-lg text-center">Cotizaciones de {{ cliente.nombre_empresa }}</h1>

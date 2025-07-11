@@ -3,20 +3,13 @@
 {% block title %}Bienvenida{% endblock %}
 {% block content %}
 <style>
-    .glow {
-        text-shadow: 0 0 3px #00cfff, 0 0 8px #00cfff33;
-        animation: glowPulse 2.5s infinite alternate;
-    }
-    @keyframes glowPulse {
-        0% { text-shadow: 0 0 3px #00cfff, 0 0 8px #00cfff33; }
-        100% { text-shadow: 0 0 8px #00cfff, 0 0 16px #00cfff22; }
-    }
+    /* Eliminado efecto glow */
     .float {
-        animation: floatY 4s ease-in-out infinite;
+        animation: floatY 8s ease-in-out infinite;
     }
     @keyframes floatY {
         0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-18px); }
+        50% { transform: translateY(-4px); }
     }
     .fade-in {
         animation: fadeIn 1.2s ease;
@@ -37,17 +30,49 @@
         0% { background-position: 0% 0%, 100% 100%, 0 0; }
         100% { background-position: 20% 10%, 80% 90%, 0 0; }
     }
+    main {
+        width: 100vw;
+        min-height: 100vh;
+        max-width: 100vw;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        overflow-x: hidden;
+    }
+    section {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        box-sizing: border-box;
+    }
+    @media (max-width: 1800px) {
+        section { max-width: 1400px; }
+    }
+    @media (max-width: 1400px) {
+        section { max-width: 1000px; }
+    }
+    @media (max-width: 1100px) {
+        section { max-width: 800px; }
+    }
+    @media (max-width: 900px) {
+        section { max-width: 98vw; }
+    }
+    @media (max-width: 600px) {
+        section { max-width: 100vw; padding: 0 0.5rem; }
+    }
 </style>
 <div class="bg-animated"></div>
 <main class="relative w-full min-h-screen flex flex-col items-center justify-center px-0 overflow-x-hidden" style="z-index:1;">
     <section class="w-full flex flex-col items-center justify-center py-10 fade-in">
-        <h1 class="text-5xl md:text-7xl font-extrabold glow text-center mb-2" style="color:#00cfff;">¡Bienvenido, {{ user.get_full_name|default:user.username }}!</h1>
-        <p class="text-2xl md:text-3xl text-center mb-4" style="color:#b6eaff; text-shadow:0 0 8px #00cfff55;">Perfil: <span class="uppercase tracking-widest">{{ perfil }}</span></p>
+        <h1 class="text-5xl md:text-7xl font-extrabold text-center mb-6 fade-in" style="color:#00cfff;">Bienvenido {{ user.first_name|default:'a' }}</h1>
+        <p class="text-2xl md:text-3xl text-center mb-4" style="color:#e4e5e6;"> <span class="uppercase tracking-widest">{{ perfil }}</span></p>
         <img src="https://www.iamet.mx/.cm4all/uproc.php/0/Fondos/.logo.png/picture-200?_=1904956a6f0" alt="Logo BajaNet" class="h-20 md:h-28 object-contain float my-4" style="background: white; border-radius: 2rem; padding: 0.5rem; filter: brightness(1.2) contrast(1.1); box-shadow:0 0 32px #00cfff33;"/>
     </section>
     <section class="w-full grid grid-cols-1 md:grid-cols-2 gap-6 py-4 fade-in" style="animation-delay:0.2s; max-width:900px;">
         <div class="flex flex-col items-center justify-center p-6 rounded-3xl bg-white/5 shadow-2xl border border-cyan-400/10 float">
-            <h4 class="text-xl font-bold mb-2 glow" style="color:#00cfff;">Empleado del Mes</h4>
+            <h4 class="text-xl font-bold mb-2" style="color:#00cfff;">Empleado del Mes</h4>
             {% if usuario_mes %}
                 <img src="{{ usuario_mes.avatar_url }}" alt="avatar mes" class="w-20 h-20 avatar mb-2 rounded-full border-4 border-cyan-300 shadow-lg">
                 <p class="text-lg font-bold" style="color:#e0e6f0;">{{ usuario_mes.nombre }}</p>
@@ -57,7 +82,7 @@
             {% endif %}
         </div>
         <div class="flex flex-col items-center justify-center p-6 rounded-3xl bg-white/5 shadow-2xl border border-cyan-400/10 float">
-            <h4 class="text-xl font-bold mb-2 glow" style="color:#00cfff;">Empleado del Día</h4>
+            <h4 class="text-xl font-bold mb-2" style="color:#00cfff;">Empleado del Día</h4>
             {% if usuario_dia %}
                 <img src="{{ usuario_dia.avatar_url }}" alt="avatar día" class="w-20 h-20 avatar mb-2 rounded-full border-4 border-cyan-300 shadow-lg">
                 <p class="text-lg font-bold" style="color:#e0e6f0;">{{ usuario_dia.nombre }}</p>
@@ -68,7 +93,7 @@
         </div>
     </section>
     <section class="w-full flex flex-col items-center justify-center py-4 fade-in" style="animation-delay:0.4s;">
-        <h5 class="text-2xl font-bold mb-4 glow" style="color:#00cfff;">Últimas Oportunidades</h5>
+        <h5 class="text-2xl font-bold mb-4" style="color:#00cfff;">Últimas Oportunidades</h5>
         <div class="overflow-x-auto w-full max-w-5xl">
             <table class="min-w-full divide-y divide-cyan-200/20 rounded-2xl overflow-hidden shadow-xl bg-white/5">
                 <thead style="background-color: #0a0d11;">
@@ -97,7 +122,7 @@
         </div>
     </section>
     <section class="w-full flex flex-col items-center justify-center py-4 fade-in" style="animation-delay:0.6s;">
-        <h3 class="text-2xl font-bold mb-3 glow" style="color:#00cfff;">Visión</h3>
+        <h3 class="text-2xl font-bold mb-3" style="color:#00cfff;">Visión</h3>
         <p class="text-lg md:text-xl text-center max-w-3xl" style="color:#e0e6f0; text-align:justify;">Ser la empresa líder en soluciones tecnológicas, formando equipos audaces de trabajo, verdaderos y auténticos con estrategias inteligentes éticas, legales y meritorias, para honrar a nuestras familias y reforzar la confianza brindada por nuestros socios de negocios.</p>
     </section>
 </main>

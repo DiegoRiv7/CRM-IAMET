@@ -14,10 +14,24 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #1a202c;
+            background: linear-gradient(120deg, #232946 0%, #1a202c 100%);
             color: #e2e8f0;
             min-height: 100vh;
-            padding-bottom: 80px; /* Espacio para el dock */
+            padding-bottom: 80px;
+            background-attachment: fixed;
+            background-size: cover;
+            background-repeat: no-repeat;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+            background: radial-gradient(ellipse at 60% 40%, rgba(99,102,241,0.18) 0%, rgba(20,58,86,0.10) 60%, transparent 100%),
+                        radial-gradient(ellipse at 20% 80%, rgba(16,185,129,0.10) 0%, transparent 80%),
+                        radial-gradient(ellipse at 80% 80%, rgba(236,72,153,0.10) 0%, transparent 80%);
+            pointer-events: none;
         }
         /* Estilos generales para el contenido principal */
         .main-content {
@@ -104,6 +118,41 @@
         }
         #dock nav li a:hover span {
             opacity: 1;
+        }
+        /* Glass effect utility for all cards/tables */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.55);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
+            border-radius: 1.5rem;
+            border: 1.5px solid rgba(255,255,255,0.12);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .glass-table {
+            background: rgba(30, 41, 59, 0.35);
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 24px 0 rgba(31, 38, 135, 0.10);
+            overflow: hidden;
+        }
+        .drop-shadow-glow {
+            text-shadow: 0 0 12px #6366f1, 0 0 24px #6366f1, 0 0 2px #fff;
+        }
+        @media (max-width: 640px) {
+            .glass-card, .glass-table {
+                padding: 1rem !important;
+                border-radius: 1rem !important;
+            }
+            table th, table td {
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+        }
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: none; }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.7s cubic-bezier(0.4,0,0.2,1);
         }
     </style>
 </head>

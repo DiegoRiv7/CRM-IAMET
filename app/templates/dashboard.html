@@ -15,12 +15,9 @@
         0% { background-position: 0% 0%, 100% 100%, 0 0; }
         100% { background-position: 20% 10%, 80% 90%, 0 0; }
     }
+    /* Elimina movimiento de tarjetas en dashboard */
     .float {
-        animation: floatY 4s ease-in-out infinite;
-    }
-    @keyframes floatY {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-18px); }
+        animation: none !important;
     }
     .glow {
         text-shadow: 0 0 18px #00cfff, 0 0 32px #00cfff99;
@@ -35,7 +32,7 @@
 <div class="w-full flex flex-col justify-start items-center animate-fade-in relative" style="z-index:1;">
     <!-- Título centrado -->
     <div class="flex flex-col items-center justify-center mb-8 w-full">
-        <h1 class="text-5xl font-extrabold text-white tracking-tight drop-shadow-lg text-center animate-fade-in glow">Dashboard</h1>
+        <h1 class="text-5xl font-extrabold text-white tracking-tight drop-shadow-lg text-center animate-fade-in">Dashboard</h1>
         {% if is_supervisor %}
             <span class="mt-4 px-6 py-1.5 rounded-full text-white font-semibold text-lg shadow-lg bg-gradient-to-r from-blue-700 to-fuchsia-600 animate-gradient-x">SUPERVISOR</span>
         {% else %}
@@ -50,30 +47,30 @@
                 <span class="text-xl font-bold text-cyan-200 tracking-widest uppercase mb-2">Cliente con más ventas</span>
                 <i data-lucide="user-check" class="lucide w-12 h-12 text-cyan-400 group-hover:text-cyan-300 transition mb-2"></i>
                 {% if cliente_mas_vendido %}
-                    <div class="text-4xl font-extrabold text-white tracking-tight mb-1 lowercase drop-shadow-[0_2px_8px_rgba(0,255,255,0.25)]">{{ cliente_mas_vendido.cliente__nombre_empresa }}</div>
-                    <div class="text-2xl font-bold text-cyan-100 lowercase drop-shadow-[0_2px_8px_rgba(0,255,255,0.18)]">${{ cliente_mas_vendido.total_vendido|floatformat:2 }}</div>
+                    <div class="text-4xl font-extrabold text-white tracking-tight mb-1 lowercase">{{ cliente_mas_vendido.cliente__nombre_empresa }}</div>
+                    <div class="text-2xl font-bold text-green-300 lowercase drop-shadow-[0_2px_8px_rgba(0,255,128,0.18)]">${{ cliente_mas_vendido.total_vendido|floatformat:2 }}</div>
                 {% else %}
-                    <div class="text-cyan-100 italic text-lg text-center">Sin datos</div>
+                    <div class="text-green-100 italic text-lg text-center">Sin datos</div>
                 {% endif %}
             </a>
             <!-- Cliente con menos ventas -->
-            <a href="{% if cliente_menos_vendido %}{% url 'oportunidades_por_cliente' cliente_menos_vendido.cliente__id %}{% else %}#{% endif %}" class="glass-card group card-xl flex flex-col items-center justify-center text-center py-6 transition hover:scale-105 hover:shadow-xl focus:outline-none w-full bg-gradient-to-br from-pink-900/60 to-pink-800/40 border-pink-700/60 animate-fade-in float" style="text-decoration:none;">
-                <span class="text-xl font-bold text-pink-200 tracking-widest uppercase mb-2">Cliente con menos ventas</span>
-                <i data-lucide="user-x" class="lucide w-12 h-12 text-pink-400 group-hover:text-pink-300 transition mb-2"></i>
+            <a href="{% if cliente_menos_vendido %}{% url 'oportunidades_por_cliente' cliente_menos_vendido.cliente__id %}{% else %}#{% endif %}" class="glass-card group card-xl flex flex-col items-center justify-center text-center py-6 transition hover:scale-105 hover:shadow-xl focus:outline-none w-full bg-gradient-to-br from-green-900/60 to-green-800/40 border-green-700/60 animate-fade-in float" style="text-decoration:none;">
+                <span class="text-xl font-bold text-cyan-200 tracking-widest uppercase mb-2">Cliente con menos ventas</span>
+                <i data-lucide="user-x" class="lucide w-12 h-12 text-cyan-400 group-hover:text-cyan-300 transition mb-2"></i>
                 {% if cliente_menos_vendido %}
-                    <div class="text-4xl font-extrabold text-white tracking-tight mb-1 lowercase drop-shadow-[0_2px_8px_rgba(255,0,128,0.18)]">{{ cliente_menos_vendido.cliente__nombre_empresa }}</div>
-                    <div class="text-2xl font-bold text-pink-100 lowercase drop-shadow-[0_2px_8px_rgba(255,0,128,0.12)]">${{ cliente_menos_vendido.total_vendido|floatformat:2 }}</div>
+                    <div class="text-4xl font-extrabold text-white tracking-tight mb-1 lowercase">{{ cliente_menos_vendido.cliente__nombre_empresa }}</div>
+                    <div class="text-2xl font-bold text-green-300 lowercase drop-shadow-[0_2px_8px_rgba(0,255,128,0.18)]">${{ cliente_menos_vendido.total_vendido|floatformat:2 }}</div>
                 {% else %}
-                    <div class="text-pink-100 italic text-lg text-center">Sin datos</div>
+                    <div class="text-green-100 italic text-lg text-center">Sin datos</div>
                 {% endif %}
             </a>
             <!-- Producto más vendido -->
-            <a href="{% if producto_mas_vendido %}{% url 'producto_dashboard_detail' producto_mas_vendido.producto %}{% else %}#{% endif %}" class="glass-card group card-xl flex flex-col items-center justify-center text-center py-6 transition hover:scale-105 hover:shadow-xl focus:outline-none w-full bg-gradient-to-br from-green-900/60 to-green-800/40 border-green-700/60 animate-fade-in float" style="text-decoration:none;">
-                <span class="text-xl font-bold text-green-200 tracking-widest uppercase mb-2">Producto más vendido</span>
-                <i data-lucide="package-check" class="lucide w-12 h-12 text-green-400 group-hover:text-green-300 transition mb-2"></i>
+            <a href="{% if producto_mas_vendido %}{% url 'producto_dashboard_detail' producto_mas_vendido.producto %}{% else %}#{% endif %}" class="glass-card group card-xl flex flex-col items-center justify-center text-center py-6 transition hover:scale-105 hover:shadow-xl focus:outline-none w-full bg-gradient-to-br from-cyan-900/60 to-cyan-800/40 border-cyan-700/60 animate-fade-in float" style="text-decoration:none;">
+                <span class="text-xl font-bold text-cyan-200 tracking-widest uppercase mb-2">Producto más vendido</span>
+                <i data-lucide="package-check" class="lucide w-12 h-12 text-cyan-400 group-hover:text-cyan-300 transition mb-2"></i>
                 {% if producto_mas_vendido %}
-                    <div class="text-4xl font-extrabold text-white tracking-tight mb-1 lowercase drop-shadow-[0_2px_8px_rgba(0,255,128,0.18)]">{{ producto_mas_vendido.get_producto_display }}</div>
-                    <div class="text-2xl font-bold text-green-100 lowercase drop-shadow-[0_2px_8px_rgba(0,255,128,0.12)]">{{ producto_mas_vendido.count_oportunidades }} ops. / ${{ producto_mas_vendido.total_vendido_cerrado|floatformat:2 }}</div>
+                    <div class="text-4xl font-extrabold text-white tracking-tight mb-1 lowercase">{{ producto_mas_vendido.get_producto_display }}</div>
+                    <div class="text-2xl font-bold text-green-300 lowercase drop-shadow-[0_2px_8px_rgba(0,255,128,0.18)]">{{ producto_mas_vendido.count_oportunidades }} ops. / ${{ producto_mas_vendido.total_vendido_cerrado|floatformat:2 }}</div>
                 {% else %}
                     <div class="text-green-100 italic text-lg text-center">Sin datos</div>
                 {% endif %}
@@ -82,22 +79,22 @@
         <!-- Fila 2: 3 tarjetas -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-12 w-full">
             <!-- Producto con menos ventas -->
-            <a href="{% if producto_menos_vendido %}{% url 'producto_dashboard_detail' producto_menos_vendido.producto %}{% else %}#{% endif %}" class="glass-card group card-xl flex flex-col items-center justify-center text-center py-6 transition hover:scale-105 hover:shadow-xl focus:outline-none w-full bg-gradient-to-br from-yellow-900/60 to-yellow-800/40 border-yellow-700/60 animate-fade-in float" style="text-decoration:none;">
-                <span class="text-xl font-bold text-yellow-200 tracking-widest uppercase mb-2">Producto con menos ventas</span>
-                <i data-lucide="package-x" class="lucide w-12 h-12 text-yellow-400 group-hover:text-yellow-200 transition mb-2"></i>
+            <a href="{% if producto_menos_vendido %}{% url 'producto_dashboard_detail' producto_menos_vendido.producto %}{% else %}#{% endif %}" class="glass-card group card-xl flex flex-col items-center justify-center text-center py-6 transition hover:scale-105 hover:shadow-xl focus:outline-none w-full bg-gradient-to-br from-green-900/60 to-green-800/40 border-green-700/60 animate-fade-in float" style="text-decoration:none;">
+                <span class="text-xl font-bold text-cyan-200 tracking-widest uppercase mb-2">Producto con menos ventas</span>
+                <i data-lucide="package-x" class="lucide w-12 h-12 text-cyan-400 group-hover:text-cyan-300 transition mb-2"></i>
                 {% if producto_menos_vendido %}
-                    <div class="text-4xl font-extrabold text-white tracking-tight mb-1 lowercase drop-shadow-[0_2px_8px_rgba(255,255,0,0.18)]">{{ producto_menos_vendido.get_producto_display }}</div>
-                    <div class="text-2xl font-bold text-yellow-100 lowercase drop-shadow-[0_2px_8px_rgba(255,255,0,0.12)]">{{ producto_menos_vendido.count_oportunidades }} ops. / ${{ producto_menos_vendido.total_vendido_cerrado|floatformat:2 }}</div>
+                    <div class="text-4xl font-extrabold text-white tracking-tight mb-1 lowercase">{{ producto_menos_vendido.get_producto_display }}</div>
+                    <div class="text-2xl font-bold text-green-300 lowercase drop-shadow-[0_2px_8px_rgba(0,255,128,0.18)]">{{ producto_menos_vendido.count_oportunidades }} ops. / ${{ producto_menos_vendido.total_vendido_cerrado|floatformat:2 }}</div>
                 {% else %}
-                    <div class="text-yellow-100 italic text-lg text-center">Sin datos</div>
+                    <div class="text-green-100 italic text-lg text-center">Sin datos</div>
                 {% endif %}
             </a>
             <!-- Meta mensual próxima -->
-            <a href="{% url 'mes_dashboard_detail' proximo_mes_val %}" class="glass-card group card-xl flex flex-col items-center justify-center text-center py-6 transition hover:scale-105 hover:shadow-xl focus:outline-none w-full bg-gradient-to-br from-blue-900/60 to-blue-800/40 border-blue-700/60 animate-fade-in float" style="text-decoration:none;">
-                <span class="text-xl font-bold text-blue-200 tracking-widest uppercase mb-2">Meta de {{ next_month_display }}</span>
-                <i data-lucide="target" class="lucide w-12 h-12 text-blue-400 group-hover:text-blue-300 transition mb-2"></i>
-                <div class="text-2xl font-bold text-blue-100 lowercase drop-shadow-[0_2px_8px_rgba(0,184,255,0.12)]">{{ total_oportunidades_proximo_mes }} ops. / ${{ total_monto_esperado_proximo_mes|floatformat:2 }}</div>
-                <div class="mt-2 text-base font-semibold text-center {% if alerta_proximo_mes.status == 'success' %}text-green-400{% elif alerta_proximo_mes.status == 'warning' %}text-yellow-300{% else %}text-pink-300{% endif %}">
+            <a href="{% url 'mes_dashboard_detail' proximo_mes_val %}" class="glass-card group card-xl flex flex-col items-center justify-center text-center py-6 transition hover:scale-105 hover:shadow-xl focus:outline-none w-full bg-gradient-to-br from-cyan-900/60 to-cyan-800/40 border-cyan-700/60 animate-fade-in float" style="text-decoration:none;">
+                <span class="text-xl font-bold text-cyan-200 tracking-widest uppercase mb-2">Meta de {{ next_month_display }}</span>
+                <i data-lucide="target" class="lucide w-12 h-12 text-cyan-400 group-hover:text-cyan-300 transition mb-2"></i>
+                <div class="text-2xl font-bold text-white lowercase drop-shadow-[0_2px_8px_rgba(255,255,255,0.18)]">{{ total_oportunidades_proximo_mes }} ops. / ${{ total_monto_esperado_proximo_mes|floatformat:2 }}</div>
+                <div class="mt-2 text-base font-semibold text-center {% if alerta_proximo_mes.tipo == 'success' %}text-green-400{% elif alerta_proximo_mes.tipo == 'danger' %}text-red-400{% else %}text-cyan-200{% endif %}">
                     <span class="inline-block align-middle mr-2">
                         {% if alerta_proximo_mes.icon %}
                             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 20 20"><path d="{{ alerta_proximo_mes.icon }}"/></svg>
@@ -107,11 +104,11 @@
                 </div>
             </a>
             <!-- Total perdido -->
-            <a href="{% url 'oportunidades_perdidas_detail' %}" class="glass-card group card-xl flex flex-col items-center justify-center text-center py-6 transition hover:scale-105 hover:shadow-xl focus:outline-none w-full bg-gradient-to-br from-gray-900/60 to-gray-800/40 border-gray-700/60 animate-fade-in float" style="text-decoration:none;">
-                <span class="text-xl font-bold text-gray-200 tracking-widest uppercase mb-2">Total perdido</span>
-                <i data-lucide="x-circle" class="lucide w-12 h-12 text-gray-400 group-hover:text-gray-200 transition mb-2"></i>
-                <div class="text-4xl font-extrabold text-white tracking-tight mb-1 lowercase drop-shadow-[0_2px_8px_rgba(200,200,200,0.18)]">{{ total_perdido_count }}</div>
-                <div class="text-2xl font-bold text-gray-100 lowercase drop-shadow-[0_2px_8px_rgba(200,200,200,0.12)]">${{ total_perdido_monto|floatformat:2 }}</div>
+            <a href="{% url 'oportunidades_perdidas_detail' %}" class="glass-card group card-xl flex flex-col items-center justify-center text-center py-6 transition hover:scale-105 hover:shadow-xl focus:outline-none w-full bg-gradient-to-br from-cyan-900/60 to-cyan-800/40 border-cyan-700/60 animate-fade-in float" style="text-decoration:none;">
+                <span class="text-xl font-bold text-cyan-200 tracking-widest uppercase mb-2">Total perdido</span>
+                <i data-lucide="x-circle" class="lucide w-12 h-12 text-cyan-400 group-hover:text-cyan-300 transition mb-2"></i>
+                <div class="text-4xl font-extrabold text-white tracking-tight mb-1 lowercase">{{ total_perdido_count }}</div>
+                <div class="text-2xl font-bold text-green-300 lowercase drop-shadow-[0_2px_8px_rgba(0,255,128,0.18)]">${{ total_perdido_monto|floatformat:2 }}</div>
             </a>
         </div>
     </div>

@@ -1,22 +1,22 @@
-{% extends "base.html" %} {# Extiende la plantilla base #}
-{% load app_filters %} {# Para usar el filtro format_currency_es #}
+{% extends "base.html" %}
+{% load app_filters %}
 
 {% block title %}
     Oportunidades de {{ cliente.nombre_empresa }}
 {% endblock %}
 
 {% block content %}
-<div class="mt-8 bg-gray-900 text-gray-100 p-8 rounded-lg shadow-2xl border border-gray-700">
-    <div class="flex justify-between items-center mb-6"> {# Contenedor para título y botón #}
-        <h1 class="text-3xl font-extrabold text-white">Oportunidades de: <span class="text-blue-400">{{ cliente.nombre_empresa }}</span></h1>
-        <button id="toggleFilterButton" class="bg-gray-700 hover:bg-gray-600 text-gray-100 text-sm font-semibold py-2 px-4 rounded-md shadow-sm transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75">
+<div class="mt-8 bg-white/10 backdrop-blur-lg text-gray-100 p-8 rounded-2xl shadow-2xl border border-gray-700 glass-card animate-fade-in">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <h1 class="text-3xl font-extrabold text-white mb-8 text-center">Oportunidades de: <span class="text-blue-400">{{ cliente.nombre_empresa }}</span></h1>
+        <button id="toggleFilterButton" class="bg-gray-700/80 hover:bg-indigo-600/80 text-gray-100 text-sm font-semibold py-2 px-4 rounded-md shadow-sm transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75">
             Mostrar Filtros
         </button>
     </div>
     <p class="text-gray-300 mb-8 text-center">Listado de oportunidades asociadas a este cliente.</p>
 
-    {# Formulario de Filtros - Inicialmente oculto #}
-    <form id="filterForm" method="get" class="hidden mb-8 p-4 bg-gray-800 rounded-lg shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border border-gray-700">
+    <!-- Formulario de Filtros -->
+    <form id="filterForm" method="get" class="hidden mb-8 p-4 bg-gray-800/80 rounded-lg shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border border-gray-700">
         {% for field in filter_form %}
             <div class="flex flex-col">
                 <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-1">{{ field.label }}</label>
@@ -29,44 +29,44 @@
             <button type="submit" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
                 Filtrar
             </button>
-            <a href="{% url 'oportunidades_por_cliente' cliente.id %}" class="w-full md:w-auto ml-2 bg-gray-700 hover:bg-gray-600 text-gray-100 font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75">
+            <a href="{% url 'oportunidades_por_cliente' cliente.id %}" class="w-full md:w-auto ml-2 bg-gray-700/80 hover:bg-indigo-600/80 text-gray-100 font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75">
                 Limpiar Filtros
             </a>
         </div>
     </form>
-    {# FIN FORMULARIO DE FILTROS #}
+    <!-- FIN FORMULARIO DE FILTROS -->
 
-    <div class="overflow-x-auto">
+    <div class="w-full">
         {% if oportunidades %}
-        <table class="min-w-full divide-y divide-gray-700 rounded-lg overflow-hidden">
-            <thead class="bg-gray-800">
+        <table class="w-full min-w-[1200px] max-w-full divide-y divide-gray-700 rounded-2xl overflow-hidden shadow-xl glass-table animate-fade-in">
+            <thead class="bg-gray-800/80">
                 <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Oportunidad</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Área</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Producto</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Monto</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Mes Cierre</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Probabilidad</th>
-                    <th scope="col" class="relative px-6 py-3"><span class="sr-only">Acciones</span></th>
+                    <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Oportunidad</th>
+                    <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Área</th>
+                    <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Producto</th>
+                    <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Monto</th>
+                    <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Mes Cierre</th>
+                    <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Probabilidad</th>
+                    <th scope="col" class="relative px-3 py-3"><span class="sr-only">Acciones</span></th>
                 </tr>
             </thead>
-            <tbody class="bg-gray-800 divide-y divide-gray-700">
+            <tbody class="bg-gray-800/60 divide-y divide-gray-700">
                 {% for op in oportunidades %}
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{{ op.oportunidad }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ op.get_area_display }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ op.get_producto_display }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${{ op.monto|format_currency_es }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ op.get_mes_cierre_display }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                        <div class="w-full bg-gray-700 rounded-full h-2.5">
-                            <div class="h-2.5 rounded-full" 
-                                 style="width: {{ op.probabilidad_cierre }}%; background-color: hsl({{ op.probabilidad_cierre | div:100 | mul:120 }}, 70%, 50%);">
+                <tr class="hover:bg-indigo-900/30 transition-colors duration-200">
+                    <td class="px-3 py-4 whitespace-nowrap text-sm font-medium text-white">{{ op.oportunidad }}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-300">{{ op.get_area_display }}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-300">{{ op.get_producto_display }}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-300">${{ op.monto|format_currency_es }}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-300">{{ op.get_mes_cierre_display }}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-300">
+                        <div class="w-full bg-gray-700/60 rounded-full h-2.5">
+                            <div class="h-2.5 rounded-full transition-all duration-500" 
+                                 style="width: {{ op.probabilidad_cierre }}%; background-color: hsl({{ op.probabilidad_cierre|div:100|mul:120 }}, 70%, 50%);">
                             </div>
                         </div>
                         <span class="mt-1 text-xs text-gray-400">{{ op.probabilidad_cierre }}%</span>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td class="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <a href="{% url 'editar_venta_todoitem' op.id %}" class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
                             &#9998; Editar
                         </a>
@@ -81,7 +81,7 @@
     </div>
 
     <div class="mt-8 text-center">
-        <a href="/dashboard/" class="inline-block bg-gray-700 hover:bg-gray-600 text-gray-100 font-semibold py-2 px-5 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75">
+        <a href="/dashboard/" class="inline-block bg-gray-700/80 hover:bg-indigo-600/80 text-gray-100 font-semibold py-2 px-5 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75">
             Volver al Dashboard
         </a>
     </div>
@@ -112,7 +112,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         let hasFilters = false;
         for (const [key, value] of urlParams.entries()) {
-            if (value && key !== 'page') { // Excluye el parámetro de paginación si lo tuvieras
+            if (value && key !== 'page') {
                 hasFilters = true;
                 break;
             }
@@ -124,3 +124,40 @@
     });
 </script>
 {% endblock %}
+
+<style>
+.glass-card {
+    background: rgba(30, 41, 59, 0.55);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
+    border-radius: 1.5rem;
+    border: 1.5px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+.glass-table {
+    background: rgba(30, 41, 59, 0.35);
+    border-radius: 1.5rem;
+    box-shadow: 0 4px 24px 0 rgba(31, 38, 135, 0.10);
+    overflow: hidden;
+    width: 100%;
+    min-width: 1200px;
+    max-width: 100vw;
+}
+@media (max-width: 640px) {
+    .glass-card, .glass-table {
+        padding: 1rem !important;
+        border-radius: 1rem !important;
+    }
+    table th, table td {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+}
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: none; }
+}
+.animate-fade-in {
+    animation: fade-in 0.7s cubic-bezier(0.4,0,0.2,1);
+}
+</style>
