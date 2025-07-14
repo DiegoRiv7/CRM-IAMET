@@ -29,10 +29,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-%bvhvsoqj7(y%nvdm!*_u26-x3kc$3!f&d#8*j#km!j=g%@iye') # Valor por defecto para desarrollo si no está en .env
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() == 'true'
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True' # Lee DEBUG de las variables de entorno
 
-# En producción, esto debe contener los dominios de tu sitio
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+# En producción, esto debe contener los dominios de tu sitio (ej. ['tudominio.com', 'www.tudominio.com'])
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',') # Lee ALLOWED_HOSTS de las variables de entorno
 
 # CSRF Configuration
 CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost,http://127.0.0.1').split(',')
@@ -62,22 +62,27 @@ MIDDLEWARE = [
 ]
 
 # Configuración de seguridad adicional para producción
-if not DEBUG:
-    SECURE_SSL_REDIRECT = True
-    SECURE_HSTS_SECONDS = 31536000  # 1 año
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-    SECURE_BROWSER_XSS_FILTER = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    X_FRAME_OPTIONS = 'DENY'
+# if not DEBUG:
+#     # Redirigir todo el tráfico HTTP a HTTPS
+#     SECURE_SSL_REDIRECT = True
+#     # HSTS (HTTP Strict Transport Security) para forzar HTTPS en futuras visitas
+#     SECURE_HSTS_SECONDS = 31536000  # 1 año
+#     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+#     SECURE_HSTS_PRELOAD = True
+#     # Protección contra ataques XSS en navegadores antiguos
+#     SECURE_BROWSER_XSS_FILTER = True
+#     # Protección contra ataques de "content sniffing"
+#     SECURE_CONTENT_TYPE_NOSNIFF = True
+#     # Protección contra clickjacking
+#     X_FRAME_OPTIONS = 'DENY'
 
 ROOT_URLCONF = 'cartera_clientes.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
+        'DIRS': [], # 'DIRS': [] está bien si 'APP_DIRS': True
+        'APP_DIRS': True, # ¡Muy importante! Le dice a Django que busque plantillas en las carpetas 'templates' de tus apps.
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -99,16 +104,19 @@ WSGI_APPLICATION = 'cartera_clientes.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('DB_NAME', 'cartera_clientes_db'),
-        'USER': os.environ.get('DB_USER', 'root'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'Filipenses4:13'),
-        'HOST': os.environ.get('DB_HOST', 'mysql'),
-        'PORT': os.environ.get('DB_PORT', '3306'),
+        'NAME': os.environ.get('DATABASE_NAME', 'cartera_clientes_db'),
+        'USER': os.environ.get('DATABASE_USER', 'root'),
+        'PASSWORD': os.environ.get('DATABASE_PASSWORD', 'Filipenses4:13'),
+        'HOST': os.environ.get('DATABASE_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('DATABASE_PORT', '3306'),
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         }
     }
 }
+
+
+
 
 
 # Password validation
@@ -145,7 +153,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Additional locations of static files
@@ -159,14 +167,20 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # --- Configuración de URLs para autenticación (Añade o ajusta estas líneas al final) ---
-LOGIN_REDIRECT_URL = '/app/todos/'
-LOGIN_URL = '/app/login/'
-LOGOUT_REDIRECT_URL = '/app/login/'
+# Estas URLs deben coincidir con las rutas que esperas bajo '/app/'
+LOGIN_REDIRECT_URL = '/app/todos/'    # Redirige aquí después de iniciar sesión
+LOGIN_URL = '/app/login/'             # URL de tu página de inicio de sesión
+LOGOUT_REDIRECT_URL = '/app/login/'   # Redirige aquí después de cerrar sesión
 
-# Configuración para WeasyPrint
-# WEASYPRINT_BASEURL = os.path.join(BASE_DIR, 'static/')
+# cartera_clientes/settings.py
 
-# Para el formato de moneda en el filtro de Django
+# ... otras configuraciones ...
+
+# Configuración para WeasyPrint (opcional, pero buena práctica si usas rutas absolutas)
+# import os
+# WEASYPRINT_BASEURL = os.path.join(BASE_DIR, 'static/') # Si tienes archivos estáticos en 'static/'
+
+# Para el formato de moneda en el filtro de Django (si no lo tienes ya)
 USE_L10N = True
 USE_THOUSAND_SEPARATOR = True
 DECIMAL_SEPARATOR = '.'
