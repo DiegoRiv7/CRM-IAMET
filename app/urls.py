@@ -1,7 +1,8 @@
 # cartera_clientes/app/urls.py
 
 from django.urls import path
-from . import views # Importa las vistas desde el mismo directorio de la aplicación
+from . import views
+from . import views_exportar # Importa las vistas desde el mismo directorio de la aplicación
 
 
 urlpatterns = [
@@ -10,12 +11,15 @@ urlpatterns = [
 
     # Dashboard principal
     path("dashboard/", views.dashboard, name="dashboard"),
+    path("dashboard/mes-actual/", views.oportunidades_mes_actual, name="oportunidades_mes_actual"),
 
     # Ruta para la lista de todas las oportunidades de venta (o las del usuario)
     path("todos/", views.todos, name="todos"),
 
     # API para obtener clientes por usuario
     path('api/clients-for-user/', views.get_user_clients_api, name='clients_for_user_api'),
+    # API para detalle de oportunidad (actualización de fila tras edición)
+    path('api/oportunidad/<int:id>/detalle/', views.oportunidad_detalle_api, name='oportunidad_detalle_api'),
 
     # Rutas para ingresar nuevas oportunidades de venta
     path("ingresar-venta/", views.ingresar_venta_todoitem, name="ingresar_venta_todoitem"),
@@ -56,6 +60,9 @@ urlpatterns = [
     # Recibe el ID de la cotización y lo pasa a la vista generate_cotizacion_pdf.
     path('cotizacion/pdf/<int:cotizacion_id>/', views.generate_cotizacion_pdf, name='generate_cotizacion_pdf'),
 
+    # Ruta para visualizar el PDF de una cotización en el navegador
+    path('cotizacion/view/<int:cotizacion_id>/', views.view_cotizacion_pdf, name='view_cotizacion_pdf'),
+
     # Reporte de usuarios (solo para supervisores)
     path('reporte-usuarios/', views.reporte_usuarios, name='reporte_usuarios'),
     path('perfil-usuario/<int:usuario_id>/', views.perfil_usuario, name='perfil_usuario'),
@@ -65,6 +72,11 @@ urlpatterns = [
 
     # Ruta para ver cotizaciones de un cliente específico
     path('cotizaciones/cliente/<int:cliente_id>/', views.cotizaciones_por_cliente_view, name='cotizaciones_por_cliente'),
+
+    # Exportar oportunidades (restaurado)
+    path("importar/", views_exportar.importar_oportunidades, name="importar_oportunidades"),
+    # Pantalla fullscreen de ventas por mes
+    path('dashboard/ventas_fullscreen/', views.ventas_fullscreen, name='ventas_fullscreen'),
 
     # Ruta raíz redirige al dashboard
     path("", views.dashboard, name="root_dashboard"),

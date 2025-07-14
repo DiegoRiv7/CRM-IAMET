@@ -6,14 +6,22 @@
 {% endblock %}
 
 {% block content %}
-<div class="mt-8 bg-white/10 backdrop-blur-lg text-gray-100 p-8 rounded-2xl shadow-2xl border border-gray-700 glass-card animate-fade-in">
+<div class="mt-8 bg-white/10 backdrop-blur-lg text-gray-100 p-8 rounded-2xl shadow-2xl border border-gray-700 glass-card animate-fade-in dashboard-container">
+
+<style>
+    .dashboard-container {
+        --padding-x: clamp(1rem, 5vw, 4rem);
+        padding-left: var(--padding-x);
+        padding-right: var(--padding-x);
+    }
+</style>
     <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <h1 class="text-3xl font-extrabold text-white mb-8 text-center">Oportunidades de: <span class="text-blue-400">{{ cliente.nombre_empresa }}</span></h1>
+        <h1 class="text-3xl font-extrabold text-white mb-8 text-center" style="font-size: clamp(2rem, 4vw, 3rem);">Oportunidades de: <span class="text-blue-400">{{ cliente.nombre_empresa }}</span></h1>
         <button id="toggleFilterButton" class="bg-gray-700/80 hover:bg-indigo-600/80 text-gray-100 text-sm font-semibold py-2 px-4 rounded-md shadow-sm transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75">
             Mostrar Filtros
         </button>
     </div>
-    <p class="text-gray-300 mb-8 text-center">Listado de oportunidades asociadas a este cliente.</p>
+    <p class="text-gray-300 mb-8 text-center" style="font-size: clamp(1rem, 2.5vw, 1.25rem);">Listado de oportunidades asociadas a este cliente.</p>
 
     <!-- Formulario de Filtros -->
     <form id="filterForm" method="get" class="hidden mb-8 p-4 bg-gray-800/80 rounded-lg shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border border-gray-700">
@@ -36,7 +44,7 @@
     </form>
     <!-- FIN FORMULARIO DE FILTROS -->
 
-    <div class="w-full">
+    <div class="w-full overflow-x-auto">
         {% if oportunidades %}
         <table class="w-full min-w-[1200px] max-w-full divide-y divide-gray-700 rounded-2xl overflow-hidden shadow-xl glass-table animate-fade-in">
             <thead class="bg-gray-800/80">
@@ -126,38 +134,69 @@
 {% endblock %}
 
 <style>
-.glass-card {
-    background: rgba(30, 41, 59, 0.55);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
-    border-radius: 1.5rem;
-    border: 1.5px solid rgba(255,255,255,0.12);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-}
-.glass-table {
-    background: rgba(30, 41, 59, 0.35);
-    border-radius: 1.5rem;
-    box-shadow: 0 4px 24px 0 rgba(31, 38, 135, 0.10);
-    overflow: hidden;
-    width: 100%;
-    min-width: 1200px;
-    max-width: 100vw;
-}
-@media (max-width: 640px) {
-    .glass-card, .glass-table {
-        padding: 1rem !important;
-        border-radius: 1rem !important;
+    /* --- Adaptabilidad ultra-wide y pantallas pequeñas (igual que dashboard) --- */
+    .dashboard-main {
+        width: 100%;
+        max-width: 1800px;
+        margin: 0 auto;
+        padding-left: clamp(1rem, 4vw, 4rem);
+        padding-right: clamp(1rem, 4vw, 4rem);
     }
-    table th, table td {
-        padding-left: 0.5rem !important;
-        padding-right: 0.5rem !important;
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(340px,100%), 1fr));
+        gap: clamp(1.5rem, 3vw, 3rem);
+        width: 100%;
     }
-}
-@keyframes fade-in {
-    from { opacity: 0; transform: translateY(24px); }
-    to { opacity: 1; transform: none; }
-}
-.animate-fade-in {
-    animation: fade-in 0.7s cubic-bezier(0.4,0,0.2,1);
-}
+    .glass-card {
+        background: rgba(24,24,32,0.85);
+        border-radius: 1.8rem;
+        box-shadow: 0 10px 36px 0 rgba(31,38,135,0.16);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 2px solid rgba(56,189,248,0.10);
+        padding: clamp(2rem, 4vw, 3rem) clamp(1rem, 2vw, 1.8rem) clamp(1.2rem, 2vw, 1.8rem) clamp(1rem, 2vw, 1.8rem);
+        min-height: 220px;
+        transition: opacity 0.01s cubic-bezier(0.4,0,0.2,1), box-shadow 0.18s, border-color 0.18s, transform 0.18s, background 0.3s;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        opacity: 1;
+        will-change: opacity, transform;
+    }
+    .glass-card.card-xl {
+        min-height: 260px;
+        padding: clamp(2rem, 4vw, 3rem) clamp(1rem, 2vw, 1.8rem) clamp(1.2rem, 2vw, 1.8rem) clamp(1rem, 2vw, 1.8rem);
+    }
+    .glass-card[data-loaded="false"] { opacity: 0; }
+    .glass-card[data-loaded="true"] { opacity: 1; }
+    .glass-card:hover {
+        box-shadow: 0 18px 54px 0 rgba(56,189,248,0.24), 0 2px 8px 0 rgba(255,255,255,0.10);
+        border-color: #38bdf8;
+        transform: translateY(-5px) scale(1.035);
+    }
+    .glass-card::before { display: none; }
+    .glass-card > * { position: relative; z-index: 1; }
+    /* Ultra-wide screens: centra y limita el contenido, agranda tarjetas */
+    @media (min-width: 2000px) {
+        .dashboard-main { max-width: 2200px; }
+        .dashboard-grid { gap: 3.5vw; }
+        .glass-card, .glass-card.card-xl { min-height: 320px; font-size: 1.15em; }
+    }
+    @media (max-width: 1200px) {
+        .dashboard-main { max-width: 98vw; padding-left: 2vw; padding-right: 2vw; }
+        .dashboard-grid { gap: 2vw; }
+    }
+    @media (max-width: 700px) {
+        .dashboard-main { padding-left: 0.5rem; padding-right: 0.5rem; }
+        .dashboard-grid { grid-template-columns: 1fr; gap: 1rem; }
+        .glass-card, .glass-card.card-xl { min-height: 140px; padding: 1.2rem 0.7rem; }
+    }
+    @media (max-width: 480px) {
+        .dashboard-main { padding-left: 0.2rem; padding-right: 0.2rem; }
+        .glass-card, .glass-card.card-xl { font-size: 0.98em; }
+    }
 </style>

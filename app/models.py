@@ -50,14 +50,15 @@ class TodoItem(models.Model):
     # Opciones para el campo 'producto'
     PRODUCTO_CHOICES = [
         ('ZEBRA', 'ZEBRA'),
-        ('AXIS', 'AXIS'),
+        ('PANDUIT', 'PANDUIT'),
+        ('APC', 'APC'),
         ('AVIGILION', 'AVIGILION'),
-        ('CISCO', 'CISCO'),
         ('GENETEC', 'GENETEC'),
+        ('AXIS', 'AXIS'),
         ('SOFTWARE', 'SOFTWARE'),
-        ('SERVICIOS', 'SERVICIOS'),
-        ('PÓLIZA', 'PÓLIZA'),
         ('RUNRATE', 'RUNRATE'),
+        ('PÓLIZA', 'PÓLIZA'),
+        ('CISCO', 'CISCO'),
     ]
 
     # Opciones para el campo 'mes_cierre'
@@ -129,6 +130,9 @@ class Cotizacion(models.Model):
         default='Bajanet', # Valor por defecto
         verbose_name="Tipo de Cotización"
     )
+
+    # Campo para controlar la visibilidad de la columna de descuento
+    descuento_visible = models.BooleanField(default=True, verbose_name="Mostrar Columna de Descuento")
 
     # Usuario que creó la cotización
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Creado por")

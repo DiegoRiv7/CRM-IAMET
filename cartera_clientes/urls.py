@@ -26,4 +26,3 @@ urlpatterns = [
 path('app/', include('app.urls')), # Asegúrate de que tu app.urls esté incluida aquí
 
 ]
-

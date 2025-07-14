@@ -10,7 +10,12 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Carga las variables de entorno desde .env
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +25,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-%bvhvsoqj7(y%nvdm!*_u26-x3kc$3!f&d#8*j#km!j=g%@iye'
+# Obtén la SECRET_KEY de las variables de entorno
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-%bvhvsoqj7(y%nvdm!*_u26-x3kc$3!f&d#8*j#km!j=g%@iye') # Valor por defecto para desarrollo si no está en .env
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True' # Lee DEBUG de las variables de entorno
 
-ALLOWED_HOSTS = []
+# En producción, esto debe contener los dominios de tu sitio (ej. ['tudominio.com', 'www.tudominio.com'])
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',') # Lee ALLOWED_HOSTS de las variables de entorno
 
 
 # Application definition
@@ -50,6 +57,21 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# Configuración de seguridad adicional para producción
+# if not DEBUG:
+#     # Redirigir todo el tráfico HTTP a HTTPS
+#     # SECURE_SSL_REDIRECT = True
+#     # HSTS (HTTP Strict Transport Security) para forzar HTTPS en futuras visitas
+#     SECURE_HSTS_SECONDS = 31536000  # 1 año
+#     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+#     SECURE_HSTS_PRELOAD = True
+#     # Protección contra ataques XSS en navegadores antiguos
+#     SECURE_BROWSER_XSS_FILTER = True
+#     # Protección contra ataques de "content sniffing"
+#     SECURE_CONTENT_TYPE_NOSNIFF = True
+#     # Protección contra clickjacking
+#     X_FRAME_OPTIONS = 'DENY' 
 
 ROOT_URLCONF = 'cartera_clientes.urls'
 
@@ -85,11 +107,11 @@ WSGI_APPLICATION = 'cartera_clientes.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'cartera_clientes_db',  # ¡El nombre de tu base de datos MySQL!
-        'USER': 'root',               # Tu usuario de MySQL
-        'PASSWORD': 'Filipenses4:13', # ¡Tu contraseña de MySQL!
-        'HOST': '127.0.0.1',
-        'PORT': '3306',
+        'NAME': os.environ.get('DATABASE_NAME', 'cartera_clientes_db'),
+        'USER': os.environ.get('DATABASE_USER', 'root'),
+        'PASSWORD': os.environ.get('DATABASE_PASSWORD', 'Filipenses4:13'),
+        'HOST': os.environ.get('DATABASE_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('DATABASE_PORT', '3306'),
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         }

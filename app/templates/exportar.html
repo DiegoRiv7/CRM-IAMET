@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="min-h-screen w-full flex flex-col justify-start items-center py-12 px-0 relative dashboard-container" style="z-index:1;">
+    <style>
+        .dashboard-container {
+            --padding-x: clamp(1rem, 5vw, 4rem);
+            padding-left: var(--padding-x);
+            padding-right: var(--padding-x);
+        }
+    </style>
+    <div class="w-full max-w-full mx-auto">
+        <h2 class="text-3xl md:text-4xl font-bold text-white text-center mb-8" style="font-size: clamp(2rem, 4vw, 2.5rem);">
+            Importar Oportunidades desde Excel
+        </h2>
+        <form method="post" class="bg-gray-800/50 p-6 rounded-2xl shadow-lg flex flex-col gap-6">
+            {% csrf_token %}
+            <div>
+                <label for="cliente" class="block text-lg font-semibold text-cyan-300 mb-2">Cliente:</label>
+                <select name="cliente" id="cliente" required class="w-full px-4 py-2 rounded-lg bg-gray-700 text-white border border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-400">
+                    <option value="">Selecciona un cliente</option>
+                    {% for c in clientes %}
+                    <option value="{{ c.id }}">{{ c.nombre_empresa }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="datos" class="block text-lg font-semibold text-cyan-300 mb-2">Pega aquí los datos copiados de Excel:</label>
+                <textarea name="datos" id="datos" rows="8" required class="w-full px-4 py-2 rounded-lg bg-gray-700 text-white border border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 resize-y"></textarea>
+            </div>
+
+            <button type="submit" class="px-8 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold rounded-lg hover:from-cyan-400 hover:to-blue-400 transition-all">Importar</button>
+        </form>
+
+        {% if errores %}
+        <div class="mt-8 bg-red-900/30 border border-red-600 rounded-xl p-6 text-red-300">
+            <h4 class="font-bold mb-2">Errores:</h4>
+            <ul class="list-disc list-inside">
+            {% for e in errores %}
+                <li>{{ e }}</li>
+            {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if exitos %}
+        <div class="mt-8 bg-green-900/30 border border-green-600 rounded-xl p-6 text-green-300">
+            <h4 class="font-bold mb-2">Importaciones exitosas:</h4>
+            <ul class="list-disc list-inside">
+            {% for x in exitos %}
+                <li>{{ x }}</li>
+            {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

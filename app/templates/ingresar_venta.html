@@ -1,9 +1,17 @@
 {% extends 'base.html' %}
 {% load widget_tweaks %}
 {% block content %}
-<div class="max-w-2xl mx-auto mt-10 bg-gradient-to-br from-gray-900 to-gray-950 rounded-3xl shadow-2xl p-8 relative">
-  <h2 class="text-4xl font-extrabold text-center mb-2 text-white">Registrar Nueva Oportunidad</h2>
-  <p class="text-center text-gray-400 mb-8">Rápido, fácil y sin distracciones.</p>
+<div class="max-w-2xl mx-auto mt-10 bg-gradient-to-br from-gray-900 to-gray-950 rounded-3xl shadow-2xl p-8 relative dashboard-container">
+
+<style>
+    .dashboard-container {
+        --padding-x: clamp(1rem, 5vw, 4rem);
+        padding-left: var(--padding-x);
+        padding-right: var(--padding-x);
+    }
+</style>
+  <h2 class="text-4xl font-extrabold text-center mb-2 text-white" style="font-size: clamp(2rem, 4vw, 3rem);">Registrar Nueva Oportunidad</h2>
+  <p class="text-center text-gray-400 mb-8" style="font-size: clamp(1rem, 2.5vw, 1.25rem);">Rápido, fácil y sin distracciones.</p>
   <form id="oportunidadForm" method="post" autocomplete="off" class="space-y-6">
     {% csrf_token %}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

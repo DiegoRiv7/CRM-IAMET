@@ -37,12 +37,20 @@
     }
     .float { animation: none !important; }
 </style>
-<div class="min-h-screen w-full flex flex-col justify-start items-center py-12 px-0 relative" style="z-index:1;">
+<div class="min-h-screen w-full flex flex-col justify-start items-center py-12 px-0 relative dashboard-container" style="z-index:1;">
+
+<style>
+    .dashboard-container {
+        --padding-x: clamp(1rem, 5vw, 4rem);
+        padding-left: var(--padding-x);
+        padding-right: var(--padding-x);
+    }
+</style>
     <div class="flex flex-col items-center justify-center mb-8 w-full">
-        <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight drop-shadow-lg text-center">Cotizaciones de {{ cliente.nombre_empresa }}</h1>
-        <p class="text-lg text-cyan-100 mt-2 text-center max-w-2xl">Cotizaciones creadas para este cliente. Puedes descargar o crear nuevas cotizaciones.</p>
+        <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight drop-shadow-lg text-center" style="font-size: clamp(2.5rem, 5vw, 3.5rem);">Cotizaciones de {{ cliente.nombre_empresa }}</h1>
+        <p class="text-lg text-cyan-100 mt-2 text-center max-w-2xl" style="font-size: clamp(1rem, 2.5vw, 1.25rem);">Cotizaciones creadas para este cliente. Puedes descargar o crear nuevas cotizaciones.</p>
     </div>
-    <div class="w-full max-w-3xl mx-auto p-0">
+    <div class="w-full max-w-full mx-auto p-0 overflow-x-auto">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold text-white">Cotizaciones</h2>
             <a href="{% url 'crear_cotizacion' cliente.id %}" class="inline-flex items-center px-5 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-white font-semibold rounded-xl shadow transition">
@@ -61,7 +69,9 @@
         <ul id="listaCotizaciones" class="divide-y divide-cyan-200/30">
             {% for cotizacion in cotizaciones %}
             <li class="flex items-center justify-between py-4 cotizacion-item">
-                <span class="text-cyan-100 font-semibold nombre-cotizacion">{{ cotizacion.nombre_cotizacion }}</span>
+                <a href="{% url 'view_cotizacion_pdf' cotizacion.id %}" target="_blank" class="text-cyan-100 font-semibold nombre-cotizacion hover:text-cyan-300 hover:underline">
+                    {{ cotizacion.nombre_cotizacion }}
+                </a>
                 <a href="{{ cotizacion.descargar_url }}" class="inline-flex items-center px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-white rounded transition" download>
                     <i data-lucide="download" class="lucide w-4 h-4 mr-1"></i>Descargar
                 </a>

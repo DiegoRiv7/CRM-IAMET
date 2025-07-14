@@ -2,162 +2,502 @@
 {% load static %}
 
 {% block content %}
+<div class="w-full min-h-screen flex flex-col items-center justify-start relative overflow-hidden text-gray-100 font-sans">
+    <!-- Canvas para Three.js - Ahora es un elemento de fondo que abarca toda la pantalla -->
+    <canvas id="globeCanvas" class="fixed inset-0 w-full h-full z-0"></canvas>
+
+    <!-- Fondo de esferas brillantes (se mantienen, pero con z-index superior al globo para superponerse) -->
+    <div class="absolute top-1/4 left-1/4 w-72 h-72 bg-gradient-to-br from-purple-600 to-fuchsia-500 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-pulse-slow z-10"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-64 h-64 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-pulse-slow animation-delay-2000 z-10"></div>
+
+    <!-- Contenedor principal del Dashboard (ahora abarca todo el ancho, sin barra lateral) -->
+    <!-- El padding de la página se manejará a nivel de los elementos internos de la cuadrícula si es necesario. -->
+    <div class="relative z-20 w-full max-w-screen-2xl mx-auto grid grid-cols-1 gap-8 px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-24 dashboard-container">
+
 <style>
-    .bg-animated {
-        position: fixed; inset: 0; z-index: 0;
-        pointer-events: none;
-        background: radial-gradient(circle at 20% 20%, #00cfff33 0%, transparent 60%),
-                    radial-gradient(circle at 80% 80%, #ff00c833 0%, transparent 60%),
-                    linear-gradient(120deg, #181c24 0%, #232946 100%);
-        animation: bgMove 16s linear infinite alternate;
+    .dashboard-container {
+        --padding-x: clamp(1rem, 5vw, 4rem);
+        padding-left: var(--padding-x);
+        padding-right: var(--padding-x);
     }
-    @keyframes bgMove {
-        0% { background-position: 0% 0%, 100% 100%, 0 0; }
-        100% { background-position: 20% 10%, 80% 90%, 0 0; }
-    }
-    /* Elimina movimiento de tarjetas en dashboard */
-    .float {
-        animation: none !important;
-    }
-    .glow {
-        text-shadow: 0 0 18px #00cfff, 0 0 32px #00cfff99;
-        animation: glowPulse 2.5s infinite alternate;
-    }
-    @keyframes glowPulse {
-        0% { text-shadow: 0 0 18px #00cfff, 0 0 32px #00cfff99; }
-        100% { text-shadow: 0 0 32px #00cfff, 0 0 64px #00cfff66; }
-    }
-</style>
-<div class="bg-animated"></div>
-<div class="w-full flex flex-col justify-start items-center animate-fade-in relative" style="z-index:1;">
-    <!-- Título centrado -->
-    <div class="flex flex-col items-center justify-center mb-8 w-full">
-        <h1 class="text-5xl font-extrabold text-white tracking-tight drop-shadow-lg text-center animate-fade-in">Dashboard</h1>
-        {% if is_supervisor %}
-            <span class="mt-4 px-6 py-1.5 rounded-full text-white font-semibold text-lg shadow-lg bg-gradient-to-r from-blue-700 to-fuchsia-600 animate-gradient-x">SUPERVISOR</span>
-        {% else %}
-            <span class="mt-4 px-6 py-1.5 rounded-full text-white font-semibold text-lg shadow-lg bg-gradient-to-r from-blue-700 to-fuchsia-600 animate-gradient-x">VENDEDOR</span>
-        {% endif %}
-    </div>
-    <div class="flex flex-col gap-12 w-full max-w-[1800px] mx-auto">
-        <!-- Fila 1: 3 tarjetas -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-12 w-full">
-            <!-- Cliente con más ventas -->
-            <a href="{% if cliente_mas_vendido %}{% url 'oportunidades_por_cliente' cliente_mas_vendido.cliente__id %}{% else %}#{% endif %}" class="glass-card group card-xl flex flex-col items-center justify-center text-center py-6 transition hover:scale-105 hover:shadow-xl focus:outline-none w-full bg-gradient-to-br from-cyan-900/60 to-cyan-800/40 border-cyan-700/60 animate-fade-in float" style="text-decoration:none;">
-                <span class="text-xl font-bold text-cyan-200 tracking-widest uppercase mb-2">Cliente con más ventas</span>
-                <i data-lucide="user-check" class="lucide w-12 h-12 text-cyan-400 group-hover:text-cyan-300 transition mb-2"></i>
-                {% if cliente_mas_vendido %}
-                    <div class="text-4xl font-extrabold text-white tracking-tight mb-1 lowercase">{{ cliente_mas_vendido.cliente__nombre_empresa }}</div>
-                    <div class="text-2xl font-bold text-green-300 lowercase drop-shadow-[0_2px_8px_rgba(0,255,128,0.18)]">${{ cliente_mas_vendido.total_vendido|floatformat:2 }}</div>
+</style> <!-- Responsive container -->
+
+        <!-- La columna izquierda (barra lateral) ha sido eliminada por completo -->
+
+        <!-- Contenido Principal del Dashboard - Ahora ocupa todas las columnas disponibles -->
+        <div class="col-span-1 flex flex-col gap-8 py-12 px-4 sm:px-6 lg:px-8">
+            <!-- Barra superior minimalista -->
+            <div class="flex items-center justify-between w-full mb-8">
+                <h1 class="text-5xl font-extrabold text-white tracking-tight" style="font-size: clamp(2.5rem, 5vw, 4rem);">DASHBOARD</h1>
+                {% if is_supervisor %}
+                    <span class="px-6 py-2 rounded-full text-white font-bold text-base sm:text-lg shadow-xl bg-gradient-to-r from-purple-700 to-fuchsia-600 animate-gradient-x border border-fuchsia-500">SUPERVISOR</span>
                 {% else %}
-                    <div class="text-green-100 italic text-lg text-center">Sin datos</div>
+                    <span class="px-6 py-2 rounded-full text-white font-bold text-base sm:text-lg shadow-xl bg-gradient-to-r from-blue-700 to-cyan-600 animate-gradient-x border border-cyan-500">VENDEDOR</span>
                 {% endif %}
-            </a>
-            <!-- Cliente con menos ventas -->
-            <a href="{% if cliente_menos_vendido %}{% url 'oportunidades_por_cliente' cliente_menos_vendido.cliente__id %}{% else %}#{% endif %}" class="glass-card group card-xl flex flex-col items-center justify-center text-center py-6 transition hover:scale-105 hover:shadow-xl focus:outline-none w-full bg-gradient-to-br from-green-900/60 to-green-800/40 border-green-700/60 animate-fade-in float" style="text-decoration:none;">
-                <span class="text-xl font-bold text-cyan-200 tracking-widest uppercase mb-2">Cliente con menos ventas</span>
-                <i data-lucide="user-x" class="lucide w-12 h-12 text-cyan-400 group-hover:text-cyan-300 transition mb-2"></i>
-                {% if cliente_menos_vendido %}
-                    <div class="text-4xl font-extrabold text-white tracking-tight mb-1 lowercase">{{ cliente_menos_vendido.cliente__nombre_empresa }}</div>
-                    <div class="text-2xl font-bold text-green-300 lowercase drop-shadow-[0_2px_8px_rgba(0,255,128,0.18)]">${{ cliente_menos_vendido.total_vendido|floatformat:2 }}</div>
-                {% else %}
-                    <div class="text-green-100 italic text-lg text-center">Sin datos</div>
-                {% endif %}
-            </a>
-            <!-- Producto más vendido -->
-            <a href="{% if producto_mas_vendido %}{% url 'producto_dashboard_detail' producto_mas_vendido.producto %}{% else %}#{% endif %}" class="glass-card group card-xl flex flex-col items-center justify-center text-center py-6 transition hover:scale-105 hover:shadow-xl focus:outline-none w-full bg-gradient-to-br from-cyan-900/60 to-cyan-800/40 border-cyan-700/60 animate-fade-in float" style="text-decoration:none;">
-                <span class="text-xl font-bold text-cyan-200 tracking-widest uppercase mb-2">Producto más vendido</span>
-                <i data-lucide="package-check" class="lucide w-12 h-12 text-cyan-400 group-hover:text-cyan-300 transition mb-2"></i>
-                {% if producto_mas_vendido %}
-                    <div class="text-4xl font-extrabold text-white tracking-tight mb-1 lowercase">{{ producto_mas_vendido.get_producto_display }}</div>
-                    <div class="text-2xl font-bold text-green-300 lowercase drop-shadow-[0_2px_8px_rgba(0,255,128,0.18)]">{{ producto_mas_vendido.count_oportunidades }} ops. / ${{ producto_mas_vendido.total_vendido_cerrado|floatformat:2 }}</div>
-                {% else %}
-                    <div class="text-green-100 italic text-lg text-center">Sin datos</div>
-                {% endif %}
-            </a>
-        </div>
-        <!-- Fila 2: 3 tarjetas -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-12 w-full">
-            <!-- Producto con menos ventas -->
-            <a href="{% if producto_menos_vendido %}{% url 'producto_dashboard_detail' producto_menos_vendido.producto %}{% else %}#{% endif %}" class="glass-card group card-xl flex flex-col items-center justify-center text-center py-6 transition hover:scale-105 hover:shadow-xl focus:outline-none w-full bg-gradient-to-br from-green-900/60 to-green-800/40 border-green-700/60 animate-fade-in float" style="text-decoration:none;">
-                <span class="text-xl font-bold text-cyan-200 tracking-widest uppercase mb-2">Producto con menos ventas</span>
-                <i data-lucide="package-x" class="lucide w-12 h-12 text-cyan-400 group-hover:text-cyan-300 transition mb-2"></i>
-                {% if producto_menos_vendido %}
-                    <div class="text-4xl font-extrabold text-white tracking-tight mb-1 lowercase">{{ producto_menos_vendido.get_producto_display }}</div>
-                    <div class="text-2xl font-bold text-green-300 lowercase drop-shadow-[0_2px_8px_rgba(0,255,128,0.18)]">{{ producto_menos_vendido.count_oportunidades }} ops. / ${{ producto_menos_vendido.total_vendido_cerrado|floatformat:2 }}</div>
-                {% else %}
-                    <div class="text-green-100 italic text-lg text-center">Sin datos</div>
-                {% endif %}
-            </a>
-            <!-- Meta mensual próxima -->
-            <a href="{% url 'mes_dashboard_detail' proximo_mes_val %}" class="glass-card group card-xl flex flex-col items-center justify-center text-center py-6 transition hover:scale-105 hover:shadow-xl focus:outline-none w-full bg-gradient-to-br from-cyan-900/60 to-cyan-800/40 border-cyan-700/60 animate-fade-in float" style="text-decoration:none;">
-                <span class="text-xl font-bold text-cyan-200 tracking-widest uppercase mb-2">Meta de {{ next_month_display }}</span>
-                <i data-lucide="target" class="lucide w-12 h-12 text-cyan-400 group-hover:text-cyan-300 transition mb-2"></i>
-                <div class="text-2xl font-bold text-white lowercase drop-shadow-[0_2px_8px_rgba(255,255,255,0.18)]">{{ total_oportunidades_proximo_mes }} ops. / ${{ total_monto_esperado_proximo_mes|floatformat:2 }}</div>
-                <div class="mt-2 text-base font-semibold text-center {% if alerta_proximo_mes.tipo == 'success' %}text-green-400{% elif alerta_proximo_mes.tipo == 'danger' %}text-red-400{% else %}text-cyan-200{% endif %}">
-                    <span class="inline-block align-middle mr-2">
-                        {% if alerta_proximo_mes.icon %}
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 20 20"><path d="{{ alerta_proximo_mes.icon }}"/></svg>
-                        {% endif %}
-                    </span>
-                    {{ alerta_proximo_mes.message }}
+            </div>
+
+            <!-- Fila de Métricas Adicionales (ahora con 2 elementos en la primera fila) -->
+            <!-- Cards de Mes Próximo y Mes Actual -->
+            <div class="flex flex-col md:flex-row gap-6 w-full mb-6">
+                <!-- Mes Próximo -->
+                <a href="{% url 'mes_dashboard_detail' proximo_mes_val %}" class="glass-card flex-1 min-w-[260px] max-w-[540px] w-full flex flex-col items-center justify-center p-6 sm:p-8 md:p-10 transition-transform hover:scale-105 cursor-pointer">
+                    <span class="text-2xl font-bold text-cyan-200 mb-2">Mes Próximo: {{ next_month_display }}</span>
+                    <div class="text-lg font-semibold text-gray-400 mb-2">
+                        Oportunidades: <span class="font-bold text-white">{{ total_oportunidades_proximo_mes }}</span>
+                    </div>
+                    <div class="text-5xl font-extrabold text-white mb-2">
+                        ${{ total_monto_esperado_proximo_mes|floatformat:2 }}
+                    </div>
+                    <div class="text-base font-semibold text-gray-400 mb-1">
+                        Meta: {% if is_supervisor %}$350,000{% else %}$130,000{% endif %}
+                    </div>
+                    <div class="mt-2 text-base font-semibold text-center
+                        {% if alerta_proximo_mes.status == 'success' %}text-green-300
+                        {% elif alerta_proximo_mes.status == 'warning' %}text-yellow-200
+                        {% else %}text-pink-200{% endif %}">
+                        {{ alerta_proximo_mes.message }}
+                    </div>
+                </a>
+                <!-- Mes Actual -->
+                <a href="{% url 'oportunidades_mes_actual' %}" class="glass-card flex-1 min-w-[260px] max-w-[540px] w-full flex flex-col items-center justify-center p-6 sm:p-8 md:p-10 transition-transform hover:scale-105 cursor-pointer relative">
+                    <span class="text-2xl font-bold text-purple-200 mb-4">Mes Actual: {{ mes_actual_nombre }}</span>
+                    <div class="relative w-40 h-40 flex items-center justify-center mb-2">
+                        <svg class="absolute top-0 left-0 w-full h-full" viewBox="0 0 120 120">
+                            <circle cx="60" cy="60" r="54" stroke="#3B3B4F" stroke-width="12" fill="none" />
+                            <circle cx="60" cy="60" r="54" stroke="#a855f7" stroke-width="12" fill="none"
+                                stroke-dasharray="339.292" stroke-dashoffset="{{ stroke_dashoffset_mes_actual }}"
+                                stroke-linecap="round"
+                                style="transition: stroke-dashoffset 0.8s cubic-bezier(.4,0,.2,1);"/>
+                        </svg>
+                        <span class="absolute text-5xl font-extrabold text-white">{{ porcentaje_cobertura_mes_actual }}%</span>
+                    </div>
+                    <div class="text-lg font-semibold text-gray-400 mb-2">Cobrado: <span class="font-bold text-white">${{ monto_cobrado_mes_actual|floatformat:2 }}</span></div>
+                    <div class="text-base text-gray-400">Progreso de meta mensual cobrada.</div>
+                </a>
+            </div>
+
+            <!-- Gráfica de Ventas por Mes -->
+            <section class="w-full flex justify-center mb-12">
+                <div class="glass-card w-full max-w-6xl min-h-[320px] flex flex-col items-center justify-center p-4 sm:p-8 md:p-12">
+                    <h2 class="text-2xl sm:text-3xl md:text-4xl font-extrabold text-cyan-100 mb-4 sm:mb-8 tracking-wide text-center">Ventas por mes</h2>
+                    <canvas id="ventasMesChart" style="width:100%;height:260px;max-width:100vw;background:transparent;"></canvas>
+                    <div id="cambioPorcentual" class="mt-4 sm:mt-8 text-lg sm:text-xl md:text-2xl font-extrabold text-center"></div>
                 </div>
-            </a>
-            <!-- Total perdido -->
-            <a href="{% url 'oportunidades_perdidas_detail' %}" class="glass-card group card-xl flex flex-col items-center justify-center text-center py-6 transition hover:scale-105 hover:shadow-xl focus:outline-none w-full bg-gradient-to-br from-cyan-900/60 to-cyan-800/40 border-cyan-700/60 animate-fade-in float" style="text-decoration:none;">
-                <span class="text-xl font-bold text-cyan-200 tracking-widest uppercase mb-2">Total perdido</span>
-                <i data-lucide="x-circle" class="lucide w-12 h-12 text-cyan-400 group-hover:text-cyan-300 transition mb-2"></i>
-                <div class="text-4xl font-extrabold text-white tracking-tight mb-1 lowercase">{{ total_perdido_count }}</div>
-                <div class="text-2xl font-bold text-green-300 lowercase drop-shadow-[0_2px_8px_rgba(0,255,128,0.18)]">${{ total_perdido_monto|floatformat:2 }}</div>
-            </a>
+            </section>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script>
+                // Acepta tanto ventas_por_mes_list con 'total' o 'monto'
+                var ventasPorMes = {{ ventas_por_mes_list|default:'[]'|safe }};
+                // Si los meses vienen como '01', '02', ... los convertimos a nombres
+                function nombreMes(m) {
+                    const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                    // Si viene formato '2025-01', '2025-02', etc.
+                    if (typeof m === 'string' && m.match(/^\d{4}-\d{2}$/)) {
+                        let idx = parseInt(m.split('-')[1], 10) - 1;
+                        return meses[idx] || m;
+                    }
+                    if (!isNaN(m) && Number(m) >= 1 && Number(m) <= 12) return meses[Number(m)-1];
+                    return m;
+                }
+                var labels = ventasPorMes.map(function(item) { return nombreMes(item.mes); });
+                var data = ventasPorMes.map(function(item) { return (typeof item.total !== 'undefined' ? item.total : item.monto); });
+                // Calcular y mostrar el cambio porcentual respecto al mes anterior
+                var cambioDiv = document.getElementById('cambioPorcentual');
+                // Calcular el índice del mes actual según la fecha real
+                let now = new Date();
+                let mesActualIdx = now.getMonth(); // 0=Ene, 6=Julio
+                let curr = data[mesActualIdx];
+                let prev = mesActualIdx > 0 ? data[mesActualIdx - 1] : 0;
+                let cambioHtml = '';
+                if (prev === 0 && curr > 0) {
+                    cambioHtml = `<span class='text-green-400'>N/A</span>`;
+                } else if (prev > 0) {
+                    let diff = ((curr - prev) / prev) * 100;
+                    if (diff > 0) {
+                        cambioHtml = `<span class='text-green-400'>▲ +${diff.toFixed(1)}%</span>`;
+                    } else if (diff < 0) {
+                        cambioHtml = `<span class='text-red-400'>▼ ${diff.toFixed(1)}%</span>`;
+                    } else {
+                        cambioHtml = `<span class='text-gray-300'>– 0%</span>`;
+                    }
+                } else {
+                    cambioHtml = `<span class='text-gray-300'>– 0%</span>`;
+                }
+                cambioDiv.innerHTML = cambioHtml;
+
+                var ctx = document.getElementById('ventasMesChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Ventas',
+                            data: data,
+                            fill: false,
+                            borderColor: 'rgba(34,211,238,1)',
+                            backgroundColor: 'rgba(34,211,238,0.3)',
+                            borderWidth: 4,
+                            tension: 0.4,
+                            pointRadius: 8,
+                            pointBackgroundColor: '#fbbf24', // Amarillo
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 3,
+                            pointHoverRadius: 11
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false },
+                            title: { display: false }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: '#a5f3fc', font: { weight: 'bold', size: 16 } },
+                                grid: { color: 'rgba(255,255,255,0.05)' }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: { color: '#f1f5f9', font: { weight: 'bold', size: 16 }, callback: function(v) { return '$' + v.toLocaleString(); } },
+                                grid: { color: 'rgba(255,255,255,0.08)' }
+                            }
+                        }
+                    }
+                });
+            </script>
+
+                    <div class="flex-1 flex flex-col items-start justify-center">
+
+            <!-- Top Cliente y Cliente con menos ventas -->
+            <div class="flex flex-col md:flex-row gap-8 w-full mb-8">
+                <!-- Top Cliente -->
+                <a href="{% if cliente_mas_vendido %}{% url 'oportunidades_por_cliente' cliente_mas_vendido.cliente__id %}{% else %}#{% endif %}" class="glass-card flex-1 min-w-[320px] max-w-[540px] flex flex-col items-center justify-center p-10 transition-transform hover:scale-105 cursor-pointer">
+                    <span class="text-2xl font-bold text-gray-100 mb-3">Top Cliente</span>
+                    {% if cliente_mas_vendido %}
+                        <div class="text-4xl md:text-5xl font-extrabold text-white mb-2 text-center">{{ cliente_mas_vendido.cliente__nombre_empresa }}</div>
+                        <div class="text-3xl font-bold text-cyan-100 mb-1 text-center">${{ cliente_mas_vendido.total_vendido|floatformat:2 }}</div>
+                    {% else %}
+                        <div class="text-gray-400 italic text-xl">Sin datos</div>
+                    {% endif %}
+                </a>
+                <!-- Cliente con menos ventas -->
+                <a href="{% if cliente_menos_vendido %}{% url 'oportunidades_por_cliente' cliente_menos_vendido.cliente__id %}{% else %}#{% endif %}" class="glass-card flex-1 min-w-[320px] max-w-[540px] flex flex-col items-center justify-center p-10 transition-transform hover:scale-105 cursor-pointer">
+                    <span class="text-2xl font-bold text-gray-100 mb-3">Cliente con menos ventas</span>
+                    {% if cliente_menos_vendido %}
+                        <div class="text-4xl md:text-5xl font-extrabold text-white mb-2 text-center">{{ cliente_menos_vendido.cliente__nombre_empresa }}</div>
+                        <div class="text-3xl font-bold text-pink-200 mb-1 text-center">${{ cliente_menos_vendido.total_vendido|floatformat:2 }}</div>
+                    {% else %}
+                        <div class="text-gray-400 italic text-xl">Sin datos</div>
+                    {% endif %}
+                </a>
+            </div>
+
+
+            <!-- Nueva fila de tarjetas: Oportunidades Perdidas, Producto más vendido, Producto con menos ventas -->
+            <div class="w-full flex justify-center">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 max-w-5xl w-full">
+                <!-- Oportunidades Perdidas -->
+                <a href="{% url 'oportunidades_perdidas_detail' %}" class="glass-card group animate-fade-in-up animation-delay-1000 flex flex-col items-center justify-center p-8 transition-transform hover:scale-105 cursor-pointer">
+                    <h2 class="text-xl font-bold text-gray-200 mb-2">Oportunidades Perdidas</h2>
+                    <i data-lucide="x-octagon" class="lucide w-10 h-10 text-red-400 group-hover:text-red-200 transition-colors duration-300 mb-2"></i>
+                    <div class="text-3xl font-extrabold text-white mb-1">{{ total_perdido_count }}</div>
+                    <div class="text-xl font-bold text-red-50">${{ total_perdido_monto|floatformat:2 }}</div>
+                </a>
+                <!-- Marca más vendida -->
+                <a href="{% if marca_mas_vendida and marca_mas_vendida.marca and marca_mas_vendida.marca != '' %}{% url 'producto_dashboard_detail' marca_mas_vendida.marca %}{% else %}#{% endif %}"
+                   class="glass-card group animate-fade-in-up animation-delay-1200 flex flex-col items-center justify-center p-8 transition-transform hover:scale-105 cursor-pointer border-green-500 border-2 hover:bg-green-800/30">
+                    <h2 class="text-xl font-bold text-green-200 mb-2">Marca más vendida</h2>
+                    <i data-lucide="star" class="lucide w-10 h-10 text-green-400 group-hover:text-green-200 transition-colors duration-300 mb-2"></i>
+                    {% if marca_mas_vendida %}
+                        <div class="text-3xl font-extrabold text-green-100 mb-1">{{ marca_mas_vendida.nombre_marca }}</div>
+                        <div class="text-xl font-bold text-green-200">${{ marca_mas_vendida.total_vendido|floatformat:2 }}</div>
+                    {% else %}
+                        <div class="text-green-50 italic text-lg">Sin datos</div>
+                    {% endif %}
+                </a>
+                <!-- Marca con menos ventas -->
+                {% if marca_menos_vendida and marca_menos_vendida.marca and marca_menos_vendida.marca != '' and marca_menos_vendida.total_vendido > 0 %}
+                <a href="{% url 'producto_dashboard_detail' marca_menos_vendida.marca %}"
+                   class="glass-card group animate-fade-in-up animation-delay-1400 flex flex-col items-center justify-center p-8 transition-transform hover:scale-105 cursor-pointer border-pink-500 border-2 hover:bg-pink-800/30">
+                {% else %}
+                <div class="glass-card flex flex-col items-center justify-center p-8 opacity-70 cursor-not-allowed border-pink-500 border-2 bg-pink-900/20">
+                {% endif %}
+                    <h2 class="text-xl font-bold text-pink-200 mb-2">Marca con menos ventas</h2>
+                    <i data-lucide="arrow-down" class="lucide w-10 h-10 text-pink-400 group-hover:text-pink-200 transition-colors duration-300 mb-2"></i>
+                    {% if marca_menos_vendida %}
+                        <div class="text-3xl font-extrabold text-pink-100 mb-1">{{ marca_menos_vendida.nombre_marca }}</div>
+                        <div class="text-xl font-bold text-pink-200">${{ marca_menos_vendida.total_vendido|floatformat:2 }}</div>
+                    {% else %}
+                        <div class="text-pink-50 italic text-lg">Sin datos</div>
+                    {% endif %}
+                {% if marca_menos_vendida and marca_menos_vendida.marca and marca_menos_vendida.marca != '' and marca_menos_vendida.total_vendido > 0 %}
+                </a>
+                {% else %}
+                </div>
+                {% endif %}
+                </a>
+            </div>
+                </a>
+            </div>
         </div>
     </div>
 </div>
+
 <script src="https://unpkg.com/lucide-icons@latest"></script>
-<script>lucide.createIcons();</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+    lucide.createIcons();
+
+    // Three.js Globe Setup
+    let scene, camera, renderer, globe, wireframeGlobe, glowSphere;
+    let mouseX = 0, mouseY = 0;
+    let windowHalfX = window.innerWidth / 2;
+    let windowHalfY = window.innerHeight / 2;
+
+    function initGlobe() {
+        // Scene
+        scene = new THREE.Scene();
+
+        // Camera
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5; // Position the camera to see the globe
+
+        // Adjust FOV for wider screens
+        if (window.innerWidth / window.innerHeight > 2) {
+            camera.fov = 90;
+            camera.updateProjectionMatrix();
+        }
+
+        // Renderer
+        const canvas = document.getElementById('globeCanvas');
+        if (!canvas) {
+            console.error("Globe canvas not found.");
+            return;
+        }
+        renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+        renderer.setClearColor(0x000000, 0); // Transparent background
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+
+        // Main Globe (Solid, dark base with map texture)
+        const globeGeometry = new THREE.SphereGeometry(2, 64, 64); // Larger radius
+        const textureLoader = new THREE.TextureLoader();
+
+        // Using a dark, stylized map texture for the globe
+        textureLoader.load(
+            'https://www.solarsystemscope.com/textures/download/2k_earth_nightmap.jpg', // Example night map
+            function (texture) {
+                const globeMaterial = new THREE.MeshBasicMaterial({
+                    map: texture,
+                    color: 0x232946, // Dark base color to blend with body background
+                    transparent: true,
+                    opacity: 0.7 // Slightly transparent
+                });
+                globe = new THREE.Mesh(globeGeometry, globeMaterial);
+                scene.add(globe);
+            },
+            undefined,
+            function (err) {
+                console.error('An error happened loading the globe texture.', err);
+                // Fallback to a simple dark blue globe if texture fails
+                const fallbackMaterial = new THREE.MeshBasicMaterial({
+                    color: 0x232946,
+                    transparent: true,
+                    opacity: 0.7
+                });
+                globe = new THREE.Mesh(globeGeometry, fallbackMaterial);
+                scene.add(globe);
+            }
+        );
+
+        // Wireframe Globe (for the grid effect)
+        const wireframeGeometry = new THREE.WireframeGeometry(new THREE.SphereGeometry(2.01, 64, 64)); // Slightly larger
+        const wireframeMaterial = new THREE.LineBasicMaterial({
+            color: 0x00ffff, // Cyan color for lines
+            linewidth: 1, // Line width (may not be supported on all platforms)
+            transparent: true,
+            opacity: 0.25 // More visible opacity for lines
+        });
+        wireframeGlobe = new THREE.LineSegments(wireframeGeometry, wireframeMaterial);
+        scene.add(wireframeGlobe);
+
+        // Outer Glow Sphere (for the overall aura)
+        const glowGeometry = new THREE.SphereGeometry(2.5, 64, 64); // Even larger
+        const glowMaterial = new THREE.MeshBasicMaterial({
+            color: 0x8800ff, // Purple glow color
+            transparent: true,
+            opacity: 0.1, // Increased opacity for a stronger glow
+            blending: THREE.AdditiveBlending, // Makes it look like a light source
+            side: THREE.BackSide // Render inside out
+        });
+        glowSphere = new THREE.Mesh(glowGeometry, glowMaterial);
+        scene.add(glowSphere);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0x404040, 2); // Soft white light
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(0, 0, 1).normalize(); // Light from front
+        scene.add(directionalLight);
+
+        // Mouse interaction for subtle camera movement (optional, but nice for background)
+        document.addEventListener('mousemove', onDocumentMouseMove, false);
+
+        // Handle window resize
+        window.addEventListener('resize', onWindowResize, false);
+    }
+
+    function onDocumentMouseMove(event) {
+        mouseX = (event.clientX - windowHalfX) * 0.0005;
+        mouseY = (event.clientY - windowHalfY) * 0.0005;
+    }
+
+    function onWindowResize() {
+        windowHalfX = window.innerWidth / 2;
+        windowHalfY = window.innerHeight / 2;
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    // Animation loop
+    function animate() {
+        requestAnimationFrame(animate);
+
+        // Subtle camera movement with mouse
+        camera.position.x += (mouseX - camera.position.x) * .05;
+        camera.position.y += (- mouseY - camera.position.y) * .05;
+        camera.lookAt(scene.position);
+
+        if (globe) {
+            globe.rotation.y += 0.0005; // Very slow continuous rotation
+            globe.rotation.x += 0.0001; // Slight tilt
+        }
+        if (wireframeGlobe) {
+            wireframeGlobe.rotation.y += 0.0005;
+            wireframeGlobe.rotation.x += 0.0001;
+        }
+        if (glowSphere) {
+            glowSphere.rotation.y += 0.0002; // Slower rotation for glow effect
+            glowSphere.rotation.x += 0.00005;
+        }
+
+        renderer.render(scene, camera);
+    }
+
+    // Initialize and start animation when the window loads
+    window.onload = function() {
+        initGlobe();
+        animate();
+    };
+</script>
 <style>
-    /* Mover glass-card arriba para que cargue antes y evitar flash */
+    /* Base styles for the overall dark theme */
+    body {
+        font-family: 'Inter', sans-serif; /* Using Inter for a modern look */
+    }
+
+    /* Glassmorphism card styles */
     .glass-card {
-        background: rgba(24,24,32,0.85);
-        border-radius: 1.8rem;
-        box-shadow: 0 10px 36px 0 rgba(31,38,135,0.16);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 2px solid rgba(56,189,248,0.10);
-        padding: 3rem 1.8rem 1.8rem 1.8rem;
-        min-height: 260px;
-        transition: opacity 0.01s cubic-bezier(0.4,0,0.2,1), box-shadow 0.18s, border-color 0.18s, transform 0.18s, background 0.3s;
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
+        background: rgba(255, 255, 255, 0.08); /* Fondo muy sutilmente transparente */
+        border-radius: 1.5rem; /* Bordes redondeados */
+        border: 1px solid rgba(255, 255, 255, 0.15); /* Borde sutil */
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2); /* Sombra suave */
+        backdrop-filter: blur(10px); /* Desenfoque de fondo */
+        -webkit-backdrop-filter: blur(10px);
+        transition: all 0.3s ease-in-out;
+        padding: 2.5rem;
         display: flex;
         flex-direction: column;
-        justify-content: flex-start;
-        opacity: 1;
-        will-change: opacity, transform;
+        align-items: center;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
     }
-    .glass-card.card-xl {
-        min-height: 260px;
-        padding: 3rem 1.8rem 1.8rem 1.8rem;
+
+    .glass-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 255, 255, 0.1); /* Efecto de brillo sutil */
+        border-color: rgba(255, 255, 255, 0.3);
     }
-    .glass-card[data-loaded="false"] {
+
+    /* Glow effect for the globe */
+    .shadow-glow {
+        box-shadow: 0 0 60px 20px rgba(147, 51, 234, 0.6), /* purple */
+                    0 0 40px 10px rgba(6, 182, 212, 0.4); /* cyan */
+        border-radius: 9999px; /* fully rounded */
+        animation: pulse-glow 3s infinite alternate;
+    }
+
+    /* Animations */
+    .animate-fade-in-up {
+        animation: fadeInUp 0.8s ease-out forwards;
         opacity: 0;
     }
-    .glass-card[data-loaded="true"] {
-        opacity: 1;
+    .animate-fade-in-left {
+        animation: fadeInLeft 0.8s ease-out forwards;
+        opacity: 0;
     }
-    .glass-card:hover {
-        box-shadow: 0 18px 54px 0 rgba(56,189,248,0.24), 0 2px 8px 0 rgba(255,255,255,0.10);
-        border-color: #38bdf8;
-        transform: translateY(-5px) scale(1.035);
+    .animate-fade-in-right {
+        animation: fadeInRight 0.8s ease-out forwards;
+        opacity: 0;
     }
-    .glass-card::before {
-        display: none;
+    .animate-pulse-slow {
+        animation: pulseSlow 10s infinite ease-in-out alternate;
     }
-    .glass-card > * { position: relative; z-index: 1; }
+    .animate-spin-slow {
+        animation: spinSlow 30s linear infinite;
+    }
+    .animate-spin-reverse-slow {
+        animation: spinSlow 40s linear infinite reverse;
+    }
+    .animate-grow-bar {
+        animation: growBar 1s ease-out forwards;
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInLeft {
+        from { opacity: 0; transform: translateX(-30px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes fadeInRight {
+        from { opacity: 0; transform: translateX(30px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes pulseSlow {
+        0% { transform: scale(1); opacity: 0.3; }
+        50% { transform: scale(1.1); opacity: 0.4; }
+        100% { transform: scale(1); opacity: 0.3; }
+    }
+    @keyframes spinSlow {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    @keyframes growBar {
+        from { transform: scaleY(0); }
+        to { transform: scaleY(1); }
+    }
+
+    /* Animation delay utilities */
+    .animation-delay-200 { animation-delay: 0.2s; }
+    .animation-delay-400 { animation-delay: 0.4s; }
+    .animation-delay-600 { animation-delay: 0.6s; }
+    .animation-delay-800 { animation-delay: 0.8s; }
+    .animation-delay-1000 { animation-delay: 1s; }
+    .animation-delay-1200 { animation-delay: 1.2s; }
+    .animation-delay-1400 { animation-delay: 1.4s; }
+    .animation-delay-2000 { animation-delay: 2s; } /* For background blobs */
+
+    /* Gradient X for role badge */
     .animate-gradient-x {
         background-size: 200% 200%;
-        animation: gradient-x 2.5s ease-in-out infinite;
+        animation: gradient-x 3s ease-in-out infinite;
     }
     @keyframes gradient-x {
         0% { background-position: 0% 50%; }

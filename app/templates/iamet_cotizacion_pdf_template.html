@@ -255,6 +255,12 @@
       </div>
     </div>
 
+    {% if cotizacion.titulo %}
+    <div style="text-align:center; margin: 20px 0 10px 0;">
+      <h1 style="font-size: 2rem; color: #111; margin:0; letter-spacing:1px; font-weight:800;">{{ cotizacion.titulo }}</h1>
+    </div>
+    {% endif %}
+
     <div class="section info-grid" style="background: #f8fafc; border: none; box-shadow: 0 2px 8px rgba(44,83,100,0.04); border-radius: 16px;">
       <div>
         <h2 style="color: #2c5364; font-size: 20px; margin-bottom: 6px;">Cliente</h2>
@@ -268,8 +274,6 @@
       </div>
     </div>
 
-    <div class="section" style="background: #fff; border: none; box-shadow: 0 2px 8px rgba(44,83,100,0.04); border-radius: 16px;">
-      <h2 style="color: #2c5364;">Detalle de Productos</h2>
       <table style="background: #f8fafc; border-radius: 10px; overflow: hidden;">
         <thead>
           <tr style="background: #e0f2f7; color: #0f2027;">
@@ -278,7 +282,9 @@
             <th>DESCRIPCIÓN</th>
             <th>CANTIDAD</th>
             <th>PRECIO UNITARIO</th>
+            {% if cotizacion.descuento_visible %}
             <th>DESC. (%)</th>
+            {% endif %}
             <th>TOTAL</th>
           </tr>
         </thead>
@@ -287,10 +293,12 @@
           <tr>
             <td>{{ forloop.counter }}</td>
             <td>{{ detalle.nombre_producto }}</td>
-            <td class="descripcion">{{ detalle.descripcion|default:"-" }}</td>
+            <td class="descripcion">{{ detalle.descripcion|default:"-"|linebreaksbr }}</td>
             <td class="text-right">{{ detalle.cantidad }}</td>
             <td class="text-right">${{ detalle.precio_unitario|floatformat:2 }}</td>
+            {% if cotizacion.descuento_visible %}
             <td class="text-right">{{ detalle.descuento_porcentaje|floatformat:2 }}%</td>
+            {% endif %}
             <td class="text-right">${{ detalle.get_total_item|floatformat:2 }}</td>
           </tr>
           {% endfor %}

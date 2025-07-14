@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-full mx-auto mt-10 p-8 glass-card relative dashboard-container">
+
+<style>
+    .dashboard-container {
+        --padding-x: clamp(1rem, 5vw, 4rem);
+        padding-left: var(--padding-x);
+        padding-right: var(--padding-x);
+    }
+</style>
+  <a href="{% url 'dashboard' %}" class="absolute top-6 right-8 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold px-5 py-2 rounded-full shadow-lg hover:scale-105 transition-transform">← Volver al Dashboard</a>
+  <h1 class="text-3xl font-bold mb-2 text-purple-300" style="font-size: clamp(1.8rem, 3.5vw, 2.5rem);">Detalle de Oportunidades - {{ mes_actual_nombre }}</h1>
+  <div class="mb-4 text-yellow-200 text-2xl font-extrabold" style="font-size: clamp(1.5rem, 3vw, 2rem);">
+    Por Cobrar: <span class="font-bold text-yellow-300">${{ monto_por_cobrar|floatformat:2 }}</span>
+  </div>
+  <hr class="mb-6 border-purple-400">
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm text-left">
+      <thead class="bg-purple-900 text-purple-200">
+        <tr>
+          <th class="py-2 px-4">Cliente</th>
+          <th class="py-2 px-4">Vendedor</th>
+          <th class="py-2 px-4">Monto</th>
+          <th class="py-2 px-4">Fecha de cierre</th>
+          <th class="py-2 px-4">Probabilidad</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for op in oportunidades %}
+        <tr class="border-b border-purple-800 hover:bg-purple-800/30">
+          <td class="py-2 px-4">{{ op.cliente }}</td>
+          <td class="py-2 px-4">{{ op.usuario.get_full_name|default:op.usuario.username }}</td>
+          <td class="py-2 px-4">${{ op.monto|floatformat:2 }}</td>
+          <td class="py-2 px-4">{{ op.get_mes_cierre_display }} {{ op.anio_cierre }}</td>
+          <td class="py-2 px-4">{{ op.probabilidad_cierre }}%</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-gray-400 py-8">No hay oportunidades cobradas este mes.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

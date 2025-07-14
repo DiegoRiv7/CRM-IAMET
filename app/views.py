@@ -3,6 +3,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion # Asegúrate de importar los nuevos modelos
+from . import views_exportar
 from .forms import VentaForm, VentaFilterForm, CotizacionForm # Asegúrate de que CotizacionForm esté importado
 from django.db.models import Sum, Count, F, Q
 from django.db.models.functions import Upper, Coalesce
@@ -37,6 +38,50 @@ def _get_display_for_value(value, choices_list):
     return dict(choices_list).get(value, value)
 
 # Vistas principales y funcionales
+
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def ventas_fullscreen(request):
+    user = request.user
+    is_super = hasattr(user, 'perfil') and getattr(user.perfil, 'es_supervisor', False)
+    qs = TodoItem.objects.filter(probabilidad_cierre=100).exclude(mes_cierre__isnull=True).exclude(mes_cierre='')
+    if not is_super:
+        qs = qs.filter(usuario=user)
+    ventas_por_mes = {str(i).zfill(2): 0 for i in range(1, 13)}
+    for item in qs:
+        mes = item.mes_cierre
+        if mes in ventas_por_mes:
+            ventas_por_mes[mes] += item.monto or 0
+    meses = ['01','02','03','04','05','06','07','08','09','10','11','12']
+    ventas_por_mes_list = [
+        {'mes': m, 'monto': float(ventas_por_mes[m])} for m in meses
+    ]
+    return render(request, 'ventas_fullscreen.html', {'ventas_por_mes_list': ventas_por_mes_list})
+
+
+@login_required
+def oportunidades_mes_actual(request):
+    hoy = date.today()
+    mes_actual_val = str(hoy.month).zfill(2)
+    mes_actual_nombre = dict(TodoItem.MES_CHOICES).get(mes_actual_val, f"Mes {hoy.month}")
+    if is_supervisor(request.user):
+        oportunidades = TodoItem.objects.filter(mes_cierre=mes_actual_val)
+        meta_mensual = 400000
+    else:
+        oportunidades = TodoItem.objects.filter(mes_cierre=mes_actual_val, usuario=request.user)
+        meta_mensual = 130000
+
+    # Monto por cobrar: oportunidades con probabilidad entre 1 y 99%
+    monto_por_cobrar = oportunidades.filter(probabilidad_cierre__gte=1, probabilidad_cierre__lte=99).aggregate(suma=Sum('monto'))['suma'] or 0
+
+    return render(request, 'oportunidades_mes_actual.html', {
+        'oportunidades': oportunidades,
+        'mes_actual_nombre': mes_actual_nombre,
+        'meta_mensual': meta_mensual,
+        'monto_por_cobrar': monto_por_cobrar,
+    })
+
 @login_required
 def bienvenida(request):
     """
@@ -180,21 +225,40 @@ def dashboard(request):
     productos_data_sorted_asc = sorted(productos_data_with_display, key=lambda x: x['count_oportunidades'])
     productos_data_sorted_desc = sorted(productos_data_with_display, key=lambda x: x['count_oportunidades'], reverse=True)
 
-    # Inicializar producto_mas_vendido y producto_menos_vendido
+    # --- Marca más vendida y menos vendida (usando producto como proxy de marca) ---
+    marca_mas_vendida = None
+    marca_menos_vendida = None
+
+    # Ordenar productos por total vendido cerrado (ventas reales por marca)
+    productos_sorted_by_ventas = sorted(productos_data_with_display, key=lambda x: x['total_vendido_cerrado'] or Decimal('0.00'), reverse=True)
+    productos_sorted_by_ventas_asc = sorted(productos_data_with_display, key=lambda x: x['total_vendido_cerrado'] or Decimal('0.00'))
+
+    if productos_sorted_by_ventas:
+        top_brand = productos_sorted_by_ventas[0]
+        marca_mas_vendida = {
+            'marca': top_brand['producto_upper'],
+            'nombre_marca': top_brand['get_producto_display'],
+            'total_vendido': top_brand['total_vendido_cerrado'],
+        }
+    if productos_sorted_by_ventas_asc:
+        least_brand = productos_sorted_by_ventas_asc[0]
+        marca_menos_vendida = {
+            'marca': least_brand['producto_upper'],
+            'nombre_marca': least_brand['get_producto_display'],
+            'total_vendido': least_brand['total_vendido_cerrado'],
+        }
+
+    # --- Producto más/menos vendido (por cantidad de oportunidades, para compatibilidad con otras vistas) ---
     producto_mas_vendido = None
     producto_menos_vendido = None
-
-    # Asignar valores después de ordenar las listas
     if productos_data_sorted_desc:
         producto_mas_vendido = productos_data_sorted_desc[0]
     if productos_data_sorted_asc:
         producto_menos_vendido = productos_data_sorted_asc[0]
 
-
-    # Si producto_mas_vendido existe, aseguramos que la clave 'producto' en el contexto sea la versión UPPER
     if producto_mas_vendido:
         producto_mas_vendido_context = {
-            'producto': producto_mas_vendido['producto_upper'], # Usamos producto_upper para la URL
+            'producto': producto_mas_vendido['producto_upper'],
             'get_producto_display': producto_mas_vendido['get_producto_display'],
             'count_oportunidades': producto_mas_vendido['count_oportunidades'],
             'total_vendido_cerrado': producto_mas_vendido['total_vendido_cerrado'],
@@ -202,10 +266,9 @@ def dashboard(request):
     else:
         producto_mas_vendido_context = None
 
-    # Si producto_menos_vendido existe, aseguramos que la clave 'producto' en el contexto sea la versión UPPER
     if producto_menos_vendido:
         producto_menos_vendido_context = {
-            'producto': producto_menos_vendido['producto_upper'], # Usamos producto_upper para la URL
+            'producto': producto_menos_vendido['producto_upper'],
             'get_producto_display': producto_menos_vendido['get_producto_display'],
             'count_oportunidades': producto_menos_vendido['count_oportunidades'],
             'total_vendido_cerrado': producto_menos_vendido['total_vendido_cerrado'],
@@ -213,6 +276,59 @@ def dashboard(request):
     else:
         producto_menos_vendido_context = None
 
+    # --- Cliente Top (más ventas cerradas) ---
+    if is_supervisor(request.user):
+        top_cliente_qs = (TodoItem.objects.filter(probabilidad_cierre=100)
+            .values('cliente__nombre_empresa')
+            .annotate(total_vendido=Sum('monto'))
+            .order_by('-total_vendido'))
+    else:
+        top_cliente_qs = (TodoItem.objects.filter(probabilidad_cierre=100, usuario=request.user)
+            .values('cliente__nombre_empresa')
+            .annotate(total_vendido=Sum('monto'))
+            .order_by('-total_vendido'))
+    if top_cliente_qs:
+        cliente_top_nombre = top_cliente_qs[0]['cliente__nombre_empresa']
+        cliente_top_monto = top_cliente_qs[0]['total_vendido']
+        # Oportunidades abiertas (1-99%) para ese cliente
+        if is_supervisor(request.user):
+            abiertas = TodoItem.objects.filter(cliente__nombre_empresa=cliente_top_nombre, probabilidad_cierre__gte=1, probabilidad_cierre__lte=99)
+        else:
+            abiertas = TodoItem.objects.filter(cliente__nombre_empresa=cliente_top_nombre, probabilidad_cierre__gte=1, probabilidad_cierre__lte=99, usuario=request.user)
+        cliente_top_oportunidades_abiertas = abiertas.count()
+        # Porcentaje de avance respecto a meta
+        meta_cliente_top = 400000 if is_supervisor(request.user) else 130000
+        porcentaje_cliente_top = int((cliente_top_monto / meta_cliente_top * 100) if meta_cliente_top > 0 else 0)
+        stroke_dashoffset_cliente_top = 339.292 - (339.292 * porcentaje_cliente_top / 100)
+        # Productos más vendidos a cliente top
+        productos_cliente_top = (TodoItem.objects.filter(cliente__nombre_empresa=cliente_top_nombre, probabilidad_cierre=100)
+            .values('producto')
+            .annotate(total_vendido=Sum('monto'))
+            .order_by('-total_vendido'))
+        # Convertir a lista de dicts con display name
+        productos_cliente_top_list = []
+        for p in productos_cliente_top:
+            display = dict(TodoItem.PRODUCTO_CHOICES).get(p['producto'], p['producto'])
+            productos_cliente_top_list.append({'producto': display, 'total_vendido': p['total_vendido'] or 0})
+    else:
+        cliente_top_nombre = None
+        cliente_top_monto = 0
+        cliente_top_oportunidades_abiertas = 0
+        porcentaje_cliente_top = 0
+        stroke_dashoffset_cliente_top = 339.292
+        productos_cliente_top_list = []
+
+    # --- Lógica para el Mes Actual (Cobrado) ---
+    hoy = date.today()
+    mes_actual_val = str(hoy.month).zfill(2)
+    mes_actual_nombre = dict(TodoItem.MES_CHOICES).get(mes_actual_val, f"Mes {hoy.month}")
+    oportunidades_mes_actual = TodoItem.objects.filter(mes_cierre=mes_actual_val, probabilidad_cierre=100)
+    if not is_supervisor(request.user):
+        oportunidades_mes_actual = oportunidades_mes_actual.filter(usuario=request.user)
+    monto_cobrado_mes_actual = oportunidades_mes_actual.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
+    META_MENSUAL = Decimal('350000.00') if is_supervisor(request.user) else Decimal('130000.00')
+    porcentaje_cobertura_mes_actual = int((monto_cobrado_mes_actual / META_MENSUAL * 100) if META_MENSUAL > 0 else 0)
+    stroke_dashoffset_mes_actual = 339.292 - (339.292 * porcentaje_cobertura_mes_actual / 100)
 
     # --- Lógica para el Próximo Mes y Alerta de Meta ---
     # Obtener el próximo mes
@@ -228,12 +344,12 @@ def dashboard(request):
     if not is_supervisor(request.user):
         oportunidades_proximo_mes_query = oportunidades_proximo_mes_query.filter(usuario=request.user)
 
-    total_oportunidades_proximo_mes = oportunidades_proximo_mes_query.count()
+    total_oportunidades_proximo_mes = oportunidades_proximo_mes_query.exclude(probabilidad_cierre=0).count()
     total_monto_esperado_proximo_mes = oportunidades_proximo_mes_query.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
 
 
     # Lógica para la alerta de meta
-    META_MENSUAL = Decimal('130000.00') # Convertir a Decimal
+    META_MENSUAL = Decimal('350000.00') if is_supervisor(request.user) else Decimal('130000.00')
     total_ponderado_proximo_mes = Decimal('0.00') # Inicializar como Decimal
 
     for op in oportunidades_proximo_mes_query: # Iterar sobre el queryset filtrado
@@ -275,11 +391,47 @@ def dashboard(request):
     total_perdido_count = oportunidades_perdidas_query.count()
 
 
+    # --- Ventas por mes (para gráfica) ---
+    from django.db.models.functions import TruncMonth
+    from django.utils.timezone import now
+    hoy = now().date()
+    # Agrupa ventas por mes_cierre (real, no fecha_creacion)
+    ano_actual = hoy.year
+    ventas_por_mes_qs = TodoItem.objects.filter(
+        probabilidad_cierre=100,
+        mes_cierre__isnull=False
+    ).exclude(mes_cierre='')
+    if not is_supervisor(request.user):
+        ventas_por_mes_qs = ventas_por_mes_qs.filter(usuario=request.user)
+    ventas_por_mes = ventas_por_mes_qs.values('mes_cierre').annotate(monto=Sum('monto')).order_by('mes_cierre')
+    # Prepara lista de 12 meses (enero a diciembre)
+    ventas_por_mes_dict = {v['mes_cierre']: float(v['monto'] or 0) for v in ventas_por_mes}
+    ventas_por_mes_list = []
+    for i in range(1, 13):
+        mes_key = str(i).zfill(2)
+        ventas_por_mes_list.append({'mes': f'{ano_actual}-{mes_key}', 'monto': ventas_por_mes_dict.get(mes_key, 0)})
+
     context = {
         'cliente_mas_vendido': cliente_mas_vendido,
         'cliente_menos_vendido': cliente_menos_vendido,
+        'marca_mas_vendida': marca_mas_vendida,
+        'marca_menos_vendida': marca_menos_vendida,
         'producto_mas_vendido': producto_mas_vendido_context, # Usamos el nuevo contexto
         'producto_menos_vendido': producto_menos_vendido_context, # Usamos el nuevo contexto para menos vendido
+        # Datos del cliente top
+        'productos_cliente_top_list': productos_cliente_top_list,
+        'ventas_por_mes_list': ventas_por_mes_list,
+        'porcentaje_cliente_top': porcentaje_cliente_top,
+        'stroke_dashoffset_cliente_top': stroke_dashoffset_cliente_top,
+        'cliente_top_nombre': cliente_top_nombre,
+        'cliente_top_monto': cliente_top_monto,
+        'cliente_top_oportunidades_abiertas': cliente_top_oportunidades_abiertas,
+        # Datos del mes actual
+        'monto_cobrado_mes_actual': monto_cobrado_mes_actual,
+        'porcentaje_cobertura_mes_actual': porcentaje_cobertura_mes_actual,
+        'mes_actual_nombre': mes_actual_nombre,
+        'mes_actual_val': mes_actual_val,
+        'stroke_dashoffset_mes_actual': stroke_dashoffset_mes_actual,
 
         # Datos del próximo mes
         'next_month_display': next_month_display,
@@ -327,6 +479,94 @@ def get_user_clients_api(request):
     except Exception as e:
         print(f"ERROR en get_user_clients_api: {e}")
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def view_cotizacion_pdf(request, cotizacion_id):
+    """
+    Vista para generar y mostrar el PDF de una cotización específica en el navegador.
+    """
+    print(f"DEBUG: Iniciando view_cotizacion_pdf para la cotización ID: {cotizacion_id}")
+    cotizacion = get_object_or_404(Cotizacion, pk=cotizacion_id)
+    
+    if not is_supervisor(request.user) and cotizacion.created_by != request.user:
+        return HttpResponse("Acceso denegado.", status=403)
+
+    detalles_cotizacion = DetalleCotizacion.objects.filter(cotizacion=cotizacion)
+    iva_rate_percentage = (cotizacion.iva_rate * Decimal('100')).quantize(Decimal('1'))
+
+    pdf_name_raw = cotizacion.nombre_cotizacion or f"Cotizacion_{cotizacion.id}"
+    pdf_name = "".join(c for c in pdf_name_raw if c.isalnum() or c in ('_', '-')).strip().replace(' ', '_')
+    if not pdf_name:
+        pdf_name = f"Cotizacion_{cotizacion.id}"
+
+    tipo_cotizacion = cotizacion.tipo_cotizacion
+    logo_base64 = ""
+    company_name = ""
+    company_address = ""
+    company_phone = ""
+    company_email = ""
+    template_name = 'cotizacion_pdf_template.html'
+
+    if tipo_cotizacion and tipo_cotizacion.lower() == 'iamet':
+        template_name = 'iamet_cotizacion_pdf_template.html'
+        company_name = 'IAMET S.A. de C.V.'
+        company_address = 'Av. Principal #456, Col. Centro, Guadalajara, Jalisco'
+        company_phone = '+52 33 9876 5432'
+        company_email = 'contacto@iamet.com'
+    else:
+        template_name = 'cotizacion_pdf_template.html'
+        company_name = 'BAJANET S.A. de C.V.'
+        company_address = 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México'
+        company_phone = '+52 55 1234 5678'
+        company_email = 'ventas@bajanet.com'
+        try:
+            logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'img', 'bajanet_logo.png')
+            with open(logo_path, "rb") as image_file:
+                logo_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+        except FileNotFoundError:
+            logo_base64 = ""
+
+    context = {
+        'cotizacion': cotizacion,
+        'detalles_cotizacion': detalles_cotizacion,
+        'request_user': request.user,
+        'current_date': date.today(),
+        'company_name': company_name,
+        'company_address': company_address,
+        'company_phone': company_phone,
+        'company_email': company_email,
+        'logo_base64': logo_base64,
+        'iva_rate_percentage': iva_rate_percentage,
+    }
+
+    try:
+        html_string = render_to_string(template_name, context)
+    except Exception as e:
+        return HttpResponse(f"Error interno del servidor al renderizar el PDF: {e}", status=500)
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="{pdf_name}.pdf"'
+
+    try:
+        HTML(string=html_string).write_pdf(response)
+    except Exception as e:
+        return HttpResponse(f"Error interno del servidor al generar el PDF: {e}", status=500)
+        
+    return response
+
+
+@login_required
+def supervisor_required(view_func):
+    """
+    Decorador para restringir el acceso a vistas solo para supervisores.
+    """
+    def _wrapped_view(request, *args, **kwargs):
+        if is_supervisor(request.user):
+            return view_func(request, *args, **kwargs)
+        else:
+            return HttpResponse("Acceso denegado.", status=403)
+    return _wrapped_view
 
 
 @login_required
@@ -449,11 +689,12 @@ def editar_venta_todoitem(request, pk):
 
     if request.method == 'POST':
         if 'delete' in request.POST:
-            todo_item.delete()
+            # Solo permite borrar si el usuario es supervisor o dueño
+            if is_supervisor(request.user) or todo_item.usuario == request.user:
+                todo_item.delete()
             return redirect('todos')
-
-        # Al guardar, si es supervisor, el form no necesita el 'user' para el queryset de Cliente
-        form = VentaForm(request.POST, instance=todo_item, user=request.user if not is_supervisor(request.user) else None) # Asegúrate de que usa VentaForm
+        # Si no es delete, entonces es edición:
+        form = VentaForm(request.POST, instance=todo_item, user=request.user if not is_supervisor(request.user) else None)
         if form.is_valid():
             form.save()
             return redirect('todos')
@@ -570,32 +811,28 @@ def producto_dashboard_detail(request, producto_val):
     print(f"DEBUG: Keys de PRODUCTO_CHOICES: {list(dict(TodoItem.PRODUCTO_CHOICES).keys())}")
 
     # Verificar si el producto_val_upper es una clave válida en PRODUCTO_CHOICES
-    if producto_val_upper not in dict(TodoItem.PRODUCTO_CHOICES).keys():
-        print(f"DEBUG: Redirigiendo a home porque '{producto_val_upper}' no es una clave válida en PRODUCTO_CHOICES.")
-        return redirect('home') # Redirige a home si el producto no es válido
+    if producto_val_upper not in dict(TodoItem.PRODUCTO_CHOICES):
+        return redirect('dashboard')
 
-    # Filtrar oportunidades por el producto (usando iexact para insensibilidad a mayúsculas/minúsculas)
-    # y por usuario si no es supervisor
-    oportunidades_producto_query = TodoItem.objects.filter(producto__iexact=producto_val_upper)
-    if not is_supervisor(request.user):
-        oportunidades_producto_query = oportunidades_producto_query.filter(usuario=request.user)
+    if is_supervisor(request.user):
+        oportunidades = TodoItem.objects.filter(producto=producto_val_upper)
+    else:
+        oportunidades = TodoItem.objects.filter(producto=producto_val_upper, usuario=request.user)
 
-    print(f"DEBUG: Oportunidades encontradas para {producto_val_upper} (antes de desglosar): {oportunidades_producto_query.count()}")
-    for op in oportunidades_producto_query:
+    print(f"DEBUG: Oportunidades encontradas para {producto_val_upper} (antes de desglosar): {oportunidades.count()}")
+    for op in oportunidades:
         print(f"DEBUG:   - ID: {op.id}, Oportunidad: {op.oportunidad}, Producto: {op.producto}, Usuario ID: {op.usuario.id}")
 
-
     # --- Ventas Cerradas (probabilidad 100%) para este producto ---
-    ventas_cerradas = oportunidades_producto_query.filter(probabilidad_cierre=100)
+    ventas_cerradas = oportunidades.filter(probabilidad_cierre=100)
     total_vendido_cerrado = ventas_cerradas.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
     total_vendido_cerrado_count = ventas_cerradas.count() # Conteo de oportunidades cerradas
     print(f"DEBUG: Ventas Cerradas (100%) para '{producto_val_upper}': {total_vendido_cerrado_count} oportunidades, Monto: {total_vendido_cerrado}")
     for venta in ventas_cerradas:
         print(f"DEBUG:   - Oportunidad: {venta.oportunidad}, Monto: {venta.monto}, Probabilidad: {venta.probabilidad_cierre}%")
 
-
     # --- Oportunidades Vigentes (probabilidad del 1% al 99%) para este producto ---
-    oportunidades_vigentes = oportunidades_producto_query.filter(
+    oportunidades_vigentes = oportunidades.filter(
         probabilidad_cierre__gt=0, # Mayor que 0%
         probabilidad_cierre__lt=100 # Menor que 100%
     )
@@ -606,7 +843,7 @@ def producto_dashboard_detail(request, producto_val):
         print(f"DEBUG:   - Oportunidad: {op_vigente.oportunidad}, Monto: {op_vigente.monto}, Probabilidad: {op_vigente.probabilidad_cierre}%")
 
     # --- Oportunidades Perdidas (probabilidad 0%) para este producto ---
-    oportunidades_perdidas = oportunidades_producto_query.filter(probabilidad_cierre=0)
+    oportunidades_perdidas = oportunidades.filter(probabilidad_cierre=0)
     total_monto_perdido = oportunidades_perdidas.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
     total_monto_perdido_count = oportunidades_perdidas.count() # Conteo de oportunidades perdidas
     print(f"DEBUG: Oportunidades Perdidas (0%) para '{producto_val_upper}': {total_monto_perdido_count} oportunidades, Monto: {total_monto_perdido}")
@@ -615,10 +852,10 @@ def producto_dashboard_detail(request, producto_val):
 
 
     # Clientes involucrados en este producto
-    clientes_involucrados = oportunidades_producto_query.filter(cliente__isnull=False).values('cliente__id', 'cliente__nombre_empresa').distinct()
+    clientes_involucrados = oportunidades.filter(cliente__isnull=False).values('cliente__id', 'cliente__nombre_empresa').distinct()
 
     # Meses involucrados en este producto (mes de cierre esperado)
-    meses_involucrados = oportunidades_producto_query.values('mes_cierre').distinct()
+    meses_involucrados = oportunidades.values('mes_cierre').distinct()
 
     # Mapear valores crudos de mes a sus nombres de visualización
     meses_display = []
@@ -637,7 +874,7 @@ def producto_dashboard_detail(request, producto_val):
         'total_monto_perdido_count': total_monto_perdido_count, # AÑADIDO
         'clientes_involucrados': clientes_involucrados,
         'meses_involucrados_display': meses_display,
-        'oportunidades': oportunidades_producto_query, # Pasar todas las oportunidades para listarlas
+        'oportunidades': oportunidades, # Pasar todas las oportunidades para listarlas
         'is_supervisor': is_supervisor(request.user), # Pasamos si el usuario es supervisor al contexto
     }
     return render(request, 'producto_dashboard_detail.html', context)
@@ -660,6 +897,9 @@ def mes_dashboard_detail(request, mes_val):
     # Monto total esperado para este mes
     total_monto_esperado = oportunidades_mes.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
 
+    # Monto POR COBRAR: oportunidades con probabilidad entre 1 y 99%
+    por_cobrar_monto = oportunidades_mes.filter(probabilidad_cierre__gte=1, probabilidad_cierre__lte=99).aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
+
     # Clientes involucrados en oportunidades para este mes
     clientes_involucrados = oportunidades_mes.filter(cliente__isnull=False).values('cliente__id', 'cliente__nombre_empresa').distinct()
 
@@ -677,6 +917,7 @@ def mes_dashboard_detail(request, mes_val):
         'mes_val': mes_val_padded, # Aseguramos que la clave pasada sea la que usará el template
         'mes_display': dict(TodoItem.MES_CHOICES).get(mes_val_padded, mes_val_padded),
         'total_monto_esperado': total_monto_esperado,
+        'por_cobrar_monto': por_cobrar_monto,
         'clientes_involucrados': clientes_involucrados,
         'oportunidades': oportunidades_mes, # Pasar todas las oportunidades para listarlas
         'graph_data_json': graph_data_with_display, # Pasa los datos procesados con display_value
@@ -752,35 +993,6 @@ def generate_quote_pdf(request, pk):
 # If you have two functions with the same name 'editar_venta_todoitem',
 # Django will use the last one defined. It is recommended to have only one.
 # I have kept it as it was in your original file.
-@login_required
-def editar_venta_todoitem(request, pk):
-    # Get the TodoItem (opportunity) instance to edit by its primary key (pk)
-    # If not found, returns a 404 error.
-    oportunidad = get_object_or_404(TodoItem, pk=pk)
-
-    if request.method == 'POST':
-        # If the request is POST, it means the user has submitted the form with changes.
-        # Instantiate the VentaForm with the submitted data (request.POST)
-        # and, crucially, with the existing opportunity instance (instance=oportunidad).
-        # We also pass the current user (request.user) to the form.
-        form = VentaForm(request.POST, instance=oportunidad, user=request.user)
-        if form.is_valid():
-            form.save()
-            # Redirect the user to the 'todos' page (where the opportunities table is listed)
-            # after successful editing.
-            return redirect('todos')
-    else:
-        # If the request is GET, the user is asking to view the edit form.
-        # Instantiate the VentaForm with the existing opportunity instance.
-        # We also pass the current user (request.user) to the form.
-        # This preloads all form fields with the current opportunity values,
-        # allowing the user to view and modify existing data.
-        form = VentaForm(instance=oportunidad, user=request.user)
-
-    # Render the 'ingresar_venta.html' template.
-    # This template is used for both creating new sales and editing them,
-    # as the form (VentaForm) is the same.
-    # The form (preloaded or empty) and the opportunity instance (useful for the template) are passed.
     return render(request, 'ingresar_venta.html', {'form': form, 'oportunidad': oportunidad})
 
 
@@ -823,6 +1035,7 @@ def crear_cotizacion_view(request, cliente_id=None):
 
         if form.is_valid():
             cotizacion = form.save(commit=False)
+            cotizacion.created_by = request.user  # Asignar el usuario creador
             cotizacion.save()
             print(f"DEBUG: Quote saved with ID: {cotizacion.id}")
 
@@ -877,10 +1090,13 @@ def crear_cotizacion_view(request, cliente_id=None):
 
             cotizacion.iva_amount = (cotizacion.subtotal * cotizacion.iva_rate).quantize(Decimal('0.01')) # Round IVA amount
             cotizacion.total = (cotizacion.subtotal + cotizacion.iva_amount).quantize(Decimal('0.01')) # Round final total
+
+            # Guardar el estado de visibilidad de la columna de descuento y el tipo de cotización
+            descuento_visible_str = request.POST.get('descuento_visible', 'true')
+            cotizacion.descuento_visible = descuento_visible_str.lower() == 'true'
+            cotizacion.tipo_cotizacion = request.POST.get('tipo_cotizacion')
             
-            cotizacion.tipo_cotizacion = request.POST.get('tipo_cotizacion') # Use tipo_cotizacion
-            cotizacion.created_by = request.user  # Asigna el usuario creador
-            cotizacion.save(update_fields=['subtotal', 'iva_rate', 'iva_amount', 'total', 'tipo_cotizacion', 'created_by']) # Incluye created_by
+            cotizacion.save(update_fields=['subtotal', 'iva_rate', 'iva_amount', 'total', 'descuento_visible', 'tipo_cotizacion'])
             print(f"DEBUG: Quote totals updated. Subtotal: {cotizacion.subtotal}, IVA: {cotizacion.iva_amount}, Total: {cotizacion.total}, Quote Type: {cotizacion.tipo_cotizacion}")
             
 
@@ -919,11 +1135,8 @@ def crear_cotizacion_view(request, cliente_id=None):
     else: # If the request is GET
         form = CotizacionForm() # Create an empty form for GET requests
 
-    # Get clients for the frontend selector, filtering by user if not supervisor
-    if is_supervisor(request.user):
-        clientes_queryset = Cliente.objects.all()
-    else:
-        clientes_queryset = Cliente.objects.filter(asignado_a=request.user)
+    # Get all clients for the frontend selector, regardless of the user role
+    clientes_queryset = Cliente.objects.all()
 
     # Use .values() to get dictionaries and map field names
     clientes_para_frontend = clientes_queryset.values(
@@ -996,7 +1209,20 @@ def generate_cotizacion_pdf(request, cotizacion_id):
     company_email = ""
     template_name = 'cotizacion_pdf_template.html' # Default template
 
-    if tipo_cotizacion == 'Bajanet':
+    if tipo_cotizacion and tipo_cotizacion.lower() == 'iamet':
+        template_name = 'iamet_cotizacion_pdf_template.html'
+        company_name = 'IAMET S.A. de C.V.'
+        company_address = 'Av. Principal #456, Col. Centro, Guadalajara, Jalisco'
+        company_phone = '+52 33 9876 5432'
+        company_email = 'contacto@iamet.com'
+        logo_base64 = ""
+        print(f"DEBUG: Configuration for IAMET. Using template: {template_name}")
+    else: # Default to Bajanet
+        template_name = 'cotizacion_pdf_template.html'
+        company_name = 'BAJANET S.A. de C.V.'
+        company_address = 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México'
+        company_phone = '+52 55 1234 5678'
+        company_email = 'ventas@bajanet.com'
         try:
             logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'img', 'bajanet_logo.png')
             with open(logo_path, "rb") as image_file:
@@ -1005,27 +1231,7 @@ def generate_cotizacion_pdf(request, cotizacion_id):
         except FileNotFoundError:
             print(f"Warning: BAJANET logo not found in {logo_path}")
             logo_base64 = ""
-        company_name = 'BAJANET S.A. de C.V.'
-        company_address = 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México'
-        company_phone = '+52 55 1234 5678'
-        company_email = 'ventas@bajanet.com'
-        template_name = 'cotizacion_pdf_template.html'
-    elif tipo_cotizacion == 'Iamet':
-        logo_base64 = "" 
-        company_name = 'IAMET S.A. de C.V.'
-        company_address = 'Av. Principal #456, Col. Centro, Guadalajara, Jalisco'
-        company_phone = '+52 33 9876 5432'
-        company_email = 'contacto@iamet.com'
-        template_name = 'iamet_cotizacion_pdf_template.html'
-        print(f"DEBUG: Configuration for IAMET. Using template: {template_name}")
-    else:
-        print(f"DEBUG: Unknown or null quote type: '{tipo_cotizacion}'. Using default configuration.")
-        logo_base64 = ""
-        company_name = 'Tu Empresa de Ventas S.A. de C.V.'
-        company_address = 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México'
-        company_phone = '+52 55 1234 5678'
-        company_email = 'ventas@tuempresa.com'
-        template_name = 'cotizacion_pdf_template.html'
+
 
     context = {
         'cotizacion': cotizacion,
@@ -1122,35 +1328,42 @@ def add_is_supervisor_to_context(request):
 @login_required
 def cotizaciones_view(request):
     user = request.user
-    is_supervisor = user.groups.filter(name='Supervisores').exists()
-    if is_supervisor:
+    is_supervisor_flag = is_supervisor(request.user)
+
+    if is_supervisor_flag:
         clientes = Cliente.objects.all().order_by('nombre_empresa')
     else:
-        clientes = Cliente.objects.filter(asignado_a=user).order_by('nombre_empresa')
+        clientes = Cliente.objects.filter(asignado_a=request.user).order_by('nombre_empresa')
 
     clientes_data = []
     for cliente in clientes:
-        if is_supervisor:
-            cotizaciones = Cotizacion.objects.filter(cliente=cliente)
+        if is_supervisor_flag:
+            cotizaciones_qs = Cotizacion.objects.filter(cliente=cliente)
         else:
-            cotizaciones = Cotizacion.objects.filter(cliente=cliente, created_by=user)
+            cotizaciones_qs = Cotizacion.objects.filter(cliente=cliente, created_by=request.user)
+        
         cotizaciones_list = [
             {
-                'nombre': c.nombre_cotizacion or c.titulo or f'Cotización #{c.id}',
-                'descargar_url': f"/cotizacion/pdf/{c.id}/"
+                'id': c.id,
+                'nombre': c.nombre_cotizacion or f'Cotización #{c.id}',
+                'descargar_url': reverse('generate_cotizacion_pdf', args=[c.id]),
+                'view_url': reverse('view_cotizacion_pdf', args=[c.id])
             }
-            for c in cotizaciones
+            for c in cotizaciones_qs
         ]
-        clientes_data.append({
-            'id': cliente.id,
-            'nombre': cliente.contacto_principal or cliente.nombre_empresa,
-            'empresa': cliente.nombre_empresa,
-            'cotizaciones': cotizaciones_list
-        })
-    return render(request, 'cotizaciones.html', {
+
+        if cotizaciones_list:
+            clientes_data.append({
+                'id': cliente.id,
+                'nombre': cliente.nombre_empresa,
+                'cotizaciones': cotizaciones_list
+            })
+
+    context = {
         'clientes_asignados': clientes_data,
-        'is_supervisor': is_supervisor
-    })
+        'is_supervisor': is_supervisor_flag
+    }
+    return render(request, 'cotizaciones.html', context)
 
 @login_required
 def cotizaciones_por_cliente_view(request, cliente_id):
@@ -1216,6 +1429,27 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from .models import TodoItem
+
+@login_required
+def oportunidad_detalle_api(request, id):
+    """
+    Devuelve los datos de una oportunidad en JSON para actualizar la fila tras edición.
+    """
+    try:
+        todo = TodoItem.objects.get(pk=id)
+        return JsonResponse({
+            'id': todo.id,
+            'oportunidad': todo.oportunidad,
+            'monto': float(todo.monto),
+            'probabilidad_cierre': todo.probabilidad_cierre,
+            'cliente': str(todo.cliente) if todo.cliente else '',
+            'mes_cierre': str(todo.get_mes_cierre_display()),
+            'producto': str(todo.get_producto_display()),
+            'area': str(todo.get_area_display()),
+            'contacto': str(todo.contacto) if todo.contacto else '',
+        })
+    except TodoItem.DoesNotExist:
+        return JsonResponse({'error': 'Oportunidad no encontrada'}, status=404)
 
 @csrf_exempt
 @login_required

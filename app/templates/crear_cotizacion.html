@@ -182,9 +182,17 @@
         .float { animation: none !important; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center py-8 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-6xl w-full space-y-8">
-        <h1 class="text-3xl font-bold text-white text-center">Crear Cotización</h1>
+<body class="min-h-screen flex flex-col items-center py-8 px-4 sm:px-6 lg:px-8 dashboard-container">
+
+<style>
+    .dashboard-container {
+        --padding-x: clamp(1rem, 5vw, 4rem);
+        padding-left: var(--padding-x);
+        padding-right: var(--padding-x);
+    }
+</style>
+    <div class="max-w-full w-full space-y-8">
+        <h1 class="text-3xl font-bold text-white text-center" style="font-size: clamp(2rem, 4vw, 2.5rem);">Crear Cotización</h1>
 
         <form id="cotizacion-form" method="post" action="">
             {% csrf_token %}
@@ -231,6 +239,10 @@
                     <button type="button" id="cancel-paste-btn" class="btn-secondary mt-4 ml-2">Cancelar</button>
                 </div>
 
+                <div class="mb-4">
+                    <button type="button" id="show-discount-btn" onclick="toggleDiscountColumn()" class="btn-secondary" style="display:none;">Mostrar Columna de Descuento</button>
+                </div>
+                <input type="hidden" name="descuento_visible" id="descuento_visible" value="true">
                 <div class="table-container">
                     <table class="product-table">
                         <thead>
@@ -240,7 +252,10 @@
                                 <th class="w-2/5">Descripción</th>
                                 <th class="w-1/12">Cantidad</th>
                                 <th class="w-1/12">Precio Unitario</th>
-                                <th class="w-1/12">Descuento (%)</th>
+                                <th class="w-1/12" id="descuento-header">
+                                    Descuento (%)
+                                    <button type="button" onclick="toggleDiscountColumn()" class="text-red-400 hover:text-red-600 font-bold ml-2" title="Ocultar columna de descuento">&times;</button>
+                                </th>
                                 <th class="w-1/12">Total</th>
                                 <th class="w-8"></th> <!-- Columna para el botón de eliminar -->
                             </tr>
@@ -306,7 +321,33 @@
         const clientesData = JSON.parse('{{ clientes_data_json|escapejs }}');
         const clienteIdInicial = '{{ cliente_id_inicial|default:"" }}'; // Get initial client ID if provided
 
-        // Function to add a new product row to the table
+        function toggleDiscountColumn() {
+    const isVisible = document.getElementById('descuento_visible').value === 'true';
+    const newVisibility = !isVisible;
+    document.getElementById('descuento_visible').value = newVisibility;
+
+    // Toggle header
+    document.getElementById('descuento-header').style.display = newVisibility ? '' : 'none';
+
+    // Toggle cells in each row
+    document.querySelectorAll('.descuento-cell').forEach(cell => {
+        cell.style.display = newVisibility ? '' : 'none';
+    });
+
+    // Toggle buttons
+    document.getElementById('show-discount-btn').style.display = newVisibility ? 'none' : 'inline-block';
+    document.querySelector('#descuento-header button').style.display = newVisibility ? 'inline-block' : 'none';
+
+    // If hiding, set all discounts to 0 and recalculate
+    if (!newVisibility) {
+        document.querySelectorAll('input[id^="descuento_"]').forEach(input => {
+            input.value = 0;
+        });
+        calculateTotals();
+    }
+}
+
+// Function to add a new product row to the table
         function addRow(productName = '', description = '', quantity = 1, price = 0, discount = 0) {
             rowCounter++;
             const rowId = `row-${rowCounter}`;
@@ -320,14 +361,21 @@
                 <td><textarea id="descripcion_producto_${rowCounter}" name="productos[${rowCounter}][descripcion]" class="textarea-field" placeholder="Descripción detallada del producto" oninput="calculateTotals()">${description}</textarea></td>
                 <td><input type="number" id="cantidad_${rowCounter}" name="productos[${rowCounter}][cantidad]" class="input-field" value="${quantity}" min="1" oninput="calculateTotals()"></td>
                 <td><input type="number" id="precio_${rowCounter}" name="productos[${rowCounter}][precio]" class="input-field" value="${price}" min="0" step="0.01" oninput="calculateTotals()"></td>
-                <td><input type="number" id="descuento_${rowCounter}" name="productos[${rowCounter}][descuento]" class="input-field" value="${discount}" min="0" max="100" oninput="calculateTotals()"></td>
-                <td><input type="text" id="total_producto_${rowCounter}" class="input-field bg-gray-800" value="0.00" readonly></td>
+                <td class="descuento-cell"><input type="number" id="descuento_${rowCounter}" name="productos[${rowCounter}][descuento]" class="input-field" style="width:60px; min-width:40px; font-size:0.9rem; padding:0.3rem 0.4rem; text-align:center;" value="${discount}" min="0" max="100" oninput="calculateTotals()"></td>
+                <td><input type="text" id="total_producto_${rowCounter}" class="input-field bg-gray-800" style="font-size:1.2rem; font-weight:600; width:130px; min-width:100px; text-align:right;" value="0.00" readonly></td>
                 <td class="text-center">
                     <button type="button" onclick="removeRow('${rowId}')" class="text-red-400 hover:text-red-600 text-xl font-bold leading-none">&times;</button>
                 </td>
             `;
             tbody.appendChild(newRow);
-            calculateTotals(); // Recalculate totals when adding a row
+
+    // Ensure the new row's discount cell visibility matches the current state
+    const isDiscountVisible = document.getElementById('descuento_visible').value === 'true';
+    if (!isDiscountVisible) {
+        newRow.querySelector('.descuento-cell').style.display = 'none';
+    }
+
+    calculateTotals(); // Recalculate totals when adding a row
         }
 
         // Function to remove a product row
@@ -359,8 +407,8 @@
                 let totalProducto = cantidad * precio;
                 totalProducto -= totalProducto * (descuento / 100);
                 
-                // Update the total for each product with currency formatting
-                totalProductoInput.value = formatCurrency(totalProducto, currency);
+                // Update the total for each product, ensuring it's just the number
+                totalProductoInput.value = new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalProducto);
                 console.log(`DEBUG JS: Producto ${id} - Cantidad: ${cantidad}, Precio: ${precio}, Descuento: ${descuento}%, Total Producto (raw float): ${totalProducto}`);
 
                 subtotal += totalProducto;
@@ -497,14 +545,7 @@
                 console.log('Evento de submit del formulario detectado.');
                 event.preventDefault(); // Evitar el envío de formulario tradicional
 
-                // Abrir una nueva ventana/pestaña inmediatamente
-                const newWindow = window.open('', '_blank');
-                if (!newWindow) {
-                    alert('El navegador bloqueó la ventana emergente. Por favor, permite las ventanas emergentes para este sitio.');
-                    return; // Detener la ejecución si la ventana fue bloqueada
-                }
-                newWindow.document.write('Cargando PDF...'); // Mensaje temporal
-                newWindow.document.close();
+
 
                 // La construcción de FormData(cotizacionForm) ya recopila todos los inputs
                 // con atributos 'name' correctamente. El bucle anterior era redundante
@@ -543,16 +584,38 @@
                     console.log('DEBUG JS: Resultado JSON del servidor:', result);
 
                     if (result.success) {
-                        console.log('DEBUG JS: Cotización guardada exitosamente. Redirigiendo nueva ventana a PDF:', result.pdf_url);
-                        // Si la cotización se guardó exitosamente, redirigir la ventana ya abierta
-                        newWindow.location.href = result.pdf_url;
-                        
-                        // COMENTADO: No reiniciar el formulario para permitir edición post-descarga
-                        // document.querySelectorAll('#productos-tbody tr').forEach((row, index) => {
-                        //     if (index > 0) {
-                        //         row.remove();
-                        //     } else {
-                        //         // Reset the first row
+                        console.log('DEBUG JS: Cotización guardada exitosamente.');
+                        if (result.pdf_url) {
+                            console.log('PDF URL recibida:', result.pdf_url);
+                            // Crear un enlace temporal para forzar la descarga
+                            const a = document.createElement('a');
+                            a.href = result.pdf_url;
+                            a.download = result.filename || 'cotizacion.pdf'; // Usar el nombre de archivo del servidor o uno por defecto
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+
+                            // Opcional: re-dirigir o mostrar un mensaje de éxito
+                            // window.location.href = '/ruta-a-lista-de-cotizaciones/';
+
+                        } else if (result.error) {
+                            // COMENTADO: No reiniciar el formulario para permitir edición post-descarga
+                            // document.querySelectorAll('#productos-tbody tr').forEach((row, index) => {
+                            //     if (index > 0) {
+                            //         row.remove();
+                            //     } else {
+                            //         // Reset the first row
+                            //         document.getElementById(`nombre_producto_${row.id.split('-')[1]}`).value = '';
+                            //         document.getElementById(`descripcion_producto_${row.id.split('-')[1]}`).value = '';
+                            //         document.getElementById(`cantidad_${row.id.split('-')[1]}`).value = '1';
+                            //         document.getElementById(`precio_${row.id.split('-')[1]}`).value = '0.00';
+                            //         document.getElementById(`descuento_${row.id.split('-')[1]}`).value = '0';
+                            //     }
+                            // });
+                            // calculateTotals();
+                            // cotizacionForm.reset(); // Reset form fields
+                            // populateClientSelect(); // Repopulate client select to reset it
+                        }
                         //         document.getElementById(`nombre_producto_${row.id.split('-')[1]}`).value = '';
                         //         document.getElementById(`descripcion_producto_${row.id.split('-')[1]}`).value = '';
                         //         document.getElementById(`cantidad_${row.id.split('-')[1]}`).value = '1';

@@ -214,6 +214,11 @@
         <span>✉️ contacto@baja-net.com</span>
       </div>
     </div>
+    {% if cotizacion.titulo %}
+    <div style="text-align:center; margin: 20px 0 10px 0;">
+      <h1 style="font-size: 2rem; color: #ff9800; margin:0; letter-spacing:1px; font-weight:800;">{{ cotizacion.titulo }}</h1>
+    </div>
+    {% endif %}
     <div class="section info-grid">
       <div>
         <h2>Cliente</h2>
@@ -236,7 +241,9 @@
             <th>DESCRIPCIÓN</th>
             <th>CANTIDAD</th>
             <th>PRECIO UNITARIO</th>
-            <th>DESC. (%)</th>
+            {% if cotizacion.descuento_visible %}
+            <th>DESCUENTO</th>
+            {% endif %}
             <th>TOTAL</th>
           </tr>
         </thead>
@@ -245,10 +252,12 @@
           <tr>
             <td>{{ forloop.counter }}</td>
             <td>{{ detalle.nombre_producto }}</td>
-            <td class="descripcion">{{ detalle.descripcion|default:"-" }}</td>
-            <td class="text-right">{{ detalle.cantidad }}</td>
+            <td class="descripcion">{{ detalle.descripcion|default:"-"|linebreaksbr }}</td>
+            <td class="text-center">{{ detalle.cantidad }}</td>
             <td class="text-right">${{ detalle.precio_unitario|floatformat:2 }}</td>
-            <td class="text-right">{{ detalle.descuento_porcentaje|floatformat:2 }}%</td>
+            {% if cotizacion.descuento_visible %}
+            <td class="text-center">{{ detalle.descuento_porcentaje|floatformat:2 }}%</td>
+            {% endif %}
             <td class="text-right">${{ detalle.get_total_item|floatformat:2 }}</td>
           </tr>
           {% endfor %}

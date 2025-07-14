@@ -1,0 +1,13 @@
+# Archivos de entorno
+.env
+
+# Base de datos
+*.sqlite3
+db.sqlite3
+
+# Directorios de Python
+/venv
+__pycache__/
+
+# Archivos de sistema operativo
+.DS_Store
