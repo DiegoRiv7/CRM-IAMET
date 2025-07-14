@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    volumes:
+      - .:/app # Monta el directorio actual para desarrollo (opcional para producción)
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env # Carga variables de entorno desde el archivo .env
+    depends_on:
+      - db
+    environment:
+      # Sobrescribe DB_HOST para el entorno de Docker Compose para usar el nombre del servicio
+      DB_HOST: db
+
+  db:
+    image: mysql:8.0
+    volumes:
+      - db_data:/var/lib/mysql # Volumen de datos persistente para la base de datos
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD} # Usa la misma contraseña para root por simplicidad en desarrollo
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes" # Permite contraseña root vacía para conveniencia en desarrollo
+    ports:
+      - "3306:3306" # Expone el puerto MySQL para acceso local (ej. MySQL Workbench)
+
+volumes:
+  db_data: # Define el volumen nombrado para la persistencia de la base de datos
