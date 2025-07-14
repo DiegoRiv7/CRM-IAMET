@@ -1,0 +1,73 @@
+/* admin_custom.css - Personalización visual para el admin clásico Django */
+
+body, .dashboard #content-main {
+    background: #181f2a !important;
+    color: #f3f4f6 !important;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+
+#header, .module caption, .breadcrumbs {
+    background: linear-gradient(90deg, #00796b 0%, #00bcd4 100%) !important;
+    color: #fff !important;
+    border: none !important;
+}
+
+#header h1, #header a, #user-tools {
+    color: #fff !important;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+#content-main .module, .dashboard #content-main .module {
+    background: #232b3e !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+    border: none !important;
+}
+
+#content-main .module h2, .dashboard #content-main .module h2 {
+    color: #00bcd4 !important;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+#content-main a, .dashboard #content-main a {
+    color: #00bcd4 !important;
+    font-weight: 600;
+}
+
+#content-main th, #content-main td {
+    background: transparent !important;
+    color: #f3f4f6 !important;
+}
+
+#content-main .addlink, #content-main .changelink, #content-main .deletelink {
+    background: #00796b !important;
+    color: #fff !important;
+    border-radius: 6px;
+    padding: 4px 10px;
+    margin: 0 2px;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+#content-main .addlink:hover, #content-main .changelink:hover, #content-main .deletelink:hover {
+    background: #00bcd4 !important;
+}
+
+#user-tools a {
+    color: #fff !important;
+}
+
+/* Botón de logout y otros enlaces superiores */
+#user-tools a:hover {
+    text-decoration: underline;
+    color: #ffe082 !important;
+}
+
+/* Personaliza el footer */
+#footer {
+    background: #232b3e !important;
+    color: #b2ebf2 !important;
+    border: none !important;
+    border-radius: 0 0 12px 12px;
+}
