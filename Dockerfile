@@ -4,8 +4,8 @@ FROM python:3.13-slim-bookworm
 # Establece el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Instala dependencias necesarias para mysqlclient (¡ESTA ES LA LÍNEA QUE FALTA!)
-RUN apt-get update && apt-get install -y default-libmysqlclient-dev pkg-config
+# Instala dependencias necesarias para mysqlclient y herramientas de compilación
+RUN apt-get update && apt-get install -y default-libmysqlclient-dev pkg-config build-essential python3-dev
 
 # Copia el archivo de requisitos e instala las dependencias
 COPY requirements.txt .
