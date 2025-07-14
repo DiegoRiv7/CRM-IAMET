@@ -23,8 +23,8 @@ services:
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD} # Usa la misma contraseña para root por simplicidad en desarrollo
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes" # Permite contraseña root vacía para conveniencia en desarrollo
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD} # Usa la misma contraseña para root por simplicidad en desarrollo
+      #MYSQL_ALLOW_EMPTY_PASSWORD: "yes" # Permite contraseña root vacía para conveniencia en desarrollo
     ports:
       - "3306:3306" # Expone el puerto MySQL para acceso local (ej. MySQL Workbench)
 
