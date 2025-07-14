@@ -2,8 +2,11 @@
 
 from django.contrib import admin
 from django.urls import path, include
-from django.views.generic.base import RedirectView
-from django.contrib.auth import views as auth_views
+# No necesitamos RedirectView ni auth_views si no los usas directamente en este archivo
+# from django.views.generic.base import RedirectView
+# from django.contrib.auth import views as auth_views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     # Ruta para el panel de administración de Django
@@ -11,18 +14,18 @@ urlpatterns = [
 
     # Incluye las URLs de tu aplicación 'app' directamente en la raíz del proyecto.
     # Esto significa que todas las rutas definidas en 'app/urls.py' serán accesibles
-    # sin ningún prefijo. Por ejemplo, '/home/', '/todos/', '/reporte-clientes/', etc.
-    # Si quieres que la URL raíz (http://127.0.0.1:8000/) redirija a una página específica
-    # de tu app (como 'home' o 'index'), puedes añadir una línea como:
-    # path('', RedirectView.as_view(url='/home/', permanent=False)),
-    # pero asegúrate de que '/home/' esté definido en app/urls.py.
+    # sin ningún prefijo (por ejemplo, /home/, /todos/, /reporte-clientes/).
     path("", include("app.urls")),
 
-    # Si aún quieres que la URL raíz (http://127.0.0.1:8000/) redirija a /app/,
-    # y que las URLs de tu app sigan siendo accesibles con y sin el prefijo 'app/',
-    # entonces necesitarías un enfoque más avanzado con namespaces o un patrón diferente.
-    # Por ahora, esta configuración prioriza que 'reporte-clientes/' funcione directamente.
-
-path('app/', include('app.urls')), # Asegúrate de que tu app.urls esté incluida aquí
-
+    # He eliminado la línea path('app/', include('app.urls')) porque con la línea de arriba
+    # tus URLs ya son accesibles desde la raíz. Incluirla de nuevo bajo '/app/' podría
+    # generar rutas duplicadas y confusión. Si necesitas URLs bajo /app/, tendrías
+    # que ajustar cómo se definen en app/urls.py o manejarlo con namespaces.
 ]
+
+# ESTAS LÍNEAS DEBEN ESTAR DESPUÉS DE LA DEFINICIÓN COMPLETA DE urlpatterns
+# Sirve archivos estáticos y de medios solo en modo de depuración (DEBUG=True).
+# EN PRODUCCIÓN REAL, ESTO DEBE SER MANEJADO POR UN SERVIDOR COMO NGINX.
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
