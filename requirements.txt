@@ -2,3 +2,4 @@ Django
 python-dotenv
 gunicorn
 django-widget-tweaks
+mysqlclient
