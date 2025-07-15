@@ -61,35 +61,8 @@
                             <th class="px-4 py-2 text-left text-sm font-semibold text-cyan-300 uppercase">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td contenteditable="true" class="px-4 py-2 border-b border-gray-600"></td>
-                            <td class="px-4 py-2 border-b border-gray-600"><button type="button" class="delete-row text-red-500 hover:text-red-400 font-bold">✕</button></td>
-                        </tr>
+                    <tbody id="importTableBody">
+                        <!-- Las filas se añadirán aquí dinámicamente -->
                     </tbody>
                 </table>
             </div>
@@ -101,6 +74,82 @@
     </div>
 </div>
 <script>
-// Script sin cambios
+    document.addEventListener('DOMContentLoaded', function() {
+        const excelPasteTextarea = document.getElementById('excelPaste');
+        const distribuirBtn = document.getElementById('distribuirBtn');
+        const importTableBody = document.getElementById('importTableBody');
+        const addRowBtn = document.getElementById('addRowBtn');
+        const importForm = document.getElementById('importForm');
+        const tablaJsonInput = document.getElementById('tabla_json');
+
+        const headers = [
+            "oportunidad", "area", "contacto", "zebra", "panduit", "apc", "avigilon",
+            "genetec", "axis", "desarrollo_app", "runrate", "poliza", "cisco",
+            "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+            "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+        ];
+
+        function createRow(rowData = []) {
+            const tr = document.createElement('tr');
+            tr.className = 'bg-gray-700/50 hover:bg-gray-600/50 transition-colors';
+
+            headers.forEach((header, index) => {
+                const td = document.createElement('td');
+                td.className = 'px-4 py-2 border-b border-gray-600';
+                td.contentEditable = 'true';
+                td.textContent = rowData[index] !== undefined ? rowData[index] : '';
+                tr.appendChild(td);
+            });
+
+            const actionsTd = document.createElement('td');
+            actionsTd.className = 'px-4 py-2 border-b border-gray-600 text-center';
+            actionsTd.innerHTML = '<button type="button" class="delete-row text-red-500 hover:text-red-400 font-bold">✕</button>';
+            actionsTd.querySelector('.delete-row').addEventListener('click', function() {
+                tr.remove();
+            });
+            tr.appendChild(actionsTd);
+
+            return tr;
+        }
+
+        // Initial empty row
+        importTableBody.appendChild(createRow());
+
+        distribuirBtn.addEventListener('click', function() {
+            const pastedData = excelPasteTextarea.value.trim();
+            if (!pastedData) return;
+
+            importTableBody.innerHTML = ''; // Clear existing rows
+
+            const rows = pastedData.split('\n');
+            rows.forEach(rowString => {
+                const columns = rowString.split('\t'); // Tab-separated values
+                importTableBody.appendChild(createRow(columns));
+            });
+        });
+
+        addRowBtn.addEventListener('click', function() {
+            importTableBody.appendChild(createRow());
+        });
+
+        importForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const tableData = [];
+            importTableBody.querySelectorAll('tr').forEach(row => {
+                const rowData = {};
+                row.querySelectorAll('td[contenteditable="true"]').forEach((cell, index) => {
+                    rowData[headers[index]] = cell.textContent.trim();
+                });
+                tableData.push(rowData);
+            });
+
+            tablaJsonInput.value = JSON.stringify(tableData);
+            console.log("Datos de la tabla para enviar:", tablaJsonInput.value);
+
+            // Ahora que el hidden input está lleno, envía el formulario
+            importForm.submit();
+        });
+    });
 </script>
 {% endblock %}

@@ -1025,9 +1025,11 @@ def crear_cotizacion_view(request, cliente_id=None):
     Handles the creation of the quote and its product details,
     then returns a JSON response with the PDF URL.
     """
+    print(f"DEBUG: crear_cotizacion_view - Request method: {request.method}")
     cliente_seleccionado = None
     if cliente_id:
         cliente_seleccionado = get_object_or_404(Cliente, pk=cliente_id)
+        print(f"DEBUG: crear_cotizacion_view - Cliente seleccionado por ID: {cliente_seleccionado.nombre_empresa}")
 
     if request.method == 'POST':
         # Instantiate the form with POST data
@@ -1137,6 +1139,7 @@ def crear_cotizacion_view(request, cliente_id=None):
 
     # Get all clients for the frontend selector, regardless of the user role
     clientes_queryset = Cliente.objects.all()
+    print(f"DEBUG: crear_cotizacion_view - Clientes obtenidos para frontend: {clientes_queryset.count()}")
 
     # Use .values() to get dictionaries and map field names
     clientes_para_frontend = clientes_queryset.values(
@@ -1152,6 +1155,7 @@ def crear_cotizacion_view(request, cliente_id=None):
             'address': c['direccion'],
             'taxId': c['email'] # Or the field you use for Tax ID
         })
+    print(f"DEBUG: crear_cotizacion_view - Clientes serializados para JSON: {len(clientes_data_json)}")
 
     context = {
         'form': form,
@@ -1329,11 +1333,13 @@ def add_is_supervisor_to_context(request):
 def cotizaciones_view(request):
     user = request.user
     is_supervisor_flag = is_supervisor(request.user)
+    print(f"DEBUG: cotizaciones_view - Usuario: {user.username}, Es supervisor: {is_supervisor_flag}")
 
     if is_supervisor_flag:
         clientes = Cliente.objects.all().order_by('nombre_empresa')
     else:
         clientes = Cliente.objects.filter(asignado_a=request.user).order_by('nombre_empresa')
+    print(f"DEBUG: cotizaciones_view - Clientes obtenidos (antes de filtrar por cotizaciones): {clientes.count()}")
 
     clientes_data = []
     for cliente in clientes:
@@ -1351,13 +1357,14 @@ def cotizaciones_view(request):
             }
             for c in cotizaciones_qs
         ]
+        print(f"DEBUG: cotizaciones_view - Cliente: {cliente.nombre_empresa}, Cotizaciones encontradas: {len(cotizaciones_list)}")
 
-        if cotizaciones_list:
-            clientes_data.append({
-                'id': cliente.id,
-                'nombre': cliente.nombre_empresa,
-                'cotizaciones': cotizaciones_list
-            })
+        clientes_data.append({
+            'id': cliente.id,
+            'nombre': cliente.nombre_empresa,
+            'cotizaciones': cotizaciones_list
+        })
+    print(f"DEBUG: cotizaciones_view - Clientes finales en clientes_asignados: {len(clientes_data)}")
 
     context = {
         'clientes_asignados': clientes_data,
@@ -1474,3 +1481,111 @@ def actualizar_probabilidad(request, id):
         return JsonResponse({'error': 'Oportunidad no encontrada'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+
+@login_required
+def importar_oportunidades(request):
+    clientes = Cliente.objects.all().order_by('nombre_empresa')
+
+    if request.method == 'POST':
+        cliente_id = request.POST.get('cliente')
+        tabla_json = request.POST.get('tabla_json')
+
+        if not cliente_id or not tabla_json:
+            return JsonResponse({'error': 'Faltan datos obligatorios (cliente o tabla_json)'}, status=400)
+
+        try:
+            cliente = Cliente.objects.get(pk=cliente_id)
+            oportunidades_data = json.loads(tabla_json)
+        except Cliente.DoesNotExist:
+            return JsonResponse({'error': 'Cliente no encontrado'}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Formato JSON inválido para la tabla'}, status=400)
+
+        created_count = 0
+        errors = []
+
+        # Mapeo de nombres de meses a números de dos dígitos
+        MONTH_MAPPING = {
+            "enero": "01", "febrero": "02", "marzo": "03", "abril": "04",
+            "mayo": "05", "junio": "06", "julio": "07", "agosto": "08",
+            "septiembre": "09", "octubre": "10", "noviembre": "11", "diciembre": "12"
+        }
+
+        # Columnas de producto (deben coincidir con los choices de TodoItem.PRODUCTO_CHOICES)
+        PRODUCT_COLUMNS = [
+            "zebra", "panduit", "apc", "avigilon", "genetec", "axis",
+            "desarrollo_app", "runrate", "poliza", "cisco"
+        ]
+
+        for row_data in oportunidades_data:
+            try:
+                oportunidad_nombre = row_data.get('oportunidad', '')
+                area = row_data.get('area', '')
+                contacto = row_data.get('contacto', '')
+
+                # Encontrar el producto y el monto/mes de cierre
+                producto = None
+                monto = Decimal('0.00')
+                mes_cierre = None
+
+                # Buscar el producto en las columnas de producto
+                for prod_col in PRODUCT_COLUMNS:
+                    if row_data.get(prod_col) and row_data.get(prod_col).strip() != '':
+                        producto = row_data[prod_col].strip().upper() # Convertir a mayúsculas para coincidir con choices
+                        break
+                
+                # Buscar el monto y mes de cierre en las columnas de meses
+                for month_name, month_num in MONTH_MAPPING.items():
+                    if row_data.get(month_name) and row_data.get(month_name).strip() != '':
+                        try:
+                            monto = Decimal(row_data[month_name].strip())
+                            mes_cierre = month_num
+                            break
+                        except (ValueError, TypeError):
+                            pass # Ignorar si el monto no es un número válido
+
+                # Validaciones básicas
+                if not oportunidad_nombre:
+                    errors.append(f"Fila con oportunidad vacía: {row_data}")
+                    continue
+                if not producto:
+                    errors.append(f"Fila '{oportunidad_nombre}': Producto no especificado o inválido.")
+                    continue
+                if not mes_cierre or monto == Decimal('0.00'):
+                    errors.append(f"Fila '{oportunidad_nombre}': Mes de cierre o monto no especificado/inválido.")
+                    continue
+                
+                # Asegurarse de que el producto y el área sean válidos según los choices del modelo
+                # Esto requiere importar TodoItem y sus CHOICES
+                # from .models import TodoItem
+                if producto not in dict(TodoItem.PRODUCTO_CHOICES).keys():
+                    errors.append(f"Fila '{oportunidad_nombre}': Producto '{producto}' no es un valor válido.")
+                    continue
+                if area not in dict(TodoItem.AREA_CHOICES).keys():
+                    errors.append(f"Fila '{oportunidad_nombre}': Área '{area}' no es un valor válido.")
+                    continue
+
+                TodoItem.objects.create(
+                    oportunidad=oportunidad_nombre,
+                    area=area,
+                    contacto=contacto,
+                    producto=producto,
+                    monto=monto,
+                    probabilidad_cierre=100, # Por defecto 100% para oportunidades importadas
+                    mes_cierre=mes_cierre,
+                    usuario=request.user, # Asignar al usuario que realiza la importación
+                    cliente=cliente
+                )
+                created_count += 1
+
+            except Exception as e:
+                errors.append(f"Error procesando fila {row_data}: {e}")
+
+        if errors:
+            return JsonResponse({'success': False, 'message': f'Se importaron {created_count} oportunidades con errores.', 'errors': errors}, status=400)
+        else:
+            return JsonResponse({'success': True, 'message': f'Se importaron {created_count} oportunidades exitosamente.'})
+
+    # Para peticiones GET, simplemente renderiza la plantilla
+    clientes = Cliente.objects.all().order_by('nombre_empresa')
+    return render(request, 'importar_oportunidades.html', {'clientes': clientes})
