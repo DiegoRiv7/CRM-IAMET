@@ -3,11 +3,12 @@
 from django.urls import path
 from . import views
 from . import views_exportar # Importa las vistas desde el mismo directorio de la aplicación
-
+from django.views.generic import RedirectView
 
 urlpatterns = [
     # Página de bienvenida (será la nueva Home)
     path("home/", views.bienvenida, name="home"),
+    path("", views.bienvenida, name="root_home"),
 
     # Dashboard principal
     path("dashboard/", views.dashboard, name="dashboard"),
@@ -48,7 +49,6 @@ urlpatterns = [
     # Ruta para el detalle del dashboard por mes de cierre
     # <str:mes_val> captura el valor del mes (ej. "07" para Julio)
     path("mes-detalle/<str:mes_val>/", views.mes_dashboard_detail, name="mes_dashboard_detail"),
-
     # Ruta para el detalle de oportunidades perdidas (0% probabilidad)
     path("oportunidades-perdidas/", views.oportunidades_perdidas_detail, name="oportunidades_perdidas_detail"),
 
@@ -78,12 +78,11 @@ urlpatterns = [
     # Pantalla fullscreen de ventas por mes
     path('dashboard/ventas_fullscreen/', views.ventas_fullscreen, name='ventas_fullscreen'),
 
-    # Ruta raíz redirige al dashboard
-    path("", views.dashboard, name="root_dashboard"),
-
     # API para actualizar la probabilidad de una oportunidad
     path('api/oportunidad/<int:id>/probabilidad/', views.actualizar_probabilidad, name='actualizar_probabilidad'),
 
     # API para crear clientes desde el modal
     path('api/crear-cliente/', views.crear_cliente_api, name='crear_cliente_api'),
+ 
+   # path("", RedirectView.as_view(url='/dashboard/', permanent=False), name='root_redirect'),
 ]
