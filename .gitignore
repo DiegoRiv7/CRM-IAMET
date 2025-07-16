@@ -2,7 +2,18 @@
 .env
 
 # Base de datos
+# Archivos de base de datos
 *.sqlite3
+
+# Archivos de entorno
+.env
+
+# Archivos de caché de Python
+__pycache__/
+*.pyc
+
+# Archivos del sistema operativo
+.DS_Store
 db.sqlite3
 
 # Directorios de Python
