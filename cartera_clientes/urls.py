@@ -2,9 +2,7 @@
 
 from django.contrib import admin
 from django.urls import path, include
-# No necesitamos RedirectView ni auth_views si no los usas directamente en este archivo
-# from django.views.generic.base import RedirectView
-# from django.contrib.auth import views as auth_views
+from django.views.generic.base import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -12,15 +10,12 @@ urlpatterns = [
     # Ruta para el panel de administración de Django
     path('admin/', admin.site.urls),
 
-    # Incluye las URLs de tu aplicación 'app' directamente en la raíz del proyecto.
-    # Esto significa que todas las rutas definidas en 'app/urls.py' serán accesibles
-    # sin ningún prefijo (por ejemplo, /home/, /todos/, /reporte-clientes/).
-    path("", include("app.urls")),
+    # Incluye todas las URLs de la aplicación 'app' bajo el prefijo /app/
+    # Esto hace que las rutas sean consistentes con la configuración (LOGIN_URL, etc.)
+    path("app/", include("app.urls")),
 
-    # He eliminado la línea path('app/', include('app.urls')) porque con la línea de arriba
-    # tus URLs ya son accesibles desde la raíz. Incluirla de nuevo bajo '/app/' podría
-    # generar rutas duplicadas y confusión. Si necesitas URLs bajo /app/, tendrías
-    # que ajustar cómo se definen en app/urls.py o manejarlo con namespaces.
+    # Redirige la raíz del sitio (/) a la página de login de la aplicación.
+    path('', RedirectView.as_view(url='/app/login/', permanent=False)),
 ]
 
 # ESTAS LÍNEAS DEBEN ESTAR DESPUÉS DE LA DEFINICIÓN COMPLETA DE urlpatterns
@@ -28,4 +23,5 @@ urlpatterns = [
 # EN PRODUCCIÓN REAL, ESTO DEBE SER MANEJADO POR UN SERVIDOR COMO NGINX.
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # La siguiente línea es para los archivos de medios, si los usas.
+    # urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
