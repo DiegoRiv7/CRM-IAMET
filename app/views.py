@@ -2,44 +2,33 @@ from django.shortcuts import render, HttpResponse, redirect, get_object_or_404
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion # Asegúrate de importar los nuevos modelos
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion
 from . import views_exportar
-from .forms import VentaForm, VentaFilterForm, CotizacionForm # Asegúrate de que CotizacionForm esté importado
+from .forms import VentaForm, VentaFilterForm, CotizacionForm
 from django.db.models import Sum, Count, F, Q
 from django.db.models.functions import Upper, Coalesce
 from django.db.models import Value
 from datetime import date
 from dateutil.relativedelta import relativedelta
-from decimal import Decimal # Importa Decimal para manejar números con precisión
+from decimal import Decimal
 from django.utils.html import json_script
 import json
 from django.http import JsonResponse
-from django.urls import reverse # Importar reverse para construir URLs
+from django.urls import reverse
 from django.utils import timezone
-
-# Importaciones para generación de PDF
 from weasyprint import HTML
 from django.template.loader import render_to_string
-from django.http import HttpResponse
-
-# Asegúrate de importar tu modelo Cotizacion y DetalleCotizacion
-from .models import Cotizacion, DetalleCotizacion
-
-# Importaciones para el logo Base64 (asegúrate de que estas líneas estén al inicio del archivo si no lo están)
 import base64
 import os
+import math
+from django.contrib.auth.models import User
 
-# Función auxiliar para comprobar si el usuario es supervisor
+
 def is_supervisor(user):
     return user.groups.filter(name='Supervisores').exists()
 
-# Función auxiliar para obtener el display de un valor de choice
 def _get_display_for_value(value, choices_list):
     return dict(choices_list).get(value, value)
-
-# Vistas principales y funcionales
-
-from django.contrib.auth.decorators import login_required
 
 @login_required
 def ventas_fullscreen(request):
@@ -72,7 +61,6 @@ def oportunidades_mes_actual(request):
         oportunidades = TodoItem.objects.filter(mes_cierre=mes_actual_val, usuario=request.user)
         meta_mensual = 130000
 
-    # Monto por cobrar: oportunidades con probabilidad entre 1 y 99%
     monto_por_cobrar = oportunidades.filter(probabilidad_cierre__gte=1, probabilidad_cierre__lte=99).aggregate(suma=Sum('monto'))['suma'] or 0
 
     return render(request, 'oportunidades_mes_actual.html', {
@@ -87,15 +75,11 @@ def bienvenida(request):
     """
     Vista de bienvenida que será la primera que vea el usuario al ingresar.
     """
-    # Determinar perfil
     perfil = "SUPERVISOR" if is_supervisor(request.user) else "VENDEDOR"
-    # Fecha actual
     fecha_actual = timezone.localtime(timezone.now()).strftime('%A, %d de %B de %Y')
 
-    # Usuario del mes: más ventas cerradas (probabilidad 100%) del mes ANTERIOR, solo vendedores
     today = date.today()
     inicio_mes_actual = today.replace(day=1)
-    # Calcular el inicio y fin del mes anterior
     inicio_mes_anterior = (inicio_mes_actual - relativedelta(months=1))
     fin_mes_anterior = inicio_mes_actual - relativedelta(days=1)
     ventas_mes = (
@@ -110,7 +94,6 @@ def bienvenida(request):
     if ventas_mes:
         user_id = ventas_mes[0]['usuario']
         user = User.objects.get(id=user_id)
-        # Calcular el monto total vendido por este usuario en el mes anterior (probabilidad 100%)
         monto_vendido_mes = TodoItem.objects.filter(
             probabilidad_cierre=100,
             fecha_creacion__date__gte=inicio_mes_anterior,
@@ -124,7 +107,6 @@ def bienvenida(request):
             'monto_vendido_mes': monto_vendido_mes,
         }
 
-    # Usuario del día: más oportunidades registradas hoy, solo vendedores
     hoy = date.today()
     usuario_dia = None
     oportunidades_hoy = (
@@ -142,9 +124,7 @@ def bienvenida(request):
             'avatar_url': f'https://ui-avatars.com/api/?name={user.get_full_name() or user.username}&background=f472b6&color=fff',
             'oportunidades_hoy': oportunidades_hoy[0]['oportunidades_hoy'],
         }
-    # Si no hay oportunidades hoy, usuario_dia queda en None
 
-    # Últimas oportunidades (de todos)
     ultimas_oportunidades_qs = TodoItem.objects.select_related('cliente', 'usuario').order_by('-fecha_creacion')[:8]
     ultimas_oportunidades = [
         {
@@ -157,7 +137,6 @@ def bienvenida(request):
         for o in ultimas_oportunidades_qs
     ]
 
-    # Clima: dejar None, preparado para integración futura
     clima = None
 
     context = {
@@ -172,18 +151,13 @@ def bienvenida(request):
 
 @login_required
 def dashboard(request):
-    # Determinar si el usuario es un supervisor
     if is_supervisor(request.user):
-        # Si es supervisor, obtiene todas las oportunidades de todos los usuarios
         user_opportunities = TodoItem.objects.all()
         print("DEBUG: Usuario es supervisor. Obteniendo todas las oportunidades.")
     else:
-        # Si no es supervisor, solo obtiene las oportunidades del usuario actual
         user_opportunities = TodoItem.objects.filter(usuario=request.user)
         print(f"DEBUG: Usuario {request.user.username} es vendedor. Obteniendo sus propias oportunidades.")
 
-    # 1. Cliente con más/menos ventas cerradas (100% probabilidad)
-    # Las ventas cerradas se filtran por usuario si no es supervisor
     ventas_cerradas_query = TodoItem.objects.filter(probabilidad_cierre=100, cliente__isnull=False)
     if not is_supervisor(request.user):
         ventas_cerradas_query = ventas_cerradas_query.filter(usuario=request.user)
@@ -191,7 +165,7 @@ def dashboard(request):
     cliente_mas_vendido = None
     cliente_menos_vendido = None
 
-    ventas_por_cliente_cerradas = ventas_cerradas_query.values('cliente__nombre_empresa', 'cliente__id').annotate( # Asegura cliente__id
+    ventas_por_cliente_cerradas = ventas_cerradas_query.values('cliente__nombre_empresa', 'cliente__id').annotate(
         total_vendido=Sum('monto')
     ).order_by('-total_vendido')
 
@@ -199,37 +173,29 @@ def dashboard(request):
         cliente_mas_vendido = ventas_por_cliente_cerradas.first()
         cliente_menos_vendido = ventas_por_cliente_cerradas.last()
 
-    # 2. Producto más/menos vendido (total de oportunidades y ventas cerradas)
-    # La consulta de productos también debe considerar el rol de supervisor
     productos_data_base_query = TodoItem.objects.all() if is_supervisor(request.user) else TodoItem.objects.filter(usuario=request.user)
 
     productos_data_raw = productos_data_base_query.annotate(
-        # Convertir el campo 'producto' a mayúsculas para la agrupación
         producto_upper=Upper('producto')
     ).values('producto_upper').annotate(
         count_oportunidades=Count('id'),
         total_monto=Sum('monto'),
-        # Suma el monto SOLO si la probabilidad de cierre es 100%
         total_vendido_cerrado=Sum('monto', filter=Q(probabilidad_cierre=100))
-    ).order_by('-count_oportunidades') # Ordenar para encontrar el "más vendido"
+    ).order_by('-count_oportunidades')
 
     productos_data_with_display = []
     for item in productos_data_raw:
         item_copy = item.copy()
-        # Usa 'producto_upper' para obtener el display, ya que es el valor normalizado
         item_copy['get_producto_display'] = _get_display_for_value(item_copy['producto_upper'], TodoItem.PRODUCTO_CHOICES)
-        # Asegúrate de que total_vendido_cerrado sea 0.00 si es None
         item_copy['total_vendido_cerrado'] = item_copy['total_vendido_cerrado'] or Decimal('0.00')
         productos_data_with_display.append(item_copy)
 
     productos_data_sorted_asc = sorted(productos_data_with_display, key=lambda x: x['count_oportunidades'])
     productos_data_sorted_desc = sorted(productos_data_with_display, key=lambda x: x['count_oportunidades'], reverse=True)
 
-    # --- Marca más vendida y menos vendida (usando producto como proxy de marca) ---
     marca_mas_vendida = None
     marca_menos_vendida = None
 
-    # Ordenar productos por total vendido cerrado (ventas reales por marca)
     productos_sorted_by_ventas = sorted(productos_data_with_display, key=lambda x: x['total_vendido_cerrado'] or Decimal('0.00'), reverse=True)
     productos_sorted_by_ventas_asc = sorted(productos_data_with_display, key=lambda x: x['total_vendido_cerrado'] or Decimal('0.00'))
 
@@ -248,7 +214,6 @@ def dashboard(request):
             'total_vendido': least_brand['total_vendido_cerrado'],
         }
 
-    # --- Producto más/menos vendido (por cantidad de oportunidades, para compatibilidad con otras vistas) ---
     producto_mas_vendido = None
     producto_menos_vendido = None
     if productos_data_sorted_desc:
@@ -276,7 +241,6 @@ def dashboard(request):
     else:
         producto_menos_vendido_context = None
 
-    # --- Cliente Top (más ventas cerradas) ---
     if is_supervisor(request.user):
         top_cliente_qs = (TodoItem.objects.filter(probabilidad_cierre=100)
             .values('cliente__nombre_empresa')
@@ -290,22 +254,18 @@ def dashboard(request):
     if top_cliente_qs:
         cliente_top_nombre = top_cliente_qs[0]['cliente__nombre_empresa']
         cliente_top_monto = top_cliente_qs[0]['total_vendido']
-        # Oportunidades abiertas (1-99%) para ese cliente
         if is_supervisor(request.user):
             abiertas = TodoItem.objects.filter(cliente__nombre_empresa=cliente_top_nombre, probabilidad_cierre__gte=1, probabilidad_cierre__lte=99)
         else:
             abiertas = TodoItem.objects.filter(cliente__nombre_empresa=cliente_top_nombre, probabilidad_cierre__gte=1, probabilidad_cierre__lte=99, usuario=request.user)
         cliente_top_oportunidades_abiertas = abiertas.count()
-        # Porcentaje de avance respecto a meta
         meta_cliente_top = 400000 if is_supervisor(request.user) else 130000
         porcentaje_cliente_top = int((cliente_top_monto / meta_cliente_top * 100) if meta_cliente_top > 0 else 0)
         stroke_dashoffset_cliente_top = 339.292 - (339.292 * porcentaje_cliente_top / 100)
-        # Productos más vendidos a cliente top
         productos_cliente_top = (TodoItem.objects.filter(cliente__nombre_empresa=cliente_top_nombre, probabilidad_cierre=100)
             .values('producto')
             .annotate(total_vendido=Sum('monto'))
             .order_by('-total_vendido'))
-        # Convertir a lista de dicts con display name
         productos_cliente_top_list = []
         for p in productos_cliente_top:
             display = dict(TodoItem.PRODUCTO_CHOICES).get(p['producto'], p['producto'])
@@ -318,7 +278,6 @@ def dashboard(request):
         stroke_dashoffset_cliente_top = 339.292
         productos_cliente_top_list = []
 
-    # --- Lógica para el Mes Actual (Cobrado) ---
     hoy = date.today()
     mes_actual_val = str(hoy.month).zfill(2)
     mes_actual_nombre = dict(TodoItem.MES_CHOICES).get(mes_actual_val, f"Mes {hoy.month}")
@@ -330,16 +289,11 @@ def dashboard(request):
     porcentaje_cobertura_mes_actual = int((monto_cobrado_mes_actual / META_MENSUAL * 100) if META_MENSUAL > 0 else 0)
     stroke_dashoffset_mes_actual = 339.292 - (339.292 * porcentaje_cobertura_mes_actual / 100)
 
-    # --- Lógica para el Próximo Mes y Alerta de Meta ---
-    # Obtener el próximo mes
     today = date.today()
     next_month_date = today + relativedelta(months=1)
-    next_month_value = next_month_date.month # El valor numérico del mes
-
-    # Obtener el nombre del próximo mes para la visualización
+    next_month_value = next_month_date.month
     next_month_display = dict(TodoItem.MES_CHOICES).get(str(next_month_value).zfill(2), f"Mes {next_month_value}")
 
-    # Obtener las oportunidades del próximo mes (considerando el rol)
     oportunidades_proximo_mes_query = TodoItem.objects.filter(mes_cierre=str(next_month_value).zfill(2))
     if not is_supervisor(request.user):
         oportunidades_proximo_mes_query = oportunidades_proximo_mes_query.filter(usuario=request.user)
@@ -347,18 +301,16 @@ def dashboard(request):
     total_oportunidades_proximo_mes = oportunidades_proximo_mes_query.exclude(probabilidad_cierre=0).count()
     total_monto_esperado_proximo_mes = oportunidades_proximo_mes_query.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
 
-
-    # Lógica para la alerta de meta
     META_MENSUAL = Decimal('350000.00') if is_supervisor(request.user) else Decimal('130000.00')
-    total_ponderado_proximo_mes = Decimal('0.00') # Inicializar como Decimal
+    total_ponderado_proximo_mes = Decimal('0.00')
 
-    for op in oportunidades_proximo_mes_query: # Iterar sobre el queryset filtrado
+    for op in oportunidades_proximo_mes_query:
         if 70 <= op.probabilidad_cierre <= 100:
-            total_ponderado_proximo_mes += op.monto * Decimal('1.00') # Alta importancia
+            total_ponderado_proximo_mes += op.monto * Decimal('1.00')
         elif 50 <= op.probabilidad_cierre <= 69:
-            total_ponderado_proximo_mes += op.monto * Decimal('0.50') # Media importancia
-        else: # op.probabilidad_cierre < 50
-            total_ponderado_proximo_mes += op.monto * Decimal('0.10') # Baja importancia
+            total_ponderado_proximo_mes += op.monto * Decimal('0.50')
+        else:
+            total_ponderado_proximo_mes += op.monto * Decimal('0.10')
 
     alerta_proximo_mes = {
         'status': '',
@@ -369,33 +321,28 @@ def dashboard(request):
     if total_ponderado_proximo_mes >= META_MENSUAL:
         alerta_proximo_mes['status'] = 'success'
         alerta_proximo_mes['message'] = '¡Meta mensual alcanzada o superada!'
-        alerta_proximo_mes['icon'] = 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' # Checkmark circle
-    elif total_ponderado_proximo_mes >= META_MENSUAL * Decimal('0.70'): # Multiplicar por Decimal
+        alerta_proximo_mes['icon'] = 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+    elif total_ponderado_proximo_mes >= META_MENSUAL * Decimal('0.70'):
         alerta_proximo_mes['status'] = 'warning'
         alerta_proximo_mes['message'] = 'Cerca de la meta, aún es posible alcanzarla.'
-        alerta_proximo_mes['icon'] = 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' # Exclamation triangle
+        alerta_proximo_mes['icon'] = 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
     else:
         alerta_proximo_mes['status'] = 'danger'
         alerta_proximo_mes['message'] = 'Se requiere más esfuerzo para alcanzar la meta.'
-        alerta_proximo_mes['icon'] = 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z' # X-mark circle
+        alerta_proximo_mes['icon'] = 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'
 
-
-    # --- TOTAL PERDIDO (0% probabilidad) ---
     oportunidades_perdidas_query = TodoItem.objects.filter(probabilidad_cierre=0)
     if not is_supervisor(request.user):
         oportunidades_perdidas_query = oportunidades_perdidas_query.filter(usuario=request.user)
 
     total_perdido_monto = oportunidades_perdidas_query.aggregate(
         sum_monto=Sum('monto')
-    )['sum_monto'] or Decimal('0.00') # Asegurar que sea Decimal
+    )['sum_monto'] or Decimal('0.00')
     total_perdido_count = oportunidades_perdidas_query.count()
 
-
-    # --- Ventas por mes (para gráfica) ---
     from django.db.models.functions import TruncMonth
     from django.utils.timezone import now
     hoy = now().date()
-    # Agrupa ventas por mes_cierre (real, no fecha_creacion)
     ano_actual = hoy.year
     ventas_por_mes_qs = TodoItem.objects.filter(
         probabilidad_cierre=100,
@@ -404,7 +351,6 @@ def dashboard(request):
     if not is_supervisor(request.user):
         ventas_por_mes_qs = ventas_por_mes_qs.filter(usuario=request.user)
     ventas_por_mes = ventas_por_mes_qs.values('mes_cierre').annotate(monto=Sum('monto')).order_by('mes_cierre')
-    # Prepara lista de 12 meses (enero a diciembre)
     ventas_por_mes_dict = {v['mes_cierre']: float(v['monto'] or 0) for v in ventas_por_mes}
     ventas_por_mes_list = []
     for i in range(1, 13):
@@ -416,9 +362,8 @@ def dashboard(request):
         'cliente_menos_vendido': cliente_menos_vendido,
         'marca_mas_vendida': marca_mas_vendida,
         'marca_menos_vendida': marca_menos_vendida,
-        'producto_mas_vendido': producto_mas_vendido_context, # Usamos el nuevo contexto
-        'producto_menos_vendido': producto_menos_vendido_context, # Usamos el nuevo contexto para menos vendido
-        # Datos del cliente top
+        'producto_mas_vendido': producto_mas_vendido_context,
+        'producto_menos_vendido': producto_menos_vendido_context,
         'productos_cliente_top_list': productos_cliente_top_list,
         'ventas_por_mes_list': ventas_por_mes_list,
         'porcentaje_cliente_top': porcentaje_cliente_top,
@@ -426,24 +371,19 @@ def dashboard(request):
         'cliente_top_nombre': cliente_top_nombre,
         'cliente_top_monto': cliente_top_monto,
         'cliente_top_oportunidades_abiertas': cliente_top_oportunidades_abiertas,
-        # Datos del mes actual
         'monto_cobrado_mes_actual': monto_cobrado_mes_actual,
         'porcentaje_cobertura_mes_actual': porcentaje_cobertura_mes_actual,
         'mes_actual_nombre': mes_actual_nombre,
         'mes_actual_val': mes_actual_val,
         'stroke_dashoffset_mes_actual': stroke_dashoffset_mes_actual,
-
-        # Datos del próximo mes
         'next_month_display': next_month_display,
         'total_oportunidades_proximo_mes': total_oportunidades_proximo_mes,
         'total_monto_esperado_proximo_mes': total_monto_esperado_proximo_mes,
         'alerta_proximo_mes': alerta_proximo_mes,
         'proximo_mes_val': str(next_month_value).zfill(2),
-
-        # Total Perdido
         'total_perdido_monto': total_perdido_monto,
         'total_perdido_count': total_perdido_count,
-        'is_supervisor': is_supervisor(request.user), # Pasamos si el usuario es supervisor al contexto
+        'is_supervisor': is_supervisor(request.user),
     }
     return render (request, "dashboard.html", context)
 
@@ -456,26 +396,21 @@ def get_user_clients_api(request):
     """
     try:
         if is_supervisor(request.user):
-            # Si el usuario es supervisor, obtener todos los clientes
             clients_queryset = Cliente.objects.all()
             print("DEBUG: Usuario es supervisor. Obteniendo todos los clientes.")
         else:
-            # Si no es supervisor, obtener solo los clientes asignados a este usuario
-            # Usamos 'asignado_a' que es el campo correcto en tu modelo Cliente
             clients_queryset = Cliente.objects.filter(asignado_a=request.user)
             print(f"DEBUG: Usuario {request.user.username} es vendedor. Obteniendo sus clientes.")
 
-        # Serializar los clientes a un formato que pueda ser convertido a JSON
         clients_data = []
         for client in clients_queryset:
             clients_data.append({
-                'id': str(client.id), # Convertir ID a string para consistencia con JSON
-                'name': client.nombre_empresa, # Mapear nombre_empresa a 'name'
-                'address': client.direccion, # Mapear direccion a 'address'
-                'taxId': client.email # Mapear email a 'taxId' (o el campo que uses para ID Fiscal)
-                # Puedes añadir más campos aquí si los necesitas en el frontend
+                'id': str(client.id),
+                'name': client.nombre_empresa,
+                'address': client.direccion,
+                'taxId': client.email
             })
-        return JsonResponse(clients_data, safe=False) # safe=False permite serializar listas directamente
+        return JsonResponse(clients_data, safe=False)
     except Exception as e:
         print(f"ERROR en get_user_clients_api: {e}")
         return JsonResponse({'error': str(e)}, status=500)
@@ -571,7 +506,6 @@ def supervisor_required(view_func):
 
 @login_required
 def todos (request):
-    # Determinar si el usuario es un supervisor
     if is_supervisor(request.user):
         items = TodoItem.objects.all()
     else:
@@ -590,8 +524,7 @@ def todos (request):
         if area:
             items = items.filter(area=area)
         if producto:
-            # Modificación aquí: hacer la búsqueda del producto insensible a mayúsculas/minúsculas
-            items = items.filter(producto__iexact=producto) # Usa icontains o iexact para insensibilidad
+            items = items.filter(producto__iexact=producto)
         if probabilidad_min is not None:
             items = items.filter(probabilidad_cierre__gte=probabilidad_min)
         if probabilidad_max is not None:
@@ -617,13 +550,14 @@ def todos (request):
     context = {
         "items":items,
         "filter_form": filter_form,
-        "is_supervisor": is_supervisor(request.user), # También pasamos esto al template de "todos"
+        "is_supervisor": is_supervisor(request.user),
     }
     return render (request, "todos.html", context)
 
+from .bitrix_integration import send_opportunity_to_bitrix
+
 @login_required
 def ingresar_venta_todoitem(request):
-    # Permitir a supervisores y vendedores ingresar ventas
     if request.method == 'POST':
         if is_supervisor(request.user):
             form = VentaForm(request.POST)
@@ -631,15 +565,29 @@ def ingresar_venta_todoitem(request):
             form = VentaForm(request.POST, user=request.user)
         if form.is_valid():
             venta = form.save(commit=False)
-            # Si es supervisor, toma el usuario del formulario
             if is_supervisor(request.user):
                 venta.usuario = form.cleaned_data['usuario']
             else:
                 venta.usuario = request.user
             venta.save()
+
+            # Enviar oportunidad a Bitrix24
+            opportunity_data = {
+                'oportunidad': venta.oportunidad,
+                'monto': float(venta.monto),
+                'cliente': venta.cliente.nombre_empresa,
+                'contacto': venta.contacto,
+                'producto': venta.producto,
+                'probabilidad_cierre': venta.probabilidad_cierre,
+                'mes_cierre': venta.mes_cierre,
+                'area': venta.area,
+                'comentarios': venta.comentarios,
+            }
+            print(f"DEBUG views.py: Datos de oportunidad enviados a Bitrix: {opportunity_data}")
+            send_opportunity_to_bitrix(opportunity_data)
+
             return redirect('ingresar_venta_todoitem_exitosa')
         else:
-            # Si el formulario no es válido, mostrar errores y mantener datos
             return render(request, 'ingresar_venta.html', {'form': form, 'errores': form.errors})
     else:
         if is_supervisor(request.user):
@@ -651,14 +599,13 @@ def ingresar_venta_todoitem(request):
 def ingresar_venta_todoitem_exitosa(request):
     return render(request, 'ingresar_venta_exitosa.html')
 
-# Vistas de autenticación
 def register(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect('home') # Redirigir a 'home' después de registrar e iniciar sesión
+            return redirect('home')
     else:
         form = UserCreationForm()
     return render(request, 'register.html', {'form': form})
@@ -669,10 +616,10 @@ def user_login(request):
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-            return redirect('home') # Redirigir a 'home' después de iniciar sesión
+            return redirect('home')
     else:
         form = AuthenticationForm()
-    return render(request, 'login.html', {'form': form, 'hide_dock': True}) # Pasar hide_dock=True para ocultar el dock
+    return render(request, 'login.html', {'form': form, 'hide_dock': True})
 
 @login_required
 def user_logout(request):
@@ -681,32 +628,28 @@ def user_logout(request):
 
 @login_required
 def editar_venta_todoitem(request, pk):
-    # Supervisor puede editar cualquier venta, vendedor solo las suyas
     if is_supervisor(request.user):
-        todo_item = get_object_or_404(TodoItem, pk=pk) # No filtrar por usuario si es supervisor
+        todo_item = get_object_or_404(TodoItem, pk=pk)
     else:
         todo_item = get_object_or_404(TodoItem, pk=pk, usuario=request.user)
 
     if request.method == 'POST':
         if 'delete' in request.POST:
-            # Solo permite borrar si el usuario es supervisor o dueño
             if is_supervisor(request.user) or todo_item.usuario == request.user:
                 todo_item.delete()
             return redirect('todos')
-        # Si no es delete, entonces es edición:
         form = VentaForm(request.POST, instance=todo_item, user=request.user if not is_supervisor(request.user) else None)
         if form.is_valid():
             form.save()
             return redirect('todos')
     else:
-        form = VentaForm(instance=todo_item, user=request.user if not is_supervisor(request.user) else None) # Asegúrate de que usa VentaForm
+        form = VentaForm(instance=todo_item, user=request.user if not is_supervisor(request.user) else None)
 
     return render(request, 'editar_venta.html', {'form': form, 'todo_item': todo_item})
 
 
 @login_required
 def reporte_ventas_por_cliente(request):
-    from django.contrib.auth.models import User
     if is_supervisor(request.user):
         reporte_data = Cliente.objects.annotate(
             total_monto=Coalesce(
@@ -748,18 +691,15 @@ def reporte_ventas_por_cliente(request):
 
 @login_required
 def oportunidades_por_cliente(request, cliente_id):
-    # Determinar qué clientes pueden ser vistos por el usuario
     if is_supervisor(request.user):
-        cliente_seleccionado = get_object_or_404(Cliente, pk=cliente_id) # No filtrar por usuario
-        oportunidades = TodoItem.objects.filter(cliente=cliente_seleccionado) # Todas las oportunidades del cliente
+        cliente_seleccionado = get_object_or_404(Cliente, pk=cliente_id)
+        oportunidades = TodoItem.objects.filter(cliente=cliente_seleccionado)
         print("DEBUG: Supervisor viendo oportunidades de cliente.")
     else:
-        cliente_seleccionado = get_object_or_404(Cliente, pk=cliente_id, asignado_a=request.user) # Usar asignado_a
+        cliente_seleccionado = get_object_or_404(Cliente, pk=cliente_id, asignado_a=request.user)
         oportunidades = TodoItem.objects.filter(cliente=cliente_seleccionado, usuario=request.user)
         print(f"DEBUG: Vendedor {request.user.username} viendo sus propias oportunidades de cliente.")
 
-    # El formulario de filtro no necesita el usuario para sus querysets de clientes en este contexto
-    # ya que los clientes ya vienen filtrados por la vista o se obtienen todos.
     filter_form = VentaFilterForm(request.GET)
 
     if filter_form.is_valid():
@@ -805,12 +745,10 @@ def oportunidades_por_cliente(request, cliente_id):
 def producto_dashboard_detail(request, producto_val):
     print(f"DEBUG: producto_dashboard_detail - producto_val recibido RAW: {producto_val}")
 
-    # Convertir a mayúsculas para asegurar que la comparación con PRODUCTO_CHOICES sea consistente
     producto_val_upper = producto_val.upper()
     print(f"DEBUG: producto_dashboard_detail - producto_val_upper: {producto_val_upper}")
     print(f"DEBUG: Keys de PRODUCTO_CHOICES: {list(dict(TodoItem.PRODUCTO_CHOICES).keys())}")
 
-    # Verificar si el producto_val_upper es una clave válida en PRODUCTO_CHOICES
     if producto_val_upper not in dict(TodoItem.PRODUCTO_CHOICES):
         return redirect('dashboard')
 
@@ -823,90 +761,76 @@ def producto_dashboard_detail(request, producto_val):
     for op in oportunidades:
         print(f"DEBUG:   - ID: {op.id}, Oportunidad: {op.oportunidad}, Producto: {op.producto}, Usuario ID: {op.usuario.id}")
 
-    # --- Ventas Cerradas (probabilidad 100%) para este producto ---
     ventas_cerradas = oportunidades.filter(probabilidad_cierre=100)
     total_vendido_cerrado = ventas_cerradas.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
-    total_vendido_cerrado_count = ventas_cerradas.count() # Conteo de oportunidades cerradas
+    total_vendido_cerrado_count = ventas_cerradas.count()
     print(f"DEBUG: Ventas Cerradas (100%) para '{producto_val_upper}': {total_vendido_cerrado_count} oportunidades, Monto: {total_vendido_cerrado}")
     for venta in ventas_cerradas:
         print(f"DEBUG:   - Oportunidad: {venta.oportunidad}, Monto: {venta.monto}, Probabilidad: {venta.probabilidad_cierre}%")
 
-    # --- Oportunidades Vigentes (probabilidad del 1% al 99%) para este producto ---
     oportunidades_vigentes = oportunidades.filter(
-        probabilidad_cierre__gt=0, # Mayor que 0%
-        probabilidad_cierre__lt=100 # Menor que 100%
+        probabilidad_cierre__gt=0,
+        probabilidad_cierre__lt=100
     )
     total_monto_vigente = oportunidades_vigentes.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
-    total_monto_vigente_count = oportunidades_vigentes.count() # Conteo de oportunidades vigentes
+    total_monto_vigente_count = oportunidades_vigentes.count()
     print(f"DEBUG: Oportunidades Vigentes (0% < prob < 100%) para '{producto_val_upper}': {total_monto_vigente_count} oportunidades, Monto: {total_monto_vigente}")
     for op_vigente in oportunidades_vigentes:
         print(f"DEBUG:   - Oportunidad: {op_vigente.oportunidad}, Monto: {op_vigente.monto}, Probabilidad: {op_vigente.probabilidad_cierre}%")
 
-    # --- Oportunidades Perdidas (probabilidad 0%) para este producto ---
     oportunidades_perdidas = oportunidades.filter(probabilidad_cierre=0)
     total_monto_perdido = oportunidades_perdidas.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
-    total_monto_perdido_count = oportunidades_perdidas.count() # Conteo de oportunidades perdidas
+    total_monto_perdido_count = oportunidades_perdidas.count()
     print(f"DEBUG: Oportunidades Perdidas (0%) para '{producto_val_upper}': {total_monto_perdido_count} oportunidades, Monto: {total_monto_perdido}")
     for op_perdida in oportunidades_perdidas:
         print(f"DEBUG:   - Oportunidad: {op_perdida.oportunidad}, Monto: {op_perdida.monto}, Probabilidad: {op_perdida.probabilidad_cierre}%")
 
 
-    # Clientes involucrados en este producto
     clientes_involucrados = oportunidades.filter(cliente__isnull=False).values('cliente__id', 'cliente__nombre_empresa').distinct()
 
-    # Meses involucrados en este producto (mes de cierre esperado)
     meses_involucrados = oportunidades.values('mes_cierre').distinct()
 
-    # Mapear valores crudos de mes a sus nombres de visualización
     meses_display = []
     for m in meses_involucrados:
-        # Aseguramos que la clave sea un string de dos dígitos para la búsqueda
         mes_key = str(m['mes_cierre']).zfill(2)
         meses_display.append(dict(TodoItem.MES_CHOICES).get(mes_key, mes_key))
     context = {
-        'producto_val': producto_val_upper, # Aseguramos que la clave pasada sea la que usará el template
+        'producto_val': producto_val_upper,
         'producto_display': dict(TodoItem.PRODUCTO_CHOICES).get(producto_val_upper, producto_val_upper),
         'total_vendido_cerrado': total_vendido_cerrado,
-        'total_vendido_cerrado_count': total_vendido_cerrado_count, # AÑADIDO
-        'total_monto_vigente': total_monto_vigente, # Nuevo: Monto oportunidades vigentes
-        'total_monto_vigente_count': total_monto_vigente_count, # AÑADIDO
-        'total_monto_perdido': total_monto_perdido, # Nuevo: Monto oportunidades perdidas
-        'total_monto_perdido_count': total_monto_perdido_count, # AÑADIDO
+        'total_vendido_cerrado_count': total_vendido_cerrado_count,
+        'total_monto_vigente': total_monto_vigente,
+        'total_monto_vigente_count': total_monto_vigente_count,
+        'total_monto_perdido': total_monto_perdido,
+        'total_monto_perdido_count': total_monto_perdido_count,
         'clientes_involucrados': clientes_involucrados,
         'meses_involucrados_display': meses_display,
-        'oportunidades': oportunidades, # Pasar todas las oportunidades para listarlas
-        'is_supervisor': is_supervisor(request.user), # Pasamos si el usuario es supervisor al contexto
+        'oportunidades': oportunidades,
+        'is_supervisor': is_supervisor(request.user),
     }
     return render(request, 'producto_dashboard_detail.html', context)
 
 
 @login_required
 def mes_dashboard_detail(request, mes_val):
-    # Asegúrate de que el mes_val recibido es uno de los choices válidos
-    mes_val_padded = str(mes_val).zfill(2) # Asegurar que mes_val sea de dos dígitos para la validación
+    mes_val_padded = str(mes_val).zfill(2)
     if mes_val_padded not in dict(TodoItem.MES_CHOICES).keys():
-        return redirect('home') # Redirige a home si el mes no es válido
+        return redirect('home')
 
-    # Base queryset de oportunidades según el rol
     if is_supervisor(request.user):
         oportunidades_mes = TodoItem.objects.filter(mes_cierre=mes_val_padded)
     else:
         oportunidades_mes = TodoItem.objects.filter(usuario=request.user, mes_cierre=mes_val_padded)
 
 
-    # Monto total esperado para este mes
     total_monto_esperado = oportunidades_mes.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
 
-    # Monto POR COBRAR: oportunidades con probabilidad entre 1 y 99%
     por_cobrar_monto = oportunidades_mes.filter(probabilidad_cierre__gte=1, probabilidad_cierre__lte=99).aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
 
-    # Clientes involucrados en oportunidades para este mes
     clientes_involucrados = oportunidades_mes.filter(cliente__isnull=False).values('cliente__id', 'cliente__nombre_empresa').distinct()
 
-    # Datos para la gráfica: Probabilidad de cierre vs. Monto
     graph_data_raw = oportunidades_mes.values('id', 'oportunidad', 'producto', 'monto', 'probabilidad_cierre', 'cliente__nombre_empresa')
 
-    # Añadir 'get_producto_display' a cada item en graph_data
     graph_data_with_display = []
     for item in graph_data_raw:
         item_copy = item.copy()
@@ -914,13 +838,13 @@ def mes_dashboard_detail(request, mes_val):
         graph_data_with_display.append(item_copy)
 
     context = {
-        'mes_val': mes_val_padded, # Aseguramos que la clave pasada sea la que usará el template
+        'mes_val': mes_val_padded,
         'mes_display': dict(TodoItem.MES_CHOICES).get(mes_val_padded, mes_val_padded),
         'total_monto_esperado': total_monto_esperado,
         'por_cobrar_monto': por_cobrar_monto,
         'clientes_involucrados': clientes_involucrados,
-        'oportunidades': oportunidades_mes, # Pasar todas las oportunidades para listarlas
-        'graph_data_json': graph_data_with_display, # Pasa los datos procesados con display_value
+        'oportunidades': oportunidades_mes,
+        'graph_data_json': graph_data_with_display,
         'is_supervisor': is_supervisor(request.user),
     }
     return render(request, 'mes_dashboard_detail.html', context)
@@ -950,53 +874,33 @@ def oportunidades_perdidas_detail(request):
     return render(request, 'oportunidades_perdidas_detail.html', context)
 
 
-# VISTA DEPRECADA - MANTENIDA POR REFERENCIA
 @login_required
 def generate_quote_pdf(request, pk):
     """
     DEPRECATED: Esta vista generaba PDF para TodoItem.
     Now it will use generate_cotizacion_pdf for the Cotizacion model.
     """
-    # Ensure that only the owner or a supervisor can generate the quote
     if is_supervisor(request.user):
         opportunity = get_object_or_404(TodoItem, pk=pk)
     else:
         opportunity = get_object_or_404(TodoItem, pk=pk, usuario=request.user)
 
-    # Context for the PDF template
     context = {
         'opportunity': opportunity,
-        'request_user': request.user, # To show the user generating the quote
+        'request_user': request.user,
         'current_date': date.today(),
-        # You can add more company data here if you have it in the model or settings
         'company_name': 'Tu Empresa de Ventas S.A. de C.V.',
         'company_address': 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México',
         'company_phone': '+52 55 1234 5678',
         'company_email': 'ventas@tuempresa.com',
     }
 
-    # Render the HTML template to a string
     html_string = render_to_string('quote_pdf.html', context)
-
-    # Create the PDF from the HTML string
-    # You can add a base_url if you have external images or CSS that WeasyPrint needs to load
-    # Example: HTML(string=html_string, base_url=request.build_absolute_uri('/')).write_pdf(...)
     pdf_file = HTML(string=html_string).write_pdf()
-
-    # Create the HTTP response with the PDF
     response = HttpResponse(pdf_file, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="cotizacion_{opportunity.oportunidad}.pdf"'
     return response
 
-
-# This view seems to be duplicated in your original code.
-# If you have two functions with the same name 'editar_venta_todoitem',
-# Django will use the last one defined. It is recommended to have only one.
-# I have kept it as it was in your original file.
-    return render(request, 'ingresar_venta.html', {'form': form, 'oportunidad': oportunidad})
-
-
-# --- NEW/CORRECTED VIEWS ADDED ---
 
 @login_required
 def oportunidades_por_cliente_view(request, cliente_id):
@@ -1012,7 +916,7 @@ def oportunidades_por_cliente_view(request, cliente_id):
 
     context = {
         'cliente_id': cliente_id,
-        'cliente_nombre': cliente.nombre_empresa, # Use nombre_empresa
+        'cliente_nombre': cliente.nombre_empresa,
         'oportunidades': oportunidades,
     }
     return render(request, 'oportunidades_por_cliente.html', context)
@@ -1032,24 +936,17 @@ def crear_cotizacion_view(request, cliente_id=None):
         print(f"DEBUG: crear_cotizacion_view - Cliente seleccionado por ID: {cliente_seleccionado.nombre_empresa}")
 
     if request.method == 'POST':
-        # Instantiate the form with POST data
         form = CotizacionForm(request.POST)
 
         if form.is_valid():
             cotizacion = form.save(commit=False)
-            cotizacion.created_by = request.user  # Asignar el usuario creador
+            cotizacion.created_by = request.user
             cotizacion.save()
             print(f"DEBUG: Quote saved with ID: {cotizacion.id}")
 
-            # Collect product data sent from JavaScript
             productos_data = {}
-            # Iterate through request.POST.items() to correctly parse product data
-            # The keys will look like 'productos[1][nombre]', 'productos[1][cantidad]', etc.
-            # We need to group them by index.
             for key, value in request.POST.items():
                 if key.startswith('productos['):
-                    # Extract the index and the field name
-                    # Example: 'productos[1][nombre]' -> index '1', field 'nombre'
                     parts = key.split('[')
                     index = parts[1].split(']')[0]
                     field = parts[2].split(']')[0]
@@ -1058,12 +955,9 @@ def crear_cotizacion_view(request, cliente_id=None):
                         productos_data[index] = {}
                     productos_data[index][field] = value
 
-            # Convert the dictionary of dictionaries into a list of dictionaries,
-            # sorted by their original numerical index to maintain order.
             productos_list = [productos_data[key] for key in sorted(productos_data.keys(), key=int)]
-            print(f"DEBUG: productos_list before saving details: {productos_list}") # NEW DEBUG PRINT FOR DUPLICATION ISSUE
+            print(f"DEBUG: productos_list before saving details: {productos_list}")
 
-            # Calculate subtotal and quote totals
             calculated_subtotal = Decimal('0.00')
             for item_data in productos_list:
                 try:
@@ -1073,27 +967,23 @@ def crear_cotizacion_view(request, cliente_id=None):
                     
                     item_total = cantidad * precio
                     item_total -= item_total * (descuento / Decimal('100.00'))
-                    calculated_subtotal += item_total.quantize(Decimal('0.01')) # Round each item to 2 decimal places before summing
+                    calculated_subtotal += item_total.quantize(Decimal('0.01'))
                     print(f"DEBUG_CALC: Item: {item_data.get('nombre')}, Quantity: {cantidad}, Price: {precio}, Discount: {descuento}, Item Total (rounded): {item_total.quantize(Decimal('0.01'))}")
                 except (ValueError, TypeError) as e:
                     print(f"Warning: Invalid product data found: {item_data} - Error: {e}")
-                    # Consider returning an error here or logging more severely
-                    # If a detail is invalid, it's better to delete the entire quote
                     cotizacion.delete()
                     return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Invalid product data in row. Error: {e}'}]}}, status=400)
 
-            # Round the subtotal before calculating IVA
             cotizacion.subtotal = calculated_subtotal.quantize(Decimal('0.01'))
             
             try:
                 cotizacion.iva_rate = Decimal(request.POST.get('iva_rate', '0.00'))
             except (ValueError, TypeError):
-                cotizacion.iva_rate = Decimal('0.00') # Default to 0 if conversion fails
+                cotizacion.iva_rate = Decimal('0.00')
 
-            cotizacion.iva_amount = (cotizacion.subtotal * cotizacion.iva_rate).quantize(Decimal('0.01')) # Round IVA amount
-            cotizacion.total = (cotizacion.subtotal + cotizacion.iva_amount).quantize(Decimal('0.01')) # Round final total
+            cotizacion.iva_amount = (cotizacion.subtotal * cotizacion.iva_rate).quantize(Decimal('0.01'))
+            cotizacion.total = (cotizacion.subtotal + cotizacion.iva_amount).quantize(Decimal('0.01'))
 
-            # Guardar el estado de visibilidad de la columna de descuento y el tipo de cotización
             descuento_visible_str = request.POST.get('descuento_visible', 'true')
             cotizacion.descuento_visible = descuento_visible_str.lower() == 'true'
             cotizacion.tipo_cotizacion = request.POST.get('tipo_cotizacion')
@@ -1101,8 +991,6 @@ def crear_cotizacion_view(request, cliente_id=None):
             cotizacion.save(update_fields=['subtotal', 'iva_rate', 'iva_amount', 'total', 'descuento_visible', 'tipo_cotizacion'])
             print(f"DEBUG: Quote totals updated. Subtotal: {cotizacion.subtotal}, IVA: {cotizacion.iva_amount}, Total: {cotizacion.total}, Quote Type: {cotizacion.tipo_cotizacion}")
             
-
-            # Save product details after the quote has been saved and its totals calculated
             for item_data in productos_list:
                 try:
                     DetalleCotizacion.objects.create(
@@ -1111,13 +999,13 @@ def crear_cotizacion_view(request, cliente_id=None):
                         descripcion=item_data.get('descripcion', ''),
                         cantidad=int(item_data.get('cantidad', 1)),
                         precio_unitario=Decimal(item_data.get('precio', '0.00')),
-                        descuento_porcentaje=Decimal(item_data.get('descuento', '0.00'))
+                        descuento_porcentaje=Decimal(item_data.get('descuento', '0.00')),
+                        marca=item_data.get('marca', '')
                     )
-                    print(f"DEBUG: Product detail created: {item_data.get('nombre')}")
+                    print(f"DEBUG: Product detail created: {item_data.get('nombre')}, Marca: {item_data.get('marca')}")
                 except (ValueError, TypeError) as e:
                     print(f"Error saving DetalleCotizacion: {e} for data {item_data}")
-                    # If a detail fails, it's better to delete the entire quote
-                    cotizacion.delete() # Revert the quote if details are invalid
+                    cotizacion.delete()
                     return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Error saving product details. Error: {e}'}]}}, status=400)
 
             
@@ -1127,41 +1015,157 @@ def crear_cotizacion_view(request, cliente_id=None):
             return JsonResponse({'success': True, 'pdf_url': pdf_url})
 
         else:
-            # If the form is not valid, return a JSON response with errors
             errors_dict = {}
             for field, field_errors in form.errors.items():
                 errors_dict[field] = [{'message': str(e), 'code': e.code if hasattr(e, 'code') else 'invalid'} for e in field_errors]
             print(f"DEBUG: Form errors: {errors_dict}")
             return JsonResponse({'success': False, 'errors': errors_dict}, status=400)
 
-    else: # If the request is GET
-        form = CotizacionForm() # Create an empty form for GET requests
+    else:
+        form = CotizacionForm()
 
-    # Get all clients for the frontend selector, regardless of the user role
     clientes_queryset = Cliente.objects.all()
     print(f"DEBUG: crear_cotizacion_view - Clientes obtenidos para frontend: {clientes_queryset.count()}")
 
-    # Use .values() to get dictionaries and map field names
     clientes_para_frontend = clientes_queryset.values(
         'id', 'nombre_empresa', 'direccion', 'email'
     )
 
-    # Convert the QuerySet to a list of dictionaries with the field names expected by the frontend
     clientes_data_json = []
     for c in clientes_para_frontend:
         clientes_data_json.append({
             'id': str(c['id']),
             'name': c['nombre_empresa'],
             'address': c['direccion'],
-            'taxId': c['email'] # Or the field you use for Tax ID
+            'taxId': c['email']
         })
     print(f"DEBUG: crear_cotizacion_view - Clientes serializados para JSON: {len(clientes_data_json)}")
 
+    PRODUCTOS_DATA = [
+        # ZEBRA
+        {"nombre": "800300-550LA", "descripcion": "RIBBON, COLOR-YMCKO, 300 IMAGES ZC300, LA", "precio": 60, "marca": "ZEBRA"},
+        {"nombre": "10010031", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS DESKTOP TD 4INX2IN Z-PERFORM", "precio": 25, "marca": "ZEBRA"},
+        {"nombre": "800300-350LA", "descripcion": "Cinta Zebra - YMCKO - Original", "precio": 41, "marca": "ZEBRA"},
+        {"nombre": "10005850", "descripcion": "Label, Paper, 2x1in (50.8x25.4mm); TT, Z-Perform 2000T, Value Coated, Permanent Adhesive, 1in (25.4mm) core", "precio": 13, "marca": "ZEBRA"},
+        {"nombre": "10010028", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS DESKTOP TD 2INX1IN Z-PERFORM", "precio": 15, "marca": "ZEBRA"},
+        {"nombre": "10006995K", "descripcion": "BRAZALETE POLIPROPILENO 1X11I 1X11IN 25.4X279.4MM 6/BOX", "precio": 389, "marca": "ZEBRA"},
+        {"nombre": "800077-742", "descripcion": "ZEBRA IX SERIES 7 COLOR RIBB YMCKO 750 IMPRESIONES", "precio": 146, "marca": "ZEBRA"},
+        {"nombre": "800033-840", "descripcion": "ZEBRA IX SERIES COLOR RIBBON FOR ZXP3 YMCKO 200 IMAGES", "precio": 47, "marca": "ZEBRA"},
+        {"nombre": "800011-140", "descripcion": "ZEBRA LOAD-N-GO SERIES 1 YMCKO 100 IMPRESIONES", "precio": 35, "marca": "ZEBRA"},
+        {"nombre": "800033-848", "descripcion": "ZEBRA IX SERIES COLOR RIBBON FOR ZXP3 YMCKOK 165 IMAGES", "precio": 63, "marca": "ZEBRA"},
+        {"nombre": "800033-340", "descripcion": "ZEBRA IX SERIES COLOR RIBBON ZXP3 YMCKO 280 IMAGES", "precio": 61, "marca": "ZEBRA"},
+        {"nombre": "10010034", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS DESKTOP TD 4INX6IN Z-Perform 2000D", "precio": 17, "marca": "ZEBRA"},
+        {"nombre": "800300-360LA", "descripcion": "RIBBON, COLOR-YMCKOK 200 IMAGES, ZC300, LA", "precio": 68, "marca": "ZEBRA"},
+        {"nombre": "05319GS11007", "descripcion": "ZEBRA 1 RIBBON CERA 110MMX74MTS FORM 5319 DESKTOP", "precio": 7, "marca": "ZEBRA"},
+        {"nombre": "10018340", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS TABLETO TT 4INX6IN Z-PERFORM", "precio": 17, "marca": "ZEBRA"},
+        {"nombre": "10000281", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS TABLETO TT 4INX6IN Z-PERFORM", "precio": 20, "marca": "ZEBRA"},
+        {"nombre": "10009528", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS DESKTOP TT 3INX1IN Z-Select 4000T", "precio": 18, "marca": "ZEBRA"},
+        {"nombre": "10010029", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS DESKTOP TD 3INX2IN Z-PERFORM", "precio": 19, "marca": "ZEBRA"},
+        {"nombre": "10005851", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS DESKTOP TT 4INX2IN Z-PERFORM", "precio": 17, "marca": "ZEBRA"},
+        {"nombre": "ZC31-000CQ00LA00", "descripcion": "QUICK CARD BUNDLE ZC300 SINGLE SIDE, SOFTWARE, 200 PVC CARD, YMCKO", "precio": 1429, "marca": "ZEBRA"},
+        {"nombre": "10010032", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS DESKTOP TD 4INX3IN Z-Perform", "precio": 19, "marca": "ZEBRA"},
+        {"nombre": "05095GS06407", "descripcion": "ZEBRA 1 RIBBON RESINA 64mmx74m (2.52inx242ft), 5095; High Performance, 12mm (0.5in) core, Desktop", "precio": 8, "marca": "ZEBRA"},
+        {"nombre": "800300-562LA", "descripcion": "ZEBRA ZC300 COLOR RIBB YMCPKO 200 IMPRESIONES", "precio": 52, "marca": "ZEBRA"},
+        {"nombre": "06000BK11045", "descripcion": "ZEBRA 1 RIBBON CERA 0mmx450m (4.33inx1476ft), 6000; Wax, 25mm (1in)core; Tabletop", "precio": 12, "marca": "ZEBRA"},
+        {"nombre": "05095GS11007", "descripcion": "ZEBRA1 RIBBON RESINA 110mmx74m (4.33inx242ft), 5095; High Performance, 12mm (0.5in) core, Desktop", "precio": 13, "marca": "ZEBRA"},
+        {"nombre": "10000286", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS TABLETO TT 3INX2IN Z-PERFORM", "precio": 18, "marca": "ZEBRA"},
+        {"nombre": "800085-918", "descripcion": "LAMINADOR PARA REVERSO ZXP7", "precio": 99, "marca": "ZEBRA"},
+        {"nombre": "10000285", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS TABLETO TT 4INX2IN Z-PERFORM", "precio": 22, "marca": "ZEBRA"},
+        {"nombre": "10005852", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS DESKTOP TT 4INX3IN Z-PERFORM", "precio": 16, "marca": "ZEBRA"},
+        {"nombre": "800012-601", "descripcion": "ZEBRA I SERIES TRANSFER FILM 1250 IMAGES (SINGLE-SIDED)", "precio": 117, "marca": "ZEBRA"},
+        {"nombre": "05319GS06407", "descripcion": "ZEBRA 1 RIBBON CERA 64mmx74m (2.52inx242ft), 5319; Performance, 12mm (0.5in) core, Desktop", "precio": 4, "marca": "ZEBRA"},
+        {"nombre": "105999-311-01", "descripcion": "CLEANING CARD KIT,ZC 100/300 5 CARDS", "precio": 30, "marca": "ZEBRA"},
+        {"nombre": "10010033", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS DESKTOP TD 4INX4IN Z-Perform 2000D", "precio": 22, "marca": "ZEBRA"},
+        {"nombre": "10005853", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS DESKTOP TT 4INX6IN Z-PERFORM", "precio": 12, "marca": "ZEBRA"},
+        {"nombre": "ZC11-0000Q00LA00", "descripcion": "QUICK BUNDLE ZC100 SINGLE SIDED CARDSTUDIO 2.0, 200 PVC CARD YMCKO", "precio": 1072, "marca": "ZEBRA"},
+        {"nombre": "800300-301", "descripcion": "RIBBON MONO -BLACK 2000 IMAGES ZC100/ZC300, LA", "precio": 30, "marca": "ZEBRA"},
+        {"nombre": "02000BK08345", "descripcion": "ZEBRA 1 RIBBON CERA 83mmx450m (3.27inx1476ft), 2000; Standard, 25mm (1in) core, Tabletop", "precio": 11, "marca": "ZEBRA"},
+        {"nombre": "800077-749", "descripcion": "ZEBRA IX SERIES 7 COLOR RIBB YMCKOK 750 IMPRESIONES", "precio": 236, "marca": "ZEBRA"},
+        {"nombre": "800085-914", "descripcion": "LAM,1MIL,CLEAR,TOP,ZXP 7,750 PATCH", "precio": 98, "marca": "ZEBRA"},
+        {"nombre": "01600BK15645", "descripcion": "ZEBRA CINTA CERA RESINA 110mmx450m (4.33inx1476ft) 5586; Premium, 25mm (1in) , Tabletop", "precio": 12, "marca": "ZEBRA"},
+        {"nombre": "104523-010", "descripcion": "PAQUETE 500 TARJETAS ADESIVAS 10MILESIMA", "precio": 254, "marca": "ZEBRA"},
+        {"nombre": "10026382", "descripcion": "ZEBRA 1 ROLLO ETIQUETA DESKTOP TD 4X6IN Z PERFORM 1000D", "precio": 13, "marca": "ZEBRA"},
+        {"nombre": "800033-348", "descripcion": "ZEBRA IX SERIES HIGH CAPACITY COLOR RIBBON FOR ZXP", "precio": 80, "marca": "ZEBRA"},
+        {"nombre": "03200BK11045", "descripcion": "ZEBRA RIBBON CERA RESINA 110mmx450m (4.33inx1476ft), 3200; High Performance, 25mm (1in) core, Tabletop", "precio": 37, "marca": "ZEBRA"},
+        {"nombre": "800077-740", "descripcion": "ZEBRA IX SERIES 7 COLOR RIBB YMCKO 250 IMPRESIONES", "precio": 77, "marca": "ZEBRA"},
+        {"nombre": "06000GS06407", "descripcion": "ZEBRA 1 RIBBON CERA 64mmx70m (2.52inx229ft), 6000; Standard, 12mm (0.5in) core, Desktop", "precio": 3, "marca": "ZEBRA"},
+        {"nombre": "10000284", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS TABLETO TT 4INX3IN Z-PERFORM", "precio": 23, "marca": "ZEBRA"},
+        {"nombre": "10007008", "descripcion": "ZEBRA 1 ROLLO PAPEL TD 3.125IN Z-PERFORM 1000D PARA KIOSCO", "precio": 20, "marca": "ZEBRA"},
+        {"nombre": "03200GS08407", "descripcion": "ZEBRA CINTA CERA RESINA 84mmx74m (3.31inx242ft)3200; High Performance, 12mm (0.5in) core, Desktop", "precio": 6, "marca": "ZEBRA"},
+        {"nombre": "06200GS11007", "descripcion": "ZEBRA CINTA RESINA 110mmx74m (4.33inx242ft), 6200; 12mm (0.5in) core; Desktop", "precio": 9, "marca": "ZEBRA"},
+        {"nombre": "800077-748", "descripcion": "ZEBRA IX SERIES 7 COLOR RIBB YMCKOK 250 IMPRESIONES", "precio": 134, "marca": "ZEBRA"},
+        {"nombre": "10003051", "descripcion": "ZEBRA 1 ROLLO ETIQUETA TABLETOP TD 4X2IN Z-PERFORM 1000D", "precio": 26, "marca": "ZEBRA"},
+        {"nombre": "800300-264LA", "descripcion": "ZEBRA ZC300 COLOR RIBB SDYMCKO 200 IMPRESIONES", "precio": 73, "marca": "ZEBRA"},
+        {"nombre": "ZC31-000C000LA00", "descripcion": "IMPRE DE TARJETAS ZC300 SINGLE SIDE, USB, RED", "precio": 1250, "marca": "ZEBRA"},
+        {"nombre": "105999-302", "descripcion": "KIT DE LIMPIEZA PARA ZXP SERIE 3", "precio": 35, "marca": "ZEBRA"},
+        {"nombre": "10000290", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS TABLETO TD 4INX6IN Z-PERFORM", "precio": 32, "marca": "ZEBRA"},
+        {"nombre": "10000283", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS TABLETO TT 4INX4IN Z-PERFORM", "precio": 24, "marca": "ZEBRA"},
+        {"nombre": "800011-101", "descripcion": "RIBBON NEGRO PARA ZXP1 1000 IMAGENES", "precio": 33, "marca": "ZEBRA"},
+        {"nombre": "03200GS11007", "descripcion": "ZEBRA RIBBON CERA RESINA110mmx74m (4.33inx242ft), 3200; High Performance, 12mm (0.5in) core, Desktop", "precio": 7, "marca": "ZEBRA"},
+        {"nombre": "10000288", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS TABLET TT 2INX1IN Z-PERFORM", "precio": 13, "marca": "ZEBRA"},
+        {"nombre": "06100GS11007", "descripcion": "ZEBRA RIBBON CERA RESINA 110mmx74m (4.33inx242ft), 6100; Wax/Resin, 12mm (0.5in) core, Desktop", "precio": 6, "marca": "ZEBRA"},
+        {"nombre": "17154", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS DESKTOP 2X1IN POLYPRO 3000T", "precio": 31, "marca": "ZEBRA"},
+        {"nombre": "800300-563LA", "descripcion": "ZEBRA ZC300 COLOR RIBB YMCKLL 200 IMPRESIONES", "precio": 65, "marca": "ZEBRA"},
+        {"nombre": "800012-480", "descripcion": "ZEBRA I SERIES COLOR RIBBON PANEL YMCKK, 500 IMAGES", "precio": 212, "marca": "ZEBRA"},
+        {"nombre": "10010047", "descripcion": "ZEBRA 1 ROLLO ETIQUETAS DESKTOP TD 4INX2IN Z-Select", "precio": 31, "marca": "ZEBRA"},
+        {"nombre": "05095BK06045", "descripcion": "ZEBRA 1 RIBBON RESINA 60mmx450m (2.36inx1476ft), 5095; High Performance, 25mm (1in) core, Tabletop", "precio": 39, "marca": "ZEBRA"},
+        {"nombre": "10006224", "descripcion": "ZEBRA 1 ROLLO PAPEL TD 4in x 100ft (101.6mm x 30.5m) 75mm core Z-PERFORM 1000D", "precio": 4, "marca": "ZEBRA"},
+        {"nombre": "10018351", "descripcion": "ZEBRA 1 ROLLO ETIQUETA TABLETOP TT 4X2IN Z PERFORM 1500T", "precio": 22, "marca": "ZEBRA"},
+        {"nombre": "10026380", "descripcion": "ZEBRA 1 ROLLO ETIQUETA DESKTOP TD 4X3IN Z PERFORM 1000D", "precio": 14, "marca": "ZEBRA"},
+        {"nombre": "02000BK10245", "descripcion": "ZEBRA 1 RIBBON CERA 102mmx450m (4.02inx1476ft), 2000; Standard, 25mm (1in) core; Tabletop", "precio": 15, "marca": "ZEBRA"},
+        {"nombre": "02000BK10245", "descripcion": "ZEBRA 1 RIBBON CERA 102mmx450m (4.02inx1476ft), 2000; Standard, 25mm (1in) core; Tabletop", "precio": 15, "marca": "ZEBRA"},
+        {"nombre": "02000BK06045", "descripcion": "ZEBRA 1 RIBBON CERA 60mmx450m (2.36inx1476ft), 2000; Standard, 25mm (1in) core, Tabletop", "precio": 9, "marca": "ZEBRA"},
+        {"nombre": "05095BK08345", "descripcion": "ZEBRA RIBBON RESINA83mmx450m (3.27inx1476ft), 5095; High Performance, 25mm (1in) core, Tabletop", "precio": 52, "marca": "ZEBRA"},
+        {"nombre": "10014013", "descripcion": "ZEBRA 1 ROLLO ETIQUETA TABLETOP TT 4X8IN Z-PERFORM 2000T", "precio": 23, "marca": "ZEBRA"},
+        {"nombre": "05319GS08407", "descripcion": "ZEBRA 1 RIBBON CERA 84mmx74m (3.31inx242ft), 5319; Performance, 12mm (0.5in) core, Desktop", "precio": 6, "marca": "ZEBRA"},
+        {"nombre": "800300-250LA", "descripcion": "Cinta Zebra Sublimación, Transferencia térmica - YMCKO - Original", "precio": 43, "marca": "ZEBRA"},
+        {"nombre": "02000BK15645", "descripcion": "ZEBRA 1 RIBBON CERA 156mmx450m (6.14inx1476ft), 2000; Standard, 25mm (1in) core,Tabletop", "precio": 21, "marca": "ZEBRA"},
+        {"nombre": "10000301", "descripcion": "ZEBRA 1 ROLLO ETIQUETA TABLETOP TD 4X6IN Z PERFORM 1000D", "precio": 22, "marca": "ZEBRA"},
+        {"nombre": "800012-445", "descripcion": "Cinta Zebra Sublimación - YMCK - 1 - Sublimación - 1 Paquete(s)", "precio": 209, "marca": "ZEBRA"},
+        {"nombre": "104523-111", "descripcion": "Tarjeta de identificación Zebra Premier - Imprimible - 53.85mm x 85.85mm Longitud - Blanco - Cloruro de Polivinilo (PVC) - 500 Paquete", "precio": 58, "marca": "ZEBRA"},
+        {"nombre": "ZD22042-D01G00EZ", "descripcion": "Impresora térmica directa Zebra ZD220 - Monocromo - 203 dpi - 104mm (4.09\") Ancho de Impresión", "precio": 296, "marca": "ZEBRA"},
+        {"nombre": "ZC32-000CQ00LA00", "descripcion": "QUICK CARD BUNDLE ZC300 DUAL SIDE SOFTWARE, 200 PVC CARD, YMCKOK", "precio": 1658, "marca": "ZEBRA"},
+        {"nombre": "ZC11-0000000LA00", "descripcion": "IMPRE DE TARJETAS ZEBRA ZC100 SINGLE SIDE USB", "precio": 993, "marca": "ZEBRA"},
+        {"nombre": "ZC32-000C000LA00", "descripcion": "IMPRE DE TARJETAS ZEBRA ZC300 DUAL SIDE USB", "precio": 1593, "marca": "ZEBRA"},
+        {"nombre": "ZD4A042-301M00EZ", "descripcion": "Impresora de transferencia térmica Zebra ZD421 - Monocromo - 203 dpi - 104mm (4.09\") Ancho de Impresión", "precio": 478, "marca": "ZEBRA"},
+        {"nombre": "ZD22042-T01G00EZ", "descripcion": "Impresora de transferencia térmica Zebra ZD220 - Monocromo - 203 dpi - 104mm (4.09\") Ancho de Impresión", "precio": 360, "marca": "ZEBRA"},
+        {"nombre": "ZD4A042-D01M00EZ", "descripcion": "Impresora térmica directa Zebra ZD421 - Monocromo - 203 dpi - 104mm (4.09\") Ancho de Impresión", "precio": 416, "marca": "ZEBRA"},
+        {"nombre": "DS2278-SR7U2100PRW", "descripcion": "ZEBRA LECTOR INALAMBRICO 1D/2D KIT USB DS2278-SR", "precio": 259, "marca": "ZEBRA"},
+        {"nombre": "DS4608-SR7U2100SGW", "descripcion": "Lector de Código de Barras ZEBRA DS4608-SR7U2100SGW", "precio": 218, "marca": "ZEBRA"},
+        {"nombre": "BTRY-MC9X-26MA-01", "descripcion": "BATERIA REPUESTO ZEBRA BTRY-MC9X-26MA-01", "precio": 108, "marca": "ZEBRA"},
+        {"nombre": "LI4278-TRBU0100ZLR", "descripcion": "ZEBRA Lector Inalámbrico KIT LI4278-SR", "precio": 331, "marca": "ZEBRA"},
+        {"nombre": "KT-TC15-ROLATAM", "descripcion": "Kit Computadora móvil ZEBRA TC15 ( KT-TC15-ROLATAM ) Pantalla tactil 6.5 pulgadas HD+, 720 x 1600, 450 NITS; multitáctil. Batería estándar de 5000 mAh/19,3\"", "precio": 608, "marca": "ZEBRA"},
+        {"nombre": "ZT23142-T01000FZ", "descripcion": "Zebra ZT231 Impresora de Etiquetas, Transferencia Térmica, 203 x 203 DPI, Bluetooth, Ethernet/USB", "precio": 1429, "marca": "ZEBRA"},
+        {"nombre": "ZT41142-T010000Z", "descripcion": "Zebra ZT411, Impresora de Etiquetas, Transferencia térmica, 203 x 203DPI, USB, Serial, Ethernet, Bluetooth, Negro/Gris — Requiere Cinta de Impresión", "precio": 2215, "marca": "ZEBRA"},
+        {"nombre": "ZT23142-D01000FZ", "descripcion": "Zebra ZT231 Impresora de Etiquetas, Térmica Directa, 203 x 203 DPI, Bluetooth, Ethernet/USB", "precio": 1333, "marca": "ZEBRA"},
+        {"nombre": "ZT23143-T01000FZ", "descripcion": "Zebra ZT231, Impresora de Etiquetas, Transferencia Térmica, 300 x 300DPI, USB, Serial, Ethernet, USB Host, Negro — Requiere Cinta de Impresión", "precio": 1929, "marca": "ZEBRA"},
+        {"nombre": "ZD4A022-D01E00EZ", "descripcion": "Zebra ZD411 Impresora de Etiquetas, Térmica Directa, 203 x 203DPI, USB/USB Host/Ethernet/Bluetooth/WIFi, Negro", "precio": 572, "marca": "ZEBRA"},
+        # PANDUIT
+        {"nombre": "Patch Panel CAT6", "descripcion": "Patch panel de 24 puertos, categoría 6", "precio": 4, "marca": "PANDUIT"},
+        {"nombre": "Cable UTP CAT6", "descripcion": "Bobina de cable UTP categoría 6, 305m", "precio": 8, "marca": "PANDUIT"},
+        # APC
+        {"nombre": "UPS BR1500MS", "descripcion": "Sistema de alimentación ininterrumpida 1500VA", "precio": 18, "marca": "APC"},
+        {"nombre": "Rack 42U", "descripcion": "Gabinete rack de 42 unidades", "precio": 35, "marca": "APC"},
+        # AVIGILION
+        {"nombre": "Cámara H4A-D1", "descripcion": "Cámara domo IP de 5MP con analíticas", "precio": 30, "marca": "AVIGILION"},
+        {"nombre": "NVR 8-Port", "descripcion": "Grabador de video en red de 8 canales", "precio": 48, "marca": "AVIGILION"},
+        # GENETEC
+        {"nombre": "Security Center Pro", "descripcion": "Licencia base para Security Center Pro", "precio": 125, "marca": "GENETEC"},
+        {"nombre": "Módulo LPR", "descripcion": "Módulo de reconocimiento de matrículas", "precio": 40, "marca": "GENETEC"},
+        # AXIS
+        {"nombre": "Cámara P3374-LV", "descripcion": "Cámara domo fija de 3MP con IR", "precio": 23, "marca": "AXIS"},
+        {"nombre": "Codificador M7011", "descripcion": "Codificador de video de 1 canal", "precio": 9, "marca": "AXIS"},
+        # CISCO
+        {"nombre": "Switch Catalyst 2960", "descripcion": "Switch de red Gigabit Ethernet de 24 puertos", "precio": 55, "marca": "CISCO"},
+        {"nombre": "Router ISR 4331", "descripcion": "Router de servicios integrados", "precio": 90, "marca": "CISCO"},
+    ]
+
     context = {
         'form': form,
-        'cliente_seleccionado': cliente_seleccionado, # Pass the client object if it comes from the URL
-        'clientes_data_json': json.dumps(clientes_data_json), # Pass the JSON of clients for JS
-        'cliente_id_inicial': cliente_id, # Pass the initial ID for JS to pre-select
+        'cliente_seleccionado': cliente_seleccionado,
+        'clientes_data_json': json.dumps(clientes_data_json),
+        'cliente_id_inicial': cliente_id,
+        'productos_data_json': json.dumps(PRODUCTOS_DATA),
     }
     return render(request, 'crear_cotizacion.html', context)
 
@@ -1175,7 +1179,6 @@ def generate_cotizacion_pdf(request, cotizacion_id):
     cotizacion = get_object_or_404(Cotizacion, pk=cotizacion_id)
     print(f"DEBUG: Quote found: {cotizacion.id} - Quote Type: {cotizacion.tipo_cotizacion}")
     
-    # Ensure that the user has permission to view this quote
     if not is_supervisor(request.user) and cotizacion.created_by != request.user:
         print(f"DEBUG: Access denied for user {request.user.username} to quote {cotizacion.id}")
         return HttpResponse("Access denied.", status=403)
@@ -1183,12 +1186,9 @@ def generate_cotizacion_pdf(request, cotizacion_id):
     detalles_cotizacion = DetalleCotizacion.objects.filter(cotizacion=cotizacion)
     print(f"DEBUG: Quote details found: {detalles_cotizacion.count()}")
 
-    # Calculate IVA as a percentage to display in the PDF
-    # cotizacion.iva_rate is already the decimal value (e.g., 0.08 or 0.16)
     iva_rate_percentage = (cotizacion.iva_rate * Decimal('100')).quantize(Decimal('1'))
     print(f"DEBUG: IVA rate: {iva_rate_percentage}%")
 
-    # --- Get the name for the PDF ---
     pdf_name_raw = ""
     if hasattr(cotizacion, 'nombre_cotizacion') and cotizacion.nombre_cotizacion:
         pdf_name_raw = cotizacion.nombre_cotizacion
@@ -1204,14 +1204,13 @@ def generate_cotizacion_pdf(request, cotizacion_id):
         pdf_name = f"Cotizacion_{cotizacion.id}"
     print(f"DEBUG: PDF file name: {pdf_name}.pdf")
 
-    # --- Logic to handle logo and company information based on quote type ---
     tipo_cotizacion = cotizacion.tipo_cotizacion 
     logo_base64 = ""
     company_name = ""
     company_address = ""
     company_phone = ""
     company_email = ""
-    template_name = 'cotizacion_pdf_template.html' # Default template
+    template_name = 'cotizacion_pdf_template.html'
 
     if tipo_cotizacion and tipo_cotizacion.lower() == 'iamet':
         template_name = 'iamet_cotizacion_pdf_template.html'
@@ -1221,7 +1220,7 @@ def generate_cotizacion_pdf(request, cotizacion_id):
         company_email = 'contacto@iamet.com'
         logo_base64 = ""
         print(f"DEBUG: Configuration for IAMET. Using template: {template_name}")
-    else: # Default to Bajanet
+    else:
         template_name = 'cotizacion_pdf_template.html'
         company_name = 'BAJANET S.A. de C.V.'
         company_address = 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México'
@@ -1272,9 +1271,6 @@ def generate_cotizacion_pdf(request, cotizacion_id):
     return response
 
 
-from django.contrib.auth.models import User
-from django.contrib.auth.decorators import user_passes_test
-
 def supervisor_required(view_func):
     decorated_view_func = login_required(user_passes_test(is_supervisor)(view_func))
     return decorated_view_func
@@ -1286,27 +1282,21 @@ def reporte_usuarios(request):
 
 @supervisor_required
 def perfil_usuario(request, usuario_id):
-    from datetime import date
     usuario = get_object_or_404(User, id=usuario_id)
     oportunidades = TodoItem.objects.filter(usuario=usuario).select_related('cliente')
 
     today = date.today()
     mes_actual = str(today.month).zfill(2)
-    # Oportunidades del mes actual
     oportunidades_mes = oportunidades.filter(mes_cierre=mes_actual)
 
-    # Oportunidad más grande (1-99% probabilidad, cualquier mes)
     oportunidad_mayor = oportunidades.filter(probabilidad_cierre__gte=1, probabilidad_cierre__lte=99).order_by('-monto').first()
 
-    # Total cobrado del mes actual (probabilidad 100%)
     oportunidades_cobradas_mes = oportunidades_mes.filter(probabilidad_cierre=100)
     monto_total_cobrado_mes = oportunidades_cobradas_mes.aggregate(suma=Sum('monto'))['suma'] or 0
 
-    # Oportunidades por cobrar del mes actual (probabilidad > 70% y < 100%)
     oportunidades_por_cobrar_mes = oportunidades_mes.filter(probabilidad_cierre__gt=70, probabilidad_cierre__lt=100)
     monto_total_por_cobrar_mes = oportunidades_por_cobrar_mes.aggregate(suma=Sum('monto'))['suma'] or 0
 
-    # Oportunidades creadas en el mes actual (año y mes actual)
     oportunidades_creadas_mes = oportunidades.filter(fecha_creacion__year=today.year, fecha_creacion__month=today.month)
     oportunidades_creadas_mes_count = oportunidades_creadas_mes.count()
 
@@ -1396,10 +1386,6 @@ def cotizaciones_por_cliente_view(request, cliente_id):
     })
 
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
-from .models import Cliente
-from django.contrib.auth.models import User
 
 @csrf_exempt
 @login_required
@@ -1412,7 +1398,6 @@ def crear_cliente_api(request):
         asignado_a_id = request.POST.get('asignado_a')
         if not nombre_empresa or not contacto:
             return JsonResponse({'error': 'Faltan campos obligatorios'}, status=400)
-        # Si el usuario es supervisor o superuser puede asignar, si no, se asigna a sí mismo
         if user.is_superuser or is_supervisor(user):
             if asignado_a_id:
                 try:
@@ -1432,10 +1417,6 @@ def crear_cliente_api(request):
         return JsonResponse({'ok': True, 'cliente_id': cliente.id})
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
-from .models import TodoItem
 
 @login_required
 def oportunidad_detalle_api(request, id):
@@ -1504,14 +1485,12 @@ def importar_oportunidades(request):
         created_count = 0
         errors = []
 
-        # Mapeo de nombres de meses a números de dos dígitos
         MONTH_MAPPING = {
             "enero": "01", "febrero": "02", "marzo": "03", "abril": "04",
             "mayo": "05", "junio": "06", "julio": "07", "agosto": "08",
             "septiembre": "09", "octubre": "10", "noviembre": "11", "diciembre": "12"
         }
 
-        # Columnas de producto (deben coincidir con los choices de TodoItem.PRODUCTO_CHOICES)
         PRODUCT_COLUMNS = [
             "zebra", "panduit", "apc", "avigilon", "genetec", "axis",
             "desarrollo_app", "runrate", "poliza", "cisco"
@@ -1523,18 +1502,15 @@ def importar_oportunidades(request):
                 area = row_data.get('area', '')
                 contacto = row_data.get('contacto', '')
 
-                # Encontrar el producto y el monto/mes de cierre
                 producto = None
                 monto = Decimal('0.00')
                 mes_cierre = None
 
-                # Buscar el producto en las columnas de producto
                 for prod_col in PRODUCT_COLUMNS:
                     if row_data.get(prod_col) and row_data.get(prod_col).strip() != '':
-                        producto = row_data[prod_col].strip().upper() # Convertir a mayúsculas para coincidir con choices
+                        producto = row_data[prod_col].strip().upper()
                         break
                 
-                # Buscar el monto y mes de cierre en las columnas de meses
                 for month_name, month_num in MONTH_MAPPING.items():
                     if row_data.get(month_name) and row_data.get(month_name).strip() != '':
                         try:
@@ -1542,9 +1518,8 @@ def importar_oportunidades(request):
                             mes_cierre = month_num
                             break
                         except (ValueError, TypeError):
-                            pass # Ignorar si el monto no es un número válido
+                            pass
 
-                # Validaciones básicas
                 if not oportunidad_nombre:
                     errors.append(f"Fila con oportunidad vacía: {row_data}")
                     continue
@@ -1555,9 +1530,6 @@ def importar_oportunidades(request):
                     errors.append(f"Fila '{oportunidad_nombre}': Mes de cierre o monto no especificado/inválido.")
                     continue
                 
-                # Asegurarse de que el producto y el área sean válidos según los choices del modelo
-                # Esto requiere importar TodoItem y sus CHOICES
-                # from .models import TodoItem
                 if producto not in dict(TodoItem.PRODUCTO_CHOICES).keys():
                     errors.append(f"Fila '{oportunidad_nombre}': Producto '{producto}' no es un valor válido.")
                     continue
@@ -1571,9 +1543,9 @@ def importar_oportunidades(request):
                     contacto=contacto,
                     producto=producto,
                     monto=monto,
-                    probabilidad_cierre=100, # Por defecto 100% para oportunidades importadas
+                    probabilidad_cierre=100,
                     mes_cierre=mes_cierre,
-                    usuario=request.user, # Asignar al usuario que realiza la importación
+                    usuario=request.user,
                     cliente=cliente
                 )
                 created_count += 1
@@ -1586,6 +1558,5 @@ def importar_oportunidades(request):
         else:
             return JsonResponse({'success': True, 'message': f'Se importaron {created_count} oportunidades exitosamente.'})
 
-    # Para peticiones GET, simplemente renderiza la plantilla
     clientes = Cliente.objects.all().order_by('nombre_empresa')
     return render(request, 'importar_oportunidades.html', {'clientes': clientes})

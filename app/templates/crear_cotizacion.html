@@ -247,7 +247,8 @@
                     <table class="product-table">
                         <thead>
                             <tr>
-                                <th class="w-1/12">Partida</th> <!-- Nueva columna para el número de partida -->
+                                <th class="w-1/12">Partida</th>
+                                <th class="w-1/6">Marca</th>
                                 <th class="w-1/5">Nombre del Producto</th>
                                 <th class="w-2/5">Descripción</th>
                                 <th class="w-1/12">Cantidad</th>
@@ -257,7 +258,7 @@
                                     <button type="button" onclick="toggleDiscountColumn()" class="text-red-400 hover:text-red-600 font-bold ml-2" title="Ocultar columna de descuento">&times;</button>
                                 </th>
                                 <th class="w-1/12">Total</th>
-                                <th class="w-8"></th> <!-- Columna para el botón de eliminar -->
+                                <th class="w-8"></th>
                             </tr>
                         </thead>
                         <tbody id="productos-tbody">
@@ -317,38 +318,33 @@
 
     <script>
         let rowCounter = 0;
-        // Parse the clients data passed from Django
         const clientesData = JSON.parse('{{ clientes_data_json|escapejs }}');
-        const clienteIdInicial = '{{ cliente_id_inicial|default:"" }}'; // Get initial client ID if provided
+        const clienteIdInicial = '{{ cliente_id_inicial|default:"" }}';
+        const productosData = JSON.parse('{{ productos_data_json|escapejs }}');
 
         function toggleDiscountColumn() {
-    const isVisible = document.getElementById('descuento_visible').value === 'true';
-    const newVisibility = !isVisible;
-    document.getElementById('descuento_visible').value = newVisibility;
+            const isVisible = document.getElementById('descuento_visible').value === 'true';
+            const newVisibility = !isVisible;
+            document.getElementById('descuento_visible').value = newVisibility;
 
-    // Toggle header
-    document.getElementById('descuento-header').style.display = newVisibility ? '' : 'none';
+            document.getElementById('descuento-header').style.display = newVisibility ? '' : 'none';
 
-    // Toggle cells in each row
-    document.querySelectorAll('.descuento-cell').forEach(cell => {
-        cell.style.display = newVisibility ? '' : 'none';
-    });
+            document.querySelectorAll('.descuento-cell').forEach(cell => {
+                cell.style.display = newVisibility ? '' : 'none';
+            });
 
-    // Toggle buttons
-    document.getElementById('show-discount-btn').style.display = newVisibility ? 'none' : 'inline-block';
-    document.querySelector('#descuento-header button').style.display = newVisibility ? 'inline-block' : 'none';
+            document.getElementById('show-discount-btn').style.display = newVisibility ? 'none' : 'inline-block';
+            document.querySelector('#descuento-header button').style.display = newVisibility ? 'inline-block' : 'none';
 
-    // If hiding, set all discounts to 0 and recalculate
-    if (!newVisibility) {
-        document.querySelectorAll('input[id^="descuento_"]').forEach(input => {
-            input.value = 0;
-        });
-        calculateTotals();
-    }
-}
+            if (!newVisibility) {
+                document.querySelectorAll('input[id^="descuento_"]').forEach(input => {
+                    input.value = 0;
+                });
+                calculateTotals();
+            }
+        }
 
-// Function to add a new product row to the table
-        function addRow(productName = '', description = '', quantity = 1, price = 0, discount = 0) {
+        function addRow(productName = '', description = '', quantity = 1, price = 0, discount = 0, brand = '') {
             rowCounter++;
             const rowId = `row-${rowCounter}`;
             const tbody = document.getElementById('productos-tbody');
@@ -356,9 +352,26 @@
             const newRow = document.createElement('tr');
             newRow.id = rowId;
             newRow.innerHTML = `
-                <td>${rowCounter}</td> <!-- Celda para el número de partida -->
-                <td><input type="text" id="nombre_producto_${rowCounter}" name="productos[${rowCounter}][nombre]" class="input-field" placeholder="Nombre del producto" value="${productName}" oninput="calculateTotals()"></td>
-                <td><textarea id="descripcion_producto_${rowCounter}" name="productos[${rowCounter}][descripcion]" class="textarea-field" placeholder="Descripción detallada del producto" oninput="calculateTotals()">${description}</textarea></td>
+                <td>${rowCounter}</td>
+                <td>
+                    <select id="marca_producto_${rowCounter}" name="productos[${rowCounter}][marca]" class="input-field" onchange="filterProducts(this.value, ${rowCounter})">
+                        <option value="">Todas</option>
+                        <option value="ZEBRA">ZEBRA</option>
+                        <option value="APC">APC</option>
+                        <option value="PANDUIT">PANDUIT</option>
+                        <option value="AVIGILION">AVIGILION</option>
+                        <option value="CISCO">CISCO</option>
+                        <option value="GENETEC">GENETEC</option>
+                        <option value="AXIS">AXIS</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="text" id="nombre_producto_${rowCounter}" name="productos[${rowCounter}][nombre]" class="input-field" list="datalist_producto_${rowCounter}" oninput="updateProductDetails(${rowCounter})" placeholder="Escriba para buscar...">
+                    <datalist id="datalist_producto_${rowCounter}">
+                        <!-- Options will be populated by JavaScript -->
+                    </datalist>
+                </td>
+                <td><textarea id="descripcion_producto_${rowCounter}" name="productos[${rowCounter}][descripcion]" class="textarea-field" placeholder="Descripción detallada del producto">${description}</textarea></td>
                 <td><input type="number" id="cantidad_${rowCounter}" name="productos[${rowCounter}][cantidad]" class="input-field" value="${quantity}" min="1" oninput="calculateTotals()"></td>
                 <td><input type="number" id="precio_${rowCounter}" name="productos[${rowCounter}][precio]" class="input-field" value="${price}" min="0" step="0.01" oninput="calculateTotals()"></td>
                 <td class="descuento-cell"><input type="number" id="descuento_${rowCounter}" name="productos[${rowCounter}][descuento]" class="input-field" style="width:60px; min-width:40px; font-size:0.9rem; padding:0.3rem 0.4rem; text-align:center;" value="${discount}" min="0" max="100" oninput="calculateTotals()"></td>
@@ -369,32 +382,68 @@
             `;
             tbody.appendChild(newRow);
 
-    // Ensure the new row's discount cell visibility matches the current state
-    const isDiscountVisible = document.getElementById('descuento_visible').value === 'true';
-    if (!isDiscountVisible) {
-        newRow.querySelector('.descuento-cell').style.display = 'none';
-    }
+            document.getElementById(`marca_producto_${rowCounter}`).value = brand;
+            filterProducts(brand, rowCounter);
+            
+            if (productName) {
+                document.getElementById(`nombre_producto_${rowCounter}`).value = productName;
+            }
 
-    calculateTotals(); // Recalculate totals when adding a row
+            const isDiscountVisible = document.getElementById('descuento_visible').value === 'true';
+            if (!isDiscountVisible) {
+                newRow.querySelector('.descuento-cell').style.display = 'none';
+            }
+
+            calculateTotals();
         }
 
-        // Function to remove a product row
+        function filterProducts(brand, rowId) {
+            const datalist = document.getElementById(`datalist_producto_${rowId}`);
+            datalist.innerHTML = ''; // Clear previous options
+
+            const filteredProducts = brand ? productosData.filter(p => p.marca === brand) : productosData;
+
+            filteredProducts.forEach(product => {
+                const option = document.createElement('option');
+                option.value = product.nombre;
+                datalist.appendChild(option);
+            });
+        }
+
+        function updateProductDetails(rowId) {
+            const productNameInput = document.getElementById(`nombre_producto_${rowId}`);
+            const selectedProductName = productNameInput.value;
+            const product = productosData.find(p => p.nombre.toLowerCase() === selectedProductName.toLowerCase());
+
+            const descriptionInput = document.getElementById(`descripcion_producto_${rowId}`);
+            const priceInput = document.getElementById(`precio_${rowId}`);
+
+            if (product) {
+                descriptionInput.value = product.descripcion;
+                priceInput.value = product.precio;
+            } else {
+                // If no exact match, do not clear the description and price, 
+                // allowing for custom entries.
+            }
+
+            calculateTotals();
+        }
+
         function removeRow(id) {
             const row = document.getElementById(id);
             if (row) {
                 row.remove();
-                calculateTotals(); // Recalculate totals when removing a row
+                calculateTotals();
             }
         }
 
-        // Function to calculate totals (subtotal, IVA, total)
         function calculateTotals() {
             let subtotal = 0;
             const currency = document.getElementById('currency-select').value;
             const ivaRate = parseFloat(document.getElementById('iva-rate').value);
 
             document.querySelectorAll('#productos-tbody tr').forEach(row => {
-                const id = row.id.split('-')[1]; // Get the counter from the row ID
+                const id = row.id.split('-')[1];
                 const cantidadInput = document.getElementById(`cantidad_${id}`);
                 const precioInput = document.getElementById(`precio_${id}`);
                 const descuentoInput = document.getElementById(`descuento_${id}`);
@@ -407,19 +456,16 @@
                 let totalProducto = cantidad * precio;
                 totalProducto -= totalProducto * (descuento / 100);
                 
-                // Update the total for each product, ensuring it's just the number
                 totalProductoInput.value = new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalProducto);
                 console.log(`DEBUG JS: Producto ${id} - Cantidad: ${cantidad}, Precio: ${precio}, Descuento: ${descuento}%, Total Producto (raw float): ${totalProducto}`);
 
                 subtotal += totalProducto;
             });
 
-            // Redondear subtotal y luego calcular IVA y Total para mayor precisión
             subtotal = parseFloat(subtotal.toFixed(2));
             const ivaAmount = parseFloat((subtotal * ivaRate).toFixed(2));
             const total = parseFloat((subtotal + ivaAmount).toFixed(2));
 
-            // Format and display the totals
             document.getElementById('subtotal').textContent = formatCurrency(subtotal, currency);
             document.getElementById('iva-amount').textContent = formatCurrency(ivaAmount, currency);
             document.getElementById('total').textContent = formatCurrency(total, currency);
@@ -427,10 +473,8 @@
             console.log(`DEBUG JS: Subtotal (rounded for display): ${subtotal}, IVARate: ${ivaRate}, IVA Amount (rounded for display): ${ivaAmount}, Total (rounded for display): ${total}`);
         }
 
-        // Helper function to format currency
         function formatCurrency(amount, currencyCode) {
-            let locale = 'es-MX'; // Default for Pesos
-            // Intl.NumberFormat will handle the currency symbol automatically
+            let locale = 'es-MX';
             return new Intl.NumberFormat(locale, {
                 style: 'currency',
                 currency: currencyCode,
@@ -439,7 +483,6 @@
             }).format(amount);
         }
 
-        // Function to process pasted Excel data
         function processExcelPaste() {
             const pasteTextarea = document.getElementById('excel-paste-textarea');
             const pastedData = pasteTextarea.value.trim();
@@ -452,14 +495,12 @@
             const rows = pastedData.split('\n');
             const tbody = document.getElementById('productos-tbody');
 
-            // Clear existing rows before pasting new data
             tbody.innerHTML = '';
-            rowCounter = 0; // Reset row counter
+            rowCounter = 0;
 
             rows.forEach((rowString) => {
-                const columns = rowString.split('\t'); // Tab-separated values from Excel
+                const columns = rowString.split('\t');
 
-                // Expected order: Nombre, Descripción, Cantidad, Precio, Descuento
                 const productName = columns[0] || '';
                 const description = columns[1] || '';
                 const quantity = parseFloat(columns[2]) || 1;
@@ -469,18 +510,16 @@
                 addRow(productName, description, quantity, price, discount);
             });
 
-            calculateTotals(); // Recalculate all totals after processing paste
-            pasteTextarea.value = ''; // Clear the paste area
-            document.getElementById('paste-area-container').classList.remove('active'); // Hide paste area
+            calculateTotals();
+            pasteTextarea.value = '';
+            document.getElementById('paste-area-container').classList.remove('active');
         }
 
-        // Function to populate client select dropdown
         function populateClientSelect() {
             const clientSelect = document.getElementById('id_cliente');
             const selectedClientIdInput = document.getElementById('selected_client_id');
 
-            // Clear existing options
-            clientSelect.innerHTML = '<option value="">Seleccione un cliente</option>'; // Added empty option
+            clientSelect.innerHTML = '<option value="">Seleccione un cliente</option>';
 
             clientesData.forEach(client => {
                 const option = document.createElement('option');
@@ -489,30 +528,23 @@
                 clientSelect.appendChild(option);
             });
 
-            // Set initial selected client if client_id_inicial is provided
             if (clienteIdInicial) {
                 clientSelect.value = clienteIdInicial;
-                selectedClientIdInput.value = clienteIdInicial; // Set hidden input as well
+                selectedClientIdInput.value = clienteIdInicial;
             } else {
-                // Ensure the "Seleccione un cliente" option is selected if no initial client
                 clientSelect.value = "";
                 selectedClientIdInput.value = "";
             }
 
-            // Update hidden input when select changes
             clientSelect.addEventListener('change', () => {
                 selectedClientIdInput.value = clientSelect.value;
             });
         }
 
-
-        // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
-            populateClientSelect(); // Populate client dropdown on page load
-            // addRow(); // COMENTADO: Eliminado para evitar la adición automática de una fila inicial
-            // El usuario debe usar el botón "Agregar Fila" o la función de pegar.
+            populateClientSelect();
 
-            document.getElementById('add-row-btn').addEventListener('click', addRow);
+            document.getElementById('add-row-btn').addEventListener('click', () => addRow());
             document.getElementById('iva-rate').addEventListener('change', calculateTotals);
             document.getElementById('currency-select').addEventListener('change', calculateTotals);
 
@@ -528,49 +560,28 @@
             processPasteBtn.addEventListener('click', processExcelPaste);
             cancelPasteBtn.addEventListener('click', () => {
                 pasteAreaContainer.classList.remove('active');
-                document.getElementById('excel-paste-textarea').value = ''; // Clear textarea on cancel
+                document.getElementById('excel-paste-textarea').value = '';
             });
 
-            // Optional: Auto-process on paste into the dedicated textarea
-            // REMOVED: This was causing potential double processing. User must click "Procesar Pegado"
-            // document.getElementById('excel-paste-textarea').addEventListener('paste', (event) => {
-            //     setTimeout(() => {
-            //         processExcelPaste();
-            //     }, 0);
-            // });
-
-            // MODIFICACIÓN CLAVE: Interceptar el envío del formulario con Fetch API
             const cotizacionForm = document.getElementById('cotizacion-form');
             cotizacionForm.addEventListener('submit', async (event) => {
-                console.log('Evento de submit del formulario detectado.');
-                event.preventDefault(); // Evitar el envío de formulario tradicional
+                event.preventDefault();
 
-
-
-                // La construcción de FormData(cotizacionForm) ya recopila todos los inputs
-                // con atributos 'name' correctamente. El bucle anterior era redundante
-                // y causaba la duplicación.
                 const formData = new FormData(cotizacionForm);
                 
-                // Asegurarse de que el campo 'cliente' tome el valor del select
                 formData.set('cliente', document.getElementById('id_cliente').value);
 
-                // --- DEBUGGING: Imprimir FormData antes de enviar ---
                 console.log('DEBUG JS: Datos del formulario a enviar:');
                 let productItemCount = 0;
                 for (let pair of formData.entries()) {
                     console.log(pair[0]+ ': ' + pair[1]);
                     if (pair[0].startsWith('productos[') && pair[0].includes('[nombre]')) {
-                        // Simple heurística para contar elementos de producto distintos.
-                        // Asume que 'nombre' siempre está presente para un producto.
                         productItemCount++;
                     }
                 }
                 console.log(`DEBUG JS: Total de elementos de producto contados en FormData: ${productItemCount}`);
-                // --- FIN DEBUGGING ---
 
                 try {
-                    console.log('DEBUG JS: Enviando solicitud fetch...');
                     const response = await fetch(cotizacionForm.action, {
                         method: 'POST',
                         body: formData,
@@ -579,63 +590,23 @@
                         }
                     });
 
-                    console.log('DEBUG JS: Respuesta del servidor recibida. Status:', response.status);
                     const result = await response.json();
-                    console.log('DEBUG JS: Resultado JSON del servidor:', result);
 
                     if (result.success) {
-                        console.log('DEBUG JS: Cotización guardada exitosamente.');
                         if (result.pdf_url) {
-                            console.log('PDF URL recibida:', result.pdf_url);
-                            // Crear un enlace temporal para forzar la descarga
                             const a = document.createElement('a');
                             a.href = result.pdf_url;
-                            a.download = result.filename || 'cotizacion.pdf'; // Usar el nombre de archivo del servidor o uno por defecto
+                            a.download = result.filename || 'cotizacion.pdf';
                             document.body.appendChild(a);
                             a.click();
                             document.body.removeChild(a);
-
-                            // Opcional: re-dirigir o mostrar un mensaje de éxito
-                            // window.location.href = '/ruta-a-lista-de-cotizaciones/';
-
-                        } else if (result.error) {
-                            // COMENTADO: No reiniciar el formulario para permitir edición post-descarga
-                            // document.querySelectorAll('#productos-tbody tr').forEach((row, index) => {
-                            //     if (index > 0) {
-                            //         row.remove();
-                            //     } else {
-                            //         // Reset the first row
-                            //         document.getElementById(`nombre_producto_${row.id.split('-')[1]}`).value = '';
-                            //         document.getElementById(`descripcion_producto_${row.id.split('-')[1]}`).value = '';
-                            //         document.getElementById(`cantidad_${row.id.split('-')[1]}`).value = '1';
-                            //         document.getElementById(`precio_${row.id.split('-')[1]}`).value = '0.00';
-                            //         document.getElementById(`descuento_${row.id.split('-')[1]}`).value = '0';
-                            //     }
-                            // });
-                            // calculateTotals();
-                            // cotizacionForm.reset(); // Reset form fields
-                            // populateClientSelect(); // Repopulate client select to reset it
                         }
-                        //         document.getElementById(`nombre_producto_${row.id.split('-')[1]}`).value = '';
-                        //         document.getElementById(`descripcion_producto_${row.id.split('-')[1]}`).value = '';
-                        //         document.getElementById(`cantidad_${row.id.split('-')[1]}`).value = '1';
-                        //         document.getElementById(`precio_${row.id.split('-')[1]}`).value = '0.00';
-                        //         document.getElementById(`descuento_${row.id.split('-')[1]}`).value = '0';
-                        //     }
-                        // });
-                        // calculateTotals();
-                        // cotizacionForm.reset(); // Reset form fields
-                        // populateClientSelect(); // Repopulate client select to reset it
                     } else {
-                        // Si hay errores, mostrarlos en el formulario
                         console.error('DEBUG JS: Errores de validación del servidor:', result.errors);
-                        // Limpiar errores anteriores
                         document.querySelectorAll('.errorlist').forEach(el => el.remove());
 
-                        // Mostrar nuevos errores
                         for (const fieldName in result.errors) {
                             const fieldErrors = result.errors[fieldName];
-                            // Intenta encontrar el elemento por su nombre o ID para mostrar el error
                             let fieldElement = document.querySelector(`[name="${fieldName}"]`);
                             if (!fieldElement) {
                                 fieldElement = document.getElementById(`id_${fieldName}`);
@@ -651,11 +622,9 @@
                                 });
                                 fieldElement.parentNode.insertBefore(errorList, fieldElement.nextSibling);
                             } else {
-                                // Si el campo no se encuentra, podría ser un error no de campo específico (e.g., __all__)
                                 console.warn(`DEBUG JS: Elemento de formulario para el campo '${fieldName}' no encontrado para mostrar el error.`);
                             }
                         }
-                        // Si hay un error general del formulario (non_field_errors)
                         if (result.errors.__all__) {
                             const formErrorsDiv = document.createElement('div');
                             formErrorsDiv.classList.add('errorlist', 'text-center', 'mt-4');
@@ -666,19 +635,10 @@
                             });
                             cotizacionForm.prepend(formErrorsDiv);
                         }
-                        // Si hay un error, cierra la ventana emergente que se abrió
-                        if (newWindow && !newWindow.closed) {
-                            newWindow.close();
-                        }
                     }
                 } catch (error) {
                     console.error('DEBUG JS: Error en la solicitud Fetch o procesamiento de respuesta:', error);
-                    // Mostrar un mensaje de error genérico al usuario
                     alert('Ocurrió un error al procesar la cotización. Por favor, inténtalo de nuevo.');
-                    // Si hay un error, cierra la ventana emergente que se abrió
-                    if (newWindow && !newWindow.closed) {
-                        newWindow.close();
-                    }
                 }
             });
         });

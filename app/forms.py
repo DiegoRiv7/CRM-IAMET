@@ -119,9 +119,22 @@ class DetalleCotizacionForm(forms.ModelForm):
     """
     Formulario para cada línea de producto/servicio en una cotización.
     """
+    MARCA_CHOICES = [
+        ('', 'Seleccionar Marca'),
+        ('ZEBRA', 'ZEBRA'),
+        ('PANDUIT', 'PANDUIT'),
+        ('APC', 'APC'),
+        ('AVIGILION', 'AVIGILION'),
+        ('GENETEC', 'GENETEC'),
+        ('AXIS', 'AXIS'),
+        ('CISCO', 'CISCO'),
+    ]
+
+    marca = forms.ChoiceField(choices=MARCA_CHOICES, required=False, widget=forms.Select(attrs={'class': 'input-field'}))
+
     class Meta:
         model = DetalleCotizacion
-        fields = ['nombre_producto', 'descripcion', 'cantidad', 'precio_unitario', 'descuento_porcentaje']
+        fields = ['nombre_producto', 'descripcion', 'cantidad', 'precio_unitario', 'descuento_porcentaje', 'marca']
         widgets = {
             'nombre_producto': forms.TextInput(attrs={'class': 'input-field'}),
             'descripcion': forms.Textarea(attrs={'rows': 2, 'class': 'input-field'}),
@@ -135,4 +148,5 @@ class DetalleCotizacionForm(forms.ModelForm):
             'cantidad': 'Cantidad',
             'precio_unitario': 'Precio Unitario',
             'descuento_porcentaje': 'Descuento (%)',
+            'marca': 'Marca',
         }

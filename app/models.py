@@ -155,13 +155,23 @@ class DetalleCotizacion(models.Model):
     """
     Modelo para representar cada línea de producto/servicio dentro de una cotización.
     """
+    MARCA_CHOICES = [
+        ('ZEBRA', 'ZEBRA'),
+        ('PANDUIT', 'PANDUIT'),
+        ('APC', 'APC'),
+        ('AVIGILION', 'AVIGILION'),
+        ('GENETEC', 'GENETEC'),
+        ('AXIS', 'AXIS'),
+        ('CISCO', 'CISCO'),
+    ]
+
     cotizacion = models.ForeignKey(Cotizacion, on_delete=models.CASCADE, related_name='detalles', verbose_name="Cotización")
     nombre_producto = models.CharField(max_length=255, verbose_name="Nombre del Producto")
     descripcion = models.TextField(blank=True, null=True, verbose_name="Descripción")
     cantidad = models.PositiveIntegerField(default=1, verbose_name="Cantidad")
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Precio Unitario")
-    # Se corrigió el error de sintaxis en el verbose_name y se añadió el redondeo en get_total_item
-    descuento_porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'), verbose_name="Descuento (%)") # Ej. 5.00 para 5%
+    descuento_porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'), verbose_name="Descuento (%)")
+    marca = models.CharField(max_length=50, choices=MARCA_CHOICES, blank=True, null=True, verbose_name="Marca") # NUEVO CAMPO
 
     class Meta:
         """
