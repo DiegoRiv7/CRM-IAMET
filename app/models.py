@@ -14,6 +14,7 @@ class Cliente(models.Model):
     telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono")
     email = models.EmailField(blank=True, null=True, verbose_name="Email")
     direccion = models.CharField(max_length=255, blank=True, null=True, verbose_name="Dirección")
+    bitrix_company_id = models.IntegerField(unique=True, null=True, blank=True, verbose_name="ID de Compañía en Bitrix24")
     # Relación con el modelo User de Django para asignar un cliente a un usuario
     asignado_a = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='clientes_asignados', verbose_name="Asignado a")
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
@@ -79,6 +80,9 @@ class TodoItem(models.Model):
     mes_cierre = models.CharField(max_length=2, choices=MES_CHOICES, verbose_name="Mes de Cierre Esperado")
     area = models.CharField(max_length=50, choices=AREA_CHOICES, verbose_name="Área")
     comentarios = models.TextField(blank=True, null=True, verbose_name="Comentarios")
+    bitrix_deal_id = models.IntegerField(blank=True, null=True, verbose_name="ID de Oportunidad en Bitrix24")
+    bitrix_company_id = models.IntegerField(blank=True, null=True, verbose_name="ID de Compañía en Bitrix24")
+    bitrix_stage_id = models.CharField(max_length=50, blank=True, null=True, verbose_name="ID de Etapa en Bitrix24")
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Última Actualización")
 

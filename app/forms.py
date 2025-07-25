@@ -4,12 +4,31 @@ from django.contrib.auth.models import User
 
 
 class VentaForm(forms.ModelForm):
-    # El campo 'cliente' se define aquí, y su queryset se filtrará en el __init__
-    cliente = forms.ModelChoiceField(
-        queryset=Cliente.objects.all(), # Se inicializa con todos, luego se filtra
-        label="Cliente",
-        empty_label="Selecciona un cliente" # Opción para no seleccionar ninguno inicialmente
-    )
+    BITRIX_STAGE_CHOICES = [
+        ('', 'Seleccionar Etapa'),
+        ('NEW', 'Solicitud de Cotizacion'),
+        ('UC_YUQKW6', 'Cotizando'),
+        ('UC_H8L1Z8', 'Cotización Enviada'),
+        ('UC_RFMQC1', 'Seguimiento de Cotización.'),
+        ('UC_J7Q5HD', 'Vendido sin PO'),
+        ('UC_AO5AY3', 'Vendido con PO'),
+        ('PREPARATION', 'Vendido en Transito con Proveedor'),
+        ('1', 'Programado para entrega'),
+        ('EXECUTING', 'Entregado'),
+        ('PREPAYMENT_INVOICE', 'Facturado'),
+        ('FINAL_INVOICE', 'Pagado'),
+        ('2', 'Perdido'),
+        ('3', 'Cancelado'),
+        ('4', 'Sin respuesta'),
+        ('WON', 'Cerrado Ganado'),
+        ('LOSE', 'Cerrado Perdido'),
+        ('APOLOGY', 'Analizar la falla'),
+        ('5', 'Crear campaña'),
+    ]
+
+    cliente_nombre = forms.CharField(max_length=200, label="Cliente", required=True)
+    bitrix_company_id = forms.CharField(widget=forms.HiddenInput(), required=False)
+    bitrix_stage_id = forms.ChoiceField(choices=BITRIX_STAGE_CHOICES, required=False, label="Etapa de Bitrix")
     usuario = forms.ModelChoiceField(
         queryset=User.objects.filter(is_active=True),
         label="Vendedor",
@@ -19,32 +38,41 @@ class VentaForm(forms.ModelForm):
     class Meta:
         model = TodoItem
         fields = [
-            'oportunidad', 'cliente', 'usuario', 'contacto', 'monto',
+            'oportunidad', 'usuario', 'contacto', 'monto',
             'probabilidad_cierre', 'mes_cierre', 'area', 'producto',
-            'comentarios'
+            'comentarios', 'bitrix_deal_id', 'bitrix_company_id', 'bitrix_stage_id'
         ]
         widgets = {
             'comentarios': forms.Textarea(attrs={'rows': 3}),
         }
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user', None) # Obtener el usuario de los kwargs
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
-        # Si el usuario existe y no es supervisor, filtrar los clientes
+        # Eliminar el campo 'cliente' si existe, ya que es reemplazado por 'cliente_nombre' y 'bitrix_company_id'
+        if 'cliente' in self.fields:
+            del self.fields['cliente']
+
+        # Manejar valores iniciales para cliente_nombre y bitrix_company_id al editar
+        if self.instance.pk: # Si es una instancia existente (editando)
+            if self.instance.cliente:
+                self.fields['cliente_nombre'].initial = self.instance.cliente.nombre_empresa
+            if self.instance.bitrix_company_id:
+                self.fields['bitrix_company_id'].initial = self.instance.bitrix_company_id
+
         if user and not user.groups.filter(name='Supervisores').exists():
-            self.fields['cliente'].queryset = Cliente.objects.filter(asignado_a=user)
             self.fields['usuario'].widget = forms.HiddenInput()
             self.fields['usuario'].required = False
         else:
-            # Si es supervisor, puede elegir cualquier usuario
             self.fields['usuario'].queryset = User.objects.filter(is_active=True)
             self.fields['usuario'].required = True
 
-        # Añadir clases de Tailwind a todos los campos
+        # Aplicar clases de Tailwind a todos los campos visibles
         for field_name, field in self.fields.items():
-            if isinstance(field.widget, (forms.TextInput, forms.NumberInput, forms.Textarea, forms.Select, forms.DateInput)):
+            if not isinstance(field.widget, forms.HiddenInput): # No aplicar a campos ocultos
                 field.widget.attrs.update({'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'})
+
 
 
 class VentaFilterForm(forms.Form):
