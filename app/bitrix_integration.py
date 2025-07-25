@@ -2,6 +2,7 @@ import os
 import requests
 import json
 from dotenv import load_dotenv
+from django.contrib import messages
 
 from django.http import JsonResponse
 
@@ -9,10 +10,12 @@ load_dotenv()
 
 BITRIX_WEBHOOK_URL = os.getenv("BITRIX_WEBHOOK_URL")
 
-def get_or_create_bitrix_company(company_name):
+def get_or_create_bitrix_company(company_name, request=None):
     normalized_company_name = company_name.strip().upper() # Normalizar el nombre
 
     if not BITRIX_WEBHOOK_URL:
+        if request:
+            messages.error(request, "Error: La URL del webhook de Bitrix24 no está configurada.")
         print("Error: La URL del webhook de Bitrix24 no está configurada.")
         return None
 
@@ -46,7 +49,7 @@ def get_or_create_bitrix_company(company_name):
         print(f"Error al crear compañía en Bitrix24: {e}")
         return None
 
-def _get_bitrix_mapped_data(opportunity_data):
+def _get_bitrix_mapped_data(opportunity_data, request=None):
     producto_map = {
         'ZEBRA': '176',
         'PANDUIT': '178',
@@ -100,7 +103,7 @@ def _get_bitrix_mapped_data(opportunity_data):
 
     bitrix_company_id = opportunity_data.get('bitrix_company_id')
     if not bitrix_company_id and opportunity_data.get('cliente'):
-        bitrix_company_id = get_or_create_bitrix_company(opportunity_data['cliente'])
+        bitrix_company_id = get_or_create_bitrix_company(opportunity_data['cliente'], request=request)
 
     product_value = opportunity_data.get('producto')
     bitrix_product_id = producto_map.get(product_value)
@@ -146,12 +149,14 @@ def _get_bitrix_mapped_data(opportunity_data):
 
     return fields
 
-def send_opportunity_to_bitrix(opportunity_data):
+def send_opportunity_to_bitrix(opportunity_data, request=None):
     if not BITRIX_WEBHOOK_URL:
+        if request:
+            messages.error(request, "Error: La URL del webhook de Bitrix24 no está configurada.")
         print("Error: La URL del webhook de Bitrix24 no está configurada.")
         return None
 
-    fields = _get_bitrix_mapped_data(opportunity_data)
+    fields = _get_bitrix_mapped_data(opportunity_data, request=request)
     data = {'fields': fields}
 
     print(f"DEBUG Bitrix: Datos finales enviados a Bitrix24 (ADD): {json.dumps(data, indent=2)}")
@@ -165,14 +170,17 @@ def send_opportunity_to_bitrix(opportunity_data):
         print(f"DEBUG Bitrix: Error al enviar la oportunidad a Bitrix24: {e}")
         return None
 
-def update_opportunity_in_bitrix(bitrix_deal_id, opportunity_data):
+def update_opportunity_in_bitrix(bitrix_deal_id, opportunity_data, request=None):
+    from django.contrib import messages # Import messages here
     if not BITRIX_WEBHOOK_URL:
+        if request:
+            messages.error(request, "Error: La URL del webhook de Bitrix24 no está configurada.")
         print("Error: La URL del webhook de Bitrix24 no está configurada.")
         return False
 
     update_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "crm.deal.update.json")
 
-    fields = _get_bitrix_mapped_data(opportunity_data)
+    fields = _get_bitrix_mapped_data(opportunity_data, request=request)
     data = {
         'id': bitrix_deal_id,
         'fields': fields

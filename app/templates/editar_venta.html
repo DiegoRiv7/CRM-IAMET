@@ -44,6 +44,7 @@
         <label for="id_cliente_nombre" class="block text-sm text-white mb-1">Cliente</label>
         {{ form.cliente_nombre|add_class:"form-input-modern"|attr:"placeholder: Escribe para buscar cliente"|attr:"id:id_cliente_nombre" }}
         {{ form.bitrix_company_id }}
+        {{ form.bitrix_deal_id }}
         <div id="autocomplete-suggestions" class="autocomplete-suggestions hidden"></div>
       </div>
       {% if form.usuario %}

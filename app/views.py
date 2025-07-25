@@ -1,4 +1,5 @@
 from django.shortcuts import render, HttpResponse, redirect, get_object_or_404
+from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -621,47 +622,48 @@ def todos (request):
     }
     return render (request, "todos.html", context)
 
-from .bitrix_integration import get_or_create_bitrix_company, send_opportunity_to_bitrix
+from .bitrix_integration import get_or_create_bitrix_company, send_opportunity_to_bitrix, update_opportunity_in_bitrix
 
 @login_required
 def ingresar_venta_todoitem(request):
+    # Asegurarse de que messages y las funciones de bitrix_integration estén disponibles
+    
+
     if request.method == 'POST':
         form = VentaForm(request.POST, user=request.user if not is_supervisor(request.user) else None)
         if form.is_valid():
             cliente_nombre = form.cleaned_data['cliente_nombre']
-            bitrix_company_id = form.cleaned_data.get('bitrix_company_id')
+            bitrix_company_id_from_form = form.cleaned_data.get('bitrix_company_id')
 
             cliente = None
             # Escenario 1: Se seleccionó un cliente existente de Bitrix
-            if bitrix_company_id:
+            if bitrix_company_id_from_form:
                 try:
-                    # Busca el cliente local por el ID de Bitrix. Si no existe, lo crea.
-                    cliente, created = Cliente.objects.get_or_create(
-                        bitrix_company_id=bitrix_company_id,
-                        defaults={'nombre_empresa': cliente_nombre}
+                    cliente = Cliente.objects.get(bitrix_company_id=bitrix_company_id_from_form)
+                except Cliente.DoesNotExist:
+                    # Si el cliente no existe localmente, lo creamos con el ID de Bitrix proporcionado
+                    cliente = Cliente.objects.create(
+                        nombre_empresa=cliente_nombre,
+                        bitrix_company_id=bitrix_company_id_from_form
                     )
-                    if created:
-                        print(f"DEBUG: Cliente local creado para Bitrix ID {bitrix_company_id}")
                 except Exception as e:
-                    print(f"ERROR: No se pudo obtener o crear el cliente local: {e}")
+                    messages.error(request, f"ERROR: No se pudo obtener o crear el cliente local: {e}")
                     form.add_error('cliente_nombre', 'Hubo un error al procesar el cliente.')
                     return render(request, 'ingresar_venta.html', {'form': form})
-            
             # Escenario 2: Se escribió un nombre de cliente nuevo (sin ID de Bitrix)
             else:
                 # Primero, crea la compañía en Bitrix para obtener un ID
-                new_bitrix_id = get_or_create_bitrix_company(cliente_nombre)
-                if new_bitrix_id:
-                    # Ahora, crea el cliente local con el nuevo ID de Bitrix
+                new_bitrix_company_id = get_or_create_bitrix_company(cliente_nombre, request=request)
+                if new_bitrix_company_id:
                     cliente, created = Cliente.objects.get_or_create(
-                        bitrix_company_id=new_bitrix_id,
+                        bitrix_company_id=new_bitrix_company_id,
                         defaults={'nombre_empresa': cliente_nombre}
                     )
                 else:
+                    messages.error(request, 'No se pudo crear la compañía en Bitrix. Verifique la configuración del webhook.')
                     form.add_error('cliente_nombre', 'No se pudo crear la compañía en Bitrix.')
                     return render(request, 'ingresar_venta.html', {'form': form})
 
-            # Si tenemos un cliente, procedemos a guardar la oportunidad
             if cliente:
                 venta = form.save(commit=False)
                 venta.cliente = cliente
@@ -670,9 +672,8 @@ def ingresar_venta_todoitem(request):
                 else:
                     venta.usuario = request.user
                 
-                venta.save()
+                venta.save() # Guardar la instancia de venta para obtener un PK
 
-                # Preparar y enviar datos a Bitrix
                 opportunity_data = {
                     'oportunidad': venta.oportunidad,
                     'monto': float(venta.monto),
@@ -685,12 +686,15 @@ def ingresar_venta_todoitem(request):
                     'comentarios': venta.comentarios,
                     'bitrix_stage_id': venta.bitrix_stage_id,
                 }
-                bitrix_response = send_opportunity_to_bitrix(opportunity_data)
                 
-                # Si Bitrix devuelve un ID, lo guardamos en nuestra oportunidad
+                bitrix_response = send_opportunity_to_bitrix(opportunity_data, request=request)
+                
                 if bitrix_response and bitrix_response.get('result'):
                     venta.bitrix_deal_id = bitrix_response.get('result')
-                    venta.save(update_fields=['bitrix_deal_id'])
+                    venta.save(update_fields=['bitrix_deal_id']) # Actualizar solo el campo bitrix_deal_id
+                    messages.success(request, "Oportunidad creada y sincronizada con Bitrix24.")
+                else:
+                    messages.warning(request, "Oportunidad creada, pero no se pudo sincronizar con Bitrix24. Verifique los logs.")
 
                 return redirect('ingresar_venta_todoitem_exitosa')
 
@@ -734,7 +738,7 @@ def user_logout(request):
 def editar_venta_todoitem(request, pk):
     # Supervisor puede editar cualquier venta, vendedor solo las suyas
     if is_supervisor(request.user):
-        todo_item = get_object_or_404(TodoItem, pk=pk) # No filtrar por usuario si es supervisor
+        todo_item = get_object_or_404(TodoItem, pk=pk)
     else:
         todo_item = get_object_or_404(TodoItem, pk=pk, usuario=request.user)
 
@@ -743,14 +747,77 @@ def editar_venta_todoitem(request, pk):
             # Solo permite borrar si el usuario es supervisor o dueño
             if is_supervisor(request.user) or todo_item.usuario == request.user:
                 todo_item.delete()
+                messages.success(request, "Oportunidad eliminada con éxito.")
+            else:
+                messages.error(request, "No tienes permiso para eliminar esta oportunidad.")
             return redirect('todos')
+        
         # Si no es delete, entonces es edición:
         form = VentaForm(request.POST, instance=todo_item, user=request.user if not is_supervisor(request.user) else None)
         if form.is_valid():
-            form.save()
+            cliente_nombre = form.cleaned_data['cliente_nombre']
+            bitrix_company_id_from_form = form.cleaned_data.get('bitrix_company_id')
+
+            cliente = None
+            # Try to get client by bitrix_company_id if provided
+            if bitrix_company_id_from_form:
+                try:
+                    cliente = Cliente.objects.get(bitrix_company_id=bitrix_company_id_from_form)
+                except Cliente.DoesNotExist:
+                    # If client doesn't exist locally, create it with the provided Bitrix ID
+                    cliente = Cliente.objects.create(
+                        nombre_empresa=cliente_nombre,
+                        bitrix_company_id=bitrix_company_id_from_form
+                    )
+                except Exception as e:
+                    messages.error(request, f"ERROR: No se pudo obtener o crear el cliente local por Bitrix ID: {e}")
+                    form.add_error('cliente_nombre', 'Hubo un error al procesar el cliente.')
+                    return render(request, 'editar_venta.html', {'form': form, 'todo_item': todo_item})
+            else:
+                # If no bitrix_company_id from form, try to find by name or create a new one without Bitrix ID
+                try:
+                    cliente, created = Cliente.objects.get_or_create(
+                        nombre_empresa=cliente_nombre,
+                        defaults={'bitrix_company_id': None}
+                    )
+                except Exception as e:
+                    messages.error(request, f"ERROR: No se pudo obtener o crear el cliente local por nombre: {e}")
+                    form.add_error('cliente_nombre', 'Hubo un error al procesar el cliente.')
+                    return render(request, 'editar_venta.html', {'form': form, 'todo_item': todo_item})
+
+            venta = form.save(commit=False)
+            venta.cliente = cliente
+            if is_supervisor(request.user):
+                venta.usuario = form.cleaned_data['usuario']
+            else:
+                venta.usuario = request.user
+            venta.save()
+
+            # Actualizar en Bitrix si existe un bitrix_deal_id
+            if venta.bitrix_deal_id:
+                opportunity_data = {
+                    'oportunidad': venta.oportunidad,
+                    'monto': float(venta.monto),
+                    'cliente': venta.cliente.nombre_empresa,
+                    'bitrix_company_id': venta.cliente.bitrix_company_id,
+                    'producto': venta.producto,
+                    'area': venta.area,
+                    'mes_cierre': venta.mes_cierre,
+                    'probabilidad_cierre': venta.probabilidad_cierre,
+                    'comentarios': venta.comentarios,
+                    'bitrix_stage_id': venta.bitrix_stage_id,
+                }
+                bitrix_updated = update_opportunity_in_bitrix(venta.bitrix_deal_id, opportunity_data, request=request)
+                if bitrix_updated:
+                    messages.success(request, "Oportunidad actualizada en Bitrix24 con éxito.")
+                else:
+                    messages.error(request, "Error al actualizar la oportunidad en Bitrix24.")
+            else:
+                messages.warning(request, "La oportunidad no tiene un ID de Bitrix24 asociado. No se pudo actualizar en Bitrix24.")
+
             return redirect('todos')
     else:
-        form = VentaForm(instance=todo_item, user=request.user if not is_supervisor(request.user) else None) # Asegúrate de que usa VentaForm
+        form = VentaForm(instance=todo_item, user=request.user if not is_supervisor(request.user) else None)
 
     return render(request, 'editar_venta.html', {'form': form, 'todo_item': todo_item})
 

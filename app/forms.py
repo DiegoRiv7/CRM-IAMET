@@ -28,6 +28,7 @@ class VentaForm(forms.ModelForm):
 
     cliente_nombre = forms.CharField(max_length=200, label="Cliente", required=True)
     bitrix_company_id = forms.CharField(widget=forms.HiddenInput(), required=False)
+    bitrix_deal_id = forms.IntegerField(widget=forms.HiddenInput(), required=False) # Explicitly define bitrix_deal_id as hidden
     bitrix_stage_id = forms.ChoiceField(choices=BITRIX_STAGE_CHOICES, required=False, label="Etapa de Bitrix")
     usuario = forms.ModelChoiceField(
         queryset=User.objects.filter(is_active=True),
@@ -54,12 +55,14 @@ class VentaForm(forms.ModelForm):
         if 'cliente' in self.fields:
             del self.fields['cliente']
 
-        # Manejar valores iniciales para cliente_nombre y bitrix_company_id al editar
+        # Manejar valores iniciales para cliente_nombre, bitrix_company_id y bitrix_deal_id al editar
         if self.instance.pk: # Si es una instancia existente (editando)
             if self.instance.cliente:
                 self.fields['cliente_nombre'].initial = self.instance.cliente.nombre_empresa
             if self.instance.bitrix_company_id:
                 self.fields['bitrix_company_id'].initial = self.instance.bitrix_company_id
+            if self.instance.bitrix_deal_id: # Set initial for bitrix_deal_id
+                self.fields['bitrix_deal_id'].initial = self.instance.bitrix_deal_id
 
         if user and not user.groups.filter(name='Supervisores').exists():
             self.fields['usuario'].widget = forms.HiddenInput()
