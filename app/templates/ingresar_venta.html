@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Función reutilizable para buscar y mostrar sugerencias
     const fetchAndShowSuggestions = (query) => {
-        fetch(`/api/bitrix-companies/?query=${encodeURIComponent(query)}`)
+        fetch(`/app/api/bitrix-companies/?query=${encodeURIComponent(query)}`)
             .then(response => response.json())
             .then(data => {
                 suggestionsContainer.innerHTML = '';

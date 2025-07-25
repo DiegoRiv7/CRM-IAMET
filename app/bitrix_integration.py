@@ -197,11 +197,12 @@ def get_bitrix_companies_api(request):
 
     search_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "crm.company.list.json")
     
+    payload = {'select': ['ID', 'TITLE']}
+    if query:
+        payload['filter'] = {'TITLE': f'%{query.upper()}%'}
+
     try:
-        response = requests.post(search_url, json={
-            'filter': {'TITLE': f'%{query}%'},
-            'select': ['ID', 'TITLE']
-        })
+        response = requests.post(search_url, json=payload)
         response.raise_for_status()
         companies = response.json().get('result', [])
         return JsonResponse([{'id': c['ID'], 'name': c['TITLE']} for c in companies], safe=False)
