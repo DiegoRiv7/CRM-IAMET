@@ -77,6 +77,10 @@
         <label for="id_probabilidad_cierre" class="block text-sm text-white mb-1">Probabilidad de Cierre (%)</label>
         {{ form.probabilidad_cierre|add_class:"form-input-modern"|attr:"placeholder: Probabilidad de Cierre (%)" }}
       </div>
+      <div>
+        <label for="id_bitrix_stage_id" class="block text-sm text-white mb-1">Etapa de Bitrix</label>
+        {{ form.bitrix_stage_id|add_class:"form-input-modern" }}
+      </div>
       <div class="md:col-span-2">
         <label for="id_comentarios" class="block text-sm text-white mb-1">Comentarios</label>
         {{ form.comentarios|add_class:"form-input-modern resize-y"|attr:"placeholder: Comentarios" }}
@@ -90,74 +94,80 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const clienteNombreInput = document.getElementById('id_cliente_nombre');
-        const bitrixCompanyIdInput = document.getElementById('id_bitrix_company_id');
-        const suggestionsContainer = document.getElementById('autocomplete-suggestions');
-        let debounceTimeout;
+document.addEventListener('DOMContentLoaded', function() {
+    const clienteNombreInput = document.getElementById('id_cliente_nombre');
+    const bitrixCompanyIdInput = document.getElementById('id_bitrix_company_id');
+    const suggestionsContainer = document.getElementById('autocomplete-suggestions');
+    let debounceTimeout;
 
-        // Set initial value for bitrixCompanyIdInput if it exists in the form instance
-        if (clienteNombreInput.value && !bitrixCompanyIdInput.value) {
-            // This block is for when editing an existing item that might not have bitrix_company_id populated
-            // but has a client name. We try to fetch the bitrix_company_id based on the name.
-            const initialCompanyName = clienteNombreInput.value;
-            fetch(`/app/api/bitrix-companies/?query=${initialCompanyName}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.length > 0) {
-                        const matchedCompany = data.find(c => c.name === initialCompanyName) || data[0];
-                        bitrixCompanyIdInput.value = matchedCompany.id;
-                    }
-                })
-                .catch(error => console.error('Error fetching initial Bitrix company ID:', error));
-        }
-
-        clienteNombreInput.addEventListener('input', function() {
-            clearTimeout(debounceTimeout);
-            const query = this.value;
-
-            if (query.length < 2) {
-                suggestionsContainer.classList.add('hidden');
-                return;
-            }
-
-            debounceTimeout = setTimeout(() => {
-                fetch(`/app/api/bitrix-companies/?query=${query}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        suggestionsContainer.innerHTML = '';
-                        if (data.length > 0) {
-                            data.forEach(company => {
-                                const item = document.createElement('div');
-                                item.classList.add('autocomplete-suggestion-item');
-                                item.textContent = company.name;
-                                item.dataset.companyId = company.id;
-                                item.addEventListener('click', () => {
-                                    clienteNombreInput.value = company.name;
-                                    bitrixCompanyIdInput.value = company.id;
-                                    suggestionsContainer.classList.add('hidden');
-                                });
-                                suggestionsContainer.appendChild(item);
-                            });
-                            suggestionsContainer.classList.remove('hidden');
-                        } else {
+    // Función reutilizable para buscar y mostrar sugerencias
+    const fetchAndShowSuggestions = (query) => {
+        fetch(`/app/api/bitrix-companies/?query=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                suggestionsContainer.innerHTML = '';
+                if (data.length > 0) {
+                    data.forEach(company => {
+                        const item = document.createElement('div');
+                        item.classList.add('autocomplete-suggestion-item');
+                        item.textContent = company.name;
+                        item.dataset.companyId = company.id;
+                        item.addEventListener('click', () => {
+                            clienteNombreInput.value = company.name;
+                            bitrixCompanyIdInput.value = company.id;
                             suggestionsContainer.classList.add('hidden');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching Bitrix companies:', error);
+                        });
+                        suggestionsContainer.appendChild(item);
+                    });
+                } else if (query) {
+                    const createItem = document.createElement('div');
+                    createItem.classList.add('autocomplete-suggestion-item');
+                    createItem.innerHTML = `Crear nuevo cliente: <strong>${query}</strong>`;
+                    createItem.addEventListener('click', () => {
+                        clienteNombreInput.value = query;
+                        bitrixCompanyIdInput.value = '';
                         suggestionsContainer.classList.add('hidden');
                     });
-            }, 300); // Debounce time
-        });
-
-        // Hide suggestions when clicking outside
-        document.addEventListener('click', function(event) {
-            if (!clienteNombreInput.contains(event.target) && !suggestionsContainer.contains(event.target)) {
+                    suggestionsContainer.appendChild(createItem);
+                }
+                suggestionsContainer.classList.remove('hidden');
+            })
+            .catch(error => {
+                console.error('Error fetching Bitrix companies:', error);
                 suggestionsContainer.classList.add('hidden');
-            }
-        });
+            });
+    };
+
+    // Muestra todos los clientes al hacer clic en el campo
+    clienteNombreInput.addEventListener('focus', () => {
+        fetchAndShowSuggestions('');
     });
+
+    // Filtra los clientes mientras el usuario escribe
+    clienteNombreInput.addEventListener('input', function() {
+        clearTimeout(debounceTimeout);
+        const query = this.value.trim();
+
+        if (query === '') {
+            bitrixCompanyIdInput.value = '';
+            fetchAndShowSuggestions(''); // Muestra todos si el campo se vacía
+            return;
+        }
+
+        bitrixCompanyIdInput.value = '';
+
+        debounceTimeout = setTimeout(() => {
+            fetchAndShowSuggestions(query);
+        }, 300);
+    });
+
+    // Oculta las sugerencias si se hace clic fuera
+    document.addEventListener('click', function(event) {
+        if (!clienteNombreInput.contains(event.target) && !suggestionsContainer.contains(event.target)) {
+            suggestionsContainer.classList.add('hidden');
+        }
+    });
+});
 </script>
 
 <style>
