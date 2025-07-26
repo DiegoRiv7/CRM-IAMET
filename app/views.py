@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion # Asegúrate de importar los nuevos modelos
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile # Asegúrate de importar los nuevos modelos
 from . import views_exportar
 from .forms import VentaForm, VentaFilterForm, CotizacionForm # Asegúrate de que CotizacionForm esté importado
 from django.db.models import Sum, Count, F, Q
@@ -686,6 +686,11 @@ def ingresar_venta_todoitem(request):
                     'comentarios': venta.comentarios,
                     'bitrix_stage_id': venta.bitrix_stage_id,
                 }
+                # Obtener el bitrix_user_id del usuario asignado
+                bitrix_assigned_by_id = None
+                if venta.usuario and hasattr(venta.usuario, 'userprofile') and venta.usuario.userprofile.bitrix_user_id:
+                    bitrix_assigned_by_id = venta.usuario.userprofile.bitrix_user_id
+                opportunity_data['bitrix_assigned_by_id'] = bitrix_assigned_by_id
                 
                 bitrix_response = send_opportunity_to_bitrix(opportunity_data, request=request)
                 
@@ -807,6 +812,11 @@ def editar_venta_todoitem(request, pk):
                     'comentarios': venta.comentarios,
                     'bitrix_stage_id': venta.bitrix_stage_id,
                 }
+                # Obtener el bitrix_user_id del usuario asignado
+                bitrix_assigned_by_id = None
+                if venta.usuario and hasattr(venta.usuario, 'userprofile') and venta.usuario.userprofile.bitrix_user_id:
+                    bitrix_assigned_by_id = venta.usuario.userprofile.bitrix_user_id
+                opportunity_data['bitrix_assigned_by_id'] = bitrix_assigned_by_id
                 bitrix_updated = update_opportunity_in_bitrix(venta.bitrix_deal_id, opportunity_data, request=request)
                 if bitrix_updated:
                     messages.success(request, "Oportunidad actualizada en Bitrix24 con éxito.")

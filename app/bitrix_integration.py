@@ -49,6 +49,25 @@ def get_or_create_bitrix_company(company_name, request=None):
         print(f"Error al crear compañía en Bitrix24: {e}")
         return None
 
+def get_bitrix_users(request=None):
+    if not BITRIX_WEBHOOK_URL:
+        if request:
+            messages.error(request, "Error: La URL del webhook de Bitrix24 no está configurada.")
+        print("Error: La URL del webhook de Bitrix24 no está configurada.")
+        return []
+
+    users_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "user.get.json")
+    try:
+        response = requests.post(users_url)
+        response.raise_for_status()
+        users = response.json().get('result', [])
+        return [{'id': user['ID'], 'name': f"{user.get('NAME', '')} {user.get('LAST_NAME', '')}".strip()} for user in users]
+    except requests.exceptions.RequestException as e:
+        print(f"Error al obtener usuarios de Bitrix24: {e}")
+        if request:
+            messages.error(request, f"Error al obtener usuarios de Bitrix24: {e}")
+        return []
+
 def _get_bitrix_mapped_data(opportunity_data, request=None):
     producto_map = {
         'ZEBRA': '176',
@@ -125,9 +144,16 @@ def _get_bitrix_mapped_data(opportunity_data, request=None):
         "TITLE": opportunity_data.get('oportunidad'),
         "OPPORTUNITY": opportunity_data.get('monto'),
         "CURRENCY_ID": "USD",
-        "ASSIGNED_BY_ID": 1,
         "COMMENTS": opportunity_data.get('comentarios'),
     }
+
+    # Asignar el usuario responsable de Bitrix si se proporciona
+    bitrix_assigned_by_id = opportunity_data.get('bitrix_assigned_by_id')
+    if bitrix_assigned_by_id:
+        fields["ASSIGNED_BY_ID"] = bitrix_assigned_by_id
+    else:
+        # Valor por defecto si no se proporciona un ID de Bitrix (ej. el admin o un usuario genérico)
+        fields["ASSIGNED_BY_ID"] = 1 # ID del administrador o un usuario por defecto en Bitrix
 
     if bitrix_company_id:
         fields["COMPANY_ID"] = bitrix_company_id
