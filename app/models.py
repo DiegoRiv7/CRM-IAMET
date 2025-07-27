@@ -126,6 +126,7 @@ class Cotizacion(models.Model):
     
     titulo = models.CharField(max_length=255, default="Cotización sin título", verbose_name="Título de la Cotización")
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='cotizaciones', verbose_name="Cliente")
+    oportunidad = models.ForeignKey(TodoItem, on_delete=models.SET_NULL, null=True, blank=True, related_name='cotizaciones', verbose_name="Oportunidad de Venta") # NUEVO CAMPO
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
 
     # Nuevo campo para la descripción general de la cotización

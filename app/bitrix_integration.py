@@ -68,6 +68,45 @@ def get_bitrix_users(request=None):
             messages.error(request, f"Error al obtener usuarios de Bitrix24: {e}")
         return []
 
+def upload_file_to_bitrix_deal_field(bitrix_deal_id, file_field_id, file_name, file_content_base64, request=None):
+    if not BITRIX_WEBHOOK_URL:
+        if request:
+            messages.error(request, "Error: La URL del webhook de Bitrix24 no está configurada para subir archivos.")
+        print("Error: La URL del webhook de Bitrix24 no está configurada para subir archivos.")
+        return False
+
+    update_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "crm.deal.update.json")
+
+    # El formato para subir archivos a campos de tipo 'file' es una lista de listas:
+    # [[file_name, base64_content]]
+    file_data_payload = [[file_name, file_content_base64]]
+
+    data = {
+        'id': bitrix_deal_id,
+        'fields': {
+            file_field_id: file_data_payload
+        }
+    }
+
+    print(f"DEBUG Bitrix: Intentando subir archivo a Bitrix24 (UPDATE con archivo): {json.dumps(data, indent=2)}")
+    try:
+        response = requests.post(update_url, json=data)
+        response.raise_for_status()
+        json_response = response.json()
+        if json_response.get('result'):
+            print(f"DEBUG Bitrix: Archivo '{file_name}' subido con éxito a la negociación {bitrix_deal_id}.")
+            return True
+        else:
+            print(f"DEBUG Bitrix: Error al subir archivo '{file_name}' a la negociación {bitrix_deal_id}: {json_response.get('error_description', json_response)}")
+            if request:
+                messages.error(request, f"Error al subir archivo a Bitrix24: {json_response.get('error_description', 'Error desconocido')}")
+            return False
+    except requests.exceptions.RequestException as e:
+        print(f"DEBUG Bitrix: Excepción al subir archivo a Bitrix24: {e}")
+        if request:
+            messages.error(request, f"Excepción al subir archivo a Bitrix24: {e}")
+        return False
+
 def _get_bitrix_mapped_data(opportunity_data, request=None):
     producto_map = {
         'ZEBRA': '176',
@@ -175,7 +214,7 @@ def _get_bitrix_mapped_data(opportunity_data, request=None):
 
     return fields
 
-def send_opportunity_to_bitrix(opportunity_data, request=None):
+def send_opportunity_to_bitrix(opportunity_data, request=None, file_data=None):
     if not BITRIX_WEBHOOK_URL:
         if request:
             messages.error(request, "Error: La URL del webhook de Bitrix24 no está configurada.")
@@ -191,12 +230,21 @@ def send_opportunity_to_bitrix(opportunity_data, request=None):
         response.raise_for_status()
         json_response = response.json()
         print(f"DEBUG Bitrix: Oportunidad enviada a Bitrix24 con éxito: {json_response}")
+
+        bitrix_deal_id = json_response.get('result')
+        if bitrix_deal_id and file_data:
+            file_name = file_data['name']
+            file_content_base64 = file_data['content']
+            # Usar el ID del campo personalizado de archivo que identificamos
+            file_field_id = "UF_CRM_1753490093"
+            upload_file_to_bitrix_deal_field(bitrix_deal_id, file_field_id, file_name, file_content_base64, request=request)
+
         return json_response
     except requests.exceptions.RequestException as e:
         print(f"DEBUG Bitrix: Error al enviar la oportunidad a Bitrix24: {e}")
         return None
 
-def update_opportunity_in_bitrix(bitrix_deal_id, opportunity_data, request=None):
+def update_opportunity_in_bitrix(bitrix_deal_id, opportunity_data, request=None, file_data=None):
     from django.contrib import messages # Import messages here
     if not BITRIX_WEBHOOK_URL:
         if request:
@@ -218,6 +266,14 @@ def update_opportunity_in_bitrix(bitrix_deal_id, opportunity_data, request=None)
         response.raise_for_status()
         json_response = response.json()
         print(f"DEBUG Bitrix: Oportunidad actualizada en Bitrix24 con éxito: {json_response}")
+
+        if file_data:
+            file_name = file_data['name']
+            file_content_base64 = file_data['content']
+            # Usar el ID del campo personalizado de archivo que identificamos
+            file_field_id = "UF_CRM_1753490093"
+            upload_file_to_bitrix_deal_field(bitrix_deal_id, file_field_id, file_name, file_content_base64, request=request)
+
         return True
     except requests.exceptions.RequestException as e:
         print(f"DEBUG Bitrix: Error al actualizar la oportunidad en Bitrix24: {e}")

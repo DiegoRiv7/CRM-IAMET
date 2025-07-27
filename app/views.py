@@ -1,32 +1,31 @@
-from django.shortcuts import render, HttpResponse, redirect, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile # Asegúrate de importar los nuevos modelos
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile
 from . import views_exportar
-from .forms import VentaForm, VentaFilterForm, CotizacionForm # Asegúrate de que CotizacionForm esté importado
+from .forms import VentaForm, VentaFilterForm, CotizacionForm
 from django.db.models import Sum, Count, F, Q
 from django.db.models.functions import Upper, Coalesce
 from django.db.models import Value
 from datetime import date
 from dateutil.relativedelta import relativedelta
-from decimal import Decimal # Importa Decimal para manejar números con precisión
+from decimal import Decimal
 from django.utils.html import json_script
 import json
-from django.http import JsonResponse
-from django.urls import reverse # Importar reverse para construir URLs
+from django.urls import reverse
 from django.utils import timezone
 
 # Importaciones para generación de PDF
 from weasyprint import HTML
 from django.template.loader import render_to_string
-from django.http import HttpResponse
 
 # Asegúrate de importar tu modelo Cotizacion y DetalleCotizacion
 from .models import Cotizacion, DetalleCotizacion
 
-# Importaciones para el logo Base64 (asegúrate de que estas líneas estén al inicio del archivo si no lo están)
+# Importaciones para el logo Base64
 import base64
 import os
 
@@ -40,7 +39,22 @@ def _get_display_for_value(value, choices_list):
 
 # Vistas principales y funcionales
 
-from django.contrib.auth.decorators import login_required
+@login_required
+def get_oportunidades_por_cliente(request):
+    cliente_id = request.GET.get('cliente_id')
+    print(f"[DEBUG] Buscando oportunidades para cliente_id: {cliente_id}")
+
+    if not cliente_id:
+        print("[DEBUG] No se proporcionó cliente_id.")
+        return JsonResponse([], safe=False)
+
+    oportunidades = TodoItem.objects.filter(cliente_id=cliente_id).order_by('-fecha_creacion')
+    print(f"[DEBUG] Se encontraron {oportunidades.count()} oportunidades.")
+
+    data = [{'id': op.id, 'nombre': op.oportunidad} for op in oportunidades]
+    print(f"[DEBUG] Enviando datos: {data}")
+
+    return JsonResponse(data, safe=False)
 
 @login_required
 def ventas_fullscreen(request):
@@ -73,7 +87,7 @@ def oportunidades_mes_actual(request):
         oportunidades = TodoItem.objects.filter(mes_cierre=mes_actual_val, usuario=request.user)
         meta_mensual = 130000
 
-    # Monto por cobrar: oportunidades con probabilidad entre 1 y 99%
+    # Monto por cobrar: oportunidades con probabilidad entre 1 and 99%
     monto_por_cobrar = oportunidades.filter(probabilidad_cierre__gte=1, probabilidad_cierre__lte=99).aggregate(suma=Sum('monto'))['suma'] or 0
 
     return render(request, 'oportunidades_mes_actual.html', {
@@ -507,7 +521,7 @@ def view_cotizacion_pdf(request, cotizacion_id):
     company_address = ""
     company_phone = ""
     company_email = ""
-    template_name = 'cotizacion_pdf_template.html'
+    template_name = 'cotizacion_pdf_template.html' # Default template
 
     if tipo_cotizacion and tipo_cotizacion.lower() == 'iamet':
         template_name = 'iamet_cotizacion_pdf_template.html'
@@ -515,7 +529,7 @@ def view_cotizacion_pdf(request, cotizacion_id):
         company_address = 'Av. Principal #456, Col. Centro, Guadalajara, Jalisco'
         company_phone = '+52 33 9876 5432'
         company_email = 'contacto@iamet.com'
-    else:
+    else: # Default to Bajanet
         template_name = 'cotizacion_pdf_template.html'
         company_name = 'BAJANET S.A. de C.V.'
         company_address = 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México'
@@ -527,6 +541,7 @@ def view_cotizacion_pdf(request, cotizacion_id):
                 logo_base64 = base64.b64encode(image_file.read()).decode('utf-8')
         except FileNotFoundError:
             logo_base64 = ""
+
 
     context = {
         'cotizacion': cotizacion,
@@ -542,17 +557,23 @@ def view_cotizacion_pdf(request, cotizacion_id):
     }
 
     try:
+        print(f"DEBUG: Attempting to render template: {template_name}")
         html_string = render_to_string(template_name, context)
+        print("DEBUG: Template rendered to HTML string.")
     except Exception as e:
-        return HttpResponse(f"Error interno del servidor al renderizar el PDF: {e}", status=500)
+        print(f"ERROR: Error rendering template '{template_name}': {e}")
+        return HttpResponse(f"Internal server error rendering PDF: {e}", status=500)
 
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="{pdf_name}.pdf"'
 
     try:
+        print("DEBUG: Attempting to generate PDF with WeasyPrint.")
         HTML(string=html_string).write_pdf(response)
+        print("DEBUG: PDF generated successfully.")
     except Exception as e:
-        return HttpResponse(f"Error interno del servidor al generar el PDF: {e}", status=500)
+        print(f"ERROR: Error generating PDF with WeasyPrint: {e}")
+        return HttpResponse(f"Internal server error generating PDF: {e}", status=500)
         
     return response
 
@@ -641,7 +662,7 @@ def ingresar_venta_todoitem(request):
                 try:
                     cliente = Cliente.objects.get(bitrix_company_id=bitrix_company_id_from_form)
                 except Cliente.DoesNotExist:
-                    # Si el cliente no existe localmente, lo creamos con el ID de Bitrix proporcionado
+                    # If client doesn't exist locally, create it with the provided Bitrix ID
                     cliente = Cliente.objects.create(
                         nombre_empresa=cliente_nombre,
                         bitrix_company_id=bitrix_company_id_from_form
@@ -803,8 +824,8 @@ def editar_venta_todoitem(request, pk):
                 opportunity_data = {
                     'oportunidad': venta.oportunidad,
                     'monto': float(venta.monto),
-                    'cliente': venta.cliente.nombre_empresa,
-                    'bitrix_company_id': venta.cliente.bitrix_company_id,
+                    'cliente': cliente.nombre_empresa,
+                    'bitrix_company_id': cliente.bitrix_company_id,
                     'producto': venta.producto,
                     'area': venta.area,
                     'mes_cierre': venta.mes_cierre,
@@ -1025,7 +1046,7 @@ def mes_dashboard_detail(request, mes_val):
     # Monto total esperado para este mes
     total_monto_esperado = oportunidades_mes.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
 
-    # Monto POR COBRAR: oportunidades con probabilidad entre 1 y 99%
+    # Monto POR COBRAR: oportunidades con probabilidad entre 1 and 99%
     por_cobrar_monto = oportunidades_mes.filter(probabilidad_cierre__gte=1, probabilidad_cierre__lte=99).aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
 
     # Clientes involucrados en oportunidades para este mes
@@ -1108,7 +1129,7 @@ def generate_quote_pdf(request, pk):
 
     # Create the PDF from the HTML string
     # You can add a base_url if you have external images or CSS that WeasyPrint needs to load
-    # Example: HTML(string=html_string, base_url=request.build_absolute_uri('/')).write_pdf(...)
+    # Example: HTML(string=html_string, base_url=request.build_absolute_uri('/'))
     pdf_file = HTML(string=html_string).write_pdf()
 
     # Create the HTTP response with the PDF
@@ -1116,12 +1137,6 @@ def generate_quote_pdf(request, pk):
     response['Content-Disposition'] = f'attachment; filename="cotizacion_{opportunity.oportunidad}.pdf"'
     return response
 
-
-# This view seems to be duplicated in your original code.
-# If you have two functions with the same name 'editar_venta_todoitem',
-# Django will use the last one defined. It is recommended to have only one.
-# I have kept it as it was in your original file.
-    return render(request, 'ingresar_venta.html', {'form': form, 'oportunidad': oportunidad})
 
 
 # --- NEW/CORRECTED VIEWS ADDED ---
@@ -1169,6 +1184,12 @@ def crear_cotizacion_view(request, cliente_id=None):
             cotizacion.save()
             print(f"DEBUG: Quote saved with ID: {cotizacion.id}")
 
+            # Obtener la oportunidad seleccionada del formulario
+            oportunidad_seleccionada = form.cleaned_data.get('oportunidad')
+            bitrix_deal_id_to_upload = None
+            if oportunidad_seleccionada and oportunidad_seleccionada.bitrix_deal_id:
+                bitrix_deal_id_to_upload = oportunidad_seleccionada.bitrix_deal_id
+
             # Collect product data sent from JavaScript
             productos_data = {}
             # Iterate through request.POST.items() to correctly parse product data
@@ -1207,7 +1228,7 @@ def crear_cotizacion_view(request, cliente_id=None):
                     print(f"Warning: Invalid product data found: {item_data} - Error: {e}")
                     # Consider returning an error here or logging more severely
                     # If a detail is invalid, it's better to delete the entire quote
-                    cotizacion.delete()
+                    cotizacion.delete() # Revert the quote if details are invalid
                     return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Invalid product data in row. Error: {e}'}]}}, status=400)
 
             # Round the subtotal before calculating IVA
@@ -1226,7 +1247,7 @@ def crear_cotizacion_view(request, cliente_id=None):
             cotizacion.descuento_visible = descuento_visible_str.lower() == 'true'
             cotizacion.tipo_cotizacion = request.POST.get('tipo_cotizacion')
             
-            cotizacion.save(update_fields=['subtotal', 'iva_rate', 'iva_amount', 'total', 'descuento_visible', 'tipo_cotizacion'])
+            cotizacion.save(update_fields=['subtotal', 'iva_rate', 'iva_amount', 'total', 'descuento_visible', 'tipo_cotizacion', 'oportunidad'])
             print(f"DEBUG: Quote totals updated. Subtotal: {cotizacion.subtotal}, IVA: {cotizacion.iva_amount}, Total: {cotizacion.total}, Quote Type: {cotizacion.tipo_cotizacion}")
             
 
@@ -1246,11 +1267,50 @@ def crear_cotizacion_view(request, cliente_id=None):
                     print(f"Error saving DetalleCotizacion: {e} for data {item_data}")
                     # If a detail fails, it's better to delete the entire quote
                     cotizacion.delete() # Revert the quote if details are invalid
-                    return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Error saving product details. Error: {e}'}]}}, status=400)
+                    return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Invalid product data in row. Error: {e}'}]}}, status=400)
 
             
             pdf_url = reverse('generate_cotizacion_pdf', args=[cotizacion.id])
             print(f"DEBUG: PDF URL generated: {pdf_url}")
+
+            # Generar el PDF en memoria para enviarlo a Bitrix24
+            try:
+                # Renderizar el HTML de la cotización a una cadena
+                html_string = render_to_string('cotizacion_pdf_template.html', {
+                    'cotizacion': cotizacion,
+                    'detalles_cotizacion': cotizacion.detalles.all(),
+                    'request_user': request.user,
+                    'current_date': date.today(),
+                    'company_name': 'BAJANET S.A. de C.V.',
+                    'company_address': 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México',
+                    'company_phone': '+52 55 1234 5678',
+                    'company_email': 'ventas@bajanet.com',
+                    'logo_base64': '', # Puedes cargar el logo aquí si es necesario
+                    'iva_rate_percentage': (cotizacion.iva_rate * Decimal('100')).quantize(Decimal('1')),
+                })
+                # Generar el PDF en memoria
+                pdf_file_content = HTML(string=html_string).write_pdf()
+                # Codificar el contenido del PDF a Base64
+                pdf_base64 = base64.b64encode(pdf_file_content).decode('utf-8')
+
+                if bitrix_deal_id_to_upload:
+                    file_name_for_bitrix = f"{cotizacion.nombre_cotizacion or cotizacion.titulo}.pdf"
+                    # Llamar a la función de Bitrix para subir el archivo
+                    from .bitrix_integration import upload_file_to_bitrix_deal_field
+                    file_field_id = "UF_CRM_1753490093" # El ID del campo de archivo en Bitrix24
+                    upload_success = upload_file_to_bitrix_deal_field(
+                        bitrix_deal_id_to_upload, file_field_id, file_name_for_bitrix, pdf_base64, request=request
+                    )
+                    if upload_success:
+                        messages.success(request, "Cotización generada y PDF subido a Bitrix24 con éxito.")
+                    else:
+                        messages.warning(request, "Cotización generada, pero hubo un error al subir el PDF a Bitrix24.")
+                else:
+                    messages.info("Cotización generada, pero no se pudo subir el PDF a Bitrix24 (no hay ID de negociación). ")
+
+            except Exception as e:
+                print(f"ERROR al generar o subir PDF a Bitrix24: {e}")
+                messages.error(request, f"Error al generar o subir PDF a Bitrix24: {e}")
             
             return JsonResponse({'success': True, 'pdf_url': pdf_url})
 
@@ -1306,34 +1366,17 @@ def generate_cotizacion_pdf(request, cotizacion_id):
     # Ensure that the user has permission to view this quote
     if not is_supervisor(request.user) and cotizacion.created_by != request.user:
         print(f"DEBUG: Access denied for user {request.user.username} to quote {cotizacion.id}")
-        return HttpResponse("Access denied.", status=403)
+        return HttpResponse("Acceso denegado.", status=403)
 
     detalles_cotizacion = DetalleCotizacion.objects.filter(cotizacion=cotizacion)
-    print(f"DEBUG: Quote details found: {detalles_cotizacion.count()}")
-
-    # Calculate IVA as a percentage to display in the PDF
-    # cotizacion.iva_rate is already the decimal value (e.g., 0.08 or 0.16)
     iva_rate_percentage = (cotizacion.iva_rate * Decimal('100')).quantize(Decimal('1'))
-    print(f"DEBUG: IVA rate: {iva_rate_percentage}%")
 
-    # --- Get the name for the PDF ---
-    pdf_name_raw = ""
-    if hasattr(cotizacion, 'nombre_cotizacion') and cotizacion.nombre_cotizacion:
-        pdf_name_raw = cotizacion.nombre_cotizacion
-    elif hasattr(cotizacion, 'titulo') and cotizacion.titulo:
-        pdf_name_raw = cotizacion.titulo
-    else:
-        pdf_name_raw = f"Cotizacion_{cotizacion.id}"
-
-    pdf_name = "".join(c if c.isalnum() or c in ('_', '-') else '_' for c in pdf_name_raw).strip()
-    pdf_name = pdf_name.replace(' ', '_')
-
+    pdf_name_raw = cotizacion.nombre_cotizacion or f"Cotizacion_{cotizacion.id}"
+    pdf_name = "".join(c for c in pdf_name_raw if c.isalnum() or c in ('_', '-')).strip().replace(' ', '_')
     if not pdf_name:
         pdf_name = f"Cotizacion_{cotizacion.id}"
-    print(f"DEBUG: PDF file name: {pdf_name}.pdf")
 
-    # --- Logic to handle logo and company information based on quote type ---
-    tipo_cotizacion = cotizacion.tipo_cotizacion 
+    tipo_cotizacion = cotizacion.tipo_cotizacion
     logo_base64 = ""
     company_name = ""
     company_address = ""
@@ -1347,8 +1390,6 @@ def generate_cotizacion_pdf(request, cotizacion_id):
         company_address = 'Av. Principal #456, Col. Centro, Guadalajara, Jalisco'
         company_phone = '+52 33 9876 5432'
         company_email = 'contacto@iamet.com'
-        logo_base64 = ""
-        print(f"DEBUG: Configuration for IAMET. Using template: {template_name}")
     else: # Default to Bajanet
         template_name = 'cotizacion_pdf_template.html'
         company_name = 'BAJANET S.A. de C.V.'
@@ -1359,9 +1400,7 @@ def generate_cotizacion_pdf(request, cotizacion_id):
             logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'img', 'bajanet_logo.png')
             with open(logo_path, "rb") as image_file:
                 logo_base64 = base64.b64encode(image_file.read()).decode('utf-8')
-            print(f"DEBUG: BAJANET logo loaded from: {logo_path}")
         except FileNotFoundError:
-            print(f"Warning: BAJANET logo not found in {logo_path}")
             logo_base64 = ""
 
 
@@ -1430,7 +1469,7 @@ def perfil_usuario(request, usuario_id):
     oportunidades_cobradas_mes = oportunidades_mes.filter(probabilidad_cierre=100)
     monto_total_cobrado_mes = oportunidades_cobradas_mes.aggregate(suma=Sum('monto'))['suma'] or 0
 
-    # Oportunidades por cobrar del mes actual (probabilidad > 70% y < 100%)
+    # Oportunidades por cobrar del mes actual (probabilidad > 70% and < 100%)
     oportunidades_por_cobrar_mes = oportunidades_mes.filter(probabilidad_cierre__gt=70, probabilidad_cierre__lt=100)
     monto_total_por_cobrar_mes = oportunidades_por_cobrar_mes.aggregate(suma=Sum('monto'))['suma'] or 0
 
@@ -1524,7 +1563,6 @@ def cotizaciones_por_cliente_view(request, cliente_id):
     })
 
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from .models import Cliente
 from django.contrib.auth.models import User
@@ -1561,7 +1599,6 @@ def crear_cliente_api(request):
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from .models import TodoItem
 

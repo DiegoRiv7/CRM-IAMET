@@ -113,33 +113,41 @@ class CotizacionForm(forms.ModelForm):
     """
     Formulario para la creación/edición de una cotización.
     """
-    class Meta:
-        model = Cotizacion # Indica que este formulario está basado en el modelo Cotizacion
-        # Define qué campos del modelo Cotizacion quieres incluir en el formulario.
-        # Se elimina 'tipo_cotizacion' de aquí porque se maneja manualmente en la vista
-        # a través del campo 'institucion' del HTML.
-        fields = ['titulo', 'cliente', 'descripcion', 'moneda', 'iva_rate']
+    oportunidad = forms.ModelChoiceField(
+        queryset=TodoItem.objects.none(),  # Se inicia vacío y se llena con JS
+        required=False,
+        label="Oportunidad de Venta (Opcional)",
+        widget=forms.Select(attrs={'class': 'input-field'})
+    )
 
-        # Opcional: Personaliza las etiquetas de los campos en el formulario
+    class Meta:
+        model = Cotizacion
+        fields = ['titulo', 'cliente', 'oportunidad', 'descripcion', 'moneda', 'iva_rate']
         labels = {
             'titulo': 'Título de la Cotización',
-            'cliente': 'Cliente', # Asegurarse de que el cliente tiene una etiqueta
+            'cliente': 'Cliente',
+            'oportunidad': 'Oportunidad de Venta (Opcional)',
             'descripcion': 'Descripción General',
             'moneda': 'Moneda',
             'iva_rate': 'Tasa de IVA (ej. 0.16 para 16%)',
         }
-        # Opcional: Personaliza cómo se ven los campos HTML (clases CSS, tipo de input, etc.)
         widgets = {
             'titulo': forms.TextInput(attrs={'class': 'input-field'}),
-            'cliente': forms.Select(attrs={'class': 'input-field'}), # Asegurarse de que el cliente tiene un widget
+            'cliente': forms.Select(attrs={'class': 'input-field'}),
             'descripcion': forms.Textarea(attrs={'rows': 3, 'class': 'input-field'}),
             'moneda': forms.Select(attrs={'class': 'input-field'}),
             'iva_rate': forms.NumberInput(attrs={'class': 'input-field', 'step': '0.01'}),
         }
 
     def __init__(self, *args, **kwargs):
+        cliente_id = kwargs.pop('cliente_id', None)
         super().__init__(*args, **kwargs)
-        # Añadir clases de Tailwind a todos los campos
+
+        if cliente_id:
+            self.fields['oportunidad'].queryset = TodoItem.objects.filter(cliente_id=cliente_id).order_by('-fecha_creacion')
+        else:
+            self.fields['oportunidad'].queryset = TodoItem.objects.none()
+
         for field_name, field in self.fields.items():
             if isinstance(field.widget, (forms.TextInput, forms.NumberInput, forms.Textarea, forms.Select, forms.DateInput)):
                 field.widget.attrs.update({'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'})

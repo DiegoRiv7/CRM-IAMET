@@ -216,6 +216,15 @@
                         {% endif %}
                     </div>
                 </div>
+                <div class="mt-6 text-center">
+                    <label for="id_oportunidad" class="block text-sm font-medium text-gray-300 mb-1">Oportunidad Bitrix24</label>
+                    <select id="id_oportunidad" name="oportunidad" class="input-field mx-auto" style="max-width: 500px;">
+                        <option value="">-- Seleccione una oportunidad --</option>
+                    </select>
+                    {% if form.oportunidad.errors %}
+                        <ul class="errorlist">{% for error in form.oportunidad.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                    {% endif %}
+                </div>
             </div>
 
             <div class="card p-6 shadow-md-dark">
@@ -234,7 +243,7 @@
 
                 <div id="paste-area-container" class="paste-area-container">
                     <p class="text-gray-400 mb-4">Copia tus datos de Excel (columnas: Nombre, Descripción, Cantidad, Precio, Descuento) y pégalos aquí:</p>
-                    <textarea id="excel-paste-textarea" class="textarea-field w-full h-40" placeholder="Pega tus datos de Excel aquí (ej. Nombre&#9;Descripción&#9;1&#9;10.50&#9;5)"></textarea>
+                    <textarea id="excel-paste-textarea" class="textarea-field w-full h-40" placeholder="Pega tus datos de Excel aquí (ej. Nombre\tDescripción\t1\t10.50\t5)"></textarea>
                     <button type="button" id="process-paste-btn" class="btn-primary mt-4">Procesar Pegado</button>
                     <button type="button" id="cancel-paste-btn" class="btn-secondary mt-4 ml-2">Cancelar</button>
                 </div>
@@ -502,7 +511,41 @@
             // Update hidden input when select changes
             clientSelect.addEventListener('change', () => {
                 selectedClientIdInput.value = clientSelect.value;
+                fetchOportunidadesForClient(clientSelect.value); // Fetch opportunities when client changes
             });
+
+            // Initial fetch of opportunities if a client is already selected (e.g., on page load with initial data)
+            if (clienteIdInicial) {
+                fetchOportunidadesForClient(clienteIdInicial);
+            }
+        }
+
+        // Function to fetch opportunities for a given client
+        async function fetchOportunidadesForClient(clientId) {
+            const oportunidadSelect = document.getElementById('id_oportunidad');
+            oportunidadSelect.innerHTML = '<option value="">-- Seleccione una oportunidad --</option>'; // Clear existing options
+
+            if (!clientId) {
+                return; // No client selected, so no opportunities to fetch
+            }
+
+            try {
+                const response = await fetch(`/api/get-oportunidades-por-cliente/?cliente_id=${clientId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const oportunidades = await response.json();
+
+                oportunidades.forEach(oportunidad => {
+                    const option = document.createElement('option');
+                    option.value = oportunidad.id;
+                    option.textContent = oportunidad.nombre;
+                    oportunidadSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error fetching opportunities:', error);
+                // Optionally, display an error message to the user
+            }
         }
 
 
@@ -554,6 +597,8 @@
                 
                 // Asegurarse de que el campo 'cliente' tome el valor del select
                 formData.set('cliente', document.getElementById('id_cliente').value);
+                // Asegurarse de que el campo 'oportunidad' tome el valor del select
+                formData.set('oportunidad', document.getElementById('id_oportunidad').value);
 
                 // --- DEBUGGING: Imprimir FormData antes de enviar ---
                 console.log('DEBUG JS: Datos del formulario a enviar:');
