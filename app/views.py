@@ -42,7 +42,6 @@ def _get_display_for_value(value, choices_list):
 @login_required
 def get_oportunidades_por_cliente(request):
     cliente_id = request.GET.get('cliente_id')
-    print(f"[DEBUG] Buscando oportunidades para cliente_id: {cliente_id}")
 
     if is_supervisor(request.user):
         if cliente_id:
@@ -57,10 +56,10 @@ def get_oportunidades_por_cliente(request):
             # If no client_id, return the 20 most recent opportunities for the current user
             oportunidades = TodoItem.objects.filter(usuario=request.user).order_by('-fecha_creacion')[:20]
 
-    print(f"[DEBUG] Se encontraron {oportunidades.count()} oportunidades.")
+    
 
     data = [{'id': op.id, 'nombre': op.oportunidad} for op in oportunidades]
-    print(f"[DEBUG] Enviando datos: {data}")
+    
 
     return JsonResponse(data, safe=False)
 

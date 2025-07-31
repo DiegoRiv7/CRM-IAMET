@@ -575,7 +575,7 @@
             }
 
             try {
-                const response = await fetch(`/api/get-oportunidades-por-cliente/?cliente_id=${clientId}`);
+                const response = await fetch(`/app/api/get-oportunidades-por-cliente/?cliente_id=${clientId}`);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -689,7 +689,7 @@
             cotizacionForm.addEventListener('submit', async (event) => {
                 event.preventDefault(); // Evitar el envío de formulario tradicional
 
-                console.log('URL de envío del formulario:', formActionUrl);
+                
 
                 if (!formActionUrl || formActionUrl.trim() === '') {
                     alert('Error crítico: No se pudo determinar la URL para guardar la cotización.');
