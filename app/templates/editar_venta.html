@@ -54,8 +54,9 @@
       </div>
       {% endif %}
       <div>
-        <label for="id_contacto" class="block text-sm text-white mb-1">Contacto del Cliente</label>
-        {{ form.contacto|add_class:"form-input-modern"|attr:"placeholder: Contacto del Cliente" }}
+        <label for="id_contacto_nombre" class="block text-sm text-white mb-1">Contacto del Cliente</label>
+        {{ form.contacto_nombre|add_class:"form-input-modern"|attr:"placeholder: Contacto del Cliente" }}
+        {{ form.bitrix_contact_id }}
       </div>
       <div>
         <label for="id_area" class="block text-sm text-white mb-1">Área</label>

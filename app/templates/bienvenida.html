@@ -138,31 +138,54 @@
     </section>
     <section class="w-full flex flex-col items-center justify-center py-4 fade-in max-w-screen-2xl" style="animation-delay:0.4s;">
         <h5 class="text-2xl font-bold mb-4" style="color:#00cfff;">Últimas Oportunidades</h5>
-        <div class="responsive-table w-full">
-            <table class="min-w-full divide-y divide-cyan-200/20 rounded-2xl overflow-hidden shadow-xl bg-white/5">
-                <thead style="background-color: #0a0d11;">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-cyan-200 uppercase tracking-wider">Oportunidad</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-cyan-200 uppercase tracking-wider">Cliente</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-cyan-200 uppercase tracking-wider">Monto</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-cyan-200 uppercase tracking-wider">Probabilidad</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-cyan-200 uppercase tracking-wider">Empleado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for o in ultimas_oportunidades %}
-                    <tr class="hover:bg-cyan-900/10 transition-all">
-                        <td data-label="Oportunidad" class="px-6 py-2 whitespace-nowrap text-lg font-medium" style="color: #E0E6F0;">{{ o.nombre }}</td>
-                        <td data-label="Cliente" class="px-6 py-2 whitespace-nowrap text-lg" style="color: #9AA7B7;">{{ o.cliente }}</td>
-                        <td data-label="Monto" class="px-6 py-2 whitespace-nowrap text-lg" style="color: #E0E6F0;">${{ o.monto|floatformat:0 }}</td>
-                        <td data-label="Probabilidad" class="px-6 py-2 whitespace-nowrap text-lg" style="color: #00CFFF;">{{ o.probabilidad }}%</td>
-                        <td data-label="Empleado" class="px-6 py-2 whitespace-nowrap text-lg" style="color: #9AA7B7;">{{ o.usuario }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="5" class="text-center text-gray-500 py-4">No hay oportunidades recientes.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="w-full overflow-x-auto">
+            <div class="min-w-full inline-block align-middle">
+                <div class="overflow-hidden rounded-2xl shadow-xl bg-white/5">
+                    <table class="min-w-full divide-y divide-cyan-200/20">
+                        <thead style="background-color: #0a0d11;">
+                            <tr>
+                                <th class="px-3 sm:px-4 py-3 text-left text-xs font-bold text-cyan-200 uppercase tracking-wider whitespace-nowrap">Oportunidad</th>
+                                <th class="px-3 sm:px-4 py-3 text-left text-xs font-bold text-cyan-200 uppercase tracking-wider whitespace-nowrap">Cliente</th>
+                                <th class="px-3 sm:px-4 py-3 text-left text-xs font-bold text-cyan-200 uppercase tracking-wider whitespace-nowrap">Monto</th>
+                                <th class="px-3 sm:px-4 py-3 text-left text-xs font-bold text-cyan-200 uppercase tracking-wider whitespace-nowrap">Probabilidad</th>
+                                <th class="px-3 sm:px-4 py-3 text-left text-xs font-bold text-cyan-200 uppercase tracking-wider whitespace-nowrap">Empleado</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-cyan-200/10">
+                            {% for o in ultimas_oportunidades %}
+                            <tr class="hover:bg-cyan-900/10 transition-colors duration-150">
+                                <td class="px-3 sm:px-4 py-3 text-sm sm:text-base font-medium text-cyan-100 max-w-[200px] sm:max-w-none truncate" title="{{ o.nombre }}">
+                                    {{ o.nombre|truncatechars:30 }}
+                                </td>
+                                <td class="px-3 sm:px-4 py-3 text-sm sm:text-base text-cyan-100/80 max-w-[150px] sm:max-w-none truncate" title="{{ o.get_nombre_cliente|default:'Sin cliente asignado' }}">
+                                    {{ o.get_nombre_cliente|default:'Sin cliente asignado'|truncatechars:20 }}
+                                </td>
+                                <td class="px-3 sm:px-4 py-3 text-sm sm:text-base font-medium text-cyan-100 whitespace-nowrap">
+                                    ${{ o.monto|floatformat:0 }}
+                                </td>
+                                <td class="px-3 sm:px-4 py-3">
+                                    <div class="flex items-center">
+                                        <div class="w-16 sm:w-20 bg-cyan-900/50 rounded-full h-2.5 mr-2">
+                                            <div class="bg-cyan-400 h-2.5 rounded-full" style="width: {{ o.probabilidad }}%; max-width: 100%;"></div>
+                                        </div>
+                                        <span class="text-sm sm:text-base text-cyan-300 font-medium">{{ o.probabilidad }}%</span>
+                                    </div>
+                                </td>
+                                <td class="px-3 sm:px-4 py-3 text-sm sm:text-base text-cyan-100/80 max-w-[120px] sm:max-w-none truncate" title="{{ o.usuario }}">
+                                    {{ o.usuario|truncatechars:15 }}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="px-6 py-4 text-center text-gray-400">
+                                    No hay oportunidades recientes.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </section>
     <section class="w-full flex flex-col items-center justify-center py-4 fade-in max-w-screen-2xl" style="animation-delay:0.6s;">

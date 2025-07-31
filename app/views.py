@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto
 from . import views_exportar
 from .forms import VentaForm, VentaFilterForm, CotizacionForm
 from django.db.models import Sum, Count, F, Q
@@ -44,16 +44,45 @@ def get_oportunidades_por_cliente(request):
     cliente_id = request.GET.get('cliente_id')
     print(f"[DEBUG] Buscando oportunidades para cliente_id: {cliente_id}")
 
-    if not cliente_id:
-        print("[DEBUG] No se proporcionó cliente_id.")
-        return JsonResponse([], safe=False)
+    if is_supervisor(request.user):
+        if cliente_id:
+            oportunidades = TodoItem.objects.filter(cliente_id=cliente_id).order_by('-fecha_creacion')
+        else:
+            # If no client_id, return the 20 most recent opportunities for supervisors
+            oportunidades = TodoItem.objects.all().order_by('-fecha_creacion')[:20]
+    else:
+        if cliente_id:
+            oportunidades = TodoItem.objects.filter(cliente_id=cliente_id, usuario=request.user).order_by('-fecha_creacion')
+        else:
+            # If no client_id, return the 20 most recent opportunities for the current user
+            oportunidades = TodoItem.objects.filter(usuario=request.user).order_by('-fecha_creacion')[:20]
 
-    oportunidades = TodoItem.objects.filter(cliente_id=cliente_id).order_by('-fecha_creacion')
     print(f"[DEBUG] Se encontraron {oportunidades.count()} oportunidades.")
 
     data = [{'id': op.id, 'nombre': op.oportunidad} for op in oportunidades]
     print(f"[DEBUG] Enviando datos: {data}")
 
+    return JsonResponse(data, safe=False)
+
+@login_required
+def get_bitrix_contacts_api(request):
+    query = request.GET.get('query', '')
+    company_id = request.GET.get('company_id', None)
+
+    contacts = get_all_bitrix_contacts(request=request, company_id=company_id)
+
+    # Filter contacts by query if provided
+    if query:
+        contacts = [c for c in contacts if query.lower() in (c.get('NAME', '') + ' ' + c.get('LAST_NAME', '')).lower()]
+
+    data = []
+    for contact in contacts:
+        full_name = f"{contact.get('NAME', '')} {contact.get('LAST_NAME', '')}".strip()
+        data.append({
+            'ID': contact['ID'],
+            'NAME': full_name,
+            'COMPANY_ID': contact.get('COMPANY_ID'),
+        })
     return JsonResponse(data, safe=False)
 
 @login_required
@@ -643,7 +672,7 @@ def todos (request):
     }
     return render (request, "todos.html", context)
 
-from .bitrix_integration import get_or_create_bitrix_company, send_opportunity_to_bitrix, update_opportunity_in_bitrix
+from .bitrix_integration import get_or_create_bitrix_company, send_opportunity_to_bitrix, update_opportunity_in_bitrix, get_all_bitrix_companies, get_all_bitrix_contacts
 
 @login_required
 def ingresar_venta_todoitem(request):
@@ -695,32 +724,38 @@ def ingresar_venta_todoitem(request):
                 
                 venta.save() # Guardar la instancia de venta para obtener un PK
 
-                opportunity_data = {
-                    'oportunidad': venta.oportunidad,
-                    'monto': float(venta.monto),
-                    'cliente': cliente.nombre_empresa,
-                    'bitrix_company_id': cliente.bitrix_company_id,
-                    'producto': venta.producto,
-                    'area': venta.area,
-                    'mes_cierre': venta.mes_cierre,
-                    'probabilidad_cierre': venta.probabilidad_cierre,
-                    'comentarios': venta.comentarios,
-                    'bitrix_stage_id': venta.bitrix_stage_id,
-                }
-                # Obtener el bitrix_user_id del usuario asignado
-                bitrix_assigned_by_id = None
-                if venta.usuario and hasattr(venta.usuario, 'userprofile') and venta.usuario.userprofile.bitrix_user_id:
-                    bitrix_assigned_by_id = venta.usuario.userprofile.bitrix_user_id
-                opportunity_data['bitrix_assigned_by_id'] = bitrix_assigned_by_id
-                
-                bitrix_response = send_opportunity_to_bitrix(opportunity_data, request=request)
-                
-                if bitrix_response and bitrix_response.get('result'):
-                    venta.bitrix_deal_id = bitrix_response.get('result')
-                    venta.save(update_fields=['bitrix_deal_id']) # Actualizar solo el campo bitrix_deal_id
-                    messages.success(request, "Oportunidad creada y sincronizada con Bitrix24.")
-                else:
-                    messages.warning(request, "Oportunidad creada, pero no se pudo sincronizar con Bitrix24. Verifique los logs.")
+                try:
+                    opportunity_data = {
+                        'oportunidad': venta.oportunidad,
+                        'monto': float(venta.monto),
+                        'cliente': cliente.nombre_empresa,
+                        'bitrix_company_id': cliente.bitrix_company_id,
+                        'producto': venta.producto,
+                        'area': venta.area,
+                        'mes_cierre': venta.mes_cierre,
+                        'probabilidad_cierre': venta.probabilidad_cierre,
+                        'comentarios': venta.comentarios,
+                        'bitrix_stage_id': venta.bitrix_stage_id,
+                        'bitrix_contact_id': venta.contacto.bitrix_contact_id if venta.contacto else None,
+                    }
+                    # Obtener el bitrix_user_id del usuario asignado
+                    bitrix_assigned_by_id = None
+                    if venta.usuario and hasattr(venta.usuario, 'userprofile') and venta.usuario.userprofile.bitrix_user_id:
+                        bitrix_assigned_by_id = venta.usuario.userprofile.bitrix_user_id
+                    opportunity_data['bitrix_assigned_by_id'] = bitrix_assigned_by_id
+                    
+                    bitrix_response = send_opportunity_to_bitrix(opportunity_data, request=request)
+                    
+                    if bitrix_response and bitrix_response.get('result'):
+                        venta.bitrix_deal_id = bitrix_response.get('result')
+                        venta.save(update_fields=['bitrix_deal_id']) # Actualizar solo el campo bitrix_deal_id
+                        messages.success(request, "Oportunidad creada y sincronizada con Bitrix24.")
+                    else:
+                        messages.warning(request, "Oportunidad creada, pero no se pudo sincronizar con Bitrix24. Verifique los logs.")
+
+                except Exception as e:
+                    messages.error(request, f"Oportunidad creada localmente, pero falló la sincronización con Bitrix24: {e}")
+                    print(f"ERROR: Falló la sincronización con Bitrix24 para la oportunidad {venta.id}: {e}")
 
                 return redirect('ingresar_venta_todoitem_exitosa')
 
@@ -1169,14 +1204,29 @@ def crear_cotizacion_view(request, cliente_id=None):
     then returns a JSON response with the PDF URL.
     """
     print(f"DEBUG: crear_cotizacion_view - Request method: {request.method}")
+    
+    # --- Security Check ---
     cliente_seleccionado = None
     if cliente_id:
-        cliente_seleccionado = get_object_or_404(Cliente, pk=cliente_id)
+        user = request.user
+        try:
+            if is_supervisor(user):
+                cliente_seleccionado = Cliente.objects.get(pk=cliente_id)
+            else:
+                # Vendedor solo puede acceder a clientes asignados a él o sin asignar.
+                cliente_seleccionado = Cliente.objects.get(
+                    Q(pk=cliente_id) & 
+                    (Q(asignado_a=user) | Q(asignado_a__isnull=True))
+                )
+        except Cliente.DoesNotExist:
+            from django.http import Http404
+            raise Http404("No tiene permiso para ver este cliente o el cliente no existe.")
+
         print(f"DEBUG: crear_cotizacion_view - Cliente seleccionado por ID: {cliente_seleccionado.nombre_empresa}")
 
     if request.method == 'POST':
-        # Instantiate the form with POST data
-        form = CotizacionForm(request.POST)
+        # Instantiate the form with POST data, and provide the user-specific queryset for the cliente field
+        form = CotizacionForm(request.POST, user=request.user)
 
         if form.is_valid():
             cotizacion = form.save(commit=False)
@@ -1192,13 +1242,8 @@ def crear_cotizacion_view(request, cliente_id=None):
 
             # Collect product data sent from JavaScript
             productos_data = {}
-            # Iterate through request.POST.items() to correctly parse product data
-            # The keys will look like 'productos[1][nombre]', 'productos[1][cantidad]', etc.
-            # We need to group them by index.
             for key, value in request.POST.items():
                 if key.startswith('productos['):
-                    # Extract the index and the field name
-                    # Example: 'productos[1][nombre]' -> index '1', field 'nombre'
                     parts = key.split('[')
                     index = parts[1].split(']')[0]
                     field = parts[2].split(']')[0]
@@ -1207,12 +1252,9 @@ def crear_cotizacion_view(request, cliente_id=None):
                         productos_data[index] = {}
                     productos_data[index][field] = value
 
-            # Convert the dictionary of dictionaries into a list of dictionaries,
-            # sorted by their original numerical index to maintain order.
             productos_list = [productos_data[key] for key in sorted(productos_data.keys(), key=int)]
-            print(f"DEBUG: productos_list before saving details: {productos_list}") # NEW DEBUG PRINT FOR DUPLICATION ISSUE
+            print(f"DEBUG: productos_list before saving details: {productos_list}")
 
-            # Calculate subtotal and quote totals
             calculated_subtotal = Decimal('0.00')
             for item_data in productos_list:
                 try:
@@ -1222,27 +1264,22 @@ def crear_cotizacion_view(request, cliente_id=None):
                     
                     item_total = cantidad * precio
                     item_total -= item_total * (descuento / Decimal('100.00'))
-                    calculated_subtotal += item_total.quantize(Decimal('0.01')) # Round each item to 2 decimal places before summing
+                    calculated_subtotal += item_total.quantize(Decimal('0.01'))
                     print(f"DEBUG_CALC: Item: {item_data.get('nombre')}, Quantity: {cantidad}, Price: {precio}, Discount: {descuento}, Item Total (rounded): {item_total.quantize(Decimal('0.01'))}")
                 except (ValueError, TypeError) as e:
-                    print(f"Warning: Invalid product data found: {item_data} - Error: {e}")
-                    # Consider returning an error here or logging more severely
-                    # If a detail is invalid, it's better to delete the entire quote
-                    cotizacion.delete() # Revert the quote if details are invalid
+                    cotizacion.delete()
                     return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Invalid product data in row. Error: {e}'}]}}, status=400)
 
-            # Round the subtotal before calculating IVA
             cotizacion.subtotal = calculated_subtotal.quantize(Decimal('0.01'))
             
             try:
                 cotizacion.iva_rate = Decimal(request.POST.get('iva_rate', '0.00'))
             except (ValueError, TypeError):
-                cotizacion.iva_rate = Decimal('0.00') # Default to 0 if conversion fails
+                cotizacion.iva_rate = Decimal('0.00')
 
-            cotizacion.iva_amount = (cotizacion.subtotal * cotizacion.iva_rate).quantize(Decimal('0.01')) # Round IVA amount
-            cotizacion.total = (cotizacion.subtotal + cotizacion.iva_amount).quantize(Decimal('0.01')) # Round final total
+            cotizacion.iva_amount = (cotizacion.subtotal * cotizacion.iva_rate).quantize(Decimal('0.01'))
+            cotizacion.total = (cotizacion.subtotal + cotizacion.iva_amount).quantize(Decimal('0.01'))
 
-            # Guardar el estado de visibilidad de la columna de descuento y el tipo de cotización
             descuento_visible_str = request.POST.get('descuento_visible', 'true')
             cotizacion.descuento_visible = descuento_visible_str.lower() == 'true'
             cotizacion.tipo_cotizacion = request.POST.get('tipo_cotizacion')
@@ -1250,8 +1287,6 @@ def crear_cotizacion_view(request, cliente_id=None):
             cotizacion.save(update_fields=['subtotal', 'iva_rate', 'iva_amount', 'total', 'descuento_visible', 'tipo_cotizacion', 'oportunidad'])
             print(f"DEBUG: Quote totals updated. Subtotal: {cotizacion.subtotal}, IVA: {cotizacion.iva_amount}, Total: {cotizacion.total}, Quote Type: {cotizacion.tipo_cotizacion}")
             
-
-            # Save product details after the quote has been saved and its totals calculated
             for item_data in productos_list:
                 try:
                     DetalleCotizacion.objects.create(
@@ -1260,22 +1295,19 @@ def crear_cotizacion_view(request, cliente_id=None):
                         descripcion=item_data.get('descripcion', ''),
                         cantidad=int(item_data.get('cantidad', 1)),
                         precio_unitario=Decimal(item_data.get('precio', '0.00')),
-                        descuento_porcentaje=Decimal(item_data.get('descuento', '0.00'))
+                        descuento_porcentaje=Decimal(item_data.get('descuento', '0.00')),
+                        marca=item_data.get('marca', ''),
+                        no_parte=item_data.get('no_parte', '')
                     )
                     print(f"DEBUG: Product detail created: {item_data.get('nombre')}")
                 except (ValueError, TypeError) as e:
-                    print(f"Error saving DetalleCotizacion: {e} for data {item_data}")
-                    # If a detail fails, it's better to delete the entire quote
-                    cotizacion.delete() # Revert the quote if details are invalid
+                    cotizacion.delete()
                     return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Invalid product data in row. Error: {e}'}]}}, status=400)
 
-            
             pdf_url = reverse('generate_cotizacion_pdf', args=[cotizacion.id])
             print(f"DEBUG: PDF URL generated: {pdf_url}")
 
-            # Generar el PDF en memoria para enviarlo a Bitrix24
             try:
-                # Renderizar el HTML de la cotización a una cadena
                 html_string = render_to_string('cotizacion_pdf_template.html', {
                     'cotizacion': cotizacion,
                     'detalles_cotizacion': cotizacion.detalles.all(),
@@ -1285,19 +1317,16 @@ def crear_cotizacion_view(request, cliente_id=None):
                     'company_address': 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México',
                     'company_phone': '+52 55 1234 5678',
                     'company_email': 'ventas@bajanet.com',
-                    'logo_base64': '', # Puedes cargar el logo aquí si es necesario
+                    'logo_base64': '',
                     'iva_rate_percentage': (cotizacion.iva_rate * Decimal('100')).quantize(Decimal('1')),
                 })
-                # Generar el PDF en memoria
                 pdf_file_content = HTML(string=html_string).write_pdf()
-                # Codificar el contenido del PDF a Base64
                 pdf_base64 = base64.b64encode(pdf_file_content).decode('utf-8')
 
                 if bitrix_deal_id_to_upload:
                     file_name_for_bitrix = f"{cotizacion.nombre_cotizacion or cotizacion.titulo}.pdf"
-                    # Llamar a la función de Bitrix para subir el archivo
                     from .bitrix_integration import upload_file_to_bitrix_deal_field
-                    file_field_id = "UF_CRM_1753490093" # El ID del campo de archivo en Bitrix24
+                    file_field_id = "UF_CRM_1753490093"
                     upload_success = upload_file_to_bitrix_deal_field(
                         bitrix_deal_id_to_upload, file_field_id, file_name_for_bitrix, pdf_base64, request=request
                     )
@@ -1315,7 +1344,6 @@ def crear_cotizacion_view(request, cliente_id=None):
             return JsonResponse({'success': True, 'pdf_url': pdf_url})
 
         else:
-            # If the form is not valid, return a JSON response with errors
             errors_dict = {}
             for field, field_errors in form.errors.items():
                 errors_dict[field] = [{'message': str(e), 'code': e.code if hasattr(e, 'code') else 'invalid'} for e in field_errors]
@@ -1323,35 +1351,75 @@ def crear_cotizacion_view(request, cliente_id=None):
             return JsonResponse({'success': False, 'errors': errors_dict}, status=400)
 
     else: # If the request is GET
-        form = CotizacionForm() # Create an empty form for GET requests
+        form = CotizacionForm(user=request.user)
+        form_action_url = reverse('crear_cotizacion', args=[cliente_id]) if cliente_id else ""
+        print(f"DEBUG: crear_cotizacion_view - Generated form_action_url: {form_action_url}")
 
-    # Get all clients for the frontend selector, regardless of the user role
-    clientes_queryset = Cliente.objects.all()
-    print(f"DEBUG: crear_cotizacion_view - Clientes obtenidos para frontend: {clientes_queryset.count()}")
+        if is_supervisor(request.user):
+            clientes_django = Cliente.objects.all().order_by('nombre_empresa')
+        else:
+            clientes_django = Cliente.objects.filter(Q(asignado_a=request.user) | Q(asignado_a__isnull=True)).order_by('nombre_empresa')
 
-    # Use .values() to get dictionaries and map field names
-    clientes_para_frontend = clientes_queryset.values(
-        'id', 'nombre_empresa', 'direccion', 'email'
-    )
+        print(f"DEBUG: crear_cotizacion_view - Clientes obtenidos de Django: {len(clientes_django)}")
 
-    # Convert the QuerySet to a list of dictionaries with the field names expected by the frontend
+        clientes_data_json = []
+        for c in clientes_django:
+            clientes_data_json.append({
+                'id': str(c.id),
+                'name': c.nombre_empresa,
+            })
+        print(f"DEBUG: crear_cotizacion_view - Clientes serializados para JSON: {len(clientes_data_json)}")
+
+        context = {
+            'form': form,
+            'cliente_seleccionado': cliente_seleccionado,
+            'clientes_data_json': json.dumps(clientes_data_json),
+            'cliente_id_inicial': cliente_id,
+            'form_action_url': form_action_url,
+        }
+        return render(request, 'crear_cotizacion.html', context)
+
+
+@login_required
+def editar_cotizacion_view(request, cotizacion_id):
+    cotizacion_original = get_object_or_404(Cotizacion, pk=cotizacion_id)
+    detalles_originales = DetalleCotizacion.objects.filter(cotizacion=cotizacion_original)
+
+    detalles_list = [{
+        'marca': d.marca,
+        'no_parte': d.no_parte,
+        'descripcion': d.descripcion,
+        'cantidad': d.cantidad,
+        'precio': str(d.precio_unitario),
+        'descuento': str(d.descuento_porcentaje),
+    } for d in detalles_originales]
+
+    if is_supervisor(request.user):
+        clientes_django = Cliente.objects.all().order_by('nombre_empresa')
+    else:
+        clientes_django = Cliente.objects.filter(Q(asignado_a=request.user) | Q(asignado_a__isnull=True)).order_by('nombre_empresa')
+
     clientes_data_json = []
-    for c in clientes_para_frontend:
+    for c in clientes_django:
         clientes_data_json.append({
-            'id': str(c['id']),
-            'name': c['nombre_empresa'],
-            'address': c['direccion'],
-            'taxId': c['email'] # Or the field you use for Tax ID
+            'id': str(c.id),
+            'name': c.nombre_empresa,
         })
-    print(f"DEBUG: crear_cotizacion_view - Clientes serializados para JSON: {len(clientes_data_json)}")
+
+    # Define the URL where the form should be submitted (always the creation URL)
+    form_action_url = reverse('crear_cotizacion', args=[cotizacion_original.cliente.id])
 
     context = {
-        'form': form,
-        'cliente_seleccionado': cliente_seleccionado, # Pass the client object if it comes from the URL
-        'clientes_data_json': json.dumps(clientes_data_json), # Pass the JSON of clients for JS
-        'cliente_id_inicial': cliente_id, # Pass the initial ID for JS to pre-select
+        'form': CotizacionForm(instance=cotizacion_original, user=request.user),
+        'cliente_seleccionado': cotizacion_original.cliente,
+        'clientes_data_json': json.dumps(clientes_data_json),
+        'cliente_id_inicial': cotizacion_original.cliente.id,
+        'detalles_cotizacion': detalles_list,
+        'form_action_url': form_action_url,  # Pass the correct action URL
     }
+
     return render(request, 'crear_cotizacion.html', context)
+
 
 
 @login_required
@@ -1505,7 +1573,7 @@ def cotizaciones_view(request):
     if is_supervisor_flag:
         clientes = Cliente.objects.all().order_by('nombre_empresa')
     else:
-        clientes = Cliente.objects.filter(asignado_a=request.user).order_by('nombre_empresa')
+        clientes = Cliente.objects.filter(Q(asignado_a=request.user) | Q(asignado_a__isnull=True)).order_by('nombre_empresa')
     print(f"DEBUG: cotizaciones_view - Clientes obtenidos (antes de filtrar por cotizaciones): {clientes.count()}")
 
     clientes_data = []
@@ -1562,10 +1630,91 @@ def cotizaciones_por_cliente_view(request, cliente_id):
         'is_supervisor': is_supervisor
     })
 
+@login_required
+def editar_cotizacion_view(request, cotizacion_id):
+    cotizacion_original = get_object_or_404(Cotizacion, pk=cotizacion_id)
+    detalles_originales = DetalleCotizacion.objects.filter(cotizacion=cotizacion_original)
+
+    detalles_list = [{
+        'marca': d.marca,
+        'no_parte': d.no_parte,
+        'descripcion': d.descripcion,
+        'cantidad': d.cantidad,
+        'precio': str(d.precio_unitario),
+        'descuento': str(d.descuento_porcentaje),
+    } for d in detalles_originales]
+
+    if is_supervisor(request.user):
+        clientes_django = Cliente.objects.all().order_by('nombre_empresa')
+    else:
+        clientes_django = Cliente.objects.filter(Q(asignado_a=request.user) | Q(asignado_a__isnull=True)).order_by('nombre_empresa')
+
+    clientes_data_json = []
+    for c in clientes_django:
+        clientes_data_json.append({
+            'id': str(c.id),
+            'name': c.nombre_empresa,
+        })
+
+    context = {
+        'form': CotizacionForm(instance=cotizacion_original, user=request.user),
+        'cliente_seleccionado': cotizacion_original.cliente,
+        'clientes_data_json': json.dumps(clientes_data_json),
+        'cliente_id_inicial': cotizacion_original.cliente.id,
+        'detalles_cotizacion': detalles_list,
+    }
+
+    return render(request, 'crear_cotizacion.html', context)
+
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from .models import Cliente
 from django.contrib.auth.models import User
+
+@csrf_exempt
+@login_required
+def crear_cliente_api(request):
+    if request.method == 'POST':
+        form = ClienteForm(request.POST)
+        if form.is_valid():
+            # Create the company in Bitrix24 first
+            company_name = form.cleaned_data['nombre_empresa']
+            bitrix_company_id = get_or_create_bitrix_company(company_name, request=request)
+
+            if bitrix_company_id:
+                # Check if a client with this bitrix_company_id already exists
+                cliente, created = Cliente.objects.get_or_create(
+                    bitrix_company_id=bitrix_company_id,
+                    defaults={
+                        'nombre_empresa': form.cleaned_data['nombre_empresa'],
+                        'contacto_principal': form.cleaned_data['contacto_principal'],
+                        'telefono': form.cleaned_data['telefono'],
+                        'email': form.cleaned_data['email'],
+                        'direccion': form.cleaned_data['direccion'],
+                        'asignado_a': request.user
+                    }
+                )
+                if not created:
+                    # If the client already existed, update its fields
+                    cliente.nombre_empresa = form.cleaned_data['nombre_empresa']
+                    cliente.contacto_principal = form.cleaned_data['contacto_principal']
+                    cliente.telefono = form.cleaned_data['telefono']
+                    cliente.email = form.cleaned_data['email']
+                    cliente.direccion = form.cleaned_data['direccion']
+                    cliente.save()
+
+                return JsonResponse({
+                    'success': True,
+                    'cliente': {
+                        'id': cliente.bitrix_company_id, # Return the bitrix_company_id
+                        'nombre_empresa': cliente.nombre_empresa,
+                    }
+                })
+            else:
+                return JsonResponse({'success': False, 'errors': {'__all__': ['Could not create company in Bitrix24.']}}, status=400)
+        else:
+            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 @csrf_exempt
 @login_required

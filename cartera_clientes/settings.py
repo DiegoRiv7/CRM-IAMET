@@ -33,8 +33,7 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True' # Lee DEBUG de las vari
 
 # En producción, esto debe contener los dominios de tu sitio (ej. ['tudominio.com', 'www.tudominio.com'])
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',') # Lee ALLOWED_HOSTS de las variables de entorno
-
-# CSRF Configuration
+ALLOWED_HOSTS = ['28dc74831cca.ngrok-free.app', 'localhost', '127.0.0.1'] 
 CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost,http://127.0.0.1').split(',')
 
 

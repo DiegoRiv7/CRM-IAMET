@@ -36,7 +36,7 @@
             padding: 0.5rem 0.75rem;
             border-radius: 0.375rem;
             width: 100%;
-            min-height: 3rem; /* Altura mínima para textarea */
+            min-height: 4rem; /* Altura mínima para textarea */
             resize: vertical; /* Permitir redimensionar verticalmente */
             font-size: 0.875rem; /* text-sm */
         }
@@ -194,7 +194,7 @@
     <div class="max-w-full w-full space-y-8">
         <h1 class="text-3xl font-bold text-white text-center" style="font-size: clamp(2rem, 4vw, 2.5rem);">Crear Cotización</h1>
 
-        <form id="cotizacion-form" method="post" action="">
+        <form id="cotizacion-form" method="post" action="{{ form_action_url }}">
             {% csrf_token %}
             <div class="card p-6 mb-8 shadow-md-dark">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -207,9 +207,14 @@
                     </div>
                     <div>
                         <label for="id_cliente" class="block text-sm font-medium text-gray-300 mb-1">Cliente</label>
-                        <select id="id_cliente" name="cliente" class="input-field" required>
-                            <!-- Options will be populated by JavaScript -->
-                        </select>
+                        <div class="flex items-center space-x-2">
+                            <select id="id_cliente" name="cliente" class="input-field flex-grow" required>
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
+                            <button type="button" id="add-client-btn" class="btn-secondary py-2 px-4">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                            </button>
+                        </div>
                         <input type="hidden" id="selected_client_id" name="cliente_hidden" value="">
                         {% if form.cliente.errors %}
                             <ul class="errorlist">{% for error in form.cliente.errors %}<li>{{ error }}</li>{% endfor %}</ul>
@@ -242,8 +247,8 @@
                 </div>
 
                 <div id="paste-area-container" class="paste-area-container">
-                    <p class="text-gray-400 mb-4">Copia tus datos de Excel (columnas: Nombre, Descripción, Cantidad, Precio, Descuento) y pégalos aquí:</p>
-                    <textarea id="excel-paste-textarea" class="textarea-field w-full h-40" placeholder="Pega tus datos de Excel aquí (ej. Nombre\tDescripción\t1\t10.50\t5)"></textarea>
+                    <p class="text-gray-400 mb-4">Copia tus datos de Excel (columnas: Marca, No. Parte, Cantidad, Descripcion, Precio Lista, Desc, Unitario, Total) y pégalos aquí:</p>
+                    <textarea id="excel-paste-textarea" class="textarea-field w-full h-40" placeholder="Pega tus datos de Excel aquí..."></textarea>
                     <button type="button" id="process-paste-btn" class="btn-primary mt-4">Procesar Pegado</button>
                     <button type="button" id="cancel-paste-btn" class="btn-secondary mt-4 ml-2">Cancelar</button>
                 </div>
@@ -256,17 +261,18 @@
                     <table class="product-table">
                         <thead>
                             <tr>
-                                <th class="w-1/12">Partida</th> <!-- Nueva columna para el número de partida -->
-                                <th class="w-1/5">Nombre del Producto</th>
-                                <th class="w-2/5">Descripción</th>
+                                <th class="w-1/12">Partida</th>
+                                <th class="w-1/8">Marca</th>
+                                <th class="w-1/8">No. Parte</th>
+                                <th class="w-1/4">Descripción</th>
                                 <th class="w-1/12">Cantidad</th>
-                                <th class="w-1/12">Precio Unitario</th>
+                                <th class="w-1/8">Precio Lista</th>
                                 <th class="w-1/12" id="descuento-header">
-                                    Descuento (%)
+                                    Desc. Unitario (%)
                                     <button type="button" onclick="toggleDiscountColumn()" class="text-red-400 hover:text-red-600 font-bold ml-2" title="Ocultar columna de descuento">&times;</button>
                                 </th>
-                                <th class="w-1/12">Total</th>
-                                <th class="w-8"></th> <!-- Columna para el botón de eliminar -->
+                                <th class="w-1/8">Total</th>
+                                <th class="w-8"></th>
                             </tr>
                         </thead>
                         <tbody id="productos-tbody">
@@ -324,40 +330,76 @@
         </form>
     </div>
 
+    <!-- Add Client Modal -->
+    <div id="add-client-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-md">
+            <h2 class="text-2xl font-bold text-white mb-6">Agregar Nuevo Cliente</h2>
+            <form id="add-client-form">
+                <div class="space-y-4">
+                    <div>
+                        <label for="new-client-name" class="block text-sm font-medium text-gray-300 mb-1">Nombre de la Empresa</label>
+                        <input type="text" id="new-client-name" name="nombre_empresa" class="input-field" required>
+                    </div>
+                    <div>
+                        <label for="new-client-contact" class="block text-sm font-medium text-gray-300 mb-1">Contacto Principal</label>
+                        <input type="text" id="new-client-contact" name="contacto_principal" class="input-field">
+                    </div>
+                    <div>
+                        <label for="new-client-phone" class="block text-sm font-medium text-gray-300 mb-1">Teléfono</label>
+                        <input type="text" id="new-client-phone" name="telefono" class="input-field">
+                    </div>
+                    <div>
+                        <label for="new-client-email" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                        <input type="email" id="new-client-email" name="email" class="input-field">
+                    </div>
+                    <div>
+                        <label for="new-client-address" class="block text-sm font-medium text-gray-300 mb-1">Dirección</label>
+                        <input type="text" id="new-client-address" name="direccion" class="input-field">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-4 mt-8">
+                    <button type="button" id="cancel-add-client-btn" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         let rowCounter = 0;
+        let stagingRowCounter = 0;
         // Parse the clients data passed from Django
         const clientesData = JSON.parse('{{ clientes_data_json|escapejs }}');
         const clienteIdInicial = '{{ cliente_id_inicial|default:"" }}'; // Get initial client ID if provided
 
         function toggleDiscountColumn() {
-    const isVisible = document.getElementById('descuento_visible').value === 'true';
-    const newVisibility = !isVisible;
-    document.getElementById('descuento_visible').value = newVisibility;
+            const isVisible = document.getElementById('descuento_visible').value === 'true';
+            const newVisibility = !isVisible;
+            document.getElementById('descuento_visible').value = newVisibility;
 
-    // Toggle header
-    document.getElementById('descuento-header').style.display = newVisibility ? '' : 'none';
+            // Toggle header
+            document.getElementById('descuento-header').style.display = newVisibility ? '' : 'none';
 
-    // Toggle cells in each row
-    document.querySelectorAll('.descuento-cell').forEach(cell => {
-        cell.style.display = newVisibility ? '' : 'none';
-    });
+            // Toggle cells in each row
+            document.querySelectorAll('.descuento-cell').forEach(cell => {
+                cell.style.display = newVisibility ? '' : 'none';
+            });
 
-    // Toggle buttons
-    document.getElementById('show-discount-btn').style.display = newVisibility ? 'none' : 'inline-block';
-    document.querySelector('#descuento-header button').style.display = newVisibility ? 'inline-block' : 'none';
+            // Toggle buttons
+            document.getElementById('show-discount-btn').style.display = newVisibility ? 'none' : 'inline-block';
+            document.querySelector('#descuento-header button').style.display = newVisibility ? 'inline-block' : 'none';
 
-    // If hiding, set all discounts to 0 and recalculate
-    if (!newVisibility) {
-        document.querySelectorAll('input[id^="descuento_"]').forEach(input => {
-            input.value = 0;
-        });
-        calculateTotals();
-    }
-}
+            // If hiding, set all discounts to 0 and recalculate
+            if (!newVisibility) {
+                document.querySelectorAll('input[id^="descuento_"]').forEach(input => {
+                    input.value = 0;
+                });
+                calculateTotals();
+            }
+        }
 
-// Function to add a new product row to the table
-        function addRow(productName = '', description = '', quantity = 1, price = 0, discount = 0) {
+        // Function to add a new product row to the main table
+        function addRow(marca = '', noParte = '', description = '', quantity = 1, price = 0, discount = 0) {
             rowCounter++;
             const rowId = `row-${rowCounter}`;
             const tbody = document.getElementById('productos-tbody');
@@ -365,8 +407,9 @@
             const newRow = document.createElement('tr');
             newRow.id = rowId;
             newRow.innerHTML = `
-                <td>${rowCounter}</td> <!-- Celda para el número de partida -->
-                <td><input type="text" id="nombre_producto_${rowCounter}" name="productos[${rowCounter}][nombre]" class="input-field" placeholder="Nombre del producto" value="${productName}" oninput="calculateTotals()"></td>
+                <td>${rowCounter}</td>
+                <td><input type="text" id="marca_${rowCounter}" name="productos[${rowCounter}][marca]" class="input-field" placeholder="Marca" value="${marca}"></td>
+                <td><input type="text" id="no_parte_${rowCounter}" name="productos[${rowCounter}][no_parte]" class="input-field" placeholder="No. Parte" value="${noParte}"></td>
                 <td><textarea id="descripcion_producto_${rowCounter}" name="productos[${rowCounter}][descripcion]" class="textarea-field" placeholder="Descripción detallada del producto" oninput="calculateTotals()">${description}</textarea></td>
                 <td><input type="number" id="cantidad_${rowCounter}" name="productos[${rowCounter}][cantidad]" class="input-field" value="${quantity}" min="1" oninput="calculateTotals()"></td>
                 <td><input type="number" id="precio_${rowCounter}" name="productos[${rowCounter}][precio]" class="input-field" value="${price}" min="0" step="0.01" oninput="calculateTotals()"></td>
@@ -378,16 +421,16 @@
             `;
             tbody.appendChild(newRow);
 
-    // Ensure the new row's discount cell visibility matches the current state
-    const isDiscountVisible = document.getElementById('descuento_visible').value === 'true';
-    if (!isDiscountVisible) {
-        newRow.querySelector('.descuento-cell').style.display = 'none';
-    }
+            // Ensure the new row's discount cell visibility matches the current state
+            const isDiscountVisible = document.getElementById('descuento_visible').value === 'true';
+            if (!isDiscountVisible) {
+                newRow.querySelector('.descuento-cell').style.display = 'none';
+            }
 
-    calculateTotals(); // Recalculate totals when adding a row
+            calculateTotals(); // Recalculate totals when adding a row
         }
 
-        // Function to remove a product row
+        // Function to remove a product row from the main table
         function removeRow(id) {
             const row = document.getElementById(id);
             if (row) {
@@ -409,16 +452,16 @@
                 const descuentoInput = document.getElementById(`descuento_${id}`);
                 const totalProductoInput = document.getElementById(`total_producto_${id}`);
 
-                const cantidad = parseFloat(cantidadInput.value) || 0;
-                const precio = parseFloat(precioInput.value) || 0;
-                const descuento = parseFloat(descuentoInput.value) || 0;
+                const quantity = parseFloat(cantidadInput.value) || 0;
+                const price = parseFloat(precioInput.value) || 0;
+                const discount = parseFloat(descuentoInput.value) || 0;
 
-                let totalProducto = cantidad * precio;
-                totalProducto -= totalProducto * (descuento / 100);
+                let totalProducto = quantity * price;
+                totalProducto -= totalProducto * (discount / 100);
                 
                 // Update the total for each product, ensuring it's just the number
                 totalProductoInput.value = new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalProducto);
-                console.log(`DEBUG JS: Producto ${id} - Cantidad: ${cantidad}, Precio: ${precio}, Descuento: ${descuento}%, Total Producto (raw float): ${totalProducto}`);
+                console.log(`DEBUG JS: Producto ${id} - Cantidad: ${quantity}, Precio: ${price}, Descuento: ${discount}%, Total Producto (raw float): ${totalProducto}`);
 
                 subtotal += totalProducto;
             });
@@ -448,45 +491,51 @@
             }).format(amount);
         }
 
-        // Function to process pasted Excel data
+        
+
         function processExcelPaste() {
             const pasteTextarea = document.getElementById('excel-paste-textarea');
             const pastedData = pasteTextarea.value.trim();
 
             if (!pastedData) {
-                console.warn("No data pasted.");
+                console.warn("DEBUG JS: No data pasted.");
                 return;
             }
 
             const rows = pastedData.split('\n');
-            const tbody = document.getElementById('productos-tbody');
 
-            // Clear existing rows before pasting new data
-            tbody.innerHTML = '';
-            rowCounter = 0; // Reset row counter
+            rows.forEach((rowString, index) => {
+                console.log(`DEBUG JS: Processing row ${index}: ${rowString}`);
+                const columns = rowString.split('\t');
+                console.log(`DEBUG JS: Columns for row ${index}:`, columns);
 
-            rows.forEach((rowString) => {
-                const columns = rowString.split('\t'); // Tab-separated values from Excel
-
-                // Expected order: Nombre, Descripción, Cantidad, Precio, Descuento
-                const productName = columns[0] || '';
-                const description = columns[1] || '';
+                // Expected order: Marca, No. Parte, Cantidad, Descripcion, Precio Lista, Desc, Unitario, Total
+                const marca = columns[0] || '';
+                const noParte = columns[1] || '';
                 const quantity = parseFloat(columns[2]) || 1;
-                const price = parseFloat(columns[3]) || 0;
-                const discount = parseFloat(columns[4]) || 0;
+                const description = columns[3] || '';
+                // Precio Lista (columns[4]) is ignored
+                const discount = parseFloat(columns[5]) || 0;
+                const price = parseFloat(columns[6]) || 0;
 
-                addRow(productName, description, quantity, price, discount);
+                console.log(`DEBUG JS: Parsed data for row ${index}: Marca=${marca}, No. Parte=${noParte}, Quantity=${quantity}, Description=${description}, Price=${price}, Discount=${discount}`);
+
+                addRow(marca, noParte, description, quantity, price, discount);
             });
 
-            calculateTotals(); // Recalculate all totals after processing paste
             pasteTextarea.value = ''; // Clear the paste area
-            document.getElementById('paste-area-container').classList.remove('active'); // Hide paste area
+            document.getElementById('paste-area-container').classList.remove('active');
         }
+
+        
+
 
         // Function to populate client select dropdown
         function populateClientSelect() {
             const clientSelect = document.getElementById('id_cliente');
             const selectedClientIdInput = document.getElementById('selected_client_id');
+
+            console.log("DEBUG JS: clientesData received:", clientesData); // Added debug log
 
             // Clear existing options
             clientSelect.innerHTML = '<option value="">Seleccione un cliente</option>'; // Added empty option
@@ -498,14 +547,10 @@
                 clientSelect.appendChild(option);
             });
 
-            // Set initial selected client if client_id_inicial is provided
+            // Set initial selected client if clienteIdInicial is provided
             if (clienteIdInicial) {
                 clientSelect.value = clienteIdInicial;
                 selectedClientIdInput.value = clienteIdInicial; // Set hidden input as well
-            } else {
-                // Ensure the "Seleccione un cliente" option is selected if no initial client
-                clientSelect.value = "";
-                selectedClientIdInput.value = "";
             }
 
             // Update hidden input when select changes
@@ -552,10 +597,61 @@
         // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
             populateClientSelect(); // Populate client dropdown on page load
-            // addRow(); // COMENTADO: Eliminado para evitar la adición automática de una fila inicial
+            fetchOportunidadesForClient(); // Load recent opportunities on page load
+
+            // Modal functionality
+            const addClientModal = document.getElementById('add-client-modal');
+            const addClientBtn = document.getElementById('add-client-btn');
+            const cancelAddClientBtn = document.getElementById('cancel-add-client-btn');
+            const addClientForm = document.getElementById('add-client-form');
+
+            addClientBtn.addEventListener('click', () => {
+                addClientModal.classList.remove('hidden');
+            });
+
+            cancelAddClientBtn.addEventListener('click', () => {
+                addClientModal.classList.add('hidden');
+            });
+
+            addClientForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const formData = new FormData(addClientForm);
+                const response = await fetch('{% url "crear_cliente_api" %}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    const clientSelect = document.getElementById('id_cliente');
+                    const newOption = document.createElement('option');
+                    newOption.value = result.cliente.id;
+                    newOption.textContent = result.cliente.nombre_empresa;
+                    newOption.selected = true;
+                    clientSelect.appendChild(newOption);
+                    clientSelect.dispatchEvent(new Event('change'));
+                    addClientModal.classList.add('hidden');
+                    addClientForm.reset();
+                } else {
+                    // Handle errors
+                    console.error('Error creating client:', result.errors);
+                }
+            });
+
             // El usuario debe usar el botón "Agregar Fila" o la función de pegar.
 
-            document.getElementById('add-row-btn').addEventListener('click', addRow);
+            {% if detalles_cotizacion %}
+            const detalles_existentes = {{ detalles_cotizacion|safe }};
+            if (detalles_existentes) {
+                detalles_existentes.forEach(d => {
+                    addRow(d.marca, d.no_parte, d.descripcion, d.cantidad, d.precio, d.descuento);
+                });
+            }
+            {% endif %}
+
+            document.getElementById('add-row-btn').addEventListener('click', () => addRow('', '', '', 1, 0, 0));
             document.getElementById('iva-rate').addEventListener('change', calculateTotals);
             document.getElementById('currency-select').addEventListener('change', calculateTotals);
 
@@ -566,13 +662,18 @@
 
             togglePasteAreaBtn.addEventListener('click', () => {
                 pasteAreaContainer.classList.toggle('active');
+                if (!pasteAreaContainer.classList.contains('active')) {
+                    document.getElementById('excel-paste-textarea').value = ''; // Clear textarea on close
+                }
             });
 
             processPasteBtn.addEventListener('click', processExcelPaste);
+
             cancelPasteBtn.addEventListener('click', () => {
                 pasteAreaContainer.classList.remove('active');
                 document.getElementById('excel-paste-textarea').value = ''; // Clear textarea on cancel
             });
+
 
             // Optional: Auto-process on paste into the dedicated textarea
             // REMOVED: This was causing potential double processing. User must click "Procesar Pegado"
@@ -584,39 +685,25 @@
 
             // MODIFICACIÓN CLAVE: Interceptar el envío del formulario con Fetch API
             const cotizacionForm = document.getElementById('cotizacion-form');
+
             cotizacionForm.addEventListener('submit', async (event) => {
-                console.log('Evento de submit del formulario detectado.');
                 event.preventDefault(); // Evitar el envío de formulario tradicional
 
+                console.log('URL de envío del formulario:', formActionUrl);
 
+                if (!formActionUrl || formActionUrl.trim() === '') {
+                    alert('Error crítico: No se pudo determinar la URL para guardar la cotización.');
+                    return;
+                }
 
-                // La construcción de FormData(cotizacionForm) ya recopila todos los inputs
-                // con atributos 'name' correctamente. El bucle anterior era redundante
-                // y causaba la duplicación.
                 const formData = new FormData(cotizacionForm);
                 
-                // Asegurarse de que el campo 'cliente' tome el valor del select
                 formData.set('cliente', document.getElementById('id_cliente').value);
-                // Asegurarse de que el campo 'oportunidad' tome el valor del select
                 formData.set('oportunidad', document.getElementById('id_oportunidad').value);
 
-                // --- DEBUGGING: Imprimir FormData antes de enviar ---
-                console.log('DEBUG JS: Datos del formulario a enviar:');
-                let productItemCount = 0;
-                for (let pair of formData.entries()) {
-                    console.log(pair[0]+ ': ' + pair[1]);
-                    if (pair[0].startsWith('productos[') && pair[0].includes('[nombre]')) {
-                        // Simple heurística para contar elementos de producto distintos.
-                        // Asume que 'nombre' siempre está presente para un producto.
-                        productItemCount++;
-                    }
-                }
-                console.log(`DEBUG JS: Total de elementos de producto contados en FormData: ${productItemCount}`);
-                // --- FIN DEBUGGING ---
-
                 try {
-                    console.log('DEBUG JS: Enviando solicitud fetch...');
-                    const response = await fetch(cotizacionForm.action, {
+                    console.log('Enviando solicitud fetch a:', formActionUrl);
+                    const response = await fetch(formActionUrl, {
                         method: 'POST',
                         body: formData,
                         headers: {
@@ -624,106 +711,28 @@
                         }
                     });
 
-                    console.log('DEBUG JS: Respuesta del servidor recibida. Status:', response.status);
+                    console.log('Respuesta del servidor recibida. Status:', response.status);
                     const result = await response.json();
-                    console.log('DEBUG JS: Resultado JSON del servidor:', result);
+                    console.log('Resultado JSON del servidor:', result);
 
                     if (result.success) {
-                        console.log('DEBUG JS: Cotización guardada exitosamente.');
+                        console.log('Cotización guardada exitosamente.');
                         if (result.pdf_url) {
                             console.log('PDF URL recibida:', result.pdf_url);
-                            // Crear un enlace temporal para forzar la descarga
                             const a = document.createElement('a');
                             a.href = result.pdf_url;
-                            a.download = result.filename || 'cotizacion.pdf'; // Usar el nombre de archivo del servidor o uno por defecto
+                            a.download = result.filename || 'cotizacion.pdf';
                             document.body.appendChild(a);
                             a.click();
                             document.body.removeChild(a);
-
-                            // Opcional: re-dirigir o mostrar un mensaje de éxito
-                            // window.location.href = '/ruta-a-lista-de-cotizaciones/';
-
-                        } else if (result.error) {
-                            // COMENTADO: No reiniciar el formulario para permitir edición post-descarga
-                            // document.querySelectorAll('#productos-tbody tr').forEach((row, index) => {
-                            //     if (index > 0) {
-                            //         row.remove();
-                            //     } else {
-                            //         // Reset the first row
-                            //         document.getElementById(`nombre_producto_${row.id.split('-')[1]}`).value = '';
-                            //         document.getElementById(`descripcion_producto_${row.id.split('-')[1]}`).value = '';
-                            //         document.getElementById(`cantidad_${row.id.split('-')[1]}`).value = '1';
-                            //         document.getElementById(`precio_${row.id.split('-')[1]}`).value = '0.00';
-                            //         document.getElementById(`descuento_${row.id.split('-')[1]}`).value = '0';
-                            //     }
-                            // });
-                            // calculateTotals();
-                            // cotizacionForm.reset(); // Reset form fields
-                            // populateClientSelect(); // Repopulate client select to reset it
                         }
-                        //         document.getElementById(`nombre_producto_${row.id.split('-')[1]}`).value = '';
-                        //         document.getElementById(`descripcion_producto_${row.id.split('-')[1]}`).value = '';
-                        //         document.getElementById(`cantidad_${row.id.split('-')[1]}`).value = '1';
-                        //         document.getElementById(`precio_${row.id.split('-')[1]}`).value = '0.00';
-                        //         document.getElementById(`descuento_${row.id.split('-')[1]}`).value = '0';
-                        //     }
-                        // });
-                        // calculateTotals();
-                        // cotizacionForm.reset(); // Reset form fields
-                        // populateClientSelect(); // Repopulate client select to reset it
                     } else {
-                        // Si hay errores, mostrarlos en el formulario
-                        console.error('DEBUG JS: Errores de validación del servidor:', result.errors);
-                        // Limpiar errores anteriores
-                        document.querySelectorAll('.errorlist').forEach(el => el.remove());
-
-                        // Mostrar nuevos errores
-                        for (const fieldName in result.errors) {
-                            const fieldErrors = result.errors[fieldName];
-                            // Intenta encontrar el elemento por su nombre o ID para mostrar el error
-                            let fieldElement = document.querySelector(`[name="${fieldName}"]`);
-                            if (!fieldElement) {
-                                fieldElement = document.getElementById(`id_${fieldName}`);
-                            }
-
-                            if (fieldElement) {
-                                const errorList = document.createElement('ul');
-                                errorList.classList.add('errorlist');
-                                fieldErrors.forEach(error => {
-                                    const li = document.createElement('li');
-                                    li.textContent = error.message;
-                                    errorList.appendChild(li);
-                                });
-                                fieldElement.parentNode.insertBefore(errorList, fieldElement.nextSibling);
-                            } else {
-                                // Si el campo no se encuentra, podría ser un error no de campo específico (e.g., __all__)
-                                console.warn(`DEBUG JS: Elemento de formulario para el campo '${fieldName}' no encontrado para mostrar el error.`);
-                            }
-                        }
-                        // Si hay un error general del formulario (non_field_errors)
-                        if (result.errors.__all__) {
-                            const formErrorsDiv = document.createElement('div');
-                            formErrorsDiv.classList.add('errorlist', 'text-center', 'mt-4');
-                            result.errors.__all__.forEach(error => {
-                                const p = document.createElement('p');
-                                p.textContent = error.message;
-                                formErrorsDiv.appendChild(p);
-                            });
-                            cotizacionForm.prepend(formErrorsDiv);
-                        }
-                        // Si hay un error, cierra la ventana emergente que se abrió
-                        if (newWindow && !newWindow.closed) {
-                            newWindow.close();
-                        }
+                        console.error('Errores de validación del servidor:', result.errors);
+                        alert('Hubo un error al validar los datos. Por favor, revisa el formulario.');
                     }
                 } catch (error) {
-                    console.error('DEBUG JS: Error en la solicitud Fetch o procesamiento de respuesta:', error);
-                    // Mostrar un mensaje de error genérico al usuario
+                    console.error('Error en la solicitud Fetch o procesamiento de respuesta:', error);
                     alert('Ocurrió un error al procesar la cotización. Por favor, inténtalo de nuevo.');
-                    // Si hay un error, cierra la ventana emergente que se abrió
-                    if (newWindow && !newWindow.closed) {
-                        newWindow.close();
-                    }
                 }
             });
         });

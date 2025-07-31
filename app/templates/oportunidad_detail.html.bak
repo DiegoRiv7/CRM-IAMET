@@ -1,0 +1,653 @@
+{% extends "base.html" %}
+{% load app_filters %}
+{% load humanize %}
+
+{% block title %}Detalle de Oportunidad: {{ oportunidad.oportunidad }}{% endblock %}
+
+{% block content %}
+<!-- Botón de sincronización con Bitrix24 -->
+{% if bitrix_data %}
+<div class="fixed bottom-6 right-6 z-50">
+    <form method="post" action="{% url 'oportunidad_detail' pk=oportunidad.id %}" class="mb-4">
+        {% csrf_token %}
+        <button type="submit" name="sync_bitrix" class="flex items-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+            </svg>
+            Sincronizar con Bitrix24
+        </button>
+    </form>
+    {% if last_sync %}
+    <div class="text-xs text-gray-400 text-right">
+        Última sincronización: {{ last_sync|date:"d/m/Y H:i" }}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+<div class="w-full flex flex-col justify-start items-center relative" style="z-index:1;">
+    <!-- Opportunity Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8 w-full max-w-7xl mx-auto px-4">
+        <h1 class="text-4xl font-extrabold text-slate-100 mb-4 md:mb-0 flex items-center">
+            <span class="gradient-text">Oportunidad:</span>
+            <span id="display_oportunidad_titulo" class="mr-2">{{ oportunidad.oportunidad }}</span>
+            
+            <span id="edit_icon_container" class="cursor-pointer text-blue-400 hover:text-blue-300 transition-colors duration-200 ml-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487a2.125 2.125 0 1 1 3.006 3.006L7.5 19.862l-4 1 1-4 12.362-12.375z" />
+                </svg>
+            </span>
+        </h1>
+        {% comment %} Removed the duplicate "Crear cotización" button from here {% endcomment %}
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full max-w-7xl mx-auto px-4">
+
+        <!-- Left Column: Key Metrics, Communication & Activity History (lg:col-span-2) -->
+        <div class="lg:col-span-2 space-y-8">
+            <!-- Negotiation Summary Card (made more compact and now includes opportunity name) -->
+            <div class="card-base p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-slate-200">Visión General de la Negociación</h2>
+                    {% comment %} Removed the "Editar" link here as editing is now handled by the pencil icon {% endcomment %}
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <span class="text-slate-400 text-sm">Monto de la Oportunidad</span>
+                        <p class="text-5xl font-extrabold text-green-400 tracking-tight mt-1">
+                            USD {{ oportunidad.monto|format_currency_es }}
+                        </p>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 text-sm">Probabilidad de Cierre</span>
+                        <p class="text-4xl font-extrabold text-blue-400 tracking-tight mt-1">
+                            {{ oportunidad.probabilidad_cierre }}<span class="text-2xl">%</span>
+                        </p>
+                        <div class="progress-bar-container mt-2">
+                            <div class="progress-bar-fill" style="width: {{ oportunidad.probabilidad_cierre }}%;"></div>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-slate-400 text-xs leading-relaxed mb-4">
+                    Este resumen proporciona una visión rápida de los aspectos financieros y la probabilidad de éxito de la oportunidad.
+                </p>
+                <!-- Puedes añadir un botón para ver detalles financieros si tienes una vista dedicada -->
+                <!-- <button class="interactive-btn">Ver Detalles Financieros</button> -->
+            </div>
+
+            <!-- Combined Communication & Activity History Card -->
+            <div class="card-base p-8">
+                <!-- Communication Input -->
+                <h2 class="text-2xl font-bold text-slate-200 mb-4">Registrar Actividad</h2>
+                <div class="flex border-b border-slate-700 mb-6 space-x-4 text-sm font-medium text-slate-400">
+                    <button class="py-2 border-b-2 border-blue-500 text-blue-400 transition-colors duration-200 hover:text-blue-300">Comentario</button>
+                    <button class="py-2 hover:text-blue-400 transition-colors duration-200">Tarea</button>
+                    <button class="py-2 hover:text-blue-400 transition-colors duration-200">Actividad</button>
+                    <button class="py-2 hover:text-blue-400 transition-colors duration-200 flex items-center">
+                        Más
+                        <svg class="w-4 h-4 ml-1 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                </div>
+                <textarea class="w-full p-3 border border-slate-600 rounded-lg bg-slate-800 text-slate-200 placeholder-slate-500 focus:ring-blue-500 focus:border-blue-500 text-sm mb-4" rows="4" placeholder="Deje un comentario o registre una actividad..."></textarea>
+                <button class="interactive-btn w-full mb-8">Registrar</button>
+
+                <!-- Activity Timeline -->
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-slate-200">Historial de Actividad</h2>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-slate-400">
+                            {% if bitrix_data and bitrix_data.history|length > 0 %}
+                                {{ bitrix_data.history|length }} actividades sincronizadas
+                            {% endif %}
+                        </span>
+                        <button class="text-slate-400 text-sm font-medium flex items-center hover:text-blue-400 transition-colors duration-200">
+                            FILTRO
+                            <svg class="w-4 h-4 ml-1 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="activity-timeline space-y-4">
+                    <!-- Mostrar historial de Bitrix24 -->
+                    {% if bitrix_data and bitrix_data.history %}
+                        {% for item in bitrix_data.history %}
+                            {% if item.ENTITY_TYPE == 'deal' %}
+                                <div class="timeline-event">
+                                    <div class="bg-slate-700 p-4 rounded-lg shadow-sm border border-slate-600">
+                                        <div class="flex justify-between items-start">
+                                            <p class="text-slate-200 text-sm font-semibold">
+                                                {{ item.ENTITY|title }} actualizado
+                                            </p>
+                                            <span class="text-slate-400 text-xs">
+                                                {{ item.DATE_CREATE|date:"H:i - d/m/Y" }}
+                                            </span>
+                                        </div>
+                                        {% if item.FIELDS %}
+                                            <div class="mt-2 space-y-1">
+                                                {% for field, values in item.FIELDS.items %}
+                                                    {% if field != 'ID' and values.0 != values.1 %}
+                                                        <p class="text-slate-400 text-sm">
+                                                            <span class="font-medium">{{ field|title }}:</span> 
+                                                            <span class="line-through text-red-400">{{ values.0|default:"-" }}</span> 
+                                                            <span>→</span> 
+                                                            <span class="text-green-400">{{ values.1|default:"-" }}</span>
+                                                        </p>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <!-- Mostrar datos de ejemplo si no hay datos de Bitrix24 -->
+                        <div class="timeline-event">
+                            <div class="bg-slate-700 p-4 rounded-lg shadow-sm border border-slate-600">
+                                <p class="text-slate-200 text-sm mb-1 font-semibold">Etapa cambiada <span class="text-slate-400 text-xs font-normal">17:08 - 25/07/2025</span></p>
+                                <p class="text-slate-400 text-sm">De <span class="text-red-400 font-semibold">Vendido con PO</span> a <span class="text-blue-400 font-semibold">Cotizando</span></p>
+                            </div>
+                        </div>
+                        <div class="timeline-event">
+                            <div class="bg-slate-700 p-4 rounded-lg shadow-sm border border-slate-600">
+                                <p class="text-slate-200 text-sm mb-1 font-semibold">Negociación creada <span class="text-slate-400 text-xs font-normal">17:06 - 25/07/2025</span></p>
+                                <p class="text-slate-400 text-sm">Creada por <span class="text-blue-400 font-semibold">{% if oportunidad.usuario %}{{ oportunidad.usuario.username }}{% else %}N/A{% endif %}</span></p>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Sección de Comentarios de Bitrix24 -->
+                    <div class="mt-8">
+                        <h3 class="text-lg font-bold text-slate-200 mb-4 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                            </svg>
+                            Comentarios en Bitrix24
+                            <span class="ml-2 bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                {{ bitrix_data.comments|length }} comentarios
+                            </span>
+                        </h3>
+                        
+                        {% if bitrix_data.comments %}
+                            <div class="space-y-4">
+                                {% for comment in bitrix_data.comments %}
+                                    <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+                                        <div class="p-4">
+                                            <div class="flex items-start">
+                                                <div class="flex-shrink-0">
+                                                    <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                                                        {{ comment.author_name|slice:":1"|upper }}
+                                                    </div>
+                                                </div>
+                                                <div class="ml-3 flex-1 min-w-0">
+                                                    <div class="flex justify-between items-baseline">
+                                                        <p class="text-sm font-medium text-blue-400">
+                                                            {{ comment.author_name }}
+                                                        </p>
+                                                        <p class="text-xs text-slate-500">
+                                                            {{ comment.date|date:"d M Y, H:i" }}
+                                                        </p>
+                                                    </div>
+                                                    <div class="mt-1 text-sm text-slate-300 whitespace-pre-line">
+                                                        {{ comment.text|linebreaksbr }}
+                                                    </div>
+                                                    
+                                                    <!-- Archivos adjuntos -->
+                                                    {% if comment.files %}
+                                                        <div class="mt-3 pt-3 border-t border-slate-700">
+                                                            <p class="text-xs text-slate-500 mb-2">Archivos adjuntos:</p>
+                                                            <div class="flex flex-wrap gap-2">
+                                                                {% for file in comment.files %}
+                                                                    <a href="{{ file.DOWNLOAD_URL }}" target="_blank" class="inline-flex items-center px-2.5 py-1.5 border border-slate-700 rounded text-xs font-medium text-blue-400 bg-slate-800 hover:bg-slate-700 transition-colors">
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                                        </svg>
+                                                                        {{ file.NAME|truncatechars:30 }}
+                                                                    </a>
+                                                                {% endfor %}
+                                                            </div>
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-6 bg-slate-800 rounded-lg border border-slate-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                </svg>
+                                <p class="mt-2 text-sm text-slate-400">No hay comentarios en Bitrix24 para esta oportunidad.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="timeline-event">
+                        <div class="bg-slate-700 p-4 rounded-lg shadow-sm border border-slate-600">
+                            <p class="text-slate-200 text-sm mb-1 font-semibold">Tarea Asignada <span class="text-slate-400 text-xs font-normal">15:00 - 24/07/2025</span></p>
+                            <p class="text-slate-400 text-sm">"Preparar propuesta detallada para el cliente X."</p>
+                        </div>
+                    </div>
+                    <!-- Add more activity items as needed -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Combined Status, Action Buttons & Compact Opportunity Details (lg:col-span-1) -->
+        <div class="lg:col-span-1 space-y-8">
+            <!-- Combined Status, Action Buttons Card -->
+            <div class="card-base p-6 flex flex-col space-y-4">
+                <h2 class="text-xl font-bold text-slate-200 mb-2">Estatus</h2>
+                <div class="relative">
+                    <select id="bitrix-stage-select" class="w-full py-3 px-3 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 appearance-none pr-10 focus:outline-none focus:ring-blue-500 focus:border-blue-500 custom-select-arrow transition-all duration-200 ease-in-out hover:border-blue-500 hover:shadow-md text-lg">
+                        <option value="">Seleccionar Etapa</option>
+                        <option value="Solicitud de Cotizacion">Solicitud de Cotizacion</option>
+                        <option value="Cotizando">Cotizando</option>
+                        <option value="Cotización Enviada">Cotización Enviada</option>
+                        <option value="Seguimiento de Cotización.">Seguimiento de Cotización.</option>
+                        <option value="Vendido sin PO">Vendido sin PO</option>
+                        <option value="Vendido con PO">Vendido con PO</option>
+                        <option value="Vendido en Transito con Proveedor">Vendido en Transito con Proveedor</option>
+                        <option value="Programado para entrega">Programado para entrega</option>
+                        <option value="Entregado">Entregado</option>
+                        <option value="Facturado">Facturado</option>
+                        <option value="Pagado">Pagado</option>
+                        <option value="Perdido">Perdido</option>
+                        <option value="Cancelado">Cancelado</option>
+                        <option value="Sin respuesta">Sin respuesta</option>
+                        <option value="Cerrado Ganado">Cerrado Ganado</option>
+                        <option value="Cerrado Perdido">Cerrado Perdido</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 6.757 7.586 5.343 9z"/></svg>
+                    </div>
+                </div>
+
+                <a href="{% url 'crear_cotizacion' oportunidad.cliente.id %}" class="interactive-btn w-full px-6 py-3 text-lg text-center">
+                    Crear cotización
+                </a>
+                <button class="interactive-btn w-full px-6 py-3 text-lg bg-purple-600 hover:bg-purple-700">
+                    Crear proyecto
+                </button>
+            </div>
+
+            <!-- Detalles de la Oportunidad - Versión extendida con todos los campos de Bitrix24 -->
+            <div class="card-base p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-slate-200">Detalles de la Oportunidad</h2>
+                    {% if bitrix_data %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900 text-green-300">
+                            <svg class="-ml-0.5 mr-1.5 h-2 w-2 text-green-400" fill="currentColor" viewBox="0 0 8 8">
+                                <circle cx="4" cy="4" r="3" />
+                            </svg>
+                            Sincronizado con Bitrix24
+                        </span>
+                    {% endif %}
+                </div>
+
+                <!-- Pestañas para organizar la información -->
+                <div class="border-b border-slate-700 mb-6">
+                    <nav class="-mb-px flex space-x-8" x-data="{ activeTab: 'general' }">
+                        <button @click="activeTab = 'general'" 
+                            :class="{ 'border-blue-500 text-blue-400': activeTab === 'general', 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-400': activeTab !== 'general' }" 
+                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                            Información General
+                        </button>
+                        <button @click="activeTab = 'bitrix'" 
+                            :class="{ 'border-blue-500 text-blue-400': activeTab === 'bitrix', 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-400': activeTab !== 'bitrix' }" 
+                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                            Datos Bitrix24
+                        </button>
+                        <button @click="activeTab = 'custom'" 
+                            :class="{ 'border-blue-500 text-blue-400': activeTab === 'custom', 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-400': activeTab !== 'custom' }" 
+                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                            Campos Personalizados
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Contenido de las pestañas -->
+                <div x-show="activeTab === 'general'" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-slate-300 text-sm">
+                    <!-- Columna 1 -->
+                    <div class="space-y-4">
+                        <div class="bg-slate-800/50 p-4 rounded-lg">
+                            <h3 class="text-slate-400 text-sm font-medium mb-3">Información Básica</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <div class="text-slate-400 text-xs mb-1">ID en Bitrix24</div>
+                                    <div class="font-mono text-xs bg-slate-800 px-2 py-1.5 rounded">{{ oportunidad.bitrix_deal_id|default:"No sincronizado" }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-slate-400 text-xs mb-1">Nombre de la Oportunidad</div>
+                                    <div class="font-medium">{{ oportunidad.oportunidad|default:"No especificado" }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-slate-400 text-xs mb-1">Cliente</div>
+                                    <div class="font-medium">{% if oportunidad.cliente %}{{ oportunidad.cliente.nombre_empresa }}{% else %}No asignado{% endif %}</div>
+                                </div>
+                                <div>
+                                    <div class="text-slate-400 text-xs mb-1">Responsable</div>
+                                    <div class="font-medium">{{ oportunidad.usuario.get_full_name|default:oportunidad.usuario.username }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-800/50 p-4 rounded-lg">
+                            <h3 class="text-slate-400 text-sm font-medium mb-3">Estado</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <div class="flex justify-between items-center">
+                                        <div class="text-slate-400 text-xs mb-1">Etapa</div>
+                                        {% if bitrix_data and bitrix_data.opportunity.STAGE_ID %}
+                                            <span class="text-xs text-slate-500">Bitrix24: {{ bitrix_data.opportunity.STAGE_ID }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="font-medium">{{ oportunidad.get_estado_display|default:"No especificada" }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-slate-400 text-xs mb-1">Probabilidad de Cierre</div>
+                                    <div class="space-y-1">
+                                        <div class="w-full bg-slate-700 rounded-full h-2.5">
+                                            <div class="bg-gradient-to-r from-blue-500 to-blue-400 h-2.5 rounded-full" style="width: {{ oportunidad.probabilidad_cierre }}%"></div>
+                                        </div>
+                                        <div class="flex justify-between text-xs text-slate-400">
+                                            <span>0%</span>
+                                            <span>{{ oportunidad.probabilidad_cierre }}%</span>
+                                            <span>100%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-slate-400 text-xs mb-1">Estado</div>
+                                    <div class="font-medium">
+                                        <span class="{% if oportunidad.completado %}text-green-400{% else %}text-yellow-400{% endif %}">
+                                            {% if oportunidad.completado %}Completado{% else %}En Progreso{% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Columna 2 -->
+                    <div class="space-y-4">
+                        <div class="bg-slate-800/50 p-4 rounded-lg">
+                            <h3 class="text-slate-400 text-sm font-medium mb-3">Información Comercial</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <div class="flex justify-between items-center">
+                                        <div class="text-slate-400 text-xs mb-1">Monto</div>
+                                        {% if bitrix_data and bitrix_data.opportunity.OPPORTUNITY %}
+                                            <span class="text-xs text-slate-500">Bitrix24: USD {{ bitrix_data.opportunity.OPPORTUNITY|floatformat:2|intcomma }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-xl font-bold text-green-400">USD {{ oportunidad.monto|floatformat:2|intcomma }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-slate-400 text-xs mb-1">Moneda</div>
+                                    <div class="font-medium">USD - Dólar Estadounidense</div>
+                                </div>
+                                <div>
+                                    <div class="text-slate-400 text-xs mb-1">Área</div>
+                                    <div class="font-medium">{{ oportunidad.get_area_display|default:"No especificada" }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-slate-400 text-xs mb-1">Producto</div>
+                                    <div class="font-medium">{{ oportunidad.get_producto_display|default:"No especificado" }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-slate-400 text-xs mb-1">Fecha de Cierre Esperada</div>
+                                    <div class="font-medium">{{ oportunidad.fecha_cierre_esperada|date:"d/m/Y"|default:"No especificada" }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-800/50 p-4 rounded-lg">
+                            <h3 class="text-slate-400 text-sm font-medium mb-3">Metadatos</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <div class="text-slate-400 text-xs mb-1">Fecha de Creación</div>
+                                    <div class="font-medium">{{ oportunidad.fecha_creacion|date:"d/m/Y H:i" }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-slate-400 text-xs mb-1">Última Actualización</div>
+                                    <div class="font-medium">{{ oportunidad.fecha_actualizacion|date:"d/m/Y H:i"|default:"Nunca" }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-slate-400 text-xs mb-1">Creado por</div>
+                                    <div class="font-medium">{{ oportunidad.usuario.get_full_name|default:oportunidad.usuario.username }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Descripción (ancho completo) -->
+                    <div class="md:col-span-2 bg-slate-800/50 p-4 rounded-lg">
+                        <h3 class="text-slate-400 text-sm font-medium mb-3">Descripción</h3>
+                        <div class="prose prose-invert max-w-none text-slate-300 text-sm">
+                            {{ oportunidad.descripcion|linebreaks|default:"<p class='text-slate-500'>No hay descripción disponible</p>" }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña de Datos de Bitrix24 -->
+                <div x-show="activeTab === 'bitrix'" class="space-y-4">
+                    {% if bitrix_data and bitrix_data.opportunity %}
+                        <div class="bg-slate-800/50 p-4 rounded-lg">
+                            <h3 class="text-slate-300 text-sm font-medium mb-3">Datos de la Oportunidad en Bitrix24</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-slate-700 text-xs">
+                                    <tbody class="divide-y divide-slate-700">
+                                        {% for key, value in bitrix_data.opportunity.items %}
+                                            {% if value and key not in 'UF_CRM_' %}
+                                                <tr class="hover:bg-slate-700/50">
+                                                    <td class="py-2 px-3 text-slate-400 font-medium whitespace-nowrap">{{ key }}</td>
+                                                    <td class="py-2 px-3 text-slate-200 break-all">
+                                                        {% if value is not None %}
+                                                            {% if value.items is defined %}
+                                                                <pre class="text-xs bg-slate-800 p-2 rounded overflow-auto max-h-40">{{ value|pprint|escape }}</pre>
+                                                            {% else %}
+                                                                {{ value|truncatechars:100 }}
+                                                            {% endif %}
+                                                        {% else %}
+                                                            <span class="text-slate-500">Nulo</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-8 text-slate-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p>No hay datos de Bitrix24 disponibles o la oportunidad no está sincronizada.</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Pestaña de Campos Personalizados -->
+                <div x-show="activeTab === 'custom'" class="space-y-4">
+                    {% if bitrix_data and bitrix_data.opportunity %}
+                        {% with custom_fields=bitrix_data.opportunity|dictsort:0 %}
+                            {% if custom_fields %}
+                                <div class="bg-slate-800/50 p-4 rounded-lg">
+                                    <h3 class="text-slate-300 text-sm font-medium mb-3">Campos Personalizados</h3>
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full divide-y divide-slate-700 text-xs">
+                                            <tbody class="divide-y divide-slate-700">
+                                                {% for key, value in bitrix_data.opportunity.items %}
+                                                    {% if value and 'UF_CRM_' in key %}
+                                                        <tr class="hover:bg-slate-700/50">
+                                                            <td class="py-2 px-3 text-slate-400 font-medium whitespace-nowrap">{{ key }}</td>
+                                                            <td class="py-2 px-3 text-slate-200 break-all">
+                                                                {% if value is not None %}
+                                                                    {% if value.items is defined %}
+                                                                        <pre class="text-xs bg-slate-800 p-2 rounded overflow-auto max-h-40">{{ value|pprint|escape }}</pre>
+                                                                    {% else %}
+                                                                        {{ value|truncatechars:100 }}
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-slate-500">Nulo</span>
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-8 text-slate-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    <p>No se encontraron campos personalizados en esta oportunidad.</p>
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+                    {% else %}
+                        <div class="text-center py-8 text-slate-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p>No hay datos de Bitrix24 disponibles o la oportunidad no está sincronizada.</p>
+                        </div>
+                    {% endif %}
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* General styles for the body and cards */
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #0d1117; /* Even darker background */
+        color: #e2e8f0;
+        overflow-x: hidden; /* Prevent horizontal scroll */
+    }
+    .gradient-text {
+        background: linear-gradient(90deg, #6366f1, #8b5cf6); /* Blue to purple gradient */
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .card-base {
+        background-color: #1a202c; /* Darker card background */
+        border: 1px solid #2d3748; /* Subtle border */
+        border-radius: 1rem; /* More rounded corners */
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card-base:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 20px -5px rgba(0, 0, 0, 0.3), 0 6px 10px -3px rgba(0, 0, 0, 0.15);
+    }
+    .interactive-btn {
+        background-color: #4f46e5; /* Deeper blue */
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    .interactive-btn:hover {
+        background-color: #4338ca;
+        transform: translateY(-2px);
+    }
+
+    /* Activity timeline */
+    .activity-timeline {
+        position: relative;
+        padding-left: 1.5rem;
+    }
+    .activity-timeline::before {
+        content: '';
+        position: absolute;
+        left: 0.75rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: #4a5568;
+    }
+    .timeline-event {
+        position: relative;
+        margin-bottom: 2rem;
+        padding-left: 1.5rem;
+    }
+    .timeline-event::before {
+        content: '';
+        position: absolute;
+        left: -0.5rem; /* Adjust to align with main line */
+        top: 0.25rem;
+        width: 1rem;
+        height: 1rem;
+        background-color: #8b5cf6;
+        border-radius: 50%;
+        border: 2px solid #1a202c; /* Matches card background */
+        z-index: 1;
+        box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+    }
+    .timeline-event:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Progress bar */
+    .progress-bar-container {
+        background-color: #2d3748;
+        border-radius: 0.5rem;
+        height: 0.75rem;
+        overflow: hidden;
+    }
+    .progress-bar-fill {
+        background: linear-gradient(90deg, #6366f1, #8b5cf6);
+        height: 100%;
+        border-radius: 0.5rem;
+        transition: width 0.5s ease-in-out;
+    }
+    /* Custom arrow for select dropdown */
+    .custom-select-arrow {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3e%3cpath d='M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 6.757 7.586 5.343 9z' fill='%239CA3AF'/%3e%3c/svg%3e"); /* Tailwind gray-400 */
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 1em;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const oportunidadId = "{{ oportunidad.id }}";
+        const editIconContainer = document.getElementById('edit_icon_container');
+
+        // Event listener for the edit icon (pencil)
+        if (editIconContainer) {
+            editIconContainer.addEventListener('click', () => {
+                // Redirect to the edit form URL
+                window.location.href = "{% url 'editar_venta_todoitem' oportunidad.id %}";
+            });
+        }
+
+        // Bitrix Stage Select (existing logic)
+        const bitrixStageSelect = document.getElementById('bitrix-stage-select');
+        const currentStage = "{{ oportunidad.bitrix_stage_id|default:'Solicitud de Cotizacion' }}";
+        if (bitrixStageSelect) {
+            bitrixStageSelect.value = currentStage;
+            bitrixStageSelect.addEventListener('change', (event) => {
+                const newStage = event.target.value;
+                console.log(`Etapa actualizada a: ${newStage}`);
+                // In a real application, you would send an AJAX request here to update the opportunity status in the backend.
+                // Example: fetch('/api/update-opportunity-stage/', { method: 'POST', body: JSON.stringify({ stage: newStage }) });
+            });
+        }
+    });
+</script>
+{% endblock %}

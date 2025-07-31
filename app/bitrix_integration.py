@@ -212,6 +212,10 @@ def _get_bitrix_mapped_data(opportunity_data, request=None):
     if opportunity_data.get('bitrix_stage_id'):
         fields["STAGE_ID"] = opportunity_data.get('bitrix_stage_id')
 
+    bitrix_contact_id = opportunity_data.get('bitrix_contact_id')
+    if bitrix_contact_id:
+        fields["CONTACT_ID"] = bitrix_contact_id # Assuming CONTACT_ID is the field name in Bitrix
+
     return fields
 
 def send_opportunity_to_bitrix(opportunity_data, request=None, file_data=None):
@@ -278,6 +282,74 @@ def update_opportunity_in_bitrix(bitrix_deal_id, opportunity_data, request=None,
     except requests.exceptions.RequestException as e:
         print(f"DEBUG Bitrix: Error al actualizar la oportunidad en Bitrix24: {e}")
         return False
+
+def get_all_bitrix_companies(request=None):
+    if not BITRIX_WEBHOOK_URL:
+        if request:
+            messages.error(request, "Error: La URL del webhook de Bitrix24 no está configurada.")
+        print("Error: La URL del webhook de Bitrix24 no está configurada.")
+        return []
+
+    list_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "crm.company.list.json")
+    companies = []
+    start = 0
+
+    while True:
+        try:
+            response = requests.post(list_url, json={
+                'select': ['ID', 'TITLE'],
+                'start': start
+            })
+            response.raise_for_status()
+            result = response.json()
+            companies.extend(result.get('result', []))
+
+            if 'next' in result:
+                start = result['next']
+            else:
+                break
+        except requests.exceptions.RequestException as e:
+            print(f"Error al obtener compañías de Bitrix24: {e}")
+            if request:
+                messages.error(request, f"Error al obtener compañías de Bitrix24: {e}")
+            return []
+
+    return companies
+
+def get_all_bitrix_contacts(request=None, company_id=None):
+    if not BITRIX_WEBHOOK_URL:
+        if request:
+            messages.error(request, "Error: La URL del webhook de Bitrix24 no está configurada.")
+        print("Error: La URL del webhook de Bitrix24 no está configurada.")
+        return []
+
+    list_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "crm.contact.list.json")
+    contacts = []
+    start = 0
+
+    payload = {'select': ['ID', 'NAME', 'LAST_NAME', 'COMPANY_ID']}
+    if company_id:
+        payload['filter'] = {'COMPANY_ID': company_id}
+
+    while True:
+        payload['start'] = start
+        try:
+            response = requests.post(list_url, json=payload)
+            response.raise_for_status()
+            result = response.json()
+            contacts.extend(result.get('result', []))
+
+            if 'next' in result:
+                start = result['next']
+            else:
+                break
+        except requests.exceptions.RequestException as e:
+            print(f"Error al obtener contactos de Bitrix24: {e}")
+            if request:
+                messages.error(request, f"Error al obtener contactos de Bitrix24: {e}")
+            return []
+
+    return contacts
 
 def get_bitrix_companies_api(request):
     query = request.GET.get('q', '')

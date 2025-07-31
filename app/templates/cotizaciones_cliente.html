@@ -75,6 +75,9 @@
                 <a href="{{ cotizacion.descargar_url }}" class="inline-flex items-center px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-white rounded transition" download>
                     <i data-lucide="download" class="lucide w-4 h-4 mr-1"></i>Descargar
                 </a>
+                <a href="{% url 'editar_cotizacion' cotizacion.id %}" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-400 text-white rounded transition">
+                    <i data-lucide="edit" class="lucide w-4 h-4 mr-1"></i>Editar
+                </a>
             </li>
             {% endfor %}
         </ul>

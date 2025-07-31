@@ -1,0 +1,115 @@
+{% load widget_tweaks %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Cotización</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f4f7f9; }
+        .form-input-modern {
+            background: #fff;
+            color: #333;
+            border: 1px solid #ccc;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+        .form-input-modern:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px #2563eb33;
+        }
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover { background-color: #1d4ed8; }
+    </style>
+</head>
+<body class="p-4">
+
+<div class="max-w-4xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Crear Cotización para: {{ oportunidad.oportunidad }}</h2>
+        {% if oportunidad %}
+        <p class="text-gray-700 mt-2">Cliente: <span class="font-semibold">{{ oportunidad.get_nombre_cliente|default:'Sin cliente asignado' }}</span></p>
+        {% endif %}
+        {% if oportunidad and oportunidad.id %}
+        <a href="{{ request.scheme }}://{{ request.get_host }}{% url 'crear_cotizacion' cliente.id %}?oportunidad_id={{ oportunidad.id }}" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+            Generar Cotización en Página Principal
+        </a>
+        {% else %}
+        <button disabled class="bg-gray-400 text-white font-bold py-2 px-4 rounded-lg cursor-not-allowed" title="No se puede generar cotización sin una oportunidad">
+            Generar Cotización en Página Principal
+        </button>
+        {% endif %}
+    </div>
+    
+    <form id="cotizacionWidgetForm" method="post" action="{% url 'crear_cotizacion' cliente.id %}" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Hidden fields to pass opportunity and client info -->
+        <input type="hidden" name="oportunidad" value="{{ oportunidad.id }}">
+        <input type="hidden" name="cliente" value="{{ cliente.id }}">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label for="id_titulo" class="block text-sm font-medium text-gray-700 mb-1">Título de la Cotización</label>
+                {{ form.titulo|add_class:"form-input-modern w-full"|attr:"placeholder:Ej. Cotización de Servicios de TI" }}
+            </div>
+            <div>
+                <label for="id_moneda" class="block text-sm font-medium text-gray-700 mb-1">Moneda</label>
+                {{ form.moneda|add_class:"form-input-modern w-full" }}
+            </div>
+        </div>
+
+        <div>
+            <label for="id_descripcion" class="block text-sm font-medium text-gray-700 mb-1">Descripción General</label>
+            {{ form.descripcion|add_class:"form-input-modern w-full"|attr:"rows:3"|attr:"placeholder:Descripción de los productos o servicios..." }}
+        </div>
+
+        <hr class="my-8">
+
+        <h3 class="text-xl font-semibold text-gray-800">Detalles de la Cotización</h3>
+        <div id="detalles-container" class="space-y-4"></div>
+        <button type="button" id="add-detalle-btn" class="btn-primary">+ Añadir Producto</button>
+
+        <div class="flex justify-end mt-8">
+            <button type="submit" id="submit-widget-form-btn" class="btn-primary text-lg">Guardar Cotización</button>
+        </div>
+    </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const detallesContainer = document.getElementById('detalles-container');
+    const addDetalleBtn = document.getElementById('add-detalle-btn');
+    let detalleIndex = 0;
+
+    function addDetalleRow() {
+        const newRow = document.createElement('div');
+        newRow.classList.add('grid', 'grid-cols-12', 'gap-4', 'items-center');
+        newRow.innerHTML = `
+            <div class="col-span-3"><input type="text" name="productos[${detalleIndex}][nombre]" class="form-input-modern w-full" placeholder="Producto"></div>
+            <div class="col-span-4"><input type="text" name="productos[${detalleIndex}][descripcion]" class="form-input-modern w-full" placeholder="Descripción"></div>
+            <div class="col-span-2"><input type="number" name="productos[${detalleIndex}][cantidad]" class="form-input-modern w-full" placeholder="Cant." value="1"></div>
+            <div class="col-span-2"><input type="number" name="productos[${detalleIndex}][precio]" class="form-input-modern w-full" placeholder="Precio U." step="0.01"></div>
+            <div class="col-span-1"><button type="button" class="text-red-500 hover:text-red-700 font-bold">X</button></div>
+        `;
+        detallesContainer.appendChild(newRow);
+        newRow.querySelector('button').addEventListener('click', () => newRow.remove());
+        detalleIndex++;
+    }
+
+    addDetalleBtn.addEventListener('click', addDetalleRow);
+    addDetalleRow(); // Add one row to start with
+});
+</script>
+
+</body>
+</html>

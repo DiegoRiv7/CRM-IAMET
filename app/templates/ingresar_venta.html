@@ -35,54 +35,98 @@
   <p class="text-center text-gray-400 mb-8" style="font-size: clamp(1rem, 2.5vw, 1.25rem);">Rápido, fácil y sin distracciones.</p>
   <form id="oportunidadForm" method="post" autocomplete="off" class="space-y-6">
     {% csrf_token %}
+    {% if form.non_field_errors %}
+        <div class="bg-red-800 text-white p-4 rounded-lg mb-4">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
         <label for="id_oportunidad" class="block text-sm text-white mb-1">Oportunidad</label>
         {{ form.oportunidad|add_class:"form-input-modern"|attr:"placeholder: Oportunidad" }}
+        {% if form.oportunidad.errors %}
+            <ul class="errorlist text-red-400 text-xs mt-1">{% for error in form.oportunidad.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
       </div>
       <div class="relative md:col-span-2">
         <label for="id_cliente_nombre" class="block text-sm text-white mb-1">Cliente</label>
         {{ form.cliente_nombre|add_class:"form-input-modern"|attr:"placeholder:Escribe para buscar o crear un cliente..."|attr:"id:id_cliente_nombre" }}
-        {{ form.bitrix_company_id|attr:"id:id_bitrix_company_id" }}
+        <input type="hidden" id="id_bitrix_company_id" name="bitrix_company_id" value="{{ form.bitrix_company_id.value|default:'' }}">
         <div id="autocomplete-suggestions" class="autocomplete-suggestions hidden"></div>
+        {% if form.cliente_nombre.errors %}
+            <ul class="errorlist text-red-400 text-xs mt-1">{% for error in form.cliente_nombre.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
       </div>
-      {% if form.usuario %}
+      {% if form.usuario_nombre %}
       <div class="md:col-span-2">
-        <label for="id_usuario" class="block text-sm text-white mb-1">Vendedor Responsable</label>
-        {{ form.usuario|add_class:"form-input-modern"|attr:"placeholder: Vendedor Responsable" }}
+        <label for="id_usuario_nombre" class="block text-sm text-white mb-1">Vendedor Responsable</label>
+        {{ form.usuario_nombre|add_class:"form-input-modern"|attr:"placeholder: Vendedor Responsable"|attr:"id:id_usuario_nombre" }}
+        <input type="hidden" id="id_bitrix_assigned_by_id" name="bitrix_assigned_by_id" value="{{ form.bitrix_assigned_by_id.value|default:'' }}">
+        <div id="user-autocomplete-suggestions" class="autocomplete-suggestions hidden"></div>
+        {% if form.usuario_nombre.errors %}
+            <ul class="errorlist text-red-400 text-xs mt-1">{% for error in form.usuario_nombre.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
       </div>
       {% endif %}
       <div>
-        <label for="id_contacto" class="block text-sm text-white mb-1">Contacto del Cliente</label>
-        {{ form.contacto|add_class:"form-input-modern"|attr:"placeholder: Contacto del Cliente" }}
+        <label for="id_contacto_nombre" class="block text-sm text-white mb-1">Contacto del Cliente</label>
+        {{ form.contacto|add_class:"form-input-modern"|attr:"placeholder:Buscar o crear contacto..."|attr:"id:id_contacto_nombre" }}
+        <input type="hidden" id="id_bitrix_contact_id" name="bitrix_contact_id" value="{{ form.bitrix_contact_id.value|default:'' }}">
+        <div id="contact-autocomplete-suggestions" class="autocomplete-suggestions hidden"></div>
+        {% if form.contacto.errors %}
+            <ul class="errorlist text-red-400 text-xs mt-1">{% for error in form.contacto.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
       </div>
       <div>
         <label for="id_area" class="block text-sm text-white mb-1">Área</label>
         {{ form.area|add_class:"form-input-modern"|attr:"placeholder: Área" }}
+        {% if form.area.errors %}
+            <ul class="errorlist text-red-400 text-xs mt-1">{% for error in form.area.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
       </div>
       <div class="md:col-span-2">
         <label for="id_producto" class="block text-sm text-white mb-1">Producto / Servicio</label>
         {{ form.producto|add_class:"form-input-modern"|attr:"placeholder: Producto / Servicio" }}
+        {% if form.producto.errors %}
+            <ul class="errorlist text-red-400 text-xs mt-1">{% for error in form.producto.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
       </div>
       <div>
         <label for="id_monto" class="block text-sm text-white mb-1">Monto de la Oportunidad ($)</label>
         {{ form.monto|add_class:"form-input-modern"|attr:"placeholder: Monto de la Oportunidad ($)" }}
+        {% if form.monto.errors %}
+            <ul class="errorlist text-red-400 text-xs mt-1">{% for error in form.monto.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
       </div>
       <div>
         <label for="id_mes_cierre" class="block text-sm text-white mb-1">Mes de Cierre Esperado</label>
         {{ form.mes_cierre|add_class:"form-input-modern"|attr:"placeholder: Mes de Cierre Esperado" }}
+        {% if form.mes_cierre.errors %}
+            <ul class="errorlist text-red-400 text-xs mt-1">{% for error in form.mes_cierre.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
       </div>
       <div>
         <label for="id_probabilidad_cierre" class="block text-sm text-white mb-1">Probabilidad de Cierre (%)</label>
         {{ form.probabilidad_cierre|add_class:"form-input-modern"|attr:"placeholder: Probabilidad de Cierre (%)" }}
+        {% if form.probabilidad_cierre.errors %}
+            <ul class="errorlist text-red-400 text-xs mt-1">{% for error in form.probabilidad_cierre.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
       </div>
       <div>
         <label for="id_bitrix_stage_id" class="block text-sm text-white mb-1">Etapa de Bitrix</label>
         {{ form.bitrix_stage_id|add_class:"form-input-modern" }}
+        {% if form.bitrix_stage_id.errors %}
+            <ul class="errorlist text-red-400 text-xs mt-1">{% for error in form.bitrix_stage_id.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
       </div>
       <div class="md:col-span-2">
         <label for="id_comentarios" class="block text-sm text-white mb-1">Comentarios</label>
         {{ form.comentarios|add_class:"form-input-modern resize-y"|attr:"placeholder: Comentarios" }}
+        {% if form.comentarios.errors %}
+            <ul class="errorlist text-red-400 text-xs mt-1">{% for error in form.comentarios.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
       </div>
     </div>
     <div class="flex justify-between items-center mt-8">
@@ -164,6 +208,93 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(event) {
         if (!clienteNombreInput.contains(event.target) && !suggestionsContainer.contains(event.target)) {
             suggestionsContainer.classList.add('hidden');
+        }
+    });
+});
+
+// --- Script for Contact Autocomplete ---
+document.addEventListener('DOMContentLoaded', function() {
+    const contactNombreInput = document.getElementById('id_contacto_nombre');
+    const bitrixContactIdInput = document.getElementById('id_bitrix_contact_id');
+    const contactSuggestionsContainer = document.getElementById('contact-autocomplete-suggestions');
+    let contactDebounceTimeout;
+
+    const fetchAndShowContactSuggestions = (query, companyId = null) => {
+        let url = `/app/api/bitrix-contacts/?query=${encodeURIComponent(query)}`;
+        if (companyId) {
+            url += `&company_id=${encodeURIComponent(companyId)}`;
+        }
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                contactSuggestionsContainer.innerHTML = '';
+                if (data.length > 0) {
+                    data.forEach(contact => {
+                        const item = document.createElement('div');
+                        item.classList.add('autocomplete-suggestion-item');
+                        const fullName = `${contact.NAME || ''} ${contact.LAST_NAME || ''}`.trim();
+                        item.textContent = fullName;
+                        item.dataset.contactId = contact.ID;
+                        item.addEventListener('click', () => {
+                            contactNombreInput.value = fullName;
+                            bitrixContactIdInput.value = contact.ID;
+                            contactSuggestionsContainer.classList.add('hidden');
+                        });
+                        contactSuggestionsContainer.appendChild(item);
+                    });
+                } else if (query) {
+                    const createItem = document.createElement('div');
+                    createItem.classList.add('autocomplete-suggestion-item');
+                    createItem.innerHTML = `Crear nuevo contacto: <strong>${query}</strong>`;
+                    createItem.addEventListener('click', () => {
+                        contactNombreInput.value = query;
+                        bitrixContactIdInput.value = ''; 
+                        contactSuggestionsContainer.classList.add('hidden');
+                    });
+                    contactSuggestionsContainer.appendChild(createItem);
+                }
+                contactSuggestionsContainer.classList.remove('hidden');
+            })
+            .catch(error => {
+                console.error('Error fetching Bitrix contacts:', error);
+                contactSuggestionsContainer.classList.add('hidden');
+            });
+    };
+
+    // Event listener for client company change to filter contacts
+    bitrixCompanyIdInput.addEventListener('change', () => {
+        contactNombreInput.value = ''; // Clear contact field
+        bitrixContactIdInput.value = ''; // Clear contact ID
+        const currentCompanyId = bitrixCompanyIdInput.value;
+        fetchAndShowContactSuggestions('', currentCompanyId); // Fetch all contacts for the new company
+    });
+
+    contactNombreInput.addEventListener('focus', () => {
+        const currentCompanyId = bitrixCompanyIdInput.value;
+        fetchAndShowContactSuggestions('', currentCompanyId); // Show all contacts for current company on focus
+    });
+
+    contactNombreInput.addEventListener('input', function() {
+        clearTimeout(contactDebounceTimeout);
+        const query = this.value.trim();
+        const currentCompanyId = bitrixCompanyIdInput.value;
+
+        if (query === '') {
+            bitrixContactIdInput.value = '';
+            fetchAndShowContactSuggestions('', currentCompanyId); // Show all contacts for current company if query is empty
+            return;
+        }
+
+        bitrixContactIdInput.value = '';
+
+        contactDebounceTimeout = setTimeout(() => {
+            fetchAndShowContactSuggestions(query, currentCompanyId);
+        }, 300);
+    });
+
+    document.addEventListener('click', function(event) {
+        if (!contactNombreInput.contains(event.target) && !contactSuggestionsContainer.contains(event.target)) {
+            contactSuggestionsContainer.classList.add('hidden');
         }
     });
 });

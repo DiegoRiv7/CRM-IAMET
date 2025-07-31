@@ -65,6 +65,9 @@ urlpatterns = [
     # Ruta para visualizar el PDF de una cotización en el navegador
     path('cotizacion/view/<int:cotizacion_id>/', views.view_cotizacion_pdf, name='view_cotizacion_pdf'),
 
+    # Ruta para editar (duplicar) una cotización
+    path('cotizacion/<int:cotizacion_id>/editar/', views.editar_cotizacion_view, name='editar_cotizacion'),
+
     # Reporte de usuarios (solo para supervisores)
     path('reporte-usuarios/', views.reporte_usuarios, name='reporte_usuarios'),
     path('perfil-usuario/<int:usuario_id>/', views.perfil_usuario, name='perfil_usuario'),
@@ -85,8 +88,10 @@ urlpatterns = [
 
     # API para crear clientes desde el modal
     path('api/crear-cliente/', views.crear_cliente_api, name='crear_cliente_api'),
+    path('api/crear-cliente/', views.crear_cliente_api, name='crear_cliente_api'),
     path('api/bitrix-companies/', get_bitrix_companies_api, name='bitrix_companies_api'),
     path('api/get-oportunidades-por-cliente/', views.get_oportunidades_por_cliente, name='get_oportunidades_por_cliente'),
+    path('api/bitrix-contacts/', views.get_bitrix_contacts_api, name='bitrix_contacts_api'),
  
    # path("", RedirectView.as_view(url='/dashboard/', permanent=False), name='root_redirect'),
 ]

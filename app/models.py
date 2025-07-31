@@ -22,7 +22,7 @@ class Cliente(models.Model):
     """
     Modelo para representar un cliente en la base de datos.
     """
-    nombre_empresa = models.CharField(max_length=200, unique=True, verbose_name="Nombre de la Empresa")
+    nombre_empresa = models.CharField(max_length=200, verbose_name="Nombre de la Empresa")
     contacto_principal = models.CharField(max_length=200, blank=True, null=True, verbose_name="Contacto Principal")
     telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono")
     email = models.EmailField(blank=True, null=True, verbose_name="Email")
@@ -86,7 +86,14 @@ class TodoItem(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='oportunidades')
     oportunidad = models.CharField(max_length=200, verbose_name="Oportunidad de Venta")
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='oportunidades', verbose_name="Cliente")
-    contacto = models.CharField(max_length=100, verbose_name="Contacto del Cliente")
+    contacto = models.ForeignKey(
+        'Contacto', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='oportunidades', 
+        verbose_name="Contacto del Cliente"
+    )
     producto = models.CharField(max_length=100, choices=PRODUCTO_CHOICES, verbose_name="Producto / Servicio")
     monto = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Monto de la Oportunidad")
     probabilidad_cierre = models.IntegerField(verbose_name="Probabilidad de Cierre (%)")
@@ -112,6 +119,23 @@ class TodoItem(models.Model):
         Representación en cadena del objeto TodoItem.
         """
         return self.oportunidad
+
+class Contacto(models.Model):
+    nombre = models.CharField(max_length=100, verbose_name="Nombre del Contacto")
+    apellido = models.CharField(max_length=100, blank=True, null=True, verbose_name="Apellido del Contacto")
+    bitrix_contact_id = models.IntegerField(unique=True, null=True, blank=True, verbose_name="ID de Contacto en Bitrix24")
+    company_id = models.IntegerField(null=True, blank=True, verbose_name="ID de Compañía en Bitrix24") # To link with Bitrix Company
+    cliente = models.ForeignKey(Cliente, on_delete=models.SET_NULL, null=True, blank=True, related_name='contactos', verbose_name="Cliente Asociado")
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
+    fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Última Actualización")
+
+    def __str__(self):
+        return f"{self.nombre} {self.apellido or ''}".strip()
+
+    class Meta:
+        verbose_name = "Contacto"
+        verbose_name_plural = "Contactos"
+        ordering = ['nombre', 'apellido']
 
 class Cotizacion(models.Model):
     """
@@ -189,7 +213,8 @@ class DetalleCotizacion(models.Model):
     cantidad = models.PositiveIntegerField(default=1, verbose_name="Cantidad")
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Precio Unitario")
     descuento_porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'), verbose_name="Descuento (%)")
-    marca = models.CharField(max_length=50, choices=MARCA_CHOICES, blank=True, null=True, verbose_name="Marca") # NUEVO CAMPO
+    marca = models.CharField(max_length=50, choices=MARCA_CHOICES, blank=True, null=True, verbose_name="Marca")
+    no_parte = models.CharField(max_length=100, blank=True, null=True, verbose_name="Número de Parte")
 
     class Meta:
         """
