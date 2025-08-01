@@ -1558,6 +1558,75 @@ def perfil_usuario(request, usuario_id):
     return render(request, 'perfil_usuario.html', context)
 
 
+from django.views.decorators.csrf import csrf_exempt
+from .bitrix_integration import get_bitrix_company_details, get_bitrix_deal_details
+from django.contrib.auth.models import User
+
+@csrf_exempt
+def bitrix_webhook_receiver(request):
+    # Extraer el token de la URL, por ejemplo: /app/bitrix_webhook/?token=tu_token_aqui
+    token = request.GET.get('token')
+    expected_tokens = os.getenv("BITRIX_WEBHOOK_TOKEN", "").split(',')
+
+    if not token or token not in expected_tokens:
+        return JsonResponse({'status': 'error', 'message': 'Invalid or missing token'}, status=403)
+
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        event = data.get('event')
+        
+        if event == 'ONCRMCOMPANYADD':
+            company_id = data.get('data[FIELDS][ID]')
+            if company_id:
+                company_details = get_bitrix_company_details(company_id, request=request)
+                if company_details:
+                    Cliente.objects.get_or_create(
+                        bitrix_company_id=company_details['ID'],
+                        defaults={'nombre_empresa': company_details['TITLE']}
+                    )
+        elif event == 'ONCRMDEALADD':
+            deal_id = data.get('data[FIELDS][ID]')
+            if deal_id:
+                deal_details = get_bitrix_deal_details(deal_id, request=request)
+                if deal_details:
+                    # Obtener el ID de la compañía y el usuario asignado
+                    company_id = deal_details.get('COMPANY_ID')
+                    assigned_by_id = deal_details.get('ASSIGNED_BY_ID')
+
+                    # Buscar el cliente en la base de datos local
+                    try:
+                        cliente = Cliente.objects.get(bitrix_company_id=company_id)
+                    except Cliente.DoesNotExist:
+                        # Si el cliente no existe, créalo
+                        company_details = get_bitrix_company_details(company_id, request=request)
+                        if company_details:
+                            cliente = Cliente.objects.create(
+                                bitrix_company_id=company_details['ID'],
+                                nombre_empresa=company_details['TITLE']
+                            )
+                        else:
+                            cliente = None
+
+                    # Buscar el usuario en la base de datos local
+                    try:
+                        usuario = User.objects.get(userprofile__bitrix_user_id=assigned_by_id)
+                    except User.DoesNotExist:
+                        usuario = None # O asignar a un usuario por defecto
+
+                    if cliente and usuario:
+                        TodoItem.objects.create(
+                            oportunidad=deal_details.get('TITLE'),
+                            monto=deal_details.get('OPPORTUNITY'),
+                            cliente=cliente,
+                            usuario=usuario,
+                            bitrix_deal_id=deal_details.get('ID')
+                            # Mapear otros campos si es necesario
+                        )
+        
+        return JsonResponse({'status': 'success'})
+    
+    return JsonResponse({'status': 'invalid_method'}, status=405)
+
 from django.template.context_processors import request as request_context
 
 def add_is_supervisor_to_context(request):
