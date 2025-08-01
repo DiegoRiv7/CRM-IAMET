@@ -1198,6 +1198,7 @@ def oportunidades_por_cliente_view(request, cliente_id):
 from django.views.decorators.clickjacking import xframe_options_exempt
 
 @xframe_options_exempt
+@xframe_options_exempt
 @login_required
 def bitrix_widget_launcher(request):
     return render(request, 'bitrix_widget_launcher.html')
