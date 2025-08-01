@@ -1593,6 +1593,7 @@ def cotizaciones_view(request):
         ]
         print(f"DEBUG: cotizaciones_view - Cliente: {cliente.nombre_empresa}, Cotizaciones encontradas: {len(cotizaciones_list)}")
 
+        # Add the client to the list regardless of whether they have quotes or not.
         clientes_data.append({
             'id': cliente.id,
             'nombre': cliente.nombre_empresa,
