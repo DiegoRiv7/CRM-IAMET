@@ -1214,17 +1214,20 @@ def crear_cotizacion_view(request, cliente_id=None):
     if cliente_id:
         user = request.user
         try:
-            if is_supervisor(user):
-                cliente_seleccionado = Cliente.objects.get(pk=cliente_id)
-            else:
-                # Vendedor solo puede acceder a clientes asignados a él o sin asignar.
-                cliente_seleccionado = Cliente.objects.get(
-                    Q(pk=cliente_id) & 
-                    (Q(asignado_a=user) | Q(asignado_a__isnull=True))
-                )
+            # CORRECTO: Buscar el cliente por su bitrix_company_id, que es lo que la URL del widget nos da.
+            cliente_seleccionado = Cliente.objects.get(bitrix_company_id=cliente_id)
         except Cliente.DoesNotExist:
-            from django.http import Http404
-            raise Http404("No tiene permiso para ver este cliente o el cliente no existe.")
+            # Si el cliente no existe, es posible que la sincronización aún no haya ocurrido.
+            # Forzamos la sincronización de este cliente específico.
+            company_details = get_bitrix_company_details(cliente_id, request=request)
+            if company_details:
+                cliente_seleccionado, created = Cliente.objects.get_or_create(
+                    bitrix_company_id=company_details['ID'],
+                    defaults={'nombre_empresa': company_details['TITLE']}
+                )
+            else:
+                from django.http import Http404
+                raise Http404(f"El cliente con Bitrix ID {cliente_id} no se encuentra y no se pudo crear. Verifique la conexión con Bitrix.")
 
         print(f"DEBUG: crear_cotizacion_view - Cliente seleccionado por ID: {cliente_seleccionado.nombre_empresa}")
 
