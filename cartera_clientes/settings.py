@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Carga las variables de entorno desde .env
+# Carga las variables de entorno desde .env en el directorio raíz del proyecto
 dotenv_path = BASE_DIR / '.env'
 load_dotenv(dotenv_path=dotenv_path)
 

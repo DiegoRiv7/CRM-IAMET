@@ -242,11 +242,7 @@ class CotizacionForm(forms.ModelForm):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
-        if user:
-            if user.groups.filter(name='Supervisores').exists():
-                self.fields['cliente'].queryset = Cliente.objects.all().order_by('nombre_empresa')
-            else:
-                self.fields['cliente'].queryset = Cliente.objects.filter(Q(asignado_a=user) | Q(asignado_a__isnull=True)).order_by('nombre_empresa')
+        self.fields['cliente'].queryset = Cliente.objects.all().order_by('nombre_empresa')
 
         cliente_id = self.initial.get('cliente') or (self.data.get('cliente') if self.data else None)
         if cliente_id:
