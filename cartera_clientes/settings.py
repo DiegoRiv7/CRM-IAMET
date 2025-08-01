@@ -75,6 +75,8 @@ MIDDLEWARE = [
 #     # Protección contra clickjacking
 #     X_FRAME_OPTIONS = 'DENY'
 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # Configuración de cookies para iframes
 SESSION_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SECURE = True
