@@ -1569,10 +1569,7 @@ def cotizaciones_view(request):
     is_supervisor_flag = is_supervisor(request.user)
     print(f"DEBUG: cotizaciones_view - Usuario: {user.username}, Es supervisor: {is_supervisor_flag}")
 
-    if is_supervisor_flag:
-        clientes = Cliente.objects.all().order_by('nombre_empresa')
-    else:
-        clientes = Cliente.objects.filter(Q(asignado_a=request.user) | Q(asignado_a__isnull=True)).order_by('nombre_empresa')
+    clientes = Cliente.objects.all().order_by('nombre_empresa')
     print(f"DEBUG: cotizaciones_view - Clientes obtenidos (antes de filtrar por cotizaciones): {clientes.count()}")
 
     clientes_data = []
