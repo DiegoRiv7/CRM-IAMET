@@ -1563,14 +1563,37 @@ from django.template.context_processors import request as request_context
 def add_is_supervisor_to_context(request):
     return {'is_supervisor': is_supervisor(request.user) if request.user.is_authenticated else False}
 
+from .bitrix_integration import get_all_bitrix_companies
+
 @login_required
 def cotizaciones_view(request):
     user = request.user
     is_supervisor_flag = is_supervisor(request.user)
     print(f"DEBUG: cotizaciones_view - Usuario: {user.username}, Es supervisor: {is_supervisor_flag}")
 
+    # Obtener clientes de la base de datos local
+    clientes_locales = Cliente.objects.all().order_by('nombre_empresa')
+    print(f"DEBUG: cotizaciones_view - Clientes locales obtenidos: {clientes_locales.count()}")
+
+    # Obtener clientes de Bitrix
+    clientes_bitrix = get_all_bitrix_companies(request=request)
+    print(f"DEBUG: cotizaciones_view - Clientes de Bitrix obtenidos: {len(clientes_bitrix)}")
+
+    # Combinar y desduplicar clientes
+    clientes_combinados = {cliente.bitrix_company_id: cliente for cliente in clientes_locales if cliente.bitrix_company_id}
+    for cliente_b in clientes_bitrix:
+        bitrix_id = cliente_b['ID']
+        if bitrix_id not in clientes_combinados:
+            # Si el cliente de Bitrix no existe localmente, créalo
+            cliente_nuevo, created = Cliente.objects.get_or_create(
+                bitrix_company_id=bitrix_id,
+                defaults={'nombre_empresa': cliente_b['TITLE']}
+            )
+            if created:
+                print(f"DEBUG: cotizaciones_view - Cliente de Bitrix creado localmente: {cliente_nuevo.nombre_empresa}")
+    
+    # Obtener todos los clientes de nuevo para incluir los recién creados
     clientes = Cliente.objects.all().order_by('nombre_empresa')
-    print(f"DEBUG: cotizaciones_view - Clientes obtenidos (antes de filtrar por cotizaciones): {clientes.count()}")
 
     clientes_data = []
     for cliente in clientes:
@@ -1588,9 +1611,7 @@ def cotizaciones_view(request):
             }
             for c in cotizaciones_qs
         ]
-        print(f"DEBUG: cotizaciones_view - Cliente: {cliente.nombre_empresa}, Cotizaciones encontradas: {len(cotizaciones_list)}")
 
-        # Add the client to the list regardless of whether they have quotes or not.
         clientes_data.append({
             'id': cliente.id,
             'nombre': cliente.nombre_empresa,
