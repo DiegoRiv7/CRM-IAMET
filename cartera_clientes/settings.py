@@ -75,6 +75,12 @@ MIDDLEWARE = [
 #     # Protección contra clickjacking
 #     X_FRAME_OPTIONS = 'DENY'
 
+# Configuración de cookies para iframes
+SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SECURE = True
+
 ROOT_URLCONF = 'cartera_clientes.urls'
 
 TEMPLATES = [
