@@ -12,6 +12,7 @@ urlpatterns = [
     # Página de bienvenida (será la nueva Home)
     path("home/", views.bienvenida, name="home"),
     path("", views.bienvenida, name="root_home"),
+    path('bitrix-temp-link/', TemplateView.as_view(template_name='bitrix_temp_link.html'), name='bitrix_temp_link'),
 
     # Dashboard principal
     path("dashboard/", views.dashboard, name="dashboard"),
