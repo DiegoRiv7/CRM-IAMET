@@ -1,5 +1,5 @@
 from django.urls import path
-from django.views.generic import RedirectView
+from django.views.generic import RedirectView, TemplateView # <--- ¡Añadido TemplateView aquí!
 
 from . import views
 from .bitrix_integration import get_bitrix_companies_api
@@ -12,7 +12,6 @@ urlpatterns = [
     # Página de bienvenida (será la nueva Home)
     path("home/", views.bienvenida, name="home"),
     path("", views.bienvenida, name="root_home"),
-    path('bitrix-temp-link/', TemplateView.as_view(template_name='bitrix_temp_link.html'), name='bitrix_temp_link'),
 
     # Dashboard principal
     path("dashboard/", views.dashboard, name="dashboard"),
@@ -96,4 +95,6 @@ urlpatterns = [
     path('api/bitrix-contacts/', views.get_bitrix_contacts_api, name='bitrix_contacts_api'),
  
    # path("", RedirectView.as_view(url='/dashboard/', permanent=False), name='root_redirect'),
+    # Ruta temporal para depuración del enlace de Bitrix
+    path('bitrix-temp-link/', TemplateView.as_view(template_name='bitrix_temp_link.html'), name='bitrix_temp_link'),
 ]
