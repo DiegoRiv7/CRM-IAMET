@@ -1224,8 +1224,8 @@ def crear_cotizacion_view(request, cliente_id=None):
                     defaults={'nombre_empresa': company_details['TITLE']}
                 )
             else:
-                from django.http import Http404
-                raise Http404(f"El cliente con Bitrix ID {cliente_id} no se encuentra y no se pudo crear. Verifique la conexión con Bitrix.")
+                messages.error(request, f"El cliente con Bitrix ID {cliente_id} no se encuentra en Bitrix24. Por favor, seleccione un cliente existente o cree uno nuevo.")
+                return redirect('crear_cotizacion')
 
         print(f"DEBUG: crear_cotizacion_view - Cliente seleccionado por ID: {cliente_seleccionado.nombre_empresa}")
 

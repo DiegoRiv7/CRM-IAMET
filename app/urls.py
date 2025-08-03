@@ -57,7 +57,8 @@ urlpatterns = [
 
     # Ruta para crear una cotización para un cliente específico
     path('lanzador-widget/', views.bitrix_widget_launcher, name='bitrix_widget_launcher'),
-    path('cliente/<int:cliente_id>/crear-cotizacion/', views.crear_cotizacion_view, name='crear_cotizacion'),
+    path('cliente/<int:cliente_id>/crear-cotizacion/', views.crear_cotizacion_view, name='crear_cotizacion_with_id'),
+    path('crear-cotizacion/', views.crear_cotizacion_view, name='crear_cotizacion'),
 
     # NUEVA RUTA: Para generar el PDF de una cotización específica
     # Esta es la ruta clave que faltaba para que el PDF se descargue.
