@@ -316,6 +316,13 @@ def get_bitrix_company_details(company_id, request=None):
         return json_response.get('result')
     except requests.exceptions.RequestException as e:
         print(f"Error al obtener detalles de la compañía de Bitrix24: {e}")
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                print(f"DEBUG Bitrix: Contenido de la respuesta de error: {e.response.text}")
+                error_json = e.response.json()
+                print(f"DEBUG Bitrix: JSON de la respuesta de error: {json.dumps(error_json, indent=2)}")
+            except json.JSONDecodeError:
+                pass
         if request:
             messages.error(request, f"Error al obtener detalles de la compañía de Bitrix24: {e}")
         return None
