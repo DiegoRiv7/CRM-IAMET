@@ -126,7 +126,7 @@ class Contacto(models.Model):
     bitrix_contact_id = models.IntegerField(unique=True, null=True, blank=True, verbose_name="ID de Contacto en Bitrix24")
     company_id = models.IntegerField(null=True, blank=True, verbose_name="ID de Compañía en Bitrix24") # To link with Bitrix Company
     cliente = models.ForeignKey(Cliente, on_delete=models.SET_NULL, null=True, blank=True, related_name='contactos', verbose_name="Cliente Asociado")
-    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación", default=timezone.now)
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Última Actualización")
 
     def __str__(self):
