@@ -606,17 +606,7 @@ def view_cotizacion_pdf(request, cotizacion_id):
     return response
 
 
-@login_required
-def supervisor_required(view_func):
-    """
-    Decorador para restringir el acceso a vistas solo para supervisores.
-    """
-    def _wrapped_view(request, *args, **kwargs):
-        if is_supervisor(request.user):
-            return view_func(request, *args, **kwargs)
-        else:
-            return HttpResponse("Acceso denegado.", status=403)
-    return _wrapped_view
+
 
 
 @login_required
@@ -1198,7 +1188,6 @@ def oportunidades_por_cliente_view(request, cliente_id):
 from django.views.decorators.clickjacking import xframe_options_exempt
 
 @xframe_options_exempt
-@xframe_options_exempt
 @login_required
 def bitrix_widget_launcher(request):
     return render(request, 'bitrix_widget_launcher.html')
@@ -1752,41 +1741,7 @@ def cotizaciones_por_cliente_view(request, cliente_id):
         'is_supervisor': is_supervisor
     })
 
-@login_required
-def editar_cotizacion_view(request, cotizacion_id):
-    cotizacion_original = get_object_or_404(Cotizacion, pk=cotizacion_id)
-    detalles_originales = DetalleCotizacion.objects.filter(cotizacion=cotizacion_original)
 
-    detalles_list = [{
-        'marca': d.marca,
-        'no_parte': d.no_parte,
-        'descripcion': d.descripcion,
-        'cantidad': d.cantidad,
-        'precio': str(d.precio_unitario),
-        'descuento': str(d.descuento_porcentaje),
-    } for d in detalles_originales]
-
-    if is_supervisor(request.user):
-        clientes_django = Cliente.objects.all().order_by('nombre_empresa')
-    else:
-        clientes_django = Cliente.objects.filter(Q(asignado_a=request.user) | Q(asignado_a__isnull=True)).order_by('nombre_empresa')
-
-    clientes_data_json = []
-    for c in clientes_django:
-        clientes_data_json.append({
-            'id': str(c.id),
-            'name': c.nombre_empresa,
-        })
-
-    context = {
-        'form': CotizacionForm(instance=cotizacion_original, user=request.user),
-        'cliente_seleccionado': cotizacion_original.cliente,
-        'clientes_data_json': json.dumps(clientes_data_json),
-        'cliente_id_inicial': cotizacion_original.cliente.id,
-        'detalles_cotizacion': detalles_list,
-    }
-
-    return render(request, 'crear_cotizacion.html', context)
 
 
 from django.views.decorators.csrf import csrf_exempt
@@ -1839,36 +1794,7 @@ def crear_cliente_api(request):
             return JsonResponse({'success': False, 'errors': form.errors}, status=400)
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
-@csrf_exempt
-@login_required
-def crear_cliente_api(request):
-    if request.method == 'POST':
-        nombre_empresa = request.POST.get('nombre_empresa')
-        contacto = request.POST.get('contacto')
-        direccion = request.POST.get('direccion')
-        user = request.user
-        asignado_a_id = request.POST.get('asignado_a')
-        if not nombre_empresa or not contacto:
-            return JsonResponse({'error': 'Faltan campos obligatorios'}, status=400)
-        # Si el usuario es supervisor o superuser puede asignar, si no, se asigna a sí mismo
-        if user.is_superuser or is_supervisor(user):
-            if asignado_a_id:
-                try:
-                    asignado_a = User.objects.get(pk=asignado_a_id)
-                except User.DoesNotExist:
-                    return JsonResponse({'error': 'Usuario asignado no existe'}, status=400)
-            else:
-                asignado_a = None
-        else:
-            asignado_a = user
-        cliente = Cliente.objects.create(
-            nombre_empresa=nombre_empresa,
-            contacto=contacto,
-            direccion=direccion,
-            asignado_a=asignado_a
-        )
-        return JsonResponse({'ok': True, 'cliente_id': cliente.id})
-    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
 
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
