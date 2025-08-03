@@ -1602,7 +1602,7 @@ def bitrix_webhook_receiver(request):
                 print(f"BITRIX WEBHOOK: Evento ONCRMDEALADD detectado. ID de la oportunidad: {deal_id}")
                 if deal_id:
                     deal_details = get_bitrix_deal_details(deal_id, request=request)
-                    print(f"BITRIX WEBHOOK: Detalles de la oportunidad obtenidos: {json.dumps(deal_details)}")
+                    print(f"BITRIX WEBHOOK: Detalles de la oportunidad obtenidos: {json.dumps(deal_details, indent=2)}")
                     if deal_details:
                         company_id = deal_details.get('COMPANY_ID')
                         assigned_by_id = deal_details.get('ASSIGNED_BY_ID')
