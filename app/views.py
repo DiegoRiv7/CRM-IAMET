@@ -1203,7 +1203,7 @@ def crear_cotizacion_view(request, cliente_id=None):
     # Debugging temporal: Devuelve una respuesta simple para confirmar que la vista es alcanzada.
     # Si ves esto, significa que la URL de Bitrix24 está bien configurada y llega aquí.
     # COMENTA O ELIMINA ESTA LÍNEA UNA VEZ QUE CONFIRMES QUE FUNCIONA.
-    return HttpResponse(f"<h1>DEBUG: Vista crear_cotizacion_view alcanzada! Cliente ID: {cliente_id}</h1>")
+    
 
     print(f"DEBUG: crear_cotizacion_view - Request method: {request.method}")
     
