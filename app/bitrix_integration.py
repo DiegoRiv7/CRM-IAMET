@@ -308,9 +308,12 @@ def get_bitrix_company_details(company_id, request=None):
 
     get_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "crm.company.get.json")
     try:
+        print(f"DEBUG Bitrix: Solicitando detalles de compañía {company_id} a: {get_url}")
         response = requests.post(get_url, json={'id': company_id})
         response.raise_for_status()
-        return response.json().get('result')
+        json_response = response.json()
+        print(f"DEBUG Bitrix: Respuesta de Bitrix para compañía {company_id}: {json.dumps(json_response, indent=2)}")
+        return json_response.get('result')
     except requests.exceptions.RequestException as e:
         print(f"Error al obtener detalles de la compañía de Bitrix24: {e}")
         if request:
