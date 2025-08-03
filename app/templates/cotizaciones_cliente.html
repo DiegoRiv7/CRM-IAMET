@@ -53,7 +53,7 @@
     <div class="w-full max-w-full mx-auto p-0 overflow-x-auto">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold text-white">Cotizaciones</h2>
-            <a href="{% url 'crear_cotizacion' cliente.id %}" class="inline-flex items-center px-5 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-white font-semibold rounded-xl shadow transition">
+            <a href="{% url 'crear_cotizacion_with_id' cliente.id %}" class="inline-flex items-center px-5 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-white font-semibold rounded-xl shadow transition">
                 <i data-lucide="file-plus" class="lucide w-5 h-5 mr-2"></i>Crear cotización
             </a>
         </div>

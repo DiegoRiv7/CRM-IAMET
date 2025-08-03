@@ -41,7 +41,7 @@
         <p class="text-gray-700 mt-2">Cliente: <span class="font-semibold">{{ oportunidad.get_nombre_cliente|default:'Sin cliente asignado' }}</span></p>
         {% endif %}
         {% if oportunidad and oportunidad.id %}
-        <a href="{{ request.scheme }}://{{ request.get_host }}{% url 'crear_cotizacion' cliente.id %}?oportunidad_id={{ oportunidad.id }}" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+        <a href="{{ request.scheme }}://{{ request.get_host }}{% url 'crear_cotizacion_with_id' cliente.id %}?oportunidad_id={{ oportunidad.id }}" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105">
             Generar Cotización en Página Principal
         </a>
         {% else %}
@@ -51,7 +51,7 @@
         {% endif %}
     </div>
     
-    <form id="cotizacionWidgetForm" method="post" action="{% url 'crear_cotizacion' cliente.id %}" class="space-y-6">
+    <form id="cotizacionWidgetForm" method="post" action="{% url 'crear_cotizacion_with_id' cliente.id %}" class="space-y-6">
         {% csrf_token %}
         
         <!-- Hidden fields to pass opportunity and client info -->
