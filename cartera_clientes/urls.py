@@ -25,8 +25,3 @@ if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     # La siguiente línea es para los archivos de medios, si los usas.
     # urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
-
-from app.models import Cliente
-for cliente in Cliente.objects.all():
-    print(f"ID: {cliente.id}, Nombre: {cliente.nombre_empresa}")
