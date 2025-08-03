@@ -94,7 +94,7 @@ class TodoItem(models.Model):
         related_name='oportunidades', 
         verbose_name="Contacto del Cliente"
     )
-    producto = models.CharField(max_length=100, choices=PRODUCTO_CHOICES, verbose_name="Producto / Servicio")
+    producto = models.CharField(max_length=100, choices=PRODUCTO_CHOICES, verbose_name="Producto / Servicio", default='ZEBRA')
     monto = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Monto de la Oportunidad")
     probabilidad_cierre = models.IntegerField(verbose_name="Probabilidad de Cierre (%)")
     mes_cierre = models.CharField(max_length=2, choices=MES_CHOICES, verbose_name="Mes de Cierre Esperado")
