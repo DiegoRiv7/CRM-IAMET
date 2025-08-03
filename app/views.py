@@ -1357,7 +1357,7 @@ def crear_cotizacion_view(request, cliente_id=None):
 
     else: # If the request is GET
         form = CotizacionForm(user=request.user)
-        form_action_url = reverse('crear_cotizacion', args=[cliente_id]) if cliente_id else ""
+        form_action_url = reverse('crear_cotizacion_with_id', args=[cliente_id]) if cliente_id else reverse('crear_cotizacion')
         print(f"DEBUG: crear_cotizacion_view - Generated form_action_url: {form_action_url}")
 
         if is_supervisor(request.user):

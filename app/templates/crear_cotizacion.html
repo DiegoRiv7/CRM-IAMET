@@ -689,21 +689,14 @@
             cotizacionForm.addEventListener('submit', async (event) => {
                 event.preventDefault(); // Evitar el envío de formulario tradicional
 
-                
-
-                if (!formActionUrl || formActionUrl.trim() === '') {
-                    alert('Error crítico: No se pudo determinar la URL para guardar la cotización.');
-                    return;
-                }
-
                 const formData = new FormData(cotizacionForm);
                 
                 formData.set('cliente', document.getElementById('id_cliente').value);
                 formData.set('oportunidad', document.getElementById('id_oportunidad').value);
 
                 try {
-                    console.log('Enviando solicitud fetch a:', formActionUrl);
-                    const response = await fetch(formActionUrl, {
+                    console.log('Enviando solicitud fetch a:', cotizacionForm.action);
+                    const response = await fetch(cotizacionForm.action, {
                         method: 'POST',
                         body: formData,
                         headers: {

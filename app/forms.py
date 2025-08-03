@@ -246,7 +246,7 @@ class CotizacionForm(forms.ModelForm):
 
         cliente_id = self.initial.get('cliente') or (self.data.get('cliente') if self.data else None)
         if cliente_id:
-            self.fields['oportunidad'].queryset = TodoItem.objects.filter(cliente_id=cliente_id).order_by('-fecha_creacion')
+            self.fields['oportunidad'].queryset = TodoItem.objects.filter(cliente_id=cliente_id, bitrix_deal_id__isnull=False).order_by('-fecha_creacion')
         else:
             self.fields['oportunidad'].queryset = TodoItem.objects.none()
 
