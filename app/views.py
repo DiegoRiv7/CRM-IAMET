@@ -1581,66 +1581,84 @@ from django.contrib.auth.models import User
 
 @csrf_exempt
 def bitrix_webhook_receiver(request):
-    # Extraer el token de la URL, por ejemplo: /app/bitrix_webhook/?token=tu_token_aqui
     token = request.GET.get('token')
     expected_tokens = os.getenv("BITRIX_WEBHOOK_TOKEN", "").split(',')
 
+    print(f"BITRIX WEBHOOK: Solicitud recibida con token: {token}")
+
     if not token or token not in expected_tokens:
+        print(f"BITRIX WEBHOOK: ERROR - Token inválido o ausente.")
         return JsonResponse({'status': 'error', 'message': 'Invalid or missing token'}, status=403)
 
     if request.method == 'POST':
-        data = json.loads(request.body)
-        event = data.get('event')
-        
-        if event == 'ONCRMCOMPANYADD':
-            company_id = data.get('data[FIELDS][ID]')
-            if company_id:
-                company_details = get_bitrix_company_details(company_id, request=request)
-                if company_details:
-                    Cliente.objects.get_or_create(
-                        bitrix_company_id=company_details['ID'],
-                        defaults={'nombre_empresa': company_details['TITLE']}
-                    )
-        elif event == 'ONCRMDEALADD':
-            deal_id = data.get('data[FIELDS][ID]')
-            if deal_id:
-                deal_details = get_bitrix_deal_details(deal_id, request=request)
-                if deal_details:
-                    # Obtener el ID de la compañía y el usuario asignado
-                    company_id = deal_details.get('COMPANY_ID')
-                    assigned_by_id = deal_details.get('ASSIGNED_BY_ID')
+        try:
+            data = json.loads(request.body)
+            print(f"BITRIX WEBHOOK: Datos recibidos: {json.dumps(data)}")
+            event = data.get('event')
 
-                    # Buscar el cliente en la base de datos local
-                    try:
-                        cliente = Cliente.objects.get(bitrix_company_id=company_id)
-                    except Cliente.DoesNotExist:
-                        # Si el cliente no existe, créalo
-                        company_details = get_bitrix_company_details(company_id, request=request)
-                        if company_details:
-                            cliente = Cliente.objects.create(
-                                bitrix_company_id=company_details['ID'],
-                                nombre_empresa=company_details['TITLE']
-                            )
-                        else:
-                            cliente = None
-
-                    # Buscar el usuario en la base de datos local
-                    try:
-                        usuario = User.objects.get(userprofile__bitrix_user_id=assigned_by_id)
-                    except User.DoesNotExist:
-                        usuario = None # O asignar a un usuario por defecto
-
-                    if cliente and usuario:
-                        TodoItem.objects.create(
-                            oportunidad=deal_details.get('TITLE'),
-                            monto=deal_details.get('OPPORTUNITY'),
-                            cliente=cliente,
-                            usuario=usuario,
-                            bitrix_deal_id=deal_details.get('ID')
-                            # Mapear otros campos si es necesario
+            if event == 'ONCRMCOMPANYADD':
+                company_id = data.get('data[FIELDS][ID]')
+                print(f"BITRIX WEBHOOK: Evento ONCRMCOMPANYADD detectado. ID de la compañía: {company_id}")
+                if company_id:
+                    company_details = get_bitrix_company_details(company_id, request=request)
+                    if company_details:
+                        Cliente.objects.get_or_create(
+                            bitrix_company_id=company_details['ID'],
+                            defaults={'nombre_empresa': company_details['TITLE']}
                         )
-        
-        return JsonResponse({'status': 'success'})
+                        print(f"BITRIX WEBHOOK: Compañía '{company_details['TITLE']}' procesada.")
+
+            elif event == 'ONCRMDEALADD':
+                deal_id = data.get('data[FIELDS][ID]')
+                print(f"BITRIX WEBHOOK: Evento ONCRMDEALADD detectado. ID de la oportunidad: {deal_id}")
+                if deal_id:
+                    deal_details = get_bitrix_deal_details(deal_id, request=request)
+                    print(f"BITRIX WEBHOOK: Detalles de la oportunidad obtenidos: {json.dumps(deal_details)}")
+                    if deal_details:
+                        company_id = deal_details.get('COMPANY_ID')
+                        assigned_by_id = deal_details.get('ASSIGNED_BY_ID')
+                        print(f"BITRIX WEBHOOK: ID de Compañía: {company_id}, ID de Usuario Asignado: {assigned_by_id}")
+
+                        cliente = None
+                        if company_id:
+                            try:
+                                cliente = Cliente.objects.get(bitrix_company_id=company_id)
+                                print(f"BITRIX WEBHOOK: Cliente encontrado en la BD local: {cliente}")
+                            except Cliente.DoesNotExist:
+                                print(f"BITRIX WEBHOOK: Cliente con Bitrix ID {company_id} no encontrado. Se intentará crear.")
+                                company_details = get_bitrix_company_details(company_id, request=request)
+                                if company_details:
+                                    cliente = Cliente.objects.create(
+                                        bitrix_company_id=company_details['ID'],
+                                        nombre_empresa=company_details['TITLE']
+                                    )
+                                    print(f"BITRIX WEBHOOK: Nuevo cliente '{cliente.nombre_empresa}' creado.")
+                        
+                        usuario = None
+                        if assigned_by_id:
+                            try:
+                                usuario = User.objects.get(userprofile__bitrix_user_id=assigned_by_id)
+                                print(f"BITRIX WEBHOOK: Usuario encontrado en la BD local: {usuario}")
+                            except User.DoesNotExist:
+                                print(f"BITRIX WEBHOOK: ERROR - Usuario con Bitrix User ID {assigned_by_id} no existe en la BD local.")
+
+                        if cliente and usuario:
+                            print(f"BITRIX WEBHOOK: Creando TodoItem para la oportunidad '{deal_details.get('TITLE')}'")
+                            TodoItem.objects.create(
+                                oportunidad=deal_details.get('TITLE'),
+                                monto=deal_details.get('OPPORTUNITY', 0.0),
+                                cliente=cliente,
+                                usuario=usuario,
+                                bitrix_deal_id=deal_details.get('ID')
+                            )
+                            print(f"BITRIX WEBHOOK: Oportunidad creada con éxito.")
+                        else:
+                            print(f"BITRIX WEBHOOK: ERROR - No se pudo crear la oportunidad porque falta el cliente o el usuario.")
+            
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            print(f"BITRIX WEBHOOK: EXCEPCIÓN - Ocurrió un error: {e}")
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     
     return JsonResponse({'status': 'invalid_method'}, status=405)
 
