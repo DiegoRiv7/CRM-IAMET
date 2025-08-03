@@ -1412,7 +1412,7 @@ def editar_cotizacion_view(request, cotizacion_id):
         })
 
     # Define the URL where the form should be submitted (always the creation URL)
-    form_action_url = reverse('crear_cotizacion', args=[cotizacion_original.cliente.id])
+    form_action_url = reverse('crear_cotizacion_with_id', args=[cotizacion_original.cliente.id])
 
     context = {
         'form': CotizacionForm(instance=cotizacion_original, user=request.user),
@@ -1569,7 +1569,7 @@ from .bitrix_integration import get_bitrix_company_details, get_bitrix_deal_deta
 from django.contrib.auth.models import User
 
 @csrf_exempt
-def bitrix_webhook_receiver(request):
+def bitrix_webhook_receiver(request, token):
     token = request.GET.get('token')
     expected_tokens = os.getenv("BITRIX_WEBHOOK_TOKEN", "").split(',')
 

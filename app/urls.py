@@ -8,7 +8,7 @@ from .bitrix_integration import get_bitrix_companies_api
 from . import views_exportar
 
 urlpatterns = [
-    path('bitrix_webhook/', views.bitrix_webhook_receiver, name='bitrix_webhook'),
+    path('bitrix_webhook/<str:token>/', views.bitrix_webhook_receiver, name='bitrix_webhook'),
     # Página de bienvenida (será la nueva Home)
     path("home/", views.bienvenida, name="home"),
     path("", views.bienvenida, name="root_home"),
