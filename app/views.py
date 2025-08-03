@@ -1746,55 +1746,21 @@ def cotizaciones_por_cliente_view(request, cliente_id):
 
 
 
-from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import login_required
-from .models import Cliente
-from django.contrib.auth.models import User
+import traceback
 
 @csrf_exempt
-@login_required
-def crear_cliente_api(request):
-    if request.method == 'POST':
-        form = ClienteForm(request.POST)
-        if form.is_valid():
-            # Create the company in Bitrix24 first
-            company_name = form.cleaned_data['nombre_empresa']
-            bitrix_company_id = get_or_create_bitrix_company(company_name, request=request)
+def bitrix_webhook_receiver(request):
+    print(f"BITRIX WEBHOOK: Solicitud recibida. Método: {request.method}", flush=True)
+    print(f"BITRIX WEBHOOK: Headers: {request.headers}", flush=True)
+    print(f"BITRIX WEBHOOK: Parámetros GET: {request.GET}", flush=True)
+    try:
+        data = json.loads(request.body)
+        print(f"BITRIX WEBHOOK: Cuerpo de la solicitud (JSON): {json.dumps(data, indent=2)}", flush=True)
+    except json.JSONDecodeError:
+        print(f"BITRIX WEBHOOK: Cuerpo de la solicitud (no JSON): {request.body.decode('utf-8')}", flush=True)
 
-            if bitrix_company_id:
-                # Check if a client with this bitrix_company_id already exists
-                cliente, created = Cliente.objects.get_or_create(
-                    bitrix_company_id=bitrix_company_id,
-                    defaults={
-                        'nombre_empresa': form.cleaned_data['nombre_empresa'],
-                        'contacto_principal': form.cleaned_data['contacto_principal'],
-                        'telefono': form.cleaned_data['telefono'],
-                        'email': form.cleaned_data['email'],
-                        'direccion': form.cleaned_data['direccion'],
-                        'asignado_a': request.user
-                    }
-                )
-                if not created:
-                    # If the client already existed, update its fields
-                    cliente.nombre_empresa = form.cleaned_data['nombre_empresa']
-                    cliente.contacto_principal = form.cleaned_data['contacto_principal']
-                    cliente.telefono = form.cleaned_data['telefono']
-                    cliente.email = form.cleaned_data['email']
-                    cliente.direccion = form.cleaned_data['direccion']
-                    cliente.save()
-
-                return JsonResponse({
-                    'success': True,
-                    'cliente': {
-                        'id': cliente.bitrix_company_id, # Return the bitrix_company_id
-                        'nombre_empresa': cliente.nombre_empresa,
-                    }
-                })
-            else:
-                return JsonResponse({'success': False, 'errors': {'__all__': ['Could not create company in Bitrix24.']}}, status=400)
-        else:
-            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
-    return JsonResponse({'error': 'Método no permitido'}, status=405)
+    # Por ahora, siempre devolveremos éxito para depuración
+    return JsonResponse({'status': 'success', 'message': 'Webhook recibido para depuración'})
 
 
 
