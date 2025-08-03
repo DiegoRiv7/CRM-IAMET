@@ -80,7 +80,7 @@
                             <a href="{% url 'cotizaciones_por_cliente' cliente.id %}" class="inline-flex items-center px-6 py-3 bg-[#143a56] hover:bg-[#1e3350] text-white rounded-xl shadow transition font-semibold text-lg">
                                 <i data-lucide="file-text" class="lucide w-5 h-5 mr-2"></i>Ver cotizaciones
                             </a>
-                            <a href="{% url 'crear_cotizacion' cliente.id %}" class="inline-flex items-center px-6 py-3 bg-[#143a56] hover:bg-[#1e3350] text-white font-semibold rounded-xl shadow transition text-lg">
+                            <a href="{% url 'crear_cotizacion_with_id' cliente.id %}" class="inline-flex items-center px-6 py-3 bg-[#143a56] hover:bg-[#1e3350] text-white font-semibold rounded-xl shadow transition text-lg">
                                 <i data-lucide="file-plus" class="lucide w-5 h-5 mr-2"></i>Crear cotización
                             </a>
                         </div>
