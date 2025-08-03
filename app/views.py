@@ -1570,7 +1570,7 @@ from django.contrib.auth.models import User
 
 @csrf_exempt
 def bitrix_webhook_receiver(request, token):
-    token = request.GET.get('token')
+    
     expected_tokens = os.getenv("BITRIX_WEBHOOK_TOKEN", "").split(',')
 
     print(f"BITRIX WEBHOOK: Solicitud recibida con token: {token}")
