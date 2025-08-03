@@ -1574,8 +1574,8 @@ def bitrix_webhook_receiver(request, token):
     token = token.strip()
     expected_tokens = [t.strip() for t in os.getenv("BITRIX_WEBHOOK_TOKEN", "").split(',')]
 
-    print(f"BITRIX WEBHOOK: Solicitud recibida con token: {token}")
-    print(f"BITRIX WEBHOOK: Tokens esperados (desde env): {expected_tokens}")
+    print(f"BITRIX WEBHOOK: Solicitud recibida con token: {token}", flush=True)
+    print(f"BITRIX WEBHOOK: Tokens esperados (desde env): {expected_tokens}", flush=True)
 
     if not token or token not in expected_tokens:
         print(f"BITRIX WEBHOOK: ERROR - Token inválido o ausente.")
