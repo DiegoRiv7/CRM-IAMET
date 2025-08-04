@@ -1640,12 +1640,28 @@ def bitrix_webhook_receiver(request):
 
             # --- Create the Opportunity (TodoItem) ---
             if cliente and usuario:
+                # Mapeo de valores de Bitrix a los campos del modelo
+                producto = deal_details.get('UF_CRM_1752859685662')
+                area = deal_details.get('UF_CRM_1752859525038')
+                mes_cierre = deal_details.get('UF_CRM_1752859877756')
+                probabilidad_cierre = deal_details.get('UF_CRM_1752855787179')
+
+                # Limpiar el valor de probabilidad para que sea solo el número
+                if probabilidad_cierre:
+                    probabilidad_cierre = int("".join(filter(str.isdigit, probabilidad_cierre)))
+                else:
+                    probabilidad_cierre = 5 # Valor por defecto si no viene de Bitrix
+
                 new_opportunity = TodoItem.objects.create(
                     oportunidad=deal_details.get('TITLE', 'Oportunidad sin título'),
                     monto=deal_details.get('OPPORTUNITY', 0.0) or 0.0,
                     cliente=cliente,
                     usuario=usuario,
                     bitrix_deal_id=deal_id,
+                    producto=producto,
+                    area=area,
+                    mes_cierre=mes_cierre,
+                    probabilidad_cierre=probabilidad_cierre,
                 )
                 print(f"BITRIX WEBHOOK: Successfully created new opportunity '{new_opportunity.oportunidad}' with ID {new_opportunity.id}", flush=True)
             else:
