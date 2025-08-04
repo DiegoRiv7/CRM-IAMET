@@ -1199,11 +1199,11 @@ from django.views.decorators.csrf import csrf_exempt
 @csrf_exempt
 def bitrix_cotizador_redirect(request):
     """
-    Redirige al usuario a la URL del cotizador externo.
+    Renderiza una plantilla con JavaScript para redirigir al cotizador en una nueva pestaña.
     """
     cotizador_url = "https://nethive.mx/app/crear-cotizacion/"
-    print(f"DEBUG: Redirigiendo a: {cotizador_url}", flush=True)
-    return HttpResponseRedirect(cotizador_url)
+    print(f"DEBUG: Renderizando plantilla de redirección para: {cotizador_url}", flush=True)
+    return render(request, 'bitrix_redirect_cotizador.html', {'cotizador_url': cotizador_url})
 
 
 @login_required

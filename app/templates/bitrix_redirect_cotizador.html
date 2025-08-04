@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Redirigiendo a Cotizador</title>
+    <script type="text/javascript">
+        var cotizadorUrl = "{{ cotizador_url }}";
+        var newWindow = window.open(cotizadorUrl, '_blank');
+        if (newWindow) {
+            // Si la ventana se abrió, podemos intentar cerrar el iframe actual
+            // Esto puede ser bloqueado por el navegador
+            // window.close();
+        } else {
+            // Si el pop-up fue bloqueado, redirigir la ventana actual (el iframe)
+            // Esto probablemente fallará debido a X-Frame-Options: DENY
+            // window.location.href = cotizadorUrl;
+            console.warn("El pop-up fue bloqueado. Por favor, permita pop-ups para este sitio o haga clic en el enlace.");
+        }
+    </script>
+</head>
+<body>
+    <p>Redirigiendo al cotizador...</p>
+    <p>Si no es redirigido automáticamente, haga clic <a href="{{ cotizador_url }}" target="_blank">aquí</a>.</p>
+    <p>Si esta página se queda en blanco, es posible que su navegador haya bloqueado la ventana emergente. Por favor, revise la configuración de su navegador.</p>
+</body>
+</html>
