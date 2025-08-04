@@ -14,7 +14,7 @@ services:
     environment:
       # Sobrescribe DB_HOST para el entorno de Docker Compose para usar el nombre del servicio
       DB_HOST: db
-    command: gunicorn --chdir /app/Gesti-n-de-ventas cartera_clientes.wsgi:application --bind 0.0.0.0:8000 --timeout 240 # Añade o modifica esta línea
+    command: gunicorn cartera_clientes.wsgi:application --bind 0.0.0.0:8000 --timeout 240 # Añade o modifica esta línea
     # <<-- ESTA LÍNEA 'deploy:' DEBE TENER SOLO 2 ESPACIOS DE INDENTACIÓN -->>
 
 
