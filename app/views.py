@@ -1330,17 +1330,17 @@ def crear_cotizacion_view(request, cliente_id=None):
 
                 if bitrix_deal_id_to_upload:
                     file_name_for_bitrix = f"{cotizacion.nombre_cotizacion or cotizacion.titulo}.pdf"
-                    from .bitrix_integration import upload_file_to_bitrix_deal_field
-                    file_field_id = "UF_CRM_1753490093"
-                    upload_success = upload_file_to_bitrix_deal_field(
-                        bitrix_deal_id_to_upload, file_field_id, file_name_for_bitrix, pdf_base64, request=request
+                    comment_text = f"Se ha generado una nueva cotización: {file_name_for_bitrix}"
+                    from .bitrix_integration import add_comment_with_attachment_to_deal
+                    upload_success = add_comment_with_attachment_to_deal(
+                        bitrix_deal_id_to_upload, file_name_for_bitrix, pdf_base64, comment_text, request=request
                     )
                     if upload_success:
-                        messages.success(request, "Cotización generada y PDF subido a Bitrix24 con éxito.")
+                        messages.success(request, "Cotización generada y PDF adjuntado como comentario en Bitrix24.")
                     else:
-                        messages.warning(request, "Cotización generada, pero hubo un error al subir el PDF a Bitrix24.")
+                        messages.warning(request, "Cotización generada, pero hubo un error al adjuntar el PDF en Bitrix24.")
                 else:
-                    messages.info("Cotización generada, pero no se pudo subir el PDF a Bitrix24 (no hay ID de negociación). ")
+                    messages.info("Cotización generada, pero no se pudo adjuntar a Bitrix24 (no hay ID de negociación).")
 
             except Exception as e:
                 print(f"ERROR al generar o subir PDF a Bitrix24: {e}")

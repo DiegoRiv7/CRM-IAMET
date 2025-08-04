@@ -415,3 +415,52 @@ def get_bitrix_companies_api(request):
     except requests.exceptions.RequestException as e:
         print(f"Error al buscar compañías en Bitrix24: {e}")
         return JsonResponse({'error': str(e)}, status=500)
+
+def add_comment_with_attachment_to_deal(deal_id, file_name, file_content_base64, comment_text, request=None):
+    if not BITRIX_WEBHOOK_URL:
+        if request:
+            messages.error(request, "Error: La URL del webhook de Bitrix24 no está configurada.")
+        print("Error: La URL del webhook de Bitrix24 no está configurada.")
+        return False
+
+    # 1. Subir el archivo y obtener su ID
+    upload_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "disk.storage.uploadfile.json")
+    upload_data = {
+        'id': 2, # ID del almacenamiento de Bitrix (2 es el de la compañía)
+        'data': {'NAME': file_name},
+        'fileContent': file_content_base64
+    }
+    try:
+        upload_response = requests.post(upload_url, json=upload_data)
+        upload_response.raise_for_status()
+        upload_result = upload_response.json().get('result')
+        if not upload_result or not upload_result.get('ID'):
+            print(f"Error al subir el archivo a Bitrix: {upload_response.text}")
+            return False
+        file_id = upload_result['ID']
+    except requests.exceptions.RequestException as e:
+        print(f"Excepción al subir el archivo a Bitrix: {e}")
+        return False
+
+    # 2. Añadir el comentario con el archivo adjunto
+    comment_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "crm.timeline.comment.add")
+    comment_data = {
+        'fields': {
+            'ENTITY_ID': deal_id,
+            'ENTITY_TYPE': 'deal',
+            'COMMENT': comment_text,
+            'FILES': [file_id]
+        }
+    }
+    try:
+        comment_response = requests.post(comment_url, json=comment_data)
+        comment_response.raise_for_status()
+        if 'result' in comment_response.json():
+            print(f"Comentario con adjunto añadido con éxito a la oportunidad {deal_id}")
+            return True
+        else:
+            print(f"Error al añadir el comentario a Bitrix: {comment_response.text}")
+            return False
+    except requests.exceptions.RequestException as e:
+        print(f"Excepción al añadir el comentario a Bitrix: {e}")
+        return False
