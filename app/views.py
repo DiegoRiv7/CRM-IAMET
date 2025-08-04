@@ -2006,6 +2006,5 @@ def test_widget_view(request):
 # --- NUEVA VISTA PARA WIDGET PERSONALIZADO DE BITRIX ---
 @xframe_options_exempt
 def bitrix_custom_widget_view(request):
-    cotizador_url = "https://nethive.mx/app/crear-cotizacion/"
-    return render(request, 'bitrix_custom_widget.html', {'cotizador_url': cotizador_url})
+    return HttpResponse("<h1>¡Hola desde el widget!</h1><p>Si ves esto, el iframe de Bitrix funciona.</p>")
 # --- FIN NUEVA VISTA PARA WIDGET PERSONALIZADO DE BITRIX --- 
