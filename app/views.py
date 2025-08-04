@@ -1192,6 +1192,18 @@ from django.views.decorators.clickjacking import xframe_options_exempt
 def bitrix_widget_launcher(request):
     return render(request, 'bitrix_widget_launcher.html')
 
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
+def bitrix_cotizador_redirect(request):
+    """
+    Redirige al usuario a la URL del cotizador externo.
+    """
+    cotizador_url = "https://nethive.mx/app/crear-cotizacion/"
+    return HttpResponseRedirect(cotizador_url)
+
 
 @login_required
 def crear_cotizacion_view(request, cliente_id=None):
@@ -1982,3 +1994,10 @@ def importar_oportunidades(request):
     return render(request, 'importar_oportunidades.html', {'clientes': clientes})
 
     #esto es para que fdunione 
+
+# --- VISTA DE PRUEBA TEMPORAL ---
+from django.http import HttpResponse
+
+def test_widget_view(request):
+    return HttpResponse("¡Widget de prueba funcionando!")
+# --- FIN VISTA DE PRUEBA TEMPORAL --- 
