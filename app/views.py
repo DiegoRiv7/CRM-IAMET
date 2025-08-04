@@ -1275,7 +1275,7 @@ def crear_cotizacion_view(request, cliente_id=None):
                     cotizacion.delete()
                     return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Invalid product data in row. Error: {e}'}]}}, status=400)
 
-            cotizacion.subtotal = calculated_subtotal.quantitalize(Decimal('0.01'))
+            cotizacion.subtotal = calculated_subtotal.quantize(Decimal('0.01'))
             
             try:
                 cotizacion.iva_rate = Decimal(request.POST.get('iva_rate', '0.00'))
