@@ -1640,10 +1640,21 @@ def bitrix_webhook_receiver(request):
 
             # --- Create the Opportunity (TodoItem) ---
             if cliente and usuario:
+                # Mapeo de nombres de meses a números de dos dígitos
+                MONTH_NAME_TO_NUMBER_MAPPING = {
+                    "enero": "01", "febrero": "02", "marzo": "03", "abril": "04",
+                    "mayo": "05", "junio": "06", "julio": "07", "agosto": "08",
+                    "septiembre": "09", "octubre": "10", "noviembre": "11", "diciembre": "12"
+                }
+
                 # Mapeo de valores de Bitrix a los campos del modelo
                 producto = deal_details.get('UF_CRM_1752859685662')
                 area = deal_details.get('UF_CRM_1752859525038')
-                mes_cierre = deal_details.get('UF_CRM_1752859877756')
+                mes_cierre_bitrix = deal_details.get('UF_CRM_1752859877756')
+                
+                # Convertir el mes de Bitrix al formato esperado por Django
+                mes_cierre = MONTH_NAME_TO_NUMBER_MAPPING.get(mes_cierre_bitrix.lower(), '01') if mes_cierre_bitrix else '01'
+
                 probabilidad_cierre = deal_details.get('UF_CRM_1752855787179')
 
                 # Limpiar el valor de probabilidad para que sea solo el número
