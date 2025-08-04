@@ -1333,12 +1333,12 @@ def crear_cotizacion_view(request, cliente_id=None):
                     comment_text = f"Se ha creado una nueva cotización: {file_name_for_bitrix}"
                     from .bitrix_integration import add_comment_with_attachment_to_deal
                     upload_success = add_comment_with_attachment_to_deal(
-                        bitrix_deal_id_to_upload, file_name_for_bitrix, None, comment_text, request=request
+                        bitrix_deal_id_to_upload, file_name_for_bitrix, pdf_base64, comment_text, request=request
                     )
                     if upload_success:
-                        messages.success(request, "Comentario de cotización añadido en Bitrix24.")
+                        messages.success(request, "Cotización generada y PDF adjuntado como comentario en Bitrix24.")
                     else:
-                        messages.warning(request, "Error al añadir el comentario de cotización en Bitrix24.")
+                        messages.warning(request, "Cotización generada, pero hubo un error al adjuntar el PDF en Bitrix24.")
                 else:
                     messages.info("Cotización generada, pero no se pudo adjuntar a Bitrix24 (no hay ID de negociación).")
 
