@@ -1749,7 +1749,7 @@ def cotizaciones_por_cliente_view(request, cliente_id):
 import traceback
 
 @csrf_exempt
-def bitrix_webhook_receiver(request, token):
+def bitrix_webhook_receiver(request):
     print(f"BITRIX WEBHOOK: Solicitud recibida. Método: {request.method}", flush=True)
     print(f"BITRIX WEBHOOK: Headers: {request.headers}", flush=True)
     print(f"BITRIX WEBHOOK: Parámetros GET: {request.GET}", flush=True)
