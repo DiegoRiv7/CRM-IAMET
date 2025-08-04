@@ -3,6 +3,8 @@ version: '3.8'
 services:
   web:
     build: .
+    volumes:
+      - .:/app # Monta el directorio actual para desarrollo (opcional para producción)
     ports:
       - "8000:8000"
     env_file:
@@ -12,7 +14,7 @@ services:
     environment:
       # Sobrescribe DB_HOST para el entorno de Docker Compose para usar el nombre del servicio
       DB_HOST: db
-    command: gunicorn cartera_clientes.wsgi:application --bind 0.0.0.0:8000 --timeout 240 # Añade o modifica esta línea
+    command: gunicorn --chdir /app/Gesti-n-de-ventas cartera_clientes.wsgi:application --bind 0.0.0.0:8000 --timeout 240 # Añade o modifica esta línea
     # <<-- ESTA LÍNEA 'deploy:' DEBE TENER SOLO 2 ESPACIOS DE INDENTACIÓN -->>
 
 
