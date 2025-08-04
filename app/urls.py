@@ -102,4 +102,5 @@ urlpatterns = [
     path('bitrix-temp-link/', TemplateView.as_view(template_name='bitrix_temp_link.html'), name='bitrix_temp_link'),
     path('api/crear-cliente/', views.crear_cliente_api, name='crear_cliente_api'),
     path('test-widget/', views.test_widget_view, name='test_widget_view'),
+    path('bitrix-custom-widget/', views.bitrix_custom_widget_view, name='bitrix_custom_widget_view'),
 ]

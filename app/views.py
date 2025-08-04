@@ -2001,4 +2001,11 @@ from django.http import HttpResponse
 
 def test_widget_view(request):
     return HttpResponse("¡Widget de prueba funcionando!")
-# --- FIN VISTA DE PRUEBA TEMPORAL --- 
+# --- FIN VISTA DE PRUEBA TEMPORAL ---
+
+# --- NUEVA VISTA PARA WIDGET PERSONALIZADO DE BITRIX ---
+@xframe_options_exempt
+def bitrix_custom_widget_view(request):
+    cotizador_url = "https://nethive.mx/app/crear-cotizacion/"
+    return render(request, 'bitrix_custom_widget.html', {'cotizador_url': cotizador_url})
+# --- FIN NUEVA VISTA PARA WIDGET PERSONALIZADO DE BITRIX --- 

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Widget Cotizador</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Asegura que ocupe toda la altura disponible */
+            margin: 0;
+            background-color: #f0f2f5; /* Un fondo suave */
+            color: #333;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #007bff; /* Color primario de Bitrix */
+            margin-bottom: 20px;
+        }
+        .cotizador-button {
+            background-color: #007bff; /* Color primario de Bitrix */
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            text-decoration: none; /* Para que se vea como un botón si es un <a> */
+            display: inline-block; /* Para que padding funcione en <a> */
+        }
+        .cotizador-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Acceder al Cotizador</h1>
+        <a href="{{ cotizador_url }}" target="_blank" class="cotizador-button">
+            Abrir Cotizador
+        </a>
+        <p style="margin-top: 20px; font-size: 12px; color: #666;">Se abrirá en una nueva pestaña.</p>
+    </div>
+</body>
+</html>
