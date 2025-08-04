@@ -57,6 +57,7 @@ urlpatterns = [
 
     # Ruta para crear una cotización para un cliente específico
     path('lanzador-widget/', views.bitrix_widget_launcher, name='bitrix_widget_launcher'),
+    path('bitrix-cotizador-redirect/', views.bitrix_cotizador_redirect, name='bitrix_cotizador_redirect'),
     path('cliente/<int:cliente_id>/crear-cotizacion/', views.crear_cotizacion_view, name='crear_cotizacion_with_id'),
     path('crear-cotizacion/', views.crear_cotizacion_view, name='crear_cotizacion'),
 
