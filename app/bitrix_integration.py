@@ -459,7 +459,7 @@ def add_comment_with_attachment_to_deal(deal_id, file_name, file_content_base64,
             'ENTITY_ID': deal_id,
             'ENTITY_TYPE': 'deal',
             'COMMENT': comment_text,
-            'FILES': [f'n{file_id}']  # Formato correcto para adjuntar un archivo del disco.
+            'FILES': [f'n{file_id}']
         }
     }
     
