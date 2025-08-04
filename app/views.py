@@ -1953,3 +1953,5 @@ def importar_oportunidades(request):
         return JsonResponse({'success': f'{created_count} oportunidades importadas con éxito.'})
 
     return render(request, 'importar_oportunidades.html', {'clientes': clientes})
+
+    #esto es para que fdunione 
