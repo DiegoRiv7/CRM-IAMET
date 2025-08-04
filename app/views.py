@@ -1330,7 +1330,7 @@ def crear_cotizacion_view(request, cliente_id=None):
 
                 if bitrix_deal_id_to_upload:
                     file_name_for_bitrix = f"{cotizacion.nombre_cotizacion or cotizacion.titulo}.pdf"
-                    comment_text = f"Se ha generado una nueva cotización: {file_name_for_bitrix}"
+                    comment_text = f"Se ha creado una nueva cotización: {file_name_for_bitrix}"
                     from .bitrix_integration import add_comment_with_attachment_to_deal
                     upload_success = add_comment_with_attachment_to_deal(
                         bitrix_deal_id_to_upload, file_name_for_bitrix, pdf_base64, comment_text, request=request
