@@ -1749,7 +1749,7 @@ def cotizaciones_por_cliente_view(request, cliente_id):
 import traceback
 
 @csrf_exempt
-def bitrix_webhook_receiver(request):
+def bitrix_webhook_receiver(request, token):
     print(f"BITRIX WEBHOOK: Solicitud recibida. Método: {request.method}", flush=True)
     print(f"BITRIX WEBHOOK: Headers: {request.headers}", flush=True)
     print(f"BITRIX WEBHOOK: Parámetros GET: {request.GET}", flush=True)
@@ -1766,7 +1766,7 @@ def bitrix_webhook_receiver(request):
 
         # Lógica de validación del token (ahora que sabemos que el cuerpo se procesó)
         # El token se espera en la URL, no en los parámetros GET
-        token_from_url = request.path.split('/')[-2] # Obtener el token de la URL
+        token_from_url = token.strip() # Obtener el token de la URL
         expected_tokens = [t.strip() for t in os.getenv("BITRIX_WEBHOOK_TOKEN", "").split(',')]
 
         print(f"BITRIX WEBHOOK: Token de URL: {token_from_url}", flush=True)
@@ -1851,6 +1851,56 @@ from django.contrib.auth.decorators import login_required
 from .models import TodoItem
 
 
+
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
+from .models import Cliente
+from .bitrix_integration import get_or_create_bitrix_company
+
+@csrf_exempt
+@login_required
+def crear_cliente_api(request):
+    if request.method == 'POST':
+        form = ClienteForm(request.POST)
+        if form.is_valid():
+            # Create the company in Bitrix24 first
+            company_name = form.cleaned_data['nombre_empresa']
+            bitrix_company_id = get_or_create_bitrix_company(company_name, request=request)
+
+            if bitrix_company_id:
+                # Check if a client with this bitrix_company_id already exists
+                cliente, created = Cliente.objects.get_or_create(
+                    bitrix_company_id=bitrix_company_id,
+                    defaults={
+                        'nombre_empresa': form.cleaned_data['nombre_empresa'],
+                        'contacto_principal': form.cleaned_data['contacto_principal'],
+                        'telefono': form.cleaned_data['telefono'],
+                        'email': form.cleaned_data['email'],
+                        'direccion': form.cleaned_data['direccion'],
+                        'asignado_a': request.user
+                    }
+                )
+                if not created:
+                    # If the client already existed, update its fields
+                    cliente.nombre_empresa = form.cleaned_data['nombre_empresa']
+                    cliente.contacto_principal = form.cleaned_data['contacto_principal']
+                    cliente.telefono = form.cleaned_data['telefono']
+                    cliente.email = form.cleaned_data['email']
+                    cliente.direccion = form.cleaned_data['direccion']
+                    cliente.save()
+
+                return JsonResponse({
+                    'success': True,
+                    'cliente': {
+                        'id': cliente.bitrix_company_id, # Return the bitrix_company_id
+                        'nombre_empresa': cliente.nombre_empresa,
+                    }
+                })
+            else:
+                return JsonResponse({'success': False, 'errors': {'__all__': ['Could not create company in Bitrix24.']}}, status=400)
+        else:
+            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 @login_required
 def oportunidad_detalle_api(request, id):

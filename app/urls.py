@@ -8,7 +8,7 @@ from .bitrix_integration import get_bitrix_companies_api
 from . import views_exportar
 
 urlpatterns = [
-    path('bitrix_webhook/', views.bitrix_webhook_receiver, name='bitrix_webhook'),
+    path('bitrix_webhook/<str:token>/', views.bitrix_webhook_receiver, name='bitrix_webhook'),
     # Página de bienvenida (será la nueva Home)
     path("home/", views.bienvenida, name="home"),
     path("", views.bienvenida, name="root_home"),
@@ -90,8 +90,8 @@ urlpatterns = [
     path('api/oportunidad/<int:id>/probabilidad/', views.actualizar_probabilidad, name='actualizar_probabilidad'),
 
     # API para crear clientes desde el modal
-    path('api/crear-cliente/', views.crear_cliente_api, name='crear_cliente_api'),
-    path('api/crear-cliente/', views.crear_cliente_api, name='crear_cliente_api'),
+
+
     path('api/bitrix-companies/', get_bitrix_companies_api, name='bitrix_companies_api'),
     path('api/get-oportunidades-por-cliente/', views.get_oportunidades_por_cliente, name='get_oportunidades_por_cliente'),
     path('api/bitrix-contacts/', views.get_bitrix_contacts_api, name='bitrix_contacts_api'),
