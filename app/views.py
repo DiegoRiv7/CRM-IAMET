@@ -1202,6 +1202,7 @@ def bitrix_cotizador_redirect(request):
     Redirige al usuario a la URL del cotizador externo.
     """
     cotizador_url = "https://nethive.mx/app/crear-cotizacion/"
+    print(f"DEBUG: Redirigiendo a: {cotizador_url}", flush=True)
     return HttpResponseRedirect(cotizador_url)
 
 
