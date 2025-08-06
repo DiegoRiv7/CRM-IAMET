@@ -152,7 +152,7 @@ def _get_bitrix_mapped_data(opportunity_data, request=None):
     }
 
     area_map = {
-        'SISTEMAS': '164',
+        'Sistemas': '164',
         'Recursos Humanos': '166',
         'Compras': '168',
         'Seguridad': '170',
@@ -161,18 +161,18 @@ def _get_bitrix_mapped_data(opportunity_data, request=None):
     }
 
     mes_cierre_map = {
-        '01': '196',
-        '02': '198',
-        '03': '200',
-        '04': '202',
-        '05': '204',
-        '06': '206',
-        '07': '208',
-        '08': '210',
-        '09': '212',
-        '10': '214',
-        '11': '216',
-        '12': '218',
+        'Enero': '196',
+        'Febrero': '198',
+        'Marzo': '200',
+        'Abril': '202',
+        'Mayo': '204',
+        'Junio': '206',
+        'Julio': '208',
+        'Agosto': '210',
+        'Septiembre': '212',
+        'Octubre': '214',
+        'Noviembre': '216',
+        'Diciembre': '218',
     }
 
     probabilidad_map = {
@@ -426,6 +426,85 @@ def get_all_bitrix_contacts(request=None, company_id=None):
             return []
 
     return contacts
+
+def get_all_bitrix_deals(request=None):
+    if not BITRIX_WEBHOOK_URL:
+        if request:
+            messages.error(request, "Error: La URL del webhook de Bitrix24 no está configurada.")
+        print("Error: La URL del webhook de Bitrix24 no está configurada.")
+        return []
+
+    list_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "crm.deal.list.json")
+    deals = []
+    start = 0
+
+    while True:
+        try:
+            response = requests.post(list_url, json={
+                'select': [
+                    'ID', 'TITLE', 'OPPORTUNITY', 'CURRENCY_ID', 'COMMENTS',
+                    'COMPANY_ID', 'CONTACT_ID', 'ASSIGNED_BY_ID', 'STAGE_ID',
+                    'UF_CRM_1752859685662', # Producto
+                    'UF_CRM_1752859525038',  # Área
+                    'UF_CRM_1752859877756',  # Mes de Cobro
+                    'UF_CRM_1752855787179',  # Probabilidad de cierre
+                ],
+                'start': start
+            })
+            response.raise_for_status()
+            result = response.json()
+            deals.extend(result.get('result', []))
+
+            if 'next' in result:
+                start = result['next']
+            else:
+                break
+        except requests.exceptions.RequestException as e:
+            print(f"Error al obtener oportunidades de Bitrix24: {e}")
+            if request:
+                messages.error(request, f"Error al obtener oportunidades de Bitrix24: {e}")
+            return []
+
+    return deals
+
+def get_bitrix_user_details(user_id, request=None):
+    if not BITRIX_WEBHOOK_URL:
+        if request:
+            messages.error(request, "Error: La URL del webhook de Bitrix24 no está configurada.")
+        print("Error: La URL del webhook de Bitrix24 no está configurada.")
+        return None
+
+    get_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "user.get.json")
+    try:
+        response = requests.post(get_url, json={'ID': user_id})
+        response.raise_for_status()
+        users = response.json().get('result')
+        if users:
+            return users[0] # user.get returns a list
+        return None
+    except requests.exceptions.RequestException as e:
+        print(f"Error al obtener detalles del usuario de Bitrix24: {e}")
+        if request:
+            messages.error(request, f"Error al obtener detalles del usuario de Bitrix24: {e}")
+        return None
+
+def get_bitrix_contact_details(contact_id, request=None):
+    if not BITRIX_WEBHOOK_URL:
+        if request:
+            messages.error(request, "Error: La URL del webhook de Bitrix24 no está configurada.")
+        print("Error: La URL del webhook de Bitrix24 no está configurada.")
+        return None
+
+    get_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "crm.contact.get.json")
+    try:
+        response = requests.post(get_url, json={'id': contact_id})
+        response.raise_for_status()
+        return response.json().get('result')
+    except requests.exceptions.RequestException as e:
+        print(f"Error al obtener detalles del contacto de Bitrix24: {e}")
+        if request:
+            messages.error(request, f"Error al obtener detalles del contacto de Bitrix24: {e}")
+        return None
 
 def get_bitrix_companies_api(request):
     query = request.GET.get('q', '')

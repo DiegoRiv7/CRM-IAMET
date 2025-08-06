@@ -1380,6 +1380,7 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             except Exception as e:
                 print(f"ERROR al generar o subir PDF a Bitrix24: {e}")
                 messages.error(request, f"Error al generar o subir PDF a Bitrix24: {e}")
+                return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Error al generar o subir PDF a Bitrix24: {str(e)}'}]}}, status=500)
             
             return JsonResponse({'success': True, 'pdf_url': pdf_url})
 
