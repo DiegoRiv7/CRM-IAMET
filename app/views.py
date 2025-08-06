@@ -1941,6 +1941,7 @@ def crear_cliente_api(request):
             else:
                 return JsonResponse({'success': False, 'errors': {'__all__': ['Could not create company in Bitrix24.']}}, status=400)
         else:
+            print(f"DEBUG: OportunidadModalForm errors: {form.errors}", flush=True)
             return JsonResponse({'success': False, 'errors': form.errors}, status=400)
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
