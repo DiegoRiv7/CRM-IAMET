@@ -1995,6 +1995,7 @@ def actualizar_probabilidad(request, id):
 def crear_oportunidad_api(request):
     if request.method == 'POST':
         form = OportunidadModalForm(request.POST)
+        print(f"DEBUG: Instanciando OportunidadModalForm con data: {request.POST}", flush=True)
         if form.is_valid():
             cliente_id = request.POST.get('cliente')
             nombre_oportunidad = request.POST.get('nombre_oportunidad')
