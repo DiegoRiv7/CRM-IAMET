@@ -43,6 +43,7 @@ def _get_display_for_value(value, choices_list):
 @login_required
 def get_oportunidades_por_cliente(request):
     cliente_id = request.GET.get('cliente_id')
+    oportunidad_inicial_id = request.GET.get('oportunidad_inicial_id')  # Nueva línea para oportunidad específica
 
     if is_supervisor(request.user):
         if cliente_id:
@@ -59,10 +60,20 @@ def get_oportunidades_por_cliente(request):
             # If no client_id, return the 20 most recent opportunities for the current user
             oportunidades = TodoItem.objects.filter(usuario=request.user).order_by('-fecha_creacion')[:20]
 
-    
+    # Si hay una oportunidad inicial específica, asegurar que esté incluida
+    if oportunidad_inicial_id:
+        try:
+            oportunidad_inicial = TodoItem.objects.get(id=oportunidad_inicial_id)
+            # Verificar si ya está en la lista
+            oportunidades_list = list(oportunidades)
+            if oportunidad_inicial not in oportunidades_list:
+                # Agregar la oportunidad específica al principio de la lista
+                oportunidades_list.insert(0, oportunidad_inicial)
+                oportunidades = oportunidades_list
+        except TodoItem.DoesNotExist:
+            pass  # Si no existe, continuar con la lista normal
 
     data = [{'id': op.id, 'nombre': op.oportunidad} for op in oportunidades]
-    
 
     return JsonResponse(data, safe=False)
 
@@ -1230,22 +1241,14 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
 
     # Si cliente_id fue pasado directamente (no a través de oportunidad_id) y no hay cliente_seleccionado aún
     if cliente_id and not cliente_seleccionado:
-        user = request.user
         try:
-            # CORRECTO: Buscar el cliente por su bitrix_company_id, que es lo que la URL del widget nos da.
-            cliente_seleccionado = Cliente.objects.get(bitrix_company_id=cliente_id)
+            # CORRECTO: La URL pasa el ID de Django, no el bitrix_company_id
+            cliente_seleccionado = Cliente.objects.get(id=cliente_id)
+            print(f"DEBUG: crear_cotizacion_view - Cliente encontrado por ID Django: {cliente_seleccionado.nombre_empresa}")
         except Cliente.DoesNotExist:
-            # Si el cliente no existe, es posible que la sincronización aún no haya ocurrido.
-            # Forzamos la sincronización de este cliente específico.
-            company_details = get_bitrix_company_details(cliente_id, request=request)
-            if company_details:
-                cliente_seleccionado, created = Cliente.objects.get_or_create(
-                    bitrix_company_id=company_details['ID'],
-                    defaults={'nombre_empresa': company_details['TITLE']}
-                )
-            else:
-                messages.error(request, f"El cliente con Bitrix ID {cliente_id} no se encuentra en Bitrix24. Por favor, seleccione un cliente existente o cree uno nuevo.")
-                return redirect('crear_cotizacion')
+            print(f"DEBUG: crear_cotizacion_view - Cliente con ID Django {cliente_id} no encontrado")
+            messages.error(request, f"El cliente con ID {cliente_id} no fue encontrado.")
+            return redirect('crear_cotizacion')
 
     if cliente_seleccionado:
         print(f"DEBUG: crear_cotizacion_view - Cliente seleccionado: {cliente_seleccionado.nombre_empresa}")
@@ -2058,59 +2061,6 @@ def actualizar_probabilidad(request, id):
 
 @csrf_exempt
 @login_required
-def crear_oportunidad_api(request):
-    if request.method == 'POST':
-        form = OportunidadModalForm(request.POST)
-        print(f"DEBUG: Instanciando OportunidadModalForm con data: {request.POST}", flush=True)
-        if form.is_valid():
-            cliente_id = request.POST.get('cliente')
-            nombre_oportunidad = request.POST.get('nombre_oportunidad')
-            cliente = get_object_or_404(Cliente, pk=cliente_id)
-
-            oportunidad = form.save(commit=False)
-            oportunidad.oportunidad = nombre_oportunidad
-            oportunidad.cliente = cliente
-            if not is_supervisor(request.user):
-                oportunidad.usuario = request.user
-            else:
-                # If user is a supervisor, you might want to assign a default user or handle it differently
-                # For now, let's assign it to the supervisor themselves
-                oportunidad.usuario = request.user
-            oportunidad.save()
-
-            try:
-                opportunity_data = {
-                    'oportunidad': oportunidad.oportunidad,
-                    'monto': float(oportunidad.monto),
-                    'cliente': cliente.nombre_empresa,
-                    'bitrix_company_id': cliente.bitrix_company_id,
-                    'producto': oportunidad.producto,
-                    'area': oportunidad.area,
-                    'mes_cierre': oportunidad.mes_cierre,
-                    'probabilidad_cierre': oportunidad.probabilidad_cierre,
-                    'comentarios': oportunidad.comentarios,
-                    'bitrix_stage_id': 'UC_YUQKW6', # Etapa de Cotizando
-                    'bitrix_contact_id': oportunidad.contacto.bitrix_contact_id if oportunidad.contacto else None,
-                }
-                bitrix_assigned_by_id = None
-                if oportunidad.usuario and hasattr(oportunidad.usuario, 'userprofile') and oportunidad.usuario.userprofile.bitrix_user_id:
-                    bitrix_assigned_by_id = oportunidad.usuario.userprofile.bitrix_user_id
-                opportunity_data['bitrix_assigned_by_id'] = bitrix_assigned_by_id
-                
-                bitrix_response = send_opportunity_to_bitrix(opportunity_data, request=request)
-                
-                if bitrix_response and bitrix_response.get('result'):
-                    oportunidad.bitrix_deal_id = bitrix_response.get('result')
-                    oportunidad.save(update_fields=['bitrix_deal_id'])
-                    return JsonResponse({'success': True, 'oportunidad': {'id': oportunidad.id, 'nombre': oportunidad.oportunidad}})
-                else:
-                    return JsonResponse({'success': False, 'errors': 'Failed to create opportunity in Bitrix24'})
-
-            except Exception as e:
-                return JsonResponse({'success': False, 'errors': str(e)})
-        else:
-            return JsonResponse({'success': False, 'errors': form.errors})
-    return JsonResponse({'success': False, 'errors': 'Invalid request method'})
 
 @login_required
 def importar_oportunidades(request):
@@ -2210,78 +2160,6 @@ def importar_oportunidades(request):
     }
     return render(request, 'importar_oportunidades.html', context)
 
-@csrf_exempt
-@login_required
-def crear_oportunidad_api(request):
-    if request.method == 'POST':
-        cliente_id = request.POST.get('cliente')
-        producto = request.POST.get('producto')
-        area = request.POST.get('area')
-        probabilidad_cierre = request.POST.get('probabilidad_cierre')
-        monto = request.POST.get('monto')
-        bitrix_stage_id = request.POST.get('bitrix_stage_id', 'NEW') # Default Bitrix stage ID
-
-        if not cliente_id or not producto or not area or not monto:
-            return JsonResponse({'success': False, 'errors': {'__all__': 'Faltan campos obligatorios.'}}, status=400)
-
-        try:
-            cliente = Cliente.objects.get(id=cliente_id)
-            monto_decimal = Decimal(monto)
-            probabilidad_int = int(probabilidad_cierre) if probabilidad_cierre else 0
-
-            # 1. Create opportunity in Bitrix24
-            opportunity_data = {
-                'oportunidad': f'Oportunidad - {producto} - {cliente.nombre_empresa}', # Default title
-                'monto': float(monto_decimal),
-                'cliente': cliente.nombre_empresa,
-                'bitrix_company_id': cliente.bitrix_company_id,
-                'producto': producto,
-                'area': area,
-                'probabilidad_cierre': probabilidad_int,
-                'bitrix_stage_id': bitrix_stage_id,
-            }
-            
-            # Get bitrix_user_id for the current user
-            bitrix_assigned_by_id = None
-            if request.user and hasattr(request.user, 'userprofile') and request.user.userprofile.bitrix_user_id:
-                bitrix_assigned_by_id = request.user.userprofile.bitrix_user_id
-            opportunity_data['bitrix_assigned_by_id'] = bitrix_assigned_by_id
-
-            bitrix_response = send_opportunity_to_bitrix(opportunity_data, request=request)
-
-            if bitrix_response and bitrix_response.get('result'):
-                bitrix_deal_id = bitrix_response.get('result')
-                
-                # 2. Save opportunity locally
-                new_opportunity = TodoItem.objects.create(
-                    oportunidad=opportunity_data['oportunidad'],
-                    monto=monto_decimal,
-                    cliente=cliente,
-                    usuario=request.user,
-                    producto=producto,
-                    area=area,
-                    probabilidad_cierre=probabilidad_int,
-                    bitrix_deal_id=bitrix_deal_id,
-                    bitrix_stage_id=bitrix_stage_id,
-                )
-                return JsonResponse({
-                    'success': True,
-                    'oportunidad': {
-                        'id': new_opportunity.id,
-                        'nombre': new_opportunity.oportunidad,
-                        'bitrix_deal_id': bitrix_deal_id,
-                    }
-                })
-            else:
-                return JsonResponse({'success': False, 'errors': {'__all__': 'No se pudo crear la oportunidad en Bitrix24.'}}, status=400)
-
-        except Cliente.DoesNotExist:
-            return JsonResponse({'success': False, 'errors': {'cliente': 'Cliente no encontrado.'}}, status=404)
-        except Exception as e:
-            print(f"ERROR en crear_oportunidad_api: {e}")
-            traceback.print_exc()
-            return JsonResponse({'success': False, 'errors': {'__all__': str(e)}}, status=500)
-    return JsonResponse({'success': False, 'errors': {'__all__': 'Método no permitido.'}}, status=405)
 
 @login_required
 def importar_oportunidades(request):

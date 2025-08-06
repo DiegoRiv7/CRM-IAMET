@@ -660,7 +660,13 @@
             }
 
             try {
-                const response = await fetch(`/app/api/get-oportunidades-por-cliente/?cliente_id=${clientId}`);
+                // Construir URL con parámetro adicional si hay oportunidad inicial
+                let url = `/app/api/get-oportunidades-por-cliente/?cliente_id=${clientId}`;
+                if (oportunidadIdInicial) {
+                    url += `&oportunidad_inicial_id=${oportunidadIdInicial}`;
+                }
+                
+                const response = await fetch(url);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -749,7 +755,7 @@
                 const cotizacionTitulo = document.getElementById('titulo_cotizacion').value;
 
                 formData.append('cliente', clienteId);
-                formData.append('nombre_oportunidad', cotizacionTitulo);
+                formData.append('oportunidad', cotizacionTitulo);
 
                 // Format the monto value before sending
                 const montoInput = document.getElementById('opportunity-monto');
@@ -778,6 +784,7 @@
                 } else {
                     // Handle errors
                     console.error('Error creating opportunity:', result.errors);
+                    alert('Error al crear oportunidad: ' + JSON.stringify(result.errors));
                 }
             });
 
