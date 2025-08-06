@@ -1667,18 +1667,30 @@ def bitrix_webhook_receiver(request):
 
         print(f"BITRIX WEBHOOK: Received event '{event}'", flush=True)
 
-        if event == 'ONCRMDEALADD':
+        if event in ['ONCRMDEALADD', 'ONCRMDEALUPDATE']:
             deal_id = data.get('data[FIELDS][ID]')
             if not deal_id:
-                print("BITRIX WEBHOOK: 'ONCRMDEALADD' event received but no deal ID found.", flush=True)
+                print(f"BITRIX WEBHOOK: '{event}' event received but no deal ID found.", flush=True)
                 return JsonResponse({'status': 'error', 'message': 'Deal ID missing'}, status=400)
 
-            print(f"BITRIX WEBHOOK: Processing ONCRMDEALADD for Deal ID: {deal_id}", flush=True)
+            print(f"BITRIX WEBHOOK: Processing {event} for Deal ID: {deal_id}", flush=True)
 
-            # Check if this deal has already been created to avoid duplicates.
-            if TodoItem.objects.filter(bitrix_deal_id=deal_id).exists():
-                print(f"BITRIX WEBHOOK: An opportunity for Deal ID {deal_id} already exists. Skipping creation.", flush=True)
-                return JsonResponse({'status': 'success', 'message': 'Duplicate ignored'})
+            # Check if this is an update to an existing deal
+            is_update = event == 'ONCRMDEALUPDATE'
+            existing_opportunity = None
+            
+            if is_update:
+                try:
+                    existing_opportunity = TodoItem.objects.get(bitrix_deal_id=deal_id)
+                    print(f"BITRIX WEBHOOK: Found existing opportunity '{existing_opportunity.oportunidad}' for update", flush=True)
+                except TodoItem.DoesNotExist:
+                    print(f"BITRIX WEBHOOK: Deal ID {deal_id} not found locally. Will create new opportunity.", flush=True)
+                    is_update = False
+            else:
+                # For ONCRMDEALADD, check for duplicates
+                if TodoItem.objects.filter(bitrix_deal_id=deal_id).exists():
+                    print(f"BITRIX WEBHOOK: An opportunity for Deal ID {deal_id} already exists. Skipping creation.", flush=True)
+                    return JsonResponse({'status': 'success', 'message': 'Duplicate ignored'})
 
             deal_details = get_bitrix_deal_details(deal_id, request=request)
             if not deal_details:
@@ -1720,46 +1732,99 @@ def bitrix_webhook_receiver(request):
 
             # --- Create the Opportunity (TodoItem) ---
             if cliente and usuario:
-                # Mapeo de nombres de meses a números de dos dígitos
-                MONTH_NAME_TO_NUMBER_MAPPING = {
-                    "enero": "01", "febrero": "02", "marzo": "03", "abril": "04",
-                    "mayo": "05", "junio": "06", "julio": "07", "agosto": "08",
-                    "septiembre": "09", "octubre": "10", "noviembre": "11", "diciembre": "12"
+                # Mapeos de Bitrix ID a Django Value - igual que en import_bitrix_opportunities.py
+                PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE = {
+                    "176": "ZEBRA", "178": "PANDUIT", "180": "APC", "182": "AVIGILION",
+                    "184": "GENETEC", "186": "AXIS", "188": "SOFTWARE", "190": "RUNRATE",
+                    "192": "PÓLIZA", "194": "CISCO", "374": "RFID", "376": "CONSUMIBLE",
+                    "378": "IMPRESORA INDUSTRIAL", "380": "SCANNER", "382": "TABLETA",
+                    "582": "SERVICIO",
                 }
 
-                # Mapeo de valores de Bitrix a los campos del modelo
-                producto = deal_details.get('UF_CRM_1752859685662')
-                area = deal_details.get('UF_CRM_1752859525038')
-                mes_cierre_bitrix = deal_details.get('UF_CRM_1752859877756')
-                
-                # Convertir el mes de Bitrix al formato esperado por Django
-                mes_cierre = MONTH_NAME_TO_NUMBER_MAPPING.get(mes_cierre_bitrix.lower(), '01') if mes_cierre_bitrix else '01'
+                AREA_BITRIX_ID_TO_DJANGO_VALUE = {
+                    "164": "SISTEMAS", "166": "Recursos Humanos", "168": "Compras",
+                    "170": "Seguridad", "172": "Mantenimiento", "174": "Almacén",
+                }
 
-                probabilidad_cierre = deal_details.get('UF_CRM_1752855787179')
+                MES_COBRO_BITRIX_ID_TO_DJANGO_VALUE = {
+                    "196": "Enero", "198": "Febrero", "200": "Marzo", "202": "Abril",
+                    "204": "Mayo", "206": "Junio", "208": "Julio", "210": "Agosto",
+                    "212": "Septiembre", "214": "Octubre", "216": "Noviembre", "218": "Diciembre",
+                }
 
-                # Limpiar el valor de probabilidad para que sea solo el número
-                if probabilidad_cierre:
-                    probabilidad_cierre = int("".join(filter(str.isdigit, probabilidad_cierre)))
+                PROBABILIDAD_BITRIX_ID_TO_VALUE_STRING = {
+                    "220": "0%", "124": "10%", "126": "20%", "128": "30%",
+                    "130": "40%", "132": "50%", "134": "60%", "136": "70%",
+                    "138": "80%", "140": "90%", "142": "100%",
+                }
+
+                # Obtener valores raw de Bitrix
+                producto_bitrix_id = deal_details.get('UF_CRM_1752859685662')
+                area_bitrix_id = deal_details.get('UF_CRM_1752859525038')
+                mes_cierre_bitrix_id = deal_details.get('UF_CRM_1752859877756')
+                probabilidad_bitrix_id = deal_details.get('UF_CRM_1752855787179')
+
+                print(f"BITRIX WEBHOOK: Raw product ID: {producto_bitrix_id}", flush=True)
+                print(f"BITRIX WEBHOOK: Raw area ID: {area_bitrix_id}", flush=True)
+                print(f"BITRIX WEBHOOK: Raw mes_cierre ID: {mes_cierre_bitrix_id}", flush=True)
+                print(f"BITRIX WEBHOOK: Raw probabilidad ID: {probabilidad_bitrix_id}", flush=True)
+
+                # Aplicar conversiones de mapeo
+                producto = PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE.get(str(producto_bitrix_id), 'SOFTWARE') # Default
+                area = AREA_BITRIX_ID_TO_DJANGO_VALUE.get(str(area_bitrix_id), 'SISTEMAS') # Default
+                mes_cierre = MES_COBRO_BITRIX_ID_TO_DJANGO_VALUE.get(str(mes_cierre_bitrix_id), 'Enero') # Default
+
+                probabilidad_cierre = 0 # Default value
+                if probabilidad_bitrix_id is not None:
+                    prob_str = PROBABILIDAD_BITRIX_ID_TO_VALUE_STRING.get(str(probabilidad_bitrix_id))
+                    if prob_str:
+                        try:
+                            parsed_prob = int(prob_str.replace('%', ''))
+                            probabilidad_cierre = min(parsed_prob, 100) # Cap at 100
+                        except ValueError:
+                            print(f"BITRIX WEBHOOK: Invalid probability string from Bitrix: {prob_str}. Setting to default (0).", flush=True)
+                            probabilidad_cierre = 0
+                    else:
+                        print(f"BITRIX WEBHOOK: Unknown probability ID from Bitrix: {probabilidad_bitrix_id}. Setting to default (0).", flush=True)
+                        probabilidad_cierre = 0
+
+                print(f"BITRIX WEBHOOK: Mapped product: {producto}", flush=True)
+                print(f"BITRIX WEBHOOK: Mapped area: {area}", flush=True)
+                print(f"BITRIX WEBHOOK: Mapped mes_cierre: {mes_cierre}", flush=True)
+                print(f"BITRIX WEBHOOK: Mapped probabilidad_cierre: {probabilidad_cierre}", flush=True)
+
+                if is_update and existing_opportunity:
+                    # Actualizar oportunidad existente
+                    existing_opportunity.oportunidad = deal_details.get('TITLE', existing_opportunity.oportunidad)
+                    existing_opportunity.monto = deal_details.get('OPPORTUNITY', existing_opportunity.monto) or existing_opportunity.monto
+                    existing_opportunity.cliente = cliente or existing_opportunity.cliente
+                    existing_opportunity.usuario = usuario or existing_opportunity.usuario
+                    existing_opportunity.producto = producto
+                    existing_opportunity.area = area
+                    existing_opportunity.mes_cierre = mes_cierre
+                    existing_opportunity.probabilidad_cierre = probabilidad_cierre
+                    existing_opportunity.save()
+                    print(f"BITRIX WEBHOOK: Successfully updated opportunity '{existing_opportunity.oportunidad}' with ID {existing_opportunity.id}", flush=True)
                 else:
-                    probabilidad_cierre = 5 # Valor por defecto si no viene de Bitrix
-
-                new_opportunity = TodoItem.objects.create(
-                    oportunidad=deal_details.get('TITLE', 'Oportunidad sin título'),
-                    monto=deal_details.get('OPPORTUNITY', 0.0) or 0.0,
-                    cliente=cliente,
-                    usuario=usuario,
-                    bitrix_deal_id=deal_id,
-                    producto=producto,
-                    area=area,
-                    mes_cierre=mes_cierre,
-                    probabilidad_cierre=probabilidad_cierre,
-                )
-                print(f"BITRIX WEBHOOK: Successfully created new opportunity '{new_opportunity.oportunidad}' with ID {new_opportunity.id}", flush=True)
+                    # Crear nueva oportunidad
+                    new_opportunity = TodoItem.objects.create(
+                        oportunidad=deal_details.get('TITLE', 'Oportunidad sin título'),
+                        monto=deal_details.get('OPPORTUNITY', 0.0) or 0.0,
+                        cliente=cliente,
+                        usuario=usuario,
+                        bitrix_deal_id=deal_id,
+                        producto=producto,
+                        area=area,
+                        mes_cierre=mes_cierre,
+                        probabilidad_cierre=probabilidad_cierre,
+                    )
+                    print(f"BITRIX WEBHOOK: Successfully created new opportunity '{new_opportunity.oportunidad}' with ID {new_opportunity.id}", flush=True)
             else:
                 missing_info = []
                 if not cliente: missing_info.append("cliente")
                 if not usuario: missing_info.append("usuario")
-                print(f"BITRIX WEBHOOK: Could not create opportunity for Deal ID {deal_id} because the following are missing: {', '.join(missing_info)}", flush=True)
+                action = "update" if is_update else "create"
+                print(f"BITRIX WEBHOOK: Could not {action} opportunity for Deal ID {deal_id} because the following are missing: {', '.join(missing_info)}", flush=True)
 
         return JsonResponse({'status': 'success'})
 
