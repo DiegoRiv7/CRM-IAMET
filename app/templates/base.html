@@ -40,87 +40,7 @@
             padding-top: 2rem; /* Menos espacio arriba, ya no hay barra fija */
             padding-bottom: 2rem;
         }
-        /* --- Dock Styles (copiados de bienvenida.html) --- */
-        .dock-icon {
-            width: var(--dock-icon-size, 36px);
-            height: var(--dock-icon-size, 36px);
-            fill: none;
-            stroke: #ffffff;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            opacity: 0;
-            transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease-in-out;
-        }
-        #dock {
-            position: fixed;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            padding: 0.5rem 1.5rem;
-            border-radius: 2rem;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            z-index: 1000;
-            transition: all 0.3s ease-in-out;
-            width: 90%;
-            max-width: 90%;
-            height: 64px;
-        }
-        #dock:hover {
-            background-color: rgba(0, 0, 0, 0.7);
-        }
-        #dock:hover .dock-icon {
-            opacity: 1;
-        }
-        #dock nav ul {
-            display: flex;
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        #dock nav li a {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: white;
-            text-decoration: none;
-            font-size: 0.75rem;
-            transition: color 0.2s ease-out, background-color 0.2s ease-out;
-            position: relative;
-            padding: var(--dock-item-padding, 0.5rem);
-            border-radius: 0.75rem;
-            background-color: transparent;
-            margin: 0 0.5rem;
-        }
-        #dock nav li a:hover .dock-icon {
-            transform: scale(1.8);
-        }
-        #dock nav li a span {
-            opacity: 0;
-            position: absolute;
-            bottom: var(--dock-text-bottom, -25px);
-            white-space: nowrap;
-            transition: opacity 0.2s ease-out;
-            pointer-events: none;
-            background-color: rgba(0, 0, 0, 0.85);
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.3rem;
-            font-size: 0.7rem;
-            z-index: 1001;
-        }
-        #dock nav li a:hover {
-            color: #e2e8f0;
-            background-color: rgba(255, 255, 255, 0.15);
-        }
-        #dock nav li a:hover span {
-            opacity: 1;
-        }
+        
         /* Glass effect utility for all cards/tables */
         .glass-card {
             background: rgba(30, 41, 59, 0.55);
@@ -164,37 +84,7 @@
         {% block content %}
         {% endblock %}
     </div>
-    {% if not hide_dock %}
-        {% include 'dock.html' %}
-    {% endif %}
-    <script>
-        function adjustDockIconSizes() {
-            const dock = document.getElementById('dock');
-            if (!dock) return;
-            const navItems = dock.querySelectorAll('nav li');
-            const itemCount = navItems.length;
-            const minIconSize = 28;
-            const maxIconSize = 48;
-            const maxItemsForMaxSize = 6;
-            const minItemsForMinSize = 12;
-            let calculatedSize;
-            if (itemCount <= maxItemsForMaxSize) {
-                calculatedSize = maxIconSize;
-            } else if (itemCount >= minItemsForMinSize) {
-                calculatedSize = minIconSize;
-            } else {
-                const range = minItemsForMinSize - maxItemsForMaxSize;
-                const position = itemCount - maxItemsForMaxSize;
-                const sizeDiff = maxIconSize - minIconSize;
-                calculatedSize = maxIconSize - (sizeDiff * (position / range));
-            }
-            document.documentElement.style.setProperty('--dock-icon-size', `${calculatedSize}px`);
-            document.documentElement.style.setProperty('--dock-item-padding', `${calculatedSize / 6}px`);
-            document.documentElement.style.setProperty('--dock-text-bottom', `-${calculatedSize / 2}px`);
-        }
-        window.addEventListener('DOMContentLoaded', adjustDockIconSizes);
-        window.addEventListener('resize', adjustDockIconSizes);
-    </script>
+    {% include 'floating_menu.html' %}
     <!-- Pie de Página (Opcional) -->
     <footer class="bg-gray-800 text-gray-400 text-center p-4 mt-8">
         <div class="container mx-auto">
