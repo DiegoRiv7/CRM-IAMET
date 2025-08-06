@@ -72,7 +72,7 @@
                 <a href="{% url 'view_cotizacion_pdf' cotizacion.id %}" target="_blank" class="text-cyan-100 font-semibold nombre-cotizacion hover:text-cyan-300 hover:underline">
                     {{ cotizacion.nombre_cotizacion }}
                 </a>
-                <a href="{{ cotizacion.descargar_url }}" class="inline-flex items-center px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-white rounded transition" download>
+                <a href="{% url 'generate_cotizacion_pdf' cotizacion.id %}" class="inline-flex items-center px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-white rounded transition" download>
                     <i data-lucide="download" class="lucide w-4 h-4 mr-1"></i>Descargar
                 </a>
                 <a href="{% url 'editar_cotizacion' cotizacion.id %}" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-400 text-white rounded transition">
