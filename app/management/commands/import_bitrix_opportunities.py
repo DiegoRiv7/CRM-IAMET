@@ -191,7 +191,7 @@ class Command(BaseCommand):
 
                 producto = PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE.get(str(producto_bitrix_id), 'SOFTWARE') # Default
                 area = AREA_BITRIX_ID_TO_DJANGO_VALUE.get(str(area_bitrix_id), 'Sistemas') # Default
-                mes_cierre = MES_COBRO_BITRIX_ID_TO_DJANGO_VALUE.get(str(mes_cierre_bitrix_id), 'Enero') # Default
+                mes_cierre = MES_COBRO_BITRIX_ID_TO_DJANGO_VALUE.get(str(mes_cierre_bitrix_id), 'Enero') # Default to January
                 
                 probabilidad_cierre = 0 # Default value
                 if probabilidad_bitrix_id is not None:
