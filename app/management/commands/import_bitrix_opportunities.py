@@ -36,6 +36,9 @@ class Command(BaseCommand):
             self.stdout.write(f'Processing Bitrix Deal ID: {bitrix_deal_id} - {deal_title}')
 
             try:
+                # Skip deals without proper data if needed, but always try to create the basic opportunity
+                self.stdout.write(f'  Processing: {deal_title}')
+                
                 # --- 1. Find or Create Cliente (Company) ---
                 cliente_obj = None
                 bitrix_company_id = deal.get('COMPANY_ID')
@@ -204,20 +207,24 @@ class Command(BaseCommand):
                         self.stdout.write(self.style.WARNING(f'  Unknown probability ID from Bitrix: {probabilidad_bitrix_id}. Setting to default (0).'))
                         probabilidad_cierre = 0
 
-                # Ensure monto is a Decimal
-                monto = Decimal(deal.get('OPPORTUNITY', 0.0) or 0.0)
+                # Ensure monto is a Decimal - handle any format
+                try:
+                    monto = Decimal(str(deal.get('OPPORTUNITY', 0.0) or 0.0))
+                except (ValueError, TypeError):
+                    monto = Decimal('0.0')
 
                 # --- 5. Create or Update TodoItem (Opportunity) ---
+                # ALWAYS create the opportunity with the essential data
                 opportunity, created = TodoItem.objects.update_or_create(
                     bitrix_deal_id=bitrix_deal_id,
                     defaults={
-                        'oportunidad': deal_title,
+                        'oportunidad': deal_title or f'Oportunidad {bitrix_deal_id}',  # Always have a name
                         'monto': monto,
-                        'cliente': cliente_obj,
-                        'usuario': usuario_obj,
-                        'producto': producto or 'SOFTWARE',  # Ensure producto is never None
-                        'area': area or 'Sistemas',  # Ensure area is never None
-                        'mes_cierre': mes_cierre,
+                        'cliente': cliente_obj,  # We ensure this exists above
+                        'usuario': usuario_obj,  # We ensure this exists above
+                        'producto': producto or 'SOFTWARE',  # Default value
+                        'area': area or 'Sistemas',  # Default value
+                        'mes_cierre': mes_cierre or 'Enero',  # Default value
                         'probabilidad_cierre': probabilidad_cierre,
                         'comentarios': deal.get('COMMENTS', ''),
                         'bitrix_company_id': bitrix_company_id,
@@ -235,9 +242,44 @@ class Command(BaseCommand):
 
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f'  Error processing Bitrix Deal ID {bitrix_deal_id} ({deal_title}): {e}'))
-                self.stdout.write(self.style.ERROR(f'  Full Bitrix Deal Data: {json.dumps(deal, indent=2)}'))
-                import traceback
-                traceback.print_exc()
+                # Try to create a minimal opportunity record with just the essentials
+                try:
+                    self.stdout.write(self.style.WARNING(f'  Attempting minimal import for deal {bitrix_deal_id}'))
+                    # Get or create default client and user
+                    default_cliente, _ = Cliente.objects.get_or_create(
+                        nombre_empresa='Cliente Desconocido',
+                        defaults={'bitrix_company_id': None}
+                    )
+                    default_usuario, _ = User.objects.get_or_create(
+                        username='default_user',
+                        defaults={'first_name': 'Usuario', 'last_name': 'Desconocido', 'is_active': True}
+                    )
+                    
+                    opportunity, created = TodoItem.objects.update_or_create(
+                        bitrix_deal_id=bitrix_deal_id,
+                        defaults={
+                            'oportunidad': deal_title or f'Oportunidad {bitrix_deal_id}',
+                            'monto': Decimal(deal.get('OPPORTUNITY', 0.0) or 0.0),
+                            'cliente': default_cliente,
+                            'usuario': default_usuario,
+                            'producto': 'SOFTWARE',
+                            'area': 'Sistemas',
+                            'mes_cierre': 'Enero',
+                            'probabilidad_cierre': 0,
+                            'comentarios': deal.get('COMMENTS', ''),
+                            'bitrix_company_id': deal.get('COMPANY_ID'),
+                            'bitrix_stage_id': deal.get('STAGE_ID'),
+                            'contacto': None,
+                        }
+                    )
+                    if created:
+                        created_count += 1
+                        self.stdout.write(self.style.SUCCESS(f'  Minimal import successful: {opportunity.oportunidad}'))
+                    else:
+                        updated_count += 1
+                        self.stdout.write(self.style.SUCCESS(f'  Minimal update successful: {opportunity.oportunidad}'))
+                except Exception as e2:
+                    self.stdout.write(self.style.ERROR(f'  Even minimal import failed for {bitrix_deal_id}: {e2}'))
 
         self.stdout.write(self.style.SUCCESS('--- Bitrix24 opportunities import/update finished ---'))
         self.stdout.write(self.style.SUCCESS(f'Total opportunities processed: {total_processed}'))
