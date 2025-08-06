@@ -17,6 +17,15 @@
 </style>
     <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md border border-gray-700 text-gray-100"> {# Fondo oscuro y texto claro #}
         <h1 class="text-3xl font-bold text-white mb-6 text-center" style="font-size: clamp(2rem, 4vw, 2.5rem);">Iniciar Sesión</h1> {# Título en blanco #}
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="bg-red-600 text-white text-sm p-3 rounded mb-4 text-center">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
         {% if form.errors %}
             <p class="text-red-400 text-sm mb-4 text-center">Tu nombre de usuario y contraseña no coinciden. Por favor, inténtalo de nuevo.</p> {# Tono rojo ajustado #}
         {% endif %}

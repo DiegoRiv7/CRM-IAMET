@@ -79,9 +79,9 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Configuración de cookies para iframes
 SESSION_COOKIE_SAMESITE = 'None'
-SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = False  # TEMPORAL: Para desarrollo local HTTP
 CSRF_COOKIE_SAMESITE = 'None'
-CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = False     # TEMPORAL: Para desarrollo local HTTP
 
 ROOT_URLCONF = 'cartera_clientes.urls'
 
@@ -188,7 +188,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # --- Configuración de URLs para autenticación (Añade o ajusta estas líneas al final) ---
 # Estas URLs deben coincidir con las rutas que esperas bajo '/app/'
-LOGIN_REDIRECT_URL = '/app/todos/'    # Redirige aquí después de iniciar sesión
+LOGIN_REDIRECT_URL = '/app/home/'    # Redirige aquí después de iniciar sesión
 LOGIN_URL = '/app/login/'             # URL de tu página de inicio de sesión
 LOGOUT_REDIRECT_URL = '/app/login/'   # Redirige aquí después de cerrar sesión
 

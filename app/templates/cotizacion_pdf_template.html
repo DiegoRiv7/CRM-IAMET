@@ -4,235 +4,303 @@
   <meta charset="UTF-8" />
   <title>Cotización - {{ cotizacion.descripcion|default:"Sin Nombre" }}</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     * { box-sizing: border-box; }
+    
     body {
       margin: 0;
-      padding: 0;
+      padding: 10px;
       font-family: 'Inter', sans-serif;
-      color: #111;
+      color: #333;
       background: #fff;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
+      font-size: 14px;
+      line-height: 1.4;
     }
+    
     .container {
-      width: 97vw;
-      max-width: 97vw;
+      max-width: 100%;
       margin: 0 auto;
-      padding: 0 1.5vw;
       background: #fff;
     }
+    
+    /* Encabezado con logo y datos de contacto */
     .header {
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
-      border-bottom: 2px solid #ff9800;
-      padding: 18px 0 12px 0;
-      margin-bottom: 18px;
-      background: #ff9800;
-      color: #111;
+      align-items: flex-start;
+      padding: 15px 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #ddd;
     }
+    
+    .logo {
+      flex: 1;
+    }
+    
     .logo img {
-      max-height: 54px;
-      border-radius: 6px;
-      background: #fff;
-      padding: 2px;
+      max-height: 60px;
+      width: auto;
     }
-    .company-details {
-      font-size: 13px;
+    
+    .contact-info {
+      flex: 1;
       text-align: right;
-      color: #111;
-      line-height: 1.5;
-      background: none !important;
-      box-shadow: none !important;
-      padding: 0 !important;
-      border: none !important;
-    }
-    .company-details strong {
-      font-size: 16px;
-      letter-spacing: 1px;
-      background: none !important;
-      color: #111;
-    }
-    .company-details span {
-      background: none !important;
-      color: #111;
-    }
-    .section {
-      padding: 18px 0;
-      margin-bottom: 12px;
-      border-radius: 6px;
-      border: none;
-      background: #fff;
-      margin-top: 0;
-      color: #111;
-    }
-    h2 {
-      font-size: 15px;
-      margin-bottom: 8px;
-      color: #111;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      margin-top: 0;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 0;
-      font-size: 13px;
-      background: transparent;
-      color: #111;
-    }
-    table tr { page-break-inside: avoid; }
-    th, td {
-      padding: 7px 6px;
-      border-bottom: 1px solid #222;
-      color: #111;
-      background: transparent;
-    }
-    th {
-      background: #ff9800;
-      color: #111;
-      border-top: 1px solid #222;
-    }
-    td.text-right { text-align: right; }
-    td.descripcion {
-      text-align: justify;
-      text-justify: inter-word;
-    }
-    .totals {
-      max-width: 340px;
-      margin-left: auto;
-      margin-top: 12px;
-      font-size: 13px;
-      background: #fff;
-      border: none;
-      border-radius: 0;
-      padding: 8px 0 0 0;
-      color: #111;
-    }
-    .totals td { padding: 5px 0; border-bottom: none; }
-    .totals .label {
-      color: #111;
-      text-align: left;
-    }
-    .totals .value { text-align: right; font-weight: 600; color: #111; }
-    .totals .total {
-      font-size: 15px;
-      font-weight: 700;
-      border-top: 2px solid #222;
-      color: #111;
-      padding-top: 7px;
-    }
-    .notes, .terms {
       font-size: 12px;
-      color: #111;
+      color: #666;
       line-height: 1.6;
     }
-    .footer {
-      border-top: 2px solid #222;
-      color: #111;
-      background: #fff;
-      padding: 12px 0 0 0;
-      text-align: center;
+    
+    .contact-info .phone {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 2px;
+    }
+    
+    .contact-info .schedule {
       font-size: 11px;
-      margin-top: 18px;
+      color: #888;
     }
-    /* Paginación real para PDF con wkhtmltopdf/WeasyPrint */
-    @page {
-      margin: 14mm;
-      @bottom-right {
-        color: #000;
-        content: counter(page) "/" counter(pages);
-        font-size: 13px;
-      }
+    
+    /* Título del documento */
+    .document-title {
+      text-align: center;
+      margin: 20px 0 15px 0;
+      padding: 10px;
+      background: #f8f9fa;
+      border-left: 4px solid #ff9800;
     }
-    .footer-paginacion { display: none !important; }
-    .info-grid {
+    
+    .document-title h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+      color: #333;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    /* Información del cliente y cotización */
+    .quote-header {
       display: flex;
       justify-content: space-between;
-      gap: 32px;
-      width: 100%;
-      background: #f6fbfd;
-      border: none;
-      margin-bottom: 0;
-      padding: 18px 0 0 0;
-      color: #22313a;
-      border-radius: 28px 28px 28px 28px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #fff;
     }
-    .info-grid h2 {
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 8px;
-      color: #34495e;
-      letter-spacing: 0.5px;
-      margin-top: 0;
-      text-align: left;
+    
+    .client-info {
+      flex: 2;
     }
-    .client-name-only-large {
-      font-size: 28px;
-      font-weight: 800;
-      color: #22313a !important;
-      margin: 0 0 0 2px;
-      text-align: left;
-      line-height: 1.1;
-      letter-spacing: -1px;
-      text-transform: none;
-    }
-    .info-grid > div:last-child {
-      text-align: right;
+    
+    .client-info h2 {
       font-size: 18px;
-      font-weight: 700;
-      color: #34495e;
+      font-weight: 600;
+      color: #333;
+      margin: 0 0 15px 0;
+      text-transform: uppercase;
     }
-    .info-grid > div:last-child h2 {
+    
+    .client-name {
       font-size: 20px;
       font-weight: 700;
-      margin-bottom: 8px;
-      color: #34495e;
+      color: #000;
+      margin: 5px 0 15px 0;
+      line-height: 1.2;
+    }
+    
+    .client-address {
+      color: #666;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    
+    .quote-info {
+      flex: 1;
+      text-align: right;
+      background: #ff9800;
+      color: white;
+      padding: 15px;
+      margin: -15px -15px -15px 15px;
+    }
+    
+    .quote-info .folio {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    
+    .quote-info .date {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    
+    .quote-info .vendor {
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    /* Tabla de productos */
+    .products-section {
+      margin: 20px 0;
+    }
+    
+    .products-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    
+    .products-table th {
+      background: #f8f9fa;
+      color: #333;
+      font-weight: 600;
+      padding: 10px 6px;
+      text-align: left;
+      border-bottom: 2px solid #ddd;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    
+    .products-table td {
+      padding: 8px 6px;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+    }
+    
+    .text-right {
       text-align: right;
     }
-    .info-grid > div:last-child p {
-      font-size: 14px;
-      margin: 2px 0;
-      color: #22313a !important;
+    
+    .text-center {
+      text-align: center;
+    }
+    
+    .product-name {
       font-weight: 600;
+      color: #333;
+    }
+    
+    .delivery-time {
+      font-style: italic;
+      color: #666;
+      font-size: 11px;
+      margin-top: 5px;
+    }
+    
+    /* Totales */
+    .totals-section {
+      display: flex;
+      justify-content: flex-end;
+      margin: 20px 0;
+    }
+    
+    .totals-table {
+      width: 280px;
+      font-size: 14px;
+    }
+    
+    .totals-table td {
+      padding: 10px 15px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .totals-table .label {
+      font-weight: 600;
+      text-align: left;
+      color: #333;
+    }
+    
+    .totals-table .value {
       text-align: right;
+      font-weight: 600;
+    }
+    
+    .totals-table .total-row {
+      background: #ff9800;
+      color: white;
+      font-weight: 700;
+      font-size: 16px;
+    }
+    
+    .totals-table .total-row td {
+      border-bottom: none;
+      padding: 15px;
+    }
+    
+    /* Términos y condiciones */
+    .terms {
+      margin-top: 25px;
+      padding: 15px;
+      background: #f8f9fa;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #666;
+    }
+    
+    /* Paginación */
+    @page {
+      margin: 12mm;
+      @bottom-right {
+        content: counter(page) "/" counter(pages);
+        font-size: 10px;
+        color: #666;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
+    <!-- Encabezado con logo y contacto -->
     <div class="header">
       <div class="logo">
-        <img src="http://www.baja-net.com/images/logo.png" alt="Logo BajaNet">
+        {% if logo_base64 %}
+          <img src="data:image/png;base64,{{ logo_base64 }}" alt="Logo BAJANET">
+        {% else %}
+          <img src="http://www.baja-net.com/images/logo.png" alt="Logo BAJANET">
+        {% endif %}
       </div>
-      <div class="company-details" style="background: none !important;">
-        <strong style="font-size: 16px; letter-spacing: 1px;">BAJANET S.A. DE C.V.</strong><br>
-        <span>📞 +52 664 123 4567</span><br>
-        <span>🌐 www.baja-net.com</span><br>
+      <div class="contact-info">
+        <div class="phone">{{ company_phone }}</div>
+        <div>{{ company_email }}</div>
+        <div>{{ company_address }}</div>
       </div>
     </div>
+
+    <!-- Título del documento -->
     {% if cotizacion.titulo %}
-    <div style="text-align:center; margin: 20px 0 10px 0;">
-      <h1 style="font-size: 2rem; color: #ff9800; margin:0; letter-spacing:1px; font-weight:800;">{{ cotizacion.titulo }}</h1>
+    <div class="document-title">
+      <h1>{{ cotizacion.titulo }}</h1>
+    </div>
+    {% else %}
+    <div class="document-title">
+      <h1>Cotización Equipos</h1>
     </div>
     {% endif %}
-    <div class="section info-grid">
-      <div>
-        <h2>Cliente</h2>
-        <p class="client-name-only-large">{{ cotizacion.cliente.nombre_empresa }}</p>
+
+    <!-- Información del cliente y cotización -->
+    <div class="quote-header">
+      <div class="client-info">
+        <div class="client-name">{{ cotizacion.cliente.nombre_empresa }}</div>
+        <div class="client-address">
+          <!-- Aquí podrías agregar la dirección del cliente si está disponible -->
+          {% if cotizacion.cliente.direccion %}
+            {{ cotizacion.cliente.direccion }}
+          {% endif %}
+        </div>
       </div>
-      <div style="text-align: right;">
-        <h2>Cotización</h2>
-        <p><strong>Folio:</strong> #{{ cotizacion.id }}</p>
-        <p><strong>Fecha:</strong> {% now "d/m/Y" %}</p>
-        <p><strong>Vendedor:</strong> {{ cotizacion.created_by.get_full_name|default:cotizacion.created_by.username }}</p>
+      <div class="quote-info">
+        <div class="folio"># {{ cotizacion.id }}</div>
+        <div class="date">{{ current_date|date:"d/m/Y" }}</div>
+        <div class="vendor">{{ cotizacion.created_by.get_full_name|default:cotizacion.created_by.username }}</div>
       </div>
     </div>
-    <div class="section">
-      <h2>Detalle de Productos</h2>
-      <table>
+
+    <!-- Tabla de productos -->
+    <div class="products-section">
+      <table class="products-table">
         <thead>
           <tr>
             <th>No. Partida</th>
@@ -241,7 +309,7 @@
             <th>CANTIDAD</th>
             <th>PRECIO UNITARIO</th>
             {% if cotizacion.descuento_visible %}
-            <th>DESCUENTO</th>
+            <th>DESC. (%)</th>
             {% endif %}
             <th>TOTAL</th>
           </tr>
@@ -249,9 +317,9 @@
         <tbody>
           {% for detalle in detalles_cotizacion %}
           <tr>
-            <td>{{ forloop.counter }}</td>
-            <td>{{ detalle.nombre_producto }}{% if detalle.no_parte %} ({{ detalle.no_parte }}){% endif %}</td>
-            <td class="descripcion">{{ detalle.descripcion|default:"-"|linebreaksbr }}</td>
+            <td class="text-center">{{ forloop.counter }}</td>
+            <td class="product-name">{{ detalle.nombre_producto }}{% if detalle.no_parte %}<br><small>({{ detalle.no_parte }})</small>{% endif %}</td>
+            <td>{{ detalle.descripcion|default:"-"|linebreaksbr }}</td>
             <td class="text-center">{{ detalle.cantidad }}</td>
             <td class="text-right">${{ detalle.precio_unitario|floatformat:2 }}</td>
             {% if cotizacion.descuento_visible %}
@@ -262,35 +330,37 @@
           {% endfor %}
         </tbody>
       </table>
-      <table class="totals">
+    </div>
+
+    <!-- Totales -->
+    <div class="totals-section">
+      <table class="totals-table">
         <tr>
-          <td class="label">Subtotal:</td>
+          <td class="label">SUB TOTAL:</td>
           <td class="value">${{ cotizacion.subtotal|floatformat:2 }}</td>
         </tr>
         <tr>
           <td class="label">IVA ({{ iva_rate_percentage|floatformat:0 }}%):</td>
           <td class="value">${{ cotizacion.iva_amount|floatformat:2 }}</td>
         </tr>
-        <tr class="total">
-          <td class="label">Total:</td>
+        <tr class="total-row">
+          <td class="label">TOTAL:</td>
           <td class="value">${{ cotizacion.total|floatformat:2 }} {{ cotizacion.moneda }}</td>
         </tr>
       </table>
     </div>
-    {% if cotizacion.descripcion %}
-    <div class="section">
-      <h2>Notas</h2>
-      <p class="notes">{{ cotizacion.descripcion }}</p>
-    </div>
-    {% endif %}
-    <div class="section">
-      <h2>Términos y Condiciones</h2>
-      <p class="terms">
-        Esta cotización tiene una validez de 15 días desde su emisión. Precios sujetos a cambios sin previo aviso. El pedido se procesará tras la confirmación de la orden de compra. Todos los términos deben ser aceptados previamente.
-      </p>
-    </div>
-    <div class="footer">
-      &copy; {% now "Y" %} BajaNet S.A. de C.V. Todos los derechos reservados.
+
+    <!-- Términos y condiciones -->
+    <div class="terms">
+      <strong>Términos y Condiciones:</strong><br>
+      Esta cotización tiene una validez de 15 días desde su emisión. Precios sujetos a cambios sin previo aviso. 
+      El pedido se procesará tras la confirmación de la orden de compra. Todos los términos deben ser aceptados previamente.
+      
+      {% if cotizacion.descripcion %}
+      <br><br>
+      <strong>Notas adicionales:</strong><br>
+      {{ cotizacion.descripcion }}
+      {% endif %}
     </div>
   </div>
 </body>
