@@ -173,7 +173,7 @@ class Command(BaseCommand):
                 }
 
                 AREA_BITRIX_ID_TO_DJANGO_VALUE = {
-                    "164": "Sistemas", "166": "Recursos Humanos", "168": "Compras",
+                    "164": "SISTEMAS", "166": "Recursos Humanos", "168": "Compras",
                     "170": "Seguridad", "172": "Mantenimiento", "174": "Almacén",
                 }
 
@@ -190,7 +190,7 @@ class Command(BaseCommand):
                 }
 
                 producto = PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE.get(str(producto_bitrix_id), 'SOFTWARE') # Default
-                area = AREA_BITRIX_ID_TO_DJANGO_VALUE.get(str(area_bitrix_id), 'Sistemas') # Default
+                area = AREA_BITRIX_ID_TO_DJANGO_VALUE.get(str(area_bitrix_id), 'SISTEMAS') # Default
                 mes_cierre = MES_COBRO_BITRIX_ID_TO_DJANGO_VALUE.get(str(mes_cierre_bitrix_id), 'Enero') # Default to January
                 
                 probabilidad_cierre = 0 # Default value
@@ -223,7 +223,7 @@ class Command(BaseCommand):
                         'cliente': cliente_obj,  # We ensure this exists above
                         'usuario': usuario_obj,  # We ensure this exists above
                         'producto': producto or 'SOFTWARE',  # Default value
-                        'area': area or 'Sistemas',  # Default value
+                        'area': area or 'SISTEMAS',  # Default value
                         'mes_cierre': mes_cierre or 'Enero',  # Default value
                         'probabilidad_cierre': probabilidad_cierre,
                         'comentarios': deal.get('COMMENTS', ''),
@@ -263,7 +263,7 @@ class Command(BaseCommand):
                             'cliente': default_cliente,
                             'usuario': default_usuario,
                             'producto': 'SOFTWARE',
-                            'area': 'Sistemas',
+                            'area': 'SISTEMAS',
                             'mes_cierre': 'Enero',
                             'probabilidad_cierre': 0,
                             'comentarios': deal.get('COMMENTS', ''),

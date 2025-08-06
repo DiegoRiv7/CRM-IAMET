@@ -152,7 +152,7 @@ def _get_bitrix_mapped_data(opportunity_data, request=None):
     }
 
     area_map = {
-        'Sistemas': '164',
+        'SISTEMAS': '164',
         'Recursos Humanos': '166',
         'Compras': '168',
         'Seguridad': '170',
