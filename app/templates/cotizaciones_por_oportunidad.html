@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    main {
+        width: 100vw;
+        min-height: 100vh;
+        max-width: 100vw;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        overflow-x: hidden;
+    }
+    section {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        box-sizing: border-box;
+    }
+    @media (max-width: 1800px) {
+        section { max-width: 1400px; }
+    }
+    @media (max-width: 1400px) {
+        section { max-width: 1000px; }
+    }
+    @media (max-width: 1100px) {
+        section { max-width: 800px; }
+    }
+    @media (max-width: 900px) {
+        section { max-width: 98vw; }
+    }
+    @media (max-width: 600px) {
+        section { max-width: 100vw; padding: 0 0.5rem; }
+    }
+    .float { animation: none !important; }
+</style>
+<div class="min-h-screen w-full flex flex-col justify-start items-center py-12 px-0 relative dashboard-container" style="z-index:1;">
+
+<style>
+    .dashboard-container {
+        --padding-x: clamp(1rem, 5vw, 4rem);
+        padding-left: var(--padding-x);
+        padding-right: var(--padding-x);
+    }
+</style>
+    <div class="flex flex-col items-center justify-center mb-8 w-full">
+        <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight drop-shadow-lg text-center" style="font-size: clamp(2.5rem, 5vw, 3.5rem);">Cotizaciones</h1>
+        <h2 class="text-2xl md:text-3xl font-bold text-blue-300 tracking-tight text-center mt-2" style="font-size: clamp(1.5rem, 3vw, 2rem);">{{ oportunidad.oportunidad }}</h2>
+        <p class="text-gray-300 text-center mt-2" style="font-size: clamp(1rem, 2.5vw, 1.25rem);">Cliente: <span class="text-blue-400 font-semibold">{{ oportunidad.cliente.nombre_empresa }}</span></p>
+        <p class="text-gray-300 text-center" style="font-size: clamp(0.9rem, 2vw, 1rem);">Monto: <span class="text-green-400 font-semibold">${{ oportunidad.monto|floatformat:2 }} {{ oportunidad.cliente.moneda|default:"USD" }}</span></p>
+    </div>
+
+    <section class="flex flex-col items-center justify-start w-full">
+        <!-- Botones de acción -->
+        <div class="flex flex-wrap justify-center gap-4 mb-8">
+            <a href="{% url 'todos' %}" class="bg-gray-700/80 hover:bg-gray-600/80 text-gray-100 font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75">
+                ← Volver a Oportunidades
+            </a>
+            
+            <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="bg-blue-600/80 hover:bg-blue-500/80 text-blue-100 font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
+                + Crear Nueva Cotización
+            </a>
+        </div>
+
+        {% if tiene_cotizaciones %}
+        <!-- Tabla de cotizaciones -->
+        <div class="w-full">
+            <div class="bg-gray-800/60 backdrop-blur-sm border border-gray-700/50 rounded-xl shadow-2xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-300">
+                        <thead class="text-xs text-gray-400 uppercase bg-gray-700/50">
+                            <tr>
+                                <th scope="col" class="px-6 py-4">Título</th>
+                                <th scope="col" class="px-6 py-4">Descripción</th>
+                                <th scope="col" class="px-6 py-4 text-center">Total</th>
+                                <th scope="col" class="px-6 py-4 text-center">Moneda</th>
+                                <th scope="col" class="px-6 py-4 text-center">Tipo</th>
+                                <th scope="col" class="px-6 py-4 text-center">Fecha</th>
+                                <th scope="col" class="px-6 py-4 text-center">Creado Por</th>
+                                <th scope="col" class="px-6 py-4 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cotizacion in cotizaciones %}
+                            <tr class="bg-gray-800/30 border-b border-gray-700/50 hover:bg-gray-700/40 transition-colors">
+                                <td class="px-6 py-4 font-medium text-white">
+                                    {{ cotizacion.titulo }}
+                                </td>
+                                <td class="px-6 py-4 text-gray-300">
+                                    {{ cotizacion.descripcion|truncatewords:10|default:"Sin descripción" }}
+                                </td>
+                                <td class="px-6 py-4 text-center font-semibold text-green-400">
+                                    ${{ cotizacion.total|floatformat:2 }}
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    {{ cotizacion.moneda }}
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full {% if cotizacion.tipo_cotizacion == 'Bajanet' %}bg-blue-900 text-blue-200{% else %}bg-purple-900 text-purple-200{% endif %}">
+                                        {{ cotizacion.tipo_cotizacion }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-center text-gray-400">
+                                    {{ cotizacion.fecha_creacion|date:"d/m/Y H:i" }}
+                                </td>
+                                <td class="px-6 py-4 text-center text-gray-400">
+                                    {{ cotizacion.created_by.first_name|default:cotizacion.created_by.username }}
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <div class="flex justify-center space-x-2">
+                                        <!-- Ver PDF -->
+                                        <a href="{% url 'view_cotizacion_pdf' cotizacion.id %}" target="_blank" class="bg-green-600/80 hover:bg-green-500/80 text-green-100 px-3 py-2 rounded-lg text-xs font-medium transition duration-300 ease-in-out" title="Ver PDF">
+                                            👁️ Ver
+                                        </a>
+                                        
+                                        <!-- Descargar PDF -->
+                                        <a href="{% url 'generate_cotizacion_pdf' cotizacion.id %}" class="bg-blue-600/80 hover:bg-blue-500/80 text-blue-100 px-3 py-2 rounded-lg text-xs font-medium transition duration-300 ease-in-out" title="Descargar PDF">
+                                            📥 Descargar
+                                        </a>
+                                        
+                                        <!-- Editar (crear nueva basada en esta) -->
+                                        <a href="{% url 'editar_cotizacion' cotizacion.id %}" class="bg-yellow-600/80 hover:bg-yellow-500/80 text-yellow-100 px-3 py-2 rounded-lg text-xs font-medium transition duration-300 ease-in-out" title="Editar Cotización">
+                                            ✏️ Editar
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Estado vacío - sin cotizaciones -->
+        <div class="w-full text-center py-16">
+            <div class="bg-gray-800/60 backdrop-blur-sm border border-gray-700/50 rounded-xl shadow-2xl p-12">
+                <div class="text-6xl text-gray-500 mb-6">📄</div>
+                <h3 class="text-2xl font-bold text-gray-300 mb-4">Sin cotizaciones</h3>
+                <p class="text-gray-400 mb-8 max-w-md mx-auto">
+                    Esta oportunidad aún no tiene cotizaciones asociadas. Crea la primera cotización para comenzar.
+                </p>
+                <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="bg-blue-600/80 hover:bg-blue-500/80 text-blue-100 font-semibold py-3 px-8 rounded-lg shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 inline-block">
+                    + Crear Primera Cotización
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}

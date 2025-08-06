@@ -92,7 +92,7 @@
             <tbody class="bg-gray-900/80 divide-y divide-blue-900/30" id="tablaOportunidades">
                 {% for item in items %}
                 <tr class="oportunidad-item transition duration-200 hover:bg-blue-900/30 hover:shadow-lg hover:scale-[1.01]">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-white nombre-oportunidad"><a href="{% url 'crear_cotizacion_with_opportunity' item.id %}" class="text-blue-400 hover:text-blue-200">{{ item.oportunidad }}</a></td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-white nombre-oportunidad"><a href="{% url 'cotizaciones_por_oportunidad' item.id %}" class="text-blue-400 hover:text-blue-200 hover:underline">{{ item.oportunidad }}</a></td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-100">{{ item.get_area_display }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-100">{{ item.contacto }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-100">{{ item.get_producto_display }}</td>

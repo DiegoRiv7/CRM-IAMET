@@ -82,6 +82,9 @@ urlpatterns = [
 
     # Ruta para ver cotizaciones de un cliente específico
     path('cotizaciones/cliente/<int:cliente_id>/', views.cotizaciones_por_cliente_view, name='cotizaciones_por_cliente'),
+    
+    # Ruta para ver cotizaciones de una oportunidad específica
+    path('cotizaciones/oportunidad/<int:oportunidad_id>/', views.cotizaciones_por_oportunidad_view, name='cotizaciones_por_oportunidad'),
 
     # Exportar oportunidades (restaurado)
     path("importar/", views.importar_oportunidades, name="importar_oportunidades"),

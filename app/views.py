@@ -46,13 +46,15 @@ def get_oportunidades_por_cliente(request):
 
     if is_supervisor(request.user):
         if cliente_id:
-            oportunidades = TodoItem.objects.filter(cliente_id=cliente_id).order_by('-fecha_creacion')
+            # Solo las 10 oportunidades más recientes del cliente para supervisores
+            oportunidades = TodoItem.objects.filter(cliente_id=cliente_id).order_by('-fecha_creacion')[:10]
         else:
             # If no client_id, return the 20 most recent opportunities for supervisors
             oportunidades = TodoItem.objects.all().order_by('-fecha_creacion')[:20]
     else:
         if cliente_id:
-            oportunidades = TodoItem.objects.filter(cliente_id=cliente_id, usuario=request.user).order_by('-fecha_creacion')
+            # Solo las 10 oportunidades más recientes del cliente del usuario actual
+            oportunidades = TodoItem.objects.filter(cliente_id=cliente_id, usuario=request.user).order_by('-fecha_creacion')[:10]
         else:
             # If no client_id, return the 20 most recent opportunities for the current user
             oportunidades = TodoItem.objects.filter(usuario=request.user).order_by('-fecha_creacion')[:20]
@@ -1831,6 +1833,32 @@ def cotizaciones_view(request):
         'is_supervisor': is_supervisor_flag
     }
     return render(request, 'cotizaciones.html', context)
+
+@login_required
+def cotizaciones_por_oportunidad_view(request, oportunidad_id):
+    """
+    Vista para mostrar todas las cotizaciones de una oportunidad específica
+    """
+    oportunidad = get_object_or_404(TodoItem, pk=oportunidad_id)
+    
+    # Verificar permisos - supervisores ven todo, usuarios solo sus propias oportunidades
+    if not is_supervisor(request.user) and oportunidad.usuario != request.user:
+        messages.error(request, "No tienes permisos para ver las cotizaciones de esta oportunidad.")
+        return redirect('todos')
+    
+    # Obtener todas las cotizaciones vinculadas a esta oportunidad
+    if is_supervisor(request.user):
+        cotizaciones = Cotizacion.objects.filter(oportunidad=oportunidad).order_by('-fecha_creacion')
+    else:
+        cotizaciones = Cotizacion.objects.filter(oportunidad=oportunidad, created_by=request.user).order_by('-fecha_creacion')
+    
+    context = {
+        'oportunidad': oportunidad,
+        'cotizaciones': cotizaciones,
+        'tiene_cotizaciones': cotizaciones.exists(),
+    }
+    
+    return render(request, 'cotizaciones_por_oportunidad.html', context)
 
 @login_required
 def cotizaciones_por_cliente_view(request, cliente_id):

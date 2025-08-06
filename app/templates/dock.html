@@ -10,6 +10,7 @@
                     <span class="text-white">Home</span>
                 </a>
             </li>
+            {% if is_supervisor or user.is_superuser %}
             <li>
                 <a href="{% url 'dashboard' %}" class="group">
                     <!-- Dashboard -->
@@ -19,6 +20,7 @@
                     <span class="text-white">Dashboard</span>
                 </a>
             </li>
+            {% endif %}
             <li>
                 <a href="{% url 'todos' %}" class="group">
                     <!-- Oportunidades -->
@@ -48,6 +50,7 @@
                 </a>
             </li>
             {% endif %}
+            {% if is_supervisor or user.is_superuser %}
             <li>
                 <a href="{% url 'reporte_ventas_por_cliente' %}" class="group">
                     <!-- Clientes -->
@@ -57,6 +60,7 @@
                     <span class="text-white">Clientes</span>
                 </a>
             </li>
+            {% endif %}
             {% if user.is_superuser %}
             <li>
                 <a href="/admin/" class="group">
@@ -68,6 +72,7 @@
                 </a>
             </li>
             {% endif %}
+            {% if is_supervisor or user.is_superuser %}
             <li>
                 <a href="{% url 'importar_oportunidades' %}" class="group">
                     <!-- Importar -->
@@ -77,6 +82,7 @@
                     <span class="text-white">Importar</span>
                 </a>
             </li>
+            {% endif %}
             <li>
                 <a href="{% url 'user_logout' %}" class="group">
                     <!-- Cerrar Sesión -->
