@@ -214,6 +214,7 @@ def _get_bitrix_mapped_data(opportunity_data, request=None):
         "OPPORTUNITY": opportunity_data.get('monto'),
         "CURRENCY_ID": "USD",
         "COMMENTS": opportunity_data.get('comentarios'),
+        "TAG": ["Nethive"],  # Etiqueta para identificar que se creó desde Nethive
     }
 
     # Asignar el usuario responsable de Bitrix si se proporciona
