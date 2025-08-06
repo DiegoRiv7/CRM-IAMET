@@ -209,11 +209,15 @@ def _get_bitrix_mapped_data(opportunity_data, request=None):
     bitrix_probabilidad_id = probabilidad_map.get(probabilidad_value)
     print(f"DEBUG Bitrix: Valor de probabilidad recibido: '{probabilidad_value}', Mapeado a ID: '{bitrix_probabilidad_id}'")
 
+    # Agregar indicador Nethive a los comentarios para mayor visibilidad
+    comentarios_originales = opportunity_data.get('comentarios', '')
+    comentarios_con_nethive = f"🌐 Creado desde Nethive\n\n{comentarios_originales}".strip()
+    
     fields = {
         "TITLE": opportunity_data.get('oportunidad'),
         "OPPORTUNITY": opportunity_data.get('monto'),
         "CURRENCY_ID": "USD",
-        "COMMENTS": opportunity_data.get('comentarios'),
+        "COMMENTS": comentarios_con_nethive,
         "TAG": ["Nethive"],  # Etiqueta para identificar que se creó desde Nethive
     }
 
