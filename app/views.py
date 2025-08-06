@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.csrf import csrf_exempt
 from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto
 from . import views_exportar
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm
@@ -1207,6 +1208,7 @@ def bitrix_cotizador_redirect(request):
 
 
 @login_required
+@csrf_exempt
 def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
     cliente_seleccionado = None
     oportunidad_seleccionada = None
@@ -1249,10 +1251,22 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
         print("DEBUG: crear_cotizacion_view - No hay cliente seleccionado.")
 
     if request.method == 'POST':
-        # Instantiate the form with POST data, and provide the user-specific queryset for the cliente field
-        form = CotizacionForm(request.POST, user=request.user)
+        try:
+            print(f"DEBUG: Procesando POST request para crear cotización")
+            print(f"DEBUG: Usuario: {request.user}")
+            print(f"DEBUG: POST data keys: {list(request.POST.keys())}")
+            
+            # Instantiate the form with POST data, and provide the user-specific queryset for the cliente field
+            form = CotizacionForm(request.POST, user=request.user)
+            print(f"DEBUG: Formulario creado exitosamente")
+        except Exception as e:
+            print(f"ERROR: Error general en POST request: {e}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Error al procesar solicitud: {str(e)}'}]}}, status=500)
 
         if form.is_valid():
+            print(f"DEBUG: Formulario es válido")
             cotizacion = form.save(commit=False)
             cotizacion.created_by = request.user  # Asignar el usuario creador
             cotizacion.save()
@@ -1315,7 +1329,7 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                 try:
                     DetalleCotizacion.objects.create(
                         cotizacion=cotizacion,
-                        nombre_producto=item_data.get('nombre', ''),
+                        nombre_producto=item_data.get('nombre_producto', ''),
                         descripcion=item_data.get('descripcion', ''),
                         cantidad=int(item_data.get('cantidad', 1)),
                         precio_unitario=Decimal(item_data.get('precio', '0.00')),
@@ -1323,7 +1337,7 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                         marca=item_data.get('marca', ''),
                         no_parte=item_data.get('no_parte', '')
                     )
-                    print(f"DEBUG: Product detail created: {item_data.get('nombre')}")
+                    print(f"DEBUG: Product detail created: {item_data.get('nombre_producto')}")
                 except (ValueError, TypeError) as e:
                     cotizacion.delete()
                     return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Invalid product data in row. Error: {e}'}]}}, status=400)
@@ -1417,7 +1431,9 @@ def editar_cotizacion_view(request, cotizacion_id):
     cotizacion_original = get_object_or_404(Cotizacion, pk=cotizacion_id)
     detalles_originales = DetalleCotizacion.objects.filter(cotizacion=cotizacion_original)
 
+    # Formatear detalles para el JavaScript del template
     detalles_list = [{
+        'nombre_producto': d.nombre_producto,
         'marca': d.marca,
         'no_parte': d.no_parte,
         'descripcion': d.descripcion,
@@ -1426,6 +1442,7 @@ def editar_cotizacion_view(request, cotizacion_id):
         'descuento': str(d.descuento_porcentaje),
     } for d in detalles_originales]
 
+    # Obtener todos los clientes para el dropdown
     if is_supervisor(request.user):
         clientes_django = Cliente.objects.all().order_by('nombre_empresa')
     else:
@@ -1438,16 +1455,49 @@ def editar_cotizacion_view(request, cotizacion_id):
             'name': c.nombre_empresa,
         })
 
-    # Define the URL where the form should be submitted (always the creation URL)
-    form_action_url = reverse('crear_cotizacion_with_id', args=[cotizacion_original.cliente.id])
+    # Obtener oportunidades del cliente para el dropdown
+    oportunidades_data_json = []
+    if cotizacion_original.cliente:
+        if is_supervisor(request.user):
+            oportunidades = TodoItem.objects.filter(cliente=cotizacion_original.cliente).order_by('-fecha_creacion')
+        else:
+            oportunidades = TodoItem.objects.filter(cliente=cotizacion_original.cliente, usuario=request.user).order_by('-fecha_creacion')
+        
+        for o in oportunidades:
+            oportunidades_data_json.append({
+                'id': str(o.id),
+                'title': o.oportunidad,
+                'monto': str(o.monto),
+            })
+
+    # URL del formulario apunta siempre a crear_cotizacion estándar para reutilizar la lógica
+    form_action_url = reverse('crear_cotizacion')
+
+    # Datos iniciales para el formulario
+    initial_data = {
+        'titulo': cotizacion_original.titulo,
+        'cliente': cotizacion_original.cliente.id,
+        'oportunidad': cotizacion_original.oportunidad.id if cotizacion_original.oportunidad else None,
+        'descripcion': cotizacion_original.descripcion,
+        'nombre_cotizacion': cotizacion_original.nombre_cotizacion,
+        'iva_rate': cotizacion_original.iva_rate,
+        'moneda': cotizacion_original.moneda,
+        'tipo_cotizacion': cotizacion_original.tipo_cotizacion,
+        'descuento_visible': cotizacion_original.descuento_visible,
+    }
 
     context = {
-        'form': CotizacionForm(instance=cotizacion_original, user=request.user),
+        'form': CotizacionForm(initial=initial_data, user=request.user),
         'cliente_seleccionado': cotizacion_original.cliente,
         'clientes_data_json': json.dumps(clientes_data_json),
+        'oportunidades_data_json': json.dumps(oportunidades_data_json),
         'cliente_id_inicial': cotizacion_original.cliente.id,
-        'detalles_cotizacion': detalles_list,
-        'form_action_url': form_action_url,  # Pass the correct action URL
+        'oportunidad_id_inicial': cotizacion_original.oportunidad.id if cotizacion_original.oportunidad else None,
+        'detalles_cotizacion': json.dumps(detalles_list),  # Convertir a JSON para el template
+        'form_action_url': form_action_url,
+        'editing_mode': True,  # Indicador para el template
+        'cotizacion_original': cotizacion_original,  # Datos de la cotización original
+        'probabilidad_choices_list': [i for i in range(0, 101, 10)],
     }
 
     return render(request, 'crear_cotizacion.html', context)

@@ -192,10 +192,9 @@
     }
 </style>
     <div class="max-w-full w-full space-y-8">
-        <h1 class="text-3xl font-bold text-white text-center" style="font-size: clamp(2rem, 4vw, 2.5rem);">Crear Cotización</h1>
+        <h1 class="text-3xl font-bold text-white text-center" style="font-size: clamp(2rem, 4vw, 2.5rem);">{% if editing_mode %}Editar Cotización{% else %}Crear Cotización{% endif %}</h1>
 
-                <form id="cotizacion-form" method="post" action="{% if cliente_id_inicial %}{% url 'crear_cotizacion_with_id' cliente_id_inicial %}{% else %}{% url 'crear_cotizacion' %}{% endif %}">
-            {% csrf_token %}
+                <form id="cotizacion-form" method="post" action="{% if form_action_url %}{{ form_action_url }}{% elif cliente_id_inicial %}{% url 'crear_cotizacion_with_id' cliente_id_inicial %}{% else %}{% url 'crear_cotizacion' %}{% endif %}">
             <div class="card p-6 mb-8 shadow-md-dark">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -330,7 +329,7 @@
 
             <div class="flex justify-end space-x-4 mt-8">
                 <button type="button" class="btn-secondary" onclick="window.history.back()">Regresar</button>
-                <button type="submit" class="btn-primary">Crear Cotización</button>
+                <button type="submit" class="btn-primary">{% if editing_mode %}Crear Nueva Cotización{% else %}Crear Cotización{% endif %}</button>
             </div>
         </form>
     </div>
@@ -447,6 +446,7 @@
         // Parse the clients data passed from Django
         const clientesData = JSON.parse('{{ clientes_data_json|escapejs }}');
         const clienteIdInicial = '{{ cliente_id_inicial|default:"" }}'; // Get initial client ID if provided
+        const oportunidadIdInicial = '{{ oportunidad_id_inicial|default:"" }}'; // Get initial opportunity ID if provided
 
         function toggleDiscountColumn() {
             const isVisible = document.getElementById('descuento_visible').value === 'true';
@@ -475,7 +475,7 @@
         }
 
         // Function to add a new product row to the main table
-        function addRow(marca = '', noParte = '', description = '', quantity = 1, price = 0, discount = 0) {
+        function addRow(marca = '', noParte = '', description = '', quantity = 1, price = 0, discount = 0, nombre_producto = '') {
             const tbody = document.getElementById('productos-tbody');
             const newRowNumber = tbody.rows.length + 1;
             const rowId = `row-${newRowNumber}`;
@@ -487,6 +487,7 @@
                 <td style="display: none;"><input type="text" id="marca_${newRowNumber}" name="productos[${newRowNumber}][marca]" class="input-field" placeholder="Marca" value="${marca}"></td>
                 <td><input type="text" id="no_parte_${newRowNumber}" name="productos[${newRowNumber}][no_parte]" class="input-field" placeholder="No. Parte" value="${noParte}"></td>
                 <td><textarea id="descripcion_producto_${newRowNumber}" name="productos[${newRowNumber}][descripcion]" class="textarea-field" placeholder="Descripción detallada del producto" oninput="calculateTotals()">${description}</textarea></td>
+                <input type="hidden" id="nombre_producto_${newRowNumber}" name="productos[${newRowNumber}][nombre_producto]" value="${nombre_producto}">
                 <td><input type="number" id="cantidad_${newRowNumber}" name="productos[${newRowNumber}][cantidad]" class="input-field" value="${quantity}" min="1" oninput="calculateTotals()"></td>
                 <td><input type="number" id="precio_${newRowNumber}" name="productos[${newRowNumber}][precio]" class="input-field" value="${price}" min="0" step="0.01" oninput="calculateTotals()"></td>
                 <td class="descuento-cell"><input type="number" id="descuento_${newRowNumber}" name="productos[${newRowNumber}][descuento]" class="input-field" style="width:60px; min-width:40px; font-size:0.9rem; padding:0.3rem 0.4rem; text-align:center;" value="${discount}" min="0" max="100" oninput="calculateTotals()"></td>
@@ -671,6 +672,10 @@
                     option.textContent = oportunidad.nombre;
                     oportunidadSelect.appendChild(option);
                 });
+
+                if (oportunidadIdInicial) {
+                    oportunidadSelect.value = oportunidadIdInicial;
+                }
             } catch (error) {
                 console.error('Error fetching opportunities:', error);
                 // Optionally, display an error message to the user
@@ -789,10 +794,30 @@
 
             {% if detalles_cotizacion %}
             const detalles_existentes = {{ detalles_cotizacion|safe }};
-            if (detalles_existentes) {
+            if (detalles_existentes && detalles_existentes.length > 0) {
                 detalles_existentes.forEach(d => {
-                    addRow(d.marca, d.no_parte, d.descripcion, d.cantidad, d.precio, d.descuento);
+                    addRow(d.marca, d.no_parte, d.descripcion, d.cantidad, d.precio, d.descuento, d.nombre_producto);
                 });
+                // Recalcular totales después de cargar todos los productos
+                calculateTotals();
+            }
+            {% endif %}
+
+            {% if editing_mode and cotizacion_original %}
+            // Inicializar campos del formulario con valores de la cotización original
+            document.getElementById('iva-rate').value = '{{ cotizacion_original.iva_rate }}';
+            document.getElementById('currency-select').value = '{{ cotizacion_original.moneda }}';
+            document.getElementById('tipo-cotizacion-select').value = '{{ cotizacion_original.tipo_cotizacion }}';
+            document.getElementById('descuento_visible').value = '{{ cotizacion_original.descuento_visible|yesno:"true,false" }}';
+            
+            // Actualizar visibilidad de la columna de descuento
+            const isDiscountVisible = '{{ cotizacion_original.descuento_visible|yesno:"true,false" }}' === 'true';
+            if (!isDiscountVisible) {
+                document.getElementById('descuento-header').style.display = 'none';
+                document.querySelectorAll('.descuento-cell').forEach(cell => {
+                    cell.style.display = 'none';
+                });
+                document.getElementById('show-discount-btn').style.display = 'inline-block';
             }
             {% endif %}
 
@@ -841,12 +866,10 @@
 
                 try {
                     console.log('Enviando solicitud fetch a:', cotizacionForm.action);
+                    
                     const response = await fetch(cotizacionForm.action, {
                         method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                        }
+                        body: formData
                     });
 
                     console.log('Respuesta del servidor recibida. Status:', response.status);
