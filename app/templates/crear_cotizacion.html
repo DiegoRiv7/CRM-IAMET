@@ -267,7 +267,7 @@
                         <thead>
                             <tr>
                                 <th class="w-1/12">Partida</th>
-                                <th class="w-1/8">Marca</th>
+                                <th class="w-1/8" style="display: none;">Marca</th>
                                 <th class="w-1/8">No. Parte</th>
                                 <th class="w-1/4">Descripción</th>
                                 <th class="w-1/12">Cantidad</th>
@@ -484,7 +484,7 @@
             newRow.id = rowId;
             newRow.innerHTML = `
                 <td>${rowCounter}</td>
-                <td><input type="text" id="marca_${rowCounter}" name="productos[${rowCounter}][marca]" class="input-field" placeholder="Marca" value="${marca}"></td>
+                <td style="display: none;"><input type="text" id="marca_${rowCounter}" name="productos[${rowCounter}][marca]" class="input-field" placeholder="Marca" value="${marca}"></td>
                 <td><input type="text" id="no_parte_${rowCounter}" name="productos[${rowCounter}][no_parte]" class="input-field" placeholder="No. Parte" value="${noParte}"></td>
                 <td><textarea id="descripcion_producto_${rowCounter}" name="productos[${rowCounter}][descripcion]" class="textarea-field" placeholder="Descripción detallada del producto" oninput="calculateTotals()">${description}</textarea></td>
                 <td><input type="number" id="cantidad_${rowCounter}" name="productos[${rowCounter}][cantidad]" class="input-field" value="${quantity}" min="1" oninput="calculateTotals()"></td>
@@ -511,8 +511,16 @@
             const row = document.getElementById(id);
             if (row) {
                 row.remove();
+                updateRowNumbers();
                 calculateTotals(); // Recalculate totals when removing a row
             }
+        }
+
+        function updateRowNumbers() {
+            const rows = document.querySelectorAll('#productos-tbody tr');
+            rows.forEach((row, index) => {
+                row.cells[0].textContent = index + 1;
+            });
         }
 
         // Function to calculate totals (subtotal, IVA, total)
@@ -588,11 +596,11 @@
                 // Expected order: Marca, No. Parte, Cantidad, Descripcion, Precio Lista, Desc, Unitario, Total
                 const marca = columns[0] || '';
                 const noParte = columns[1] || '';
-                const quantity = parseFloat(columns[2]) || 1;
+                const quantity = parseFloat((columns[2] || '1').replace(/,/g, '')) || 1;
                 const description = columns[3] || '';
                 // Precio Lista (columns[4]) is ignored
-                const discount = parseFloat(columns[5]) || 0;
-                const price = parseFloat(columns[6]) || 0;
+                const discount = parseFloat((columns[5] || '0').replace(/,/g, '')) || 0;
+                const price = parseFloat((columns[6] || '0').replace(/,/g, '')) || 0;
 
                 console.log(`DEBUG JS: Parsed data for row ${index}: Marca=${marca}, No. Parte=${noParte}, Quantity=${quantity}, Description=${description}, Price=${price}, Discount=${discount}`);
 
