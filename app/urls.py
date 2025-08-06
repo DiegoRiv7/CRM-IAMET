@@ -60,6 +60,7 @@ urlpatterns = [
     path('bitrix-cotizador-redirect/', views.bitrix_cotizador_redirect, name='bitrix_cotizador_redirect'),
     path('cliente/<int:cliente_id>/crear-cotizacion/', views.crear_cotizacion_view, name='crear_cotizacion_with_id'),
     path('crear-cotizacion/', views.crear_cotizacion_view, name='crear_cotizacion'),
+    path('crear-cotizacion/oportunidad/<int:oportunidad_id>/', views.crear_cotizacion_view, name='crear_cotizacion_with_opportunity'),
 
     # NUEVA RUTA: Para generar el PDF de una cotización específica
     # Esta es la ruta clave que faltaba para que el PDF se descargue.
@@ -96,11 +97,10 @@ urlpatterns = [
     path('api/bitrix-companies/', get_bitrix_companies_api, name='bitrix_companies_api'),
     path('api/get-oportunidades-por-cliente/', views.get_oportunidades_por_cliente, name='get_oportunidades_por_cliente'),
     path('api/bitrix-contacts/', views.get_bitrix_contacts_api, name='bitrix_contacts_api'),
+    path('api/crear-oportunidad/', views.crear_oportunidad_api, name='crear_oportunidad_api'),
  
    # path("", RedirectView.as_view(url='/dashboard/', permanent=False), name='root_redirect'),
     # Ruta temporal para depuración del enlace de Bitrix
     path('bitrix-temp-link/', TemplateView.as_view(template_name='bitrix_temp_link.html'), name='bitrix_temp_link'),
     path('api/crear-cliente/', views.crear_cliente_api, name='crear_cliente_api'),
-    path('test-widget/', views.test_widget_view, name='test_widget_view'),
-    path('bitrix-custom-widget/', views.bitrix_custom_widget_view, name='bitrix_custom_widget_view'),
 ]

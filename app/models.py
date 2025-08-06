@@ -73,6 +73,7 @@ class TodoItem(models.Model):
         ('RUNRATE', 'RUNRATE'),
         ('PÓLIZA', 'PÓLIZA'),
         ('CISCO', 'CISCO'),
+        ('SERVICIO', 'Servicio'),
     ]
 
     # Opciones para el campo 'mes_cierre'

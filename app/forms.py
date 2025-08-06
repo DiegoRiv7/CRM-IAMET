@@ -8,7 +8,13 @@ from .models import UserProfile # Import UserProfile
 class ClienteForm(forms.ModelForm):
     class Meta:
         model = Cliente
-        fields = ['nombre_empresa', 'contacto_principal', 'telefono', 'email', 'direccion']
+        fields = ['nombre_empresa', 'contacto_principal', 'email']
+
+
+class OportunidadModalForm(forms.ModelForm):
+    class Meta:
+        model = TodoItem
+        fields = ['area', 'producto', 'probabilidad_cierre', 'mes_cierre', 'monto']
 
 
 class VentaForm(forms.ModelForm):
