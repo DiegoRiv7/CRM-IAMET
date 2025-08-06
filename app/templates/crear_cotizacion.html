@@ -271,7 +271,7 @@
                                 <th class="w-1/8">No. Parte</th>
                                 <th class="w-1/4">Descripción</th>
                                 <th class="w-1/12">Cantidad</th>
-                                <th class="w-1/8">Precio Lista</th>
+                                <th class="w-1/8">Precio Unitario</th>
                                 <th class="w-1/12" id="descuento-header">
                                     Desc. Unitario (%)
                                     <button type="button" onclick="toggleDiscountColumn()" class="text-red-400 hover:text-red-600 font-bold ml-2" title="Ocultar columna de descuento">&times;</button>
@@ -476,21 +476,21 @@
 
         // Function to add a new product row to the main table
         function addRow(marca = '', noParte = '', description = '', quantity = 1, price = 0, discount = 0) {
-            rowCounter++;
-            const rowId = `row-${rowCounter}`;
             const tbody = document.getElementById('productos-tbody');
+            const newRowNumber = tbody.rows.length + 1;
+            const rowId = `row-${newRowNumber}`;
 
             const newRow = document.createElement('tr');
             newRow.id = rowId;
             newRow.innerHTML = `
-                <td>${rowCounter}</td>
-                <td style="display: none;"><input type="text" id="marca_${rowCounter}" name="productos[${rowCounter}][marca]" class="input-field" placeholder="Marca" value="${marca}"></td>
-                <td><input type="text" id="no_parte_${rowCounter}" name="productos[${rowCounter}][no_parte]" class="input-field" placeholder="No. Parte" value="${noParte}"></td>
-                <td><textarea id="descripcion_producto_${rowCounter}" name="productos[${rowCounter}][descripcion]" class="textarea-field" placeholder="Descripción detallada del producto" oninput="calculateTotals()">${description}</textarea></td>
-                <td><input type="number" id="cantidad_${rowCounter}" name="productos[${rowCounter}][cantidad]" class="input-field" value="${quantity}" min="1" oninput="calculateTotals()"></td>
-                <td><input type="number" id="precio_${rowCounter}" name="productos[${rowCounter}][precio]" class="input-field" value="${price}" min="0" step="0.01" oninput="calculateTotals()"></td>
-                <td class="descuento-cell"><input type="number" id="descuento_${rowCounter}" name="productos[${rowCounter}][descuento]" class="input-field" style="width:60px; min-width:40px; font-size:0.9rem; padding:0.3rem 0.4rem; text-align:center;" value="${discount}" min="0" max="100" oninput="calculateTotals()"></td>
-                <td><input type="text" id="total_producto_${rowCounter}" class="input-field bg-gray-800" style="font-size:1.2rem; font-weight:600; width:130px; min-width:100px; text-align:right;" value="0.00" readonly></td>
+                <td>${newRowNumber}</td>
+                <td style="display: none;"><input type="text" id="marca_${newRowNumber}" name="productos[${newRowNumber}][marca]" class="input-field" placeholder="Marca" value="${marca}"></td>
+                <td><input type="text" id="no_parte_${newRowNumber}" name="productos[${newRowNumber}][no_parte]" class="input-field" placeholder="No. Parte" value="${noParte}"></td>
+                <td><textarea id="descripcion_producto_${newRowNumber}" name="productos[${newRowNumber}][descripcion]" class="textarea-field" placeholder="Descripción detallada del producto" oninput="calculateTotals()">${description}</textarea></td>
+                <td><input type="number" id="cantidad_${newRowNumber}" name="productos[${newRowNumber}][cantidad]" class="input-field" value="${quantity}" min="1" oninput="calculateTotals()"></td>
+                <td><input type="number" id="precio_${newRowNumber}" name="productos[${newRowNumber}][precio]" class="input-field" value="${price}" min="0" step="0.01" oninput="calculateTotals()"></td>
+                <td class="descuento-cell"><input type="number" id="descuento_${newRowNumber}" name="productos[${newRowNumber}][descuento]" class="input-field" style="width:60px; min-width:40px; font-size:0.9rem; padding:0.3rem 0.4rem; text-align:center;" value="${discount}" min="0" max="100" oninput="calculateTotals()"></td>
+                <td><input type="text" id="total_producto_${newRowNumber}" class="input-field bg-gray-800" style="font-size:1.2rem; font-weight:600; width:130px; min-width:100px; text-align:right;" value="0.00" readonly></td>
                 <td class="text-center">
                     <button type="button" onclick="removeRow('${rowId}')" class="text-red-400 hover:text-red-600 text-xl font-bold leading-none">&times;</button>
                 </td>

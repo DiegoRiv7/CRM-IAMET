@@ -1943,7 +1943,7 @@ def crear_oportunidad_api(request):
                     'mes_cierre': oportunidad.mes_cierre,
                     'probabilidad_cierre': oportunidad.probabilidad_cierre,
                     'comentarios': oportunidad.comentarios,
-                    'bitrix_stage_id': oportunidad.bitrix_stage_id,
+                    'bitrix_stage_id': 'UC_YUQKW6', # Etapa de Cotizando
                     'bitrix_contact_id': oportunidad.contacto.bitrix_contact_id if oportunidad.contacto else None,
                 }
                 bitrix_assigned_by_id = None
