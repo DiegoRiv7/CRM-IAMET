@@ -8,7 +8,7 @@ from django.http import JsonResponse
 
 BITRIX_WEBHOOK_URL = os.getenv("BITRIX_WEBHOOK_URL")
 
-def get_or_create_bitrix_company(company_name, request=None):
+def get_or_create_bitrix_company(company_name, email=None, contact_name=None, request=None):
     normalized_company_name = company_name.strip().upper() # Normalizar el nombre
 
     if not BITRIX_WEBHOOK_URL:
@@ -38,13 +38,45 @@ def get_or_create_bitrix_company(company_name, request=None):
 
     # 2. Si no se encuentra, crear la compañía con el nombre normalizado
     try:
-        add_response = requests.post(add_url, json={'fields': {'TITLE': normalized_company_name}})
+        company_fields = {'TITLE': normalized_company_name}
+        if email:
+            company_fields['EMAIL'] = [{'VALUE': email, 'VALUE_TYPE': 'WORK'}]
+        add_response = requests.post(add_url, json={'fields': company_fields})
         add_response.raise_for_status()
         new_company_id = add_response.json().get('result')
         print(f"DEBUG Bitrix: Compañía '{normalized_company_name}' creada con ID: {new_company_id}")
+
+        if new_company_id and contact_name:
+            create_bitrix_contact(new_company_id, contact_name, email, request=request)
+
         return new_company_id
     except requests.exceptions.RequestException as e:
         print(f"Error al crear compañía en Bitrix24: {e}")
+        return None
+
+def create_bitrix_contact(company_id, contact_name, email, request=None):
+    if not BITRIX_WEBHOOK_URL:
+        if request:
+            messages.error(request, "Error: La URL del webhook de Bitrix24 no está configurada.")
+        print("Error: La URL del webhook de Bitrix24 no está configurada.")
+        return None
+
+    add_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "crm.contact.add.json")
+
+    contact_fields = {
+        'NAME': contact_name,
+        'COMPANY_ID': company_id,
+        'EMAIL': [{'VALUE': email, 'VALUE_TYPE': 'WORK'}]
+    }
+
+    try:
+        response = requests.post(add_url, json={'fields': contact_fields})
+        response.raise_for_status()
+        new_contact_id = response.json().get('result')
+        print(f"DEBUG Bitrix: Contacto '{contact_name}' creado con ID: {new_contact_id}")
+        return new_contact_id
+    except requests.exceptions.RequestException as e:
+        print(f"Error al crear contacto en Bitrix24: {e}")
         return None
 
 def get_bitrix_users(request=None):

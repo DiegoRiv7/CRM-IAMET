@@ -1831,7 +1831,9 @@ def crear_cliente_api(request):
         if form.is_valid():
             # Create the company in Bitrix24 first
             company_name = form.cleaned_data['nombre_empresa']
-            bitrix_company_id = get_or_create_bitrix_company(company_name, request=request)
+            contact_name = form.cleaned_data['contacto_principal']
+            email = form.cleaned_data['email']
+            bitrix_company_id = get_or_create_bitrix_company(company_name, email, contact_name, request=request)
 
             if bitrix_company_id:
                 # Check if a client with this bitrix_company_id already exists
