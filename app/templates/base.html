@@ -3306,6 +3306,102 @@ RESPONDE SOLO ESTE JSON (sin ```json ni texto extra):
                 };
             }
         }
+
+        // Función para ejecutar sincronización de Bitrix
+        async function executeBitrixSync() {
+            // Mostrar modal de carga
+            const syncModal = document.createElement('div');
+            syncModal.id = 'bitrix-sync-modal';
+            syncModal.innerHTML = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div class="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4">
+                        <div class="text-center">
+                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                            <h3 class="text-lg font-bold text-white mb-2">Sincronizando con Bitrix24</h3>
+                            <p class="text-gray-300 text-sm" id="sync-status">Iniciando sincronización...</p>
+                            <div class="mt-4 space-y-2" id="sync-progress">
+                                <div class="text-xs text-gray-400">⏳ Usuarios de Bitrix</div>
+                                <div class="text-xs text-gray-400">⏳ Empresas/Clientes</div>
+                                <div class="text-xs text-gray-400">⏳ Contactos</div>
+                                <div class="text-xs text-gray-400">⏳ Oportunidades</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(syncModal);
+
+            try {
+                const response = await fetch('/app/api/sync-bitrix-manual/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                    }
+                });
+
+                const data = await response.json();
+                
+                // Actualizar modal con resultados
+                if (data.success) {
+                    syncModal.innerHTML = `
+                        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                            <div class="bg-slate-800 rounded-lg p-6 max-w-lg w-full mx-4 max-h-96 overflow-y-auto">
+                                <div class="text-center mb-4">
+                                    <div class="text-green-500 text-4xl mb-2">✅</div>
+                                    <h3 class="text-lg font-bold text-white">Sincronización Completada</h3>
+                                    <p class="text-green-300 text-sm">${data.message}</p>
+                                </div>
+                                
+                                <div class="bg-slate-700 rounded-lg p-4 mb-4">
+                                    <h4 class="text-white font-semibold mb-2">📊 Estadísticas:</h4>
+                                    <div class="grid grid-cols-2 gap-2 text-sm">
+                                        <div class="text-gray-300">Usuarios: <span class="text-white">${data.stats.usuarios}</span></div>
+                                        <div class="text-gray-300">Profiles Bitrix: <span class="text-white">${data.stats.profiles_bitrix}</span></div>
+                                        <div class="text-gray-300">Clientes: <span class="text-white">${data.stats.clientes}</span></div>
+                                        <div class="text-gray-300">Oportunidades: <span class="text-white">${data.stats.oportunidades}</span></div>
+                                    </div>
+                                </div>
+
+                                <button onclick="closeBitrixSyncModal()" 
+                                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
+                                    Cerrar
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    syncModal.innerHTML = `
+                        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                            <div class="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4">
+                                <div class="text-center">
+                                    <div class="text-red-500 text-4xl mb-2">❌</div>
+                                    <h3 class="text-lg font-bold text-white mb-2">Error en Sincronización</h3>
+                                    <p class="text-red-300 text-sm mb-4">${data.error}</p>
+                                    <button onclick="closeBitrixSyncModal()" 
+                                            class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded">
+                                        Cerrar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('Error en sincronización:', error);
+            }
+        }
+
+        function closeBitrixSyncModal() {
+            const modal = document.getElementById('bitrix-sync-modal');
+            if (modal) {
+                modal.remove();
+                // Recargar la página para ver los datos actualizados
+                window.location.reload();
+            }
+        }
         
 
     </script>

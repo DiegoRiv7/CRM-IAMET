@@ -59,6 +59,14 @@
                     <span>Usuarios</span>
                 </a>
             </li>
+            <li>
+                <a href="#" class="menu-item" id="sync-bitrix-btn">
+                    <svg class="menu-icon" viewBox="0 0 24 24">
+                        <path d="M23 4v6h-6M1 20v-6h6"></path><path d="m3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                    <span>Sincronizar Bitrix</span>
+                </a>
+            </li>
             {% endif %}
             {% if is_supervisor or user.is_superuser %}
             <li>
@@ -383,6 +391,18 @@
                     window.showNethiveAssistant();
                 }
                 // Close the floating menu after clicking assistant
+                floatingMenuNav.classList.remove('menu-open');
+                menuToggleButton.classList.remove('menu-open');
+            });
+        }
+
+        // Add event listener for Bitrix sync button
+        const syncBitrixBtn = document.getElementById('sync-bitrix-btn');
+        if (syncBitrixBtn) {
+            syncBitrixBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                executeBitrixSync();
+                // Close the floating menu
                 floatingMenuNav.classList.remove('menu-open');
                 menuToggleButton.classList.remove('menu-open');
             });

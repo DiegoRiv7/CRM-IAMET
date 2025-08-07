@@ -2595,3 +2595,95 @@ def trigger_immediate_opportunity_notification(opportunity, request):
         
     except Exception as e:
         print(f"ERROR: No se pudo configurar notificación de oportunidad: {e}")
+
+
+@login_required
+def sync_bitrix_manual(request):
+    """
+    Vista para que los supervisores ejecuten sincronización manual con Bitrix
+    """
+    # Verificar que el usuario sea supervisor
+    if not is_supervisor(request.user):
+        return JsonResponse({
+            'success': False,
+            'error': 'Solo los supervisores pueden ejecutar sincronización'
+        })
+    
+    if request.method != 'POST':
+        return JsonResponse({
+            'success': False,
+            'error': 'Método no permitido'
+        })
+    
+    try:
+        from django.core.management import call_command
+        import io
+        import sys
+        from contextlib import redirect_stdout, redirect_stderr
+        
+        # Capturar la salida de los comandos
+        stdout_buffer = io.StringIO()
+        stderr_buffer = io.StringIO()
+        
+        results = {
+            'success': [],
+            'errors': [],
+            'output': []
+        }
+        
+        sync_commands = [
+            ('sync_bitrix_users', 'Usuarios de Bitrix'),
+            ('sync_bitrix', 'Empresas/Clientes'),
+            ('sync_bitrix_contacts', 'Contactos'),
+            ('import_bitrix_opportunities', 'Oportunidades')
+        ]
+        
+        for command, description in sync_commands:
+            try:
+                stdout_buffer.seek(0)
+                stdout_buffer.truncate(0)
+                stderr_buffer.seek(0) 
+                stderr_buffer.truncate(0)
+                
+                with redirect_stdout(stdout_buffer), redirect_stderr(stderr_buffer):
+                    call_command(command)
+                
+                output = stdout_buffer.getvalue()
+                results['success'].append({
+                    'command': command,
+                    'description': description,
+                    'output': output[:500]  # Limitar output
+                })
+                
+            except Exception as e:
+                error_output = stderr_buffer.getvalue()
+                results['errors'].append({
+                    'command': command,
+                    'description': description,
+                    'error': str(e),
+                    'output': error_output[:500]
+                })
+        
+        # Estadísticas finales
+        from app.models import Cliente, TodoItem, UserProfile
+        from django.contrib.auth.models import User
+        
+        stats = {
+            'usuarios': User.objects.count(),
+            'profiles_bitrix': UserProfile.objects.filter(bitrix_user_id__isnull=False).count(),
+            'clientes': Cliente.objects.count(),
+            'oportunidades': TodoItem.objects.count()
+        }
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Sincronización completada: {len(results["success"])} exitosos, {len(results["errors"])} errores',
+            'results': results,
+            'stats': stats
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error general en sincronización: {str(e)}'
+        })
