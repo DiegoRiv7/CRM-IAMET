@@ -80,16 +80,6 @@
                 </a>
             </li>
             {% endif %}
-            {% if is_supervisor or user.is_superuser %}
-            <li>
-                <a href="{% url 'importar_oportunidades' %}" class="menu-item">
-                    <svg class="menu-icon" viewBox="0 0 24 24">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    <span>Importar</span>
-                </a>
-            </li>
-            {% endif %}
             <li>
                 <a href="{% url 'user_logout' %}" class="menu-item">
                     <svg class="menu-icon" viewBox="0 0 24 24">
