@@ -207,7 +207,7 @@
             const hour = new Date().getHours();
             const { visitCount, userName, lastVisit } = nethivePersonality;
             
-            let greeting = '';
+            let personalizedGreeting = '';
             let timeGreeting = '';
             
             if (hour < 12) timeGreeting = '¡Buenos días!';
@@ -215,14 +215,14 @@
             else timeGreeting = '¡Buenas noches!';
 
             if (visitCount === 1) {
-                greeting = `${timeGreeting} ¡Soy Nethive y es un placer conocerte! 😊`;
+                personalizedGreeting = `${timeGreeting} ¡Es un placer conocerte! 😊`;
             } else if (visitCount < 5) {
-                greeting = `${timeGreeting} ¡Qué alegría verte de nuevo! Esta es tu visita #${visitCount} ✨`;
+                personalizedGreeting = `${timeGreeting} ¡Qué alegría verte de nuevo! Esta es tu visita #${visitCount} ✨`;
             } else {
-                greeting = `${timeGreeting}${userName ? ` ${userName}` : ''}! Me encanta que sigas usando Nethive 💙`;
+                personalizedGreeting = `${timeGreeting}${userName ? ` ${userName}` : ''}! Me encanta que sigas usando Nethive 💙`;
             }
             
-            return greeting;
+            return `Hola soy Nethive, tu asistente virtual. ${personalizedGreeting}`;
         }
 
         function updateNethiveMood(mood) {
@@ -332,14 +332,10 @@
                                     <div>
                                         <div class="flex items-center space-x-2">
                                             <h2 class="text-3xl font-bold text-white tracking-wide">Nethive</h2>
-                                            <div class="flex space-x-1">
-                                                <div class="w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
-                                                <div class="w-2 h-2 bg-green-400 rounded-full animate-ping" style="animation-delay: 0.5s"></div>
-                                                <div class="w-2 h-2 bg-green-400 rounded-full animate-ping" style="animation-delay: 1s"></div>
-                                            </div>
+                                            
                                         </div>
                                         <p class="text-cyan-100 text-sm font-medium">Tu Asistente Virtual Inteligente</p>
-                                        <div id="nethive-status" class="text-xs text-cyan-200 opacity-80 mt-1">🔴 En línea • Listo para ayudar</div>
+                                        <div id="nethive-status" class="text-xs text-cyan-200 opacity-80 mt-1">En línea • Listo para ayudar</div>
                                     </div>
                                 </div>
                                 <button onclick="closeNethiveAssistant()" class="text-white/80 hover:text-white text-4xl font-bold transition-all duration-300 hover:rotate-90 hover:scale-110">&times;</button>
@@ -465,6 +461,34 @@
                 return {
                     welcome: "Estás viendo las **cotizaciones por cliente**. Aquí encuentras todo el historial de cotizaciones organizadas."
                 };
+            } else if (currentPath.includes('dashboard')) {
+                return {
+                    welcome: "Estás en el **Dashboard**. Aquí puedes ver un resumen de tus ventas y oportunidades."
+                };
+            } else if (currentPath.includes('reporte-usuarios')) {
+                return {
+                    welcome: "Estás en el **Reporte de Usuarios**. Aquí puedes ver el rendimiento de cada vendedor."
+                };
+            } else if (currentPath.includes('reporte-clientes')) {
+                return {
+                    welcome: "Estás en el **Reporte de Ventas por Cliente**. Aquí puedes analizar las ventas por cada cliente."
+                };
+            } else if (currentPath.includes('perfil-usuario')) {
+                return {
+                    welcome: "Estás viendo el **Perfil de Usuario**. Aquí puedes revisar el detalle de un vendedor específico."
+                };
+            } else if (currentPath.includes('ingresar-venta')) {
+                return {
+                    welcome: "Estás en la página para **Ingresar una Nueva Venta**. Te guiaré en el proceso."
+                };
+            } else if (currentPath.includes('editar-venta')) {
+                return {
+                    welcome: "Estás en la página para **Editar una Oportunidad de Venta**. Puedes actualizar los detalles aquí."
+                };
+            } else if (currentPath.includes('incrementa')) {
+                return {
+                    welcome: "Bienvenido a la sección **Incrementa**. Aquí podrás gestionar las cotizaciones de tu sistema anterior."
+                };
             } else {
                 return {
                     welcome: "Te ayudo a navegar y usar **Nethive** de manera eficiente. Esta es tu plataforma de gestión de ventas integrada con Bitrix24."
@@ -555,6 +579,102 @@
                         question: "¿Por qué algunos clientes aparecen sin cotizaciones?",
                         answer: "🤔 <strong>Clientes sin cotizaciones:</strong><br><br><strong>En la página principal de cotizaciones:</strong><br>• ✅ Solo aparecen clientes CON cotizaciones<br>• ❌ Los clientes sin cotizaciones NO aparecen<br>• 📊 Es normal y correcto<br><br><strong>Posibles razones si esperabas ver un cliente:</strong><br>• Son clientes nuevos sin cotizaciones aún<br>• Solo tienen oportunidades, pero no cotizaciones generadas<br>• Las cotizaciones fueron creadas antes del sistema actual<br>• Hay un error tipográfico en el nombre<br><br><strong>✅ Soluciones:</strong><br>• <strong>Cliente nuevo:</strong> Crea su primera cotización<br>• <strong>Verificar nombre:</strong> Busca variaciones del nombre<br>• <strong>Crear historial:</strong> Genera una cotización para empezar su registro<br><br><strong>🔄 Una vez que crees la primera cotización:</strong><br>• El cliente aparecerá en la lista principal<br>• Se mantendrá su historial completo<br>• Podrás acceder a todas sus cotizaciones futuras",
                         category: "Resolución de problemas"
+                    }
+                ];
+            } else if (currentPath.includes('dashboard')) {
+                questions = [
+                    {
+                        question: "¿Qué información puedo ver en el Dashboard?",
+                        answer: "📊 <strong>Información del Dashboard:</strong><br><br>• Resumen de ventas cerradas<br>• Oportunidades por mes<br>• Clientes top<br>• Productos más vendidos<br>• Alertas de meta mensual",
+                        category: "Dashboard"
+                    },
+                    {
+                        question: "¿Cómo se calculan las metas?",
+                        answer: "🎯 <strong>Cálculo de Metas:</strong><br><br>Las metas se basan en el rol del usuario (supervisor/vendedor) y se calculan en función de las oportunidades con probabilidad de cierre del 100%.",
+                        category: "Dashboard"
+                    }
+                ];
+            } else if (currentPath.includes('reporte-usuarios')) {
+                questions = [
+                    {
+                        question: "¿Qué puedo hacer en el Reporte de Usuarios?",
+                        answer: "👥 <strong>Reporte de Usuarios:</strong><br><br>• Ver el listado de todos los usuarios<br>• Acceder al perfil detallado de cada vendedor<br>• Analizar su rendimiento individual",
+                        category: "Reportes"
+                    },
+                    {
+                        question: "¿Cómo veo el perfil de un usuario?",
+                        answer: "👤 <strong>Ver Perfil de Usuario:</strong><br><br>Haz clic en el nombre de cualquier usuario en la tabla para ver su perfil detallado, incluyendo sus oportunidades y ventas.",
+                        category: "Navegación"
+                    }
+                ];
+            } else if (currentPath.includes('reporte-clientes')) {
+                questions = [
+                    {
+                        question: "¿Qué muestra el Reporte de Ventas por Cliente?",
+                        answer: "📈 <strong>Reporte de Ventas por Cliente:</strong><br><br>• Total de ventas cerradas por cada cliente<br>• Listado de clientes con sus montos totales<br>• Permite identificar a los clientes más valiosos",
+                        category: "Reportes"
+                    },
+                    {
+                        question: "¿Cómo se actualizan estos datos?",
+                        answer: "🔄 <strong>Actualización de Datos:</strong><br><br>Los datos se actualizan automáticamente a medida que se cierran las oportunidades y se registran las ventas en el sistema.",
+                        category: "Datos"
+                    }
+                ];
+            } else if (currentPath.includes('perfil-usuario')) {
+                questions = [
+                    {
+                        question: "¿Qué información encuentro en el Perfil de Usuario?",
+                        answer: "📋 <strong>Detalle del Perfil de Usuario:</strong><br><br>• Oportunidades asignadas al usuario<br>• Oportunidad más grande<br>• Monto total cobrado en el mes actual<br>• Oportunidades por cobrar<br>• Oportunidades creadas en el mes",
+                        category: "Perfiles"
+                    },
+                    {
+                        question: "¿Cómo se define la 'oportunidad más grande'?",
+                        answer: "💰 <strong>Oportunidad Más Grande:</strong><br><br>Es la oportunidad con el monto más alto que tiene una probabilidad de cierre entre 1% y 99% para ese usuario.",
+                        category: "Definiciones"
+                    }
+                ];
+            } else if (currentPath.includes('ingresar-venta')) {
+                questions = [
+                    {
+                        question: "¿Cómo ingreso una nueva venta?",
+                        answer: "📝 <strong>Ingresar Nueva Venta:</strong><br><br>• Completa todos los campos del formulario<br>• Selecciona el cliente o crea uno nuevo<br>• Ingresa los detalles de la oportunidad<br>• Guarda para sincronizar con Bitrix24",
+                        category: "Creación"
+                    },
+                    {
+                        question: "¿Qué campos son obligatorios?",
+                        answer: "⚠️ <strong>Campos Obligatorios:</strong><br><br>• Nombre de la oportunidad<br>• Monto<br>• Cliente<br>• Área<br>• Mes de cierre<br>• Probabilidad de cierre",
+                        category: "Formulario"
+                    }
+                ];
+            } else if (currentPath.includes('editar-venta')) {
+                questions = [
+                    {
+                        question: "¿Cómo edito una oportunidad existente?",
+                        answer: "✏️ <strong>Editar Oportunidad:</strong><br><br>• Modifica los campos que necesites actualizar<br>• Asegúrate de que la información sea correcta<br>• Guarda los cambios para que se sincronicen con Bitrix24",
+                        category: "Edición"
+                    },
+                    {
+                        question: "¿Puedo eliminar una oportunidad desde aquí?",
+                        answer: "🗑️ <strong>Eliminar Oportunidad:</strong><br><br>Sí, puedes eliminar una oportunidad desde esta página. Ten en cuenta que esta acción es permanente.",
+                        category: "Gestión"
+                    }
+                ];
+            } else if (currentPath.includes('incrementa')) {
+                questions = [
+                    {
+                        question: "¿Qué es la sección Incrementa?",
+                        answer: "📦 <strong>Sección Incrementa:</strong><br><br>Esta sección está diseñada para gestionar y visualizar las cotizaciones importadas de tu sistema anterior, Incrementa. Actualmente, estamos preparando la integración con la API.",
+                        category: "Información General"
+                    },
+                    {
+                        question: "¿Cómo busco una cotización de Incrementa?",
+                        answer: "🔍 <strong>Buscar Cotizaciones:</strong><br><br>Usa el campo de búsqueda en la parte superior para filtrar las cotizaciones por su nombre. La búsqueda es en tiempo real.",
+                        category: "Búsqueda"
+                    },
+                    {
+                        question: "¿Puedo descargar los PDFs de Incrementa?",
+                        answer: "📄 <strong>Descargar PDFs:</strong><br><br>Sí, una vez que la integración esté completa, podrás descargar los PDFs de las cotizaciones de Incrementa directamente desde la tabla.",
+                        category: "Funcionalidad"
                     }
                 ];
             } else {
