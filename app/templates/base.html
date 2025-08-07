@@ -115,6 +115,36 @@
         .introjs-skipbutton:hover {
             background: rgba(75, 85, 99, 0.9) !important;
         }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes pulse-light {
+            0% { box-shadow: 0 0 8px rgba(255,255,255,0.7); }
+            50% { box-shadow: 0 0 15px rgba(255,255,255,1); }
+            100% { box-shadow: 0 0 8px rgba(255,255,255,0.7); }
+        }
+        .animate-pulse-light {
+            animation: pulse-light 2s infinite;
+        }
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 0.1; }
+            50% { opacity: 0.3; }
+        }
+        .animate-pulse-slow {
+            animation: pulse-slow 4s infinite ease-in-out;
+        }
+        @keyframes slide-in {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .animate-slide-in {
+            animation: slide-in 0.5s ease-out;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -223,7 +253,56 @@
         }
 
         // Nethive Virtual Assistant - Main function with 3D avatar
-        function showNethiveAssistant() {
+                  // Helper function to create the main Nethive 3D avatar
+          function createNethiveAvatar() {
+              const { currentMood, expressions } = nethivePersonality;
+              const expression = expressions[currentMood];
+
+              return `
+                  <div class="nethive-avatar-main relative w-24 h-24 md:w-32 md:h-32 flex items-center justify-center animate-float">
+                      <!-- Body -->
+                      <div class="nethive-body absolute w-full h-full rounded-full transition-all duration-500"
+                           style="background: linear-gradient(145deg, ${expression.color}20, ${expression.color}10);
+                                  box-shadow: inset 0 0 15px ${expression.color}40, 0 0 20px ${expression.color}30;">
+                      </div>
+                      <!-- Head (slightly above body) -->
+                      <div class="nethive-head absolute w-3/4 h-3/4 rounded-full bg-gray-700 border-2 border-gray-600 flex items-center justify-center transition-all duration-500"
+                           style="transform: translateY(-30%); background: radial-gradient(circle at 50% 50%, #374151, #1f2937);">
+                          <!-- Face -->
+                          <div class="nethive-face relative w-3/4 h-3/4 rounded-full border-2 border-gray-500 flex flex-col items-center justify-center transition-all duration-500"
+                               style="border-color: ${expression.color}; background: #111827;">
+                              <!-- Eyes -->
+                              <div class="nethive-eyes flex space-x-3">
+                                  <div class="nethive-eye w-4 h-4 bg-white rounded-full animate-pulse-light" style="box-shadow: 0 0 8px ${expression.color};"></div>
+                                  <div class="nethive-eye w-4 h-4 bg-white rounded-full animate-pulse-light" style="box-shadow: 0 0 8px ${expression.color};"></div>
+                              </div>
+                              <!-- Mouth -->
+                              <div class="nethive-mouth mt-2 text-white text-xl font-bold transition-all duration-500"
+                                   style="color: ${expression.color};">${expression.mouth}</div>
+                          </div>
+                      </div>
+                  </div>
+              `;
+          }
+
+          // Helper function to create a mini Nethive avatar for chat messages
+          function createMiniNethiveAvatar() {
+              const { currentMood, expressions } = nethivePersonality;
+              const expression = expressions[currentMood];
+
+              return `
+                  <div class="nethive-mini-avatar w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 relative overflow-hidden"
+                       style="background: linear-gradient(145deg, ${expression.color}40, ${expression.color}20);
+                              box-shadow: 0 0 10px ${expression.color}30;">
+                      <div class="absolute inset-0 bg-gray-800 opacity-70 rounded-full"></div>
+                      <div class="relative text-white text-lg font-bold" style="color: ${expression.color};">
+                          ${expression.eyes ? expression.eyes.substring(0,1) : 'N'}
+                      </div>
+                  </div>
+              `;
+          }
+
+           function showNethiveAssistant() {
             initNethiveMemory();
             updateNethiveMood('excited');
             
