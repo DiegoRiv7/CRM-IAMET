@@ -105,5 +105,6 @@ urlpatterns = [
    # path("", RedirectView.as_view(url='/dashboard/', permanent=False), name='root_redirect'),
     # Ruta temporal para depuración del enlace de Bitrix
     path('bitrix-temp-link/', TemplateView.as_view(template_name='bitrix_temp_link.html'), name='bitrix_temp_link'),
+    path('incrementa/', views.incrementa_view, name='incrementa'),
     path('api/crear-cliente/', views.crear_cliente_api, name='crear_cliente_api'),
 ]

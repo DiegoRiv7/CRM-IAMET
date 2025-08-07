@@ -292,7 +292,7 @@
           {% for detalle in detalles_cotizacion %}
           <tr>
             <td>{{ forloop.counter }}</td>
-            <td>{{ detalle.nombre_producto }}</td>
+            <td>{{ detalle.no_parte }}</td>
             <td class="descripcion">{{ detalle.descripcion|default:"-"|linebreaksbr }}</td>
             <td class="text-right">{{ detalle.cantidad }}</td>
             <td class="text-right">${{ detalle.precio_unitario|floatformat:2 }}</td>

@@ -2037,6 +2037,12 @@ def oportunidad_detalle_api(request, id):
 
 @csrf_exempt
 @login_required
+def incrementa_view(request):
+    if not is_supervisor(request.user) and not request.user.groups.filter(name='Supervisores').exists():
+        return render(request, 'incrementa.html', {'coming_soon': True})
+    return render(request, 'incrementa.html', {'coming_soon': False})
+
+@login_required
 def actualizar_probabilidad(request, id):
     """
     API para actualizar la probabilidad_cierre de una oportunidad (TodoItem).
