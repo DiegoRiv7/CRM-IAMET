@@ -903,7 +903,15 @@
             Object.keys(fieldsToValidate).forEach(fieldId => {
                 const field = document.getElementById(fieldId);
                 if (field) {
+                    let timer;
+                    field.addEventListener('focus', () => {
+                        timer = setTimeout(() => {
+                            showHelpMessage(fieldId.replace(/_/g, '-'), '¿Necesitas ayuda con este campo?');
+                        }, 5000); // 5 seconds
+                    });
+
                     field.addEventListener('blur', () => {
+                        clearTimeout(timer);
                         const { validate, message } = fieldsToValidate[fieldId];
                         if (!validate(field.value)) {
                             showHelpMessage(fieldId.replace(/_/g, '-'), message);

@@ -516,24 +516,23 @@
                 ];
             } else if (currentPath.includes('crear_cotizacion') || currentPath.endsWith('/crear_cotizacion.html')) {
                 console.log('Detected crear_cotizacion page. Current path:', currentPath);
-                // Create quotation page questions - más guiadas
+                // Create quotation page questions - more guided
                 questions = [
                     {
                         question: "¿Cómo llenar cada campo?",
-                        answer: "📝 <strong>Guía de campos:</strong><br><br>• <strong>Título:</strong> Nombre descriptivo para la cotización.<br>• <strong>Cliente:</strong> Selecciona un cliente existente o crea uno nuevo con el botón '+ '.<br>• <strong>Oportunidad:</strong> (Opcional) Asocia la cotización a una oportunidad existente. Si seleccionas una, se precargará el cliente y el título.<br>• <strong>Productos:</strong> Agrega filas manualmente o pega datos desde Excel. Incluye: Nombre, Marca, No. Parte, Cantidad, Precio Unitario, Descuento.<br>• <strong>IVA:</strong> Tasa de Impuesto al Valor Agregado.<br>• <strong>Moneda:</strong> Tipo de moneda de la cotización.<br>• <strong>Tipo de Cotización:</strong> Elige entre BAJANET o IAMET para el formato del PDF.<br>• <strong>Descuento Visible:</strong> Decide si el descuento se muestra en el PDF.<br>💡 <strong>Tip:</strong> Los campos se validan automáticamente.",
+                        answer: "📝 <strong>Guía de campos:</strong><br><br>• <strong>Título:</strong> Nombre descriptivo para la cotización.<br>• <strong>Cliente:</strong> Selecciona un cliente existente o crea uno nuevo con el botón '+'.<br>• <strong>Oportunidad:</strong> (Opcional) Asocia la cotización a una oportunidad existente.<br>• <strong>Productos:</strong> Agrega filas de productos, ya sea manualmente o pegando desde Excel.<br>• <strong>IVA, Moneda, Institución:</strong> Configura los detalles finales de tu cotización.<br>💡 <strong>Tip:</strong> El bot te puede ayudar si te equivocas en algún campo.",
                         category: "Formulario"
                     },
                     {
                         question: "¿Cómo crear una oportunidad desde aquí?",
-                        answer: "➕ <strong>Crear oportunidad:</strong><br><br><strong>Pasos:</strong><br>1️⃣ En el campo <strong>'Oportunidad'</strong>, haz clic en el botón <strong>'+'</strong>.<br>2️⃣ Se abrirá un formulario para crear una nueva oportunidad.<br>3️⃣ Llena los datos requeridos (nombre, monto, área, etc.).<br>4️⃣ La nueva oportunidad se vinculará automáticamente a esta cotización y se sincronizará con Bitrix24.<br>✨ <strong>Ventaja:</strong> Puedes crear y vincular oportunidades sin salir del formulario de cotización.",
-                        category: "Creación",
-                        action: { text: "Ir a Crear Cotización", url: "/crear-cotizacion/" }
+                        answer: "➕ <strong>Crear oportunidad:</strong><br><br><strong>Pasos:</strong><br>1️⃣ Junto al campo <strong>'Oportunidad'</strong>, haz clic en el botón <strong>'+'</strong>.<br>2️⃣ Se abrirá una ventana para crear una nueva oportunidad.<br>3️⃣ Llena los datos y guárdala.<br>4️⃣ La nueva oportunidad se vinculará automáticamente a esta cotización y se creará en Bitrix24.<br>✨ <strong>Ventaja:</strong> No necesitas salir del formulario de cotización.",
+                        category: "Creación"
                     },
                     {
-                        question: "¿Dónde veo mis PDF descargados?",
-                        answer: "📄 <strong>Acceso a PDFs:</strong><br><br>• <strong>Por Oportunidad:</strong> Ve a la sección de <strong>Oportunidades</strong>. Haz clic en el <strong>nombre de la oportunidad</strong> a la que asignaste el PDF. Te saldrán todos los PDFs vinculados a esa oportunidad.<br>• <strong>Por Cliente:</strong> Ve a la sección de <strong>Cotizaciones</strong>. Podrás visualizar todas las cotizaciones por cliente, y desde ahí descargar o ver el PDF.<br>💡 <strong>Recuerda:</strong> Los PDFs también se descargan automáticamente a tu navegador al generarlos.",
-                        category: "Archivos",
-                        action: { text: "Ir a Cotizaciones", url: "/cotizaciones/" }
+                        question: "¿Dónde veré la cotización que cree?",
+                        answer: "📄 <strong>Acceso a tus cotizaciones:</strong><br><br>Una vez generada, podrás encontrar tu cotización en dos lugares principales:<br><br>1️⃣ <strong>Sección de Cotizaciones:</strong> Ve al menú y selecciona 'Cotizaciones'. Ahí podrás buscar por cliente y ver todo su historial.<br>2️⃣ <strong>Detalle de la Oportunidad:</strong> Si la vinculaste a una oportunidad, la verás dentro de los detalles de esa oportunidad.<br><br>💡 <strong>Recuerda:</strong> El PDF también se descarga a tu navegador al momento de crearla.",
+                        category: "Visualización",
+                        action: { text: "Ir a Cotizaciones", url: "{% url 'cotizaciones' %}" }
                     }
                 ];
                 console.log('Questions for crear_cotizacion loaded:', questions);
