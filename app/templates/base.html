@@ -309,6 +309,7 @@
             // Get current page context and questions
             const currentPath = window.location.pathname;
             let pageQuestions = getNethiveQuestionsForCurrentPage(currentPath);
+            console.log('Page Questions for current path:', pageQuestions);
             let pageContext = getNethivePageContext(currentPath);
             
             // Create the Nethive assistant modal with 3D avatar
