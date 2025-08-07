@@ -499,12 +499,14 @@
                     {
                         question: "¿Cómo creo una cotización desde una oportunidad?",
                         answer: "🎯 <strong>Crear cotización desde oportunidad:</strong><br><br><strong>Pasos:</strong><br>1️⃣ Haz clic en el <strong>nombre de la oportunidad</strong> en la tabla.<br>2️⃣ En la vista de detalle de la oportunidad, haz clic en el botón <strong>'Crear Nueva Cotización'</strong>.<br>3️⃣ El cliente y la oportunidad se seleccionarán automáticamente en el formulario de cotización.<br>4️⃣ Agrega los productos y genera el PDF.<br><br>💡 <strong>Ventaja:</strong> La cotización se vincula automáticamente con Bitrix24 y se precargan los datos principales.",
-                        category: "Flujo principal"
+                        category: "Flujo principal",
+                        action: { text: "Ir a Crear Cotización", url: "/crear-cotizacion/" }
                     },
                     {
                         question: "¿Puedo crear una oportunidad nueva aquí?",
                         answer: "➕ <strong>Crear oportunidades:</strong><br><br><strong>Método recomendado:</strong><br>1️⃣ Ya que estas en la sección de <strong>Oportunidades</strong>.<br>2️⃣ Haz clic en <strong>'Crear Cotización'</strong>.<br>3️⃣ Si el cliente no existe, créalo con el botón '+'.<br>4️⃣ Usa el botón '+' junto al campo de oportunidad para crear una nueva.<br>5️⃣ Se creará en Bitrix24 automáticamente y aparecerá aquí al instante.<br><br><strong>Datos requeridos:</strong><br>• Cliente<br>• Nombre de oportunidad<br>• Área y producto<br>• Probabilidad inicial<br>• Monto estimado<br><br>🔄 La nueva oportunidad se sincroniza inmediatamente.",
-                        category: "Creación"
+                        category: "Creación",
+                        action: { text: "Ir a Crear Cotización", url: "/crear-cotizacion/" }
                     },
                     {
                         question: "¿De dónde vienen estas oportunidades?",
@@ -524,12 +526,14 @@
                     {
                         question: "¿Cómo crear una oportunidad desde aquí?",
                         answer: "➕ <strong>Crear oportunidad:</strong><br><br><strong>Pasos:</strong><br>1️⃣ En el campo <strong>'Oportunidad'</strong>, haz clic en el botón <strong>'+'</strong>.<br>2️⃣ Se abrirá un formulario para crear una nueva oportunidad.<br>3️⃣ Llena los datos requeridos (nombre, monto, área, etc.).<br>4️⃣ La nueva oportunidad se vinculará automáticamente a esta cotización y se sincronizará con Bitrix24.<br>✨ <strong>Ventaja:</strong> Puedes crear y vincular oportunidades sin salir del formulario de cotización.",
-                        category: "Creación"
+                        category: "Creación",
+                        action: { text: "Ir a Crear Cotización", url: "/crear-cotizacion/" }
                     },
                     {
                         question: "¿Dónde veo mis PDF descargados?",
                         answer: "📄 <strong>Acceso a PDFs:</strong><br><br>• <strong>Por Oportunidad:</strong> Ve a la sección de <strong>Oportunidades</strong>. Haz clic en el <strong>nombre de la oportunidad</strong> a la que asignaste el PDF. Te saldrán todos los PDFs vinculados a esa oportunidad.<br>• <strong>Por Cliente:</strong> Ve a la sección de <strong>Cotizaciones</strong>. Podrás visualizar todas las cotizaciones por cliente, y desde ahí descargar o ver el PDF.<br>💡 <strong>Recuerda:</strong> Los PDFs también se descargan automáticamente a tu navegador al generarlos.",
-                        category: "Archivos"
+                        category: "Archivos",
+                        action: { text: "Ir a Cotizaciones", url: "/cotizaciones/" }
                     }
                 ];
                 console.log('Questions for crear_cotizacion loaded:', questions);
@@ -706,6 +710,13 @@
                         </div>
                     </div>
                 </div>
+                ${question.action ? `
+                    <div class="mt-4 text-center animate-fade-in">
+                        <button onclick="window.location.href='${question.action.url}'" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
+                            ${question.action.text}
+                        </button>
+                    </div>
+                ` : ''}
             `;
             
             questionsDiv.classList.add('hidden');
