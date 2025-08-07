@@ -20,8 +20,8 @@ class Command(BaseCommand):
 
         self.stdout.write("Conectando con la API de Incrementa para obtener cotizaciones...")
 
-        # Endpoint de la API para obtener el listado de pedidos
-        api_url = "https://incrementacrm.com/api/v2/pedidos"
+        # Endpoint de la API para obtener el listado de documentos
+        api_url = "https://incrementacrm.com/documents"
         
         headers = {
             "Authorization": f"Bearer {INCREMENTA_API_TOKEN}",
@@ -38,22 +38,22 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR('Error: La respuesta de la API no es una lista de cotizaciones.'))
                 return
 
-            self.stdout.write(self.style.SUCCESS(f'¡Conexión exitosa! {len(quotes_data)} cotizaciones encontradas.'))
+            self.stdout.write(self.style.SUCCESS(f'¡Conexión exitosa! {len(quotes_data)} documentos encontrados.'))
 
             # Ruta a la carpeta de destino para los PDFs
             pdf_output_dir = os.path.join(settings.BASE_DIR, 'media', 'incrementa_pdfs')
             os.makedirs(pdf_output_dir, exist_ok=True) # Asegura que la carpeta exista
 
-            for quote in quotes_data:
-                pdf_url = quote.get('url_pdf')
-                folio = quote.get('folio', 'sin_folio')
-                serie = quote.get('serie_documento', 'A')
+            for doc in quotes_data:
+                pdf_url = doc.get('document_url')
+                document_id = doc.get('id', 'unknown_id')
+                document_type = doc.get('document_type', 'unknown_type')
                 
-                if not pdf_url:
-                    self.stdout.write(self.style.WARNING(f"Omitiendo cotización con folio {folio} porque no tiene 'url_pdf'."))
+                if not pdf_url or document_type != 'pdf':
+                    self.stdout.write(self.style.WARNING(f"Omitiendo documento con ID {document_id} porque no es un PDF o no tiene 'document_url'."))
                     continue
 
-                file_name = f"incrementa_{serie}_{folio}.pdf"
+                file_name = f"incrementa_doc_{document_id}.pdf"
                 output_path = os.path.join(pdf_output_dir, file_name)
 
                 self.stdout.write(f"Descargando PDF de: {pdf_url} a {output_path}")
