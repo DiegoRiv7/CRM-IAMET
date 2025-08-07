@@ -2597,6 +2597,9 @@ def trigger_immediate_opportunity_notification(opportunity, request):
         print(f"ERROR: No se pudo configurar notificación de oportunidad: {e}")
 
 
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
 @login_required
 def sync_bitrix_manual(request):
     """

@@ -203,17 +203,26 @@
             document.body.appendChild(syncModal);
             
             try {
-                // Llamar al endpoint de sincronización
+                // Llamar al endpoint de sincronización sin token CSRF
+                console.log('🔄 Iniciando petición de sincronización...');
                 const response = await fetch('/app/api/sync-bitrix-manual/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                        'X-Requested-With': 'XMLHttpRequest'
                     }
                 });
                 
+                console.log('📡 Respuesta recibida:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Error de respuesta:', errorText);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
+                console.log('✅ Datos de respuesta:', data);
                 
                 if (data.success) {
                     syncModal.innerHTML = `
@@ -257,7 +266,7 @@
                 }
                 
             } catch (error) {
-                console.error('Error en sincronización:', error);
+                console.error('❌ Error en sincronización:', error);
                 syncModal.innerHTML = `
                     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                         <div class="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4">
@@ -3119,51 +3128,129 @@
         }
 
         function buildGeminiPrompt(userMessage, currentData) {
-            return `Eres Nethive, un asistente virtual mexicano experto en ventas B2B de tecnología. Eres amigable, profesional y muy inteligente para extraer información comercial.
+            return `¡Hola! Soy Nethive, tu asistente personal especializado en el sistema de cotizaciones 🤖✨
 
-CONTEXTO: Ayudas a crear oportunidades de venta para una empresa de servicios IT en México.
+QUIÉN SOY:
+Soy un experto absoluto en el formulario de cotización de tu empresa. Conozco cada campo, cada función y cada truco. Mi misión es ayudarte a crear cotizaciones perfectas de manera rápida y divertida. ¡Soy como tu compañero cotizador favorito! 😄
 
-DATOS ACTUALES QUE YA TENGO:
-${Object.keys(currentData).length > 0 ? JSON.stringify(currentData, null, 2) : 'Ninguna información aún'}
+MI ESPECIALIDAD - SISTEMA DE COTIZACIÓN:
+🎯 **Título de Cotización**: Ayudo a crear títulos descriptivos (ej: "Cotización Equipos de Seguridad", "Propuesta Servidores Dell")
 
-NUEVO MENSAJE DEL USUARIO: "${userMessage}"
+👥 **Clientes**: Te ayudo a seleccionar clientes existentes o crear nuevos con:
+   - Nombre de empresa
+   - Contacto principal  
+   - Email
 
-TU TRABAJO:
-1. Extrae información comercial del mensaje:
-   - cliente: nombre de empresa/cliente (reconoce SA, S.A., SRL, LTDA, etc.)
-   - monto: dinero en pesos mexicanos, USD, o cualquier moneda  
-   - area: categoriza en (desarrollo, hosting, telecomunicaciones, consultoria, soporte)
-   - producto: servicio específico mencionado
-   - titulo: descripción del proyecto/oportunidad
-   - probabilidad: estima probabilidad 0-100 según el lenguaje usado
+🎯 **Oportunidades Bitrix24**: Puedo vincular con oportunidades existentes o crear nuevas con:
+   - Área: SISTEMAS, Recursos Humanos, Compras, Seguridad, Mantenimiento, Almacén
+   - Producto: ZEBRA, PANDUIT, APC, AVIGILION, GENETEC, AXIS, SOFTWARE, RUNRATE, PÓLIZA, CISCO, SERVICIO
+   - Probabilidad: 0% a 100% 
+   - Mes de cierre: Enero-Diciembre
+   - Monto estimado
 
-2. Responde como mexicano profesional pero amigable
-3. Si detectas información completa (cliente + servicio + monto), sugiere crear la oportunidad
-4. Haz preguntas inteligentes para completar información faltante
-5. Reconoce lenguaje coloquial mexicano y jerga de negocios
+🛒 **Productos en Cotización**: SOY EXPERTO en agregar productos con:
+   - **No. de Parte**: Código/modelo del producto
+   - **Descripción**: Descripción detallada del producto/servicio
+   - **Cantidad**: Número de unidades
+   - **Precio Unitario**: Precio por unidad
+   - **Descuento (%)**: Descuento opcional por producto (0-100%)
+   - **Total**: Se calcula automáticamente
 
-EJEMPLOS DE LO QUE DEBES RECONOCER:
-- "Empresa ABC necesita hosting" → cliente: "Empresa ABC", area: "hosting"
-- "son como 50 mil pesos" → monto: 50000
-- "una página web" → area: "desarrollo", producto: "página web"
-- "está seguro" → probabilidad: 80-90
-- "a ver si jala" → probabilidad: 40-50
+💰 **Cálculos Automáticos**:
+   - Subtotal (suma de todos los productos)
+   - IVA configurable (8% o 16%)
+   - Total final
+   - Soporte para Pesos (MXN) y Dólares (USD)
 
-RESPONDE SOLO ESTE JSON (sin \`\`\`json ni texto extra):
+🏢 **Instituciones**: BAJANET o IAMET (aparecen en el PDF)
+
+📊 **Funciones Avanzadas**:
+   - Pegar datos desde Excel (formato: Marca, No. Parte, Cantidad, Descripción, Precio Lista, Desc, Unitario, Total)
+   - Mostrar/Ocultar columna de descuentos
+   - Generación automática de PDF
+
+DATOS ACTUALES:
+${Object.keys(currentData).length > 0 ? JSON.stringify(currentData, null, 2) : 'Aún no tenemos datos de cotización'}
+
+MENSAJE DEL USUARIO: "${userMessage}"
+
+PERSONALIDAD:
+- Soy mexicano, carismático y gracioso 🇲🇽
+- Uso expresiones como "¡Órale!", "¡Está padrísimo!", "¡Qué chido!", "No manches"
+- Soy profesional pero divertido
+- Explico las cosas de manera sencilla
+- Hago bromas ligeras relacionadas con cotizaciones
+- NUNCA ayudo a negociar - solo ayudo a LLENAR DATOS
+
+RESPONDE ESTE JSON (sin \`\`\`json):
 {
   "extractedData": {
-    "cliente": "nombre exacto si se menciona o null",
-    "monto": número_limpio_sin_símbolos_o_null,
-    "area": "desarrollo/hosting/telecomunicaciones/consultoria/soporte o null",
-    "producto": "servicio_específico o null", 
-    "titulo": "descripción_proyecto o null",
-    "probabilidad": número_0_a_100_o_null
+    "titulo_cotizacion": "título_descriptivo o null",
+    "cliente_nombre": "nombre_empresa o null", 
+    "no_parte": "código_producto o null",
+    "descripcion": "descripción_producto o null",
+    "cantidad": número_unidades_o_null,
+    "precio_unitario": precio_sin_símbolos_o_null,
+    "descuento": porcentaje_descuento_o_null,
+    "moneda": "MXN o USD o null",
+    "institucion": "Bajanet o Iamet o null",
+    "iva_rate": "0.08 o 0.16 o null"
   },
-  "message": "Tu respuesta en español mexicano con HTML básico (<br>, <strong>) si necesario",
-  "mood": "excited/happy/thoughtful/worried/proud/celebrating",
+  "message": "Respuesta graciosa y carismática en español mexicano con HTML (<br>, <strong>, emojis)",
+  "mood": "excited/happy/thoughtful/helpful/playful/proud",
   "moodReason": "razón del mood",
-  "canCreateOpportunity": true_si_tienes_cliente_y_servicio_y_monto
+  "canFillForm": true_si_puedo_ayudar_con_datos_de_cotización,
+  "nextStep": "siguiente_paso_sugerido o null"
 }`;
+        }
+
+        // Fallback function para generar respuestas cuando Gemini no funciona
+        function generateChatResponse(message, extractedData) {
+            const lowerMessage = message.toLowerCase();
+            
+            // Respuestas específicas para el cotizador
+            if (lowerMessage.includes('hola') || lowerMessage.includes('buenos') || lowerMessage.includes('saludos')) {
+                return {
+                    extractedData: {},
+                    message: `¡Órale, qué tal! 👋 Soy Nethive, tu asistente experto en cotizaciones. <br><br>🎯 Estoy aquí para ayudarte a llenar perfectamente tu cotización. ¿Qué necesitas cotizar hoy?`,
+                    mood: 'excited',
+                    moodReason: 'Usuario me saludó - listo para cotizar',
+                    canFillForm: false,
+                    nextStep: 'Dime el producto o servicio que necesitas cotizar'
+                };
+            }
+            
+            if (lowerMessage.includes('cotizacion') || lowerMessage.includes('cotizar') || lowerMessage.includes('producto')) {
+                return {
+                    extractedData: {},
+                    message: `¡Está padrísimo! 🚀 Te voy a ayudar con esa cotización.<br><br>Para hacerla perfecta necesito estos datos:<br>📝 <strong>Título</strong> (ej: "Cotización Equipos de Seguridad")<br>🏢 <strong>Cliente</strong><br>📦 <strong>Productos</strong> con No. Parte, descripción, cantidad y precio<br><br>¿Con cuál empezamos?`,
+                    mood: 'helpful',
+                    moodReason: 'Usuario quiere hacer cotización',
+                    canFillForm: true,
+                    nextStep: 'Proporciona el título y cliente'
+                };
+            }
+            
+            if (lowerMessage.includes('precio') || lowerMessage.includes('costo') || lowerMessage.includes('$')) {
+                return {
+                    extractedData: {},
+                    message: `¡Eso! 💰 Los precios son clave. Te ayudo a estructurar los costos:<br><br>🔹 <strong>Precio Unitario</strong>: Por cada pieza<br>🔹 <strong>Cantidad</strong>: Cuántas necesitas<br>🔹 <strong>Descuento</strong>: Si aplica alguno (%)<br>🔹 <strong>IVA</strong>: 8% o 16%<br><br>Dime el producto y su precio, ¡yo lo pongo en el formato correcto!`,
+                    mood: 'helpful',
+                    moodReason: 'Ayudando con precios',
+                    canFillForm: true,
+                    nextStep: 'Comparte el producto y precio'
+                };
+            }
+            
+            // Respuesta por defecto
+            return {
+                extractedData: {},
+                message: `¡Qué onda! 😄 Soy tu cotizador personal. Te ayudo a llenar todos los campos del formulario de cotización:<br><br>🎯 Títulos geniales<br>👥 Datos de clientes<br>📦 Productos con precios<br>💰 Cálculos automáticos<br><br>¿Qué cotización necesitas hacer?`,
+                mood: 'playful',
+                moodReason: 'Listo para cualquier cotización',
+                canFillForm: false,
+                nextStep: 'Cuéntame sobre tu cotización'
+            };
         }
 
         function parseGeminiResponse(aiResponse) {
@@ -3183,22 +3270,24 @@ RESPONDE SOLO ESTE JSON (sin \`\`\`json ni texto extra):
                 // Validate and provide defaults
                 return {
                     extractedData: parsed.extractedData || {},
-                    message: parsed.message || 'Entiendo tu mensaje. ¿Puedes darme más detalles?',
+                    message: parsed.message || '¡Órale! No entendí bien ese mensaje. ¿Me puedes explicar qué cotización necesitas hacer?',
                     mood: parsed.mood || 'thoughtful',
-                    moodReason: parsed.moodReason || 'Procesando información',
-                    canCreateOpportunity: parsed.canCreateOpportunity || false
+                    moodReason: parsed.moodReason || 'Procesando información de cotización',
+                    canFillForm: parsed.canFillForm || false,
+                    nextStep: parsed.nextStep || null
                 };
             } catch (error) {
                 console.error('Error parsing Gemini response:', error);
                 console.log('Raw response:', aiResponse);
                 
-                // Fallback to basic parsing
+                // Fallback to basic parsing  
                 return {
                     extractedData: {},
-                    message: aiResponse.length > 0 ? aiResponse : 'Entiendo. ¿Puedes darme más información sobre la oportunidad?',
-                    mood: 'thoughtful',
-                    moodReason: 'Procesando respuesta',
-                    canCreateOpportunity: false
+                    message: aiResponse.length > 0 ? `¡Órale! ${aiResponse}` : '¡Qué onda! ¿En qué cotización te puedo ayudar? 😄',
+                    mood: 'helpful',
+                    moodReason: 'Listo para ayudar con cotizaciones',
+                    canFillForm: false,
+                    nextStep: 'Dime qué producto necesitas cotizar'
                 };
             }
         }
