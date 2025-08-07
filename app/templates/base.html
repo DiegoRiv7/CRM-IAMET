@@ -2967,6 +2967,45 @@
         //    <script>window.GEMINI_API_KEY = 'your_api_key_here';</script>
         // 4. That's it! The chat will now use real AI
         // ==============================================================
+// La función `processWithGeminiAI` debe existir para evitar el error.
+async function processWithGeminiAI(userMessage) {
+    // Aquí es donde iría la llamada a tu API proxy en tu servidor
+    // y la lógica para manejar la respuesta.
+    console.log("Mensaje para procesar con la IA:", userMessage);
+
+    try {
+        const response = await fetch('/app/api/gemini-proxy/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // Asegúrate de enviar el token CSRF para seguridad
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            },
+            body: JSON.stringify({
+                user_message: userMessage,
+                // Puedes enviar más contexto si es necesario, como el historial de chat
+                // chat_history: getChatHistory() 
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        
+        // Aquí puedes procesar la respuesta de la IA
+        const aiResponse = result.response;
+        console.log("Respuesta de la IA:", aiResponse);
+
+        // Retorna la respuesta para que la función que la llamó la pueda usar
+        return aiResponse;
+
+    } catch (error) {
+        console.error("Error al procesar con la IA:", error);
+        return "Disculpa, hubo un problema con mi conexión. ¿Puedes repetir tu mensaje? 😅";
+    }
+}
 
         async function processWithGeminiAI(userMessage, currentData) {
             // Gemini API key configured
@@ -3267,6 +3306,7 @@ RESPONDE SOLO ESTE JSON (sin ```json ni texto extra):
                 };
             }
         }
+        
 
     </script>
 </body>
