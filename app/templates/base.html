@@ -596,6 +596,22 @@
                             <div class="flex items-start mb-8"><div class="flex-shrink-0 mr-4">${createMiniNethiveAvatar()}</div><div class="bg-gradient-to-br from-cyan-900/60 to-blue-900/60 rounded-2xl p-6"><div id="nethive-message">${getNethiveGreeting()}</div></div></div>
                             <div id="nethive-questions" class="space-y-4 mt-6">
                                 <h3 class="text-cyan-300 font-semibold text-center mb-4">¿Qué te gustaría saber?</h3>
+                                
+                                <!-- Advanced Chat Option -->
+                                <button onclick="openAdvancedChatFromBasic()" class="w-full text-left bg-gradient-to-r from-green-600/80 to-emerald-600/80 hover:from-green-600/100 hover:to-emerald-600/100 text-white p-4 rounded-xl transition-all border border-green-400/30 mb-4">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="bg-green-400/30 rounded-full p-2">
+                                            <svg class="w-5 h-5 text-green-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold">💬 Chat Avanzado con IA</div>
+                                            <div class="text-green-200 text-xs">Conversa naturalmente para crear oportunidades</div>
+                                        </div>
+                                    </div>
+                                </button>
+                                
                                 ${pageQuestions.map((q, index) => `<button onclick="showNethiveAnswer(${index})" class="w-full text-left bg-slate-700/60 hover:bg-cyan-600/80 text-white p-4 rounded-xl transition-all">${q.question}</button>`).join('')}
                             </div>
                             <div id="nethive-answer" class="hidden">
@@ -612,6 +628,14 @@
         window.closeNethiveAssistant = function() {
             const modal = document.getElementById('nethive-assistant-modal');
             if (modal) modal.remove();
+        }
+
+        window.openAdvancedChatFromBasic = function() {
+            updateNethiveMood('excited', '¡Usuario cambió al chat avanzado!');
+            // Close basic assistant
+            closeNethiveAssistant();
+            // Open advanced chat after brief delay
+            setTimeout(() => showAdvancedNethiveChat(), 500);
         }
 
         // --- Advanced Proactive Bot Logic ---
@@ -658,17 +682,17 @@
             updateNethiveMood('excited', 'Usuario aceptó ayuda');
             
             if (context && context.type === 'quotation-assistance') {
-                // User wants full quotation assistance - open the complete auto-creator
-                showAutoQuotationCreator(context);
+                // User wants full quotation assistance - open the advanced chat
+                setTimeout(() => showAdvancedNethiveChat(), 500);
             } else if (context && context.type === 'field-specific') {
-                // Handle field-specific help
-                window.resolveFieldIssue(context);
+                // Field-specific help should go to advanced chat
+                setTimeout(() => showAdvancedNethiveChat(), 500);
             } else if (context && context.type === 'zone-stuck') {
-                // Handle zone-specific help
-                window.resolveZoneIssue(context);
+                // Zone-specific help should go to advanced chat  
+                setTimeout(() => showAdvancedNethiveChat(), 500);
             } else {
-                // Default to opening main assistant
-                window.showNethiveAssistant();
+                // Any other proactive help goes to advanced chat
+                setTimeout(() => showAdvancedNethiveChat(), 500);
             }
         }
 
@@ -1764,15 +1788,8 @@
         function showAutoQuotationCreator(context) {
             updateNethiveMood('focused', 'Iniciando creación automática de cotización');
             
-            // Check if we should show the advanced chat instead
-            const currentPath = window.location.pathname;
-            const isOpportunityPage = currentPath.includes('ingresar-venta') || currentPath.includes('todos');
-            
-            if (isOpportunityPage) {
-                // Show choice between advanced chat and basic quotation creator
-                showAssistanceChoice();
-                return;
-            }
+            // This function is now only used for the basic quotation creator
+            // Advanced chat is handled separately by the proactive system
             
             const assistantHTML = `
                 <div id="nethive-auto-quotation-creator" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[9999] nethive-slide-in">
@@ -2925,121 +2942,7 @@
             return extractedData;
         }
 
-        function showAssistanceChoice() {
-            const choiceHTML = `
-                <div id="nethive-assistance-choice" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
-                    <div class="bg-slate-900/95 backdrop-blur-md rounded-3xl shadow-2xl w-full max-w-2xl border border-cyan-500/40">
-                        <div class="bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 p-6 rounded-t-3xl">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-4">
-                                    <div class="scale-75">${createNethiveAvatar()}</div>
-                                    <div>
-                                        <h2 class="text-2xl font-bold text-white">🤖 ¿Cómo te gustaría que te ayude?</h2>
-                                        <p class="text-cyan-100 text-sm">Elige el tipo de asistencia que prefieres</p>
-                                    </div>
-                                </div>
-                                <button onclick="closeAssistanceChoice()" class="text-white/80 hover:text-white text-3xl font-bold transition-colors">&times;</button>
-                            </div>
-                        </div>
-                        
-                        <div class="p-8 space-y-4">
-                            <!-- Advanced Chat Option -->
-                            <div onclick="selectAdvancedChat()" 
-                                 class="group bg-gradient-to-r from-green-600/20 to-emerald-600/20 border border-green-500/30 rounded-2xl p-6 cursor-pointer transition-all hover:from-green-600/30 hover:to-emerald-600/30 hover:border-green-400/50 hover:scale-105">
-                                <div class="flex items-start space-x-4">
-                                    <div class="bg-green-500/20 rounded-full p-3">
-                                        <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                                        </svg>
-                                    </div>
-                                    <div class="flex-1">
-                                        <h3 class="text-xl font-bold text-white mb-2">💬 Chat Avanzado con IA</h3>
-                                        <p class="text-green-200 text-sm mb-3">Conversa conmigo naturalmente para crear oportunidades. Solo dime los datos y yo me encargo de todo.</p>
-                                        <div class="text-xs text-green-300 space-y-1">
-                                            <div class="flex items-center space-x-2">
-                                                <span class="w-1 h-1 bg-green-400 rounded-full"></span>
-                                                <span>Procesamiento de lenguaje natural</span>
-                                            </div>
-                                            <div class="flex items-center space-x-2">
-                                                <span class="w-1 h-1 bg-green-400 rounded-full"></span>
-                                                <span>Extracción automática de datos</span>
-                                            </div>
-                                            <div class="flex items-center space-x-2">
-                                                <span class="w-1 h-1 bg-green-400 rounded-full"></span>
-                                                <span>Creación inteligente de oportunidades</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="text-green-400 group-hover:scale-110 transition-transform">
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Basic Assistant Option -->
-                            <div onclick="selectBasicAssistant()" 
-                                 class="group bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-500/30 rounded-2xl p-6 cursor-pointer transition-all hover:from-blue-600/30 hover:to-cyan-600/30 hover:border-blue-400/50 hover:scale-105">
-                                <div class="flex items-start space-x-4">
-                                    <div class="bg-blue-500/20 rounded-full p-3">
-                                        <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                                        </svg>
-                                    </div>
-                                    <div class="flex-1">
-                                        <h3 class="text-xl font-bold text-white mb-2">📋 Asistente Básico</h3>
-                                        <p class="text-blue-200 text-sm mb-3">Preguntas y respuestas paso a paso para usuarios nuevos. Perfecto para aprender el sistema.</p>
-                                        <div class="text-xs text-blue-300 space-y-1">
-                                            <div class="flex items-center space-x-2">
-                                                <span class="w-1 h-1 bg-blue-400 rounded-full"></span>
-                                                <span>Guía paso a paso</span>
-                                            </div>
-                                            <div class="flex items-center space-x-2">
-                                                <span class="w-1 h-1 bg-blue-400 rounded-full"></span>
-                                                <span>Preguntas estructuradas</span>
-                                            </div>
-                                            <div class="flex items-center space-x-2">
-                                                <span class="w-1 h-1 bg-blue-400 rounded-full"></span>
-                                                <span>Perfecto para nuevos usuarios</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="text-blue-400 group-hover:scale-110 transition-transform">
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.body.insertAdjacentHTML('beforeend', choiceHTML);
-        }
-
-        window.closeAssistanceChoice = function() {
-            const choice = document.getElementById('nethive-assistance-choice');
-            if (choice) {
-                choice.style.opacity = '0';
-                choice.style.transform = 'scale(0.95)';
-                setTimeout(() => choice.remove(), 300);
-            }
-        }
-
-        window.selectAdvancedChat = function() {
-            updateNethiveMood('excited', '¡Usuario eligió chat avanzado!');
-            closeAssistanceChoice();
-            setTimeout(() => showAdvancedNethiveChat(), 500);
-        }
-
-        window.selectBasicAssistant = function() {
-            updateNethiveMood('helpful', 'Usuario eligió asistente básico');
-            closeAssistanceChoice();
-            setTimeout(() => window.showNethiveAssistant(), 500);
-        }
+        // Functions removed - no longer needed since we have direct routing
 
         function generateChatResponse(message, extractedData) {
             const lowerMessage = message.toLowerCase();

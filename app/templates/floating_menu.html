@@ -378,6 +378,7 @@
         if (assistantBtn) {
             assistantBtn.addEventListener('click', function(e) {
                 e.preventDefault();
+                // Menu assistant always opens basic assistant with questions
                 if (typeof window.showNethiveAssistant === 'function') {
                     window.showNethiveAssistant();
                 }
