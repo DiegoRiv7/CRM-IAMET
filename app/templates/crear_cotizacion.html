@@ -180,6 +180,13 @@
             section { max-width: 100vw; padding: 0 0.5rem; }
         }
         .float { animation: none !important; }
+
+        .nethive-help-text {
+            color: #f59e0b; /* Amber color for help text */
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: none; /* Hidden by default */
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center py-8 px-4 sm:px-6 lg:px-8 dashboard-container">
@@ -200,6 +207,7 @@
                     <div>
                         <label for="titulo_cotizacion" class="block text-sm font-medium text-gray-300 mb-1">Título de la Cotización</label>
                         <input type="text" id="titulo_cotizacion" name="titulo" class="input-field" placeholder="Ej. Cotización Proyecto X" value="{{ form.titulo.value|default:'' }}" required data-intro="📝 Ingresa un título descriptivo para tu cotización (ej. 'Cotización Equipos de Seguridad')" data-step="2">
+                        <div id="titulo-help" class="nethive-help-text"></div>
                         {% if form.titulo.errors %}
                             <ul class="errorlist">{% for error in form.titulo.errors %}<li>{{ error }}</li>{% endfor %}</ul>
                         {% endif %}
@@ -214,6 +222,7 @@
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                             </button>
                         </div>
+                        <div id="cliente-help" class="nethive-help-text"></div>
                         <input type="hidden" id="selected_client_id" name="cliente_hidden" value="">
                         {% if form.cliente.errors %}
                             <ul class="errorlist">{% for error in form.cliente.errors %}<li>{{ error }}</li>{% endfor %}</ul>
@@ -230,6 +239,7 @@
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                         </button>
                     </div>
+                    <div id="oportunidad-help" class="nethive-help-text"></div>
                     {% if form.oportunidad.errors %}
                         <ul class="errorlist">{% for error in form.oportunidad.errors %}<li>{{ error }}</li>{% endfor %}</ul>
                     {% endif %}
@@ -859,6 +869,50 @@
             //         processExcelPaste();
             //     }, 0);
             // });
+
+            //     },
+            // });
+
+            // Nethive Proactive Form Help
+            function showHelpMessage(fieldId, message) {
+                const helpText = document.getElementById(`${fieldId}-help`);
+                if (helpText) {
+                    helpText.textContent = message;
+                    helpText.style.display = 'block';
+                }
+            }
+
+            function hideHelpMessage(fieldId) {
+                const helpText = document.getElementById(`${fieldId}-help`);
+                if (helpText) {
+                    helpText.style.display = 'none';
+                }
+            }
+
+            const fieldsToValidate = {
+                'titulo_cotizacion': {
+                    validate: (value) => value.trim() !== '',
+                    message: 'El título no puede estar vacío.'
+                },
+                'id_cliente': {
+                    validate: (value) => value !== '',
+                    message: 'Debes seleccionar un cliente.'
+                }
+            };
+
+            Object.keys(fieldsToValidate).forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('blur', () => {
+                        const { validate, message } = fieldsToValidate[fieldId];
+                        if (!validate(field.value)) {
+                            showHelpMessage(fieldId.replace(/_/g, '-'), message);
+                        } else {
+                            hideHelpMessage(fieldId.replace(/_/g, '-'));
+                        }
+                    });
+                }
+            });
 
             // MODIFICACIÓN CLAVE: Interceptar el envío del formulario con Fetch API
             const cotizacionForm = document.getElementById('cotizacion-form');
