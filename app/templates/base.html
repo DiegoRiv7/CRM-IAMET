@@ -823,6 +823,20 @@
             initProactiveLogic();
         });
 
-        <script src="{% static 'js/proactive_bot.js' %}"></script>
+        // Add event listener when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait a bit for the floating menu to be ready
+            setTimeout(function() {
+                const assistantBtn = document.getElementById('assistant-btn');
+                if (assistantBtn) {
+                    assistantBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        showNethiveAssistant();
+                    });
+                }
+            }, 1000);
+        });
+    </script>
+    <script src="{% static 'js/proactive_bot.js' %}"></script>
 </body>
 </html>
