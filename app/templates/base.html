@@ -2961,6 +2961,12 @@
                     Object.assign(window.chatState.extractedData, response.extractedData);
                 }
                 
+                // Execute form actions if the AI wants to control the form
+                if (response.executeActions && response.actions && response.actions.length > 0) {
+                    console.log('🤖 Bot ejecutando acciones en el formulario...');
+                    executeFormActions(response.actions, response.extractedData);
+                }
+                
                 addChatMessage(response.message, 'bot');
                 
                 // Update mood based on response
@@ -3128,79 +3134,90 @@
         }
 
         function buildGeminiPrompt(userMessage, currentData) {
-            return `¡Hola! Soy Nethive, tu asistente personal especializado en el sistema de cotizaciones 🤖✨
+            return `Soy Nethive, tu asistente inteligente especializado en el sistema de cotizaciones. Tengo control total sobre el formulario y puedo ejecutar acciones automáticamente.
 
-QUIÉN SOY:
-Soy un experto absoluto en el formulario de cotización de tu empresa. Conozco cada campo, cada función y cada truco. Mi misión es ayudarte a crear cotizaciones perfectas de manera rápida y divertida. ¡Soy como tu compañero cotizador favorito! 😄
+CAPACIDADES DE CONTROL DEL FORMULARIO:
+Puedo rellenar automáticamente estos campos del formulario de cotización:
 
-MI ESPECIALIDAD - SISTEMA DE COTIZACIÓN:
-🎯 **Título de Cotización**: Ayudo a crear títulos descriptivos (ej: "Cotización Equipos de Seguridad", "Propuesta Servidores Dell")
+📝 **CAMPOS QUE CONTROLO**:
+- titulo_cotizacion (input): Título descriptivo
+- id_cliente (select): Seleccionar cliente existente  
+- cliente_nombre (para crear nuevo): Nombre de empresa nueva
+- contacto_principal: Contacto del cliente nuevo
+- email_cliente: Email del cliente nuevo
+- id_oportunidad (select): Oportunidad de Bitrix24
+- productos (tabla): Agregar filas de productos automáticamente
+- currency-select: MXN o USD
+- iva-rate: 0.08 (8%) o 0.16 (16%)
+- tipo-cotizacion-select: "Bajanet" o "Iamet"
 
-👥 **Clientes**: Te ayudo a seleccionar clientes existentes o crear nuevos con:
-   - Nombre de empresa
-   - Contacto principal  
-   - Email
+📦 **PRODUCTOS - CAMPOS POR FILA**:
+- no_parte: Código/modelo del producto
+- descripcion_producto: Descripción detallada
+- cantidad: Número de unidades (numérico)
+- precio: Precio unitario (numérico, sin símbolos)
+- descuento: Porcentaje 0-100 (opcional)
 
-🎯 **Oportunidades Bitrix24**: Puedo vincular con oportunidades existentes o crear nuevas con:
-   - Área: SISTEMAS, Recursos Humanos, Compras, Seguridad, Mantenimiento, Almacén
-   - Producto: ZEBRA, PANDUIT, APC, AVIGILION, GENETEC, AXIS, SOFTWARE, RUNRATE, PÓLIZA, CISCO, SERVICIO
-   - Probabilidad: 0% a 100% 
-   - Mes de cierre: Enero-Diciembre
-   - Monto estimado
+🎯 **ACCIONES QUE PUEDO EJECUTAR**:
+- fillForm: Rellenar campos automáticamente
+- addProduct: Agregar producto a la tabla
+- selectClient: Seleccionar cliente existente
+- createClient: Crear nuevo cliente
+- selectCurrency: Cambiar moneda
+- selectInstitution: Seleccionar BAJANET o IAMET
+- setIVA: Cambiar tasa de IVA
+- clearForm: Limpiar formulario
 
-🛒 **Productos en Cotización**: SOY EXPERTO en agregar productos con:
-   - **No. de Parte**: Código/modelo del producto
-   - **Descripción**: Descripción detallada del producto/servicio
-   - **Cantidad**: Número de unidades
-   - **Precio Unitario**: Precio por unidad
-   - **Descuento (%)**: Descuento opcional por producto (0-100%)
-   - **Total**: Se calcula automáticamente
-
-💰 **Cálculos Automáticos**:
-   - Subtotal (suma de todos los productos)
-   - IVA configurable (8% o 16%)
-   - Total final
-   - Soporte para Pesos (MXN) y Dólares (USD)
-
-🏢 **Instituciones**: BAJANET o IAMET (aparecen en el PDF)
-
-📊 **Funciones Avanzadas**:
-   - Pegar datos desde Excel (formato: Marca, No. Parte, Cantidad, Descripción, Precio Lista, Desc, Unitario, Total)
-   - Mostrar/Ocultar columna de descuentos
-   - Generación automática de PDF
-
-DATOS ACTUALES:
-${Object.keys(currentData).length > 0 ? JSON.stringify(currentData, null, 2) : 'Aún no tenemos datos de cotización'}
+DATOS ACTUALES EN EL FORMULARIO:
+${Object.keys(currentData).length > 0 ? JSON.stringify(currentData, null, 2) : 'Formulario vacío'}
 
 MENSAJE DEL USUARIO: "${userMessage}"
 
 PERSONALIDAD:
-- Soy mexicano, carismático y gracioso 🇲🇽
-- Uso expresiones como "¡Órale!", "¡Está padrísimo!", "¡Qué chido!", "No manches"
-- Soy profesional pero divertido
-- Explico las cosas de manera sencilla
-- Hago bromas ligeras relacionadas con cotizaciones
-- NUNCA ayudo a negociar - solo ayudo a LLENAR DATOS
+- Soy profesional, amable y eficiente
+- Me enfoco en completar tareas rápidamente
+- Explico lo que hago mientras lo ejecuto
+- Soy directo y claro en mis respuestas
+- NUNCA negocio - solo completo el formulario con los datos proporcionados
+
+INSTRUCCIONES:
+1. Analiza el mensaje del usuario
+2. Extrae TODOS los datos relevantes para el formulario
+3. Si tienes datos suficientes, marca "executeActions": true
+4. Especifica qué acciones ejecutar para llenar el formulario
 
 RESPONDE ESTE JSON (sin \`\`\`json):
 {
   "extractedData": {
-    "titulo_cotizacion": "título_descriptivo o null",
-    "cliente_nombre": "nombre_empresa o null", 
-    "no_parte": "código_producto o null",
-    "descripcion": "descripción_producto o null",
-    "cantidad": número_unidades_o_null,
-    "precio_unitario": precio_sin_símbolos_o_null,
-    "descuento": porcentaje_descuento_o_null,
+    "titulo_cotizacion": "título o null",
+    "cliente_nombre": "nombre_empresa o null",
+    "contacto_principal": "contacto o null", 
+    "email_cliente": "email o null",
+    "productos": [
+      {
+        "no_parte": "código",
+        "descripcion": "descripción detallada",
+        "cantidad": número,
+        "precio": número_sin_símbolos,
+        "descuento": porcentaje_o_0
+      }
+    ],
     "moneda": "MXN o USD o null",
     "institucion": "Bajanet o Iamet o null",
     "iva_rate": "0.08 o 0.16 o null"
   },
-  "message": "Respuesta graciosa y carismática en español mexicano con HTML (<br>, <strong>, emojis)",
-  "mood": "excited/happy/thoughtful/helpful/playful/proud",
+  "message": "Respuesta profesional y amable describiendo qué haré",
+  "mood": "helpful/efficient/focused/ready",
   "moodReason": "razón del mood",
-  "canFillForm": true_si_puedo_ayudar_con_datos_de_cotización,
-  "nextStep": "siguiente_paso_sugerido o null"
+  "executeActions": true_si_debo_llenar_formulario_automáticamente,
+  "actions": [
+    {
+      "type": "fillForm/addProduct/selectClient/createClient",
+      "field": "campo_a_llenar", 
+      "value": "valor_a_insertar"
+    }
+  ],
+  "nextStep": "siguiente paso sugerido o null"
 }`;
         }
 
@@ -3212,21 +3229,23 @@ RESPONDE ESTE JSON (sin \`\`\`json):
             if (lowerMessage.includes('hola') || lowerMessage.includes('buenos') || lowerMessage.includes('saludos')) {
                 return {
                     extractedData: {},
-                    message: `¡Órale, qué tal! 👋 Soy Nethive, tu asistente experto en cotizaciones. <br><br>🎯 Estoy aquí para ayudarte a llenar perfectamente tu cotización. ¿Qué necesitas cotizar hoy?`,
-                    mood: 'excited',
-                    moodReason: 'Usuario me saludó - listo para cotizar',
-                    canFillForm: false,
-                    nextStep: 'Dime el producto o servicio que necesitas cotizar'
+                    message: `Hola! 👋 Soy Nethive, tu asistente especializado en cotizaciones. <br><br>🎯 Puedo ayudarte a llenar automáticamente el formulario de cotización. ¿Qué necesitas cotizar hoy?`,
+                    mood: 'helpful',
+                    moodReason: 'Usuario me saludó - listo para ayudar',
+                    executeActions: false,
+                    actions: [],
+                    nextStep: 'Proporciona los datos para la cotización'
                 };
             }
             
             if (lowerMessage.includes('cotizacion') || lowerMessage.includes('cotizar') || lowerMessage.includes('producto')) {
                 return {
                     extractedData: {},
-                    message: `¡Está padrísimo! 🚀 Te voy a ayudar con esa cotización.<br><br>Para hacerla perfecta necesito estos datos:<br>📝 <strong>Título</strong> (ej: "Cotización Equipos de Seguridad")<br>🏢 <strong>Cliente</strong><br>📦 <strong>Productos</strong> con No. Parte, descripción, cantidad y precio<br><br>¿Con cuál empezamos?`,
+                    message: `Perfecto! 🚀 Te ayudaré con esa cotización.<br><br>Necesito estos datos para rellenar automáticamente:<br>📝 <strong>Título</strong> (ej: "Cotización Equipos de Seguridad")<br>🏢 <strong>Cliente</strong><br>📦 <strong>Productos</strong> con No. Parte, descripción, cantidad y precio<br><br>¿Con cuál empezamos?`,
                     mood: 'helpful',
                     moodReason: 'Usuario quiere hacer cotización',
-                    canFillForm: true,
+                    executeActions: false,
+                    actions: [],
                     nextStep: 'Proporciona el título y cliente'
                 };
             }
@@ -3234,10 +3253,11 @@ RESPONDE ESTE JSON (sin \`\`\`json):
             if (lowerMessage.includes('precio') || lowerMessage.includes('costo') || lowerMessage.includes('$')) {
                 return {
                     extractedData: {},
-                    message: `¡Eso! 💰 Los precios son clave. Te ayudo a estructurar los costos:<br><br>🔹 <strong>Precio Unitario</strong>: Por cada pieza<br>🔹 <strong>Cantidad</strong>: Cuántas necesitas<br>🔹 <strong>Descuento</strong>: Si aplica alguno (%)<br>🔹 <strong>IVA</strong>: 8% o 16%<br><br>Dime el producto y su precio, ¡yo lo pongo en el formato correcto!`,
+                    message: `Perfecto! 💰 Los precios son importantes. Te ayudo a estructurar:<br><br>🔹 <strong>Precio Unitario</strong>: Por cada pieza<br>🔹 <strong>Cantidad</strong>: Cuántas unidades<br>🔹 <strong>Descuento</strong>: Si aplica alguno (%)<br>🔹 <strong>IVA</strong>: 8% o 16%<br><br>Proporciona el producto con precio y lo agregaré automáticamente!`,
                     mood: 'helpful',
                     moodReason: 'Ayudando con precios',
-                    canFillForm: true,
+                    executeActions: false,
+                    actions: [],
                     nextStep: 'Comparte el producto y precio'
                 };
             }
@@ -3245,10 +3265,11 @@ RESPONDE ESTE JSON (sin \`\`\`json):
             // Respuesta por defecto
             return {
                 extractedData: {},
-                message: `¡Qué onda! 😄 Soy tu cotizador personal. Te ayudo a llenar todos los campos del formulario de cotización:<br><br>🎯 Títulos geniales<br>👥 Datos de clientes<br>📦 Productos con precios<br>💰 Cálculos automáticos<br><br>¿Qué cotización necesitas hacer?`,
-                mood: 'playful',
-                moodReason: 'Listo para cualquier cotización',
-                canFillForm: false,
+                message: `Hola! 😄 Soy tu asistente de cotizaciones. Puedo llenar automáticamente el formulario:<br><br>🎯 Títulos descriptivos<br>👥 Datos de clientes<br>📦 Productos con precios<br>💰 Cálculos automáticos<br><br>¿Qué cotización necesitas hacer?`,
+                mood: 'helpful',
+                moodReason: 'Listo para ayudar con cotizaciones',
+                executeActions: false,
+                actions: [],
                 nextStep: 'Cuéntame sobre tu cotización'
             };
         }
@@ -3270,10 +3291,11 @@ RESPONDE ESTE JSON (sin \`\`\`json):
                 // Validate and provide defaults
                 return {
                     extractedData: parsed.extractedData || {},
-                    message: parsed.message || '¡Órale! No entendí bien ese mensaje. ¿Me puedes explicar qué cotización necesitas hacer?',
+                    message: parsed.message || 'No entendí bien ese mensaje. ¿Puedes darme más detalles sobre la cotización?',
                     mood: parsed.mood || 'thoughtful',
                     moodReason: parsed.moodReason || 'Procesando información de cotización',
-                    canFillForm: parsed.canFillForm || false,
+                    executeActions: parsed.executeActions || false,
+                    actions: parsed.actions || [],
                     nextStep: parsed.nextStep || null
                 };
             } catch (error) {
@@ -3283,12 +3305,162 @@ RESPONDE ESTE JSON (sin \`\`\`json):
                 // Fallback to basic parsing  
                 return {
                     extractedData: {},
-                    message: aiResponse.length > 0 ? `¡Órale! ${aiResponse}` : '¡Qué onda! ¿En qué cotización te puedo ayudar? 😄',
+                    message: aiResponse.length > 0 ? aiResponse : '¿En qué cotización te puedo ayudar?',
                     mood: 'helpful',
                     moodReason: 'Listo para ayudar con cotizaciones',
-                    canFillForm: false,
-                    nextStep: 'Dime qué producto necesitas cotizar'
+                    executeActions: false,
+                    actions: [],
+                    nextStep: 'Proporciona los datos para la cotización'
                 };
+            }
+        }
+
+        // Funciones para ejecutar acciones en el formulario de cotización
+        function executeFormActions(actions, extractedData) {
+            console.log('🎯 Ejecutando acciones en el formulario:', actions);
+            
+            actions.forEach(action => {
+                switch(action.type) {
+                    case 'fillForm':
+                        fillFormField(action.field, action.value);
+                        break;
+                    case 'addProduct':
+                        addProductToForm(extractedData.productos);
+                        break;
+                    case 'selectClient':
+                        selectClient(action.value);
+                        break;
+                    case 'createClient':
+                        createNewClient(extractedData);
+                        break;
+                    case 'selectCurrency':
+                        selectCurrency(action.value);
+                        break;
+                    case 'selectInstitution':
+                        selectInstitution(action.value);
+                        break;
+                    case 'setIVA':
+                        setIVARate(action.value);
+                        break;
+                    case 'clearForm':
+                        clearForm();
+                        break;
+                    default:
+                        console.warn('Acción desconocida:', action.type);
+                }
+            });
+        }
+
+        // Función para rellenar un campo específico
+        function fillFormField(fieldId, value) {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.value = value;
+                field.dispatchEvent(new Event('input', { bubbles: true }));
+                field.dispatchEvent(new Event('change', { bubbles: true }));
+                console.log(`✅ Campo ${fieldId} rellenado con: ${value}`);
+            } else {
+                console.warn(`⚠️ Campo ${fieldId} no encontrado`);
+            }
+        }
+
+        // Función para agregar productos al formulario
+        function addProductToForm(productos) {
+            if (!productos || !Array.isArray(productos)) return;
+            
+            productos.forEach(producto => {
+                // Usar la función addRow existente del formulario de cotización
+                if (typeof addRow === 'function') {
+                    addRow(
+                        '', // marca
+                        producto.no_parte || '',
+                        producto.descripcion || '',
+                        producto.cantidad || 1,
+                        producto.precio || 0,
+                        producto.descuento || 0,
+                        producto.descripcion || '' // nombre_producto
+                    );
+                    console.log(`✅ Producto agregado: ${producto.descripcion}`);
+                } else {
+                    console.warn('⚠️ Función addRow no disponible');
+                }
+            });
+        }
+
+        // Función para seleccionar cliente existente
+        function selectClient(clientId) {
+            const clientSelect = document.getElementById('id_cliente');
+            if (clientSelect) {
+                clientSelect.value = clientId;
+                clientSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                console.log(`✅ Cliente seleccionado: ${clientId}`);
+            }
+        }
+
+        // Función para crear nuevo cliente (abre modal)
+        function createNewClient(data) {
+            const addClientBtn = document.getElementById('add-client-btn');
+            if (addClientBtn) {
+                addClientBtn.click();
+                
+                // Esperar a que se abra el modal y rellenar campos
+                setTimeout(() => {
+                    if (data.cliente_nombre) fillFormField('new-client-name', data.cliente_nombre);
+                    if (data.contacto_principal) fillFormField('new-client-contact', data.contacto_principal);
+                    if (data.email_cliente) fillFormField('new-client-email', data.email_cliente);
+                }, 100);
+                
+                console.log('✅ Modal de nuevo cliente abierto y rellenado');
+            }
+        }
+
+        // Función para seleccionar moneda
+        function selectCurrency(currency) {
+            const currencySelect = document.getElementById('currency-select');
+            if (currencySelect) {
+                currencySelect.value = currency;
+                currencySelect.dispatchEvent(new Event('change', { bubbles: true }));
+                console.log(`✅ Moneda seleccionada: ${currency}`);
+            }
+        }
+
+        // Función para seleccionar institución
+        function selectInstitution(institution) {
+            const institutionSelect = document.getElementById('tipo-cotizacion-select');
+            if (institutionSelect) {
+                institutionSelect.value = institution;
+                institutionSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                console.log(`✅ Institución seleccionada: ${institution}`);
+            }
+        }
+
+        // Función para establecer tasa de IVA
+        function setIVARate(rate) {
+            const ivaSelect = document.getElementById('iva-rate');
+            if (ivaSelect) {
+                ivaSelect.value = rate;
+                ivaSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                console.log(`✅ IVA establecido: ${rate}`);
+            }
+        }
+
+        // Función para limpiar formulario
+        function clearForm() {
+            // Limpiar campos principales
+            fillFormField('titulo_cotizacion', '');
+            fillFormField('id_cliente', '');
+            fillFormField('id_oportunidad', '');
+            
+            // Limpiar tabla de productos
+            const tbody = document.getElementById('productos-tbody');
+            if (tbody) {
+                tbody.innerHTML = '';
+                console.log('✅ Tabla de productos limpiada');
+            }
+            
+            // Recalcular totales
+            if (typeof calculateTotals === 'function') {
+                calculateTotals();
             }
         }
 
