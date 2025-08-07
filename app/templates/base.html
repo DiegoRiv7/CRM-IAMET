@@ -238,42 +238,169 @@
         }
 
         function getNethiveGreeting() {
-            return "Hola soy Nethive, tu asistente virtual. ¿En qué puedo ayudarte hoy?";
+            const currentPath = window.location.pathname;
+            const timeOnPage = Date.now() - window.nethiveContextualIntelligence.pageLoadTime;
+            const hasErrors = window.nethiveState.formErrors.size > 0;
+            
+            let greeting = "Hola soy Nethive, tu asistente virtual. ";
+            
+            if (hasErrors) {
+                greeting += "Veo que hay algunos campos que necesitan atención. ";
+            } else if (timeOnPage > 120000) { // More than 2 minutes
+                greeting += "He estado observando tu sesión. ";
+            }
+            
+            if (currentPath.includes('crear_cotizacion')) {
+                greeting += "¿Te ayudo con la cotización?";
+            } else if (currentPath.includes('dashboard')) {
+                greeting += "¿Necesitas ayuda interpretando tus métricas de ventas?";
+            } else if (currentPath.includes('todos')) {
+                greeting += "¿Te ayudo a gestionar tus oportunidades?";
+            } else if (currentPath.includes('cotizaciones')) {
+                greeting += "¿Te ayudo a organizar tus cotizaciones?";
+            } else {
+                greeting += "¿En qué puedo ayudarte hoy?";
+            }
+            
+            return greeting;
         }
 
         function getNethiveQuestionsForCurrentPage(currentPath) {
-            if (currentPath.includes('crear_cotizacion')) {
+            // Dashboard principal
+            if (currentPath.includes('dashboard')) {
                 return [
                     {
-                        question: "¿Cómo llenar cada campo?",
-                        answer: "📝 <strong>Guía de campos:</strong><br><br>• <strong>Título:</strong> Nombre descriptivo para la cotización.<br>• <strong>Cliente:</strong> Selecciona un cliente existente o crea uno nuevo con el botón '+'.<br>• <strong>Oportunidad:</strong> (Opcional) Asocia la cotización a una oportunidad existente.<br>• <strong>Productos:</strong> Agrega filas de productos, ya sea manualmente o pegando desde Excel.<br>• <strong>IVA, Moneda, Institución:</strong> Configura los detalles finales de tu cotización.<br>💡 <strong>Tip:</strong> El bot te puede ayudar si te equivocas en algún campo.",
-                        category: "Formulario"
+                        question: "¿Cómo interpretar las métricas de ventas?",
+                        answer: "📊 <strong>Guía del Dashboard:</strong><br><br>• <strong>Ventas por mes:</strong> Muestra el progreso mensual de tus oportunidades cerradas.<br>• <strong>Por producto:</strong> Analiza qué productos tienen mejor rendimiento.<br>• <strong>Probabilidad promedio:</strong> Indica qué tan cerca estás de cerrar tus oportunidades.<br>• <strong>Filtros:</strong> Usa los filtros de fecha para análisis específicos.",
+                        category: "Análisis"
                     },
                     {
-                        question: "¿Cómo crear una oportunidad desde aquí?",
-                        answer: "➕ <strong>Crear oportunidad:</strong><br><br><strong>Pasos:</strong><br>1️⃣ Junto al campo <strong>'Oportunidad'</strong>, haz clic en el botón <strong>'+'</strong>.<br>2️⃣ Se abrirá una ventana para crear una nueva oportunidad.<br>3️⃣ Llena los datos y guárdala.<br>4️⃣ La nueva oportunidad se vinculará automáticamente a esta cotización y se creará en Bitrix24.",
-                        category: "Creación"
-                    },
-                    {
-                        question: "¿Dónde veré la cotización que cree?",
-                        answer: "📄 <strong>Acceso a tus cotizaciones:</strong><br><br>Una vez generada, podrás encontrar tu cotización en la sección de 'Cotizaciones' del menú. También se descargará un PDF a tu navegador.",
-                        category: "Visualización",
-                        action: { text: "Ir a Cotizaciones", url: "/cotizaciones/" }
+                        question: "¿Cómo puedo mejorar mis métricas?",
+                        answer: "🎯 <strong>Tips para mejorar:</strong><br><br>• <strong>Actualiza probabilidades:</strong> Mantén actualizadas las probabilidades de tus oportunidades.<br>• <strong>Fechas de cierre:</strong> Asegúrate de tener fechas realistas.<br>• <strong>Seguimiento:</strong> Revisa regularmente tus oportunidades en curso.",
+                        category: "Optimización"
                     }
                 ];
             }
-            // Default questions
+            
+            // Lista de oportunidades
+            if (currentPath.includes('todos')) {
+                return [
+                    {
+                        question: "¿Cómo gestiono mis oportunidades de venta?",
+                        answer: "💼 <strong>Gestión de Oportunidades:</strong><br><br>• <strong>Crear nueva:</strong> Botón 'Agregar Oportunidad' para crear una nueva.<br>• <strong>Editar:</strong> Haz clic en cualquier oportunidad para editarla.<br>• <strong>Probabilidades:</strong> Actualiza el % de probabilidad según tu progreso.<br>• <strong>Estados:</strong> Cambia entre 'En proceso', 'Ganada', 'Perdida'.",
+                        category: "Gestión",
+                        action: { text: "Crear Nueva Oportunidad", url: "/ingresar-venta/" }
+                    },
+                    {
+                        question: "¿Qué significan los colores y estados?",
+                        answer: "🎨 <strong>Código de colores:</strong><br><br>• <strong>Verde:</strong> Oportunidades con alta probabilidad (>70%).<br>• <strong>Amarillo:</strong> Probabilidad media (30-70%).<br>• <strong>Rojo:</strong> Baja probabilidad (<30%) o vencidas.<br>• <strong>Estado:</strong> 'En proceso' = activa, 'Ganada' = cerrada exitosamente.",
+                        category: "Interpretación"
+                    },
+                    {
+                        question: "¿Cómo crear una cotización rápidamente?",
+                        answer: "⚡ <strong>Crear cotización rápida:</strong><br><br>• <strong>Desde oportunidad:</strong> Haz clic en cualquier oportunidad y selecciona 'Crear Cotización'.<br>• <strong>Datos automáticos:</strong> El sistema pre-llenará el cliente y la oportunidad.<br>• <strong>Plantillas:</strong> Usa las plantillas Bajanet o Iamet según el tipo de cliente.",
+                        category: "Cotización"
+                    }
+                ];
+            }
+            
+            // Crear/editar cotización
+            if (currentPath.includes('crear_cotizacion') || currentPath.includes('editar_cotizacion')) {
+                return [
+                    {
+                        question: "¿Cómo llenar correctamente una cotización?",
+                        answer: "📝 <strong>Guía completa de cotización:</strong><br><br>• <strong>Título:</strong> Nombre descriptivo y único.<br>• <strong>Cliente:</strong> Selecciona o crea nuevo con el botón '+'.<br>• <strong>Oportunidad:</strong> Vincula a una oportunidad existente para mejor seguimiento.<br>• <strong>Productos:</strong> Agrega línea por línea o copia desde Excel.<br>• <strong>Precios:</strong> Incluye IVA si corresponde, selecciona moneda correcta.",
+                        category: "Formulario"
+                    },
+                    {
+                        question: "¿Cómo agregar productos masivamente?",
+                        answer: "📋 <strong>Carga masiva de productos:</strong><br><br>• <strong>Desde Excel:</strong> Copia las celdas con: Descripción, Cantidad, Precio Unitario.<br>• <strong>Pegar:</strong> Usa Ctrl+V en la tabla de productos.<br>• <strong>Formato:</strong> Asegúrate de que los precios sean números (sin símbolos).<br>• <strong>Verificar:</strong> Revisa que los totales se calculen correctamente.",
+                        category: "Productos"
+                    },
+                    {
+                        question: "¿Qué hago si hay errores de validación?",
+                        answer: "❌ <strong>Solución de errores:</strong><br><br>• <strong>Campos rojos:</strong> Indican información faltante o incorrecta.<br>• <strong>Cliente:</strong> Debe estar seleccionado de la lista.<br>• <strong>Productos:</strong> Al menos un producto con precio > 0.<br>• <strong>Números:</strong> Precios y cantidades deben ser valores numéricos válidos.",
+                        category: "Errores"
+                    }
+                ];
+            }
+            
+            // Listado de cotizaciones
+            if (currentPath.includes('cotizaciones')) {
+                return [
+                    {
+                        question: "¿Cómo organizo y busco mis cotizaciones?",
+                        answer: "🔍 <strong>Organización de cotizaciones:</strong><br><br>• <strong>Por cliente:</strong> Las cotizaciones se agrupan por empresa.<br>• <strong>Estados:</strong> Filtra por 'Pendiente', 'Aprobada', 'Rechazada'.<br>• <strong>Fechas:</strong> Ordena por fecha de creación o modificación.<br>• <strong>Búsqueda:</strong> Usa el campo de búsqueda para encontrar por nombre.",
+                        category: "Búsqueda"
+                    },
+                    {
+                        question: "¿Cómo dar seguimiento a cotizaciones enviadas?",
+                        answer: "📈 <strong>Seguimiento efectivo:</strong><br><br>• <strong>Estado actual:</strong> Revisa el estado de cada cotización.<br>• <strong>Notas:</strong> Agrega comentarios sobre el seguimiento.<br>• <strong>Fechas límite:</strong> Establece recordatorios para follow-up.<br>• <strong>Duplicar:</strong> Crea nuevas versiones basadas en cotizaciones existentes.",
+                        category: "Seguimiento"
+                    }
+                ];
+            }
+            
+            // Reportes y análisis
+            if (currentPath.includes('reporte')) {
+                return [
+                    {
+                        question: "¿Cómo interpretar los reportes de ventas?",
+                        answer: "📈 <strong>Análisis de reportes:</strong><br><br>• <strong>Tendencias:</strong> Observa patrones mensuales y estacionales.<br>• <strong>Por usuario:</strong> Compara rendimiento entre vendedores.<br>• <strong>Por cliente:</strong> Identifica clientes más rentables.<br>• <strong>Conversión:</strong> Analiza qué oportunidades se convierten en ventas.",
+                        category: "Análisis"
+                    },
+                    {
+                        question: "¿Cómo exportar datos para análisis externo?",
+                        answer: "💾 <strong>Exportación de datos:</strong><br><br>• <strong>Excel:</strong> Usa los botones de exportar en cada reporte.<br>• <strong>Filtros:</strong> Aplica filtros antes de exportar para datos específicos.<br>• <strong>Períodos:</strong> Selecciona rangos de fechas relevantes.<br>• <strong>Formato:</strong> Los archivos mantienen formato y fórmulas.",
+                        category: "Exportación"
+                    }
+                ];
+            }
+            
+            // Página principal/bienvenida  
+            if (currentPath.includes('home') || currentPath === '/') {
+                return [
+                    {
+                        question: "¿Por dónde empiezo en el sistema?",
+                        answer: "🚀 <strong>Primeros pasos:</strong><br><br>• <strong>Dashboard:</strong> Ve un resumen de tus métricas de ventas.<br>• <strong>Oportunidades:</strong> Gestiona tus leads y oportunidades de venta.<br>• <strong>Cotizaciones:</strong> Crea y administra cotizaciones para clientes.<br>• <strong>Reportes:</strong> Analiza tu rendimiento y el de tu equipo.",
+                        category: "Introducción",
+                        action: { text: "Ir a Oportunidades", url: "/todos/" }
+                    },
+                    {
+                        question: "¿Cómo está conectado con Bitrix24?",
+                        answer: "🔗 <strong>Integración Bitrix24:</strong><br><br>• <strong>Sincronización:</strong> Los clientes y contactos se sincronizan automáticamente.<br>• <strong>Oportunidades:</strong> Se crean también en Bitrix24 CRM.<br>• <strong>Seguimiento:</strong> Mantén coherencia entre ambos sistemas.<br>• <strong>Webhooks:</strong> Los cambios se reflejan en tiempo real.",
+                        category: "Integración"
+                    }
+                ];
+            }
+            
+            // Configuración/admin
+            if (currentPath.includes('admin')) {
+                return [
+                    {
+                        question: "¿Cómo administro usuarios y permisos?",
+                        answer: "👥 <strong>Gestión de usuarios:</strong><br><br>• <strong>Crear usuarios:</strong> Panel de administración Django.<br>• <strong>Grupos:</strong> 'Supervisores' tienen acceso a reportes y dashboard.<br>• <strong>Permisos:</strong> Controla qué puede ver cada usuario.<br>• <strong>Bitrix24:</strong> Conecta usuarios con sus perfiles de Bitrix24.",
+                        category: "Administración"
+                    },
+                    {
+                        question: "¿Cómo configurar la integración con Bitrix24?",
+                        answer: "⚙️ <strong>Configuración Bitrix24:</strong><br><br>• <strong>Webhook URL:</strong> Configura en variables de entorno.<br>• <strong>Sincronización:</strong> Usa los comandos de management para sync inicial.<br>• <strong>Campos personalizados:</strong> Mapea campos específicos de tu Bitrix24.<br>• <strong>Testing:</strong> Usa la página de pruebas para verificar conexión.",
+                        category: "Configuración"
+                    }
+                ];
+            }
+            
+            // Default para páginas no específicas
             return [
                 {
-                    question: "¿Cómo empiezo a usar el cotizador?",
-                    answer: "🚀 <strong>Primeros pasos:</strong><br><br>El flujo principal es ir a la sección de 'Oportunidades', seleccionar una y desde ahí 'Crear Cotización'.",
-                    category: "Primeros pasos",
-                    action: { text: "Ir a Oportunidades", url: "/todos/" }
+                    question: "¿Cómo navego por el sistema?",
+                    answer: "🧭 <strong>Navegación del sistema:</strong><br><br>• <strong>Menú flotante:</strong> Acceso rápido desde cualquier página.<br>• <strong>Breadcrumbs:</strong> Rastrea tu ubicación actual.<br>• <strong>Shortcuts:</strong> Usa atajos de teclado para acciones comunes.<br>• <strong>Búsqueda:</strong> Campo de búsqueda global en la parte superior.",
+                    category: "Navegación"
                 },
                 {
-                    question: "¿Qué hace cada sección del menú?",
-                    answer: "📋 <strong>Guía del menú:</strong><br><br>• <strong>Oportunidades:</strong> Gestiona tus leads de Bitrix24.<br>• <strong>Cotizaciones:</strong> Revisa el historial de cotizaciones por cliente.<br>• <strong>Dashboard:</strong> Visualiza tus métricas de venta.",
-                    category: "Navegación"
+                    question: "¿Necesito ayuda específica para esta página?",
+                    answer: "🤖 <strong>Ayuda contextual:</strong><br><br>• <strong>Detectaré automáticamente:</strong> Si tienes problemas llenando formularios.<br>• <strong>Sugerencias:</strong> Te ayudo cuando detecte que necesitas orientación.<br>• <strong>Página específica:</strong> Pregúntame sobre cualquier función de esta sección.<br>• <strong>Siempre disponible:</strong> Puedes llamarme desde el menú flotante.",
+                    category: "Asistencia"
                 }
             ];
         }
@@ -353,36 +480,287 @@
             if (modal) modal.remove();
         }
 
-        // --- Proactive Bot Logic ---
+        // --- Advanced Proactive Bot Logic ---
 
         function initProactiveLogic() {
-            const proactiveYes = document.getElementById('proactive-yes');
-            const proactiveNo = document.getElementById('proactive-no');
+            // Initialize enhanced tracking
+            window.nethiveState = {
+                ...window.nethiveState,
+                zoneClicks: new Map(),
+                lastClickedElement: null,
+                consecutiveClicksOnElement: 0,
+                userStuckInArea: false,
+                formErrors: new Map(),
+                scrollBehavior: { position: 0, stuckTime: 0 },
+                sessionStartTime: Date.now()
+            };
 
-            if (proactiveYes) {
-                proactiveYes.addEventListener('click', () => {
+            setupZoneDetection();
+            setupFormValidation();
+            setupScrollDetection();
+            setupProactiveButtons();
+        }
+
+        function setupProactiveButtons() {
+            // Dynamic button attachment for proactive bot
+            document.addEventListener('click', (e) => {
+                const proactiveYes = e.target.closest('#proactive-yes');
+                const proactiveNo = e.target.closest('#proactive-no');
+                
+                if (proactiveYes) {
                     window.hideProactiveBot();
                     window.showNethiveAssistant();
-                });
-            }
-            if (proactiveNo) {
-                proactiveNo.addEventListener('click', () => window.hideProactiveBot());
-            }
-
-            // Click tracking
-            const MAX_CLICKS = 3;
-            document.body.addEventListener('click', (e) => {
-                if (e.target.closest('#nethive-proactive-bot') || e.target.closest('#assistant-btn') || e.target.closest('#nethive-assistant-modal')) return;
-                if (window.nethiveState.hasShownForClicks) return;
-
-                window.nethiveState.clickCount++;
-                sessionStorage.setItem('nethiveClickCount', window.nethiveState.clickCount);
-                if (window.nethiveState.clickCount >= MAX_CLICKS) {
-                    window.showProactiveBot('He notado que has estado navegando un momento. ¿Puedo ayudarte en algo?');
-                    sessionStorage.setItem('hasShownForClicks', 'true');
-                    window.nethiveState.hasShownForClicks = true;
+                }
+                if (proactiveNo) {
+                    window.hideProactiveBot();
                 }
             }, true);
+        }
+
+        function setupZoneDetection() {
+            let lastClickTime = 0;
+            let clicksInSameArea = 0;
+            let lastClickArea = null;
+
+            document.body.addEventListener('click', (e) => {
+                // Ignore bot elements and menu
+                if (e.target.closest('#nethive-proactive-bot') || 
+                    e.target.closest('#assistant-btn') || 
+                    e.target.closest('#nethive-assistant-modal') ||
+                    e.target.closest('#floating-menu-container')) return;
+
+                // Track action for contextual intelligence
+                window.nethiveContextualIntelligence.trackUserAction('click', e.target);
+
+                const currentTime = Date.now();
+                const clickArea = identifyClickArea(e.target);
+                
+                // Track zone-specific clicks
+                if (clickArea) {
+                    const zoneCount = window.nethiveState.zoneClicks.get(clickArea) || 0;
+                    window.nethiveState.zoneClicks.set(clickArea, zoneCount + 1);
+                    
+                    // Check if user is clicking repeatedly in same area
+                    if (clickArea === lastClickArea && (currentTime - lastClickTime) < 3000) {
+                        clicksInSameArea++;
+                        if (clicksInSameArea >= 3) {
+                            handleUserStuckInArea(clickArea, e.target);
+                            clicksInSameArea = 0; // Reset after showing help
+                        }
+                    } else {
+                        clicksInSameArea = 1;
+                    }
+                    
+                    lastClickArea = clickArea;
+                    lastClickTime = currentTime;
+                }
+
+                // Check for element-specific confusion
+                if (e.target === window.nethiveState.lastClickedElement) {
+                    window.nethiveState.consecutiveClicksOnElement++;
+                    if (window.nethiveState.consecutiveClicksOnElement >= 2) {
+                        handleElementConfusion(e.target);
+                        window.nethiveState.consecutiveClicksOnElement = 0;
+                    }
+                } else {
+                    window.nethiveState.lastClickedElement = e.target;
+                    window.nethiveState.consecutiveClicksOnElement = 1;
+                }
+            }, true);
+
+            // Also track other important events
+            document.body.addEventListener('focus', (e) => {
+                if (e.target.matches('input, select, textarea')) {
+                    window.nethiveContextualIntelligence.trackUserAction('focus', e.target);
+                    window.nethiveContextualIntelligence.currentFocus = e.target;
+                }
+            }, true);
+
+            document.body.addEventListener('submit', (e) => {
+                window.nethiveContextualIntelligence.trackUserAction('submit', e.target);
+            }, true);
+        }
+
+        function identifyClickArea(element) {
+            // Identify semantic areas of the page
+            if (element.closest('form')) return 'form-area';
+            if (element.closest('table')) return 'table-area';
+            if (element.closest('[class*="dashboard"]')) return 'dashboard-area';
+            if (element.closest('[class*="nav"], [class*="menu"]')) return 'navigation-area';
+            if (element.closest('button[type="submit"]')) return 'submit-area';
+            if (element.closest('input, select, textarea')) return 'input-area';
+            if (element.closest('[class*="card"], [class*="panel"]')) return 'content-area';
+            return 'general-area';
+        }
+
+        function handleUserStuckInArea(area, element) {
+            const currentPath = window.location.pathname;
+            let message = '';
+            
+            switch (area) {
+                case 'form-area':
+                    if (currentPath.includes('crear_cotizacion')) {
+                        message = '¿Necesitas ayuda llenando la cotización? Puedo guiarte paso a paso.';
+                    } else if (currentPath.includes('ingresar-venta')) {
+                        message = '¿Tienes problemas creando la oportunidad? Te ayudo con los campos.';
+                    } else {
+                        message = '¿Necesitas ayuda con este formulario? Puedo explicarte cada campo.';
+                    }
+                    break;
+                case 'table-area':
+                    message = '¿Buscas algo específico en esta tabla? Puedo ayudarte a encontrarlo o explicar cómo filtrar.';
+                    break;
+                case 'dashboard-area':
+                    message = '¿Necesitas ayuda interpretando estas métricas? Puedo explicarte qué significan.';
+                    break;
+                case 'input-area':
+                    const fieldLabel = getFieldLabel(element);
+                    message = `¿Tienes dudas sobre cómo llenar "${fieldLabel}"? Te explico qué va aquí.`;
+                    break;
+                case 'submit-area':
+                    message = '¿El formulario no se envía? Déjame revisar si hay campos faltantes o errores.';
+                    break;
+                default:
+                    message = 'Parece que estás teniendo dificultades. ¿En qué puedo ayudarte?';
+            }
+            
+            window.showProactiveBot(message);
+        }
+
+        function handleElementConfusion(element) {
+            if (element.tagName === 'BUTTON' && !element.disabled) {
+                const buttonText = element.textContent.trim();
+                if (buttonText) {
+                    window.showProactiveBot(`¿El botón "${buttonText}" no responde como esperas? Te ayudo a usarlo correctamente.`);
+                }
+            } else if (element.tagName === 'SELECT' || element.tagName === 'INPUT') {
+                const label = getFieldLabel(element);
+                window.showProactiveBot(`¿Necesitas ayuda con el campo "${label}"? Te explico cómo usarlo.`);
+            }
+        }
+
+        function setupFormValidation() {
+            // Monitor form field changes for intelligent validation
+            document.addEventListener('input', (e) => {
+                if (e.target.matches('input, select, textarea')) {
+                    validateFieldProactively(e.target);
+                }
+            });
+
+            document.addEventListener('blur', (e) => {
+                if (e.target.matches('input, select, textarea')) {
+                    setTimeout(() => validateFieldProactively(e.target, true), 500);
+                }
+            });
+        }
+
+        function validateFieldProactively(field, onBlur = false) {
+            const fieldName = field.name || field.id;
+            const value = field.value.trim();
+            const fieldLabel = getFieldLabel(field);
+            
+            let errorMessage = '';
+            let isError = false;
+
+            // Common validation patterns
+            if (field.type === 'email' && value && !isValidEmail(value)) {
+                errorMessage = `El formato del email en "${fieldLabel}" no es válido. Debe ser como: usuario@dominio.com`;
+                isError = true;
+            } else if (field.type === 'number' && value && isNaN(parseFloat(value))) {
+                errorMessage = `"${fieldLabel}" debe ser un número válido.`;
+                isError = true;
+            } else if (field.hasAttribute('required') && !value && onBlur) {
+                errorMessage = `El campo "${fieldLabel}" es obligatorio.`;
+                isError = true;
+            } else if (fieldName && fieldName.toLowerCase().includes('precio') && value && parseFloat(value) <= 0) {
+                errorMessage = `El precio en "${fieldLabel}" debe ser mayor a cero.`;
+                isError = true;
+            }
+
+            if (isError) {
+                // Track this error
+                window.nethiveState.formErrors.set(fieldName, errorMessage);
+                
+                // Show proactive help after a short delay
+                setTimeout(() => {
+                    if (field === document.activeElement || onBlur) {
+                        showFieldError(field, errorMessage);
+                    }
+                }, 1000);
+            } else {
+                // Clear error if field is now valid
+                window.nethiveState.formErrors.delete(fieldName);
+            }
+        }
+
+        function showFieldError(field, message) {
+            // Create or update error tooltip
+            let tooltip = field.parentElement.querySelector('.nethive-field-tooltip');
+            if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.className = 'nethive-field-tooltip';
+                tooltip.style.cssText = `
+                    position: absolute;
+                    top: 100%;
+                    left: 0;
+                    z-index: 1000;
+                    background: linear-gradient(135deg, #ef4444, #dc2626);
+                    color: white;
+                    padding: 8px 12px;
+                    border-radius: 8px;
+                    font-size: 12px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    max-width: 250px;
+                    animation: slideUp 0.3s ease-out;
+                `;
+                field.parentElement.style.position = 'relative';
+                field.parentElement.appendChild(tooltip);
+            }
+            
+            tooltip.innerHTML = `⚠️ ${message}`;
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                if (tooltip && tooltip.parentElement) {
+                    tooltip.remove();
+                }
+            }, 5000);
+        }
+
+        function setupScrollDetection() {
+            let scrollTimer;
+            let lastScrollPosition = 0;
+            let scrollStuckCount = 0;
+
+            window.addEventListener('scroll', () => {
+                const currentScroll = window.pageYOffset;
+                
+                clearTimeout(scrollTimer);
+                scrollTimer = setTimeout(() => {
+                    if (Math.abs(currentScroll - lastScrollPosition) < 50) {
+                        scrollStuckCount++;
+                        if (scrollStuckCount >= 3 && !window.nethiveState.hasShownForScroll) {
+                            window.showProactiveBot('¿Buscas algo específico? Puedo ayudarte a navegar por la página.');
+                            window.nethiveState.hasShownForScroll = true;
+                        }
+                    } else {
+                        scrollStuckCount = 0;
+                    }
+                    lastScrollPosition = currentScroll;
+                }, 2000);
+            });
+        }
+
+        // Utility functions
+        function getFieldLabel(field) {
+            const label = field.closest('label') || document.querySelector(`label[for="${field.id}"]`);
+            if (label) return label.textContent.trim().replace(':', '');
+            
+            return field.placeholder || field.name || 'este campo';
+        }
+
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         }
 
         window.initFormAssistance = function(fieldsToValidate) {
@@ -408,31 +786,62 @@
             });
         }
 
-        // Add missing proactive bot functions
-        window.showProactiveBot = function(message) {
+        // Enhanced proactive bot with better animations
+        window.showProactiveBot = function(message, type = 'question') {
             if (document.getElementById('nethive-proactive-bot')) return; // Already shown
 
+            const isDirectHelp = type === 'help';
+            const avatar = createMiniNethiveAvatar();
+            
             const proactiveBotHTML = `
-                <div id="nethive-proactive-bot" class="fixed bottom-6 right-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-2xl shadow-2xl max-w-sm z-50 animate-slide-in">
-                    <div class="flex items-start space-x-3">
-                        <div class="flex-shrink-0">
-                            ${createMiniNethiveAvatar()}
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-sm font-medium mb-3">${message}</p>
-                            <div class="flex space-x-2">
-                                <button id="proactive-yes" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-lg text-xs font-medium transition-all">
-                                    Sí, ayúdame
-                                </button>
-                                <button id="proactive-no" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded-lg text-xs font-medium transition-all">
-                                    No, gracias
-                                </button>
+                <div id="nethive-proactive-bot" class="fixed bottom-6 right-6 max-w-sm z-[9998] nethive-slide-in">
+                    <div class="bg-gradient-to-br from-slate-800/95 via-slate-900/95 to-gray-900/95 backdrop-blur-md rounded-2xl shadow-2xl border border-cyan-500/30 overflow-hidden">
+                        <div class="p-4">
+                            <div class="flex items-start space-x-3">
+                                <div class="flex-shrink-0 animate-bounce-subtle">
+                                    ${avatar}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <p class="text-cyan-300 text-xs font-semibold uppercase tracking-wide">Nethive Assistant</p>
+                                        <button onclick="window.hideProactiveBot()" class="text-gray-400 hover:text-white transition-colors p-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <p class="text-gray-200 text-sm font-medium leading-relaxed mb-4">${message}</p>
+                                    ${!isDirectHelp ? `
+                                        <div class="flex space-x-2">
+                                            <button id="proactive-yes" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white px-4 py-2 rounded-lg text-xs font-semibold transition-all transform hover:scale-105 hover:shadow-lg">
+                                                Sí, ayúdame
+                                            </button>
+                                            <button id="proactive-no" class="bg-slate-600/50 hover:bg-slate-600/70 text-gray-300 px-4 py-2 rounded-lg text-xs font-semibold transition-all">
+                                                No, gracias
+                                            </button>
+                                        </div>
+                                    ` : `
+                                        <div class="flex justify-end">
+                                            <button id="proactive-no" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-semibold transition-all transform hover:scale-105">
+                                                Entendido
+                                            </button>
+                                        </div>
+                                    `}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', proactiveBotHTML);
+            
+            // Auto-hide after 10 seconds if no interaction
+            setTimeout(() => {
+                const bot = document.getElementById('nethive-proactive-bot');
+                if (bot && !bot.querySelector('button:hover')) {
+                    window.hideProactiveBot();
+                }
+            }, 10000);
         }
 
         window.hideProactiveBot = function() {
@@ -440,7 +849,7 @@
             if (bot) bot.remove();
         }
 
-        // Add missing animation keyframes
+        // Enhanced animations and styles
         const style = document.createElement('style');
         style.textContent = `
             @keyframes scale-in {
@@ -450,8 +859,137 @@
             .animate-scale-in {
                 animation: scale-in 0.3s ease-out;
             }
+            
+            @keyframes nethive-slide-in {
+                from { 
+                    opacity: 0; 
+                    transform: translateX(100%) translateY(20px) scale(0.95); 
+                }
+                to { 
+                    opacity: 1; 
+                    transform: translateX(0) translateY(0) scale(1); 
+                }
+            }
+            .nethive-slide-in {
+                animation: nethive-slide-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            }
+            
+            @keyframes bounce-subtle {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-4px); }
+            }
+            .animate-bounce-subtle {
+                animation: bounce-subtle 2s infinite;
+            }
+            
+            @keyframes slideUp {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            @keyframes pulse-glow {
+                0%, 100% { 
+                    box-shadow: 0 0 10px rgba(6, 182, 212, 0.3), 
+                                0 0 20px rgba(6, 182, 212, 0.1),
+                                0 4px 12px rgba(0,0,0,0.3); 
+                }
+                50% { 
+                    box-shadow: 0 0 20px rgba(6, 182, 212, 0.6), 
+                                0 0 30px rgba(6, 182, 212, 0.3),
+                                0 4px 20px rgba(0,0,0,0.4); 
+                }
+            }
+            .pulse-glow {
+                animation: pulse-glow 3s infinite;
+            }
+            
+            .nethive-field-tooltip {
+                animation: slideUp 0.3s ease-out;
+            }
+            
+            /* Enhanced modal styling */
+            #nethive-assistant-modal {
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+            }
+            
+            #nethive-assistant-modal > div {
+                background: linear-gradient(135deg, 
+                    rgba(30, 41, 59, 0.95) 0%, 
+                    rgba(51, 65, 85, 0.95) 50%, 
+                    rgba(17, 24, 39, 0.95) 100%);
+                border: 1px solid rgba(6, 182, 212, 0.3);
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                            0 0 0 1px rgba(6, 182, 212, 0.1),
+                            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            }
         `;
         document.head.appendChild(style);
+
+        // Contextual intelligence system
+        window.nethiveContextualIntelligence = {
+            pageLoadTime: Date.now(),
+            userActions: [],
+            currentFocus: null,
+            behaviorPatterns: new Map(),
+            
+            analyzeUserBehavior() {
+                const currentPath = window.location.pathname;
+                const timeOnPage = Date.now() - this.pageLoadTime;
+                const actionCount = this.userActions.length;
+                
+                // Detect if user seems lost or confused
+                if (timeOnPage > 30000 && actionCount < 5) {
+                    return { type: 'inactive', confidence: 0.7 };
+                }
+                
+                if (actionCount > 20 && timeOnPage < 60000) {
+                    return { type: 'struggling', confidence: 0.8 };
+                }
+                
+                return { type: 'normal', confidence: 0.5 };
+            },
+            
+            trackUserAction(action, element = null) {
+                this.userActions.push({
+                    action,
+                    timestamp: Date.now(),
+                    element: element ? element.tagName + (element.id ? '#' + element.id : '') : null,
+                    path: window.location.pathname
+                });
+                
+                // Keep only last 50 actions
+                if (this.userActions.length > 50) {
+                    this.userActions.shift();
+                }
+            },
+            
+            providePredictiveHelp() {
+                const behavior = this.analyzeUserBehavior();
+                const currentPath = window.location.pathname;
+                
+                if (behavior.confidence > 0.6) {
+                    switch (behavior.type) {
+                        case 'struggling':
+                            if (currentPath.includes('crear_cotizacion')) {
+                                window.showProactiveBot('Veo que estás trabajando intensamente en la cotización. ¿Te ayudo a optimizar el proceso?', 'help');
+                            }
+                            break;
+                        case 'inactive':
+                            window.showProactiveBot('¿Todo bien? Si necesitas orientación sobre esta página, estoy aquí para ayudarte.');
+                            break;
+                    }
+                }
+            }
+        };
+        
+        // Initialize contextual intelligence
+        setInterval(() => {
+            if (!document.getElementById('nethive-proactive-bot') && 
+                !document.getElementById('nethive-assistant-modal')) {
+                window.nethiveContextualIntelligence.providePredictiveHelp();
+            }
+        }, 45000); // Check every 45 seconds
 
     </script>
 </body>
