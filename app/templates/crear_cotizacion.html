@@ -906,7 +906,7 @@
                     let timer;
                     field.addEventListener('focus', () => {
                         timer = setTimeout(() => {
-                            showHelpMessage(fieldId.replace(/_/g, '-'), '¿Necesitas ayuda con este campo?');
+                            showProactiveBot(`¿Necesitas ayuda con el campo "${field.labels[0].textContent}"?`);
                         }, 5000); // 5 seconds
                     });
 
@@ -914,9 +914,9 @@
                         clearTimeout(timer);
                         const { validate, message } = fieldsToValidate[fieldId];
                         if (!validate(field.value)) {
-                            showHelpMessage(fieldId.replace(/_/g, '-'), message);
+                            showProactiveBot(message);
                         } else {
-                            hideHelpMessage(fieldId.replace(/_/g, '-'));
+                            hideProactiveBot();
                         }
                     });
                 }
