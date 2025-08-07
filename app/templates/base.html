@@ -13,6 +13,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/oportunidad_detail.css' %}">
+    
+    <!-- Intro.js for Tutorial -->
+    <script src="https://unpkg.com/intro.js/intro.js"></script>
+    <link href="https://unpkg.com/intro.js/introjs.css" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -76,6 +80,41 @@
         .animate-fade-in {
             animation: fade-in 0.7s cubic-bezier(0.4,0,0.2,1);
         }
+        
+        /* Custom Intro.js styling */
+        .introjs-overlay {
+            background-color: rgba(0, 0, 0, 0.8) !important;
+        }
+        .introjs-tooltip {
+            background: rgba(30, 41, 59, 0.95) !important;
+            border: 1px solid rgba(255,255,255,0.2) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3) !important;
+            backdrop-filter: blur(12px) !important;
+        }
+        .introjs-tooltiptext {
+            color: #e2e8f0 !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+        .introjs-button {
+            background: #6366f1 !important;
+            border: none !important;
+            border-radius: 6px !important;
+            padding: 8px 16px !important;
+            color: white !important;
+            font-weight: 500 !important;
+            transition: all 0.2s !important;
+        }
+        .introjs-button:hover {
+            background: #4f46e5 !important;
+            transform: translateY(-1px) !important;
+        }
+        .introjs-skipbutton {
+            background: rgba(107, 114, 128, 0.8) !important;
+        }
+        .introjs-skipbutton:hover {
+            background: rgba(75, 85, 99, 0.9) !important;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -91,5 +130,161 @@
             <p>&copy; 2025 Gestión de Ventas. Todos los derechos reservados.</p>
         </div>
     </footer>
+
+    <!-- Tutorial Script -->
+    <script>
+        function startTutorial() {
+            // Configure tutorial steps based on current page
+            let steps = [];
+            
+            // Get current page URL to determine context
+            const currentPath = window.location.pathname;
+            
+            if (currentPath === '/' || currentPath.includes('home')) {
+                // Home page tutorial
+                steps = [
+                    {
+                        element: '#floating-menu-container',
+                        intro: "¡Bienvenido a Nethive! 🎉 Este es tu menú principal. Desde aquí puedes acceder a todas las funciones de la plataforma.",
+                        position: 'left'
+                    },
+                    {
+                        element: 'body',
+                        intro: "Te mostraremos las funciones principales paso a paso. ¡Empecemos! 🚀"
+                    }
+                ];
+            } else if (currentPath.includes('todos') || currentPath.includes('oportunidades')) {
+                // Opportunities page tutorial - use data attributes if available
+                const elementsWithIntro = document.querySelectorAll('[data-intro]');
+                if (elementsWithIntro.length > 0) {
+                    // Use the data attributes from the page
+                    steps = [];
+                    elementsWithIntro.forEach((element, index) => {
+                        steps.push({
+                            element: element,
+                            intro: element.getAttribute('data-intro'),
+                            position: element.getAttribute('data-position') || 'auto'
+                        });
+                    });
+                    // Add menu step at the beginning
+                    steps.unshift({
+                        element: '#floating-menu-container',
+                        intro: "🎯 Desde el menú puedes navegar a cualquier sección de Nethive.",
+                        position: 'left'
+                    });
+                } else {
+                    // Fallback tutorial
+                    steps = [
+                        {
+                            element: '#floating-menu-container',
+                            intro: "Desde el menú puedes navegar a cualquier sección de Nethive.",
+                            position: 'left'
+                        },
+                        {
+                            element: 'body',
+                            intro: "📊 Esta es la sección de Oportunidades, donde puedes ver y gestionar todas tus oportunidades de venta."
+                        }
+                    ];
+                }
+            } else if (currentPath.includes('crear_cotizacion')) {
+                // Quote creation tutorial - use data attributes if available
+                const elementsWithIntro = document.querySelectorAll('[data-intro]');
+                if (elementsWithIntro.length > 0) {
+                    steps = [];
+                    elementsWithIntro.forEach((element, index) => {
+                        steps.push({
+                            element: element,
+                            intro: element.getAttribute('data-intro'),
+                            position: element.getAttribute('data-position') || 'auto'
+                        });
+                    });
+                } else {
+                    // Fallback tutorial
+                    steps = [
+                        {
+                            element: 'body',
+                            intro: "💼 Esta es la sección de Cotizaciones, donde puedes crear cotizaciones profesionales para tus clientes."
+                        },
+                        {
+                            element: 'form',
+                            intro: "📋 Completa los datos del cliente y los productos para generar una cotización automáticamente."
+                        }
+                    ];
+                }
+            } else if (currentPath.includes('cotizacion')) {
+                // Quotations list tutorial - use data attributes if available  
+                const elementsWithIntro = document.querySelectorAll('[data-intro]');
+                if (elementsWithIntro.length > 0) {
+                    steps = [];
+                    elementsWithIntro.forEach((element, index) => {
+                        steps.push({
+                            element: element,
+                            intro: element.getAttribute('data-intro'),
+                            position: element.getAttribute('data-position') || 'auto'
+                        });
+                    });
+                    // Add menu step at the beginning
+                    steps.unshift({
+                        element: '#floating-menu-container',
+                        intro: "📋 Desde el menú puedes navegar entre cotizaciones y oportunidades.",
+                        position: 'left'
+                    });
+                } else {
+                    // Fallback tutorial
+                    steps = [
+                        {
+                            element: '#floating-menu-container',
+                            intro: "Desde el menú puedes navegar a cualquier sección de Nethive.",
+                            position: 'left'
+                        },
+                        {
+                            element: 'body',
+                            intro: "📄 Esta es la sección de Cotizaciones, donde puedes ver todas las cotizaciones organizadas por cliente."
+                        }
+                    ];
+                }
+            } else {
+                // General tutorial
+                steps = [
+                    {
+                        element: '#floating-menu-container',
+                        intro: "🎯 Menú Principal: Tu centro de control para navegar por Nethive.",
+                        position: 'left'
+                    },
+                    {
+                        element: 'body',
+                        intro: "🚀 Nethive es tu plataforma integral para gestión de ventas. Te ayudamos a manejar oportunidades, cotizaciones y más."
+                    }
+                ];
+            }
+            
+            // Start the tutorial
+            introJs().setOptions({
+                steps: steps,
+                showProgress: true,
+                showBullets: false,
+                exitOnOverlayClick: false,
+                exitOnEsc: true,
+                nextLabel: 'Siguiente →',
+                prevLabel: '← Anterior', 
+                skipLabel: 'Saltar',
+                doneLabel: '¡Terminado! ✨'
+            }).start();
+        }
+        
+        // Add event listener when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait a bit for the floating menu to be ready
+            setTimeout(function() {
+                const tutorialBtn = document.getElementById('tutorial-btn');
+                if (tutorialBtn) {
+                    tutorialBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        startTutorial();
+                    });
+                }
+            }, 1000);
+        });
+    </script>
 </body>
 </html>

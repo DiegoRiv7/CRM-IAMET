@@ -60,7 +60,7 @@
     }
 </style>
     <div class="flex flex-col items-center justify-center mb-8 w-full">
-        <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight drop-shadow-lg text-center" style="font-size: clamp(2.5rem, 5vw, 3.5rem);">Cotizaciones</h1>
+        <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight drop-shadow-lg text-center" style="font-size: clamp(2.5rem, 5vw, 3.5rem);" data-intro="📄 Esta es la vista de todas las cotizaciones organizadas por cliente. Aquí puedes acceder a todas las cotizaciones creadas." data-step="1">Cotizaciones</h1>
         <p class="text-lg text-cyan-100 mt-2 text-center max-w-2xl" style="font-size: clamp(1rem, 2.5vw, 1.25rem);">Visualiza y controla todas las cotizaciones organizadas por cliente. Las nuevas cotizaciones se crean desde el área de oportunidades.</p>
     </div>
     <div class="w-full max-w-full mx-auto overflow-x-auto">
@@ -77,7 +77,7 @@
                     <td class="px-6 py-4 text-white font-medium">{{ cliente.nombre }}</td>
                     <td class="px-6 py-4">
                         <div class="flex flex-row justify-center w-full">
-                            <a href="{% url 'cotizaciones_por_cliente' cliente.id %}" class="inline-flex items-center px-6 py-3 bg-[#143a56] hover:bg-[#1e3350] text-white rounded-xl shadow transition font-semibold text-lg">
+                            <a href="{% url 'cotizaciones_por_cliente' cliente.id %}" class="inline-flex items-center px-6 py-3 bg-[#143a56] hover:bg-[#1e3350] text-white rounded-xl shadow transition font-semibold text-lg" data-intro="👀 Haz clic en 'Ver Cotizaciones' para acceder a todas las cotizaciones de este cliente específico." data-step="2">
                                 <i data-lucide="file-text" class="lucide w-5 h-5 mr-2"></i>Ver Cotizaciones
                             </a>
                         </div>

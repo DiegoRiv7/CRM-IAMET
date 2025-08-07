@@ -192,14 +192,14 @@
     }
 </style>
     <div class="max-w-full w-full space-y-8">
-        <h1 class="text-3xl font-bold text-white text-center" style="font-size: clamp(2rem, 4vw, 2.5rem);">{% if editing_mode %}Editar Cotización{% else %}Crear Cotización{% endif %}</h1>
+        <h1 class="text-3xl font-bold text-white text-center" style="font-size: clamp(2rem, 4vw, 2.5rem);" data-intro="💼 Esta es la página para crear cotizaciones profesionales para tus clientes. Te guiaremos paso a paso." data-step="1">{% if editing_mode %}Editar Cotización{% else %}Crear Cotización{% endif %}</h1>
 
                 <form id="cotizacion-form" method="post" action="{% if form_action_url %}{{ form_action_url }}{% elif cliente_id_inicial %}{% url 'crear_cotizacion_with_id' cliente_id_inicial %}{% else %}{% url 'crear_cotizacion' %}{% endif %}">
             <div class="card p-6 mb-8 shadow-md-dark">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label for="titulo_cotizacion" class="block text-sm font-medium text-gray-300 mb-1">Título de la Cotización</label>
-                        <input type="text" id="titulo_cotizacion" name="titulo" class="input-field" placeholder="Ej. Cotización Proyecto X" value="{{ form.titulo.value|default:'' }}" required>
+                        <input type="text" id="titulo_cotizacion" name="titulo" class="input-field" placeholder="Ej. Cotización Proyecto X" value="{{ form.titulo.value|default:'' }}" required data-intro="📝 Ingresa un título descriptivo para tu cotización (ej. 'Cotización Equipos de Seguridad')" data-step="2">
                         {% if form.titulo.errors %}
                             <ul class="errorlist">{% for error in form.titulo.errors %}<li>{{ error }}</li>{% endfor %}</ul>
                         {% endif %}
@@ -207,10 +207,10 @@
                     <div>
                         <label for="id_cliente" class="block text-sm font-medium text-gray-300 mb-1">Cliente</label>
                         <div class="flex items-center space-x-2">
-                            <select id="id_cliente" name="cliente" class="input-field flex-grow" required>
+                            <select id="id_cliente" name="cliente" class="input-field flex-grow" required data-intro="🏢 Selecciona el cliente para quien crearás la cotización. Si no existe, usa el botón '+' para crear uno nuevo." data-step="3">
                                 <!-- Options will be populated by JavaScript -->
                             </select>
-                            <button type="button" id="add-client-btn" class="btn-secondary py-2 px-4">
+                            <button type="button" id="add-client-btn" class="btn-secondary py-2 px-4" data-intro="➕ Haz clic aquí para crear un nuevo cliente si no aparece en la lista." data-step="4">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                             </button>
                         </div>
@@ -223,10 +223,10 @@
                 <div class="mt-6 text-center">
                     <label for="id_oportunidad" class="block text-sm font-medium text-gray-300 mb-1">Oportunidad Bitrix24</label>
                     <div class="flex justify-center items-center space-x-2">
-                        <select id="id_oportunidad" name="oportunidad" class="input-field" style="max-width: 500px;">
+                        <select id="id_oportunidad" name="oportunidad" class="input-field" style="max-width: 500px;" data-intro="🎯 Opcionalmente, vincula esta cotización con una oportunidad de Bitrix24 para mejor seguimiento." data-step="5">
                             <option value="">-- Seleccione una oportunidad --</option>
                         </select>
-                        <button type="button" id="add-opportunity-btn" class="btn-secondary py-2 px-4">
+                        <button type="button" id="add-opportunity-btn" class="btn-secondary py-2 px-4" data-intro="🆕 Crea una nueva oportunidad directamente en Bitrix24 desde aquí." data-step="6">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                         </button>
                     </div>
@@ -240,11 +240,11 @@
                 <h2 class="text-xl font-semibold text-white mb-4">Detalles de Productos</h2>
 
                 <div class="flex justify-between items-center mb-4">
-                    <button type="button" id="add-row-btn" class="btn-primary flex items-center justify-center">
+                    <button type="button" id="add-row-btn" class="btn-primary flex items-center justify-center" data-intro="📋 Agrega productos uno por uno usando este botón. Cada fila representa un producto en tu cotización." data-step="7">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                         Agregar Fila
                     </button>
-                    <button type="button" id="toggle-paste-area-btn" class="btn-secondary flex items-center justify-center">
+                    <button type="button" id="toggle-paste-area-btn" class="btn-secondary flex items-center justify-center" data-intro="📊 ¿Tienes los datos en Excel? Usa esta función para copiar y pegar múltiples productos de una vez." data-step="8">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-2m-6-11h-2a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-2"></path></svg>
                         Pegar Datos de Excel
                     </button>
@@ -318,7 +318,7 @@
 
                         <!-- Nuevo campo para la institución -->
                         <label for="tipo-cotizacion-select" class="block text-sm font-medium text-gray-300 mt-4 mb-1">Institución</label>
-                        <select id="tipo-cotizacion-select" class="input-field w-full text-sm" name="tipo_cotizacion" required>
+                        <select id="tipo-cotizacion-select" class="input-field w-full text-sm" name="tipo_cotizacion" required data-intro="🏢 Selecciona la institución que aparecerá en el PDF de la cotización (BAJANET o IAMET)." data-step="9">
                             <option value="">Seleccione una institución</option> <!-- Añadida opción vacía y requerida -->
                             <option value="Bajanet">BAJANET</option>
                             <option value="Iamet">IAMET</option>
@@ -329,7 +329,7 @@
 
             <div class="flex justify-end space-x-4 mt-8">
                 <button type="button" class="btn-secondary" onclick="window.history.back()">Regresar</button>
-                <button type="submit" class="btn-primary">{% if editing_mode %}Crear Nueva Cotización{% else %}Crear Cotización{% endif %}</button>
+                <button type="submit" class="btn-primary" data-intro="✅ Una vez completado todo, haz clic aquí para generar la cotización y su PDF automáticamente." data-step="10">{% if editing_mode %}Crear Nueva Cotización{% else %}Crear Cotización{% endif %}</button>
             </div>
         </form>
     </div>
