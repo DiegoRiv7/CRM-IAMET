@@ -501,7 +501,7 @@
                     },
                     {
                         question: "¿Puedo crear una oportunidad nueva aquí?",
-                        answer: "➕ <strong>Crear oportunidades:</strong><br><br><strong>Método recomendado:</strong><br>1️⃣ Ve a la sección de <strong>Cotizaciones</strong>.<br>2️⃣ Haz clic en <strong>'Crear Cotización'</strong>.<br>3️⃣ Si el cliente no existe, créalo con el botón '+'.<br>4️⃣ Usa el botón '+' junto al campo de oportunidad para crear una nueva.<br>5️⃣ Se creará en Bitrix24 automáticamente y aparecerá aquí al instante.<br><br><strong>Datos requeridos:</strong><br>• Cliente<br>• Nombre de oportunidad<br>• Área y producto<br>• Probabilidad inicial<br>• Monto estimado<br><br>🔄 La nueva oportunidad se sincroniza inmediatamente.",
+                        answer: "➕ <strong>Crear oportunidades:</strong><br><br><strong>Método recomendado:</strong><br>1️⃣ Ya que estas en la sección de <strong>Oportunidades</strong>.<br>2️⃣ Haz clic en <strong>'Crear Cotización'</strong>.<br>3️⃣ Si el cliente no existe, créalo con el botón '+'.<br>4️⃣ Usa el botón '+' junto al campo de oportunidad para crear una nueva.<br>5️⃣ Se creará en Bitrix24 automáticamente y aparecerá aquí al instante.<br><br><strong>Datos requeridos:</strong><br>• Cliente<br>• Nombre de oportunidad<br>• Área y producto<br>• Probabilidad inicial<br>• Monto estimado<br><br>🔄 La nueva oportunidad se sincroniza inmediatamente.",
                         category: "Creación"
                     },
                     {
@@ -510,8 +510,7 @@
                         category: "Integración"
                     }
                 ];
-            } else if (currentPath.includes('crear_cotizacion') || currentPath.endsWith('/crear_cotizacion.html')) {
-                console.log('Detected crear_cotizacion page. Current path:', currentPath);
+            } else if (currentPath.includes('crear_cotizacion')) {
                 // Create quotation page questions - más guiadas
                 questions = [
                     {
@@ -530,7 +529,6 @@
                         category: "Archivos"
                     }
                 ];
-                console.log('Questions for crear_cotizacion loaded:', questions);
             } else if (currentPath.includes('cotizacion')) {
                 // Quotations page questions - más guiadas
                 questions = [
@@ -541,7 +539,7 @@
                     },
                     {
                         question: "¿Puedo modificar una cotización existente?",
-                        answer: "📝 <strong>Modificación de cotizaciones:</strong><br><br><strong>❌ No se pueden editar directamente</strong><br><br><strong>¿Por qué?</strong><br>• Mantiene integridad del historial<br>• Evita confusiones en negociaciones<br>• Preserva trazabilidad para auditorías<br>• Cada versión queda registrada<br><br><strong>✅ Alternativas:</strong><br>• <strong>Nueva cotización:</strong> Crea una nueva para el mismo cliente<br>• <strong>Duplicar:</strong> Si está disponible, copia los productos<br>• <strong>Vincular:</strong> Asocia con la misma oportunidad para mantener contexto<br><br><strong>🔄 Flujo recomendado:</strong><br>1️⃣ Ve a Oportunidades<br>2️⃣ Crea nueva cotización<br>3️⃣ Selecciona mismo cliente y oportunidad<br>4️⃣ Modifica productos según necesites<br><br>📊 Así mantienes un historial claro de la negociación.",
+                        answer: "📝 <strong>Modificación de cotizaciones:</strong><br><br><strong>Se pueden editar en la sección de oportunidades</strong><br><br><strong>Al darle click a una oportunidad veras todas las cotizaciones ligadas a esa oportundiad donde aparecera un nuevo menú y solo tendras que seleccionar la opción de editar</strong><br>",
                         category: "Edición"
                     },
                     {
