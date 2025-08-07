@@ -219,7 +219,7 @@
             } else if (visitCount < 5) {
                 personalizedGreeting = `${timeGreeting} ¡Qué alegría verte de nuevo! Esta es tu visita #${visitCount} ✨`;
             } else {
-                personalizedGreeting = `${timeGreeting}${userName ? ` ${userName}` : ''}! Me encanta que sigas usando Nethive 💙`;
+                personalizedGreeting = `${timeGreeting}${userName ? ` ${userName}` : ''}! Me encanta que sigas usando el cotizador 💙`;
             }
             
             return `Hola soy Nethive, tu asistente virtual. ${personalizedGreeting}`;
@@ -344,7 +344,6 @@
                         
                         <!-- Enhanced Chat Content -->
                         <div id="nethive-content" class="p-8 max-h-[500px] overflow-y-auto bg-gradient-to-b from-slate-800/50 to-slate-900/80 backdrop-blur-sm">
-                            <!-- Welcome Message with personality -->
                             <div id="nethive-chat">
                                 <div class="flex items-start mb-8 animate-slide-in">
                                     <!-- Mini avatar for chat -->
@@ -352,15 +351,8 @@
                                         ${createMiniNethiveAvatar()}
                                     </div>
                                     <div class="bg-gradient-to-br from-cyan-900/60 to-blue-900/60 rounded-2xl rounded-tl-none p-6 max-w-md border border-cyan-500/30 backdrop-blur-sm">
-                                        <div id="typing-animation" class="hidden mb-3">
-                                            <div class="flex space-x-1">
-                                                <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
-                                                <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
-                                                <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
-                                            </div>
-                                        </div>
                                         <div id="nethive-message" class="text-cyan-50 text-sm leading-relaxed">
-                                            <!-- Message will be typed here -->
+                                            ${getNethiveGreeting()}
                                         </div>
                                     </div>
                                 </div>
@@ -491,7 +483,7 @@
                 };
             } else {
                 return {
-                    welcome: "Te ayudo a navegar y usar **Nethive** de manera eficiente. Esta es tu plataforma de gestión de ventas integrada con Bitrix24."
+                    welcome: "Te ayudo a navegar y usar **el cotizador** de manera eficiente. Esta es tu plataforma de gestión de ventas integrada con Bitrix24."
                 };
             }
         }
@@ -504,57 +496,37 @@
                 questions = [
                     {
                         question: "¿Cómo creo una cotización desde una oportunidad?",
-                        answer: "🎯 <strong>Crear cotización desde oportunidad:</strong><br><br><strong>Pasos:</strong><br>1️⃣ Busca tu oportunidad en la lista<br>2️⃣ Haz clic en el botón verde <strong>'+ Crear Cotización'</strong><br>3️⃣ Selecciona el cliente (las oportunidades aparecerán automáticamente)<br>4️⃣ Elige la oportunidad específica<br>5️⃣ Agrega productos y genera<br><br>💡 <strong>Ventaja:</strong> La cotización se vincula automáticamente con Bitrix24.",
+                        answer: "🎯 <strong>Crear cotización desde oportunidad:</strong><br><br><strong>Pasos:</strong><br>1️⃣ Haz clic en el <strong>nombre de la oportunidad</strong> en la tabla.<br>2️⃣ En la vista de detalle de la oportunidad, haz clic en el botón <strong>'Crear Nueva Cotización'</strong>.<br>3️⃣ El cliente y la oportunidad se seleccionarán automáticamente en el formulario de cotización.<br>4️⃣ Agrega los productos y genera el PDF.<br><br>💡 <strong>Ventaja:</strong> La cotización se vincula automáticamente con Bitrix24 y se precargan los datos principales.",
                         category: "Flujo principal"
                     },
                     {
-                        question: "¿Qué significan los colores de probabilidad?",
-                        answer: "🎯 <strong>Sistema de colores:</strong><br><br>🔴 <strong>Rojo (0-50%):</strong> Probabilidad baja - Oportunidad en etapa temprana<br>🟡 <strong>Amarillo (51-69%):</strong> Probabilidad media - En negociación<br>🟢 <strong>Verde (70-100%):</strong> Probabilidad alta - Muy cerca de cerrarse<br><br>✨ <strong>Tip:</strong> Haz clic en cualquier barra para cambiar la probabilidad rápidamente.",
-                        category: "Visualización"
-                    },
-                    {
-                        question: "¿Cómo busco una oportunidad específica?",
-                        answer: "🔍 <strong>Búsqueda de oportunidades:</strong><br><br><strong>Método rápido:</strong><br>• Usa el campo de búsqueda en la parte superior<br>• Escribe el nombre de la oportunidad<br>• Búsqueda en tiempo real<br><br><strong>Búsqueda avanzada:</strong><br>• Haz clic en 'Mostrar Filtros'<br>• Filtra por área, producto, cliente, probabilidad<br>• Combina múltiples filtros<br><br>💡 Los filtros se mantienen mientras navegas.",
-                        category: "Navegación"
+                        question: "¿Puedo crear una oportunidad nueva aquí?",
+                        answer: "➕ <strong>Crear oportunidades:</strong><br><br><strong>Método recomendado:</strong><br>1️⃣ Ve a la sección de <strong>Cotizaciones</strong>.<br>2️⃣ Haz clic en <strong>'Crear Cotización'</strong>.<br>3️⃣ Si el cliente no existe, créalo con el botón '+'.<br>4️⃣ Usa el botón '+' junto al campo de oportunidad para crear una nueva.<br>5️⃣ Se creará en Bitrix24 automáticamente y aparecerá aquí al instante.<br><br><strong>Datos requeridos:</strong><br>• Cliente<br>• Nombre de oportunidad<br>• Área y producto<br>• Probabilidad inicial<br>• Monto estimado<br><br>🔄 La nueva oportunidad se sincroniza inmediatamente.",
+                        category: "Creación"
                     },
                     {
                         question: "¿De dónde vienen estas oportunidades?",
-                        answer: "🔄 <strong>Sincronización con Bitrix24:</strong><br><br><strong>Fuentes:</strong><br>• 📥 <strong>Bitrix24:</strong> Se sincronizan automáticamente en tiempo real<br>• 🆕 <strong>Locales:</strong> Creadas usando el botón '+' en cotizaciones<br>• 🔔 <strong>Webhooks:</strong> Cualquier cambio en Bitrix24 aparece al instante<br><br><strong>¿Qué se sincroniza?</strong><br>• Nombre de oportunidad<br>• Cliente asociado<br>• Área y producto<br>• Probabilidad de cierre<br>• Monto estimado<br><br>✨ Todo es automático, sin intervención manual.",
+                        answer: "🔄 <strong>Sincronización con Bitrix24:</strong><br><br><strong>Fuentes:</strong><br>• 📥 <strong>Bitrix24:</strong> Se sincronizan automáticamente en tiempo real.<br>• 🔔 <strong>Webhooks:</strong> Cualquier cambio en Bitrix24 aparece al instante.<br><br><strong>¿Qué se sincroniza?</strong><br>• Nombre de oportunidad<br>• Cliente asociado<br>• Área y producto<br>• Probabilidad de cierre<br>• Monto estimado<br><br>✨ Todo es automático, sin intervención manual.",
                         category: "Integración"
-                    },
-                    {
-                        question: "¿Puedo crear una oportunidad nueva aquí?",
-                        answer: "➕ <strong>Crear oportunidades:</strong><br><br><strong>Método recomendado:</strong><br>1️⃣ Ve a crear cotización<br>2️⃣ Si no existe el cliente, créalo con el botón '+'<br>3️⃣ Usa el botón '+' junto al campo de oportunidad<br>4️⃣ Se creará en Bitrix24 automáticamente<br>5️⃣ Aparecerá aquí al instante<br><br><strong>Datos requeridos:</strong><br>• Cliente<br>• Nombre de oportunidad<br>• Área y producto<br>• Probabilidad inicial<br>• Monto estimado<br><br>🔄 La nueva oportunidad se sincroniza inmediatamente.",
-                        category: "Creación"
                     }
                 ];
             } else if (currentPath.includes('crear_cotizacion')) {
                 // Create quotation page questions - más guiadas
                 questions = [
                     {
-                        question: "¿Cómo empiezo a crear una cotización?",
-                        answer: "🚀 <strong>Guía paso a paso:</strong><br><br><strong>1️⃣ Título:</strong> Pon un nombre descriptivo<br><strong>2️⃣ Cliente:</strong> Selecciona o crea cliente con el botón '+'<br><strong>3️⃣ Oportunidad:</strong> Opcional - aparecen las últimas 10 del cliente<br><strong>4️⃣ Productos:</strong> Usa 'Agregar Fila' o 'Pegar Excel'<br><strong>5️⃣ Institución:</strong> BAJANET o IAMET<br><strong>6️⃣ Generar:</strong> Haz clic en 'Crear Cotización'<br><br>⏱️ <strong>Tiempo estimado:</strong> 2-3 minutos<br>📄 <strong>Resultado:</strong> PDF profesional automático",
-                        category: "Flujo completo"
+                        question: "¿Cómo llenar cada campo?",
+                        answer: "📝 <strong>Guía de campos:</strong><br><br>• <strong>Título:</strong> Nombre descriptivo para la cotización.<br>• <strong>Cliente:</strong> Selecciona un cliente existente o crea uno nuevo con el botón '+ '.<br>• <strong>Oportunidad:</strong> (Opcional) Asocia la cotización a una oportunidad existente. Si seleccionas una, se precargará el cliente y el título.<br>• <strong>Productos:</strong> Agrega filas manualmente o pega datos desde Excel. Incluye: Nombre, Marca, No. Parte, Cantidad, Precio Unitario, Descuento.<br>• <strong>IVA:</strong> Tasa de Impuesto al Valor Agregado.<br>• <strong>Moneda:</strong> Tipo de moneda de la cotización.<br>• <strong>Tipo de Cotización:</strong> Elige entre BAJANET o IAMET para el formato del PDF.<br>• <strong>Descuento Visible:</strong> Decide si el descuento se muestra en el PDF.<br>💡 <strong>Tip:</strong> Los campos se validan automáticamente.",
+                        category: "Formulario"
                     },
                     {
-                        question: "¿Cómo funciona la selección de cliente y oportunidades?",
-                        answer: "🔮 <strong>Magia de la sincronización:</strong><br><br><strong>Al seleccionar cliente:</strong><br>• 📋 Aparecen automáticamente sus últimas 10 oportunidades<br>• 📅 Incluye oportunidades de meses pasados<br>• 🔄 Datos sincronizados con Bitrix24<br>• ⚡ Actualización en tiempo real<br><br><strong>¿Qué pasa si selecciono una oportunidad?</strong><br>• Se vincula la cotización con esa negociación<br>• Se mantiene el contexto histórico<br>• Se actualiza el seguimiento en Bitrix24<br><br><strong>¿Y si no selecciono oportunidad?</strong><br>• Cotización independiente<br>• Perfecta para consultas directas<br>• Sin complicaciones de Bitrix24",
-                        category: "Vinculación"
+                        question: "¿Cómo crear una oportunidad desde aquí?",
+                        answer: "➕ <strong>Crear oportunidad:</strong><br><br><strong>Pasos:</strong><br>1️⃣ En el campo <strong>'Oportunidad'</strong>, haz clic en el botón <strong>'+'</strong>.<br>2️⃣ Se abrirá un formulario para crear una nueva oportunidad.<br>3️⃣ Llena los datos requeridos (nombre, monto, área, etc.).<br>4️⃣ La nueva oportunidad se vinculará automáticamente a esta cotización y se sincronizará con Bitrix24.<br>✨ <strong>Ventaja:</strong> Puedes crear y vincular oportunidades sin salir del formulario de cotización.",
+                        category: "Creación"
                     },
                     {
-                        question: "¿Cómo agrego productos rápidamente?",
-                        answer: "📦 <strong>Métodos para agregar productos:</strong><br><br><strong>🖱️ Método manual:</strong><br>• Haz clic en 'Agregar Fila'<br>• Ideal para pocos productos<br>• Control total de cada campo<br><br><strong>📊 Método Excel (recomendado):</strong><br>• Haz clic en 'Pegar Datos de Excel'<br>• Copia de Excel: Marca, No. Parte, Cantidad, Descripción, Precio Lista, Desc, Unitario, Total<br>• Pega en el área de texto<br>• Procesa automáticamente múltiples filas<br><br><strong>🎨 Método mixto:</strong><br>• Combina ambos métodos<br>• Excel para productos base + manual para ajustes<br><br>💡 Todos los cálculos son automáticos.",
-                        category: "Productos"
-                    },
-                    {
-                        question: "¿Cuándo debo elegir BAJANET o IAMET?",
-                        answer: "🏢 <strong>Diferencias entre instituciones:</strong><br><br>🔹 <strong>BAJANET:</strong><br>• Para cotizaciones de Baja California<br>• Diseño optimizado para impresión<br>• Colores grises (ahorra tinta)<br>• Logo y contacto: 664 380 8965, baja-net.com<br><br>🔸 <strong>IAMET:</strong><br>• Para cotizaciones corporativas<br>• Colores azules y verdes<br>• Logo y contacto: +52 664 380 8935, iamet.mx<br><br><strong>¿Qué cambia?</strong><br>• Solo el diseño del PDF<br>• Logos y datos de contacto<br>• Colores del documento<br><br>⚠️ <strong>Importante:</strong> Elige según el cliente o región.",
-                        category: "Configuración"
-                    },
-                    {
-                        question: "¿Qué pasa después de crear la cotización?",
-                        answer: "🎉 <strong>Proceso automático al generar:</strong><br><br><strong>📄 PDF profesional:</strong><br>• Se genera automáticamente<br>• Se descarga al navegador<br>• Diseño según institución elegida<br>• Incluye todos los cálculos<br><br><strong>💾 Almacenamiento:</strong><br>• Se guarda en el historial del cliente<br>• Disponible desde 'Cotizaciones'<br>• Se puede volver a descargar<br><br><strong>🔄 Sincronización:</strong><br>• Si está vinculada a oportunidad, se actualiza Bitrix24<br>• Se agrega etiqueta 'Nethive'<br>• Se preserva el contexto de negociación<br><br><strong>📧 Uso:</strong><br>• PDF listo para enviar por email<br>• Formato profesional<br>• Incluye términos y condiciones",
-                        category: "Resultados"
+                        question: "¿Dónde veo mis PDF descargados?",
+                        answer: "📄 <strong>Acceso a PDFs:</strong><br><br>• <strong>Por Oportunidad:</strong> Ve a la sección de <strong>Oportunidades</strong>. Haz clic en el <strong>nombre de la oportunidad</strong> a la que asignaste el PDF. Te saldrán todos los PDFs vinculados a esa oportunidad.<br>• <strong>Por Cliente:</strong> Ve a la sección de <strong>Cotizaciones</strong>. Podrás visualizar todas las cotizaciones por cliente, y desde ahí descargar o ver el PDF.<br>💡 <strong>Recuerda:</strong> Los PDFs también se descargan automáticamente a tu navegador al generarlos.",
+                        category: "Archivos"
                     }
                 ];
             } else if (currentPath.includes('cotizacion')) {
@@ -681,24 +653,19 @@
                 // General/Home page questions - más guiadas
                 questions = [
                     {
-                        question: "¿Cómo empiezo a usar Nethive?",
-                        answer: "🚀 <strong>Primeros pasos con Nethive:</strong><br><br><strong>1️⃣ Familiarízate con el menú:</strong><br>• 🎮 Menú flotante siempre disponible<br>• Se puede arrastrar a cualquier posición<br>• Acceso directo a todas las funciones<br><br><strong>2️⃣ Flujo típico de trabajo:</strong><br>• <strong>Oportunidades</strong> → Ver leads de Bitrix24<br>• <strong>Crear cotización</strong> → Generar propuestas<br>• <strong>Cotizaciones</strong> → Revisar historial<br><br><strong>3️⃣ Casos de uso comunes:</strong><br>• Nueva oportunidad de Bitrix24 → Cotización rápida<br>• Cliente recurrente → Revisar historial → Nueva cotización<br>• Consulta directa → Cotización sin oportunidad<br><br><strong>💡 Comienza con:</strong> Ve a 'Oportunidades' para ver tus leads actuales.",
+                        question: "¿Cómo empiezo a usar el cotizador?",
+                        answer: "🚀 <strong>Primeros pasos con el cotizador:</strong><br><br><strong>1️⃣ Familiarízate con el menú:</strong><br>• 🎮 Menú flotante siempre disponible<br>• Se puede arrastrar a cualquier posición<br>• Acceso directo a todas las funciones<br><br><strong>2️⃣ Flujo típico de trabajo:</strong><br>• Vaya a <strong>Oportunidades</strong> desde el menú flotante y haga clic en el botón de <strong>Crear Cotización</strong>.<br><br><strong>💡 Comienza con:</strong> Ve a 'Oportunidades' para ver tus leads actuales.",
                         category: "Primeros pasos"
                     },
                     {
                         question: "¿Qué hace cada sección del menú?",
-                        answer: "📋 <strong>Guía completa del menú:</strong><br><br>🏠 <strong>Home:</strong> Página principal<br>• Punto de partida<br>• Información general<br><br>🎯 <strong>Oportunidades:</strong> Centro de ventas<br>• Ver oportunidades de Bitrix24<br>• Crear cotizaciones<br>• Gestionar leads<br><br>📄 <strong>Cotizaciones:</strong> Historial comercial<br>• Ver cotizaciones por cliente<br>• Descargar PDFs<br>• Revisar historial de negociaciones<br><br>📊 <strong>Dashboard:</strong> Reportes (supervisores)<br>• Estadísticas de ventas<br>• Análisis de rendimiento<br><br>👥 <strong>Usuarios:</strong> Gestión de equipo<br>• Administrar usuarios del sistema<br><br>⚙️ <strong>Admin:</strong> Configuración avanzada<br>• Solo para administradores del sistema",
+                        answer: "📋 <strong>Guía completa del menú:</strong><br><br>🏠 <strong>Home:</strong> Página principal<br>• Punto de partida<br>• Información general<br><br>🎯 <strong>Oportunidades:</strong> Centro de ventas<br>• Ver oportunidades de Bitrix24<br>• Crear cotizaciones<br>• Gestionar leads<br><br>📄 <strong>Cotizaciones:</strong> Historial comercial<br>• Ver cotizaciones por cliente<br>• Descargar PDFs<br>• Revisar historial de negociaciones<br><br>📦 <strong>Incrementa:</strong> Cotizaciones del sistema anterior<br>• Gestionar y visualizar cotizaciones importadas<br><br>",
                         category: "Navegación"
                     },
                     {
                         question: "¿Cómo funciona la integración con Bitrix24?",
                         answer: "🔄 <strong>Integración completa con Bitrix24:</strong><br><br><strong>⚡ Sincronización en tiempo real:</strong><br>• Webhooks automáticos<br>• Cambios instantáneos<br>• Sin intervención manual<br><br><strong>📥 ¿Qué se importa?</strong><br>• Oportunidades nuevas<br>• Actualizaciones de oportunidades existentes<br>• Datos de clientes<br>• Información de contacto<br><br><strong>📤 ¿Qué se exporta?</strong><br>• Nuevas oportunidades creadas aquí<br>• Actualizaciones de probabilidad<br>• Etiquetas 'Nethive' en oportunidades<br>• Vínculos de cotizaciones<br><br><strong>🏷️ Identificación:</strong><br>• Oportunidades creadas en Nethive llevan etiqueta 'Nethive'<br>• Fácil identificación en Bitrix24<br>• Trazabilidad completa<br><br><strong>🔔 Notificaciones:</strong><br>• Cambios aparecen al instante<br>• Sin necesidad de actualizar página<br>• Siempre sincronizado",
                         category: "Integración"
-                    },
-                    {
-                        question: "¿Cuál es el flujo típico de trabajo?",
-                        answer: "⚙️ <strong>Flujos de trabajo principales:</strong><br><br><strong>🔥 Escenario 1: Oportunidad nueva de Bitrix24</strong><br>1️⃣ Recibes notificación en Bitrix24<br>2️⃣ Ve a 'Oportunidades' en Nethive<br>3️⃣ Busca la oportunidad (aparece al principio)<br>4️⃣ Haz clic en '+ Crear Cotización'<br>5️⃣ Selecciona cliente → aparecen sus oportunidades<br>6️⃣ Agrega productos y genera PDF<br><br><strong>🔗 Escenario 2: Cliente recurrente</strong><br>1️⃣ Ve a 'Cotizaciones' → revisa historial<br>2️⃣ Ve a 'Oportunidades' → '+ Crear Cotización'<br>3️⃣ Selecciona cliente → aparecen últimas 10 oportunidades<br>4️⃣ Elige oportunidad histórica para mantener contexto<br>5️⃣ Genera nueva cotización vinculada<br><br><strong>⚡ Escenario 3: Consulta rápida</strong><br>1️⃣ Ve directo a 'Oportunidades' → '+ Crear Cotización'<br>2️⃣ Crea cliente nuevo si es necesario<br>3️⃣ NO selecciones oportunidad (déjalo vacío)<br>4️⃣ Agrega productos rápido con Excel<br>5️⃣ PDF listo en 2 minutos",
-                        category: "Flujo de trabajo"
                     }
                 ];
             }
@@ -726,8 +693,8 @@
                     </div>
                 </div>
                 <div class="flex items-start mb-6 animate-fade-in">
-                    <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span class="text-white text-lg">🤖</span>
+                    <div class="flex-shrink-0 mr-4">
+                        ${createMiniNethiveAvatar()}
                     </div>
                     <div class="ml-3 bg-gradient-to-r from-green-900/30 to-blue-900/30 rounded-2xl rounded-tl-none p-4">
                         <div class="text-green-100 text-sm leading-relaxed">
