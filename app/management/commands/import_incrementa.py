@@ -3,6 +3,7 @@ import json
 import os
 from django.core.management.base import BaseCommand
 from django.conf import settings
+from dotenv import load_dotenv
 
 class Command(BaseCommand):
     help = 'Importa los PDFs de las cotizaciones desde un archivo JSON de Incrementa'
