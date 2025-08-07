@@ -106,5 +106,7 @@ urlpatterns = [
     # Ruta temporal para depuración del enlace de Bitrix
     path('bitrix-temp-link/', TemplateView.as_view(template_name='bitrix_temp_link.html'), name='bitrix_temp_link'),
     path('incrementa/', views.incrementa_view, name='incrementa'),
+    path('incrementa/pdf/view/<int:quote_id>/', views.view_incrementa_pdf, name='view_incrementa_pdf'),
+    path('incrementa/pdf/download/<int:quote_id>/', views.download_incrementa_pdf, name='download_incrementa_pdf'),
     path('api/crear-cliente/', views.crear_cliente_api, name='crear_cliente_api'),
 ]

@@ -2035,12 +2035,103 @@ def oportunidad_detalle_api(request, id):
     except TodoItem.DoesNotExist:
         return JsonResponse({'error': 'Oportunidad no encontrada'}, status=404)
 
+@login_required
+def view_incrementa_pdf(request, quote_id):
+    # This is a dummy PDF content. In a real scenario, you would fetch the PDF
+    # from Incrementa API or a storage.
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Cotización Incrementa #{quote_id}</title>
+        <style>
+            body {{ font-family: sans-serif; margin: 40px; }}
+            h1 {{ color: #333; }}
+            p {{ color: #666; }}
+        </style>
+    </head>
+    <body>
+        <h1>Cotización Incrementa #{quote_id}</h1>
+        <p>Este es un PDF de ejemplo para la cotización de Incrementa.</p>
+        <p>Contenido detallado de la cotización #{quote_id} iría aquí.</p>
+        <p>Fecha: 2023-XX-XX</p>
+        <p>Monto: $XXXX.XX</p>
+        <p>Cliente: Cliente de Ejemplo</p>
+        <p>Este documento simula el PDF de una cotización de Incrementa.</p>
+    </body>
+    </html>
+    """
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="cotizacion_incrementa_{quote_id}.pdf"'
+    HTML(string=html_content).write_pdf(response)
+    return response
+
+@login_required
+def download_incrementa_pdf(request, quote_id):
+    # This is a dummy PDF content. In a real scenario, you would fetch the PDF
+    # from Incrementa API or a storage.
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Cotización Incrementa #{quote_id}</title>
+        <style>
+            body {{ font-family: sans-serif; margin: 40px; }}
+            h1 {{ color: #333; }}
+            p {{ color: #666; }}
+        </style>
+    </head>
+    <body>
+        <h1>Cotización Incrementa #{quote_id}</h1>
+        <p>Este es un PDF de ejemplo para la cotización de Incrementa.</p>
+        <p>Contenido detallado de la cotización #{quote_id} iría aquí.</p>
+        <p>Fecha: 2023-XX-XX</p>
+        <p>Monto: $XXXX.XX</p>
+        <p>Cliente: Cliente de Ejemplo</p>
+        <p>Este documento simula el PDF de una cotización de Incrementa.</p>
+    </body>
+    </html>
+    """
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="cotizacion_incrementa_{quote_id}.pdf"'
+    HTML(string=html_content).write_pdf(response)
+    return response
+
 @csrf_exempt
 @login_required
 def incrementa_view(request):
     if not is_supervisor(request.user) and not request.user.groups.filter(name='Supervisores').exists():
         return render(request, 'incrementa.html', {'coming_soon': True})
-    return render(request, 'incrementa.html', {'coming_soon': False})
+
+    # Dummy data for Incrementa quotes (replace with API integration later)
+    all_incrementa_quotes = [
+        {'id': 1, 'nombre': 'Cotización Incrementa #001 - Cliente A', 'fecha': '2023-01-15', 'monto': 1500.00},
+        {'id': 2, 'nombre': 'Cotización Incrementa #002 - Cliente B', 'fecha': '2023-02-20', 'monto': 2500.50},
+        {'id': 3, 'nombre': 'Cotización Incrementa #003 - Cliente C', 'fecha': '2023-03-10', 'monto': 1200.75},
+        {'id': 4, 'nombre': 'Cotización Incrementa #004 - Cliente A', 'fecha': '2023-04-01', 'monto': 3000.00},
+        {'id': 5, 'nombre': 'Cotización Incrementa #005 - Cliente D', 'fecha': '2023-05-22', 'monto': 800.00},
+        {'id': 6, 'nombre': 'Cotización Incrementa #006 - Cliente E', 'fecha': '2023-06-05', 'monto': 4500.00},
+    ]
+
+    # Add view and download URLs to dummy data
+    for quote in all_incrementa_quotes:
+        quote['view_url'] = reverse('view_incrementa_pdf', args=[quote['id']])
+        quote['download_url'] = reverse('download_incrementa_pdf', args=[quote['id']])
+
+    search_query = request.GET.get('q', '')
+    incrementa_quotes = all_incrementa_quotes
+
+    if search_query:
+        incrementa_quotes = [
+            q for q in all_incrementa_quotes if search_query.lower() in q['nombre'].lower()
+        ]
+
+    context = {
+        'coming_soon': False,
+        'incrementa_quotes': incrementa_quotes,
+        'search_query': search_query,
+    }
+    return render(request, 'incrementa.html', context)
 
 @login_required
 def actualizar_probabilidad(request, id):

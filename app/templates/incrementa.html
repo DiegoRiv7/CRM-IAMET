@@ -18,12 +18,56 @@
         </div>
     </div>
     {% else %}
-    <div class="bg-white shadow-md rounded-lg p-6">
-        <p class="text-gray-700 mb-4">Aquí se mostrarán las cotizaciones importadas desde Incrementa.</p>
-        <!-- Contenido futuro para la integración de API -->
-        <div class="border-t border-gray-200 pt-4">
-            <h2 class="text-xl font-semibold text-gray-800 mb-3">Opciones de Importación</h2>
-            <p class="text-gray-600">En esta sección podrás gestionar y visualizar las cotizaciones de tu antiguo sistema Incrementa.</p>
+    <div class="bg-white shadow-md rounded-lg p-6 glass-card">
+        <p class="text-gray-200 mb-4">Aquí se mostrarán las cotizaciones importadas desde Incrementa.</p>
+
+        <form method="GET" class="mb-6">
+            <div class="flex items-center space-x-2">
+                <input type="text" name="q" placeholder="Buscar cotización por nombre..." value="{{ search_query }}"
+                       class="flex-grow px-4 py-2 border border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800">
+                    Buscar
+                </button>
+            </div>
+        </form>
+
+        {% if incrementa_quotes %}
+        <div class="overflow-x-auto glass-table rounded-lg">
+            <table class="min-w-full divide-y divide-gray-600">
+                <thead class="bg-gray-700">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Nombre</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Fecha</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Monto</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-600">
+                    {% for quote in incrementa_quotes %}
+                    <tr class="hover:bg-gray-700">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-100">{{ quote.id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
+                            <a href="{{ quote.view_url }}" target="_blank" class="text-blue-400 hover:text-blue-600">{{ quote.nombre }}</a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">{{ quote.fecha }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">${{ quote.monto|floatformat:2 }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="{{ quote.download_url }}" class="text-green-400 hover:text-green-600">Descargar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-gray-400">No se encontraron cotizaciones que coincidan con la búsqueda.</p>
+        {% endif %}
+
+        <div class="border-t border-gray-600 pt-4 mt-6">
+            <h2 class="text-xl font-semibold text-gray-100 mb-3">Opciones de Importación</h2>
+            <p class="text-gray-400">En esta sección podrás gestionar y visualizar las cotizaciones de tu antiguo sistema Incrementa.</p>
             <!-- Botones o formularios para la importación -->
         </div>
     </div>
