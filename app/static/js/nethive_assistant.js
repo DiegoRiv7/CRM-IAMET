@@ -14,6 +14,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- Main Assistant Logic ---
 
+function initNethiveAssistant() {
+    console.log("Nethive Assistant initialized successfully!");
+    // Any additional initialization logic can go here
+}
+
 const nethivePersonality = {
     moods: ['happy', 'excited', 'thoughtful', 'helpful', 'playful'],
     currentMood: 'happy',

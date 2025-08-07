@@ -372,5 +372,19 @@
                 floatingMenuContainer.style.transition = ''; // Re-enable transition
             }
         });
+
+        // Add event listener for assistant button
+        const assistantBtn = document.getElementById('assistant-btn');
+        if (assistantBtn) {
+            assistantBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (typeof window.showNethiveAssistant === 'function') {
+                    window.showNethiveAssistant();
+                }
+                // Close the floating menu after clicking assistant
+                floatingMenuNav.classList.remove('menu-open');
+                menuToggleButton.classList.remove('menu-open');
+            });
+        }
     });
 </script>
