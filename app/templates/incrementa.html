@@ -4,22 +4,22 @@
 
 {% block content %}
 <div class="container mx-auto p-4">
-    <h1 class="text-3xl font-bold text-gray-800 mb-6">Cotizaciones Incrementa</h1>
+    <h1 class="text-3xl font-bold text-gray-100 mb-6">Cotizaciones Incrementa</h1>
 
     {% if coming_soon %}
-    <div class="flex items-center justify-center min-h-[60vh] bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg shadow-xl p-8">
+    <div class="flex items-center justify-center min-h-[60vh] bg-gradient-to-br from-gray-700 to-gray-900 rounded-lg shadow-xl p-8">
         <div class="text-center">
-            <svg class="mx-auto h-24 w-24 text-indigo-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <svg class="mx-auto h-24 w-24 text-indigo-400 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p class="mt-4 text-xl font-semibold text-indigo-700">¡Próximamente disponible!</p>
-            <p class="mt-2 text-gray-600">Estamos trabajando arduamente para traer todas tus cotizaciones de Incrementa.</p>
-            <p class="text-gray-600">Mantente atento a las actualizaciones.</p>
+            <p class="mt-4 text-xl font-semibold text-indigo-300">¡Próximamente disponible!</p>
+            <p class="mt-2 text-gray-400">Estamos trabajando arduamente para traer todas tus cotizaciones de Incrementa.</p>
+            <p class="text-gray-400">Mantente atento a las actualizaciones.</p>
         </div>
     </div>
     {% else %}
-    <div class="bg-white shadow-md rounded-lg p-6 glass-card">
-        <p class="text-gray-200 mb-4">Aquí se mostrarán las cotizaciones importadas desde Incrementa.</p>
+    <div class="bg-gray-800 shadow-md rounded-lg p-6 glass-card">
+        <p class="text-gray-300 mb-4">Aquí se mostrarán las cotizaciones importadas desde Incrementa.</p>
 
         <form method="GET" class="mb-6">
             <div class="flex items-center space-x-2">
@@ -34,27 +34,23 @@
 
         {% if incrementa_quotes %}
         <div class="overflow-x-auto glass-table rounded-lg">
-            <table class="min-w-full divide-y divide-gray-600">
+            <table class="min-w-full divide-y divide-gray-700">
                 <thead class="bg-gray-700">
                     <tr>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Nombre</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Fecha</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Monto</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-600">
+                <tbody class="divide-y divide-gray-700">
                     {% for quote in incrementa_quotes %}
                     <tr class="hover:bg-gray-700">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-100">{{ quote.id }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
-                            <a href="{{ quote.view_url }}" target="_blank" class="text-blue-400 hover:text-blue-600">{{ quote.nombre }}</a>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{{ quote.id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                            <a href="{{ quote.view_url }}" target="_blank" class="text-blue-400 hover:text-blue-300">{{ quote.nombre }}</a>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">{{ quote.fecha }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">${{ quote.monto|floatformat:2 }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <a href="{{ quote.download_url }}" class="text-green-400 hover:text-green-600">Descargar</a>
+                            <a href="{{ quote.download_url }}" class="text-green-400 hover:text-green-300">Descargar</a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -65,7 +61,7 @@
         <p class="text-gray-400">No se encontraron cotizaciones que coincidan con la búsqueda.</p>
         {% endif %}
 
-        <div class="border-t border-gray-600 pt-4 mt-6">
+        <div class="border-t border-gray-700 pt-4 mt-6">
             <h2 class="text-xl font-semibold text-gray-100 mb-3">Opciones de Importación</h2>
             <p class="text-gray-400">En esta sección podrás gestionar y visualizar las cotizaciones de tu antiguo sistema Incrementa.</p>
             <!-- Botones o formularios para la importación -->
