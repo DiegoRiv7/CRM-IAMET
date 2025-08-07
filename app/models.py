@@ -98,7 +98,7 @@ class TodoItem(models.Model):
     producto = models.CharField(max_length=100, choices=PRODUCTO_CHOICES, verbose_name="Producto / Servicio", default='ZEBRA')
     monto = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Monto de la Oportunidad", default=Decimal('0.00'))
     probabilidad_cierre = models.IntegerField(verbose_name="Probabilidad de Cierre (%)", default=5)
-    mes_cierre = models.CharField(max_length=2, choices=MES_CHOICES, verbose_name="Mes de Cierre Esperado", default='01')
+    mes_cierre = models.CharField(max_length=50, choices=MES_CHOICES, verbose_name="Mes de Cierre Esperado", default='01')
     area = models.CharField(max_length=50, choices=AREA_CHOICES, verbose_name="Área")
     comentarios = models.TextField(blank=True, null=True, verbose_name="Comentarios")
     bitrix_deal_id = models.IntegerField(blank=True, null=True, verbose_name="ID de Oportunidad en Bitrix24")
