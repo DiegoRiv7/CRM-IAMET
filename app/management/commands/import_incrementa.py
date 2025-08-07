@@ -21,7 +21,7 @@ class Command(BaseCommand):
         self.stdout.write("Conectando con la API de Incrementa para obtener cotizaciones...")
 
         # Endpoint de la API para obtener el listado de pedidos
-        api_url = "https://www.incrementa.mx/api/v2/pedidos"
+        api_url = "https://incrementacrm.com/api/v2/pedidos"
         
         headers = {
             "Authorization": f"Bearer {INCREMENTA_API_TOKEN}",
