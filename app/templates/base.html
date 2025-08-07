@@ -1764,6 +1764,16 @@
         function showAutoQuotationCreator(context) {
             updateNethiveMood('focused', 'Iniciando creación automática de cotización');
             
+            // Check if we should show the advanced chat instead
+            const currentPath = window.location.pathname;
+            const isOpportunityPage = currentPath.includes('ingresar-venta') || currentPath.includes('todos');
+            
+            if (isOpportunityPage) {
+                // Show choice between advanced chat and basic quotation creator
+                showAssistanceChoice();
+                return;
+            }
+            
             const assistantHTML = `
                 <div id="nethive-auto-quotation-creator" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[9999] nethive-slide-in">
                     <div class="bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-3xl border border-green-500/40 max-h-[90vh] overflow-hidden">
@@ -2563,6 +2573,647 @@
                 checkForNewOpportunities();
             }
         });
+
+        // ==================== ADVANCED AI CHAT SYSTEM ====================
+        // Separate chat system for advanced opportunity creation
+        // ================================================================
+
+        window.showAdvancedNethiveChat = function() {
+            // Hide any existing bot instances
+            window.hideProactiveBot?.();
+            
+            updateNethiveMood('excited', '¡Usuario abrió el chat avanzado!');
+            
+            const chatHTML = `
+                <div id="nethive-advanced-chat" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+                    <div class="bg-slate-900/95 backdrop-blur-md rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] border border-cyan-500/40 flex flex-col">
+                        <!-- Header -->
+                        <div class="bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 p-6 rounded-t-3xl">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <div class="scale-75">${createNethiveAvatar()}</div>
+                                    <div>
+                                        <h2 class="text-2xl font-bold text-white">🤖 Chat Avanzado con Nethive</h2>
+                                        <p class="text-cyan-100 text-sm">Conversemos para crear tu oportunidad perfecta</p>
+                                    </div>
+                                </div>
+                                <button onclick="closeAdvancedChat()" class="text-white/80 hover:text-white text-3xl font-bold transition-colors">&times;</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Chat Area -->
+                        <div class="flex-1 flex flex-col min-h-0">
+                            <!-- Messages Container -->
+                            <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-800/30">
+                                <!-- Initial message -->
+                                <div class="flex items-start space-x-3 opacity-0 animate-fade-in">
+                                    <div class="scale-50">${createNethiveAvatar()}</div>
+                                    <div class="bg-slate-700/60 backdrop-blur-sm rounded-2xl rounded-tl-sm p-4 max-w-md">
+                                        <p class="text-white text-sm">¡Hola! 👋 Soy tu asistente avanzado. Puedo ayudarte a crear una oportunidad de venta completa.</p>
+                                        <p class="text-cyan-200 text-xs mt-2">Solo dime cosas como:</p>
+                                        <ul class="text-cyan-300 text-xs mt-1 space-y-1">
+                                            <li>• "Necesito crear una oportunidad para Empresa ABC"</li>
+                                            <li>• "El cliente quiere servicios de hosting por $15,000"</li>
+                                            <li>• "Es una cotización de desarrollo web"</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Input Area -->
+                            <div class="p-6 bg-slate-800/50 border-t border-slate-700/50">
+                                <div class="flex items-end space-x-3">
+                                    <div class="flex-1">
+                                        <textarea id="chat-input" 
+                                                placeholder="Escribe aquí para contarme sobre tu oportunidad..."
+                                                class="w-full bg-slate-700/60 text-white placeholder-slate-400 border border-slate-600/50 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50"
+                                                rows="2"></textarea>
+                                    </div>
+                                    <button onclick="sendChatMessage()" 
+                                            class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-all hover:scale-105 flex items-center space-x-2">
+                                        <span>Enviar</span>
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                
+                                <!-- Quick Actions -->
+                                <div class="flex flex-wrap gap-2 mt-3">
+                                    <button onclick="insertQuickMessage('Quiero crear una oportunidad para un nuevo cliente')" 
+                                            class="bg-slate-700/60 hover:bg-slate-600/60 text-slate-300 text-xs px-3 py-1.5 rounded-lg transition-colors">
+                                        🏢 Nuevo cliente
+                                    </button>
+                                    <button onclick="insertQuickMessage('Necesito una cotización de servicios IT')" 
+                                            class="bg-slate-700/60 hover:bg-slate-600/60 text-slate-300 text-xs px-3 py-1.5 rounded-lg transition-colors">
+                                        💻 Servicios IT
+                                    </button>
+                                    <button onclick="insertQuickMessage('Es una venta de productos de telecomunicaciones')" 
+                                            class="bg-slate-700/60 hover:bg-slate-600/60 text-slate-300 text-xs px-3 py-1.5 rounded-lg transition-colors">
+                                        📡 Telecomunicaciones
+                                    </button>
+                                    <button onclick="insertQuickMessage('El monto estimado es de $50,000 pesos')" 
+                                            class="bg-slate-700/60 hover:bg-slate-600/60 text-slate-300 text-xs px-3 py-1.5 rounded-lg transition-colors">
+                                        💰 Agregar monto
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <style>
+                    @keyframes fade-in {
+                        from { opacity: 0; transform: translateY(10px); }
+                        to { opacity: 1; transform: translateY(0); }
+                    }
+                    .animate-fade-in {
+                        animation: fade-in 0.5s ease-out forwards;
+                    }
+                    
+                    #chat-messages {
+                        scrollbar-width: thin;
+                        scrollbar-color: #475569 #1e293b;
+                    }
+                    
+                    #chat-messages::-webkit-scrollbar {
+                        width: 6px;
+                    }
+                    
+                    #chat-messages::-webkit-scrollbar-track {
+                        background: #1e293b;
+                    }
+                    
+                    #chat-messages::-webkit-scrollbar-thumb {
+                        background: #475569;
+                        border-radius: 3px;
+                    }
+                </style>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', chatHTML);
+            
+            // Initialize chat system
+            initializeChatSystem();
+            
+            // Focus on input
+            setTimeout(() => {
+                const input = document.getElementById('chat-input');
+                if (input) input.focus();
+            }, 500);
+        }
+
+        function initializeChatSystem() {
+            window.chatState = {
+                messages: [],
+                extractedData: {},
+                currentStep: 'greeting',
+                isProcessing: false
+            };
+            
+            // Add initial message to display
+            setTimeout(() => {
+                document.querySelector('#chat-messages .animate-fade-in').style.opacity = '1';
+            }, 300);
+            
+            // Handle Enter key in textarea
+            const chatInput = document.getElementById('chat-input');
+            if (chatInput) {
+                chatInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendChatMessage();
+                    }
+                });
+            }
+        }
+
+        window.closeAdvancedChat = function() {
+            const chat = document.getElementById('nethive-advanced-chat');
+            if (chat) {
+                chat.style.opacity = '0';
+                chat.style.transform = 'scale(0.95)';
+                setTimeout(() => chat.remove(), 300);
+            }
+            updateNethiveMood('happy', 'Chat cerrado');
+        }
+
+        window.insertQuickMessage = function(message) {
+            const input = document.getElementById('chat-input');
+            if (input) {
+                input.value = message;
+                input.focus();
+            }
+        }
+
+        window.sendChatMessage = function() {
+            const input = document.getElementById('chat-input');
+            if (!input || window.chatState.isProcessing) return;
+            
+            const message = input.value.trim();
+            if (!message) return;
+            
+            // Clear input
+            input.value = '';
+            window.chatState.isProcessing = true;
+            
+            // Add user message to chat
+            addChatMessage(message, 'user');
+            
+            // Process message with AI
+            setTimeout(() => processUserMessage(message), 1000);
+        }
+
+        function addChatMessage(message, sender = 'bot', isTyping = false) {
+            const messagesContainer = document.getElementById('chat-messages');
+            if (!messagesContainer) return;
+            
+            const messageClass = sender === 'user' ? 'ml-auto bg-gradient-to-r from-cyan-600 to-blue-600 text-white' : 'bg-slate-700/60 text-white';
+            const alignClass = sender === 'user' ? 'justify-end' : 'justify-start';
+            
+            const messageHTML = `
+                <div class="flex ${alignClass} animate-fade-in" style="opacity: 0;">
+                    ${sender === 'bot' ? `<div class="scale-50 mr-3">${createNethiveAvatar()}</div>` : ''}
+                    <div class="${messageClass} backdrop-blur-sm rounded-2xl ${sender === 'user' ? 'rounded-tr-sm' : 'rounded-tl-sm'} p-4 max-w-md">
+                        ${isTyping ? '<div class="typing-indicator">●●●</div>' : `<p class="text-sm">${message}</p>`}
+                    </div>
+                </div>
+            `;
+            
+            messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
+            
+            // Animate in
+            setTimeout(() => {
+                const newMessage = messagesContainer.lastElementChild;
+                if (newMessage) newMessage.style.opacity = '1';
+            }, 100);
+            
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function processUserMessage(message) {
+            updateNethiveMood('thoughtful', 'Procesando mensaje del usuario');
+            
+            // Add typing indicator
+            addChatMessage('', 'bot', true);
+            
+            setTimeout(() => {
+                // Remove typing indicator
+                const messages = document.getElementById('chat-messages');
+                if (messages.lastElementChild) {
+                    messages.lastElementChild.remove();
+                }
+                
+                // Extract data from message using simple pattern matching
+                const extractedData = extractOpportunityData(message);
+                
+                // Merge with existing data
+                Object.assign(window.chatState.extractedData, extractedData);
+                
+                // Generate appropriate response
+                const response = generateChatResponse(message, window.chatState.extractedData);
+                
+                addChatMessage(response.message, 'bot');
+                
+                // Update mood based on response
+                if (response.mood) {
+                    updateNethiveMood(response.mood, response.moodReason);
+                }
+                
+                // Check if we have enough data to create opportunity
+                if (response.canCreateOpportunity) {
+                    setTimeout(() => {
+                        showOpportunityCreationSummary();
+                    }, 2000);
+                }
+                
+                window.chatState.isProcessing = false;
+            }, 2000);
+        }
+
+        function extractOpportunityData(message) {
+            const lowerMessage = message.toLowerCase();
+            const extractedData = {};
+            
+            // Extract company/client names (after words like "para", "de", "con", "empresa")
+            const clientPatterns = [
+                /(?:para|de|con|empresa|cliente)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ\s]+(?:SA|S\.A\.|SRL|S\.R\.L\.|LTDA|S\.C\.|SC)?)/gi,
+                /(?:empresa|compañía|cliente|negocio)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ\s]+)/gi,
+                /"([^"]+)"/g // Text in quotes
+            ];
+            
+            for (const pattern of clientPatterns) {
+                const matches = message.match(pattern);
+                if (matches) {
+                    const clientName = matches[0].replace(/(para|de|con|empresa|cliente)\s+/i, '').trim();
+                    if (clientName.length > 2) {
+                        extractedData.cliente = clientName;
+                        break;
+                    }
+                }
+            }
+            
+            // Extract monetary amounts
+            const moneyPatterns = [
+                /\$?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:pesos|MXN|USD|dólares?|dolares?)?/gi,
+                /(?:por|de|cuesta|vale|monto|precio|valor)\s*\$?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/gi
+            ];
+            
+            for (const pattern of moneyPatterns) {
+                const match = lowerMessage.match(pattern);
+                if (match) {
+                    const amount = match[0].replace(/[^\d.,]/g, '').replace(',', '');
+                    if (parseFloat(amount) > 0) {
+                        extractedData.monto = parseFloat(amount);
+                        break;
+                    }
+                }
+            }
+            
+            // Extract service/product types
+            const servicePatterns = {
+                'hosting': ['hosting', 'servidor', 'servidores', 'alojamiento', 'cloud'],
+                'desarrollo': ['desarrollo', 'programación', 'software', 'aplicación', 'app', 'web', 'website'],
+                'telecomunicaciones': ['telecomunicaciones', 'telecom', 'internet', 'fibra', 'conectividad', 'red', 'redes'],
+                'consultoria': ['consultoría', 'consultoria', 'asesoría', 'asesoramiento', 'capacitación'],
+                'soporte': ['soporte', 'mantenimiento', 'support', 'técnico', 'reparación']
+            };
+            
+            for (const [category, keywords] of Object.entries(servicePatterns)) {
+                for (const keyword of keywords) {
+                    if (lowerMessage.includes(keyword)) {
+                        extractedData.area = category;
+                        extractedData.producto = keyword;
+                        break;
+                    }
+                }
+                if (extractedData.area) break;
+            }
+            
+            // Extract opportunity title/description
+            const titlePatterns = [
+                /(?:oportunidad|proyecto|venta|cotización)\s+(?:de|para)\s+([^.!?]+)/gi,
+                /(?:necesito|quiero|busco)\s+([^.!?]+)/gi
+            ];
+            
+            for (const pattern of titlePatterns) {
+                const match = message.match(pattern);
+                if (match) {
+                    extractedData.titulo = match[0].trim();
+                    break;
+                }
+            }
+            
+            // Extract probability indicators
+            const probabilities = {
+                'seguro': 90,
+                'muy probable': 80,
+                'probable': 70,
+                'posible': 50,
+                'poco probable': 30,
+                'difícil': 20
+            };
+            
+            for (const [phrase, prob] of Object.entries(probabilities)) {
+                if (lowerMessage.includes(phrase)) {
+                    extractedData.probabilidad = prob;
+                    break;
+                }
+            }
+            
+            return extractedData;
+        }
+
+        function showAssistanceChoice() {
+            const choiceHTML = `
+                <div id="nethive-assistance-choice" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+                    <div class="bg-slate-900/95 backdrop-blur-md rounded-3xl shadow-2xl w-full max-w-2xl border border-cyan-500/40">
+                        <div class="bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 p-6 rounded-t-3xl">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <div class="scale-75">${createNethiveAvatar()}</div>
+                                    <div>
+                                        <h2 class="text-2xl font-bold text-white">🤖 ¿Cómo te gustaría que te ayude?</h2>
+                                        <p class="text-cyan-100 text-sm">Elige el tipo de asistencia que prefieres</p>
+                                    </div>
+                                </div>
+                                <button onclick="closeAssistanceChoice()" class="text-white/80 hover:text-white text-3xl font-bold transition-colors">&times;</button>
+                            </div>
+                        </div>
+                        
+                        <div class="p-8 space-y-4">
+                            <!-- Advanced Chat Option -->
+                            <div onclick="selectAdvancedChat()" 
+                                 class="group bg-gradient-to-r from-green-600/20 to-emerald-600/20 border border-green-500/30 rounded-2xl p-6 cursor-pointer transition-all hover:from-green-600/30 hover:to-emerald-600/30 hover:border-green-400/50 hover:scale-105">
+                                <div class="flex items-start space-x-4">
+                                    <div class="bg-green-500/20 rounded-full p-3">
+                                        <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h3 class="text-xl font-bold text-white mb-2">💬 Chat Avanzado con IA</h3>
+                                        <p class="text-green-200 text-sm mb-3">Conversa conmigo naturalmente para crear oportunidades. Solo dime los datos y yo me encargo de todo.</p>
+                                        <div class="text-xs text-green-300 space-y-1">
+                                            <div class="flex items-center space-x-2">
+                                                <span class="w-1 h-1 bg-green-400 rounded-full"></span>
+                                                <span>Procesamiento de lenguaje natural</span>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                <span class="w-1 h-1 bg-green-400 rounded-full"></span>
+                                                <span>Extracción automática de datos</span>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                <span class="w-1 h-1 bg-green-400 rounded-full"></span>
+                                                <span>Creación inteligente de oportunidades</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-green-400 group-hover:scale-110 transition-transform">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Basic Assistant Option -->
+                            <div onclick="selectBasicAssistant()" 
+                                 class="group bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-500/30 rounded-2xl p-6 cursor-pointer transition-all hover:from-blue-600/30 hover:to-cyan-600/30 hover:border-blue-400/50 hover:scale-105">
+                                <div class="flex items-start space-x-4">
+                                    <div class="bg-blue-500/20 rounded-full p-3">
+                                        <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h3 class="text-xl font-bold text-white mb-2">📋 Asistente Básico</h3>
+                                        <p class="text-blue-200 text-sm mb-3">Preguntas y respuestas paso a paso para usuarios nuevos. Perfecto para aprender el sistema.</p>
+                                        <div class="text-xs text-blue-300 space-y-1">
+                                            <div class="flex items-center space-x-2">
+                                                <span class="w-1 h-1 bg-blue-400 rounded-full"></span>
+                                                <span>Guía paso a paso</span>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                <span class="w-1 h-1 bg-blue-400 rounded-full"></span>
+                                                <span>Preguntas estructuradas</span>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                <span class="w-1 h-1 bg-blue-400 rounded-full"></span>
+                                                <span>Perfecto para nuevos usuarios</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-blue-400 group-hover:scale-110 transition-transform">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', choiceHTML);
+        }
+
+        window.closeAssistanceChoice = function() {
+            const choice = document.getElementById('nethive-assistance-choice');
+            if (choice) {
+                choice.style.opacity = '0';
+                choice.style.transform = 'scale(0.95)';
+                setTimeout(() => choice.remove(), 300);
+            }
+        }
+
+        window.selectAdvancedChat = function() {
+            updateNethiveMood('excited', '¡Usuario eligió chat avanzado!');
+            closeAssistanceChoice();
+            setTimeout(() => showAdvancedNethiveChat(), 500);
+        }
+
+        window.selectBasicAssistant = function() {
+            updateNethiveMood('helpful', 'Usuario eligió asistente básico');
+            closeAssistanceChoice();
+            setTimeout(() => window.showNethiveAssistant(), 500);
+        }
+
+        function generateChatResponse(message, extractedData) {
+            const lowerMessage = message.toLowerCase();
+            
+            // Determine response based on extracted data and message content
+            let response = {
+                message: '',
+                mood: 'helpful',
+                moodReason: 'Ayudando al usuario',
+                canCreateOpportunity: false
+            };
+            
+            // Check if we have minimum required data
+            const hasClient = extractedData.cliente;
+            const hasAmount = extractedData.monto;
+            const hasService = extractedData.area || extractedData.producto;
+            const hasTitle = extractedData.titulo;
+            
+            // Generate contextual responses
+            if (lowerMessage.includes('hola') || lowerMessage.includes('buenos') || lowerMessage.includes('saludos')) {
+                response.message = `¡Hola! 👋 Me da mucho gusto poder ayudarte. Cuéntame sobre la oportunidad que tienes en mente. ¿Para qué cliente es?`;
+                response.mood = 'excited';
+                response.moodReason = 'Usuario saludó amablemente';
+                
+            } else if (hasClient && !hasAmount && !hasService) {
+                response.message = `Perfecto, entiendo que es para <strong>${extractedData.cliente}</strong>. 🏢<br><br>¿Qué tipo de servicio o producto necesitan? Por ejemplo: desarrollo web, hosting, telecomunicaciones, consultoría...`;
+                
+            } else if (hasClient && hasService && !hasAmount) {
+                response.message = `Excelente, tenemos a <strong>${extractedData.cliente}</strong> interesado en <strong>${extractedData.producto || extractedData.area}</strong>. 💼<br><br>¿Tienes una idea del monto estimado para este proyecto?`;
+                
+            } else if (hasAmount && !hasClient) {
+                response.message = `Perfecto, veo que el monto estimado es de <strong>$${extractedData.monto.toLocaleString()}</strong>. 💰<br><br>¿Para qué empresa o cliente sería esta oportunidad?`;
+                
+            } else if (hasClient && hasAmount && hasService) {
+                response.message = `¡Excelente! Ya tengo la información principal:<br><br>🏢 <strong>Cliente:</strong> ${extractedData.cliente}<br>💼 <strong>Servicio:</strong> ${extractedData.producto || extractedData.area}<br>💰 <strong>Monto:</strong> $${extractedData.monto.toLocaleString()}<br><br>¿Te parece que creemos la oportunidad con estos datos?`;
+                response.canCreateOpportunity = true;
+                response.mood = 'proud';
+                response.moodReason = 'Información completa recopilada';
+                
+            } else if (lowerMessage.includes('crear') || lowerMessage.includes('generar') || lowerMessage.includes('nueva oportunidad')) {
+                if (hasClient || hasAmount || hasService) {
+                    response.message = `¡Perfecto! Veo que quieres crear una nueva oportunidad. Hasta ahora tengo:<br><br>${hasClient ? `🏢 Cliente: <strong>${extractedData.cliente}</strong><br>` : ''}${hasService ? `💼 Servicio: <strong>${extractedData.producto || extractedData.area}</strong><br>` : ''}${hasAmount ? `💰 Monto: <strong>$${extractedData.monto.toLocaleString()}</strong><br>` : ''}<br>¿Falta algún dato importante?`;
+                } else {
+                    response.message = `¡Genial! Te ayudo a crear una nueva oportunidad. 🎯<br><br>Para empezar, necesito saber:<br>• ¿Para qué cliente o empresa es?<br>• ¿Qué tipo de servicio o producto?<br>• ¿Cuál es el monto estimado?`;
+                }
+                
+            } else if (lowerMessage.includes('sí') || lowerMessage.includes('si') || lowerMessage.includes('dale') || lowerMessage.includes('perfecto')) {
+                if (hasClient && hasAmount && hasService) {
+                    response.canCreateOpportunity = true;
+                    response.message = `¡Perfecto! Voy a crear la oportunidad ahora mismo. 🚀`;
+                    response.mood = 'celebrating';
+                    response.moodReason = 'Usuario confirmó creación de oportunidad';
+                } else {
+                    response.message = `¡Me alegra que estés de acuerdo! Pero aún necesito algunos datos más para crear la oportunidad completa. 😊`;
+                }
+                
+            } else {
+                // Default response with extracted data feedback
+                const dataCount = Object.keys(extractedData).length;
+                if (dataCount > 0) {
+                    response.message = `Entiendo. He captado algunos datos de tu mensaje:<br><br>${Object.entries(extractedData).map(([key, value]) => {
+                        const labels = {
+                            'cliente': '🏢 Cliente',
+                            'monto': '💰 Monto',
+                            'area': '🎯 Área',
+                            'producto': '💼 Producto',
+                            'titulo': '📝 Título'
+                        };
+                        const label = labels[key] || key;
+                        const displayValue = key === 'monto' ? `$${value.toLocaleString()}` : value;
+                        return `${label}: <strong>${displayValue}</strong>`;
+                    }).join('<br>')}<br><br>¿Hay algo más que quieras agregar o modificar?`;
+                    response.mood = 'thoughtful';
+                } else {
+                    response.message = `Entiendo lo que me dices. Para ayudarte mejor a crear la oportunidad, ¿podrías contarme más detalles? Por ejemplo: el nombre del cliente, el tipo de servicio, o el monto estimado. 🤔`;
+                    response.mood = 'thoughtful';
+                }
+            }
+            
+            return response;
+        }
+
+        function showOpportunityCreationSummary() {
+            const data = window.chatState.extractedData;
+            
+            const summaryMessage = `
+                <div class="bg-gradient-to-r from-green-600/20 to-emerald-600/20 border border-green-500/30 rounded-xl p-4 mt-2">
+                    <h4 class="text-green-300 font-semibold mb-2">📋 Resumen de la Oportunidad</h4>
+                    <div class="space-y-2 text-sm">
+                        ${data.cliente ? `<div><span class="text-gray-400">Cliente:</span> <span class="text-white font-medium">${data.cliente}</span></div>` : ''}
+                        ${data.monto ? `<div><span class="text-gray-400">Monto:</span> <span class="text-green-300 font-medium">$${data.monto.toLocaleString()}</span></div>` : ''}
+                        ${data.area || data.producto ? `<div><span class="text-gray-400">Servicio:</span> <span class="text-blue-300 font-medium">${data.producto || data.area}</span></div>` : ''}
+                        ${data.titulo ? `<div><span class="text-gray-400">Descripción:</span> <span class="text-white">${data.titulo}</span></div>` : ''}
+                    </div>
+                    <div class="flex space-x-2 mt-4">
+                        <button onclick="createOpportunityFromChat()" 
+                                class="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg text-xs transition-colors flex items-center space-x-2">
+                            <span>✅ Crear Oportunidad</span>
+                        </button>
+                        <button onclick="continueEditing()" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg text-xs transition-colors">
+                            ✏️ Editar Datos
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            addChatMessage(summaryMessage, 'bot');
+            updateNethiveMood('excited', '¡Listo para crear oportunidad!');
+        }
+
+        window.createOpportunityFromChat = function() {
+            updateNethiveMood('celebrating', '¡Creando oportunidad desde chat!');
+            
+            const data = window.chatState.extractedData;
+            
+            // Create opportunity via API
+            createOpportunityViaAPI(data).then(result => {
+                if (result.success) {
+                    addChatMessage(`🎉 ¡Oportunidad creada exitosamente!<br><br>Se ha generado la oportunidad "${result.titulo}" en el sistema. En unos segundos recibirás una notificación para crear la cotización correspondiente.`, 'bot');
+                    
+                    setTimeout(() => {
+                        closeAdvancedChat();
+                        // Trigger immediate opportunity check
+                        if (typeof checkForNewOpportunities === 'function') {
+                            setTimeout(() => checkForNewOpportunities(), 2000);
+                        }
+                    }, 3000);
+                } else {
+                    addChatMessage(`❌ Hubo un error al crear la oportunidad: ${result.error}<br><br>¿Quieres intentarlo de nuevo?`, 'bot');
+                    updateNethiveMood('worried', 'Error al crear oportunidad');
+                }
+            });
+        }
+
+        window.continueEditing = function() {
+            addChatMessage(`¡Perfecto! Sigamos editando los datos. ¿Qué te gustaría cambiar o agregar? 😊`, 'bot');
+            updateNethiveMood('helpful', 'Usuario quiere editar datos');
+        }
+
+        async function createOpportunityViaAPI(data) {
+            try {
+                const response = await fetch('/app/api/crear-oportunidad/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                    },
+                    body: JSON.stringify({
+                        oportunidad_nombre: data.titulo || `Oportunidad - ${data.cliente || 'Cliente'}`,
+                        cliente_nombre: data.cliente || 'Cliente por definir',
+                        area: data.area || 'consultoría',
+                        producto: data.producto || 'servicios',
+                        monto: data.monto || 0,
+                        probabilidad: data.probabilidad || 50,
+                        created_from_chat: true
+                    })
+                });
+
+                const result = await response.json();
+                return {
+                    success: result.success,
+                    titulo: result.oportunidad?.nombre || data.titulo,
+                    error: result.errors ? Object.values(result.errors).flat().map(e => e.message || e).join(', ') : 'Error desconocido'
+                };
+                
+            } catch (error) {
+                return {
+                    success: false,
+                    error: `Error de conexión: ${error.message}`
+                };
+            }
+        }
 
     </script>
 </body>
