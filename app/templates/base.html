@@ -204,151 +204,530 @@
             
             switch(scenario) {
                 case 1:
-                    // Escenario 1: Cotización con Oportunidad Recién Hecha
+                    // Escenario 1: Cotización con Oportunidad Recién Hecha - INTERACTIVO
                     steps = [
                         {
                             element: 'body',
-                            intro: "🎯 <strong>Escenario 1:</strong> Crear cotización para una oportunidad recién hecha<br><br>📱 <strong>Situación:</strong> Acabas de recibir una notificación de Bitrix24 - hay una nueva oportunidad esperando tu atención. Necesitas crear una cotización rápidamente para cerrar la venta.<br><br>✨ Te mostraremos el flujo completo paso a paso.",
-                            position: 'top'
+                            intro: "🎯 <strong>Tutorial Interactivo - Escenario 1:</strong><br><br>📱 <strong>Situación:</strong> Acabas de recibir una nueva oportunidad de Bitrix24 y necesitas crear una cotización rápidamente.<br><br>✨ <strong>¡Este tutorial es interactivo!</strong> Deberás hacer clic en los elementos que te indique para avanzar.<br><br>🚀 ¡Empecemos!",
+                            position: 'top',
+                            disableInteraction: false
                         },
                         {
                             element: '#floating-menu-container',
-                            intro: "🎮 <strong>Paso 1:</strong> Tu menú principal flotante<br><br>Desde cualquier página tienes acceso directo. Este es tu centro de control para toda la aplicación.<br><br>💡 <strong>Tip:</strong> Puedes arrastrarlo a cualquier parte de la pantalla.",
-                            position: 'left'
+                            intro: "🎮 <strong>Paso 1:</strong> Tu menú de control<br><br>Este es tu menú flotante. Ahora <strong>haz clic en el botón del menú</strong> para abrirlo.<br><br>👆 <strong>¡No podrás continuar hasta que hagas clic!</strong>",
+                            position: 'left',
+                            disableInteraction: false,
+                            waitForClick: '#menu-toggle-button',
+                            highlightClick: true
+                        },
+                        {
+                            element: 'a[href*="todos"]',
+                            intro: "🎯 <strong>Paso 2:</strong> Ir a Oportunidades<br><br>Perfecto, el menú está abierto. Ahora <strong>haz clic en 'Oportunidades'</strong> para ver todas las oportunidades de venta.<br><br>👆 <strong>¡Haz clic en el enlace de Oportunidades!</strong>",
+                            position: 'right',
+                            disableInteraction: false,
+                            waitForClick: 'a[href*="todos"]',
+                            highlightClick: true,
+                            navigatesTo: '/app/todos/'
                         },
                         {
                             element: 'body',
-                            intro: "🎯 <strong>Paso 2:</strong> Navegación inicial<br><br>Haz clic en <strong>'Oportunidades'</strong> en el menú flotante para ver todas tus oportunidades de venta activas.<br><br>📊 Aquí verás tanto las oportunidades que se sincronizaron desde Bitrix24 como las creadas localmente.",
-                            position: 'top'
+                            intro: "🎉 <strong>¡Excelente!</strong> Ahora estás en la página de Oportunidades.<br><br>🔍 <strong>Paso 3:</strong> Aquí puedes ver todas las oportunidades sincronizadas desde Bitrix24.<br><br>📊 Las nuevas aparecen al principio de la lista.<br><br>➡️ Continuemos al siguiente paso.",
+                            position: 'top',
+                            disableInteraction: false,
+                            showOnlyOnPath: '/app/todos/'
                         },
                         {
-                            element: 'body',
-                            intro: "🎯 <strong>Paso 3:</strong> Crear la cotización<br><br>Una vez en la página de oportunidades:<br>• Busca tu oportunidad nueva (aparece al principio)<br>• Haz clic en el botón verde <strong>'+ Crear Cotización'</strong><br><br>⚡ Esto te llevará directamente al formulario de cotización con algunos datos prellenados.",
-                            position: 'top'
+                            element: 'a[href*="crear_cotizacion"]',
+                            intro: "💼 <strong>Paso 4:</strong> Crear la cotización<br><br>Ahora <strong>haz clic en el botón verde '+ Crear Cotización'</strong> para comenzar a crear la cotización.<br><br>👆 <strong>¡Haz clic en el botón verde!</strong>",
+                            position: 'top',
+                            disableInteraction: false,
+                            waitForClick: 'a[href*="crear_cotizacion"]',
+                            highlightClick: true,
+                            navigatesTo: '/app/crear_cotizacion/'
                         },
                         {
-                            element: 'body',
-                            intro: "🏢 <strong>Paso 4:</strong> La magia de la selección de cliente<br><br>Al seleccionar el cliente, automáticamente aparecerán:<br>• ✅ Las últimas 10 oportunidades de ese cliente<br>• ✅ La nueva oportunidad de Bitrix24 estará disponible<br>• ✅ Podrás vincularla directamente<br><br>🔥 <strong>¡Este es el paso clave!</strong> La sincronización automática te ahorra tiempo.",
-                            position: 'top'
+                            element: '#id_cliente',
+                            intro: "🏢 <strong>Paso 5:</strong> Seleccionar cliente<br><br>¡Perfecto! Ahora estás en el formulario de cotización.<br><br><strong>Haz clic en el selector de Cliente</strong> para ver las opciones disponibles.<br><br>👆 <strong>¡Haz clic en el dropdown de cliente!</strong>",
+                            position: 'top',
+                            disableInteraction: false,
+                            waitForClick: '#id_cliente',
+                            highlightClick: true,
+                            showOnlyOnPath: '/app/crear_cotizacion/'
                         },
                         {
-                            element: 'body',
-                            intro: "📦 <strong>Paso 5:</strong> Agregar productos<br><br>Tienes varias opciones:<br>• 🖱️ Fila por fila manualmente<br>• 📊 Pegar desde Excel (más rápido)<br>• 💰 Aplicar descuentos específicos<br>• ➖ Eliminar productos que no necesites<br><br>💡 Los totales se calculan automáticamente en tiempo real.",
-                            position: 'top'
+                            element: '#id_oportunidad',
+                            intro: "🎯 <strong>Paso 6:</strong> ¡La magia ocurre aquí!<br><br>Cuando selecciones un cliente, automáticamente aparecerán sus últimas 10 oportunidades en este campo.<br><br><strong>Haz clic en el selector de Oportunidad</strong> para ver las opciones.<br><br>👆 <strong>¡Haz clic en el dropdown de oportunidad!</strong>",
+                            position: 'top',
+                            disableInteraction: false,
+                            waitForClick: '#id_oportunidad',
+                            highlightClick: true
                         },
                         {
-                            element: 'body',
-                            intro: "🏢 <strong>Paso 6:</strong> Seleccionar institución<br><br>Elige entre:<br>• 🔹 <strong>BAJANET</strong> - Para cotizaciones de Baja California<br>• 🔸 <strong>IAMET</strong> - Para cotizaciones corporativas<br><br>⚠️ Esto define el formato del PDF y la información que aparece.",
-                            position: 'top'
+                            element: '#add-row-btn',
+                            intro: "📦 <strong>Paso 7:</strong> Agregar productos<br><br>Ahora agreguemos productos a la cotización.<br><br><strong>Haz clic en 'Agregar Fila'</strong> para añadir tu primer producto.<br><br>👆 <strong>¡Haz clic en el botón azul 'Agregar Fila'!</strong>",
+                            position: 'top',
+                            disableInteraction: false,
+                            waitForClick: '#add-row-btn',
+                            highlightClick: true
                         },
                         {
-                            element: 'body',
-                            intro: "🎉 <strong>¡Final exitoso!</strong><br><br>Al hacer clic en 'Crear Cotización':<br>• 📄 Se genera un PDF profesional automáticamente<br>• 🔄 Se sincroniza con Bitrix24<br>• 💾 Se guarda en el historial del cliente<br>• 📩 Queda lista para enviar<br><br>⏱️ <strong>Tiempo total: 2-3 minutos máximo</strong>",
-                            position: 'top'
+                            element: '#tipo-cotizacion-select',
+                            intro: "🏢 <strong>Paso 8:</strong> Seleccionar institución<br><br>Ahora necesitas elegir la institución para el PDF.<br><br><strong>Haz clic en el selector de Institución</strong> y elige entre BAJANET o IAMET.<br><br>👆 <strong>¡Haz clic en el dropdown de institución!</strong>",
+                            position: 'top',
+                            disableInteraction: false,
+                            waitForClick: '#tipo-cotizacion-select',
+                            highlightClick: true
+                        },
+                        {
+                            element: 'button[type="submit"]',
+                            intro: "🎉 <strong>¡Final del tutorial!</strong><br><br>¡Excelente trabajo! Has completado todos los pasos interactivos.<br><br>Para finalizar, normalmente harías clic en <strong>'Crear Cotización'</strong>, pero por ahora hemos terminado el tutorial.<br><br>✨ <strong>¡Ya sabes cómo crear cotizaciones desde oportunidades!</strong>",
+                            position: 'top',
+                            disableInteraction: false
                         }
                     ];
                     break;
                     
                 case 2:
-                    // Escenario 2: Ligar Oportunidad a Negociación Pasada
+                    // Escenario 2: Ligar Oportunidad a Negociación Pasada - INTERACTIVO
                     steps = [
                         {
                             element: 'body',
-                            intro: "🔗 <strong>Escenario 2:</strong> Ligar oportunidad a una negociación pasada<br><br>🤝 <strong>Situación:</strong> Tienes un cliente recurrente con quien ya has trabajado. Quieres crear una nueva cotización pero vincularla a una oportunidad específica que ya existía antes.<br><br>💡 Este escenario es perfecto para mantener la trazabilidad de negociaciones largas.",
-                            position: 'top'
+                            intro: "🔗 <strong>Tutorial Interactivo - Escenario 2:</strong><br><br>🤝 <strong>Situación:</strong> Tienes un cliente recurrente con quien ya has trabajado. Quieres crear una nueva cotización pero vincularla a una oportunidad específica que ya existía antes.<br><br>✨ <strong>¡Tutorial interactivo!</strong> Harás clic en cada elemento que te indique.<br><br>🚀 ¡Empecemos la investigación!",
+                            position: 'top',
+                            disableInteraction: false
                         },
                         {
                             element: '#floating-menu-container',
-                            intro: "🎮 <strong>Paso 1:</strong> Tu punto de partida<br><br>Desde el menú puedes ir tanto a 'Oportunidades' como a 'Cotizaciones' para investigar el historial.<br><br>🕵️ <strong>Tip:</strong> Siempre revisa primero qué tiene el cliente.",
-                            position: 'left'
+                            intro: "🕵️ <strong>Paso 1:</strong> Tu punto de investigación<br><br>Primero necesitamos revisar el historial del cliente. <strong>Haz clic en el botón del menú</strong> para ver las opciones.<br><br>👆 <strong>¡Haz clic para abrir el menú!</strong>",
+                            position: 'left',
+                            disableInteraction: false,
+                            waitForClick: '#menu-toggle-button',
+                            highlightClick: true
                         },
                         {
-                            element: 'body',
-                            intro: "📊 <strong>Paso 2:</strong> Investigación del cliente<br><br>Opciones para revisar el historial:<br>• 🔍 <strong>Oportunidades</strong> → Ver todas las oportunidades activas e históricas<br>• 📄 <strong>Cotizaciones</strong> → Ver cotizaciones pasadas del cliente<br>• 🔄 Ambas están sincronizadas con Bitrix24",
-                            position: 'top'
+                            element: 'a[href*="cotizacion"]',
+                            intro: "📄 <strong>Paso 2:</strong> Revisar historial de cotizaciones<br><br>Primero revisaremos las cotizaciones pasadas del cliente para entender el contexto.<br><br><strong>Haz clic en 'Cotizaciones'</strong> para ver el historial.<br><br>👆 <strong>¡Haz clic en Cotizaciones!</strong>",
+                            position: 'right',
+                            disableInteraction: false,
+                            waitForClick: 'a[href*="cotizacion"]',
+                            highlightClick: true,
+                            navigatesTo: '/app/cotizaciones/'
                         },
                         {
-                            element: 'body',
-                            intro: "🎯 <strong>Paso 3:</strong> Crear la nueva cotización<br><br>Una vez identificada la oportunidad que quieres vincular:<br>• Ve a <strong>'Oportunidades'</strong><br>• Haz clic en <strong>'+ Crear Cotización'</strong><br><br>🚀 No importa que la oportunidad sea antigua - el sistema la mostrará.",
-                            position: 'top'
+                            element: 'a[href*="cotizaciones_por_cliente"]',
+                            intro: "👀 <strong>Paso 3:</strong> Explorar cliente específico<br><br>¡Perfecto! Ahora estás viendo las cotizaciones organizadas por cliente.<br><br><strong>Haz clic en 'Ver Cotizaciones'</strong> de cualquier cliente para ver su historial completo.<br><br>👆 <strong>¡Haz clic en Ver Cotizaciones!</strong>",
+                            position: 'top',
+                            disableInteraction: false,
+                            waitForClick: 'a[href*="cotizaciones_por_cliente"]',
+                            highlightClick: true,
+                            showOnlyOnPath: '/app/cotizaciones/'
                         },
                         {
-                            element: 'body',
-                            intro: "🔮 <strong>Paso 4:</strong> La magia del historial<br><br>Al seleccionar el cliente:<br>• 📋 Aparecen las últimas 10 oportunidades<br>• 📅 Incluye oportunidades de meses pasados<br>• 🏷️ Cada oportunidad mantiene su contexto original<br><br>💎 <strong>Ventaja:</strong> Nunca pierdes el seguimiento de negociaciones largas.",
-                            position: 'top'
+                            element: '#floating-menu-container',
+                            intro: "🎯 <strong>Paso 4:</strong> Ahora ir a Oportunidades<br><br>Ya revisaste el historial de cotizaciones. Ahora necesitas ir a crear la nueva cotización desde oportunidades.<br><br><strong>Abre el menú nuevamente</strong>.<br><br>👆 <strong>¡Haz clic en el botón del menú!</strong>",
+                            position: 'left',
+                            disableInteraction: false,
+                            waitForClick: '#menu-toggle-button',
+                            highlightClick: true
                         },
                         {
-                            element: 'body',
-                            intro: "🔗 <strong>Paso 5:</strong> Vinculación inteligente<br><br>Al seleccionar la oportunidad pasada:<br>• 🔄 Se mantiene el contexto histórico<br>• 📊 Se preservan los datos originales (área, producto, probabilidad)<br>• 📈 Se actualiza el seguimiento en Bitrix24<br><br>✨ La nueva cotización queda ligada a la negociación original.",
-                            position: 'top'
+                            element: 'a[href*="todos"]',
+                            intro: "🔍 <strong>Paso 5:</strong> Ir a Oportunidades<br><br>Ahora vamos a crear la nueva cotización que se vinculará con una oportunidad pasada.<br><br><strong>Haz clic en 'Oportunidades'</strong>.<br><br>👆 <strong>¡Haz clic en Oportunidades!</strong>",
+                            position: 'right',
+                            disableInteraction: false,
+                            waitForClick: 'a[href*="todos"]',
+                            highlightClick: true,
+                            navigatesTo: '/app/todos/'
                         },
                         {
-                            element: 'body',
-                            intro: "🎯 <strong>Resultado final:</strong><br><br>📈 <strong>Beneficios únicos:</strong><br>• 🕒 Historial completo de la relación comercial<br>• 📊 Trazabilidad total en Bitrix24<br>• 💼 Contexto preservado para el equipo<br>• 🔄 Sincronización automática<br><br>🏆 <strong>Perfecto para clientes recurrentes y negociaciones complejas</strong>",
-                            position: 'top'
+                            element: 'a[href*="crear_cotizacion"]',
+                            intro: "💼 <strong>Paso 6:</strong> Crear nueva cotización<br><br>¡Excelente! Ahora estás en oportunidades donde puedes ver todas las oportunidades del cliente.<br><br><strong>Haz clic en '+ Crear Cotización'</strong>.<br><br>👆 <strong>¡Haz clic en el botón verde!</strong>",
+                            position: 'top',
+                            disableInteraction: false,
+                            waitForClick: 'a[href*="crear_cotizacion"]',
+                            highlightClick: true,
+                            navigatesTo: '/app/crear_cotizacion/',
+                            showOnlyOnPath: '/app/todos/'
+                        },
+                        {
+                            element: '#id_cliente',
+                            intro: "🏢 <strong>Paso 7:</strong> Seleccionar cliente recurrente<br><br>¡Perfecto! Ahora en el formulario de cotización.<br><br><strong>Haz clic en el selector de Cliente</strong> para elegir el cliente con historial.<br><br>👆 <strong>¡Haz clic en el dropdown de cliente!</strong>",
+                            position: 'top',
+                            disableInteraction: false,
+                            waitForClick: '#id_cliente',
+                            highlightClick: true,
+                            showOnlyOnPath: '/app/crear_cotizacion/'
+                        },
+                        {
+                            element: '#id_oportunidad',
+                            intro: "🔮 <strong>Paso 8:</strong> ¡La magia del historial!<br><br>Al seleccionar el cliente, aparecerán sus últimas 10 oportunidades, <strong>incluyendo las de meses pasados</strong>.<br><br><strong>Haz clic en el selector de Oportunidad</strong> para ver las opciones históricas.<br><br>👆 <strong>¡Haz clic para ver las oportunidades pasadas!</strong>",
+                            position: 'top',
+                            disableInteraction: false,
+                            waitForClick: '#id_oportunidad',
+                            highlightClick: true
+                        },
+                        {
+                            element: 'button[type="submit"]',
+                            intro: "🎉 <strong>¡Tutorial completado!</strong><br><br>¡Excelente trabajo! Has aprendido cómo:<br>• 📄 Revisar historial de cotizaciones<br>• 🔍 Encontrar oportunidades pasadas<br>• 🔗 Vincular nuevas cotizaciones con negociaciones anteriores<br><br>✨ <strong>¡Ahora dominas el seguimiento de clientes recurrentes!</strong>",
+                            position: 'top',
+                            disableInteraction: false
                         }
                     ];
                     break;
                     
                 case 3:
-                    // Escenario 3: Crear Cotización Sin Negociación
+                    // Escenario 3: Crear Cotización Sin Negociación - INTERACTIVO
                     steps = [
                         {
                             element: 'body',
-                            intro: "📄 <strong>Escenario 3:</strong> Crear cotización independiente<br><br>⚡ <strong>Situación:</strong> Te llega una consulta directa por teléfono, email o WhatsApp. Necesitas una cotización profesional RÁPIDO, sin complicaciones de Bitrix24.<br><br>🎯 <strong>Meta:</strong> PDF profesional en menos de 2 minutos.",
-                            position: 'top'
+                            intro: "📄 <strong>Tutorial Interactivo - Escenario 3:</strong><br><br>⚡ <strong>Situación:</strong> Te llega una consulta directa por teléfono, email o WhatsApp. Necesitas una cotización profesional RÁPIDO, sin complicaciones de Bitrix24.<br><br>✨ <strong>¡Tutorial interactivo!</strong> Te guiaré paso a paso haciendo clicks reales.<br><br>🎯 <strong>Meta:</strong> PDF profesional en menos de 2 minutos.",
+                            position: 'top',
+                            disableInteraction: false
                         },
                         {
                             element: '#floating-menu-container',
-                            intro: "🚀 <strong>Paso 1:</strong> Acceso directo<br><br>Desde el menú flotante, ve directamente a <strong>'Oportunidades'</strong> → Botón verde <strong>'+ Crear Cotización'</strong>.<br><br>💡 <strong>Atajo:</strong> Es el camino más rápido sin pasar por navegación compleja.",
-                            position: 'left'
+                            intro: "🚀 <strong>Paso 1:</strong> Acceso ultra-rápido<br><br>Para cotizaciones rápidas, el acceso más directo es a través del menú flotante.<br><br><strong>Haz clic en el botón del menú</strong> para abrirlo.<br><br>👆 <strong>¡Haz clic para abrir!</strong>",
+                            position: 'left',
+                            disableInteraction: false,
+                            waitForClick: '#menu-toggle-button',
+                            highlightClick: true
                         },
                         {
-                            element: 'body',
-                            intro: "⚡ <strong>Paso 2:</strong> Setup ultra-rápido<br><br><strong>Proceso en 5 pasos:</strong><br>1️⃣ Título descriptivo<br>2️⃣ Selecciona cliente (o crea nuevo)<br>3️⃣ <strong>OMITE</strong> el campo 'Oportunidad' (déjalo vacío)<br>4️⃣ Productos<br>5️⃣ Institución y ¡listo!<br><br>🔥 <strong>Clave:</strong> Al dejar vacío el campo oportunidad, funciona independiente.",
-                            position: 'top'
+                            element: 'a[href*="todos"]',
+                            intro: "⚡ <strong>Paso 2:</strong> Directo a Oportunidades<br><br>Para crear cotizaciones rápidas, vamos directamente a oportunidades.<br><br><strong>Haz clic en 'Oportunidades'</strong> para acceder.<br><br>👆 <strong>¡Haz clic en Oportunidades!</strong>",
+                            position: 'right',
+                            disableInteraction: false,
+                            waitForClick: 'a[href*="todos"]',
+                            highlightClick: true,
+                            navigatesTo: '/app/todos/'
                         },
                         {
-                            element: 'body',
-                            intro: "➕ <strong>Paso 3:</strong> Cliente nuevo al instante<br><br>Si el cliente no existe:<br>• Haz clic en el botón <strong>'+'</strong> junto al selector<br>• Rellena nombre de empresa, contacto y email<br>• ✅ Se guarda automáticamente<br>• 🔄 Aparece inmediatamente en la lista<br><br>⏱️ <strong>Tiempo:</strong> 30 segundos máximo.",
-                            position: 'top'
+                            element: 'a[href*="crear_cotizacion"]',
+                            intro: "🎯 <strong>Paso 3:</strong> Crear cotización directa<br><br>¡Perfecto! Ahora estás en oportunidades. Para crear una cotización independiente (sin vincular a oportunidad específica).<br><br><strong>Haz clic en '+ Crear Cotización'</strong>.<br><br>👆 <strong>¡Haz clic en el botón verde!</strong>",
+                            position: 'top',
+                            disableInteraction: false,
+                            waitForClick: 'a[href*="crear_cotizacion"]',
+                            highlightClick: true,
+                            navigatesTo: '/app/crear_cotizacion/',
+                            showOnlyOnPath: '/app/todos/'
                         },
                         {
-                            element: 'body',
-                            intro: "📦 <strong>Paso 4:</strong> Productos súper flexibles<br><br><strong>3 métodos según tu situación:</strong><br>• 🖱️ <strong>Manual:</strong> Producto por producto (ideal para pocos items)<br>• 📊 <strong>Excel:</strong> Copiar-pegar directo (perfecto para listas grandes)<br>• 🎨 <strong>Mixto:</strong> Combinar ambos métodos<br><br>💡 Todos los cálculos son automáticos.",
-                            position: 'top'
+                            element: '#titulo_cotizacion',
+                            intro: "📝 <strong>Paso 4:</strong> Título rápido<br><br>¡Excelente! Ahora estás en el formulario de cotización. Para cotizaciones rápidas, empieza con un título descriptivo.<br><br><strong>Haz clic en el campo de título</strong> y escribe algo como 'Cotización Equipos Oficina'.<br><br>👆 <strong>¡Haz clic en el campo de título!</strong>",
+                            position: 'top',
+                            disableInteraction: false,
+                            waitForClick: '#titulo_cotizacion',
+                            highlightClick: true,
+                            showOnlyOnPath: '/app/crear_cotizacion/'
                         },
                         {
-                            element: 'body',
-                            intro: "🎨 <strong>Paso 5:</strong> Personalización final<br><br><strong>Últimos detalles:</strong><br>• 💰 IVA (8% o 16%)<br>• 💵 Moneda (MXN o USD)<br>• 🏢 Institución (BAJANET/IAMET)<br>• 📝 Notas opcionales<br><br>⚠️ <strong>Importante:</strong> La institución define el diseño del PDF.",
-                            position: 'top'
+                            element: '#id_cliente',
+                            intro: "🏢 <strong>Paso 5:</strong> Cliente (crear si es necesario)<br><br>Ahora selecciona el cliente. Si es un cliente nuevo, podrás crear uno rápidamente.<br><br><strong>Haz clic en el selector de Cliente</strong> para ver las opciones.<br><br>👆 <strong>¡Haz clic en el dropdown de cliente!</strong>",
+                            position: 'top',
+                            disableInteraction: false,
+                            waitForClick: '#id_cliente',
+                            highlightClick: true
                         },
                         {
-                            element: 'body',
-                            intro: "🎉 <strong>¡Resultado inmediato!</strong><br><br><strong>Lo que obtienes:</strong><br>• 📄 PDF profesional de alta calidad<br>• 📧 Listo para enviar por email<br>• 💾 Guardado en historial del cliente<br>• 📱 Disponible desde cualquier dispositivo<br><br>✨ <strong>Sin Bitrix24, sin complicaciones, solo resultados</strong>",
-                            position: 'top'
+                            element: '#add-client-btn',
+                            intro: "➕ <strong>Paso 6:</strong> Crear cliente nuevo (opcional)<br><br>Si tu cliente no aparece en la lista, puedes crear uno al instante.<br><br><strong>Haz clic en el botón '+'</strong> para crear un cliente nuevo.<br><br>👆 <strong>¡Haz clic en el botón '+'!</strong>",
+                            position: 'top',
+                            disableInteraction: false,
+                            waitForClick: '#add-client-btn',
+                            highlightClick: true
+                        },
+                        {
+                            element: '#id_oportunidad',
+                            intro: "🔥 <strong>Paso 7:</strong> ¡Clave del escenario!<br><br>Para cotizaciones independientes, <strong>NO selecciones ninguna oportunidad</strong>. Déjalo vacío.<br><br>Solo <strong>haz clic en el campo</strong> para ver que está vacío (esto es correcto).<br><br>👆 <strong>¡Haz clic para verificar que está vacío!</strong>",
+                            position: 'top',
+                            disableInteraction: false,
+                            waitForClick: '#id_oportunidad',
+                            highlightClick: true
+                        },
+                        {
+                            element: '#toggle-paste-area-btn',
+                            intro: "📊 <strong>Paso 8:</strong> Agregar productos rápidamente<br><br>Para cotizaciones rápidas, la opción de Excel es perfecta. Te permite pegar múltiples productos de una vez.<br><br><strong>Haz clic en 'Pegar Datos de Excel'</strong>.<br><br>👆 <strong>¡Haz clic en el botón de Excel!</strong>",
+                            position: 'top',
+                            disableInteraction: false,
+                            waitForClick: '#toggle-paste-area-btn',
+                            highlightClick: true
+                        },
+                        {
+                            element: '#tipo-cotizacion-select',
+                            intro: "🏢 <strong>Paso 9:</strong> Seleccionar institución<br><br>Finalmente, elige la institución para el PDF.<br><br><strong>Haz clic en el selector de Institución</strong> y elige BAJANET o IAMET según corresponda.<br><br>👆 <strong>¡Haz clic en el dropdown de institución!</strong>",
+                            position: 'top',
+                            disableInteraction: false,
+                            waitForClick: '#tipo-cotizacion-select',
+                            highlightClick: true
+                        },
+                        {
+                            element: 'button[type="submit"]',
+                            intro: "🎉 <strong>¡Tutorial completado!</strong><br><br>¡Perfecto! Has aprendido el flujo de cotización rápida:<br>• ⚡ Acceso directo sin complicaciones<br>• 🏢 Crear clientes al instante<br>• 🚫 Sin vincular oportunidades<br>• 📊 Agregar productos desde Excel<br>• 🎯 PDF profesional en minutos<br><br>✨ <strong>¡Perfecto para consultas urgentes!</strong>",
+                            position: 'top',
+                            disableInteraction: false
                         }
                     ];
                     break;
             }
             
-            // Start the scenario tutorial
-            introJs().setOptions({
-                steps: steps,
-                showProgress: true,
-                showBullets: false,
-                exitOnOverlayClick: false,
-                exitOnEsc: true,
-                nextLabel: 'Siguiente →',
-                prevLabel: '← Anterior', 
-                skipLabel: 'Saltar Tutorial',
-                doneLabel: '¡Perfecto! ✨'
-            }).start();
+            // Start the interactive scenario tutorial
+            startInteractiveTutorial(steps);
         }
 
         function startContextualTutorial() {
             closeTutorialMenu();
             startTutorial(); // Call the original contextual tutorial function
+        }
+
+        // Interactive Tutorial System
+        let currentInteractiveTutorial = null;
+        let currentStepIndex = 0;
+        let tutorialSteps = [];
+        let clickListenerAdded = false;
+
+        function startInteractiveTutorial(steps) {
+            tutorialSteps = steps;
+            currentStepIndex = 0;
+            
+            // Filter steps based on current path if needed
+            const currentPath = window.location.pathname;
+            tutorialSteps = tutorialSteps.filter(step => {
+                if (step.showOnlyOnPath) {
+                    return currentPath.includes(step.showOnlyOnPath);
+                }
+                return true;
+            });
+            
+            if (tutorialSteps.length === 0) {
+                alert('No hay pasos disponibles para esta página del tutorial.');
+                return;
+            }
+            
+            showInteractiveStep(currentStepIndex);
+        }
+
+        function showInteractiveStep(stepIndex) {
+            if (stepIndex >= tutorialSteps.length) {
+                // Tutorial completed
+                if (currentInteractiveTutorial) {
+                    currentInteractiveTutorial.exit();
+                    currentInteractiveTutorial = null;
+                }
+                alert('🎉 ¡Tutorial completado! Has aprendido el flujo completo.');
+                return;
+            }
+            
+            const step = tutorialSteps[stepIndex];
+            
+            // Check if we need to wait for a specific path
+            const currentPath = window.location.pathname;
+            if (step.showOnlyOnPath && !currentPath.includes(step.showOnlyOnPath)) {
+                // Wait for navigation, check again in 500ms
+                setTimeout(() => showInteractiveStep(stepIndex), 500);
+                return;
+            }
+            
+            // Check if element exists
+            const element = step.element === 'body' ? document.body : document.querySelector(step.element);
+            if (!element && step.element !== 'body') {
+                // Element not found, wait a bit and try again
+                setTimeout(() => showInteractiveStep(stepIndex), 500);
+                return;
+            }
+            
+            // Create custom intro.js step
+            const introStep = {
+                element: element,
+                intro: step.intro,
+                position: step.position || 'auto'
+            };
+            
+            // Start intro.js with custom options
+            if (currentInteractiveTutorial) {
+                currentInteractiveTutorial.exit();
+            }
+            
+            currentInteractiveTutorial = introJs();
+            
+            // Configure intro.js
+            currentInteractiveTutorial.setOptions({
+                steps: [introStep],
+                showProgress: false,
+                showBullets: false,
+                exitOnOverlayClick: false,
+                exitOnEsc: true,
+                nextLabel: step.waitForClick ? '⏳ Esperando click...' : 'Siguiente →',
+                prevLabel: '← Anterior',
+                skipLabel: 'Salir del Tutorial',
+                doneLabel: step.waitForClick ? '⏳ Esperando click...' : 'Siguiente →',
+                disableInteraction: step.disableInteraction !== false
+            });
+            
+            // Handle different step types
+            if (step.waitForClick) {
+                setupClickWaiting(step);
+            } else {
+                // Normal step, allow manual progression
+                currentInteractiveTutorial.onbeforechange(function(targetElement) {
+                    return true;
+                });
+                
+                currentInteractiveTutorial.onexit(function() {
+                    // Tutorial was manually exited
+                    currentInteractiveTutorial = null;
+                });
+                
+                currentInteractiveTutorial.oncomplete(function() {
+                    // Move to next step
+                    currentStepIndex++;
+                    setTimeout(() => showInteractiveStep(currentStepIndex), 100);
+                });
+            }
+            
+            // Highlight the element if needed
+            if (step.highlightClick && element) {
+                highlightElement(element);
+            }
+            
+            // Start this step
+            currentInteractiveTutorial.start();
+        }
+
+        function setupClickWaiting(step) {
+            const targetElement = document.querySelector(step.waitForClick);
+            
+            if (!targetElement) {
+                // Element not found, treat as regular step
+                currentInteractiveTutorial.oncomplete(function() {
+                    currentStepIndex++;
+                    setTimeout(() => showInteractiveStep(currentStepIndex), 100);
+                });
+                return;
+            }
+            
+            // Disable the next/done buttons until click
+            disableTutorialButtons();
+            
+            // Add click listener
+            const clickHandler = function(event) {
+                // Valid click detected!
+                targetElement.removeEventListener('click', clickHandler);
+                removeHighlight();
+                
+                // Re-enable tutorial buttons
+                enableTutorialButtons();
+                
+                // Check if this click will navigate away
+                if (step.navigatesTo) {
+                    // Exit current tutorial and wait for navigation
+                    if (currentInteractiveTutorial) {
+                        currentInteractiveTutorial.exit();
+                        currentInteractiveTutorial = null;
+                    }
+                    
+                    // Wait for navigation, then continue
+                    setTimeout(() => {
+                        currentStepIndex++;
+                        showInteractiveStep(currentStepIndex);
+                    }, 1000);
+                } else {
+                    // Move to next step immediately
+                    if (currentInteractiveTutorial) {
+                        currentInteractiveTutorial.exit();
+                        currentInteractiveTutorial = null;
+                    }
+                    
+                    currentStepIndex++;
+                    setTimeout(() => showInteractiveStep(currentStepIndex), 300);
+                }
+            };
+            
+            targetElement.addEventListener('click', clickHandler);
+            
+            // Handle tutorial exit
+            currentInteractiveTutorial.onexit(function() {
+                targetElement.removeEventListener('click', clickHandler);
+                removeHighlight();
+                currentInteractiveTutorial = null;
+            });
+        }
+
+        function highlightElement(element) {
+            // Remove any existing highlights
+            removeHighlight();
+            
+            // Add pulsing highlight effect
+            element.style.position = 'relative';
+            element.style.zIndex = '10000';
+            element.style.outline = '3px solid #ff6b6b';
+            element.style.outlineOffset = '3px';
+            element.style.animation = 'pulse 1.5s infinite';
+            element.classList.add('tutorial-highlighted');
+            
+            // Add pulse animation if not already present
+            if (!document.getElementById('pulse-animation')) {
+                const style = document.createElement('style');
+                style.id = 'pulse-animation';
+                style.textContent = `
+                    @keyframes pulse {
+                        0% { outline-color: #ff6b6b; transform: scale(1); }
+                        50% { outline-color: #ff4757; transform: scale(1.02); }
+                        100% { outline-color: #ff6b6b; transform: scale(1); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+
+        function removeHighlight() {
+            const highlightedElements = document.querySelectorAll('.tutorial-highlighted');
+            highlightedElements.forEach(element => {
+                element.style.outline = '';
+                element.style.outlineOffset = '';
+                element.style.animation = '';
+                element.style.position = '';
+                element.style.zIndex = '';
+                element.classList.remove('tutorial-highlighted');
+            });
+        }
+
+        function disableTutorialButtons() {
+            // Make next/done buttons non-functional and change their appearance
+            setTimeout(() => {
+                const nextBtn = document.querySelector('.introjs-nextbutton');
+                const doneBtn = document.querySelector('.introjs-donebutton');
+                
+                if (nextBtn) {
+                    nextBtn.style.opacity = '0.5';
+                    nextBtn.style.cursor = 'not-allowed';
+                    nextBtn.disabled = true;
+                }
+                
+                if (doneBtn) {
+                    doneBtn.style.opacity = '0.5';
+                    doneBtn.style.cursor = 'not-allowed'; 
+                    doneBtn.disabled = true;
+                }
+            }, 100);
+        }
+
+        function enableTutorialButtons() {
+            const nextBtn = document.querySelector('.introjs-nextbutton');
+            const doneBtn = document.querySelector('.introjs-donebutton');
+            
+            if (nextBtn) {
+                nextBtn.style.opacity = '1';
+                nextBtn.style.cursor = 'pointer';
+                nextBtn.disabled = false;
+                nextBtn.textContent = 'Siguiente →';
+            }
+            
+            if (doneBtn) {
+                doneBtn.style.opacity = '1';
+                doneBtn.style.cursor = 'pointer';
+                doneBtn.disabled = false;
+                doneBtn.textContent = 'Siguiente →';
+            }
         }
 
         // New Help Bot System
