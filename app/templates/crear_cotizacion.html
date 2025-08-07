@@ -874,53 +874,21 @@
             // });
 
             // Nethive Proactive Form Help
-            function showHelpMessage(fieldId, message) {
-                const helpText = document.getElementById(`${fieldId}-help`);
-                if (helpText) {
-                    helpText.textContent = message;
-                    helpText.style.display = 'block';
-                }
-            }
-
-            function hideHelpMessage(fieldId) {
-                const helpText = document.getElementById(`${fieldId}-help`);
-                if (helpText) {
-                    helpText.style.display = 'none';
-                }
-            }
-
             const fieldsToValidate = {
                 'titulo_cotizacion': {
                     validate: (value) => value.trim() !== '',
-                    message: 'El título no puede estar vacío.'
+                    message: 'El título no puede estar vacío. Por favor, introduce un título para la cotización.'
                 },
                 'id_cliente': {
                     validate: (value) => value !== '',
-                    message: 'Debes seleccionar un cliente.'
+                    message: 'Debes seleccionar un cliente. Si no existe, puedes crearlo con el botón "+".'
+                },
+                 'tipo-cotizacion-select': {
+                    validate: (value) => value !== '',
+                    message: 'Por favor, selecciona una institución (BAJANET o IAMET) para la cotización.'
                 }
             };
-
-            Object.keys(fieldsToValidate).forEach(fieldId => {
-                const field = document.getElementById(fieldId);
-                if (field) {
-                    let timer;
-                    field.addEventListener('focus', () => {
-                        timer = setTimeout(() => {
-                            showProactiveBot(`¿Necesitas ayuda con el campo "${field.labels[0].textContent}"?`);
-                        }, 5000); // 5 seconds
-                    });
-
-                    field.addEventListener('blur', () => {
-                        clearTimeout(timer);
-                        const { validate, message } = fieldsToValidate[fieldId];
-                        if (!validate(field.value)) {
-                            showProactiveBot(message);
-                        } else {
-                            hideProactiveBot();
-                        }
-                    });
-                }
-            });
+            window.initFormAssistance(fieldsToValidate);
 
             // MODIFICACIÓN CLAVE: Interceptar el envío del formulario con Fetch API
             const cotizacionForm = document.getElementById('cotizacion-form');
