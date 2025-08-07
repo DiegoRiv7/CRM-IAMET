@@ -489,6 +489,7 @@
         }
 
         function getNethiveQuestionsForCurrentPage(currentPath) {
+            console.log('Current path in getNethiveQuestionsForCurrentPage:', currentPath);
             let questions = [];
             
             if (currentPath.includes('todos') || currentPath.includes('oportunidades')) {
@@ -510,7 +511,8 @@
                         category: "Integración"
                     }
                 ];
-            } else if (currentPath.includes('crear_cotizacion')) {
+            } else if (currentPath.includes('crear_cotizacion') || currentPath.endsWith('/crear_cotizacion.html')) {
+                console.log('Detected crear_cotizacion page. Current path:', currentPath);
                 // Create quotation page questions - más guiadas
                 questions = [
                     {
@@ -529,6 +531,7 @@
                         category: "Archivos"
                     }
                 ];
+                console.log('Questions for crear_cotizacion loaded:', questions);
             } else if (currentPath.includes('cotizacion')) {
                 // Quotations page questions - más guiadas
                 questions = [
