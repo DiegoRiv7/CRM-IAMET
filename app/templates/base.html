@@ -169,7 +169,12 @@
             // Global state for proactive features
             window.nethiveState = {
                 clickCount: parseInt(sessionStorage.getItem('nethiveClickCount') || '0'),
-                hasShownForClicks: sessionStorage.getItem('hasShownForClicks') === 'true'
+                hasShownForClicks: sessionStorage.getItem('hasShownForClicks') === 'true',
+                userDismissedHelp: false,
+                dismissalReason: null,
+                criticalErrorsCount: 0,
+                currentContext: null,
+                lastHelpOffered: null
             };
 
             // Initialize all bot functionalities
@@ -508,13 +513,49 @@
                 const proactiveNo = e.target.closest('#proactive-no');
                 
                 if (proactiveYes) {
-                    window.hideProactiveBot();
-                    window.showNethiveAssistant();
+                    handleProactiveYes();
                 }
                 if (proactiveNo) {
-                    window.hideProactiveBot();
+                    handleProactiveNo();
                 }
             }, true);
+        }
+
+        function handleProactiveYes() {
+            const context = window.nethiveState.currentContext;
+            const lastHelp = window.nethiveState.lastHelpOffered;
+            
+            window.hideProactiveBot();
+            
+            if (context && context.type === 'field-specific') {
+                // Handle field-specific help
+                window.resolveFieldIssue(context);
+            } else if (context && context.type === 'zone-stuck') {
+                // Handle zone-specific help
+                window.resolveZoneIssue(context);
+            } else {
+                // Default to opening main assistant
+                window.showNethiveAssistant();
+            }
+        }
+
+        function handleProactiveNo() {
+            const lastHelp = window.nethiveState.lastHelpOffered;
+            
+            // Set dismissal flag - won't show help again unless critical error
+            if (lastHelp && lastHelp.type !== 'critical') {
+                window.nethiveState.userDismissedHelp = true;
+                window.nethiveState.dismissalReason = 'user_declined';
+                
+                // Show brief acknowledgment
+                window.showProactiveBot('Entendido. Solo te ayudaré si detecto errores críticos. 👍', 'help');
+                
+                setTimeout(() => {
+                    window.hideProactiveBot();
+                }, 3000);
+            } else {
+                window.hideProactiveBot();
+            }
         }
 
         function setupZoneDetection() {
@@ -596,35 +637,38 @@
         function handleUserStuckInArea(area, element) {
             const currentPath = window.location.pathname;
             let message = '';
+            let context = { type: 'zone-stuck', area, element, path: currentPath };
             
             switch (area) {
                 case 'form-area':
                     if (currentPath.includes('crear_cotizacion')) {
-                        message = '¿Necesitas ayuda llenando la cotización? Puedo guiarte paso a paso.';
+                        message = '¿Necesitas ayuda llenando la cotización? Puedo guiarte paso a paso y llenar los campos por ti.';
                     } else if (currentPath.includes('ingresar-venta')) {
-                        message = '¿Tienes problemas creando la oportunidad? Te ayudo con los campos.';
+                        message = '¿Tienes problemas creando la oportunidad? Te ayudo con los campos y los lleno automáticamente.';
                     } else {
-                        message = '¿Necesitas ayuda con este formulario? Puedo explicarte cada campo.';
+                        message = '¿Necesitas ayuda con este formulario? Puedo explicarte cada campo y llenarlo por ti.';
                     }
                     break;
                 case 'table-area':
-                    message = '¿Buscas algo específico en esta tabla? Puedo ayudarte a encontrarlo o explicar cómo filtrar.';
+                    message = '¿Buscas algo específico en esta tabla? Puedo ayudarte a encontrarlo, filtrar datos o explicar las columnas.';
                     break;
                 case 'dashboard-area':
-                    message = '¿Necesitas ayuda interpretando estas métricas? Puedo explicarte qué significan.';
+                    message = '¿Necesitas ayuda interpretando estas métricas? Puedo explicarte qué significan y cómo mejorar tus números.';
                     break;
                 case 'input-area':
                     const fieldLabel = getFieldLabel(element);
-                    message = `¿Tienes dudas sobre cómo llenar "${fieldLabel}"? Te explico qué va aquí.`;
+                    message = `¿Tienes dudas sobre "${fieldLabel}"? Te explico qué va aquí y puedo llenarlo automáticamente.`;
+                    context.fieldLabel = fieldLabel;
+                    context.type = 'field-specific';
                     break;
                 case 'submit-area':
-                    message = '¿El formulario no se envía? Déjame revisar si hay campos faltantes o errores.';
+                    message = '¿El formulario no se envía? Déjame revisar errores y corregirlos automáticamente.';
                     break;
                 default:
-                    message = 'Parece que estás teniendo dificultades. ¿En qué puedo ayudarte?';
+                    message = 'Parece que estás teniendo dificultades. ¿Quieres que te ayude a completar esta tarea?';
             }
             
-            window.showProactiveBot(message);
+            window.showProactiveBot(message, 'field-help', context);
         }
 
         function handleElementConfusion(element) {
@@ -694,6 +738,19 @@
         }
 
         function showFieldError(field, message) {
+            // Track as potential critical error
+            window.nethiveState.criticalErrorsCount++;
+            
+            // Override dismissal if too many critical errors
+            if (window.nethiveState.criticalErrorsCount >= 3) {
+                window.nethiveState.userDismissedHelp = false;
+                window.showProactiveBot(
+                    `Detecté varios errores en tus campos. ¿Quieres que los corrija automáticamente?`, 
+                    'critical', 
+                    { type: 'multiple-errors', field, message }
+                );
+            }
+
             // Create or update error tooltip
             let tooltip = field.parentElement.querySelector('.nethive-field-tooltip');
             if (!tooltip) {
@@ -786,24 +843,36 @@
             });
         }
 
-        // Enhanced proactive bot with better animations
-        window.showProactiveBot = function(message, type = 'question') {
+        // Enhanced proactive bot with better animations and full avatar
+        window.showProactiveBot = function(message, type = 'question', context = null) {
+            // Check if user dismissed help recently (unless critical error)
+            if (window.nethiveState.userDismissedHelp && type !== 'critical') return;
             if (document.getElementById('nethive-proactive-bot')) return; // Already shown
 
             const isDirectHelp = type === 'help';
-            const avatar = createMiniNethiveAvatar();
+            const isCritical = type === 'critical';
+            const isFieldSpecific = type === 'field-help';
+            
+            // Store context for targeted help
+            window.nethiveState.currentContext = context;
+            window.nethiveState.lastHelpOffered = { message, type, context, timestamp: Date.now() };
+
+            // Use full avatar instead of mini for more presence
+            const avatar = createNethiveAvatar();
             
             const proactiveBotHTML = `
-                <div id="nethive-proactive-bot" class="fixed bottom-6 right-6 max-w-sm z-[9998] nethive-slide-in">
-                    <div class="bg-gradient-to-br from-slate-800/95 via-slate-900/95 to-gray-900/95 backdrop-blur-md rounded-2xl shadow-2xl border border-cyan-500/30 overflow-hidden">
-                        <div class="p-4">
-                            <div class="flex items-start space-x-3">
-                                <div class="flex-shrink-0 animate-bounce-subtle">
+                <div id="nethive-proactive-bot" class="fixed bottom-6 right-6 max-w-md z-[9998] nethive-slide-in">
+                    <div class="bg-gradient-to-br from-slate-800/95 via-slate-900/95 to-gray-900/95 backdrop-blur-md rounded-2xl shadow-2xl border border-cyan-500/30 overflow-hidden ${isCritical ? 'border-red-500/50' : ''}">
+                        <div class="p-6">
+                            <div class="flex items-start space-x-4">
+                                <div class="flex-shrink-0 scale-75 animate-bounce-subtle">
                                     ${avatar}
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <p class="text-cyan-300 text-xs font-semibold uppercase tracking-wide">Nethive Assistant</p>
+                                    <div class="flex items-center justify-between mb-3">
+                                        <p class="text-cyan-300 text-xs font-semibold uppercase tracking-wide">
+                                            ${isCritical ? '🚨 Nethive - Ayuda Urgente' : isFieldSpecific ? '💡 Nethive - Asistencia Específica' : 'Nethive Assistant'}
+                                        </p>
                                         <button onclick="window.hideProactiveBot()" class="text-gray-400 hover:text-white transition-colors p-1">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -814,16 +883,16 @@
                                     ${!isDirectHelp ? `
                                         <div class="flex space-x-2">
                                             <button id="proactive-yes" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white px-4 py-2 rounded-lg text-xs font-semibold transition-all transform hover:scale-105 hover:shadow-lg">
-                                                Sí, ayúdame
+                                                ${isFieldSpecific ? '🔧 Resolver ahora' : 'Sí, ayúdame'}
                                             </button>
                                             <button id="proactive-no" class="bg-slate-600/50 hover:bg-slate-600/70 text-gray-300 px-4 py-2 rounded-lg text-xs font-semibold transition-all">
-                                                No, gracias
+                                                ${isCritical ? 'Ignorar' : 'No molestar más'}
                                             </button>
                                         </div>
                                     ` : `
                                         <div class="flex justify-end">
                                             <button id="proactive-no" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-semibold transition-all transform hover:scale-105">
-                                                Entendido
+                                                ✅ Entendido
                                             </button>
                                         </div>
                                     `}
@@ -835,13 +904,14 @@
             `;
             document.body.insertAdjacentHTML('beforeend', proactiveBotHTML);
             
-            // Auto-hide after 10 seconds if no interaction
+            // Auto-hide after 12 seconds for regular help, 20 for critical
+            const autoHideDelay = isCritical ? 20000 : 12000;
             setTimeout(() => {
                 const bot = document.getElementById('nethive-proactive-bot');
                 if (bot && !bot.querySelector('button:hover')) {
                     window.hideProactiveBot();
                 }
-            }, 10000);
+            }, autoHideDelay);
         }
 
         window.hideProactiveBot = function() {
@@ -990,6 +1060,507 @@
                 window.nethiveContextualIntelligence.providePredictiveHelp();
             }
         }, 45000); // Check every 45 seconds
+
+        // --- Problem Resolution System ---
+
+        window.resolveFieldIssue = function(context) {
+            if (!context || !context.element) return;
+
+            const field = context.element;
+            const fieldName = field.name || field.id;
+            const fieldLabel = context.fieldLabel || getFieldLabel(field);
+            const currentPath = window.location.pathname;
+
+            // Show specialized resolver interface
+            showFieldResolver(field, fieldLabel, currentPath);
+        }
+
+        window.resolveZoneIssue = function(context) {
+            if (!context) return;
+
+            switch (context.area) {
+                case 'form-area':
+                    showFormAssistant(context);
+                    break;
+                case 'table-area':
+                    showTableHelper(context);
+                    break;
+                case 'dashboard-area':
+                    showDashboardGuide(context);
+                    break;
+                case 'submit-area':
+                    validateAndFixForm(context);
+                    break;
+                default:
+                    window.showNethiveAssistant();
+            }
+        }
+
+        function showFieldResolver(field, fieldLabel, currentPath) {
+            const fieldType = field.type || 'text';
+            const fieldName = field.name || field.id;
+            let suggestions = getFieldSuggestions(fieldName, fieldType, currentPath);
+            
+            const resolverHTML = `
+                <div id="nethive-field-resolver" class="fixed bottom-6 right-6 max-w-lg z-[9999] nethive-slide-in">
+                    <div class="bg-gradient-to-br from-slate-800/95 via-slate-900/95 to-gray-900/95 backdrop-blur-md rounded-2xl shadow-2xl border border-green-500/40 overflow-hidden">
+                        <div class="p-6">
+                            <div class="flex items-start space-x-4">
+                                <div class="flex-shrink-0 scale-50">
+                                    ${createNethiveAvatar()}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <p class="text-green-300 text-xs font-semibold uppercase tracking-wide">
+                                            🔧 Nethive - Asistente de Campo
+                                        </p>
+                                        <button onclick="closeFieldResolver()" class="text-gray-400 hover:text-white transition-colors p-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <h3 class="text-white text-sm font-semibold mb-2">Campo: "${fieldLabel}"</h3>
+                                    <p class="text-gray-300 text-xs mb-4">¿Qué quieres hacer?</p>
+                                    
+                                    <div class="space-y-2 mb-4">
+                                        ${suggestions.map((suggestion, index) => `
+                                            <button onclick="applySuggestion(${index}, '${fieldName}')" 
+                                                    class="w-full text-left bg-slate-700/60 hover:bg-green-600/80 text-white p-3 rounded-lg text-xs transition-all">
+                                                <span class="font-semibold">${suggestion.action}</span><br>
+                                                <span class="text-gray-300">${suggestion.description}</span>
+                                            </button>
+                                        `).join('')}
+                                    </div>
+                                    
+                                    <div class="flex items-center space-x-2 p-2 bg-slate-800/50 rounded-lg">
+                                        <span class="text-xs text-gray-400">O dime qué poner:</span>
+                                        <input id="custom-field-value" type="text" placeholder="Escribe aquí..." 
+                                               class="flex-1 bg-transparent text-white text-xs border-none outline-none">
+                                        <button onclick="applyCustomValue('${fieldName}')" 
+                                                class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs">
+                                            Aplicar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Store current field for reference
+            window.currentResolverField = field;
+            window.currentFieldSuggestions = suggestions;
+            
+            document.body.insertAdjacentHTML('beforeend', resolverHTML);
+        }
+
+        function getFieldSuggestions(fieldName, fieldType, currentPath) {
+            let suggestions = [];
+            
+            // Common suggestions based on field name patterns
+            if (fieldName && fieldName.toLowerCase().includes('email')) {
+                suggestions.push(
+                    { action: '📧 Email ejemplo', description: 'usuario@empresa.com', value: 'usuario@empresa.com' },
+                    { action: '🔧 Validar email', description: 'Verificar formato del email actual', value: 'validate' }
+                );
+            } else if (fieldName && fieldName.toLowerCase().includes('telefono')) {
+                suggestions.push(
+                    { action: '📞 Teléfono México', description: '+52 55 1234 5678', value: '+52 55 1234 5678' },
+                    { action: '📱 Celular', description: '+52 55 9876 5432', value: '+52 55 9876 5432' }
+                );
+            } else if (fieldName && fieldName.toLowerCase().includes('precio')) {
+                suggestions.push(
+                    { action: '💰 Precio estándar', description: '1000.00', value: '1000.00' },
+                    { action: '💵 Precio premium', description: '2500.00', value: '2500.00' }
+                );
+            } else if (fieldType === 'number') {
+                suggestions.push(
+                    { action: '🔢 Cantidad: 1', description: 'Una unidad', value: '1' },
+                    { action: '🔢 Cantidad: 10', description: 'Diez unidades', value: '10' }
+                );
+            }
+            
+            // Context-specific suggestions
+            if (currentPath.includes('crear_cotizacion')) {
+                if (fieldName && fieldName.toLowerCase().includes('titulo')) {
+                    suggestions.push(
+                        { action: '📋 Cotización básica', description: 'Cotización - Servicios IT', value: 'Cotización - Servicios IT' },
+                        { action: '📋 Cotización personalizada', description: 'Propuesta comercial personalizada', value: 'Propuesta comercial personalizada' }
+                    );
+                }
+            }
+            
+            // Default suggestions
+            if (suggestions.length === 0) {
+                suggestions.push(
+                    { action: '🔄 Limpiar campo', description: 'Borrar contenido actual', value: '' },
+                    { action: '❓ Explicar campo', description: 'Ver información sobre este campo', value: 'explain' }
+                );
+            }
+            
+            return suggestions;
+        }
+
+        window.applySuggestion = function(index, fieldName) {
+            const suggestion = window.currentFieldSuggestions[index];
+            const field = window.currentResolverField;
+            
+            if (!field || !suggestion) return;
+            
+            if (suggestion.value === 'validate') {
+                validateFieldProactively(field, true);
+            } else if (suggestion.value === 'explain') {
+                showFieldExplanation(field, fieldName);
+            } else {
+                // Apply the suggested value
+                field.value = suggestion.value;
+                field.dispatchEvent(new Event('input', { bubbles: true }));
+                field.dispatchEvent(new Event('change', { bubbles: true }));
+                
+                // Clear any existing error
+                const tooltip = field.parentElement.querySelector('.nethive-field-tooltip');
+                if (tooltip) tooltip.remove();
+                
+                // Show success
+                showFieldSuccess(field, `Campo "${getFieldLabel(field)}" actualizado con: ${suggestion.action}`);
+            }
+            
+            closeFieldResolver();
+        }
+
+        window.applyCustomValue = function(fieldName) {
+            const customInput = document.getElementById('custom-field-value');
+            const field = window.currentResolverField;
+            
+            if (!field || !customInput) return;
+            
+            const customValue = customInput.value.trim();
+            if (!customValue) return;
+            
+            field.value = customValue;
+            field.dispatchEvent(new Event('input', { bubbles: true }));
+            field.dispatchEvent(new Event('change', { bubbles: true }));
+            
+            // Clear any existing error
+            const tooltip = field.parentElement.querySelector('.nethive-field-tooltip');
+            if (tooltip) tooltip.remove();
+            
+            showFieldSuccess(field, `Campo actualizado: "${customValue}"`);
+            closeFieldResolver();
+        }
+
+        window.closeFieldResolver = function() {
+            const resolver = document.getElementById('nethive-field-resolver');
+            if (resolver) resolver.remove();
+            window.currentResolverField = null;
+            window.currentFieldSuggestions = null;
+        }
+
+        function showFieldSuccess(field, message) {
+            let tooltip = field.parentElement.querySelector('.nethive-success-tooltip');
+            if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.className = 'nethive-success-tooltip';
+                tooltip.style.cssText = `
+                    position: absolute;
+                    top: 100%;
+                    left: 0;
+                    z-index: 1000;
+                    background: linear-gradient(135deg, #10b981, #059669);
+                    color: white;
+                    padding: 8px 12px;
+                    border-radius: 8px;
+                    font-size: 12px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    max-width: 250px;
+                    animation: slideUp 0.3s ease-out;
+                `;
+                field.parentElement.style.position = 'relative';
+                field.parentElement.appendChild(tooltip);
+            }
+            
+            tooltip.innerHTML = `✅ ${message}`;
+            
+            setTimeout(() => {
+                if (tooltip && tooltip.parentElement) {
+                    tooltip.remove();
+                }
+            }, 3000);
+        }
+
+        function showFormAssistant(context) {
+            window.showProactiveBot('Abriendo asistente de formulario especializado...', 'help');
+            setTimeout(() => {
+                window.hideProactiveBot();
+                window.showNethiveAssistant();
+            }, 1500);
+        }
+
+        function showTableHelper(context) {
+            window.showProactiveBot('Te ayudo con la navegación de tablas...', 'help');
+        }
+
+        function showDashboardGuide(context) {
+            window.showProactiveBot('Explicándote las métricas del dashboard...', 'help');
+        }
+
+        function validateAndFixForm(context) {
+            window.showProactiveBot('Revisando formulario y corrigiendo errores...', 'help');
+            
+            // Auto-fix common form issues
+            setTimeout(() => {
+                const form = context.element.closest('form');
+                if (form) {
+                    const requiredFields = form.querySelectorAll('[required]');
+                    let fixedCount = 0;
+                    
+                    requiredFields.forEach(field => {
+                        if (!field.value.trim()) {
+                            // Try to provide smart defaults
+                            const suggestions = getFieldSuggestions(field.name || field.id, field.type, window.location.pathname);
+                            if (suggestions.length > 0 && suggestions[0].value && suggestions[0].value !== 'validate' && suggestions[0].value !== 'explain') {
+                                field.value = suggestions[0].value;
+                                field.dispatchEvent(new Event('input', { bubbles: true }));
+                                fixedCount++;
+                            }
+                        }
+                    });
+                    
+                    if (fixedCount > 0) {
+                        window.showProactiveBot(`✅ Arreglé ${fixedCount} campos automáticamente. ¡Ahora puedes enviar el formulario!`, 'help');
+                    } else {
+                        window.showProactiveBot('El formulario parece estar completo. ¿Hay algo específico que necesites?', 'help');
+                    }
+                }
+            }, 1000);
+        }
+
+        function showFieldExplanation(field, fieldName) {
+            const currentPath = window.location.pathname;
+            let explanation = getFieldExplanation(fieldName, field.type, currentPath);
+            
+            window.showProactiveBot(explanation, 'help');
+            closeFieldResolver();
+        }
+
+        function getFieldExplanation(fieldName, fieldType, currentPath) {
+            if (!fieldName) return 'Este campo requiere información específica. Revisa las instrucciones cercanas.';
+            
+            const lowerName = fieldName.toLowerCase();
+            
+            // Field-specific explanations
+            if (lowerName.includes('titulo')) {
+                return '📝 <strong>Título:</strong> Un nombre descriptivo para identificar fácilmente este registro. Ejemplo: "Cotización - Servicios Web Mayo 2025"';
+            } else if (lowerName.includes('cliente')) {
+                return '🏢 <strong>Cliente:</strong> Selecciona la empresa o persona para quien es este registro. Si no existe, créalo con el botón "+"';
+            } else if (lowerName.includes('email')) {
+                return '📧 <strong>Email:</strong> Dirección de correo electrónico válida. Formato: usuario@dominio.com';
+            } else if (lowerName.includes('telefono')) {
+                return '📞 <strong>Teléfono:</strong> Número de contacto con código de país. Ejemplo: +52 55 1234 5678';
+            } else if (lowerName.includes('precio')) {
+                return '💰 <strong>Precio:</strong> Valor monetario sin símbolos. Usa punto para decimales. Ejemplo: 1500.50';
+            } else if (lowerName.includes('cantidad')) {
+                return '🔢 <strong>Cantidad:</strong> Número de unidades o artículos. Solo números enteros o decimales.';
+            } else if (lowerName.includes('descripcion')) {
+                return '📄 <strong>Descripción:</strong> Información detallada sobre el producto o servicio. Sé específico y claro.';
+            } else if (lowerName.includes('fecha')) {
+                return '📅 <strong>Fecha:</strong> Selecciona la fecha apropiada desde el calendario o ingresa en formato DD/MM/AAAA';
+            } else if (lowerName.includes('oportunidad')) {
+                return '🎯 <strong>Oportunidad:</strong> Vincula este registro con una oportunidad de venta existente para mejor seguimiento.';
+            } else if (lowerName.includes('empresa')) {
+                return '🏢 <strong>Empresa:</strong> Razón social completa de la organización. Ejemplo: "Tecnología y Soluciones SA de CV"';
+            }
+            
+            // Context-specific explanations
+            if (currentPath.includes('crear_cotizacion')) {
+                if (lowerName.includes('iva')) {
+                    return '📊 <strong>IVA:</strong> Indica si los precios incluyen IVA o se calculará por separado. Selecciona según tu esquema de facturación.';
+                } else if (lowerName.includes('moneda')) {
+                    return '💱 <strong>Moneda:</strong> Tipo de moneda para todos los precios de la cotización. Ejemplo: MXN, USD, EUR';
+                }
+            }
+            
+            // Default explanation
+            return `ℹ️ <strong>${fieldName}:</strong> Este campo es necesario para completar el formulario. Ingresa la información requerida según las indicaciones.`;
+        }
+
+        // --- Advanced User Action Execution System ---
+
+        window.executeUserCommand = function(command, context = null) {
+            const lowerCommand = command.toLowerCase();
+            const currentPath = window.location.pathname;
+            
+            // Navigation commands
+            if (lowerCommand.includes('ir a') || lowerCommand.includes('navegar a')) {
+                return handleNavigationCommand(lowerCommand);
+            }
+            
+            // Form filling commands
+            if (lowerCommand.includes('llenar') || lowerCommand.includes('completar')) {
+                return handleFormFillCommand(lowerCommand, context);
+            }
+            
+            // Data entry commands
+            if (lowerCommand.includes('escribir') || lowerCommand.includes('poner')) {
+                return handleDataEntryCommand(lowerCommand, context);
+            }
+            
+            // Action commands
+            if (lowerCommand.includes('click') || lowerCommand.includes('presionar')) {
+                return handleClickCommand(lowerCommand);
+            }
+            
+            // Search commands
+            if (lowerCommand.includes('buscar') || lowerCommand.includes('encontrar')) {
+                return handleSearchCommand(lowerCommand);
+            }
+            
+            // Default: show suggestion
+            return `No pude ejecutar "${command}". ¿Puedes ser más específico? Por ejemplo: "llenar campo cliente con Empresa ABC" o "ir a dashboard"`;
+        }
+
+        function handleNavigationCommand(command) {
+            const destinations = {
+                'dashboard': '/dashboard/',
+                'oportunidades': '/todos/',
+                'cotizaciones': '/cotizaciones/',
+                'crear cotizacion': '/crear-cotizacion/',
+                'reportes': '/reporte-usuarios/',
+                'admin': '/admin/',
+                'home': '/home/'
+            };
+            
+            for (const [keyword, url] of Object.entries(destinations)) {
+                if (command.includes(keyword)) {
+                    window.location.href = url;
+                    return `Navegando a ${keyword}...`;
+                }
+            }
+            
+            return 'No reconozco ese destino. Opciones: dashboard, oportunidades, cotizaciones, crear cotización, reportes, admin, home';
+        }
+
+        function handleFormFillCommand(command, context) {
+            // Extract field name and value from command
+            const fillPatterns = [
+                /llenar (?:campo )?([a-záéíóúñ\s]+) con (.+)/i,
+                /completar (?:campo )?([a-záéíóúñ\s]+) con (.+)/i,
+                /(?:campo )?([a-záéíóúñ\s]+) = (.+)/i
+            ];
+            
+            for (const pattern of fillPatterns) {
+                const match = command.match(pattern);
+                if (match) {
+                    const fieldName = match[1].trim();
+                    const value = match[2].trim();
+                    return fillFieldByName(fieldName, value);
+                }
+            }
+            
+            return 'No pude entender qué campo llenar. Ejemplo: "llenar campo cliente con Empresa ABC"';
+        }
+
+        function handleDataEntryCommand(command, context) {
+            // Similar to form fill but more general
+            return handleFormFillCommand(command.replace(/escribir|poner/, 'llenar'), context);
+        }
+
+        function handleClickCommand(command) {
+            // Extract button/element to click
+            const clickPatterns = [
+                /(?:click|presionar) (?:en )?(?:el )?(?:botón )?([a-záéíóúñ\s]+)/i,
+                /pulsar (?:el )?(?:botón )?([a-záéíóúñ\s]+)/i
+            ];
+            
+            for (const pattern of clickPatterns) {
+                const match = command.match(pattern);
+                if (match) {
+                    const buttonText = match[1].trim();
+                    return clickButtonByText(buttonText);
+                }
+            }
+            
+            return 'No pude identificar qué elemento hacer click. Ejemplo: "click en botón guardar"';
+        }
+
+        function handleSearchCommand(command) {
+            const searchPatterns = [
+                /(?:buscar|encontrar) ([a-záéíóúñ\s]+)/i
+            ];
+            
+            for (const pattern of searchPatterns) {
+                const match = command.match(pattern);
+                if (match) {
+                    const searchTerm = match[1].trim();
+                    return performSearch(searchTerm);
+                }
+            }
+            
+            return 'No pude entender qué buscar. Ejemplo: "buscar cliente Empresa ABC"';
+        }
+
+        function fillFieldByName(fieldName, value) {
+            const possibleSelectors = [
+                `input[name*="${fieldName.toLowerCase()}"]`,
+                `select[name*="${fieldName.toLowerCase()}"]`,
+                `textarea[name*="${fieldName.toLowerCase()}"]`,
+                `input[id*="${fieldName.toLowerCase()}"]`,
+                `select[id*="${fieldName.toLowerCase()}"]`,
+                `textarea[id*="${fieldName.toLowerCase()}"]`
+            ];
+            
+            for (const selector of possibleSelectors) {
+                const field = document.querySelector(selector);
+                if (field) {
+                    field.value = value;
+                    field.dispatchEvent(new Event('input', { bubbles: true }));
+                    field.dispatchEvent(new Event('change', { bubbles: true }));
+                    showFieldSuccess(field, `Campo "${fieldName}" llenado con: ${value}`);
+                    return `✅ Campo "${fieldName}" completado con "${value}"`;
+                }
+            }
+            
+            return `❌ No pude encontrar el campo "${fieldName}". Verifica el nombre del campo.`;
+        }
+
+        function clickButtonByText(buttonText) {
+            const buttons = document.querySelectorAll('button, input[type="button"], input[type="submit"], a');
+            
+            for (const button of buttons) {
+                const text = button.textContent || button.value || '';
+                if (text.toLowerCase().includes(buttonText.toLowerCase())) {
+                    button.click();
+                    return `✅ Click realizado en "${text.trim()}"`;
+                }
+            }
+            
+            return `❌ No pude encontrar el botón "${buttonText}"`;
+        }
+
+        function performSearch(searchTerm) {
+            // Look for search inputs
+            const searchFields = document.querySelectorAll('input[type="search"], input[placeholder*="buscar"], input[placeholder*="search"]');
+            
+            if (searchFields.length > 0) {
+                const searchField = searchFields[0];
+                searchField.value = searchTerm;
+                searchField.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                // Try to find and click search button
+                const searchButton = document.querySelector('button[type="submit"], button:contains("Buscar")') || 
+                                   searchField.closest('form')?.querySelector('button[type="submit"]');
+                
+                if (searchButton) {
+                    searchButton.click();
+                }
+                
+                return `✅ Buscando: "${searchTerm}"`;
+            }
+            
+            return `❌ No encontré campo de búsqueda en esta página`;
+        }
 
     </script>
 </body>
