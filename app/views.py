@@ -726,6 +726,9 @@ def ingresar_venta_todoitem(request):
                     venta.usuario = request.user
                 
                 venta.save() # Guardar la instancia de venta para obtener un PK
+                
+                # Crown Jewel Feature: Trigger immediate opportunity detection
+                trigger_immediate_opportunity_notification(venta, request)
 
                 try:
                     opportunity_data = {
@@ -1225,6 +1228,26 @@ def bitrix_cotizador_redirect(request):
 def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
     cliente_seleccionado = None
     oportunidad_seleccionada = None
+    
+    # Detectar si viene de la detección automática de oportunidades (Crown Jewel Feature)
+    is_auto_filled = request.GET.get('auto_filled') == 'true'
+    auto_fill_data = {}
+    
+    if is_auto_filled:
+        # Obtener datos de auto-llenado desde los parámetros GET
+        auto_fill_data = {
+            'titulo': request.GET.get('titulo', ''),
+            'monto_estimado': request.GET.get('monto_estimado', ''),
+            'oportunidad_id': request.GET.get('oportunidad_id', ''),
+            'cliente_id': request.GET.get('cliente_id', '')
+        }
+        print(f"DEBUG: Auto-fill detectado desde notificación de oportunidad: {auto_fill_data}")
+        
+        # Si viene de auto-fill, usar los IDs de los parámetros
+        if not oportunidad_id and auto_fill_data['oportunidad_id']:
+            oportunidad_id = auto_fill_data['oportunidad_id']
+        if not cliente_id and auto_fill_data['cliente_id']:
+            cliente_id = auto_fill_data['cliente_id']
 
     print(f"DEBUG: crear_cotizacion_view - Request method: {request.method}")
     
@@ -1400,6 +1423,11 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             initial_data['titulo'] = oportunidad_seleccionada.oportunidad
             initial_data['cliente'] = oportunidad_seleccionada.cliente.id if oportunidad_seleccionada.cliente else None
             initial_data['oportunidad'] = oportunidad_seleccionada.id
+            
+        # Si viene de auto-fill (Crown Jewel Feature), usar ese título preferentemente
+        if is_auto_filled and auto_fill_data.get('titulo'):
+            initial_data['titulo'] = f"Cotización - {auto_fill_data['titulo']}"
+            print(f"DEBUG: Título auto-llenado: {initial_data['titulo']}")
 
         form = CotizacionForm(initial=initial_data, user=request.user)
         form_action_url = reverse('crear_cotizacion_with_id', args=[cliente_id]) if cliente_id else reverse('crear_cotizacion')
@@ -1428,6 +1456,10 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             'producto_choices': TodoItem.PRODUCTO_CHOICES,
             'area_choices': TodoItem.AREA_CHOICES,
             'probabilidad_choices_list': [i for i in range(0, 101, 10)],
+            # Crown Jewel Feature: Auto-fill data from opportunity detection
+            'is_auto_filled': is_auto_filled,
+            'auto_fill_data': auto_fill_data,
+            'oportunidad_seleccionada': oportunidad_seleccionada,
         }
         return render(request, 'crear_cotizacion.html', context)
 
@@ -2464,3 +2496,102 @@ def crear_oportunidad_api(request):
             },
             'warning': f'Oportunidad creada localmente, pero falló la sincronización con Bitrix24: {e}'
         })
+
+@login_required
+def check_new_local_opportunities(request):
+    """
+    API endpoint para detectar nuevas oportunidades creadas en nuestro sistema.
+    Esta función verifica si hay oportunidades creadas después del último timestamp de verificación.
+    """
+    try:
+        # Obtener timestamp de la última verificación desde el parámetro GET
+        last_check_timestamp = request.GET.get('last_check')
+        
+        if not last_check_timestamp:
+            return JsonResponse({
+                'success': False,
+                'error': 'Falta el parámetro last_check'
+            })
+        
+        # Convertir timestamp a datetime
+        from datetime import datetime
+        last_check = datetime.fromtimestamp(int(last_check_timestamp) / 1000, tz=timezone.utc)
+        
+        # Primero verificar si hay una alerta inmediata en la sesión (Crown Jewel Feature)
+        opportunities_data = []
+        session_key = f'new_opportunity_alert_{request.user.id}'
+        
+        if session_key in request.session:
+            # Hay una oportunidad que se acaba de crear - procesarla inmediatamente
+            alert_data = request.session.pop(session_key)  # Remover después de leer
+            opportunities_data.append(alert_data)
+            print(f"DEBUG: Detectada oportunidad inmediata desde sesión: {alert_data}")
+        
+        # También buscar oportunidades nuevas creadas después del último check
+        # Solo buscar las del usuario actual o todas si es supervisor
+        if is_supervisor(request.user):
+            new_opportunities = TodoItem.objects.filter(
+                created_at__gt=last_check
+            ).select_related('cliente').order_by('-created_at')[:5]
+        else:
+            new_opportunities = TodoItem.objects.filter(
+                user=request.user,
+                created_at__gt=last_check
+            ).select_related('cliente').order_by('-created_at')[:5]
+        
+        # Agregar oportunidades de base de datos a la lista existente
+        for opp in new_opportunities:
+            opportunities_data.append({
+                'id': opp.id,
+                'titulo': opp.oportunidad,
+                'cliente_id': opp.cliente.id if opp.cliente else None,
+                'cliente_nombre': opp.cliente.nombre_empresa if opp.cliente else 'Sin cliente',
+                'monto_estimado': str(opp.precio_estimado) if opp.precio_estimado else 'N/A',
+                'probabilidad': opp.probabilidad_exito,
+                'created_at': opp.created_at.isoformat(),
+                'user': opp.usuario.username if opp.usuario else 'Sin usuario'
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'new_opportunities': opportunities_data,
+            'count': len(opportunities_data),
+            'last_check': last_check.isoformat()
+        })
+        
+    except ValueError as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error en el formato del timestamp: {e}'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error interno del servidor: {e}'
+        })
+
+def trigger_immediate_opportunity_notification(opportunity, request):
+    """
+    Crown Jewel Feature: Notifica inmediatamente a la sesión del usuario 
+    sobre una nueva oportunidad creada, marcándola para detección inmediata
+    """
+    try:
+        # Crear una entrada en la caché/session para que el frontend la detecte inmediatamente
+        if hasattr(request, 'session'):
+            session_key = f'new_opportunity_alert_{request.user.id}'
+            request.session[session_key] = {
+                'opportunity_id': opportunity.id,
+                'titulo': opportunity.oportunidad,
+                'cliente_id': opportunity.cliente.id if opportunity.cliente else None,
+                'cliente_nombre': opportunity.cliente.nombre_empresa if opportunity.cliente else 'Sin cliente',
+                'monto_estimado': str(opportunity.precio_estimado) if opportunity.precio_estimado else str(opportunity.monto) if opportunity.monto else 'N/A',
+                'created_at': opportunity.created_at.isoformat() if opportunity.created_at else timezone.now().isoformat(),
+                'user_id': opportunity.usuario.id if opportunity.usuario else request.user.id,
+                'timestamp': timezone.now().timestamp()
+            }
+            # Marcar para que expire en 5 minutos
+            request.session.set_expiry(300)
+            print(f"DEBUG: Nueva oportunidad marcada para notificación inmediata: {opportunity.oportunidad}")
+        
+    except Exception as e:
+        print(f"ERROR: No se pudo configurar notificación de oportunidad: {e}")

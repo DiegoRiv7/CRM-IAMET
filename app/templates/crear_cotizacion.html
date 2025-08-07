@@ -201,6 +201,30 @@
     <div class="max-w-full w-full space-y-8">
         <h1 class="text-3xl font-bold text-white text-center" style="font-size: clamp(2rem, 4vw, 2.5rem);" data-intro="💼 Esta es la página para crear cotizaciones profesionales para tus clientes. Te guiaremos paso a paso." data-step="1">{% if editing_mode %}Editar Cotización{% else %}Crear Cotización{% endif %}</h1>
 
+        <!-- Crown Jewel Feature: Auto-fill notification -->
+        {% if is_auto_filled %}
+        <div class="mb-6 p-4 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl border border-green-400/30 mx-4">
+            <div class="flex items-center space-x-3">
+                <div class="flex-shrink-0">
+                    <svg class="w-6 h-6 text-green-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-sm font-semibold text-white">🎯 Nueva Oportunidad Detectada</h3>
+                    <p class="text-xs text-green-100 mt-1">
+                        Esta cotización se ha creado automáticamente para la oportunidad: 
+                        <span class="font-medium">"{{ oportunidad_seleccionada.oportunidad }}"</span>
+                        {% if oportunidad_seleccionada.cliente %}
+                        del cliente <span class="font-medium">{{ oportunidad_seleccionada.cliente.nombre_empresa }}</span>
+                        {% endif %}
+                    </p>
+                    <p class="text-xs text-green-200 mt-2">✨ Los datos han sido pre-llenados para optimizar tu flujo de trabajo.</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
                 <form id="cotizacion-form" method="post" action="{% if form_action_url %}{{ form_action_url }}{% elif cliente_id_inicial %}{% url 'crear_cotizacion_with_id' cliente_id_inicial %}{% else %}{% url 'crear_cotizacion' %}{% endif %}">
             <div class="card p-6 mb-8 shadow-md-dark">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -174,7 +174,11 @@
                 dismissalReason: null,
                 criticalErrorsCount: 0,
                 currentContext: null,
-                lastHelpOffered: null
+                lastHelpOffered: null,
+                // New opportunity detection state
+                lastOpportunityCheck: parseInt(sessionStorage.getItem('lastOpportunityCheck') || Date.now()),
+                isWatchingOpportunities: false,
+                opportunityWatchInterval: null
             };
 
             // Initialize all bot functionalities
@@ -190,26 +194,151 @@
         }
 
         const nethivePersonality = {
-            moods: ['happy', 'excited', 'thoughtful', 'helpful', 'playful'],
+            moods: ['happy', 'excited', 'thoughtful', 'helpful', 'playful', 'sad', 'worried', 'proud', 'focused', 'celebrating'],
             currentMood: 'happy',
             expressions: {
-                happy: { eyes: '⚫⚫', mouth: '︶', color: '#4ade80' },
-                excited: { eyes: '✨✨', mouth: '◡', color: '#f59e0b' },
-                thoughtful: { eyes: '🤔🤔', mouth: '−', color: '#8b5cf6' },
-                helpful: { eyes: '👀👀', mouth: '◠', color: '#06b6d4' },
-                playful: { eyes: '😊😊', mouth: '‿', color: '#ec4899' }
+                happy: { 
+                    eyes: '⚫⚫', 
+                    mouth: '︶', 
+                    color: '#4ade80',
+                    glow: '#4ade80',
+                    animation: 'pulse-gentle',
+                    description: 'Contento y listo para ayudar'
+                },
+                excited: { 
+                    eyes: '✨✨', 
+                    mouth: '◡', 
+                    color: '#f59e0b',
+                    glow: '#f59e0b',
+                    animation: 'bounce-excited',
+                    description: 'Emocionado de ayudarte'
+                },
+                sad: { 
+                    eyes: '💧💧', 
+                    mouth: '︵', 
+                    color: '#3b82f6',
+                    glow: '#3b82f6',
+                    animation: 'sway-sad',
+                    description: 'Preocupado por los errores'
+                },
+                proud: { 
+                    eyes: '⭐⭐', 
+                    mouth: '◠', 
+                    color: '#fbbf24',
+                    glow: '#fbbf24',
+                    animation: 'glow-proud',
+                    description: '¡Orgulloso de haber ayudado!'
+                },
+                worried: { 
+                    eyes: '😰😰', 
+                    mouth: '~', 
+                    color: '#f97316',
+                    glow: '#f97316',
+                    animation: 'shake-worried',
+                    description: 'Detectando problemas'
+                },
+                thoughtful: { 
+                    eyes: '🤔🤔', 
+                    mouth: '−', 
+                    color: '#8b5cf6',
+                    glow: '#8b5cf6',
+                    animation: 'think-pulse',
+                    description: 'Analizando la situación'
+                },
+                helpful: { 
+                    eyes: '👀👀', 
+                    mouth: '◠', 
+                    color: '#06b6d4',
+                    glow: '#06b6d4',
+                    animation: 'ready-bounce',
+                    description: 'Listo para resolver problemas'
+                },
+                focused: { 
+                    eyes: '👁️👁️', 
+                    mouth: '━', 
+                    color: '#10b981',
+                    glow: '#10b981',
+                    animation: 'focus-glow',
+                    description: 'Concentrado en tu tarea'
+                },
+                celebrating: { 
+                    eyes: '🎉🎉', 
+                    mouth: '◉', 
+                    color: '#ec4899',
+                    glow: '#ec4899',
+                    animation: 'celebrate-dance',
+                    description: '¡Misión cumplida!'
+                },
+                playful: { 
+                    eyes: '😊😊', 
+                    mouth: '‿', 
+                    color: '#ec4899',
+                    glow: '#ec4899',
+                    animation: 'wiggle-playful',
+                    description: 'En modo juguetón'
+                }
             }
         };
 
-        function updateNethiveMood(mood) {
+        function updateNethiveMood(mood, reason = '') {
             nethivePersonality.currentMood = mood;
-            const avatar = document.getElementById('nethive-avatar');
-            if (!avatar) return;
+            
+            // Update all avatar instances (mini, full, field resolver, etc.)
+            const avatars = document.querySelectorAll('[class*="nethive-avatar"], [class*="nethive-mini-avatar"]');
             const expression = nethivePersonality.expressions[mood];
-            const face = avatar.querySelector('.nethive-face');
-            const body = avatar.querySelector('.nethive-body');
-            if (face) face.style.borderColor = expression.color;
-            if (body) body.style.background = `linear-gradient(145deg, ${expression.color}20, ${expression.color}10)`;
+            
+            if (!expression) return;
+            
+            avatars.forEach(avatar => {
+                const face = avatar.querySelector('.nethive-face');
+                const body = avatar.querySelector('.nethive-body, .nethive-mini-avatar');
+                const eyes = avatar.querySelector('.nethive-eyes');
+                const mouth = avatar.querySelector('.nethive-mouth');
+                
+                if (face) {
+                    face.style.borderColor = expression.color;
+                    face.style.boxShadow = `0 0 15px ${expression.glow}40, inset 0 0 10px ${expression.glow}20`;
+                }
+                
+                if (body) {
+                    body.style.background = `linear-gradient(145deg, ${expression.color}30, ${expression.color}15)`;
+                    body.style.boxShadow = `0 0 20px ${expression.glow}30, inset 0 0 15px ${expression.glow}20`;
+                }
+                
+                if (eyes) {
+                    eyes.innerHTML = `
+                        <div class="nethive-eye w-4 h-4 bg-white rounded-full" style="box-shadow: 0 0 8px ${expression.glow};">${expression.eyes.charAt(0)}</div>
+                        <div class="nethive-eye w-4 h-4 bg-white rounded-full" style="box-shadow: 0 0 8px ${expression.glow};">${expression.eyes.charAt(1) || expression.eyes.charAt(0)}</div>
+                    `;
+                }
+                
+                if (mouth) {
+                    mouth.textContent = expression.mouth;
+                    mouth.style.color = expression.color;
+                }
+                
+                // Apply animation class
+                avatar.className = avatar.className.replace(/animate-\S+/g, '');
+                if (expression.animation) {
+                    avatar.classList.add('animate-' + expression.animation);
+                }
+            });
+            
+            // Update mini avatars
+            const miniAvatars = document.querySelectorAll('.nethive-mini-avatar');
+            miniAvatars.forEach(miniAvatar => {
+                miniAvatar.style.background = `linear-gradient(145deg, ${expression.color}40, ${expression.color}20)`;
+                miniAvatar.style.boxShadow = `0 0 10px ${expression.glow}30`;
+                
+                const content = miniAvatar.querySelector('div[class*="relative"]');
+                if (content) {
+                    content.style.color = expression.color;
+                    content.textContent = expression.eyes.charAt(0);
+                }
+            });
+            
+            // Log mood change for debugging
+            console.log(`🤖 Nethive mood: ${mood} (${expression.description}) ${reason ? '- ' + reason : ''}`);
         }
 
         function createNethiveAvatar() {
@@ -442,7 +571,7 @@
         window.showNethiveAssistant = function() {
             if (document.getElementById('nethive-assistant-modal')) return; // Already open
 
-            updateNethiveMood('excited');
+            updateNethiveMood('excited', '¡El usuario abrió mi panel principal!');
             const currentPath = window.location.pathname;
             const pageQuestions = getNethiveQuestionsForCurrentPage(currentPath);
             window.currentNethiveQuestions = pageQuestions; // Store globally
@@ -526,8 +655,12 @@
             const lastHelp = window.nethiveState.lastHelpOffered;
             
             window.hideProactiveBot();
+            updateNethiveMood('excited', 'Usuario aceptó ayuda');
             
-            if (context && context.type === 'field-specific') {
+            if (context && context.type === 'quotation-assistance') {
+                // User wants full quotation assistance - open the complete auto-creator
+                showAutoQuotationCreator(context);
+            } else if (context && context.type === 'field-specific') {
                 // Handle field-specific help
                 window.resolveFieldIssue(context);
             } else if (context && context.type === 'zone-stuck') {
@@ -547,13 +680,19 @@
                 window.nethiveState.userDismissedHelp = true;
                 window.nethiveState.dismissalReason = 'user_declined';
                 
+                // Show sad mood when user declines help
+                updateNethiveMood('sad', 'Usuario declinó mi ayuda');
+                
                 // Show brief acknowledgment
                 window.showProactiveBot('Entendido. Solo te ayudaré si detecto errores críticos. 👍', 'help');
                 
+                // Change mood to understanding after showing acknowledgment
                 setTimeout(() => {
+                    updateNethiveMood('thoughtful', 'Respetando la decisión del usuario');
                     window.hideProactiveBot();
-                }, 3000);
+                }, 2000);
             } else {
+                updateNethiveMood('sad', 'Usuario no quiere ayuda ahora');
                 window.hideProactiveBot();
             }
         }
@@ -702,39 +841,116 @@
             const fieldName = field.name || field.id;
             const value = field.value.trim();
             const fieldLabel = getFieldLabel(field);
+            const currentPath = window.location.pathname;
+            const isQuotationForm = currentPath.includes('crear_cotizacion') || currentPath.includes('editar_cotizacion');
             
             let errorMessage = '';
             let isError = false;
+            let errorSeverity = 'medium';
 
-            // Common validation patterns
+            // Enhanced validation for quotation forms
+            if (isQuotationForm) {
+                // Price/Amount field validation (critical for quotations)
+                if (fieldName && (fieldName.toLowerCase().includes('precio') || fieldName.toLowerCase().includes('monto') || fieldName.toLowerCase().includes('amount'))) {
+                    if (value && !/^[\d.,]+$/.test(value)) {
+                        // User typed letters in a price field - this is a critical error
+                        errorMessage = `¡Ups! "${fieldLabel}" solo acepta números. Escribiste "${value}" pero debería ser algo como "1500.00"`;
+                        isError = true;
+                        errorSeverity = 'critical';
+                        updateNethiveMood('sad', 'Usuario puso letras en campo de precio');
+                    } else if (value && parseFloat(value.replace(',', '.')) <= 0) {
+                        errorMessage = `El precio en "${fieldLabel}" debe ser mayor a cero.`;
+                        isError = true;
+                        errorSeverity = 'high';
+                        updateNethiveMood('worried', 'Precio inválido (cero o negativo)');
+                    } else if (value && parseFloat(value.replace(',', '.')) > 1000000) {
+                        errorMessage = `¿Estás seguro del precio en "${fieldLabel}"? Parece muy alto: $${value}`;
+                        isError = true;
+                        errorSeverity = 'medium';
+                        updateNethiveMood('thoughtful', 'Precio muy alto, verificando');
+                    }
+                }
+                
+                // Quantity field validation
+                if (fieldName && (fieldName.toLowerCase().includes('cantidad') || fieldName.toLowerCase().includes('qty'))) {
+                    if (value && !/^[\d.]+$/.test(value)) {
+                        errorMessage = `"${fieldLabel}" debe ser un número. Por ejemplo: 1, 5, 10.5`;
+                        isError = true;
+                        errorSeverity = 'high';
+                        updateNethiveMood('worried', 'Cantidad con caracteres inválidos');
+                    }
+                }
+                
+                // Client/Company field validation
+                if (fieldName && (fieldName.toLowerCase().includes('cliente') || fieldName.toLowerCase().includes('empresa'))) {
+                    if (value && value.length < 2) {
+                        errorMessage = `El nombre del cliente parece muy corto. ¿Está completo?`;
+                        isError = true;
+                        errorSeverity = 'medium';
+                        updateNethiveMood('thoughtful', 'Nombre de cliente muy corto');
+                    }
+                }
+            }
+            
+            // Common validation patterns (always apply)
             if (field.type === 'email' && value && !isValidEmail(value)) {
                 errorMessage = `El formato del email en "${fieldLabel}" no es válido. Debe ser como: usuario@dominio.com`;
                 isError = true;
+                errorSeverity = 'high';
+                updateNethiveMood('worried', 'Email con formato incorrecto');
             } else if (field.type === 'number' && value && isNaN(parseFloat(value))) {
                 errorMessage = `"${fieldLabel}" debe ser un número válido.`;
                 isError = true;
+                errorSeverity = 'high';
+                updateNethiveMood('sad', 'Campo numérico con letras');
             } else if (field.hasAttribute('required') && !value && onBlur) {
                 errorMessage = `El campo "${fieldLabel}" es obligatorio.`;
                 isError = true;
-            } else if (fieldName && fieldName.toLowerCase().includes('precio') && value && parseFloat(value) <= 0) {
-                errorMessage = `El precio en "${fieldLabel}" debe ser mayor a cero.`;
-                isError = true;
+                errorSeverity = 'high';
+                updateNethiveMood('worried', 'Campo obligatorio vacío');
             }
 
             if (isError) {
-                // Track this error
-                window.nethiveState.formErrors.set(fieldName, errorMessage);
+                // Track this error with severity
+                window.nethiveState.formErrors.set(fieldName, { message: errorMessage, severity: errorSeverity, field: field });
                 
-                // Show proactive help after a short delay
-                setTimeout(() => {
-                    if (field === document.activeElement || onBlur) {
-                        showFieldError(field, errorMessage);
-                    }
-                }, 1000);
+                // Show proactive help based on severity
+                if (errorSeverity === 'critical' && isQuotationForm) {
+                    // For critical errors in quotation forms, offer full assistance
+                    setTimeout(() => {
+                        showQuotationErrorAssistance(field, errorMessage, fieldLabel);
+                    }, 500);
+                } else {
+                    // Regular field error handling
+                    setTimeout(() => {
+                        if (field === document.activeElement || onBlur) {
+                            showFieldError(field, errorMessage);
+                        }
+                    }, 1000);
+                }
             } else {
                 // Clear error if field is now valid
                 window.nethiveState.formErrors.delete(fieldName);
+                // Show happy mood when fixing errors
+                if (window.nethiveState.formErrors.size === 0) {
+                    updateNethiveMood('happy', 'Todos los campos están correctos');
+                }
             }
+        }
+
+        function showQuotationErrorAssistance(field, errorMessage, fieldLabel) {
+            const assistanceMessage = `¡Detecté un problema en "${fieldLabel}"! ${errorMessage}. ¿Quieres que te ayude a crear toda la cotización automáticamente?`;
+            
+            window.showProactiveBot(
+                assistanceMessage, 
+                'critical', 
+                { 
+                    type: 'quotation-assistance', 
+                    field: field, 
+                    fieldLabel: fieldLabel,
+                    originalError: errorMessage 
+                }
+            );
         }
 
         function showFieldError(field, message) {
@@ -743,6 +959,7 @@
             
             // Override dismissal if too many critical errors
             if (window.nethiveState.criticalErrorsCount >= 3) {
+                updateNethiveMood('worried', 'Detecté muchos errores críticos');
                 window.nethiveState.userDismissedHelp = false;
                 window.showProactiveBot(
                     `Detecté varios errores en tus campos. ¿Quieres que los corrija automáticamente?`, 
@@ -850,6 +1067,19 @@
             if (document.getElementById('nethive-proactive-bot')) return; // Already shown
 
             const isDirectHelp = type === 'help';
+            
+            // Set appropriate mood based on message type
+            if (type === 'critical') {
+                updateNethiveMood('worried', 'Detecté un problema importante');
+            } else if (type === 'help') {
+                if (message.includes('exitosamente') || message.includes('completado') || message.includes('🎉') || message.includes('✅')) {
+                    updateNethiveMood('celebrating', 'Tarea completada con éxito');
+                } else {
+                    updateNethiveMood('helpful', 'Ofreciendo ayuda específica');
+                }
+            } else if (type === 'question') {
+                updateNethiveMood('thoughtful', 'Preguntando si necesitas ayuda');
+            }
             const isCritical = type === 'critical';
             const isFieldSpecific = type === 'field-help';
             
@@ -904,8 +1134,16 @@
             `;
             document.body.insertAdjacentHTML('beforeend', proactiveBotHTML);
             
-            // Shorter auto-hide for discretion
-            const autoHideDelay = isCritical ? 15000 : 8000;
+            // Auto-hide timing based on message type
+            let autoHideDelay;
+            if (isCritical) {
+                autoHideDelay = 10000; // Critical errors stay 10 seconds
+            } else if (isDirectHelp) {
+                autoHideDelay = 3000; // Direct help messages 3 seconds
+            } else {
+                autoHideDelay = 3000; // Regular questions/suggestions 3 seconds
+            }
+            
             setTimeout(() => {
                 const bot = document.getElementById('nethive-proactive-bot');
                 if (bot && !bot.querySelector('button:hover')) {
@@ -950,6 +1188,103 @@
             }
             .animate-bounce-subtle {
                 animation: bounce-subtle 2s infinite;
+            }
+            
+            @keyframes pulse-gentle {
+                0%, 100% { transform: scale(1); opacity: 1; }
+                50% { transform: scale(1.05); opacity: 0.9; }
+            }
+            .animate-pulse-gentle {
+                animation: pulse-gentle 2s infinite ease-in-out;
+            }
+            
+            @keyframes bounce-excited {
+                0%, 100% { transform: translateY(0) rotate(0deg); }
+                25% { transform: translateY(-6px) rotate(-2deg); }
+                75% { transform: translateY(-3px) rotate(2deg); }
+            }
+            .animate-bounce-excited {
+                animation: bounce-excited 0.8s infinite;
+            }
+            
+            @keyframes sway-sad {
+                0%, 100% { transform: translateX(0) translateY(2px); }
+                50% { transform: translateX(-2px) translateY(0); }
+            }
+            .animate-sway-sad {
+                animation: sway-sad 3s infinite ease-in-out;
+            }
+            
+            @keyframes glow-proud {
+                0%, 100% { 
+                    transform: scale(1); 
+                    filter: brightness(1) drop-shadow(0 0 5px currentColor); 
+                }
+                50% { 
+                    transform: scale(1.1); 
+                    filter: brightness(1.2) drop-shadow(0 0 15px currentColor); 
+                }
+            }
+            .animate-glow-proud {
+                animation: glow-proud 1.5s infinite ease-in-out;
+            }
+            
+            @keyframes shake-worried {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-2px) translateY(-1px); }
+                75% { transform: translateX(2px) translateY(1px); }
+            }
+            .animate-shake-worried {
+                animation: shake-worried 0.5s infinite;
+            }
+            
+            @keyframes think-pulse {
+                0%, 100% { transform: scale(1); opacity: 1; }
+                50% { transform: scale(0.95); opacity: 0.8; }
+            }
+            .animate-think-pulse {
+                animation: think-pulse 2s infinite;
+            }
+            
+            @keyframes ready-bounce {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-3px); }
+            }
+            .animate-ready-bounce {
+                animation: ready-bounce 1s infinite;
+            }
+            
+            @keyframes focus-glow {
+                0%, 100% { 
+                    box-shadow: 0 0 10px currentColor; 
+                    transform: scale(1); 
+                }
+                50% { 
+                    box-shadow: 0 0 20px currentColor, 0 0 30px currentColor; 
+                    transform: scale(1.02); 
+                }
+            }
+            .animate-focus-glow {
+                animation: focus-glow 2s infinite;
+            }
+            
+            @keyframes celebrate-dance {
+                0%, 100% { transform: translateY(0) rotate(0deg); }
+                25% { transform: translateY(-8px) rotate(-10deg); }
+                50% { transform: translateY(-4px) rotate(5deg); }
+                75% { transform: translateY(-6px) rotate(-5deg); }
+            }
+            .animate-celebrate-dance {
+                animation: celebrate-dance 0.6s infinite;
+            }
+            
+            @keyframes wiggle-playful {
+                0%, 100% { transform: rotate(0deg); }
+                25% { transform: rotate(-5deg); }
+                75% { transform: rotate(5deg); }
+            }
+            .animate-wiggle-playful {
+                animation: wiggle-playful 1s infinite ease-in-out;
             }
             
             @keyframes slideUp {
@@ -1166,10 +1501,14 @@
             
             if (!field || !suggestion) return;
             
+            updateNethiveMood('focused', 'Aplicando sugerencia');
+            
             if (suggestion.value === 'validate') {
                 validateFieldProactively(field, true);
+                updateNethiveMood('thoughtful', 'Validando campo');
             } else if (suggestion.value === 'explain') {
                 showFieldExplanation(field, fieldName);
+                updateNethiveMood('helpful', 'Explicando campo');
             } else {
                 // Apply the suggested value
                 field.value = suggestion.value;
@@ -1180,7 +1519,8 @@
                 const tooltip = field.parentElement.querySelector('.nethive-field-tooltip');
                 if (tooltip) tooltip.remove();
                 
-                // Show success
+                // Show success with proud mood
+                updateNethiveMood('proud', `¡Campo completado exitosamente!`);
                 showFieldSuccess(field, `Campo "${getFieldLabel(field)}" actualizado con: ${suggestion.action}`);
             }
             
@@ -1194,7 +1534,12 @@
             if (!field || !customInput) return;
             
             const customValue = customInput.value.trim();
-            if (!customValue) return;
+            if (!customValue) {
+                updateNethiveMood('worried', 'Necesito un valor para llenar el campo');
+                return;
+            }
+            
+            updateNethiveMood('focused', 'Aplicando valor personalizado');
             
             field.value = customValue;
             field.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1204,6 +1549,7 @@
             const tooltip = field.parentElement.querySelector('.nethive-field-tooltip');
             if (tooltip) tooltip.remove();
             
+            updateNethiveMood('proud', '¡Valor personalizado aplicado!');
             showFieldSuccess(field, `Campo actualizado: "${customValue}"`);
             closeFieldResolver();
         }
@@ -1415,6 +1761,281 @@
             if (assistant) assistant.remove();
         }
 
+        function showAutoQuotationCreator(context) {
+            updateNethiveMood('focused', 'Iniciando creación automática de cotización');
+            
+            const assistantHTML = `
+                <div id="nethive-auto-quotation-creator" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[9999] nethive-slide-in">
+                    <div class="bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-3xl border border-green-500/40 max-h-[90vh] overflow-hidden">
+                        <div class="bg-gradient-to-r from-green-600 via-emerald-600 to-cyan-600 p-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <div class="scale-60 animate-glow-proud">${createNethiveAvatar()}</div>
+                                    <div>
+                                        <h2 class="text-xl font-bold text-white">🚀 Creador Automático de Cotizaciones</h2>
+                                        <p class="text-green-100 text-sm">Déjame crear la cotización completa por ti</p>
+                                    </div>
+                                </div>
+                                <button onclick="closeAutoQuotationCreator()" class="text-white/80 hover:text-white text-3xl font-bold">&times;</button>
+                            </div>
+                        </div>
+                        <div class="p-6 max-h-[70vh] overflow-y-auto">
+                            <div class="mb-6 p-4 bg-green-900/30 border border-green-500/50 rounded-lg">
+                                <p class="text-green-200 text-sm">
+                                    ✨ <strong>¡Perfecto!</strong> Detecté que tuviste problemas con "${context.fieldLabel}". 
+                                    Solo necesito algunos datos y creo toda la cotización automáticamente.
+                                </p>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Información básica -->
+                                <div class="bg-slate-800/50 rounded-lg p-4">
+                                    <h3 class="text-cyan-300 font-semibold mb-4 flex items-center">
+                                        📋 Información Básica
+                                    </h3>
+                                    <div class="space-y-3">
+                                        <div>
+                                            <label class="block text-gray-300 text-sm font-medium mb-1">Nombre de la cotización:</label>
+                                            <input id="auto-titulo" type="text" placeholder="ej. Cotización Servicios Web - Empresa ABC" 
+                                                   class="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-gray-300 text-sm font-medium mb-1">Cliente/Empresa:</label>
+                                            <input id="auto-cliente" type="text" placeholder="ej. Tecnología ABC SA de CV" 
+                                                   class="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-gray-300 text-sm font-medium mb-1">Tipo de cotización:</label>
+                                            <select id="auto-tipo" class="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500">
+                                                <option value="servicios">Servicios IT</option>
+                                                <option value="productos">Productos/Hardware</option>
+                                                <option value="mixta">Servicios + Productos</option>
+                                                <option value="consultoria">Consultoría</option>
+                                                <option value="desarrollo">Desarrollo de Software</option>
+                                                <option value="soporte">Soporte Técnico</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Configuración -->
+                                <div class="bg-slate-800/50 rounded-lg p-4">
+                                    <h3 class="text-yellow-300 font-semibold mb-4 flex items-center">
+                                        ⚙️ Configuración
+                                    </h3>
+                                    <div class="space-y-3">
+                                        <div>
+                                            <label class="block text-gray-300 text-sm font-medium mb-1">Moneda:</label>
+                                            <select id="auto-moneda" class="w-full bg-slate-700 text-white rounded px-3 py-2 text-sm">
+                                                <option value="MXN">MXN (Pesos Mexicanos)</option>
+                                                <option value="USD">USD (Dólares)</option>
+                                                <option value="EUR">EUR (Euros)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-gray-300 text-sm font-medium mb-1">IVA:</label>
+                                            <select id="auto-iva" class="w-full bg-slate-700 text-white rounded px-3 py-2 text-sm">
+                                                <option value="incluido">Precios incluyen IVA</option>
+                                                <option value="mas_iva">Más 16% IVA</option>
+                                                <option value="exento">Exento de IVA</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-gray-300 text-sm font-medium mb-1">Institución:</label>
+                                            <select id="auto-institucion" class="w-full bg-slate-700 text-white rounded px-3 py-2 text-sm">
+                                                <option value="bajanet">Bajanet</option>
+                                                <option value="iamet">Iamet</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Productos automáticos -->
+                            <div class="mt-6 bg-slate-800/50 rounded-lg p-4">
+                                <h3 class="text-green-300 font-semibold mb-4 flex items-center">
+                                    🛍️ Productos/Servicios (Generación Automática)
+                                </h3>
+                                <div class="bg-slate-900/50 p-3 rounded text-sm">
+                                    <p class="text-gray-300 mb-2">
+                                        💡 <strong>¡Inteligencia automática!</strong> Basándome en el tipo de cotización que selecciones, 
+                                        voy a agregar productos/servicios típicos con precios reales del mercado.
+                                    </p>
+                                    <p class="text-green-400 text-xs">
+                                        ✨ No necesitas escribir nada aquí - yo me encargo de todo
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-between items-center mt-8 pt-4 border-t border-slate-700">
+                                <div class="text-xs text-gray-400">
+                                    🤖 Tiempo estimado: 3 segundos
+                                </div>
+                                <div class="flex space-x-3">
+                                    <button onclick="closeAutoQuotationCreator()" class="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg text-sm transition-all">
+                                        Cancelar
+                                    </button>
+                                    <button onclick="createQuotationAutomatically()" class="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-lg text-sm font-semibold transition-all hover:shadow-lg">
+                                        🚀 Crear Cotización Automática
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', assistantHTML);
+        }
+
+        window.createQuotationAutomatically = function() {
+            updateNethiveMood('focused', 'Creando cotización automáticamente');
+            
+            // Get user inputs
+            const titulo = document.getElementById('auto-titulo').value.trim();
+            const cliente = document.getElementById('auto-cliente').value.trim();
+            const tipo = document.getElementById('auto-tipo').value;
+            const moneda = document.getElementById('auto-moneda').value;
+            const iva = document.getElementById('auto-iva').value;
+            const institucion = document.getElementById('auto-institucion').value;
+            
+            if (!titulo || !cliente) {
+                updateNethiveMood('worried', 'Faltan datos básicos');
+                alert('Por favor completa al menos el título y el cliente');
+                return;
+            }
+            
+            // Close the creator and show progress
+            closeAutoQuotationCreator();
+            showQuotationCreationProgress(titulo, cliente, tipo, moneda, iva, institucion);
+        }
+
+        function showQuotationCreationProgress(titulo, cliente, tipo, moneda, iva, institucion) {
+            const progressHTML = `
+                <div id="quotation-progress" class="fixed bottom-6 right-6 max-w-md z-[9999] nethive-slide-in">
+                    <div class="bg-slate-900/95 backdrop-blur-md rounded-xl shadow-xl border border-green-500/50 p-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="animate-celebrate-dance">${createMiniNethiveAvatar()}</div>
+                            <div class="flex-1">
+                                <p class="text-green-400 text-sm font-semibold">🚀 Creando cotización...</p>
+                                <div class="w-full bg-slate-700 rounded-full h-2 mt-2">
+                                    <div id="progress-bar" class="bg-green-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                                <p id="progress-text" class="text-gray-400 text-xs mt-1">Iniciando...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', progressHTML);
+            
+            // Simulate progress steps
+            const steps = [
+                { progress: 20, text: 'Llenando datos básicos...' },
+                { progress: 40, text: 'Generando productos automáticos...' },
+                { progress: 60, text: 'Calculando precios...' },
+                { progress: 80, text: 'Aplicando configuración...' },
+                { progress: 100, text: '¡Cotización completada!' }
+            ];
+            
+            let currentStep = 0;
+            const progressInterval = setInterval(() => {
+                if (currentStep < steps.length) {
+                    const step = steps[currentStep];
+                    document.getElementById('progress-bar').style.width = step.progress + '%';
+                    document.getElementById('progress-text').textContent = step.text;
+                    
+                    if (currentStep === steps.length - 1) {
+                        // Final step - actually fill the form
+                        setTimeout(() => {
+                            fillQuotationFormAutomatically(titulo, cliente, tipo, moneda, iva, institucion);
+                            updateNethiveMood('celebrating', 'Cotización creada exitosamente');
+                            
+                            // Show success and hide progress
+                            setTimeout(() => {
+                                document.getElementById('quotation-progress').remove();
+                                window.showProactiveBot('🎉 ¡Cotización creada automáticamente! Revisa los datos y guarda cuando estés listo.', 'help');
+                            }, 1000);
+                        }, 500);
+                    }
+                    currentStep++;
+                } else {
+                    clearInterval(progressInterval);
+                }
+            }, 800);
+        }
+
+        function fillQuotationFormAutomatically(titulo, cliente, tipo, moneda, iva, institucion) {
+            // Fill basic fields
+            fillFieldBySelector('input[name*="titulo"], input[id*="titulo"], input[name*="title"]', titulo);
+            fillFieldBySelector('input[name*="cliente"], input[id*="cliente"]', cliente);
+            fillFieldBySelector('select[name*="moneda"], select[id*="moneda"]', moneda);
+            fillFieldBySelector('select[name*="iva"], select[id*="iva"]', iva);
+            fillFieldBySelector('select[name*="institucion"], select[id*="institucion"]', institucion);
+            
+            // Generate products based on type
+            const products = generateProductsByType(tipo);
+            
+            // Fill product fields (this will depend on your actual form structure)
+            products.forEach((product, index) => {
+                // Try different possible selectors for product fields
+                fillFieldBySelector(`input[name*="descripcion"][name*="${index}"], input[id*="product_${index}_desc"]`, product.descripcion);
+                fillFieldBySelector(`input[name*="cantidad"][name*="${index}"], input[id*="product_${index}_qty"]`, product.cantidad.toString());
+                fillFieldBySelector(`input[name*="precio"][name*="${index}"], input[id*="product_${index}_price"]`, product.precio.toString());
+                
+                // Also try adding rows dynamically if there's an add product button
+                if (index > 0) {
+                    const addButton = document.querySelector('button[onclick*="add"], button[class*="add"], button:contains("Agregar")');
+                    if (addButton) {
+                        addButton.click();
+                    }
+                }
+            });
+        }
+
+        function generateProductsByType(tipo) {
+            const productCatalog = {
+                servicios: [
+                    { descripcion: 'Configuración de servidores', cantidad: 1, precio: 15000 },
+                    { descripcion: 'Soporte técnico mensual', cantidad: 1, precio: 8000 },
+                    { descripcion: 'Migración de datos', cantidad: 1, precio: 12000 }
+                ],
+                productos: [
+                    { descripcion: 'Router empresarial', cantidad: 2, precio: 4500 },
+                    { descripcion: 'Switch 24 puertos', cantidad: 1, precio: 8000 },
+                    { descripcion: 'Access Point WiFi 6', cantidad: 3, precio: 2500 }
+                ],
+                consultoria: [
+                    { descripcion: 'Análisis de infraestructura IT', cantidad: 1, precio: 25000 },
+                    { descripcion: 'Diseño de arquitectura', cantidad: 1, precio: 18000 },
+                    { descripcion: 'Documentación técnica', cantidad: 1, precio: 8000 }
+                ],
+                desarrollo: [
+                    { descripcion: 'Desarrollo de aplicación web', cantidad: 1, precio: 85000 },
+                    { descripcion: 'Base de datos personalizada', cantidad: 1, precio: 25000 },
+                    { descripcion: 'Testing y QA', cantidad: 1, precio: 15000 }
+                ],
+                soporte: [
+                    { descripcion: 'Soporte técnico 24/7 (mensual)', cantidad: 1, precio: 12000 },
+                    { descripción: 'Monitoreo de sistemas', cantidad: 1, precio: 8000 },
+                    { descripcion: 'Respaldo automático', cantidad: 1, precio: 5000 }
+                ],
+                mixta: [
+                    { descripcion: 'Servidor Dell PowerEdge', cantidad: 1, precio: 35000 },
+                    { descripcion: 'Instalación y configuración', cantidad: 1, precio: 12000 },
+                    { descripcion: 'Soporte primer año', cantidad: 1, precio: 10000 }
+                ]
+            };
+            
+            return productCatalog[tipo] || productCatalog.servicios;
+        }
+
+        window.closeAutoQuotationCreator = function() {
+            const creator = document.getElementById('nethive-auto-quotation-creator');
+            if (creator) creator.remove();
+        }
+
         function showTableHelper(context) {
             window.showProactiveBot('Te ayudo con la navegación de tablas...', 'help');
         }
@@ -1446,8 +2067,10 @@
                     });
                     
                     if (fixedCount > 0) {
+                        updateNethiveMood('celebrating', `¡Arreglé ${fixedCount} campos!`);
                         window.showProactiveBot(`✅ Arreglé ${fixedCount} campos automáticamente. ¡Ahora puedes enviar el formulario!`, 'help');
                     } else {
+                        updateNethiveMood('helpful', 'Formulario en buen estado');
                         window.showProactiveBot('El formulario parece estar completo. ¿Hay algo específico que necesites?', 'help');
                     }
                 }
@@ -1509,6 +2132,9 @@
             const lowerCommand = command.toLowerCase();
             const currentPath = window.location.pathname;
             
+            // Set mood to focused when user gives a command
+            updateNethiveMood('focused', 'Ejecutando comando del usuario');
+            
             // Navigation commands
             if (lowerCommand.includes('ir a') || lowerCommand.includes('navegar a')) {
                 return handleNavigationCommand(lowerCommand);
@@ -1551,11 +2177,15 @@
             
             for (const [keyword, url] of Object.entries(destinations)) {
                 if (command.includes(keyword)) {
-                    window.location.href = url;
+                    updateNethiveMood('helpful', `Llevándote a ${keyword}`);
+                    setTimeout(() => {
+                        window.location.href = url;
+                    }, 500);
                     return `Navegando a ${keyword}...`;
                 }
             }
             
+            updateNethiveMood('worried', 'No reconozco ese destino');
             return 'No reconozco ese destino. Opciones: dashboard, oportunidades, cotizaciones, crear cotización, reportes, admin, home';
         }
 
@@ -1572,10 +2202,19 @@
                 if (match) {
                     const fieldName = match[1].trim();
                     const value = match[2].trim();
-                    return fillFieldByName(fieldName, value);
+                    updateNethiveMood('thoughtful', `Llenando campo ${fieldName}`);
+                    
+                    const result = fillFieldByName(fieldName, value);
+                    if (result.includes('exitosamente')) {
+                        updateNethiveMood('proud', `¡Campo ${fieldName} completado!`);
+                    } else if (result.includes('No encontré')) {
+                        updateNethiveMood('worried', `No pude encontrar el campo ${fieldName}`);
+                    }
+                    return result;
                 }
             }
             
+            updateNethiveMood('worried', 'No entiendo el comando');
             return 'No pude entender qué campo llenar. Ejemplo: "llenar campo cliente con Empresa ABC"';
         }
 
@@ -1634,11 +2273,13 @@
                     field.value = value;
                     field.dispatchEvent(new Event('input', { bubbles: true }));
                     field.dispatchEvent(new Event('change', { bubbles: true }));
+                    updateNethiveMood('proud', `¡Campo ${fieldName} completado!`);
                     showFieldSuccess(field, `Campo "${fieldName}" llenado con: ${value}`);
                     return `✅ Campo "${fieldName}" completado con "${value}"`;
                 }
             }
             
+            updateNethiveMood('worried', `No pude encontrar el campo ${fieldName}`);
             return `❌ No pude encontrar el campo "${fieldName}". Verifica el nombre del campo.`;
         }
 
@@ -1678,6 +2319,250 @@
             
             return `❌ No encontré campo de búsqueda en esta página`;
         }
+
+        // ==================== CROWN JEWEL FEATURE ====================
+        // Real-time Opportunity Detection and Proactive Quotation Assistant
+        // ============================================================
+
+        function initializeOpportunityWatcher() {
+            console.log('🔍 Inicializando detección de oportunidades en tiempo real...');
+            
+            // Start watching for new opportunities
+            window.nethiveState.isWatchingOpportunities = true;
+            updateNethiveMood('focused', 'Monitoreando nuevas oportunidades');
+            
+            // Check every 30 seconds for new opportunities
+            window.nethiveState.opportunityWatchInterval = setInterval(() => {
+                checkForNewOpportunities();
+            }, 30000);
+            
+            // Also check immediately
+            setTimeout(() => checkForNewOpportunities(), 5000);
+        }
+
+        async function checkForNewOpportunities() {
+            if (!window.nethiveState.isWatchingOpportunities) return;
+            
+            try {
+                // Check for opportunities created after our last check
+                const response = await fetch(`/app/api/check-new-local-opportunities/?last_check=${window.nethiveState.lastOpportunityCheck}`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.new_opportunities && data.new_opportunities.length > 0) {
+                        // New opportunity detected in our system!
+                        console.log('🎯 Nueva oportunidad detectada en nuestro sistema:', data.new_opportunities);
+                        handleNewOpportunityDetected(data.new_opportunities[0]);
+                        
+                        // Update last check timestamp
+                        window.nethiveState.lastOpportunityCheck = Date.now();
+                        sessionStorage.setItem('lastOpportunityCheck', window.nethiveState.lastOpportunityCheck);
+                    }
+                }
+            } catch (error) {
+                console.log('Error checking local opportunities:', error);
+            }
+        }
+
+        function handleNewOpportunityDetected(opportunity) {
+            // Stop any current activities and show persistent notification
+            updateNethiveMood('excited', '¡Nueva oportunidad detectada!');
+            
+            // Hide any existing bot instances
+            window.hideProactiveBot?.();
+            
+            // Show persistent opportunity notification that won't auto-dismiss
+            showPersistentOpportunityNotification(opportunity);
+        }
+
+        function showPersistentOpportunityNotification(opportunity) {
+            // Remove any existing notification
+            const existing = document.getElementById('nethive-opportunity-notification');
+            if (existing) existing.remove();
+            
+            const notificationHTML = `
+                <div id="nethive-opportunity-notification" class="fixed top-4 right-4 z-[9999] animate-slide-in-right">
+                    <div class="bg-gradient-to-br from-green-600 via-emerald-600 to-teal-700 rounded-2xl shadow-2xl border border-green-400/30 max-w-sm">
+                        <!-- Persistent glow animation -->
+                        <div class="absolute inset-0 bg-green-400/20 rounded-2xl animate-pulse"></div>
+                        
+                        <div class="relative p-4">
+                            <div class="flex items-start space-x-3">
+                                <!-- Animated Avatar -->
+                                <div class="scale-75 animate-bounce">
+                                    ${createNethiveAvatar()}
+                                </div>
+                                
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-2 mb-2">
+                                        <h3 class="font-bold text-white text-sm">🎯 ¡Nueva Oportunidad!</h3>
+                                        <div class="w-2 h-2 bg-green-300 rounded-full animate-pulse"></div>
+                                    </div>
+                                    
+                                    <div class="bg-white/10 backdrop-blur-sm rounded-lg p-3 mb-3">
+                                        <p class="text-green-100 text-xs font-medium">${opportunity.titulo || 'Nueva oportunidad'}</p>
+                                        <p class="text-green-200 text-xs mt-1">Cliente: ${opportunity.cliente_nombre || 'Sin especificar'}</p>
+                                        <p class="text-green-200 text-xs">Monto: ${opportunity.monto_estimado || 'N/A'}</p>
+                                    </div>
+                                    
+                                    <div class="space-y-2">
+                                        <button onclick="acceptOpportunityQuotation(${opportunity.id})" 
+                                                class="w-full bg-white/20 hover:bg-white/30 text-white font-semibold py-2 px-3 rounded-lg text-xs transition-all hover:scale-105 border border-white/20">
+                                            ✨ Crear Cotización Ahora
+                                        </button>
+                                        <button onclick="dismissOpportunityNotification()" 
+                                                class="w-full bg-red-500/20 hover:bg-red-500/40 text-red-100 py-1.5 px-3 rounded-lg text-xs transition-all border border-red-400/20">
+                                            Recordar más tarde
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Pulse indicator -->
+                                <div class="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-ping"></div>
+                                <div class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <style>
+                    @keyframes slide-in-right {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                    .animate-slide-in-right {
+                        animation: slide-in-right 0.5s ease-out forwards;
+                    }
+                </style>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', notificationHTML);
+            
+            // Store opportunity data for later use
+            window.currentDetectedOpportunity = opportunity;
+            
+            // Play subtle notification sound if possible
+            try {
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmccDDuO0vLNfC4FIWzA7+OZSA0PVqHh8K1iGAU+ltryxngpBSF7yO/eizEIHWq+8+OYMwcbdMTx3JE+CRRjue7mnEYOG2++8d6NPAoUYLnv45ZEDBFmvO/ggjIIHWq+8+OJMAYXdcXx3YdBCQ9Tv+LymnUIHGrA8+OYMgcbdMTx3JE+CRNT');
+                audio.volume = 0.3;
+                audio.play().catch(() => {});
+            } catch (e) {}
+        }
+
+        window.acceptOpportunityQuotation = function(opportunityId) {
+            updateNethiveMood('celebrating', '¡Usuario aceptó crear cotización!');
+            
+            // Remove notification
+            const notification = document.getElementById('nethive-opportunity-notification');
+            if (notification) {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }
+            
+            // Navigate to quotation creation with pre-filled data
+            const opportunity = window.currentDetectedOpportunity;
+            if (opportunity) {
+                const url = new URL('/app/crear-cotizacion/', window.location.origin);
+                url.searchParams.set('oportunidad_id', opportunityId);
+                url.searchParams.set('cliente_id', opportunity.cliente_id || '');
+                url.searchParams.set('titulo', opportunity.titulo || '');
+                url.searchParams.set('monto_estimado', opportunity.monto_estimado || '');
+                url.searchParams.set('auto_filled', 'true');
+                
+                // Show loading message
+                showTransitionMessage('Preparando formulario con los datos de la oportunidad...');
+                
+                setTimeout(() => {
+                    window.location.href = url.toString();
+                }, 1500);
+            }
+        }
+
+        window.dismissOpportunityNotification = function() {
+            updateNethiveMood('sad', 'Usuario pospuso crear cotización');
+            
+            const notification = document.getElementById('nethive-opportunity-notification');
+            if (notification) {
+                notification.style.transform = 'translateX(100%)';
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 300);
+            }
+            
+            // Set reminder to check again in 10 minutes
+            setTimeout(() => {
+                if (window.currentDetectedOpportunity) {
+                    updateNethiveMood('thoughtful', 'Recordando crear cotización');
+                    showQuickReminder(window.currentDetectedOpportunity);
+                }
+            }, 600000); // 10 minutes
+        }
+
+        function showQuickReminder(opportunity) {
+            window.showProactiveBot(
+                `🔔 Recordatorio: Tienes una oportunidad pendiente "${opportunity.titulo}". ¿Quieres crear la cotización ahora?`,
+                'question',
+                { type: 'opportunity-reminder', opportunity }
+            );
+        }
+
+        function showTransitionMessage(message) {
+            const messageHTML = `
+                <div id="nethive-transition-message" class="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] backdrop-blur-sm">
+                    <div class="bg-slate-900 border border-cyan-500/50 rounded-2xl p-8 max-w-md mx-4 text-center">
+                        <div class="scale-75 mb-4 flex justify-center">
+                            ${createNethiveAvatar()}
+                        </div>
+                        <div class="flex items-center justify-center space-x-3 mb-4">
+                            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-cyan-500"></div>
+                            <p class="text-white text-sm font-medium">${message}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', messageHTML);
+            
+            setTimeout(() => {
+                const msg = document.getElementById('nethive-transition-message');
+                if (msg) msg.remove();
+            }, 3000);
+        }
+
+        // Initialize the opportunity watcher when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeOpportunityWatcher);
+        } else {
+            // DOM already loaded
+            setTimeout(initializeOpportunityWatcher, 1000);
+        }
+
+        // Crown Jewel Feature: Check for immediate opportunities when user navigates
+        window.checkForImmediateOpportunities = function() {
+            // Check immediately - useful when user creates opportunity and navigates to another page
+            setTimeout(() => checkForNewOpportunities(), 2000);
+        }
+
+        // Auto-check when page becomes visible (user switches tabs or returns to page)
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && window.nethiveState.isWatchingOpportunities) {
+                checkForNewOpportunities();
+            }
+        });
+
+        // Check on page focus
+        window.addEventListener('focus', () => {
+            if (window.nethiveState.isWatchingOpportunities) {
+                checkForNewOpportunities();
+            }
+        });
 
     </script>
 </body>
