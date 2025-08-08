@@ -47,23 +47,12 @@ class Command(BaseCommand):
                         cliente_obj = Cliente.objects.get(bitrix_company_id=bitrix_company_id)
                         self.stdout.write(f'  Found existing local client: {cliente_obj.nombre_empresa}')
                     except Cliente.DoesNotExist:
-                        company_details = get_bitrix_company_details(bitrix_company_id, request=None)
-                        if company_details:
-                            cliente_obj, created = Cliente.objects.get_or_create(
-                                bitrix_company_id=company_details['ID'],
-                                defaults={'nombre_empresa': company_details['TITLE']}
-                            )
-                            if created:
-                                self.stdout.write(self.style.SUCCESS(f'  Created new local client: {cliente_obj.nombre_empresa}'))
-                            else:
-                                self.stdout.write(f'  Found existing local client (after get_or_create): {cliente_obj.nombre_empresa}')
-                        else:
-                            self.stdout.write(self.style.WARNING(f'  Could not fetch details for Bitrix Company ID: {bitrix_company_id}. Using default client.'))
-                            # Create default client if can't fetch details
-                            cliente_obj, created = Cliente.objects.get_or_create(
-                                nombre_empresa='Cliente Desconocido',
-                                defaults={'bitrix_company_id': None}
-                            )
+                        self.stdout.write(self.style.WARNING(f'  Company with Bitrix Company ID {bitrix_company_id} not found locally. Using default client.'))
+                        # Create default client if can't fetch details
+                        cliente_obj, created = Cliente.objects.get_or_create(
+                            nombre_empresa='Cliente Desconocido',
+                            defaults={'bitrix_company_id': None}
+                        )
                 else:
                     self.stdout.write('  Bitrix deal has no associated company ID. Using default client.')
                     # Create default client for deals without company ID
@@ -81,35 +70,16 @@ class Command(BaseCommand):
                         usuario_obj = user_profile.user
                         self.stdout.write(f'  Found existing local user: {usuario_obj.username}')
                     except UserProfile.DoesNotExist:
-                        user_details = get_bitrix_user_details(bitrix_assigned_by_id, request=None)
-                        if user_details:
-                            username = f"bitrix_user_{bitrix_assigned_by_id}"
-                            first_name = user_details.get('NAME', '')
-                            last_name = user_details.get('LAST_NAME', '')
-                            usuario_obj, created = User.objects.get_or_create(
-                                username=username,
-                                defaults={
-                                    'first_name': first_name,
-                                    'last_name': last_name,
-                                    'is_active': True
-                                }
-                            )
-                            if created:
-                                UserProfile.objects.create(user=usuario_obj, bitrix_user_id=bitrix_assigned_by_id)
-                                self.stdout.write(self.style.SUCCESS(f'  Created new local user: {usuario_obj.username}'))
-                            else:
-                                self.stdout.write(f'  Found existing local user (after get_or_create): {usuario_obj.username}')
-                        else:
-                            self.stdout.write(self.style.WARNING(f'  Could not fetch details for Bitrix User ID: {bitrix_assigned_by_id}. Using default user.'))
-                            # Create default user if can't fetch details
-                            usuario_obj, created = User.objects.get_or_create(
-                                username='default_user',
-                                defaults={
-                                    'first_name': 'Usuario',
-                                    'last_name': 'Desconocido',
-                                    'is_active': True
-                                }
-                            )
+                        self.stdout.write(self.style.WARNING(f'  No UserProfile found for Bitrix User ID: {bitrix_assigned_by_id}. Using default user.'))
+                        # Create default user if can't fetch details
+                        usuario_obj, created = User.objects.get_or_create(
+                            username='default_user',
+                            defaults={
+                                'first_name': 'Usuario',
+                                'last_name': 'Desconocido',
+                                'is_active': True
+                            }
+                        )
                 else:
                     self.stdout.write('  Bitrix deal has no assigned user ID. Using default user.')
                     # Create default user for deals without assigned user
@@ -130,23 +100,7 @@ class Command(BaseCommand):
                         contacto_obj = Contacto.objects.get(bitrix_contact_id=bitrix_contact_id)
                         self.stdout.write(f'  Found existing local contact: {contacto_obj.nombre} {contacto_obj.apellido}')
                     except Contacto.DoesNotExist:
-                        contact_details = get_bitrix_contact_details(bitrix_contact_id, request=None)
-                        if contact_details:
-                            contact_name_full = f"{contact_details.get('NAME', '')} {contact_details.get('LAST_NAME', '')}".strip()
-                            contacto_obj, created = Contacto.objects.get_or_create(
-                                bitrix_contact_id=bitrix_contact_id,
-                                defaults={
-                                    'nombre': contact_details.get('NAME', ''),
-                                    'apellido': contact_details.get('LAST_NAME', ''),
-                                    'cliente': cliente_obj if cliente_obj else None # Link contact to client if client exists
-                                }
-                            )
-                            if created:
-                                self.stdout.write(self.style.SUCCESS(f'  Created new local contact: {contact_name_full}'))
-                            else:
-                                self.stdout.write(f'  Found existing local contact (after get_or_create): {contact_name_full}')
-                        else:
-                            self.stdout.write(self.style.WARNING(f'  Could not fetch details for Bitrix Contact ID: {bitrix_contact_id}. Skipping contact creation.'))
+                        self.stdout.write(self.style.WARNING(f'  Contact with Bitrix Contact ID {bitrix_contact_id} not found locally. Skipping contact creation.'))
                 else:
                     self.stdout.write('  Bitrix deal has no associated contact ID.')
 
