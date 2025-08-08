@@ -141,7 +141,7 @@
                 </div>
 
                 {% if oportunidad.cliente %}
-                <a href="{% url 'crear_cotizacion_with_id' oportunidad.cliente.id %}?oportunidad_id={{ oportunidad.id }}" class="interactive-btn w-full px-6 py-3 text-lg text-center">
+                <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="interactive-btn w-full px-6 py-3 text-lg text-center">
                     Crear cotización
                 </a>
                 {% else %}
