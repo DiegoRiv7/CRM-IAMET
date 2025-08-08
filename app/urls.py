@@ -113,4 +113,5 @@ urlpatterns = [
     path('api/check-new-local-opportunities/', views.check_new_local_opportunities, name='check_new_local_opportunities'),
     # API endpoint para sincronización manual de Bitrix (solo supervisores)
     path('api/sync-bitrix-manual/', views.sync_bitrix_manual, name='sync_bitrix_manual'),
+    path('koti-bot-html/', TemplateView.as_view(template_name='nethive_bot.html'), name='koti_bot_html'),
 ]

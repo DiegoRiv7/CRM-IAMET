@@ -161,7 +161,27 @@
         </div>
     </footer>
 
-    <!-- Nethive Assistant Script -->
-    <script src="{% static 'js/nethive_assistant.js' %}"></script>
+    <!-- ==================== KOTI BOT - SISTEMA HÍBRIDO ==================== -->
+    <!-- Contenedor principal del bot Koti -->
+    {% include 'nethive_bot.html' %}
+    
+    <!-- Script principal de Nethive -->
+    <script src="{% static 'js/nethive_bot.js' %}"></script>
+    
+    <!-- Script de diagnóstico simple -->
+    <script src="{% static 'js/debug_simple.js' %}"></script>
+    
+    <!-- Configuración simplificada -->
+    <script>
+        // Variables de configuración global
+        window.KOTI_CONFIG = {
+            geminiApiKey: 'AIzaSyCliVaBtT0hju3OQR-FTUONRYIfhLAaXUA',
+            proactiveEnabled: true,
+            opportunityWatchEnabled: true,
+            debugMode: true
+        };
+
+        console.log('🤖 Configuración de Koti cargada');
+    </script>
 </body>
 </html>
