@@ -1764,10 +1764,14 @@ def bitrix_webhook_receiver(request):
             usuario = None
             if assigned_by_id:
                 try:
-                    usuario = User.objects.get(userprofile__bitrix_user_id=assigned_by_id)
-                    print(f"BITRIX WEBHOOK: Found user '{usuario.username}' for Assigned ID: {assigned_by_id}", flush=True)
-                except User.DoesNotExist:
-                    print(f"BITRIX WEBHOOK: User with Bitrix User ID {assigned_by_id} not found in local DB.", flush=True)
+                    usuario = User.objects.filter(userprofile__bitrix_user_id=assigned_by_id).first()
+                    if usuario:
+                        print(f"BITRIX WEBHOOK: Found user '{usuario.username}' for Assigned ID: {assigned_by_id}", flush=True)
+                    else:
+                        print(f"BITRIX WEBHOOK: User with Bitrix User ID {assigned_by_id} not found in local DB.", flush=True)
+                except Exception as e:
+                    print(f"BITRIX WEBHOOK: Error finding user for Bitrix ID {assigned_by_id}: {e}", flush=True)
+                    usuario = None
             else:
                 print("BITRIX WEBHOOK: Deal has no assigned user.", flush=True)
 
