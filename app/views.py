@@ -1828,61 +1828,61 @@ def bitrix_webhook_receiver(request):
                 )
 
             # Now create the opportunity
-                # Mapeos de Bitrix ID a Django Value - igual que en import_bitrix_opportunities.py
-                PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE = {
-                    "176": "ZEBRA", "178": "PANDUIT", "180": "APC", "182": "AVIGILION",
-                    "184": "GENETEC", "186": "AXIS", "188": "SOFTWARE", "190": "RUNRATE",
-                    "192": "PÓLIZA", "194": "CISCO", "374": "RFID", "376": "CONSUMIBLE",
-                    "378": "IMPRESORA INDUSTRIAL", "380": "SCANNER", "382": "TABLETA",
-                    "582": "SERVICIO",
-                }
+            # Mapeos de Bitrix ID a Django Value - igual que en import_bitrix_opportunities.py
+            PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE = {
+                "176": "ZEBRA", "178": "PANDUIT", "180": "APC", "182": "AVIGILION",
+                "184": "GENETEC", "186": "AXIS", "188": "SOFTWARE", "190": "RUNRATE",
+                "192": "PÓLIZA", "194": "CISCO", "374": "RFID", "376": "CONSUMIBLE",
+                "378": "IMPRESORA INDUSTRIAL", "380": "SCANNER", "382": "TABLETA",
+                "582": "SERVICIO",
+            }
 
-                AREA_BITRIX_ID_TO_DJANGO_VALUE = {
-                    "164": "SISTEMAS", "166": "Recursos Humanos", "168": "Compras",
-                    "170": "Seguridad", "172": "Mantenimiento", "174": "Almacén",
-                }
+            AREA_BITRIX_ID_TO_DJANGO_VALUE = {
+                "164": "SISTEMAS", "166": "Recursos Humanos", "168": "Compras",
+                "170": "Seguridad", "172": "Mantenimiento", "174": "Almacén",
+            }
 
-                MES_COBRO_BITRIX_ID_TO_DJANGO_VALUE = {
-                    "196": "Enero", "198": "Febrero", "200": "Marzo", "202": "Abril",
-                    "204": "Mayo", "206": "Junio", "208": "Julio", "210": "Agosto",
-                    "212": "Septiembre", "214": "Octubre", "216": "Noviembre", "218": "Diciembre",
-                }
+            MES_COBRO_BITRIX_ID_TO_DJANGO_VALUE = {
+                "196": "Enero", "198": "Febrero", "200": "Marzo", "202": "Abril",
+                "204": "Mayo", "206": "Junio", "208": "Julio", "210": "Agosto",
+                "212": "Septiembre", "214": "Octubre", "216": "Noviembre", "218": "Diciembre",
+            }
 
-                PROBABILIDAD_BITRIX_ID_TO_VALUE_STRING = {
-                    "220": "0%", "124": "10%", "126": "20%", "128": "30%",
-                    "130": "40%", "132": "50%", "134": "60%", "136": "70%",
-                    "138": "80%", "140": "90%", "142": "100%",
-                }
+            PROBABILIDAD_BITRIX_ID_TO_VALUE_STRING = {
+                "220": "0%", "124": "10%", "126": "20%", "128": "30%",
+                "130": "40%", "132": "50%", "134": "60%", "136": "70%",
+                "138": "80%", "140": "90%", "142": "100%",
+            }
 
-                # Obtener valores raw de Bitrix
-                producto_bitrix_id = deal_details.get('UF_CRM_1752859685662')
-                area_bitrix_id = deal_details.get('UF_CRM_1752859525038')
-                mes_cierre_bitrix_id = deal_details.get('UF_CRM_1752859877756')
-                probabilidad_bitrix_id = deal_details.get('UF_CRM_1752855787179')
+            # Obtener valores raw de Bitrix
+            producto_bitrix_id = deal_details.get('UF_CRM_1752859685662')
+            area_bitrix_id = deal_details.get('UF_CRM_1752859525038')
+            mes_cierre_bitrix_id = deal_details.get('UF_CRM_1752859877756')
+            probabilidad_bitrix_id = deal_details.get('UF_CRM_1752855787179')
 
-                print(f"BITRIX WEBHOOK: Raw product ID: {producto_bitrix_id}", flush=True)
-                print(f"BITRIX WEBHOOK: Raw area ID: {area_bitrix_id}", flush=True)
-                print(f"BITRIX WEBHOOK: Raw mes_cierre ID: {mes_cierre_bitrix_id}", flush=True)
-                print(f"BITRIX WEBHOOK: Raw probabilidad ID: {probabilidad_bitrix_id}", flush=True)
+            print(f"BITRIX WEBHOOK: Raw product ID: {producto_bitrix_id}", flush=True)
+            print(f"BITRIX WEBHOOK: Raw area ID: {area_bitrix_id}", flush=True)
+            print(f"BITRIX WEBHOOK: Raw mes_cierre ID: {mes_cierre_bitrix_id}", flush=True)
+            print(f"BITRIX WEBHOOK: Raw probabilidad ID: {probabilidad_bitrix_id}", flush=True)
 
-                # Aplicar conversiones de mapeo
-                producto = PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE.get(str(producto_bitrix_id), 'SOFTWARE') # Default
-                area = AREA_BITRIX_ID_TO_DJANGO_VALUE.get(str(area_bitrix_id), 'SISTEMAS') # Default
-                mes_cierre = MES_COBRO_BITRIX_ID_TO_DJANGO_VALUE.get(str(mes_cierre_bitrix_id), 'Enero') # Default
+            # Aplicar conversiones de mapeo
+            producto = PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE.get(str(producto_bitrix_id), 'SOFTWARE') # Default
+            area = AREA_BITRIX_ID_TO_DJANGO_VALUE.get(str(area_bitrix_id), 'SISTEMAS') # Default
+            mes_cierre = MES_COBRO_BITRIX_ID_TO_DJANGO_VALUE.get(str(mes_cierre_bitrix_id), 'Enero') # Default
 
-                probabilidad_cierre = 0 # Default value
-                if probabilidad_bitrix_id is not None:
-                    prob_str = PROBABILIDAD_BITRIX_ID_TO_VALUE_STRING.get(str(probabilidad_bitrix_id))
-                    if prob_str:
-                        try:
-                            parsed_prob = int(prob_str.replace('%', ''))
-                            probabilidad_cierre = min(parsed_prob, 100) # Cap at 100
-                        except ValueError:
-                            print(f"BITRIX WEBHOOK: Invalid probability string from Bitrix: {prob_str}. Setting to default (0).", flush=True)
-                            probabilidad_cierre = 0
-                    else:
-                        print(f"BITRIX WEBHOOK: Unknown probability ID from Bitrix: {probabilidad_bitrix_id}. Setting to default (0).", flush=True)
+            probabilidad_cierre = 0 # Default value
+            if probabilidad_bitrix_id is not None:
+                prob_str = PROBABILIDAD_BITRIX_ID_TO_VALUE_STRING.get(str(probabilidad_bitrix_id))
+                if prob_str:
+                    try:
+                        parsed_prob = int(prob_str.replace('%', ''))
+                        probabilidad_cierre = min(parsed_prob, 100) # Cap at 100
+                    except ValueError:
+                        print(f"BITRIX WEBHOOK: Invalid probability string from Bitrix: {prob_str}. Setting to default (0).", flush=True)
                         probabilidad_cierre = 0
+                else:
+                    print(f"BITRIX WEBHOOK: Unknown probability ID from Bitrix: {probabilidad_bitrix_id}. Setting to default (0).", flush=True)
+                    probabilidad_cierre = 0
 
                 print(f"BITRIX WEBHOOK: Mapped product: {producto}", flush=True)
                 print(f"BITRIX WEBHOOK: Mapped area: {area}", flush=True)
