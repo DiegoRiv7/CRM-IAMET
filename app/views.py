@@ -1680,9 +1680,9 @@ def perfil_usuario(request, usuario_id):
 
 
 from django.views.decorators.csrf import csrf_exempt
-from .bitrix_integration import get_bitrix_company_details, get_bitrix_deal_details
+from .bitrix_integration import get_bitrix_company_details, get_bitrix_deal_details, BITRIX_WEBHOOK_URL
 from django.contrib.auth.models import User
-
+import requests
 import traceback
 
 @csrf_exempt
@@ -1733,17 +1733,39 @@ def bitrix_webhook_receiver(request):
                     print(f"BITRIX WEBHOOK: An opportunity for Deal ID {deal_id} already exists. Skipping creation.", flush=True)
                     return JsonResponse({'status': 'success', 'message': 'Duplicate ignored'})
 
-            # Crear oportunidad con datos básicos disponibles en el webhook
-            # No depender de get_bitrix_deal_details() que puede fallar
-            deal_details = {
-                'ID': deal_id,
-                'TITLE': f'Oportunidad #{deal_id}',  # Título por defecto
-                'OPPORTUNITY': 0.0,  # Monto por defecto
-                'COMPANY_ID': None,  # Se buscará si hay datos disponibles
-                'ASSIGNED_BY_ID': None,  # Se buscará si hay datos disponibles
-                'CONTACT_ID': None,  # Se buscará si hay datos disponibles
-            }
-            print(f"BITRIX WEBHOOK: Using default deal details for Deal ID: {deal_id}", flush=True)
+            # Intentar obtener detalles de la oportunidad con una llamada simple
+            deal_details = None
+            if BITRIX_WEBHOOK_URL:
+                try:
+                    get_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "crm.deal.get.json")
+                    response = requests.post(get_url, json={'id': deal_id}, timeout=5)
+                    if response.status_code == 200:
+                        deal_data = response.json()
+                        if 'result' in deal_data and deal_data['result']:
+                            deal_details = deal_data['result']
+                            print(f"BITRIX WEBHOOK: Successfully fetched deal details for ID: {deal_id}", flush=True)
+                        else:
+                            print(f"BITRIX WEBHOOK: No result in API response for Deal ID: {deal_id}", flush=True)
+                    else:
+                        print(f"BITRIX WEBHOOK: API returned status {response.status_code} for Deal ID: {deal_id}", flush=True)
+                except requests.exceptions.RequestException as e:
+                    print(f"BITRIX WEBHOOK: Request failed for Deal ID {deal_id}: {e}", flush=True)
+                except Exception as e:
+                    print(f"BITRIX WEBHOOK: Unexpected error fetching deal details for ID {deal_id}: {e}", flush=True)
+            
+            # Si no se pudieron obtener los detalles, usar valores por defecto
+            if not deal_details:
+                deal_details = {
+                    'ID': deal_id,
+                    'TITLE': f'Oportunidad #{deal_id}',  # Título por defecto
+                    'OPPORTUNITY': 0.0,  # Monto por defecto
+                    'COMPANY_ID': None,  # Se buscará si hay datos disponibles
+                    'ASSIGNED_BY_ID': None,  # Se buscará si hay datos disponibles
+                    'CONTACT_ID': None,  # Se buscará si hay datos disponibles
+                }
+                print(f"BITRIX WEBHOOK: Using default deal details for Deal ID: {deal_id}", flush=True)
+            else:
+                print(f"BITRIX WEBHOOK: Using fetched deal details: Title='{deal_details.get('TITLE', 'N/A')}', Amount={deal_details.get('OPPORTUNITY', 'N/A')}", flush=True)
 
             # --- Find or Create the Associated Client (Company) ---
             company_id = deal_details.get('COMPANY_ID')
@@ -1767,11 +1789,21 @@ def bitrix_webhook_receiver(request):
                 print("BITRIX WEBHOOK: Deal has no associated Company ID.", flush=True)
 
             # --- Find the Assigned User ---
-            # Como no tenemos deal_details completos, usar usuario por defecto
-            assigned_by_id = None
+            assigned_by_id = deal_details.get('ASSIGNED_BY_ID')
             usuario = None
             
-            print("BITRIX WEBHOOK: Using default user assignment since deal details not available.", flush=True)
+            if assigned_by_id:
+                try:
+                    usuario = User.objects.filter(userprofile__bitrix_user_id=assigned_by_id).first()
+                    if usuario:
+                        print(f"BITRIX WEBHOOK: Found user '{usuario.username}' for Assigned ID: {assigned_by_id}", flush=True)
+                    else:
+                        print(f"BITRIX WEBHOOK: User with Bitrix User ID {assigned_by_id} not found in local DB.", flush=True)
+                except Exception as e:
+                    print(f"BITRIX WEBHOOK: Error finding user for Bitrix ID {assigned_by_id}: {e}", flush=True)
+                    usuario = None
+            else:
+                print("BITRIX WEBHOOK: Deal has no assigned user.", flush=True)
 
             # --- Create the Opportunity (TodoItem) ---
             # Always create the opportunity, using defaults if needed
