@@ -1692,6 +1692,11 @@ def bitrix_webhook_receiver(request):
     This view handles the 'ONCRMDEALADD' event to create a new opportunity (TodoItem)
     in the local database when a new deal is created in Bitrix24.
     """
+    # Log EVERY request to debug
+    print(f"BITRIX WEBHOOK: Received {request.method} request from {request.META.get('REMOTE_ADDR', 'unknown')}", flush=True)
+    print(f"BITRIX WEBHOOK: Request headers: {dict(request.headers)}", flush=True)
+    print(f"BITRIX WEBHOOK: Request body: {request.body}", flush=True)
+    
     if request.method != 'POST':
         print("BITRIX WEBHOOK: Received non-POST request. Ignoring.", flush=True)
         return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
@@ -1700,6 +1705,7 @@ def bitrix_webhook_receiver(request):
         data = request.POST
         event = data.get('event')
 
+        print(f"BITRIX WEBHOOK: POST data: {dict(data)}", flush=True)
         print(f"BITRIX WEBHOOK: Received event '{event}'", flush=True)
 
         if event in ['ONCRMDEALADD', 'ONCRMDEALUPDATE']:
@@ -1873,12 +1879,6 @@ def bitrix_webhook_receiver(request):
                         probabilidad_cierre=probabilidad_cierre,
                     )
                     print(f"BITRIX WEBHOOK: Successfully created new opportunity '{new_opportunity.oportunidad}' with ID {new_opportunity.id}", flush=True)
-            else:
-                missing_info = []
-                if not cliente: missing_info.append("cliente")
-                if not usuario: missing_info.append("usuario")
-                action = "update" if is_update else "create"
-                print(f"BITRIX WEBHOOK: Could not {action} opportunity for Deal ID {deal_id} because the following are missing: {', '.join(missing_info)}", flush=True)
 
         return JsonResponse({'status': 'success'})
 
