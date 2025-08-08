@@ -1886,6 +1886,7 @@ def bitrix_webhook_receiver(request):
                 print(f"BITRIX WEBHOOK: Mapped area: {area}", flush=True)
                 print(f"BITRIX WEBHOOK: Mapped mes_cierre: {mes_cierre}", flush=True)
                 print(f"BITRIX WEBHOOK: Mapped probabilidad_cierre: {probabilidad_cierre}", flush=True)
+                print(f"BITRIX WEBHOOK: About to create opportunity with usuario={usuario}, cliente={cliente}", flush=True)
 
                 if is_update and existing_opportunity:
                     # Actualizar oportunidad existente
@@ -1901,18 +1902,29 @@ def bitrix_webhook_receiver(request):
                     print(f"BITRIX WEBHOOK: Successfully updated opportunity '{existing_opportunity.oportunidad}' with ID {existing_opportunity.id}", flush=True)
                 else:
                     # Crear nueva oportunidad
-                    new_opportunity = TodoItem.objects.create(
-                        oportunidad=deal_details.get('TITLE', 'Oportunidad sin título'),
-                        monto=deal_details.get('OPPORTUNITY', 0.0) or 0.0,
-                        cliente=cliente,
-                        usuario=usuario,
-                        bitrix_deal_id=deal_id,
-                        producto=producto,
-                        area=area,
-                        mes_cierre=mes_cierre,
-                        probabilidad_cierre=probabilidad_cierre,
-                    )
-                    print(f"BITRIX WEBHOOK: Successfully created new opportunity '{new_opportunity.oportunidad}' with ID {new_opportunity.id}", flush=True)
+                    print(f"BITRIX WEBHOOK: Creating new opportunity with data:", flush=True)
+                    print(f"  - Title: {deal_details.get('TITLE', 'Oportunidad sin título')}", flush=True)
+                    print(f"  - Amount: {deal_details.get('OPPORTUNITY', 0.0)}", flush=True)
+                    print(f"  - Cliente: {cliente}", flush=True)
+                    print(f"  - Usuario: {usuario}", flush=True)
+                    print(f"  - Deal ID: {deal_id}", flush=True)
+                    
+                    try:
+                        new_opportunity = TodoItem.objects.create(
+                            oportunidad=deal_details.get('TITLE', 'Oportunidad sin título'),
+                            monto=deal_details.get('OPPORTUNITY', 0.0) or 0.0,
+                            cliente=cliente,
+                            usuario=usuario,
+                            bitrix_deal_id=deal_id,
+                            producto=producto,
+                            area=area,
+                            mes_cierre=mes_cierre,
+                            probabilidad_cierre=probabilidad_cierre,
+                        )
+                        print(f"BITRIX WEBHOOK: Successfully created new opportunity '{new_opportunity.oportunidad}' with ID {new_opportunity.id}", flush=True)
+                    except Exception as create_error:
+                        print(f"BITRIX WEBHOOK: Error creating opportunity: {create_error}", flush=True)
+                        print(f"BITRIX WEBHOOK: Traceback: {traceback.format_exc()}", flush=True)
 
         return JsonResponse({'status': 'success'})
 
