@@ -96,18 +96,24 @@ class Command(BaseCommand):
                         }
                     )
 
-                    # Crear UserProfile asociado
+                    # Crear o actualizar UserProfile asociado
                     user_profile, profile_created = UserProfile.objects.get_or_create(
                         user=user_obj,
                         defaults={'bitrix_user_id': bitrix_user_id}
                     )
                     
-                    if user_created and profile_created:
+                    # Si el UserProfile ya existía pero sin bitrix_user_id, actualizarlo
+                    if not profile_created and user_profile.bitrix_user_id != bitrix_user_id:
+                        user_profile.bitrix_user_id = bitrix_user_id
+                        user_profile.save()
+                        self.stdout.write(self.style.SUCCESS(f'  UserProfile actualizado con Bitrix ID: {user_obj.username} -> Bitrix ID: {bitrix_user_id}'))
+                        updated_count += 1
+                    elif user_created and profile_created:
                         created_count += 1
                         self.stdout.write(self.style.SUCCESS(f'  Usuario creado: {user_obj.username} ({user_name}) -> Bitrix ID: {bitrix_user_id}'))
                     else:
                         updated_count += 1
-                        self.stdout.write(self.style.SUCCESS(f'  UserProfile actualizado: {user_obj.username} -> Bitrix ID: {bitrix_user_id}'))
+                        self.stdout.write(self.style.SUCCESS(f'  UserProfile ya tenía Bitrix ID: {user_obj.username} -> Bitrix ID: {bitrix_user_id}'))
 
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f'  Error procesando Usuario Bitrix ID {bitrix_user_id}: {e}'))
