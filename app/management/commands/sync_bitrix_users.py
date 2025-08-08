@@ -58,10 +58,10 @@ class Command(BaseCommand):
                     self.stdout.write(f'  Usuario existente encontrado: {existing_user.username}')
                     updated_count += 1
                 except UserProfile.DoesNotExist:
-                    # Crear nuevo usuario Django basado en datos de Bitrix24
+                    # Buscar usuario existente que pueda corresponder a este usuario de Bitrix24
                     user_email = bitrix_user.get('EMAIL', '')
                     
-                    # Generar username único basado en el nombre
+                    # Generar username esperado basado en el nombre
                     names = user_name.split()
                     if len(names) >= 2:
                         username_base = f"{names[0].lower()}.{names[-1].lower()}"
@@ -70,50 +70,77 @@ class Command(BaseCommand):
                     
                     # Limpiar caracteres especiales del username
                     username_base = ''.join(c for c in username_base if c.isalnum() or c == '.').replace('..', '.')[:30]
-                    if not username_base:
-                        username_base = f'user{bitrix_user_id}'
                     
-                    # Asegurar username único
-                    username = username_base
-                    counter = 1
-                    while User.objects.filter(username=username).exists():
-                        username = f"{username_base}{counter}"
-                        counter += 1
+                    # Buscar usuario existente con username similar o email similar
+                    user_obj = None
                     
-                    # Separar nombre y apellido
-                    name_parts = user_name.split()
-                    first_name = name_parts[0] if name_parts else ''
-                    last_name = ' '.join(name_parts[1:]) if len(name_parts) > 1 else ''
+                    # Primero buscar por username exacto
+                    try:
+                        user_obj = User.objects.get(username=username_base)
+                        self.stdout.write(f'  Encontrado usuario existente por username: {user_obj.username}')
+                    except User.DoesNotExist:
+                        # Buscar por email si está disponible
+                        if user_email:
+                            try:
+                                user_obj = User.objects.get(email=user_email)
+                                self.stdout.write(f'  Encontrado usuario existente por email: {user_obj.username}')
+                            except User.DoesNotExist:
+                                pass
                     
-                    # Crear usuario Django
-                    user_obj, user_created = User.objects.get_or_create(
-                        username=username,
-                        defaults={
-                            'first_name': first_name[:30],
-                            'last_name': last_name[:30],
-                            'email': user_email,
-                            'is_active': True
-                        }
-                    )
+                    # Si no se encontró usuario existente, buscar por patrones similares
+                    if not user_obj:
+                        # Buscar usuarios con nombres similares
+                        possible_usernames = [
+                            username_base,
+                            username_base.replace('.', ''),
+                            names[0].lower() if names else username_base
+                        ]
+                        
+                        for possible_username in possible_usernames:
+                            matching_users = User.objects.filter(username__icontains=possible_username)
+                            if matching_users.count() == 1:
+                                user_obj = matching_users.first()
+                                self.stdout.write(f'  Encontrado usuario existente por patrón: {user_obj.username}')
+                                break
+                    
+                    # Si aún no se encontró, crear nuevo usuario
+                    if not user_obj:
+                        # Asegurar username único
+                        username = username_base
+                        counter = 1
+                        while User.objects.filter(username=username).exists():
+                            username = f"{username_base}{counter}"
+                            counter += 1
+                        
+                        # Separar nombre y apellido
+                        name_parts = user_name.split()
+                        first_name = name_parts[0] if name_parts else ''
+                        last_name = ' '.join(name_parts[1:]) if len(name_parts) > 1 else ''
+                        
+                        user_obj = User.objects.create(
+                            username=username,
+                            first_name=first_name[:30],
+                            last_name=last_name[:30],
+                            email=user_email,
+                            is_active=True
+                        )
+                        self.stdout.write(f'  Usuario creado: {user_obj.username}')
+                        created_count += 1
+                    else:
+                        updated_count += 1
 
-                    # Crear o actualizar UserProfile asociado
+                    # Crear o actualizar UserProfile
                     user_profile, profile_created = UserProfile.objects.get_or_create(
                         user=user_obj,
                         defaults={'bitrix_user_id': bitrix_user_id}
                     )
                     
-                    # Si el UserProfile ya existía pero sin bitrix_user_id, actualizarlo
+                    # Actualizar bitrix_user_id si es necesario
                     if not profile_created and user_profile.bitrix_user_id != bitrix_user_id:
                         user_profile.bitrix_user_id = bitrix_user_id
                         user_profile.save()
-                        self.stdout.write(self.style.SUCCESS(f'  UserProfile actualizado con Bitrix ID: {user_obj.username} -> Bitrix ID: {bitrix_user_id}'))
-                        updated_count += 1
-                    elif user_created and profile_created:
-                        created_count += 1
-                        self.stdout.write(self.style.SUCCESS(f'  Usuario creado: {user_obj.username} ({user_name}) -> Bitrix ID: {bitrix_user_id}'))
-                    else:
-                        updated_count += 1
-                        self.stdout.write(self.style.SUCCESS(f'  UserProfile ya tenía Bitrix ID: {user_obj.username} -> Bitrix ID: {bitrix_user_id}'))
+                    
+                    self.stdout.write(self.style.SUCCESS(f'  UserProfile configurado: {user_obj.username} -> Bitrix ID: {bitrix_user_id}'))
 
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f'  Error procesando Usuario Bitrix ID {bitrix_user_id}: {e}'))
