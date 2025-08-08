@@ -63,15 +63,17 @@ def get_oportunidades_por_cliente(request):
     # Si hay una oportunidad inicial específica, asegurar que esté incluida
     if oportunidad_inicial_id:
         try:
-            oportunidad_inicial = TodoItem.objects.get(id=oportunidad_inicial_id)
+            # Limpiar el ID eliminando comas y espacios
+            clean_id = oportunidad_inicial_id.replace(',', '').replace(' ', '').strip()
+            oportunidad_inicial = TodoItem.objects.get(id=int(clean_id))
             # Verificar si ya está en la lista
             oportunidades_list = list(oportunidades)
             if oportunidad_inicial not in oportunidades_list:
                 # Agregar la oportunidad específica al principio de la lista
                 oportunidades_list.insert(0, oportunidad_inicial)
                 oportunidades = oportunidades_list
-        except TodoItem.DoesNotExist:
-            pass  # Si no existe, continuar con la lista normal
+        except (TodoItem.DoesNotExist, ValueError, TypeError):
+            pass  # Si no existe o hay error de conversión, continuar con la lista normal
 
     data = [{'id': op.id, 'nombre': op.oportunidad} for op in oportunidades]
 
