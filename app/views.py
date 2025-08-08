@@ -1381,6 +1381,9 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
 
             
 
+            pdf_url = reverse('generate_cotizacion_pdf', args=[cotizacion.id])
+            print(f"DEBUG: PDF URL generated: {pdf_url}")
+
             try:
                 html_string = render_to_string('cotizacion_pdf_template.html', {
                     'cotizacion': cotizacion,
@@ -1416,13 +1419,7 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                 messages.error(request, f"Error al generar o subir PDF a Bitrix24: {e}")
                 return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Error al generar o subir PDF a Bitrix24: {str(e)}'}]}}, status=500)
             
-            response = HttpResponse(pdf_file_content, content_type='application/pdf')
-            pdf_name_raw = cotizacion.nombre_cotizacion or f"Cotizacion_{cotizacion.id}"
-            pdf_name = "".join(c for c in pdf_name_raw if c.isalnum() or c in ('_', '-')).strip().replace(' ', '_')
-            if not pdf_name:
-                pdf_name = f"Cotizacion_{cotizacion.id}"
-            response['Content-Disposition'] = f'attachment; filename="{pdf_name}.pdf"'
-            return response
+            return JsonResponse({'success': True, 'pdf_url': pdf_url})
 
         else:
             errors_dict = {}
