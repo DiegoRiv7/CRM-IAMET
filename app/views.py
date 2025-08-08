@@ -1804,6 +1804,8 @@ def bitrix_webhook_receiver(request):
                     usuario = None
             else:
                 print("BITRIX WEBHOOK: Deal has no assigned user.", flush=True)
+            
+            print(f"BITRIX WEBHOOK: DEBUG - After user assignment. is_update={locals().get('is_update', 'NOT_DEFINED')}, existing_opportunity={locals().get('existing_opportunity', 'NOT_DEFINED')}", flush=True)
 
             # --- Create the Opportunity (TodoItem) ---
             # Always create the opportunity, using defaults if needed
