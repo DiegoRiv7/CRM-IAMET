@@ -929,54 +929,11 @@
             };
             window.initFormAssistance(fieldsToValidate);
 
-            // MODIFICACIÓN CLAVE: Interceptar el envío del formulario con Fetch API
             const cotizacionForm = document.getElementById('cotizacion-form');
             const loadingModal = document.getElementById('loading-modal');
 
-            cotizacionForm.addEventListener('submit', async (event) => {
-                event.preventDefault(); // Evitar el envío de formulario tradicional
-
+            cotizacionForm.addEventListener('submit', (event) => {
                 loadingModal.classList.remove('hidden'); // Show loading modal
-
-                const formData = new FormData(cotizacionForm);
-                
-                formData.set('cliente', document.getElementById('id_cliente').value);
-                formData.set('oportunidad', document.getElementById('id_oportunidad').value);
-
-                try {
-                    console.log('Enviando solicitud fetch a:', cotizacionForm.action);
-                    
-                    const response = await fetch(cotizacionForm.action, {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    console.log('Respuesta del servidor recibida. Status:', response.status);
-                    const result = await response.json();
-                    console.log('Resultado JSON del servidor:', result);
-
-                    if (result.success) {
-                        console.log('Cotización guardada exitosamente.');
-                        if (result.pdf_url) {
-                            console.log('PDF URL recibida:', result.pdf_url);
-                            const a = document.createElement('a');
-                            a.href = result.pdf_url;
-                            a.download = result.filename || 'cotizacion.pdf';
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                        }
-                        // Optionally, redirect or show success message after download
-                    } else {
-                        console.error('Errores de validación del servidor:', result.errors);
-                        alert('Hubo un error al validar los datos. Por favor, revisa el formulario.');
-                    }
-                } catch (error) {
-                    console.error('Error en la solicitud Fetch o procesamiento de respuesta:', error);
-                    alert('Ocurrió un error al procesar la cotización. Por favor, inténtalo de nuevo.');
-                } finally {
-                    loadingModal.classList.add('hidden'); // Hide loading modal
-                }
             });
         });
     </script>

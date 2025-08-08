@@ -573,7 +573,19 @@ def view_cotizacion_pdf(request, cotizacion_id):
         company_address = 'Av. Principal #456, Col. Centro, Guadalajara, Jalisco'
         company_phone = '+52 33 9876 5432'
         company_email = 'contacto@iamet.com'
-    else: # Default to Bajanet
+    elif tipo_cotizacion and tipo_cotizacion.lower() == 'bajanet':
+        template_name = 'cotizacion_pdf_template.html'
+        company_name = 'BAJANET S.A. de C.V.'
+        company_address = 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México'
+        company_phone = '+52 55 1234 5678'
+        company_email = 'ventas@bajanet.com'
+        try:
+            logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'img', 'bajanet_logo.png')
+            with open(logo_path, "rb") as image_file:
+                logo_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+        except FileNotFoundError:
+            logo_base64 = ""
+    else: # Fallback to Bajanet if type is not recognized or None
         template_name = 'cotizacion_pdf_template.html'
         company_name = 'BAJANET S.A. de C.V.'
         company_address = 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México'
@@ -1419,7 +1431,7 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                 messages.error(request, f"Error al generar o subir PDF a Bitrix24: {e}")
                 return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Error al generar o subir PDF a Bitrix24: {str(e)}'}]}}, status=500)
             
-            return JsonResponse({'success': True, 'pdf_url': pdf_url})
+            return redirect('generate_cotizacion_pdf', cotizacion_id=cotizacion.id)
 
         else:
             errors_dict = {}
@@ -1589,7 +1601,19 @@ def generate_cotizacion_pdf(request, cotizacion_id):
         company_address = 'Av. Principal #456, Col. Centro, Guadalajara, Jalisco'
         company_phone = '+52 33 9876 5432'
         company_email = 'contacto@iamet.com'
-    else: # Default to Bajanet
+    elif tipo_cotizacion and tipo_cotizacion.lower() == 'bajanet':
+        template_name = 'cotizacion_pdf_template.html'
+        company_name = 'BAJANET S.A. de C.V.'
+        company_address = 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México'
+        company_phone = '+52 55 1234 5678'
+        company_email = 'ventas@bajanet.com'
+        try:
+            logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'img', 'bajanet_logo.png')
+            with open(logo_path, "rb") as image_file:
+                logo_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+        except FileNotFoundError:
+            logo_base64 = ""
+    else: # Fallback to Bajanet if type is not recognized or None
         template_name = 'cotizacion_pdf_template.html'
         company_name = 'BAJANET S.A. de C.V.'
         company_address = 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México'
