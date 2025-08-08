@@ -1,93 +1,130 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block title %}Cotizaciones{% endblock %}
+
 {% block content %}
 <style>
-    .bg-animated {
-        position: fixed; inset: 0; z-index: 0;
-        pointer-events: none;
-        background: radial-gradient(circle at 20% 20%, #00cfff33 0%, transparent 60%),
-                    radial-gradient(circle at 80% 80%, #ff00c833 0%, transparent 60%),
-                    linear-gradient(120deg, #181c24 0%, #232946 100%);
-        animation: bgMove 16s linear infinite alternate;
+    :root {
+        --apple-background-secondary: rgba(29, 29, 31, 0.7);
+        --apple-separator: #38383A;
+        --apple-blue: #007AFF;
+        --apple-label: #FFFFFF;
+        --apple-label-secondary: #EBEBF599;
     }
-    @keyframes bgMove {
-        0% { background-position: 0% 0%, 100% 100%, 0 0; }
-        100% { background-position: 20% 10%, 80% 90%, 0 0; }
-    }
-    main {
-        width: 100vw;
-        min-height: 100vh;
-        max-width: 100vw;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        overflow-x: hidden;
-    }
-    section {
+
+    .apple-container {
         width: 100%;
         max-width: 1200px;
-        margin: 0 auto;
-        box-sizing: border-box;
+        margin: 2rem auto;
+        padding: 2rem;
+        animation: appleFadeIn 0.5s ease-out;
     }
-    @media (max-width: 1800px) {
-        section { max-width: 1400px; }
-    }
-    @media (max-width: 1400px) {
-        section { max-width: 1000px; }
-    }
-    @media (max-width: 1100px) {
-        section { max-width: 800px; }
-    }
-    @media (max-width: 900px) {
-        section { max-width: 98vw; }
-    }
-    @media (max-width: 600px) {
-        section { max-width: 100vw; padding: 0 0.5rem; }
-    }
-    .float { animation: none !important; }
-</style>
-<div class="bg-animated"></div>
-<div class="min-h-screen w-full flex flex-col justify-start items-center py-12 px-0 relative dashboard-container" style="z-index:1;">
 
-<style>
-    .dashboard-container {
-        --padding-x: clamp(1rem, 5vw, 4rem);
-        padding-left: var(--padding-x);
-        padding-right: var(--padding-x);
+    @keyframes appleFadeIn {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
     }
+
+    .apple-header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+
+    .apple-title {
+        font-size: 2.5rem;
+        font-weight: 600;
+        color: var(--apple-label);
+        margin-bottom: 0.5rem;
+    }
+
+    .apple-subtitle {
+        font-size: 1.1rem;
+        color: var(--apple-label-secondary);
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .apple-list-container {
+        background: var(--apple-background-secondary);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .client-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .client-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        border-bottom: 1px solid var(--apple-separator);
+        transition: background-color 0.2s ease-in-out;
+    }
+
+    .client-item:last-child {
+        border-bottom: none;
+    }
+
+    .client-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .client-name {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: var(--apple-label);
+    }
+
+    .apple-button {
+        background: var(--apple-blue);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 18px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s;
+    }
+
+    .apple-button:hover { filter: brightness(1.1); }
+
 </style>
-    <div class="flex flex-col items-center justify-center mb-8 w-full">
-        <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight drop-shadow-lg text-center" style="font-size: clamp(2.5rem, 5vw, 3.5rem);" data-intro="📄 Esta es la vista de todas las cotizaciones organizadas por cliente. Aquí puedes acceder a todas las cotizaciones creadas." data-step="1">Cotizaciones</h1>
-        <p class="text-lg text-cyan-100 mt-2 text-center max-w-2xl" style="font-size: clamp(1rem, 2.5vw, 1.25rem);">Visualiza y controla todas las cotizaciones organizadas por cliente. Las nuevas cotizaciones se crean desde el área de oportunidades.</p>
+
+<div class="apple-container">
+    <div class="apple-header">
+        <h1 class="apple-title">Cotizaciones por Cliente</h1>
+        <p class="apple-subtitle">Selecciona un cliente para ver todas sus cotizaciones. Las nuevas cotizaciones se crean desde la sección de Oportunidades.</p>
     </div>
-    <div class="w-full max-w-full mx-auto overflow-x-auto">
-        <table class="min-w-full divide-y divide-cyan-200/30 bg-transparent text-base md:text-lg">
-            <thead>
-                <tr>
-                    <th class="px-6 py-4 text-left font-semibold text-cyan-200 uppercase">Cliente</th>
-                    <th class="px-6 py-4 text-center font-semibold text-cyan-200 uppercase"></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for cliente in clientes_asignados %}
-                <tr class="hover:bg-cyan-900/20 transition">
-                    <td class="px-6 py-4 text-white font-medium">{{ cliente.nombre }}</td>
-                    <td class="px-6 py-4">
-                        <div class="flex flex-row justify-center w-full">
-                            <a href="{% url 'cotizaciones_por_cliente' cliente.id %}" class="inline-flex items-center px-6 py-3 bg-[#143a56] hover:bg-[#1e3350] text-white rounded-xl shadow transition font-semibold text-lg" data-intro="👀 Haz clic en 'Ver Cotizaciones' para acceder a todas las cotizaciones de este cliente específico." data-step="2">
-                                <i data-lucide="file-text" class="lucide w-5 h-5 mr-2"></i>Ver Cotizaciones
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
+    <div class="apple-list-container">
+        <ul class="client-list">
+            {% for cliente in clientes_asignados %}
+            <li class="client-item">
+                <span class="client-name">{{ cliente.nombre }}</span>
+                <a href="{% url 'cotizaciones_por_cliente' cliente.id %}" class="apple-button">
+                    Ver Cotizaciones
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </a>
+            </li>
+            {% empty %}
+            <li class="client-item">
+                <p class="text-center text-gray-400 py-5">No hay clientes con cotizaciones asignadas.</p>
+            </li>
+            {% endfor %}
+        </ul>
     </div>
 </div>
-<script src="https://unpkg.com/lucide-icons@latest"></script>
-<script>lucide.createIcons();</script>
 {% endblock %}

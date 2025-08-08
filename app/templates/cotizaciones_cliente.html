@@ -1,108 +1,165 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block title %}Cotizaciones de {{ cliente.nombre_empresa }}{% endblock %}
+
 {% block content %}
 <style>
-    main {
-        width: 100vw;
-        min-height: 100vh;
-        max-width: 100vw;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        overflow-x: hidden;
+    :root {
+        --apple-background-secondary: rgba(29, 29, 31, 0.7);
+        --apple-separator: #38383A;
+        --apple-blue: #007AFF;
+        --apple-green: #32D74B;
+        --apple-yellow: #FFD60A;
+        --apple-label: #FFFFFF;
+        --apple-label-secondary: #EBEBF599;
     }
-    section {
-        width: 100%;
-        max-width: 1200px;
-        margin: 0 auto;
-        box-sizing: border-box;
-    }
-    @media (max-width: 1800px) {
-        section { max-width: 1400px; }
-    }
-    @media (max-width: 1400px) {
-        section { max-width: 1000px; }
-    }
-    @media (max-width: 1100px) {
-        section { max-width: 800px; }
-    }
-    @media (max-width: 900px) {
-        section { max-width: 98vw; }
-    }
-    @media (max-width: 600px) {
-        section { max-width: 100vw; padding: 0 0.5rem; }
-    }
-    .float { animation: none !important; }
-</style>
-<div class="min-h-screen w-full flex flex-col justify-start items-center py-12 px-0 relative dashboard-container" style="z-index:1;">
 
-<style>
-    .dashboard-container {
-        --padding-x: clamp(1rem, 5vw, 4rem);
-        padding-left: var(--padding-x);
-        padding-right: var(--padding-x);
+    .apple-container { width: 100%; max-width: 1400px; margin: 2rem auto; padding: 2rem; animation: appleFadeIn 0.5s ease-out; }
+    @keyframes appleFadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+    .apple-header-card {
+        background: var(--apple-background-secondary);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 2.5rem;
+        text-align: center;
     }
+
+    .apple-title { font-size: 2.5rem; font-weight: 600; color: var(--apple-label); margin-bottom: 0.5rem; }
+    .apple-subtitle { font-size: 1.2rem; color: var(--apple-label-secondary); }
+
+    .apple-actions {
+        display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;
+    }
+
+    .apple-search-bar {
+        position: relative;
+    }
+
+    .apple-search-input {
+        background: var(--apple-background-tertiary);
+        border: 1px solid var(--apple-separator);
+        border-radius: 8px;
+        color: var(--apple-label);
+        font-size: 1rem;
+        padding: 10px 15px 10px 40px;
+        width: 300px;
+        transition: all 0.3s;
+    }
+
+    .apple-search-input:focus {
+        outline: none;
+        border-color: var(--apple-blue);
+        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
+    }
+
+    .apple-search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--apple-label-secondary);
+    }
+
+    .apple-button {
+        background: var(--apple-blue);
+        color: white; border: none; border-radius: 8px; padding: 10px 20px;
+        font-size: 1rem; font-weight: 500; cursor: pointer; text-decoration: none;
+        display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.3s;
+    }
+    .apple-button:hover { filter: brightness(1.1); }
+
+    .apple-table-container { background: var(--apple-background-secondary); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; overflow: hidden; }
+    .apple-table { width: 100%; border-collapse: collapse; }
+    .apple-table th, .apple-table td { padding: 16px 20px; text-align: left; border-bottom: 1px solid var(--apple-separator); }
+    .apple-table th { font-size: 0.8rem; text-transform: uppercase; color: var(--apple-label-secondary); }
+    .apple-table tr:last-child td { border-bottom: none; }
+    .apple-table tr:hover { background: rgba(255, 255, 255, 0.05); }
+
+    .action-button {
+        background: var(--apple-background-tertiary); color: var(--apple-label); border: none; border-radius: 6px;
+        padding: 6px 12px; font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: all 0.2s;
+        display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none;
+    }
+    .action-button:hover { filter: brightness(1.2); }
+    .action-button.view { color: var(--apple-green); }
+    .action-button.download { color: var(--apple-blue); }
+    .action-button.edit { color: var(--apple-yellow); }
+
 </style>
-    <div class="flex flex-col items-center justify-center mb-8 w-full">
-        <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight drop-shadow-lg text-center" style="font-size: clamp(2.5rem, 5vw, 3.5rem);">Cotizaciones de {{ cliente.nombre_empresa }}</h1>
-        <p class="text-lg text-cyan-100 mt-2 text-center max-w-2xl" style="font-size: clamp(1rem, 2.5vw, 1.25rem);">Cotizaciones creadas para este cliente. Puedes descargar o crear nuevas cotizaciones.</p>
+
+<div class="apple-container">
+    <div class="apple-header-card">
+        <h1 class="apple-title">Cotizaciones</h1>
+        <p class="apple-subtitle">Cliente: {{ cliente.nombre_empresa }}</p>
     </div>
-    <div class="w-full max-w-full mx-auto p-0 overflow-x-auto">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold text-white">Cotizaciones</h2>
-            <a href="{% url 'crear_cotizacion_with_id' cliente.id %}" class="inline-flex items-center px-5 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-white font-semibold rounded-xl shadow transition">
-                <i data-lucide="file-plus" class="lucide w-5 h-5 mr-2"></i>Crear cotización
-            </a>
+
+    <div class="apple-actions">
+        <div class="apple-search-bar">
+            <svg class="apple-search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <input id="searchCotizacion" type="text" placeholder="Buscar por título..." class="apple-search-input">
         </div>
-        <div class="flex items-center gap-2 mb-4">
-            <div class="relative w-full max-w-xs">
-                <input id="searchCotizacion" type="text" placeholder="Buscar cotización por nombre..." class="w-full px-4 py-2 pl-10 rounded-lg bg-cyan-900/40 text-cyan-100 placeholder-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition" oninput="filtrarCotizaciones()">
-                <span class="absolute left-3 top-2.5 text-cyan-300 cursor-pointer" onclick="ampliarBusqueda()">
-                    <i data-lucide="search" class="lucide w-5 h-5"></i>
-                </span>
-            </div>
-        </div>
-        {% if cotizaciones %}
-        <ul id="listaCotizaciones" class="divide-y divide-cyan-200/30">
-            {% for cotizacion in cotizaciones %}
-            <li class="flex items-center justify-between py-4 cotizacion-item">
-                <a href="{% url 'view_cotizacion_pdf' cotizacion.id %}" target="_blank" class="text-cyan-100 font-semibold nombre-cotizacion hover:text-cyan-300 hover:underline">
-                    {{ cotizacion.nombre_cotizacion }}
-                </a>
-                <a href="{% url 'generate_cotizacion_pdf' cotizacion.id %}" class="inline-flex items-center px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-white rounded transition" download>
-                    <i data-lucide="download" class="lucide w-4 h-4 mr-1"></i>Descargar
-                </a>
-                <a href="{% url 'editar_cotizacion' cotizacion.id %}" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-400 text-white rounded transition">
-                    <i data-lucide="edit" class="lucide w-4 h-4 mr-1"></i>Editar
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <div class="text-cyan-200 italic">Sin cotizaciones para este cliente.</div>
-        {% endif %}
+        <a href="{% url 'crear_cotizacion_with_id' cliente.id %}" class="apple-button">+ Nueva Cotización</a>
+    </div>
+
+    <div class="apple-table-container">
+        <table class="apple-table">
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="listaCotizaciones">
+                {% for cotizacion in cotizaciones %}
+                <tr class="cotizacion-item">
+                    <td class="font-medium nombre-cotizacion">{{ cotizacion.nombre_cotizacion }}</td>
+                    <td class="text-center">
+                        <div class="flex justify-center space-x-2">
+                            <a href="{% url 'view_cotizacion_pdf' cotizacion.id %}" target="_blank" class="action-button view" title="Ver PDF">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                Ver
+                            </a>
+                            <a href="{% url 'generate_cotizacion_pdf' cotizacion.id %}" class="action-button download" title="Descargar PDF">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                Descargar
+                            </a>
+                            <a href="{% url 'editar_cotizacion' cotizacion.id %}" class="action-button edit" title="Editar Cotización">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg>
+                                Editar
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="2" class="text-center py-10 text-gray-400">No hay cotizaciones para este cliente.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
-<script src="https://unpkg.com/lucide-icons@latest"></script>
+
 <script>
-    lucide.createIcons();
-    function filtrarCotizaciones() {
-        const input = document.getElementById('searchCotizacion');
-        const filtro = input.value.toLowerCase();
-        const items = document.querySelectorAll('.cotizacion-item');
-        items.forEach(item => {
-            const nombre = item.querySelector('.nombre-cotizacion').textContent.toLowerCase();
-            item.style.display = nombre.includes(filtro) ? '' : 'none';
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchCotizacion');
+    searchInput.addEventListener('input', function() {
+        const filter = searchInput.value.toLowerCase();
+        const rows = document.querySelectorAll('.cotizacion-item');
+        rows.forEach(row => {
+            const name = row.querySelector('.nombre-cotizacion').textContent.toLowerCase();
+            if (name.includes(filter)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
         });
-    }
-    function ampliarBusqueda() {
-        const input = document.getElementById('searchCotizacion');
-        input.classList.toggle('text-2xl');
-        input.classList.toggle('py-4');
-        input.focus();
-    }
+    });
+});
 </script>
 {% endblock %}

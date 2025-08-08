@@ -3,194 +3,484 @@
 {% block title %}Bienvenida{% endblock %}
 {% block content %}
 <style>
-    /* --- Base & Animations --- */
-    .float {
-        animation: floatY 8s ease-in-out infinite;
+    /* Apple macOS Design System */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+    
+    :root {
+        /* Apple Color System - macOS inspired */
+        --apple-blue: #007AFF;
+        --apple-blue-light: #4DA8FF;
+        --apple-blue-dark: #0056CC;
+        --apple-gray: #8E8E93;
+        --apple-gray-2: #AEAEB2;
+        --apple-gray-3: #C7C7CC;
+        --apple-gray-4: #D1D1D6;
+        --apple-gray-5: #E5E5EA;
+        --apple-gray-6: #F2F2F7;
+        --apple-background: #000000;
+        --apple-background-secondary: #1D1D1F;
+        --apple-background-tertiary: #2C2C2E;
+        --apple-background-quaternary: #3A3A3C;
+        --apple-label: #FFFFFF;
+        --apple-label-secondary: #EBEBF5;
+        --apple-label-tertiary: #EBEBF599;
+        --apple-label-quaternary: #EBEBF54D;
+        --apple-separator: #38383A;
+        
+        /* Apple Typography - SF Pro inspired (using Inter as fallback) */
+        --apple-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif;
+        --apple-font-mono: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
     }
-    @keyframes floatY {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-4px); }
+    
+    body {
+        font-family: var(--apple-font-family);
+        background: var(--apple-background);
+        color: var(--apple-label);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
     }
-    .fade-in {
-        animation: fadeIn 1.2s ease;
+    
+    /* Apple Gentle Animations */
+    .apple-float {
+        animation: appleFloat 6s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
     }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(40px); }
+    @keyframes appleFloat {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-6px); }
+    }
+    
+    .apple-fade-in {
+        animation: appleFadeIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    @keyframes appleFadeIn {
+        from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
     }
-    .bg-animated {
-        position: fixed; inset: 0; z-index: 0;
+    
+    .apple-bg {
+        position: fixed; 
+        inset: 0; 
+        z-index: 0;
         pointer-events: none;
-        background: radial-gradient(circle at 20% 20%, #00cfff33 0%, transparent 60%),
-                    radial-gradient(circle at 80% 80%, #ff00c833 0%, transparent 60%),
-                    linear-gradient(120deg, #181c24 0%, #232946 100%);
-        animation: bgMove 16s linear infinite alternate;
-    }
-    @keyframes bgMove {
-        0% { background-position: 0% 0%, 100% 100%, 0 0; }
-        100% { background-position: 20% 10%, 80% 90%, 0 0; }
+        background: 
+            radial-gradient(ellipse at top left, rgba(0, 122, 255, 0.1) 0%, transparent 50%),
+            radial-gradient(ellipse at bottom right, rgba(0, 122, 255, 0.05) 0%, transparent 50%),
+            linear-gradient(180deg, var(--apple-background) 0%, var(--apple-background-secondary) 100%);
     }
 
-    /* --- Layout & Fluidity --- */
+    /* Apple Layout System */
     main {
         width: 100%;
         min-height: 100vh;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        padding: clamp(1rem, 5vw, 3rem);
+        justify-content: flex-start;
+        padding: clamp(2rem, 6vw, 4rem);
         box-sizing: border-box;
-        overflow-x: hidden;
+        position: relative;
+        z-index: 1;
     }
+    
     section {
         width: 100%;
-        max-width: 1200px; /* Set a consistent max-width */
+        max-width: 1200px;
         margin: 0 auto;
     }
-    .welcome-header h1 {
-        font-size: clamp(2.5rem, 8vw, 5rem); /* Fluid Typography */
+    
+    /* Apple Typography Scale */
+    .apple-display {
+        font-family: var(--apple-font-family);
+        font-size: clamp(3rem, 8vw, 6rem);
+        font-weight: 600;
+        line-height: 1.05;
+        letter-spacing: -0.025em;
+        color: var(--apple-label);
     }
-    .welcome-header p {
-        font-size: clamp(1.2rem, 4vw, 1.75rem); /* Fluid Typography */
+    
+    .apple-title-1 {
+        font-family: var(--apple-font-family);
+        font-size: clamp(2rem, 5vw, 3rem);
+        font-weight: 600;
+        line-height: 1.1;
+        letter-spacing: -0.015em;
+        color: var(--apple-label);
+    }
+    
+    .apple-title-2 {
+        font-family: var(--apple-font-family);
+        font-size: clamp(1.5rem, 4vw, 2rem);
+        font-weight: 600;
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+        color: var(--apple-label);
+    }
+    
+    .apple-title-3 {
+        font-family: var(--apple-font-family);
+        font-size: clamp(1.25rem, 3vw, 1.5rem);
+        font-weight: 600;
+        line-height: 1.25;
+        letter-spacing: -0.005em;
+        color: var(--apple-blue);
+    }
+    
+    .apple-headline {
+        font-family: var(--apple-font-family);
+        font-size: clamp(1rem, 3vw, 1.25rem);
+        font-weight: 600;
+        line-height: 1.3;
+        letter-spacing: -0.003em;
+        color: var(--apple-label);
+    }
+    
+    .apple-body {
+        font-family: var(--apple-font-family);
+        font-size: 17px;
+        font-weight: 400;
+        line-height: 1.47;
+        letter-spacing: -0.022em;
+        color: var(--apple-label-secondary);
+    }
+    
+    .apple-subheadline {
+        font-family: var(--apple-font-family);
+        font-size: 15px;
+        font-weight: 400;
+        line-height: 1.33;
+        letter-spacing: -0.016em;
+        color: var(--apple-label-tertiary);
+        text-transform: uppercase;
+        font-weight: 500;
     }
 
-    /* --- Responsive Table --- */
-    .responsive-table {
+    /* Apple Card System */
+    .apple-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 0.5px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            0 1px 1px rgba(255, 255, 255, 0.05) inset;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    
+    .apple-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 
+            0 12px 40px rgba(0, 0, 0, 0.4),
+            0 1px 1px rgba(255, 255, 255, 0.1) inset;
+    }
+    
+    /* Apple Avatar */
+    .apple-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: 2px solid var(--apple-blue-light);
+        background: var(--apple-background-secondary);
+        box-shadow: 
+            0 4px 16px rgba(0, 122, 255, 0.3),
+            0 0 0 1px rgba(255, 255, 255, 0.05);
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    
+    .apple-avatar:hover {
+        transform: scale(1.05);
+        border-color: var(--apple-blue);
+        box-shadow: 
+            0 6px 20px rgba(0, 122, 255, 0.4),
+            0 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Apple Table System */
+    .apple-table {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 0.5px solid var(--apple-separator);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    }
+    
+    .apple-table table {
         width: 100%;
-        max-width: 1200px;
+        border-collapse: collapse;
     }
-    /* On large screens, it's a normal table */
-    .responsive-table table {
-        min-width: 100%;
+    
+    .apple-table thead {
+        background: var(--apple-background-secondary);
+        backdrop-filter: blur(10px);
     }
-
-    /* On small screens, transform into cards */
+    
+    .apple-table th {
+        padding: 16px 20px;
+        font-family: var(--apple-font-family);
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--apple-gray-2);
+        text-align: left;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 0.5px solid var(--apple-separator);
+    }
+    
+    .apple-table td {
+        padding: 16px 20px;
+        font-family: var(--apple-font-family);
+        font-size: 15px;
+        color: var(--apple-label);
+        border-bottom: 0.5px solid var(--apple-separator);
+    }
+    
+    .apple-table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .apple-table tbody tr {
+        transition: background-color 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    
+    .apple-table tbody tr:hover {
+        background: rgba(0, 122, 255, 0.08);
+    }
+    
+    /* Apple Progress Bar */
+    .apple-progress {
+        background: var(--apple-background-quaternary);
+        border-radius: 4px;
+        height: 6px;
+        overflow: hidden;
+    }
+    
+    .apple-progress-fill {
+        background: linear-gradient(90deg, var(--apple-blue) 0%, var(--apple-blue-light) 100%);
+        border-radius: 4px;
+        height: 100%;
+        transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    
+    /* Apple Responsive Table */
     @media (max-width: 768px) {
-        .responsive-table thead {
-            display: none; /* Hide table headers */
+        .apple-table thead {
+            display: none;
         }
-        .responsive-table tr {
+        
+        .apple-table tr {
             display: block;
-            margin-bottom: 1.5rem;
-            border-radius: 1rem;
-            padding: 1rem;
-            background-color: rgba(255, 255, 255, 0.07);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            margin-bottom: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 12px;
+            border: 0.5px solid var(--apple-separator);
+            padding: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
         }
-        .responsive-table td {
-            display: block;
-            text-align: right; /* Align content to the right */
-            padding: 0.5rem;
-            border-bottom: 1px solid rgba(0, 207, 255, 0.1);
-            position: relative;
+        
+        .apple-table td {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 0.5px solid var(--apple-separator);
         }
-        .responsive-table td:last-child {
+        
+        .apple-table td:last-child {
             border-bottom: none;
         }
-        .responsive-table td::before {
-            content: attr(data-label); /* Use data-label for the 'header' */
-            position: absolute;
-            left: 1rem;
-            font-weight: bold;
+        
+        .apple-table td::before {
+            content: attr(data-label);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--apple-gray-2);
             text-transform: uppercase;
-            color: #00cfff;
-            text-align: left;
+            letter-spacing: 0.05em;
         }
     }
 </style>
-<div class="bg-animated"></div>
-<main class="relative w-full min-h-screen flex flex-col items-center justify-center px-0 overflow-x-hidden dashboard-container" style="z-index:1;">
-
-<style>
-    .dashboard-container {
-        --padding-x: clamp(1rem, 5vw, 4rem);
-        padding-left: var(--padding-x);
-        padding-right: var(--padding-x);
-    }
-</style>
-    <section class="welcome-header w-full flex flex-col items-center justify-center py-10 fade-in max-w-screen-2xl">
-        <h1 class="text-5xl md:text-7xl font-extrabold text-center mb-6 fade-in" style="color:#00cfff;">Bienvenido {{ user.first_name|default:'a' }}</h1>
-        <p class="text-2xl md:text-3xl text-center mb-4" style="color:#e4e5e6;"> <span class="uppercase tracking-widest">{{ perfil }}</span></p>
-        <img src="https://www.iamet.mx/.cm4all/uproc.php/0/Fondos/.logo.png/picture-200?_=1904956a6f0" alt="Logo BajaNet" class="h-20 md:h-28 object-contain float my-4" style="background: white; border-radius: 2rem; padding: 0.5rem; filter: brightness(1.2) contrast(1.1); box-shadow:0 0 32px #00cfff33;"/>
+<div class="apple-bg"></div>
+<main>
+    <!-- Apple Welcome Section -->
+    <section class="w-full flex flex-col items-center justify-center py-12 apple-fade-in">
+        <h1 class="apple-display text-center mb-4">
+            Bienvenido <span style="color: var(--apple-blue);">{{ user.first_name|default:'a' }}</span>
+        </h1>
+        <p class="apple-subheadline text-center mb-8">{{ perfil }}</p>
+        <div class="mb-8">
+            <img src="https://www.iamet.mx/.cm4all/uproc.php/0/Fondos/.logo.png/picture-200?_=1904956a6f0" 
+                 alt="Logo IAMET" 
+                 class="apple-float"
+                 style="height: 160px; width: auto; object-fit: contain; background: rgba(255,255,255,0.95); border-radius: 24px; padding: 20px; box-shadow: 0 8px 32px rgba(0, 122, 255, 0.25);"/>
+        </div>
     </section>
-    <section class="w-full grid grid-cols-1 md:grid-cols-2 gap-6 py-4 fade-in max-w-screen-2xl" style="animation-delay:0.2s; max-width:900px;">
-        <div class="flex flex-col items-center justify-center p-6 rounded-3xl bg-white/5 shadow-2xl border border-cyan-400/10 float">
-            <h4 class="text-xl font-bold mb-2" style="color:#00cfff;">Empleado del Mes</h4>
+    <!-- Apple Employee Cards Section -->
+    <section class="w-full grid grid-cols-1 md:grid-cols-2 gap-6 py-8 max-w-4xl apple-fade-in" style="animation-delay:0.2s;">
+        <div class="apple-card text-center apple-float" style="animation-delay: 0.1s;">
+            <h4 class="apple-title-3 mb-4">Empleado del Mes</h4>
             {% if usuario_mes %}
-                <img src="{{ usuario_mes.avatar_url }}" alt="avatar mes" class="w-20 h-20 avatar mb-2 rounded-full border-4 border-cyan-300 shadow-lg">
-                <p class="text-lg font-bold" style="color:#e0e6f0;">{{ usuario_mes.nombre }}</p>
-                <p class="text-base" style="color:#9AA7B7;">Monto vendido: <span class="font-semibold">${{ usuario_mes.monto_vendido_mes|format_currency_es }}</span></p>
+                <img src="{{ usuario_mes.avatar_url }}" 
+                     alt="Avatar mes" 
+                     class="apple-avatar mx-auto mb-4"/>
+                <h5 class="apple-headline mb-2">{{ usuario_mes.nombre }}</h5>
+                <p class="apple-body">
+                    Monto vendido: <span style="color: var(--apple-blue); font-weight: 500;">${{ usuario_mes.monto_vendido_mes|format_currency_es }}</span>
+                </p>
             {% else %}
-                <div class="text-gray-400">Aún no hay empleado destacado este mes.</div>
+                <div class="apple-avatar mx-auto mb-4 flex items-center justify-center" style="background: var(--apple-background-tertiary);">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--apple-gray);">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </div>
+                <p class="apple-body" style="color: var(--apple-gray);">Aún no hay empleado destacado este mes.</p>
             {% endif %}
         </div>
-        <div class="flex flex-col items-center justify-center p-6 rounded-3xl bg-white/5 shadow-2xl border border-cyan-400/10 float">
-            <h4 class="text-xl font-bold mb-2" style="color:#00cfff;">Empleado del Día</h4>
+        
+        <div class="apple-card text-center apple-float" style="animation-delay: 0.2s;">
+            <h4 class="apple-title-3 mb-4">Empleado del Día</h4>
             {% if usuario_dia %}
-                <img src="{{ usuario_dia.avatar_url }}" alt="avatar día" class="w-20 h-20 avatar mb-2 rounded-full border-4 border-cyan-300 shadow-lg">
-                <p class="text-lg font-bold" style="color:#e0e6f0;">{{ usuario_dia.nombre }}</p>
-                <p class="text-base" style="color:#9AA7B7;">Oportunidades registradas hoy: <span class="font-semibold">{{ usuario_dia.oportunidades_hoy }}</span></p>
+                <img src="{{ usuario_dia.avatar_url }}" 
+                     alt="Avatar día" 
+                     class="apple-avatar mx-auto mb-4"/>
+                <h5 class="apple-headline mb-2">{{ usuario_dia.nombre }}</h5>
+                <p class="apple-body">
+                    Oportunidades hoy: <span style="color: var(--apple-blue); font-weight: 500;">{{ usuario_dia.oportunidades_hoy }}</span>
+                </p>
             {% else %}
-                <div class="text-gray-400">Aún no hay empleado destacado hoy.</div>
+                <div class="apple-avatar mx-auto mb-4 flex items-center justify-center" style="background: var(--apple-background-tertiary);">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--apple-gray);">
+                        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"></polygon>
+                    </svg>
+                </div>
+                <p class="apple-body" style="color: var(--apple-gray);">Aún no hay empleado destacado hoy.</p>
             {% endif %}
         </div>
     </section>
-    <section class="w-full flex flex-col items-center justify-center py-4 fade-in max-w-screen-2xl" style="animation-delay:0.4s;">
-        <h5 class="text-2xl font-bold mb-4" style="color:#00cfff;">Últimas Oportunidades</h5>
-        <div class="w-full overflow-x-auto">
-            <div class="min-w-full inline-block align-middle">
-                <div class="overflow-hidden rounded-2xl shadow-xl bg-white/5">
-                    <table class="min-w-full divide-y divide-cyan-200/20">
-                        <thead style="background-color: #0a0d11;">
-                            <tr>
-                                <th class="px-3 sm:px-4 py-3 text-left text-xs font-bold text-cyan-200 uppercase tracking-wider whitespace-nowrap">Oportunidad</th>
-                                <th class="px-3 sm:px-4 py-3 text-left text-xs font-bold text-cyan-200 uppercase tracking-wider whitespace-nowrap">Cliente</th>
-                                <th class="px-3 sm:px-4 py-3 text-left text-xs font-bold text-cyan-200 uppercase tracking-wider whitespace-nowrap">Monto</th>
-                                <th class="px-3 sm:px-4 py-3 text-left text-xs font-bold text-cyan-200 uppercase tracking-wider whitespace-nowrap">Probabilidad</th>
-                                <th class="px-3 sm:px-4 py-3 text-left text-xs font-bold text-cyan-200 uppercase tracking-wider whitespace-nowrap">Empleado</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-cyan-200/10">
-                            {% for o in ultimas_oportunidades %}
-                            <tr class="hover:bg-cyan-900/10 transition-colors duration-150">
-                                <td class="px-3 sm:px-4 py-3 text-sm sm:text-base font-medium text-cyan-100 max-w-[200px] sm:max-w-none truncate" title="{{ o.nombre }}">
-                                    {{ o.nombre|truncatechars:30 }}
-                                </td>
-                                <td class="px-3 sm:px-4 py-3 text-sm sm:text-base text-cyan-100/80 max-w-[150px] sm:max-w-none truncate" title="{{ o.get_nombre_cliente|default:'Sin cliente asignado' }}">
-                                    {{ o.get_nombre_cliente|default:'Sin cliente asignado'|truncatechars:20 }}
-                                </td>
-                                <td class="px-3 sm:px-4 py-3 text-sm sm:text-base font-medium text-cyan-100 whitespace-nowrap">
-                                    ${{ o.monto|floatformat:0 }}
-                                </td>
-                                <td class="px-3 sm:px-4 py-3">
-                                    <div class="flex items-center">
-                                        <div class="w-16 sm:w-20 bg-cyan-900/50 rounded-full h-2.5 mr-2">
-                                            <div class="bg-cyan-400 h-2.5 rounded-full" style="width: {{ o.probabilidad }}%; max-width: 100%;"></div>
-                                        </div>
-                                        <span class="text-sm sm:text-base text-cyan-300 font-medium">{{ o.probabilidad }}%</span>
-                                    </div>
-                                </td>
-                                <td class="px-3 sm:px-4 py-3 text-sm sm:text-base text-cyan-100/80 max-w-[120px] sm:max-w-none truncate" title="{{ o.usuario }}">
-                                    {{ o.usuario|truncatechars:15 }}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="5" class="px-6 py-4 text-center text-gray-400">
-                                    No hay oportunidades recientes.
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+    <!-- Apple Table Section -->
+    <section class="w-full flex flex-col items-center py-8 max-w-6xl apple-fade-in" style="animation-delay:0.4s;">
+        <h2 class="apple-title-1 text-center mb-8" style="color: var(--apple-blue);">Últimas Oportunidades</h2>
+        <div class="w-full apple-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            <div class="flex items-center gap-2">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                                </svg>
+                                Oportunidad
+                            </div>
+                        </th>
+                        <th>
+                            <div class="flex items-center gap-2">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                    <polyline points="9,22 9,12 15,12 15,22"></polyline>
+                                </svg>
+                                Cliente
+                            </div>
+                        </th>
+                        <th>
+                            <div class="flex items-center gap-2">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                                </svg>
+                                Monto
+                            </div>
+                        </th>
+                        <th>
+                            <div class="flex items-center gap-2">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                                </svg>
+                                Probabilidad
+                            </div>
+                        </th>
+                        <th>
+                            <div class="flex items-center gap-2">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                                Empleado
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for o in ultimas_oportunidades %}
+                    <tr>
+                        <td data-label="Oportunidad">
+                            <span style="font-weight: 500;">{{ o.nombre|truncatechars:30 }}</span>
+                        </td>
+                        <td data-label="Cliente">
+                            {{ o.get_nombre_cliente|default:'Sin cliente asignado'|truncatechars:20 }}
+                        </td>
+                        <td data-label="Monto">
+                            <span style="font-weight: 500; color: var(--apple-blue);">
+                                ${{ o.monto|floatformat:0 }}
+                            </span>
+                        </td>
+                        <td data-label="Probabilidad">
+                            <div class="flex items-center gap-3">
+                                <div class="apple-progress" style="width: 60px;">
+                                    <div class="apple-progress-fill" style="width: {{ o.probabilidad }}%;"></div>
+                                </div>
+                                <span style="font-size: 13px; color: var(--apple-blue); font-weight: 500;">
+                                    {{ o.probabilidad }}%
+                                </span>
+                            </div>
+                        </td>
+                        <td data-label="Empleado">
+                            {{ o.usuario|truncatechars:15 }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--apple-gray); padding: 32px;">
+                            <div class="flex flex-col items-center gap-3">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--apple-gray);">
+                                    <path d="M3 3h18v18H3z"></path>
+                                    <path d="M8 12h8"></path>
+                                </svg>
+                                No hay oportunidades recientes.
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <!-- Apple Vision Section -->
+    <section class="w-full flex flex-col items-center py-8 max-w-4xl apple-fade-in" style="animation-delay:0.6s;">
+        <h2 class="apple-title-1 text-center mb-6" style="color: var(--apple-blue);">Nuestra Visión</h2>
+        <div class="apple-card">
+            <div class="flex items-start gap-4">
+                <div class="flex-shrink-0">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--apple-blue);">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                    </svg>
                 </div>
+                <p class="apple-body flex-1" style="text-align: justify; line-height: 1.6;">
+                    Ser la empresa líder en soluciones tecnológicas, formando equipos audaces de trabajo, 
+                    verdaderos y auténticos con estrategias inteligentes éticas, legales y meritorias, 
+                    para honrar a nuestras familias y reforzar la confianza brindada por nuestros socios de negocios.
+                </p>
             </div>
         </div>
-    </section>
-    <section class="w-full flex flex-col items-center justify-center py-4 fade-in max-w-screen-2xl" style="animation-delay:0.6s;">
-        <h3 class="text-2xl font-bold mb-3" style="color:#00cfff;">Visión</h3>
-        <p class="text-lg md:text-xl text-center max-w-3xl" style="color:#e0e6f0; text-align:justify;">Ser la empresa líder en soluciones tecnológicas, formando equipos audaces de trabajo, verdaderos y auténticos con estrategias inteligentes éticas, legales y meritorias, para honrar a nuestras familias y reforzar la confianza brindada por nuestros socios de negocios.</p>
     </section>
 </main>
 {% endblock %}

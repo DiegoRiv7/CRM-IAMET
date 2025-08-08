@@ -1,59 +1,129 @@
-{% extends "base.html" %} {# Extiende la plantilla base para heredar el estilo global #}
-
-{% block title %}
-    Iniciar Sesión
-{% endblock %}
-
-{% block content %}
-{# Contenedor principal que centra el contenido y le da el estilo oscuro #}
-<div class="flex items-center justify-center min-h-screen p-4 dashboard-container">
-
-<style>
-    .dashboard-container {
-        --padding-x: clamp(1rem, 5vw, 4rem);
-        padding-left: var(--padding-x);
-        padding-right: var(--padding-x);
-    }
-</style>
-    <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md border border-gray-700 text-gray-100"> {# Fondo oscuro y texto claro #}
-        <h1 class="text-3xl font-bold text-white mb-6 text-center" style="font-size: clamp(2rem, 4vw, 2.5rem);">Iniciar Sesión</h1> {# Título en blanco #}
-        
-        {% if messages %}
-            {% for message in messages %}
-                <div class="bg-red-600 text-white text-sm p-3 rounded mb-4 text-center">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
-        
-        {% if form.errors %}
-            <p class="text-red-400 text-sm mb-4 text-center">Tu nombre de usuario y contraseña no coinciden. Por favor, inténtalo de nuevo.</p> {# Tono rojo ajustado #}
-        {% endif %}
-        <form method="post" class="space-y-4">
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nethive - Iniciar Sesión</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --apple-blue: #007AFF;
+            --apple-gray: #8E8E93;
+            --apple-background: #000000;
+            --apple-background-secondary: #1D1D1F;
+            --apple-label: #FFFFFF;
+            --apple-label-secondary: #EBEBF5;
+            --apple-label-tertiary: #EBEBF599;
+            --apple-separator: #38383A;
+            --apple-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif;
+        }
+        body {
+            font-family: var(--apple-font-family);
+            background: var(--apple-background);
+            color: var(--apple-label);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .apple-bg {
+            position: fixed; 
+            inset: 0; 
+            z-index: 0;
+            pointer-events: none;
+            background: 
+                radial-gradient(ellipse at top left, rgba(0, 122, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom right, rgba(0, 122, 255, 0.05) 0%, transparent 50%),
+                linear-gradient(180deg, var(--apple-background) 0%, var(--apple-background-secondary) 100%);
+        }
+        .login-container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: appleFadeIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .page-title {
+            font-family: var(--apple-font-family);
+            font-size: 4rem;
+            font-weight: 600;
+            color: var(--apple-label);
+            letter-spacing: -0.025em;
+            margin-bottom: 2rem;
+        }
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 300px;
+        }
+        .login-field {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--apple-separator);
+            border-radius: 8px;
+            color: var(--apple-label);
+            font-family: var(--apple-font-family);
+            font-size: 1rem;
+            padding: 12px 16px;
+            width: 100%;
+            transition: all 0.3s;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .login-field:focus {
+            outline: none;
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
+        }
+        .login-button {
+            background: var(--apple-blue);
+            color: var(--apple-label);
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 0.5rem;
+            width: auto;
+        }
+        .login-button:hover {
+            filter: brightness(1.1);
+        }
+        .error-message {
+            color: #FF453A;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+            text-align: center;
+        }
+        @keyframes appleFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="apple-bg"></div>
+    <div class="login-container">
+        <h1 class="page-title">Nethive</h1>
+        <form method="post" class="login-form">
             {% csrf_token %}
-            {% for field in form %}
-                <div class="flex flex-col">
-                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-1">{{ field.label }}</label> {# Texto claro #}
-                    {{ field }}
-                    {% if field.help_text %}<p class="text-xs text-gray-400 mt-1">{{ field.help_text }}</p>{% endif %} {# Texto claro #}
-                    {% if field.errors %}<p class="text-red-400 text-sm mt-1">{{ field.errors }}</p>{% endif %} {# Tono rojo ajustado #}
-                </div>
-            {% endfor %}
-            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 mt-6">
-                Acceder
-            </button>
+            <input type="text" name="username" id="id_username" class="login-field" placeholder="Usuario" required value="{{ form.username.value|default:'' }}">
+            <input type="password" name="password" id="id_password" class="login-field" placeholder="Contraseña" required>
+            <button type="submit" class="login-button">Iniciar Sesión</button>
+            {% if form.errors %}
+                <p class="error-message">Credenciales incorrectas. Inténtalo de nuevo.</p>
+            {% endif %}
         </form>
-        <p class="text-center text-gray-300 text-sm mt-4">¿No tienes una cuenta? <a href="{% url 'register' %}" class="text-blue-400 hover:underline">Regístrate aquí</a></p> {# Texto claro y enlace en azul claro #}
     </div>
-</div>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const formFields = document.querySelectorAll('input, select, textarea');
-        formFields.forEach(field => {
-            if (!field.classList.contains('no-tailwind-style')) {
-                field.classList.add('mt-1', 'block', 'w-full', 'px-3', 'py-2', 'border', 'border-gray-600', 'rounded-md', 'shadow-sm', 'focus:outline-none', 'focus:ring-blue-500', 'focus:border-blue-500', 'sm:text-sm', 'bg-gray-700', 'text-gray-100'); {# Estilos para campos de formulario #}
-            }
-        });
-    });
-</script>
-{% endblock %}
+</body>
+</html>

@@ -1,223 +1,126 @@
-<aside id="dock">
-    <nav>
-        <ul>
-            <li>
-                <a href="{% url 'home' %}" class="group">
-                    <!-- Home -->
-                    <svg class="dock-icon" viewBox="0 0 24 24">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline>
-                    </svg>
-                    <span class="text-white">Home</span>
-                </a>
-            </li>
-            {% if is_supervisor or user.is_superuser %}
-            <li>
-                <a href="{% url 'dashboard' %}" class="group">
-                    <!-- Dashboard -->
-                    <svg class="dock-icon" viewBox="0 0 24 24">
-                        <line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line>
-                    </svg>
-                    <span class="text-white">Dashboard</span>
-                </a>
-            </li>
-            {% endif %}
-            
-            <li>
-                <a href="{% url 'todos' %}" class="group">
-                    <!-- Oportunidades -->
-                    <svg class="dock-icon" viewBox="0 0 24 24">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                    </svg>
-                    <span class="text-white">Oportunidades</span>
-                </a>
-            </li>
-            <li>
-                <a href="{% url 'cotizaciones' %}" class="group">
-                    <!-- Cotizaciones -->
-                    <svg class="dock-icon" viewBox="0 0 24 24">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>
-                    <span class="text-white">Cotizaciones</span>
-                </a>
-            </li>
-            {% if is_supervisor %}
-            <li>
-                <a href="{% url 'reporte_usuarios' %}" class="group">
-                    <!-- Usuarios -->
-                    <svg class="dock-icon" viewBox="0 0 24 24">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                    </svg>
-                    <span class="text-white">Usuarios</span>
-                </a>
-            </li>
-            {% endif %}
-            {% if is_supervisor or user.is_superuser %}
-            <li>
-                <a href="{% url 'reporte_ventas_por_cliente' %}" class="group">
-                    <!-- Clientes -->
-                    <svg class="dock-icon" viewBox="0 0 24 24">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle>
-                    </svg>
-                    <span class="text-white">Clientes</span>
-                </a>
-            </li>
-            {% endif %}
-            {% if user.is_superuser %}
-            <li>
-                <a href="/admin/" class="group">
-                    <!-- Admin Panel -->
-                    <svg class="dock-icon" viewBox="0 0 24 24">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                    </svg>
-                    <span class="text-white">Admin</span>
-                </a>
-            </li>
-            {% endif %}
-            {% if is_supervisor or user.is_superuser %}
-            <li>
-                <a href="{% url 'importar_oportunidades' %}" class="group">
-                    <!-- Importar -->
-                    <svg class="dock-icon" viewBox="0 0 24 24">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    <span class="text-white">Importar</span>
-                </a>
-            </li>
-            {% endif %}
-            <li>
-                <a href="{% url 'user_logout' %}" class="group">
-                    <!-- Cerrar Sesión -->
-                    <svg class="dock-icon" viewBox="0 0 24 24">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line>
-                    </svg>
-                    <span class="text-white">Cerrar Sesión</span>
-                </a>
-            </li>
-        </ul>
-    </nav>
-</aside>
 <style>
-    #dock {
+    .macos-dock {
         position: fixed;
-        bottom: clamp(10px, 2vh, 30px); /* Keeps smart vertical positioning */
-        left: 50%;
-        transform: translateX(-50%);
-
-        /* Back to wide, but controlled */
-        width: 90%;
-        max-width: 1400px; /* Prevents extreme stretching on ultrawide monitors */
-
-        background-color: rgba(0, 0, 0, 0.1);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        padding: 0.5rem 1.5rem;
-        border-radius: 2rem;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-        display: flex;
-        align-items: flex-end;
-        z-index: 1000;
-        transition: all 0.3s ease-in-out;
-        height: 65px;
-        border: 2.5px solid transparent;
-    }
-
-    #dock:hover {
-        background-color: rgba(0, 0, 0, 0.7);
-        border-color: #143a56;
-        box-shadow: 0 4px 32px 0 rgba(20,58,86,0.35), 0 1.5px 8px 0 rgba(0,0,0,0.10);
-    }
-
-    #dock nav,
-    #dock nav ul {
-        width: 100%; /* Make nav and ul fill the dock container */
-        display: flex;
-        justify-content: space-evenly; /* Distribute icons evenly */
-        align-items: flex-end;
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-
-    #dock .dock-icon {
-        width: var(--dock-icon-size, 60px);
-        height: var(--dock-icon-size, 60px);
-        fill: none;
-        stroke: #ffffff;
-        stroke-width: 1.8;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        opacity: 0;
-        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease-in-out;
-    }
-
-    #dock:hover .dock-icon {
-        opacity: 1;
-    }
-
-    #dock nav li a:hover .dock-icon {
-        transform: scale(2.0);
-    }
-
-    #dock nav li a {
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
         display: flex;
         flex-direction: column;
         align-items: center;
-        color: white;
-        text-decoration: none;
-        font-size: 0.75rem;
-        transition: color 0.2s ease-out, background-color 0.2s ease-out;
+        padding: 8px;
+        background: rgba(29, 29, 31, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .dock-item {
         position: relative;
-        padding: var(--dock-item-padding, 0.1rem);
-        border-radius: 0.75rem;
-        background-color: transparent;
-        margin: 0; /* Margin is now handled by justify-content */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 52px;
+        height: 52px;
+        margin: 6px 0;
+        transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
 
-    #dock nav li a span {
-        opacity: 0;
+    .dock-item .dock-icon {
+        width: 32px;
+        height: 32px;
+        color: #EBEBF5;
+        transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .dock-item .tooltip {
         position: absolute;
-        bottom: var(--dock-text-bottom, -20px);
+        left: 100%;
+        top: 50%;
+        transform: translateY(-50%) translateX(10px);
+        padding: 6px 12px;
+        background: #1D1D1F;
+        color: #EBEBF5;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
         white-space: nowrap;
-        transition: opacity 0.2s ease-out;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         pointer-events: none;
-        background-color: rgba(0, 0, 0, 0.85);
-        padding: 0.25rem 0.5rem;
-        border-radius: 0.3rem;
-        font-size: 0.7rem;
-        z-index: 1001;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
-    #dock nav li a:hover span {
+    .dock-item:hover {
+        transform: scale(1.2) translateX(5px);
+    }
+
+    .dock-item:hover .tooltip {
         opacity: 1;
+        visibility: visible;
+        transform: translateY(-50%) translateX(15px);
     }
 
-    #dock nav li a:active {
-        background-color: rgba(56, 189, 248, 0.18);
-        color: #38bdf8;
-        box-shadow: 0 1px 4px 0 rgba(56,189,248,0.18);
-        transform: translateY(-2px) scale(0.98);
-    }
-
-    /* Mobile Optimization */
-    @media (max-width: 768px) {
-        #dock {
-            height: 55px;
-            padding: 0.4rem 0.5rem;
-            border-radius: 1.5rem;
-            width: 95%;
-        }
-
-        #dock nav ul {
-            justify-content: space-around; /* A bit more space for mobile */
-        }
-
-        #dock .dock-icon {
-            width: var(--dock-icon-size, 44px);
-            height: var(--dock-icon-size, 44px);
-        }
-
-        #dock nav li a:hover .dock-icon {
-            transform: scale(1.6);
-        }
+    .dock-separator {
+        width: 80%;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.15);
+        margin: 8px 0;
     }
 </style>
+
+<nav class="macos-dock">
+    <a href="{% url 'home' %}" class="dock-item">
+        <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+        <span class="tooltip">Home</span>
+    </a>
+
+    {% if is_supervisor or user.is_superuser %}
+    <a href="{% url 'dashboard' %}" class="dock-item">
+        <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 012-2h2a2 2 0 012 2v6m-8 0h-2a2 2 0 01-2-2V7a2 2 0 012-2h2l2-4h4l2 4h2a2 2 0 012 2v10a2 2 0 01-2 2h-2m-6 0h6"></path></svg>
+        <span class="tooltip">Dashboard</span>
+    </a>
+    {% endif %}
+
+    <a href="{% url 'todos' %}" class="dock-item">
+        <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h6m-6 4h6m-6 4h6"></path></svg>
+        <span class="tooltip">Oportunidades</span>
+    </a>
+
+    <a href="{% url 'cotizaciones' %}" class="dock-item">
+        <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        <span class="tooltip">Cotizaciones</span>
+    </a>
+
+    <div class="dock-separator"></div>
+
+    {% if is_supervisor or user.is_superuser %}
+    <a href="{% url 'reporte_ventas_por_cliente' %}" class="dock-item">
+        <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+        <span class="tooltip">Clientes</span>
+    </a>
+    {% endif %}
+
+    {% if user.is_superuser %}
+    <a href="/admin/" class="dock-item">
+        <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        <span class="tooltip">Admin</span>
+    </a>
+    {% endif %}
+
+    <div class="dock-separator"></div>
+
+    <a href="#" class="dock-item" id="assistant-btn">
+        <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+        <span class="tooltip">Asistente Virtual</span>
+    </a>
+
+    <a href="{% url 'user_logout' %}" class="dock-item">
+        <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+        <span class="tooltip">Cerrar Sesión</span>
+    </a>
+</nav>
