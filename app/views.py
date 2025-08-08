@@ -1251,6 +1251,11 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
 
     print(f"DEBUG: crear_cotizacion_view - Request method: {request.method}")
     
+    # Si no viene oportunidad_id como parámetro de URL, verificar en GET parameters
+    if not oportunidad_id and request.GET.get('oportunidad_id'):
+        oportunidad_id = request.GET.get('oportunidad_id')
+        print(f"DEBUG: crear_cotizacion_view - oportunidad_id obtenido de GET params: {oportunidad_id}")
+    
     if oportunidad_id:
         try:
             oportunidad_seleccionada = TodoItem.objects.get(id=oportunidad_id)
