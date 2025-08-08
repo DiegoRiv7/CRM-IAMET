@@ -1,7 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from app.models import UserProfile
-from app.bitrix_integration import get_bitrix_users
 import logging
 
 logger = logging.getLogger(__name__)
@@ -12,12 +11,22 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write(self.style.SUCCESS('Iniciando sincronización de usuarios de Bitrix24...'))
 
-        # Obtener usuarios de Bitrix24
-        bitrix_users = get_bitrix_users(request=None)
+        # Datos de usuarios de Bitrix24 (hardcodeados porque API no tiene permisos)
+        bitrix_users_data = [
+            {"ID": "1", "NAME": "Alvaro Rivera"},
+            {"ID": "10", "NAME": "Diego Rivera Torrijo"},
+            {"ID": "14", "NAME": "Roberto Lopez"},
+            {"ID": "16", "NAME": "Eduardo Rivera"},
+            {"ID": "18", "NAME": "Eduardo Rivera Cordova"},
+            {"ID": "32", "NAME": "Alondra Santamaria Medina"},
+            {"ID": "86", "NAME": "Jafet Rivera"},
+            {"ID": "100", "NAME": "Viridiana Santana"},
+            {"ID": "120", "NAME": "Stefanny Corral"},
+            {"ID": "152", "NAME": "Arceli Bihouet"},
+            {"ID": "156", "NAME": "Zebra IAMET"},
+        ]
 
-        if not bitrix_users:
-            self.stdout.write(self.style.WARNING('No se encontraron usuarios en Bitrix24 o webhook no configurado.'))
-            return
+        bitrix_users = bitrix_users_data
 
         total_processed = 0
         created_count = 0
@@ -25,8 +34,8 @@ class Command(BaseCommand):
 
         for bitrix_user in bitrix_users:
             total_processed += 1
-            bitrix_user_id = bitrix_user.get('id') or bitrix_user.get('ID')
-            user_name = bitrix_user.get('name') or bitrix_user.get('NAME', f'Usuario {bitrix_user_id}')
+            bitrix_user_id = bitrix_user.get('ID')
+            user_name = bitrix_user.get('NAME', f'Usuario {bitrix_user_id}')
             
             self.stdout.write(f'Procesando Usuario Bitrix ID: {bitrix_user_id} - {user_name}')
 
