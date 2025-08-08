@@ -1766,7 +1766,26 @@ def bitrix_webhook_receiver(request):
                 print("BITRIX WEBHOOK: Deal has no assigned user.", flush=True)
 
             # --- Create the Opportunity (TodoItem) ---
-            if cliente and usuario:
+            # Always create the opportunity, using defaults if needed
+            if not usuario:
+                print(f"BITRIX WEBHOOK: User not found, using default user", flush=True)
+                usuario, _ = User.objects.get_or_create(
+                    username='default_user',
+                    defaults={
+                        'first_name': 'Usuario',
+                        'last_name': 'Sin Asignar',
+                        'is_active': True
+                    }
+                )
+            
+            if not cliente:
+                print(f"BITRIX WEBHOOK: Client not found, using default client", flush=True)
+                cliente, _ = Cliente.objects.get_or_create(
+                    nombre_empresa='Cliente Desconocido',
+                    defaults={'bitrix_company_id': None}
+                )
+
+            # Now create the opportunity
                 # Mapeos de Bitrix ID a Django Value - igual que en import_bitrix_opportunities.py
                 PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE = {
                     "176": "ZEBRA", "178": "PANDUIT", "180": "APC", "182": "AVIGILION",
