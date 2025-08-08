@@ -481,6 +481,10 @@
         const clientesData = JSON.parse('{{ clientes_data_json|escapejs }}');
         const clienteIdInicial = '{{ cliente_id_inicial|default:"" }}'; // Get initial client ID if provided
         const oportunidadIdInicial = '{{ oportunidad_id_inicial|default:"" }}'; // Get initial opportunity ID if provided
+        
+        console.log(`DEBUG JS: clienteIdInicial = "${clienteIdInicial}"`);
+        console.log(`DEBUG JS: oportunidadIdInicial = "${oportunidadIdInicial}"`);
+        console.log(`DEBUG JS: oportunidadIdInicial length = ${oportunidadIdInicial.length}`);
 
         function toggleDiscountColumn() {
             const isVisible = document.getElementById('descuento_visible').value === 'true';
@@ -713,8 +717,19 @@
                     oportunidadSelect.appendChild(option);
                 });
 
+                // Preseleccionar oportunidad inicial si existe
                 if (oportunidadIdInicial) {
+                    console.log(`DEBUG JS: Intentando preseleccionar oportunidad ID: ${oportunidadIdInicial}`);
                     oportunidadSelect.value = oportunidadIdInicial;
+                    console.log(`DEBUG JS: Valor actual del select después de asignar: ${oportunidadSelect.value}`);
+                    
+                    // Verificar si la opción realmente existe
+                    const selectedOption = oportunidadSelect.querySelector(`option[value="${oportunidadIdInicial}"]`);
+                    if (selectedOption) {
+                        console.log(`DEBUG JS: Oportunidad preseleccionada correctamente: ${selectedOption.textContent}`);
+                    } else {
+                        console.warn(`DEBUG JS: No se encontró la opción con ID ${oportunidadIdInicial} en el dropdown`);
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching opportunities:', error);
