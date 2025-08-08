@@ -1252,6 +1252,8 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             cliente_id = auto_fill_data['cliente_id']
 
     print(f"DEBUG: crear_cotizacion_view - Request method: {request.method}")
+    print(f"DEBUG: crear_cotizacion_view - GET parameters: {dict(request.GET)}")
+    print(f"DEBUG: crear_cotizacion_view - oportunidad_id inicial: {oportunidad_id}")
     
     # Si no viene oportunidad_id como parámetro de URL, verificar en GET parameters
     if not oportunidad_id and request.GET.get('oportunidad_id'):
