@@ -227,11 +227,11 @@ class CotizacionForm(forms.ModelForm):
 
     class Meta:
         model = Cotizacion
-        fields = ['titulo', 'cliente', 'nombre_cliente', 'oportunidad', 'descripcion', 'comentarios', 'moneda', 'iva_rate']
+        fields = ['titulo', 'cliente', 'usuario_final', 'oportunidad', 'descripcion', 'comentarios', 'moneda', 'iva_rate']
         labels = {
             'titulo': 'Título de la Cotización',
             'cliente': 'Cliente',
-            'nombre_cliente': 'Nombre del Cliente',
+            'usuario_final': 'Nombre del Usuario Final',
             'oportunidad': 'Oportunidad de Venta (Opcional)',
             'descripcion': 'Descripción General',
             'comentarios': 'Comentarios Adicionales',
@@ -241,7 +241,7 @@ class CotizacionForm(forms.ModelForm):
         widgets = {
             'titulo': forms.TextInput(attrs={'class': 'input-field'}),
             'cliente': forms.Select(attrs={'class': 'input-field'}),
-            'nombre_cliente': forms.TextInput(attrs={'class': 'input-field', 'placeholder': 'Ej. Juan Pérez'}),
+            'usuario_final': forms.TextInput(attrs={'class': 'input-field', 'placeholder': 'Ej. Juan Pérez'}),
             'descripcion': forms.Textarea(attrs={'rows': 3, 'class': 'textarea-field'}),
             'comentarios': forms.Textarea(attrs={'rows': 4, 'class': 'textarea-field', 'placeholder': 'Comentarios que aparecerán en el PDF de la cotización...'}),
             'moneda': forms.Select(attrs={'class': 'input-field'}),

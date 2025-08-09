@@ -289,9 +289,9 @@
     <div class="quote-header">
       <div class="client-info">
         <div class="client-name">{{ cotizacion.cliente.nombre_empresa }}</div>
-        {% if cotizacion.nombre_cliente %}
+        {% if cotizacion.usuario_final %}
         <div style="font-size: 16px; font-weight: 500; color: #333; margin: 5px 0 10px 0;">
-          {{ cotizacion.nombre_cliente }}
+          {{ cotizacion.usuario_final }}
         </div>
         {% endif %}
         <div class="client-address">

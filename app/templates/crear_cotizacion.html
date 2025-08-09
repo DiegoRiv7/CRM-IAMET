@@ -275,12 +275,12 @@
                         {% endif %}
                     </div>
                     <div>
-                        <label for="id_nombre_cliente" class="block text-sm font-medium text-gray-300 mb-1">Nombre del Cliente</label>
-                        <input type="text" id="id_nombre_cliente" name="nombre_cliente" class="input-field" placeholder="Ej. Juan Pérez" value="{{ form.nombre_cliente.value|default:'' }}" data-intro="👤 Ingresa el nombre específico de la persona de contacto del cliente." data-step="3.5">
+                        <label for="id_usuario_final" class="block text-sm font-medium text-gray-300 mb-1">Nombre del Usuario Final</label>
+                        <input type="text" id="id_usuario_final" name="usuario_final" class="input-field" placeholder="Ej. Juan Pérez" value="{{ form.usuario_final.value|default:'' }}" data-intro="👤 Ingresa el nombre específico de la persona de contacto del cliente." data-step="3.5">
                         <p class="text-xs text-gray-400 mt-1">💡 Este nombre aparecerá en el PDF debajo del nombre de la empresa.</p>
-                        <div id="nombre-cliente-help" class="nethive-help-text"></div>
-                        {% if form.nombre_cliente.errors %}
-                            <ul class="errorlist">{% for error in form.nombre_cliente.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                        <div id="usuario-final-help" class="nethive-help-text"></div>
+                        {% if form.usuario_final.errors %}
+                            <ul class="errorlist">{% for error in form.usuario_final.errors %}<li>{{ error }}</li>{% endfor %}</ul>
                         {% endif %}
                     </div>
                 </div>

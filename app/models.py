@@ -151,7 +151,7 @@ class Cotizacion(models.Model):
     
     titulo = models.CharField(max_length=255, default="Cotización", verbose_name="Título de la Cotización")
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='cotizaciones', verbose_name="Cliente")
-    nombre_cliente = models.CharField(max_length=255, blank=True, null=True, verbose_name="Nombre del Cliente")
+    usuario_final = models.CharField(max_length=255, blank=True, null=True, verbose_name="Nombre del Usuario Final")
     oportunidad = models.ForeignKey(TodoItem, on_delete=models.SET_NULL, null=True, blank=True, related_name='cotizaciones', verbose_name="Oportunidad de Venta") # NUEVO CAMPO
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
 
