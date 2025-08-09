@@ -170,6 +170,85 @@
         height: 100%;
         border-radius: 3px;
     }
+
+    /* Light Theme Styles - Liquid Glass Effect */
+    .light-theme {
+        --apple-background: #F8FBFF;
+        --apple-background-secondary: rgba(248, 251, 255, 0.8);
+        --apple-separator: rgba(26, 26, 26, 0.15);
+        --apple-blue: #0066CC;
+        --apple-label: #1A1A1A;
+        --apple-label-secondary: #666666;
+    }
+
+    .light-theme body {
+        background: var(--apple-background);
+        color: var(--apple-label);
+    }
+
+    .light-theme .apple-bg {
+        background: 
+            radial-gradient(ellipse at top left, rgba(0, 122, 255, 0.08) 0%, transparent 50%),
+            radial-gradient(ellipse at bottom right, rgba(0, 122, 255, 0.06) 0%, transparent 50%),
+            linear-gradient(135deg, #E1F1FF 0%, #D6EEFF 50%, #CCE7FF 100%);
+    }
+
+    .light-theme .apple-title {
+        color: var(--apple-label);
+        text-shadow: none;
+    }
+
+    .light-theme .apple-search-input {
+        background: rgba(255, 255, 255, 0.4);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(29, 53, 87, 0.1);
+        color: var(--apple-label);
+        box-shadow: 
+            0 2px 8px rgba(0, 122, 255, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .light-theme .apple-search-input:focus {
+        border-color: var(--apple-blue);
+        box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.3);
+    }
+
+    .light-theme .apple-button {
+        background: var(--apple-blue);
+        box-shadow: 
+            0 4px 12px rgba(0, 102, 204, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    }
+
+    /* Liquid Glass Table Effect for Light Theme */
+    .light-theme .apple-table-container {
+        background: rgba(235, 245, 255, 0.6);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(29, 53, 87, 0.15);
+        box-shadow: 
+            0 8px 32px rgba(0, 122, 255, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        border-radius: 16px;
+    }
+
+    .light-theme .apple-table th {
+        color: var(--apple-label-secondary);
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .light-theme .apple-table td {
+        color: var(--apple-label);
+    }
+
+    .light-theme .apple-table tbody tr:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    .light-theme .probability-bar-bg {
+        background: rgba(26, 26, 26, 0.2);
+    }
 </style>
 
 <div class="apple-container">

@@ -109,6 +109,61 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Light Theme Styles */
+        .light-theme {
+            --apple-background: #F8FBFF;
+            --apple-background-secondary: rgba(248, 251, 255, 0.8);
+            --apple-separator: rgba(26, 26, 26, 0.15);
+            --apple-blue: #0066CC;
+            --apple-label: #1A1A1A;
+            --apple-label-secondary: #666666;
+            --apple-label-tertiary: #999999;
+        }
+
+        .light-theme body {
+            background: var(--apple-background);
+            color: var(--apple-label);
+        }
+
+        .light-theme .apple-bg {
+            background: 
+                radial-gradient(ellipse at top left, rgba(0, 122, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom right, rgba(0, 122, 255, 0.06) 0%, transparent 50%),
+                linear-gradient(135deg, #E1F1FF 0%, #D6EEFF 50%, #CCE7FF 100%);
+        }
+
+        .light-theme .page-title {
+            color: var(--apple-label);
+            text-shadow: none;
+        }
+
+        .light-theme .login-field {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(29, 53, 87, 0.1);
+            color: var(--apple-label);
+            box-shadow: 
+                0 2px 8px rgba(0, 122, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+
+        .light-theme .login-field:focus {
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.3);
+        }
+
+        .light-theme .login-field::placeholder {
+            color: var(--apple-label-secondary);
+        }
+
+        .light-theme .login-button {
+            background: var(--apple-blue);
+            box-shadow: 
+                0 4px 12px rgba(0, 102, 204, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -125,5 +180,25 @@
             {% endif %}
         </form>
     </div>
+
+    <script>
+        // Apply saved theme preference on login page
+        (function() {
+            try {
+                const saved = localStorage.getItem('designPreferences');
+                if (saved) {
+                    const preferences = JSON.parse(saved);
+                    const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
+                    
+                    if (!isDarkMode) {
+                        document.documentElement.classList.add('light-theme');
+                    }
+                }
+            } catch (error) {
+                // If there's an error, just use default dark mode
+                console.log('Using default dark theme on login');
+            }
+        })();
+    </script>
 </body>
 </html>

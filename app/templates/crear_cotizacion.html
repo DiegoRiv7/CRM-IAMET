@@ -10,68 +10,99 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            /* Apple Color System - macOS inspired */
+            --apple-blue: #007AFF;
+            --apple-blue-light: #4DA8FF;
+            --apple-blue-dark: #0056CC;
+            --apple-gray: #8E8E93;
+            --apple-gray-2: #AEAEB2;
+            --apple-gray-3: #C7C7CC;
+            --apple-gray-4: #D1D1D6;
+            --apple-gray-5: #E5E5EA;
+            --apple-gray-6: #F2F2F7;
+            --apple-background: #000000;
+            --apple-background-secondary: #1D1D1F;
+            --apple-background-tertiary: #2C2C2E;
+            --apple-background-quaternary: #3A3A3C;
+            --apple-label: #FFFFFF;
+            --apple-label-secondary: #EBEBF5;
+            --apple-label-tertiary: #EBEBF599;
+            --apple-label-quaternary: #EBEBF54D;
+            --apple-separator: #38383A;
+            
+            /* Apple Typography */
+            --apple-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif;
+        }
+        
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #1a202c; /* Fondo oscuro */
-            color: #e2e8f0; /* Texto claro */
+            font-family: var(--apple-font-family);
+            background: var(--apple-background);
+            color: var(--apple-label);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
         }
         .input-field {
-            background-color: #2d3748; /* Fondo de input más oscuro */
-            border: 1px solid #4a5568; /* Borde de input */
-            color: #e2e8f0; /* Texto de input */
-            padding: 0.5rem 0.75rem;
-            border-radius: 0.375rem; /* rounded-md */
-            width: 100%;
-            font-size: 0.875rem; /* text-sm */
-        }
-        .input-field:focus {
-            outline: none;
-            border-color: #63b3ed; /* Borde azul al enfocar */
-            box-shadow: 0 0 0 1px #63b3ed;
-        }
-        .textarea-field {
-            background-color: #2d3748;
-            border: 1px solid #4a5568;
-            color: #e2e8f0;
+            background-color: var(--apple-background-tertiary);
+            border: 1px solid var(--apple-separator);
+            color: var(--apple-label);
             padding: 0.5rem 0.75rem;
             border-radius: 0.375rem;
             width: 100%;
-            min-height: 4rem; /* Altura mínima para textarea */
-            resize: vertical; /* Permitir redimensionar verticalmente */
-            font-size: 0.875rem; /* text-sm */
+            font-size: 0.875rem;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 1px var(--apple-blue);
+        }
+        .textarea-field {
+            background-color: var(--apple-background-tertiary);
+            border: 1px solid var(--apple-separator);
+            color: var(--apple-label);
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            width: 100%;
+            min-height: 4rem;
+            resize: vertical;
+            font-size: 0.875rem;
         }
         .textarea-field:focus {
             outline: none;
-            border-color: #63b3ed;
-            box-shadow: 0 0 0 1px #63b3ed;
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 1px var(--apple-blue);
         }
         .btn-primary {
-            background-color: #4299e1; /* Azul primario */
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem; /* rounded-lg */
-            font-weight: 600; /* font-semibold */
-            transition: background-color 0.2s;
-        }
-        .btn-primary:hover {
-            background-color: #3182ce; /* Azul más oscuro al pasar el ratón */
-        }
-        .btn-secondary {
-            background-color: #4a5568; /* Gris secundario */
+            background-color: var(--apple-blue);
             color: white;
             padding: 0.75rem 1.5rem;
             border-radius: 0.5rem;
             font-weight: 600;
             transition: background-color 0.2s;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: var(--apple-blue-dark);
+        }
+        .btn-secondary {
+            background-color: var(--apple-background-quaternary);
+            color: var(--apple-label);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            border: none;
         }
         .btn-secondary:hover {
-            background-color: #2d3748;
+            background-color: var(--apple-background-tertiary);
         }
         .card {
-            background-color: #2d3748; /* Fondo de tarjeta más oscuro */
-            border-radius: 0.75rem; /* rounded-xl */
+            background-color: var(--apple-background-secondary);
+            border-radius: 0.75rem;
             padding: 1.5rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .table-container {
             overflow-x: auto; /* Permite desplazamiento horizontal en tablas pequeñas */
@@ -88,23 +119,23 @@
         }
         .product-table th {
             font-weight: 600;
-            color: #a0aec0; /* Gris claro para encabezados */
-            border-bottom: 1px solid #4a5568;
-            background-color: #2d3748; /* Fondo para encabezado */
-            position: sticky; /* Encabezado pegajoso */
+            color: var(--apple-label-secondary);
+            border-bottom: 1px solid var(--apple-separator);
+            background-color: var(--apple-background-secondary);
+            position: sticky;
             top: 0;
             z-index: 10;
         }
         .product-table tbody tr {
-            background-color: #2d3748; /* Fondo de fila */
-            border-radius: 0.5rem; /* Bordes redondeados para filas */
+            background-color: var(--apple-background-secondary);
+            border-radius: 0.5rem;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
         .product-table tbody tr:hover {
-            background-color: #3a475a; /* Fondo de fila al pasar el ratón */
+            background-color: var(--apple-background-tertiary);
         }
         .product-table td {
-            border-bottom: 1px solid #4a5568; /* Borde inferior para celdas */
+            border-bottom: 1px solid var(--apple-separator);
         }
         /* Specific styling for the first and last cell of a row for rounded corners */
         .product-table tbody tr td:first-child {
@@ -128,12 +159,12 @@
             -moz-appearance: textfield;
         }
         .paste-area-container {
-            display: none; /* Hidden by default */
+            display: none;
             margin-top: 1.5rem;
             padding: 1.5rem;
-            background-color: #1f2937; /* Darker background for the paste area */
+            background-color: var(--apple-background-tertiary);
             border-radius: 0.75rem;
-            border: 1px dashed #4a5568;
+            border: 1px dashed var(--apple-separator);
             text-align: center;
         }
         .paste-area-container.active {
@@ -190,6 +221,7 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center py-8 px-4 sm:px-6 lg:px-8 dashboard-container">
+    <div class="apple-bg" style="position: fixed; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(ellipse at top left, rgba(0, 122, 255, 0.1) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(0, 122, 255, 0.05) 0%, transparent 50%), linear-gradient(180deg, var(--apple-background) 0%, var(--apple-background-secondary) 100%);"></div>
 
 <style>
     .dashboard-container {
@@ -198,7 +230,7 @@
         padding-right: var(--padding-x);
     }
 </style>
-    <div class="max-w-full w-full space-y-8">
+    <div class="max-w-full w-full space-y-8" style="position: relative; z-index: 1;">
         <h1 class="text-3xl font-bold text-white text-center" style="font-size: clamp(2rem, 4vw, 2.5rem);" data-intro="💼 Esta es la página para crear cotizaciones profesionales para tus clientes. Te guiaremos paso a paso." data-step="1">{% if editing_mode %}Editar Cotización{% else %}Crear Cotización{% endif %}</h1>
 
         <!-- Crown Jewel Feature: Auto-fill notification -->
@@ -229,7 +261,7 @@
             <div class="card p-6 mb-8 shadow-md-dark">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label for="titulo_cotizacion" class="block text-sm font-medium text-gray-300 mb-1">Título de la Cotización</label>
+                        <label for="titulo_cotizacion" class="block text-sm font-medium mb-1" style="color: var(--apple-label-secondary);">Título de la Cotización</label>
                         <input type="text" id="titulo_cotizacion" name="titulo" class="input-field" placeholder="Ej. Cotización Proyecto X" value="{{ form.titulo.value|default:'' }}" required data-intro="📝 Ingresa un título descriptivo para tu cotización (ej. 'Cotización Equipos de Seguridad')" data-step="2">
                         <div id="titulo-help" class="nethive-help-text"></div>
                         {% if form.titulo.errors %}
@@ -237,7 +269,7 @@
                         {% endif %}
                     </div>
                     <div>
-                        <label for="id_cliente" class="block text-sm font-medium text-gray-300 mb-1">Cliente</label>
+                        <label for="id_cliente" class="block text-sm font-medium mb-1" style="color: var(--apple-label-secondary);">Cliente</label>
                         <div class="flex items-center space-x-2">
                             <select id="id_cliente" name="cliente" class="input-field flex-grow" required data-intro="🏢 Selecciona el cliente para quien crearás la cotización. Si no existe, usa el botón '+' para crear uno nuevo." data-step="3">
                                 <!-- Options will be populated by JavaScript -->
@@ -253,16 +285,16 @@
                         {% endif %}
                     </div>
                     <div>
-                        <label for="id_usuario_final" class="block text-sm font-medium text-gray-300 mb-1">Nombre del Usuario Final</label>
+                        <label for="id_usuario_final" class="block text-sm font-medium mb-1" style="color: var(--apple-label-secondary);">Nombre del Usuario Final</label>
                         <input type="text" id="id_usuario_final" name="usuario_final" class="input-field" placeholder="Ej. Juan Pérez" value="{{ form.usuario_final.value|default:'' }}" data-intro="👤 Ingresa el nombre específico de la persona de contacto del cliente." data-step="3.5">
-                        <p class="text-xs text-gray-400 mt-1">💡 Este nombre aparecerá en el PDF debajo del nombre de la empresa.</p>
+                        <p class="text-xs mt-1" style="color: var(--apple-label-tertiary);">💡 Este nombre aparecerá en el PDF debajo del nombre de la empresa.</p>
                         <div id="usuario-final-help" class="nethive-help-text"></div>
                         {% if form.usuario_final.errors %}
                             <ul class="errorlist">{% for error in form.usuario_final.errors %}<li>{{ error }}</li>{% endfor %}</ul>
                         {% endif %}
                     </div>
                     <div>
-                        <label for="id_oportunidad" class="block text-sm font-medium text-gray-300 mb-1">Oportunidad Bitrix24</label>
+                        <label for="id_oportunidad" class="block text-sm font-medium mb-1" style="color: var(--apple-label-secondary);">Oportunidad Bitrix24</label>
                         <div class="flex items-center space-x-2">
                             <select id="id_oportunidad" name="oportunidad" class="input-field flex-grow" data-intro="🎯 Opcionalmente, vincula esta cotización con una oportunidad de Bitrix24 para mejor seguimiento." data-step="5">
                                 <option value="">-- Seleccione una oportunidad --</option>
@@ -280,7 +312,7 @@
             </div>
 
             <div class="card p-6 shadow-md-dark">
-                <h2 class="text-xl font-semibold text-white mb-4">Detalles de Productos</h2>
+                <h2 class="text-xl font-semibold mb-4" style="color: var(--apple-label);">Detalles de Productos</h2>
 
                 <div class="flex justify-between items-center mb-4">
                     <div class="flex space-x-3">
@@ -300,7 +332,7 @@
                 </div>
 
                 <div id="paste-area-container" class="paste-area-container">
-                    <p class="text-gray-400 mb-4">Copia tus datos de Excel (columnas: Marca, No. Parte, Cantidad, Descripcion, Precio Lista, Desc, Unitario, Total) y pégalos aquí:</p>
+                    <p class="mb-4" style="color: var(--apple-label-tertiary);">Copia tus datos de Excel (columnas: Marca, No. Parte, Cantidad, Descripcion, Precio Lista, Desc, Unitario, Total) y pégalos aquí:</p>
                     <textarea id="excel-paste-textarea" class="textarea-field w-full h-40" placeholder="Pega tus datos de Excel aquí..."></textarea>
                     <button type="button" id="process-paste-btn" class="btn-primary mt-4">Procesar Pegado</button>
                     <button type="button" id="cancel-paste-btn" class="btn-secondary mt-4 ml-2">Cancelar</button>
@@ -338,7 +370,7 @@
             <!-- Sección de comentarios adicionales (oculta por defecto) -->
             <div id="comments-section" class="card p-6 mt-8 shadow-md-dark hidden">
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-semibold text-white">Comentarios Adicionales</h2>
+                    <h2 class="text-xl font-semibold" style="color: var(--apple-label);">Comentarios Adicionales</h2>
                     <button type="button" id="close-comments-btn" class="text-gray-400 hover:text-white">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -357,37 +389,37 @@
             </div>
 
             <div class="card p-6 mt-8 shadow-md-dark">
-                <h2 class="text-xl font-semibold text-white mb-4">Resumen de la Cotización</h2>
+                <h2 class="text-xl font-semibold mb-4" style="color: var(--apple-label);">Resumen de la Cotización</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <div class="flex justify-between items-center mb-2">
-                            <span class="text-gray-300">Subtotal:</span>
-                            <span id="subtotal" class="text-white font-semibold">$0.00</span>
+                            <span style="color: var(--apple-label-secondary);">Subtotal:</span>
+                            <span id="subtotal" class="font-semibold" style="color: var(--apple-label);">$0.00</span>
                         </div>
                         <div class="flex justify-between items-center mb-2">
-                            <span class="text-300">IVA:</span>
+                            <span style="color: var(--apple-label-secondary);">IVA:</span>
                             <div class="flex items-center space-x-2">
                                 <select id="iva-rate" class="input-field w-24 text-sm" name="iva_rate">
                                     <option value="0.08">8%</option>
                                     <option value="0.16" selected>16%</option>
                                 </select>
-                                <span id="iva-amount" class="text-white font-semibold">$0.00</span>
+                                <span id="iva-amount" class="font-semibold" style="color: var(--apple-label);">$0.00</span>
                             </div>
                         </div>
-                        <div class="flex justify-between items-center border-t border-gray-600 pt-4 mt-4">
-                            <span class="text-lg font-bold text-white">Total:</span>
-                            <span id="total" class="text-lg font-bold text-white">$0.00</span>
+                        <div class="flex justify-between items-center pt-4 mt-4" style="border-top: 1px solid var(--apple-separator);">
+                            <span class="text-lg font-bold" style="color: var(--apple-label);">Total:</span>
+                            <span id="total" class="text-lg font-bold" style="color: var(--apple-blue);">$0.00</span>
                         </div>
                     </div>
                     <div>
-                        <label for="currency-select" class="block text-sm font-medium text-gray-300 mb-1">Moneda</label>
+                        <label for="currency-select" class="block text-sm font-medium mb-1" style="color: var(--apple-label-secondary);">Moneda</label>
                         <select id="currency-select" class="input-field w-full text-sm" name="moneda">
                             <option value="MXN">Pesos (MXN)</option>
                             <option value="USD" selected>Dólares (USD)</option>
                         </select>
 
                         <!-- Nuevo campo para la institución -->
-                        <label for="tipo-cotizacion-select" class="block text-sm font-medium text-gray-300 mt-4 mb-1">Institución</label>
+                        <label for="tipo-cotizacion-select" class="block text-sm font-medium mt-4 mb-1" style="color: var(--apple-label-secondary);">Institución</label>
                         <select id="tipo-cotizacion-select" class="input-field w-full text-sm" name="tipo_cotizacion" required data-intro="🏢 Selecciona la institución que aparecerá en el PDF de la cotización (BAJANET o IAMET)." data-step="10">
                             <option value="">Seleccione una institución</option> <!-- Añadida opción vacía y requerida -->
                             <option value="Bajanet">BAJANET</option>
@@ -405,21 +437,21 @@
     </div>
 
     <!-- Add Client Modal -->
-    <div id="add-client-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
-        <div class="bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-md">
-            <h2 class="text-2xl font-bold text-white mb-6">Agregar Nuevo Cliente</h2>
+    <div id="add-client-modal" class="fixed inset-0 bg-opacity-75 flex items-center justify-center z-50 hidden" style="background-color: rgba(0, 0, 0, 0.8);">
+        <div class="rounded-lg shadow-xl p-8 w-full max-w-md" style="background-color: var(--apple-background-secondary); border: 1px solid rgba(255, 255, 255, 0.1);">
+            <h2 class="text-2xl font-bold mb-6" style="color: var(--apple-label);">Agregar Nuevo Cliente</h2>
             <form id="add-client-form">
                 <div class="space-y-4">
                     <div>
-                        <label for="new-client-name" class="block text-sm font-medium text-gray-300 mb-1">Nombre de la Empresa</label>
+                        <label for="new-client-name" class="block text-sm font-medium mb-1" style="color: var(--apple-label-secondary);">Nombre de la Empresa</label>
                         <input type="text" id="new-client-name" name="nombre_empresa" class="input-field" required>
                     </div>
                     <div>
-                        <label for="new-client-contact" class="block text-sm font-medium text-gray-300 mb-1">Contacto Principal</label>
+                        <label for="new-client-contact" class="block text-sm font-medium mb-1" style="color: var(--apple-label-secondary);">Contacto Principal</label>
                         <input type="text" id="new-client-contact" name="contacto_principal" class="input-field">
                     </div>
                     <div>
-                        <label for="new-client-email" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                        <label for="new-client-email" class="block text-sm font-medium mb-1" style="color: var(--apple-label-secondary);">Email</label>
                         <input type="email" id="new-client-email" name="email" class="input-field">
                     </div>
                 </div>
@@ -432,13 +464,13 @@
     </div>
 
     <!-- Add Opportunity Modal -->
-    <div id="add-opportunity-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
-        <div class="bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-md">
-            <h2 class="text-2xl font-bold text-white mb-6">Crear Nueva Oportunidad en Bitrix24</h2>
+    <div id="add-opportunity-modal" class="fixed inset-0 bg-opacity-75 flex items-center justify-center z-50 hidden" style="background-color: rgba(0, 0, 0, 0.8);">
+        <div class="rounded-lg shadow-xl p-8 w-full max-w-md" style="background-color: var(--apple-background-secondary); border: 1px solid rgba(255, 255, 255, 0.1);">
+            <h2 class="text-2xl font-bold mb-6" style="color: var(--apple-label);">Crear Nueva Oportunidad</h2>
             <form id="add-opportunity-form">
                 <div class="space-y-4">
                     <div>
-                        <label for="opportunity-area" class="block text-sm font-medium text-gray-300 mb-1">Área</label>
+                        <label for="opportunity-area" class="block text-sm font-medium mb-1" style="color: var(--apple-label-secondary);">Área</label>
                         <select id="opportunity-area" name="area" class="input-field" required>
                             <option value="SISTEMAS">Sistemas</option>
                             <option value="Recursos Humanos">Recursos Humanos</option>
@@ -449,7 +481,7 @@
                         </select>
                     </div>
                     <div>
-                        <label for="opportunity-producto" class="block text-sm font-medium text-gray-300 mb-1">Producto</label>
+                        <label for="opportunity-producto" class="block text-sm font-medium mb-1" style="color: var(--apple-label-secondary);">Producto</label>
                         <select id="opportunity-producto" name="producto" class="input-field" required>
                             <option value="ZEBRA">ZEBRA</option>
                             <option value="PANDUIT">PANDUIT</option>

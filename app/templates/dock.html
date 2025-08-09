@@ -14,7 +14,7 @@
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 20px;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        z-index: 1000;
+        z-index: 1500;
         transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
 
@@ -71,6 +71,236 @@
         background: rgba(255, 255, 255, 0.15);
         margin: 8px 0;
     }
+
+    /* Design Panel Styles */
+    .design-panel {
+        position: fixed;
+        left: 76px;
+        top: 50%;
+        transform: translateY(-50%) translateY(60px) translateX(-10px) scale(0.9);
+        display: flex;
+        align-items: center;
+        padding: 8px;
+        background: rgba(29, 29, 31, 0.85);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        z-index: 1400;
+        gap: 6px;
+    }
+
+    .design-panel.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(-50%) translateY(60px) translateX(0) scale(1);
+    }
+
+    .design-control {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.1);
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        cursor: pointer;
+        position: relative;
+        transform: translateY(0) scale(1);
+    }
+
+    .design-control:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-2px) scale(1.08);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .design-control.active {
+        background: #007AFF;
+        transform: translateY(-1px) scale(1.02);
+        box-shadow: 0 6px 20px rgba(0, 122, 255, 0.4);
+    }
+
+    .design-control.active:hover {
+        transform: translateY(-3px) scale(1.1);
+        box-shadow: 0 10px 30px rgba(0, 122, 255, 0.5);
+    }
+
+    .design-control svg {
+        width: 20px;
+        height: 20px;
+        color: #EBEBF5;
+        transition: all 0.2s ease;
+    }
+
+    .design-control.active svg {
+        color: white;
+    }
+
+
+    /* Theme Variables for Light Mode - True Color Inversion */
+    .light-theme {
+        /* Backgrounds: Dark to Light */
+        --apple-background: #F8FBFF;
+        --apple-background-secondary: rgba(248, 251, 255, 0.8);
+        --apple-background-tertiary: rgba(240, 248, 255, 0.9);
+        --apple-background-quaternary: #EDF4FF;
+        
+        /* Labels: White/Light to Dark */
+        --apple-label: #1A1A1A;
+        --apple-label-secondary: #2D2D2D;
+        --apple-label-tertiary: #404040;
+        
+        /* Apple Colors adjusted for light mode */
+        --apple-blue: #0066CC;
+        --apple-blue-light: #3388FF;
+        --apple-blue-dark: #004499;
+        --apple-gray: #666666;
+        --apple-gray-2: #555555;
+        --apple-gray-3: #444444;
+        --apple-gray-4: #333333;
+        --apple-gray-5: #2A2A2A;
+        --apple-gray-6: #1A1A1A;
+        
+        --apple-separator: rgba(26, 26, 26, 0.15);
+    }
+
+    /* Light theme specific styles for liquid glass effect */
+    .light-theme .macos-dock {
+        background: rgba(235, 245, 255, 0.6);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(29, 53, 87, 0.15);
+        box-shadow: 
+            0 8px 32px rgba(0, 122, 255, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .light-theme .design-panel {
+        background: rgba(235, 245, 255, 0.75);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid rgba(29, 53, 87, 0.15);
+        box-shadow: 
+            0 12px 40px rgba(0, 122, 255, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    .light-theme .design-control {
+        background: rgba(255, 255, 255, 0.4);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(29, 53, 87, 0.1);
+        box-shadow: 
+            0 2px 8px rgba(0, 122, 255, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .light-theme .design-control:hover {
+        background: rgba(255, 255, 255, 0.6);
+        transform: scale(1.05);
+        box-shadow: 
+            0 4px 12px rgba(0, 122, 255, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    .light-theme .design-control svg {
+        color: var(--apple-label);
+    }
+
+    .light-theme .design-control.active {
+        background: var(--apple-blue);
+        box-shadow: 
+            0 4px 12px rgba(0, 102, 204, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    }
+
+    .light-theme .design-control.active svg {
+        color: white;
+    }
+
+    /* Light theme dock icons */
+    .light-theme .dock-icon {
+        color: var(--apple-label) !important;
+    }
+
+
+    .light-theme .tooltip {
+        background: rgba(235, 245, 255, 0.95);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        color: var(--apple-label);
+        border: 1px solid rgba(29, 53, 87, 0.1);
+        box-shadow: 
+            0 4px 16px rgba(0, 122, 255, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    /* Update apple-bg for light theme */
+    .light-theme .apple-bg {
+        background: 
+            radial-gradient(ellipse at top left, rgba(0, 122, 255, 0.08) 0%, transparent 50%),
+            radial-gradient(ellipse at bottom right, rgba(0, 122, 255, 0.06) 0%, transparent 50%),
+            linear-gradient(135deg, #E1F1FF 0%, #D6EEFF 50%, #CCE7FF 100%);
+    }
+
+    /* Night Shift Filter - Real Blue Light Reduction */
+    .night-shift-filter {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 2000;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        mix-blend-mode: multiply;
+    }
+
+    /* Night Shift in Dark Mode - More Intense for Better Eye Rest */
+    .night-shift-filter.active:not(.light-theme .night-shift-filter) {
+        opacity: 1;
+        background: 
+            linear-gradient(135deg, 
+                rgba(255, 190, 120, 0.25) 0%,
+                rgba(255, 170, 90, 0.22) 50%,
+                rgba(255, 150, 70, 0.18) 100%
+            );
+        filter: 
+            sepia(0.45) 
+            saturate(1.15) 
+            hue-rotate(-12deg) 
+            brightness(0.92)
+            contrast(1.08);
+    }
+
+    /* Night Shift in Light Mode - Even More Intense */
+    .light-theme .night-shift-filter.active {
+        opacity: 1;
+        background: 
+            linear-gradient(135deg, 
+                rgba(255, 170, 90, 0.35) 0%,
+                rgba(255, 150, 70, 0.32) 50%,
+                rgba(255, 130, 50, 0.28) 100%
+            );
+        filter: 
+            sepia(0.5) 
+            saturate(1.05) 
+            hue-rotate(-18deg) 
+            brightness(0.88)
+            contrast(1.12);
+    }
+
+    /* Additional blue light blocking for text and UI elements */
+    .night-shift-filter.active ~ * {
+        filter: 
+            sepia(0.2) 
+            saturate(0.9) 
+            hue-rotate(-8deg);
+    }
 </style>
 
 <nav class="macos-dock">
@@ -81,7 +311,9 @@
 
 
     <a href="{% url 'todos' %}" class="dock-item">
-        <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h6m-6 4h6m-6 4h6"></path></svg>
+        <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
         <span class="tooltip">Oportunidades</span>
     </a>
 
@@ -91,6 +323,16 @@
     </a>
 
     <div class="dock-separator"></div>
+
+    <!-- Design Controls -->
+    <div class="dock-item" id="design-btn">
+        <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h16"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5l10 16"/>
+        </svg>
+        <span class="tooltip">Diseño</span>
+    </div>
 
     <a href="#" class="dock-item" id="assistant-btn">
         <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
@@ -102,3 +344,222 @@
         <span class="tooltip">Cerrar Sesión</span>
     </a>
 </nav>
+
+<!-- Design Panel -->
+<div class="design-panel" id="design-panel">
+    <!-- Dark/Light Mode Toggle -->
+    <div class="design-control active" id="theme-toggle" title="Modo Oscuro/Claro">
+        <svg fill="currentColor" viewBox="0 0 24 24">
+            <path d="M17.75 4.09 15.22 6.03l-.46-.9L16.05 3H17.75V4.09ZM21.25 11L20.24 8.45l.96-.55L22.75 10.09L21.25 11ZM18.97 15.95c-.32.96-.5 1.93-.5 2.94 0 1.06.18 2.05.5 3 .32-.95.5-1.94.5-3s-.18-2.06-.5-2.94ZM12.5 22c-5.71-.47-10-5.05-10-10.5s4.29-10.03 10-10.5c-1.18.86-2 2.24-2 3.75 0 2.62 2.13 4.75 4.75 4.75 1.51 0 2.89-.82 3.75-2 .47 5.71-4.78 10.03-10.5 10.5Z"/>
+        </svg>
+    </div>
+
+    <!-- Night Shift Toggle -->
+    <div class="design-control" id="night-shift-toggle" title="Night Shift">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+    </div>
+</div>
+
+<!-- Night Shift Filter -->
+<div class="night-shift-filter" id="night-shift-filter"></div>
+
+
+<script type="text/javascript">
+// Override any external script interference immediately
+window.handleElementConfusion = window.handleElementConfusion || function() { return true; };
+
+// Immediate theme application to prevent flash
+(function() {
+    try {
+        const saved = localStorage.getItem('designPreferences');
+        if (saved) {
+            const preferences = JSON.parse(saved);
+            const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
+            const isNightShiftOn = preferences.isNightShiftOn || false;
+            
+            if (!isDarkMode) {
+                document.documentElement.classList.add('light-theme');
+            }
+        }
+    } catch (error) {
+        console.log('Using default theme settings');
+    }
+})();
+
+// Suppress specific error from nethive_bot.js
+window.addEventListener('error', function(e) {
+    if (e.message && e.message.includes('handleElementConfusion')) {
+        e.preventDefault();
+        return false;
+    }
+}, true);
+
+(function() {
+    'use strict';
+    
+    // Backup original console methods before external scripts can interfere
+    const originalConsole = {
+        log: console.log,
+        warn: console.warn,
+        error: console.error
+    };
+    
+    // Completely isolate our script from external interference
+    const initDesignPanel = function() {
+        // Wait for DOM to be fully loaded
+        if (document.readyState === 'loading') {
+            setTimeout(initDesignPanel, 50);
+            return;
+        }
+        
+        try {
+        const designBtn = document.getElementById('design-btn');
+        const designPanel = document.getElementById('design-panel');
+        const themeToggle = document.getElementById('theme-toggle');
+        const nightShiftToggle = document.getElementById('night-shift-toggle');
+        const nightShiftFilter = document.getElementById('night-shift-filter');
+        
+        // Check if all elements exist before proceeding
+        originalConsole.log('Design elements found:', {
+            designBtn: !!designBtn,
+            designPanel: !!designPanel,
+            themeToggle: !!themeToggle,
+            nightShiftToggle: !!nightShiftToggle,
+            nightShiftFilter: !!nightShiftFilter
+        });
+        
+        if (!designBtn || !designPanel || !themeToggle || !nightShiftToggle || !nightShiftFilter) {
+            originalConsole.warn('Some design panel elements not found, retrying in 500ms...');
+            setTimeout(initDesignPanel, 500);
+            return;
+        }
+        
+        let isDesignPanelOpen = false;
+        let isDarkMode = true; // Default to dark mode
+        let isNightShiftOn = false;
+    
+        // Load saved preferences
+        loadPreferences();
+        
+        // Simple design panel toggle with enhanced event handling
+        function toggleDesignPanel(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            console.log('Design button clicked!');
+            isDesignPanelOpen = !isDesignPanelOpen;
+            
+            if (isDesignPanelOpen) {
+                designPanel.classList.add('active');
+                console.log('Panel opened');
+            } else {
+                designPanel.classList.remove('active');
+                console.log('Panel closed');
+            }
+        }
+        
+        // Multiple event listeners to ensure it works
+        designBtn.onclick = toggleDesignPanel;
+        designBtn.addEventListener('click', toggleDesignPanel, true);
+        designBtn.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            toggleDesignPanel(e);
+        }, { passive: false });
+        
+        // Emergency reset function (temporary - remove after testing)
+        window.resetDesignPanel = function() {
+            localStorage.removeItem('designPreferences');
+            designPanel.classList.remove('active');
+            console.log('Design panel reset completed');
+        };
+        
+        // Close design panel when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!designBtn.contains(event.target) && !designPanel.contains(event.target)) {
+                isDesignPanelOpen = false;
+                designPanel.classList.remove('active');
+            }
+        });
+        
+        // Theme toggle (Dark/Light)
+        themeToggle.addEventListener('click', function() {
+            isDarkMode = !isDarkMode;
+            themeToggle.classList.toggle('active', isDarkMode);
+            
+            if (isDarkMode) {
+                document.documentElement.classList.remove('light-theme');
+                // Update theme toggle icon to moon (dark mode) - Apple style
+                themeToggle.innerHTML = '<svg fill="currentColor" viewBox="0 0 24 24"><path d="M17.75 4.09 15.22 6.03l-.46-.9L16.05 3H17.75V4.09ZM21.25 11L20.24 8.45l.96-.55L22.75 10.09L21.25 11ZM18.97 15.95c-.32.96-.5 1.93-.5 2.94 0 1.06.18 2.05.5 3 .32-.95.5-1.94.5-3s-.18-2.06-.5-2.94ZM12.5 22c-5.71-.47-10-5.05-10-10.5s4.29-10.03 10-10.5c-1.18.86-2 2.24-2 3.75 0 2.62 2.13 4.75 4.75 4.75 1.51 0 2.89-.82 3.75-2 .47 5.71-4.78 10.03-10.5 10.5Z"/></svg>';
+            } else {
+                document.documentElement.classList.add('light-theme');
+                // Update theme toggle icon to sun (light mode) - Apple style
+                themeToggle.innerHTML = '<svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 18.5A6.5 6.5 0 1 1 18.5 12 6.508 6.508 0 0 1 12 18.5ZM12 7a5 5 0 1 0 5 5A5.006 5.006 0 0 0 12 7Z"/><path d="M12 6a.75.75 0 0 1-.75-.75V3a.75.75 0 0 1 1.5 0v2.25A.75.75 0 0 1 12 6ZM12 21a.75.75 0 0 1-.75-.75v-2.25a.75.75 0 0 1 1.5 0V20.25A.75.75 0 0 1 12 21ZM21 12.75h-2.25a.75.75 0 0 1 0-1.5H21a.75.75 0 0 1 0 1.5ZM5.25 12.75H3a.75.75 0 0 1 0-1.5h2.25a.75.75 0 0 1 0 1.5ZM18.364 6.386a.75.75 0 0 1-1.061-1.061l1.591-1.591a.75.75 0 1 1 1.061 1.061l-1.591 1.591ZM6.697 18.303a.75.75 0 0 1-1.061-1.061l1.591-1.591a.75.75 0 1 1 1.061 1.061l-1.591 1.591ZM18.364 17.614a.75.75 0 0 1 0 1.061l-1.591 1.591a.75.75 0 1 1-1.061-1.061l1.591-1.591a.75.75 0 0 1 1.061 0ZM6.697 5.697a.75.75 0 0 1 0 1.061l-1.591 1.591a.75.75 0 1 1-1.061-1.061l1.591-1.591a.75.75 0 0 1 1.061 0Z"/></svg>';
+            }
+            
+            savePreferences();
+        });
+    
+        // Night Shift toggle
+        nightShiftToggle.addEventListener('click', function() {
+            isNightShiftOn = !isNightShiftOn;
+            nightShiftToggle.classList.toggle('active', isNightShiftOn);
+            nightShiftFilter.classList.toggle('active', isNightShiftOn);
+            savePreferences();
+        });
+        
+        // Save preferences to localStorage
+        function savePreferences() {
+            const preferences = {
+                isDarkMode: isDarkMode,
+                isNightShiftOn: isNightShiftOn
+            };
+            localStorage.setItem('designPreferences', JSON.stringify(preferences));
+        }
+        
+        // Load preferences from localStorage
+        function loadPreferences() {
+            const saved = localStorage.getItem('designPreferences');
+            if (saved) {
+                const preferences = JSON.parse(saved);
+                
+                isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
+                isNightShiftOn = preferences.isNightShiftOn || false;
+                
+                // Apply dark/light theme
+                themeToggle.classList.toggle('active', isDarkMode);
+                if (isDarkMode) {
+                    document.documentElement.classList.remove('light-theme');
+                    themeToggle.innerHTML = '<svg fill="currentColor" viewBox="0 0 24 24"><path d="M17.75 4.09 15.22 6.03l-.46-.9L16.05 3H17.75V4.09ZM21.25 11L20.24 8.45l.96-.55L22.75 10.09L21.25 11ZM18.97 15.95c-.32.96-.5 1.93-.5 2.94 0 1.06.18 2.05.5 3 .32-.95.5-1.94.5-3s-.18-2.06-.5-2.94ZM12.5 22c-5.71-.47-10-5.05-10-10.5s4.29-10.03 10-10.5c-1.18.86-2 2.24-2 3.75 0 2.62 2.13 4.75 4.75 4.75 1.51 0 2.89-.82 3.75-2 .47 5.71-4.78 10.03-10.5 10.5Z"/></svg>';
+                } else {
+                    document.documentElement.classList.add('light-theme');
+                    themeToggle.innerHTML = '<svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 18.5A6.5 6.5 0 1 1 18.5 12 6.508 6.508 0 0 1 12 18.5ZM12 7a5 5 0 1 0 5 5A5.006 5.006 0 0 0 12 7Z"/><path d="M12 6a.75.75 0 0 1-.75-.75V3a.75.75 0 0 1 1.5 0v2.25A.75.75 0 0 1 12 6ZM12 21a.75.75 0 0 1-.75-.75v-2.25a.75.75 0 0 1 1.5 0V20.25A.75.75 0 0 1 12 21ZM21 12.75h-2.25a.75.75 0 0 1 0-1.5H21a.75.75 0 0 1 0 1.5ZM5.25 12.75H3a.75.75 0 0 1 0-1.5h2.25a.75.75 0 0 1 0 1.5ZM18.364 6.386a.75.75 0 0 1-1.061-1.061l1.591-1.591a.75.75 0 1 1 1.061 1.061l-1.591 1.591ZM6.697 18.303a.75.75 0 0 1-1.061-1.061l1.591-1.591a.75.75 0 1 1 1.061 1.061l-1.591 1.591ZM18.364 17.614a.75.75 0 0 1 0 1.061l-1.591 1.591a.75.75 0 1 1-1.061-1.061l1.591-1.591a.75.75 0 0 1 1.061 0ZM6.697 5.697a.75.75 0 0 1 0 1.061l-1.591 1.591a.75.75 0 1 1-1.061-1.061l1.591-1.591a.75.75 0 0 1 1.061 0Z"/></svg>';
+                }
+                
+                // Apply night shift
+                nightShiftToggle.classList.toggle('active', isNightShiftOn);
+                nightShiftFilter.classList.toggle('active', isNightShiftOn);
+            }
+        }
+        } catch (error) {
+            originalConsole.error('Error initializing design panel:', error);
+            // Try to suppress the external script error
+            if (window.onerror) {
+                const originalOnError = window.onerror;
+                window.onerror = function(msg, url, line, col, error) {
+                    if (msg && msg.includes('handleElementConfusion')) {
+                        return true; // Suppress this specific error
+                    }
+                    return originalOnError.apply(this, arguments);
+                };
+            }
+        }
+    };
+    
+    // Initialize with a small delay to avoid conflicts with external scripts
+    setTimeout(initDesignPanel, 100);
+})();
+</script>
