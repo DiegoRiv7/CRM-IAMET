@@ -723,16 +723,42 @@
                 fetchOportunidadesForClient(clienteIdInicial);
             }
             
-            // If there's an initial opportunity ID but no initial client, try to preselect it anyway
+            // If there's an initial opportunity ID but no initial client, load all opportunities and preselect
             if (oportunidadIdInicial && !clienteIdInicial) {
-                // Delay to allow the page to load
-                setTimeout(() => {
-                    const oportunidadSelect = document.getElementById('id_oportunidad');
-                    if (oportunidadSelect.options.length > 1) {
-                        oportunidadSelect.value = oportunidadIdInicial;
-                        console.log(`DEBUG JS: Preseleccionando oportunidad sin cliente específico: ${oportunidadIdInicial}`);
+                console.log(`DEBUG JS: Hay oportunidad inicial pero no cliente inicial, cargando oportunidades generales`);
+                
+                // Cargar oportunidades sin cliente específico pero con la oportunidad inicial
+                setTimeout(async () => {
+                    try {
+                        const url = `/app/api/get-oportunidades-por-cliente/?oportunidad_inicial_id=${oportunidadIdInicial}`;
+                        console.log(`DEBUG JS: Cargando oportunidades desde: ${url}`);
+                        
+                        const response = await fetch(url);
+                        if (response.ok) {
+                            const oportunidades = await response.json();
+                            console.log(`DEBUG JS: Oportunidades cargadas:`, oportunidades);
+                            
+                            const oportunidadSelect = document.getElementById('id_oportunidad');
+                            
+                            oportunidades.forEach(oportunidad => {
+                                const option = document.createElement('option');
+                                option.value = oportunidad.id;
+                                option.textContent = oportunidad.nombre;
+                                oportunidadSelect.appendChild(option);
+                            });
+                            
+                            // Preseleccionar la oportunidad inicial
+                            if (oportunidades.length > 0) {
+                                oportunidadSelect.value = oportunidadIdInicial;
+                                console.log(`DEBUG JS: Oportunidad preseleccionada: ${oportunidadIdInicial}`);
+                            }
+                        }
+                    } catch (error) {
+                        console.error(`DEBUG JS: Error cargando oportunidades sin cliente:`, error);
+                        // Fallback: cargar la oportunidad específica directamente
+                        await loadSpecificOpportunity(oportunidadIdInicial);
                     }
-                }, 500);
+                }, 300);
             }
         }
 
@@ -748,45 +774,81 @@
             try {
                 // Construir URL con parámetro adicional si hay oportunidad inicial
                 let url = `/app/api/get-oportunidades-por-cliente/?cliente_id=${clientId}`;
-                if (oportunidadIdInicial) {
+                if (oportunidadIdInicial && oportunidadIdInicial.trim() !== '') {
                     url += `&oportunidad_inicial_id=${oportunidadIdInicial}`;
+                    console.log(`DEBUG JS: Solicitando oportunidades con oportunidad inicial: ${oportunidadIdInicial}`);
                 }
                 
+                console.log(`DEBUG JS: Fetching opportunities from: ${url}`);
                 const response = await fetch(url);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const oportunidades = await response.json();
+                console.log(`DEBUG JS: Oportunidades recibidas:`, oportunidades);
 
                 oportunidades.forEach(oportunidad => {
                     const option = document.createElement('option');
                     option.value = oportunidad.id;
                     option.textContent = oportunidad.nombre;
                     oportunidadSelect.appendChild(option);
+                    console.log(`DEBUG JS: Agregada opción - ID: ${oportunidad.id}, Nombre: ${oportunidad.nombre}`);
                 });
 
                 // Preseleccionar oportunidad inicial si existe
                 if (oportunidadIdInicial && oportunidadIdInicial.trim() !== '') {
                     console.log(`DEBUG JS: Intentando preseleccionar oportunidad ID: ${oportunidadIdInicial}`);
                     
-                    // Usar setTimeout para asegurar que las opciones estén completamente cargadas
-                    setTimeout(() => {
-                        const oportunidadOption = oportunidadSelect.querySelector(`option[value="${oportunidadIdInicial}"]`);
-                        if (oportunidadOption) {
-                            oportunidadSelect.value = oportunidadIdInicial;
-                            console.log(`DEBUG JS: Oportunidad preseleccionada correctamente: ${oportunidadOption.textContent}`);
-                            
-                            // Trigger change event if needed
-                            oportunidadSelect.dispatchEvent(new Event('change'));
-                        } else {
-                            console.warn(`DEBUG JS: No se encontró la opción con ID ${oportunidadIdInicial} en el dropdown`);
-                            console.log('DEBUG JS: Opciones disponibles:', Array.from(oportunidadSelect.options).map(opt => ({ value: opt.value, text: opt.textContent })));
-                        }
-                    }, 100);
+                    // Verificar inmediatamente si la opción existe
+                    const oportunidadOption = oportunidadSelect.querySelector(`option[value="${oportunidadIdInicial}"]`);
+                    if (oportunidadOption) {
+                        oportunidadSelect.value = oportunidadIdInicial;
+                        console.log(`DEBUG JS: Oportunidad preseleccionada correctamente: ${oportunidadOption.textContent}`);
+                        
+                        // Trigger change event if needed
+                        oportunidadSelect.dispatchEvent(new Event('change'));
+                    } else {
+                        console.warn(`DEBUG JS: No se encontró la opción con ID ${oportunidadIdInicial} en el dropdown`);
+                        console.log('DEBUG JS: Opciones disponibles:', Array.from(oportunidadSelect.options).map(opt => ({ value: opt.value, text: opt.textContent })));
+                        
+                        // Si no se encuentra, intentar cargar esa oportunidad específica
+                        console.log(`DEBUG JS: Intentando cargar oportunidad específica: ${oportunidadIdInicial}`);
+                        await loadSpecificOpportunity(oportunidadIdInicial);
+                    }
+                } else {
+                    console.log(`DEBUG JS: No hay oportunidad inicial para preseleccionar`);
                 }
             } catch (error) {
                 console.error('Error fetching opportunities:', error);
                 // Optionally, display an error message to the user
+            }
+        }
+
+        // Function to load a specific opportunity if it wasn't found in the regular list
+        async function loadSpecificOpportunity(opportunityId) {
+            try {
+                console.log(`DEBUG JS: Cargando oportunidad específica: ${opportunityId}`);
+                const response = await fetch(`/app/api/oportunidad/${opportunityId}/detalle/`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const oportunidad = await response.json();
+                console.log(`DEBUG JS: Oportunidad específica recibida:`, oportunidad);
+                
+                if (oportunidad && oportunidad.id) {
+                    const oportunidadSelect = document.getElementById('id_oportunidad');
+                    const option = document.createElement('option');
+                    option.value = oportunidad.id;
+                    option.textContent = oportunidad.oportunidad; // Usar el campo correcto
+                    option.selected = true; // Preseleccionar
+                    oportunidadSelect.appendChild(option);
+                    
+                    console.log(`DEBUG JS: Oportunidad específica agregada y preseleccionada: ${oportunidad.oportunidad}`);
+                } else {
+                    console.error(`DEBUG JS: La oportunidad específica no tiene datos válidos`);
+                }
+            } catch (error) {
+                console.error(`DEBUG JS: Error cargando oportunidad específica:`, error);
             }
         }
 

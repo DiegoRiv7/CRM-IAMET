@@ -45,6 +45,8 @@ def _get_display_for_value(value, choices_list):
 def get_oportunidades_por_cliente(request):
     cliente_id = request.GET.get('cliente_id')
     oportunidad_inicial_id = request.GET.get('oportunidad_inicial_id')  # Nueva línea para oportunidad específica
+    
+    print(f"DEBUG: get_oportunidades_por_cliente - cliente_id: {cliente_id}, oportunidad_inicial_id: {oportunidad_inicial_id}")
 
     if is_supervisor(request.user):
         if cliente_id:
@@ -66,14 +68,28 @@ def get_oportunidades_por_cliente(request):
         try:
             # Limpiar el ID eliminando comas y espacios
             clean_id = oportunidad_inicial_id.replace(',', '').replace(' ', '').strip()
+            print(f"DEBUG: Buscando oportunidad inicial con ID: {clean_id}")
             oportunidad_inicial = TodoItem.objects.get(id=int(clean_id))
-            # Verificar si ya está en la lista
+            print(f"DEBUG: Oportunidad inicial encontrada: {oportunidad_inicial.oportunidad}")
+            
+            # Convertir queryset a lista para manipulación
             oportunidades_list = list(oportunidades)
-            if oportunidad_inicial not in oportunidades_list:
+            oportunidades_ids = [op.id for op in oportunidades_list]
+            
+            # Verificar si ya está en la lista por ID
+            if oportunidad_inicial.id not in oportunidades_ids:
+                print(f"DEBUG: Oportunidad inicial NO estaba en la lista, agregándola al principio")
                 # Agregar la oportunidad específica al principio de la lista
                 oportunidades_list.insert(0, oportunidad_inicial)
                 oportunidades = oportunidades_list
-        except (TodoItem.DoesNotExist, ValueError, TypeError):
+            else:
+                print(f"DEBUG: Oportunidad inicial YA estaba en la lista")
+                # Moverla al principio si ya estaba presente
+                oportunidades_list = [op for op in oportunidades_list if op.id != oportunidad_inicial.id]
+                oportunidades_list.insert(0, oportunidad_inicial)
+                oportunidades = oportunidades_list
+        except (TodoItem.DoesNotExist, ValueError, TypeError) as e:
+            print(f"DEBUG: Error procesando oportunidad inicial {oportunidad_inicial_id}: {e}")
             pass  # Si no existe o hay error de conversión, continuar con la lista normal
 
     data = [{'id': op.id, 'nombre': op.oportunidad} for op in oportunidades]
