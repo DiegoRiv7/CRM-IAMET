@@ -2,6 +2,24 @@
 {% load app_filters %}
 {% block title %}Bienvenida{% endblock %}
 {% block content %}
+<script type="text/javascript">
+// Apply theme immediately to prevent flash
+(function() {
+    try {
+        const saved = localStorage.getItem('designPreferences');
+        if (saved) {
+            const preferences = JSON.parse(saved);
+            const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
+            
+            if (!isDarkMode) {
+                document.documentElement.classList.add('light-theme');
+            }
+        }
+    } catch (error) {
+        console.log('Using default theme settings');
+    }
+})();
+</script>
 <style>
     /* Apple macOS Design System */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
@@ -302,6 +320,232 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
+    }
+
+    /* Light Theme Styles - Summer Pink Edition */
+    .light-theme body {
+        background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%) !important;
+        background-attachment: fixed;
+    }
+    
+    .light-theme {
+        /* Backgrounds: Soft summer pastels */
+        --apple-background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%);
+        --apple-background-secondary: rgba(255, 240, 245, 0.8);
+        --apple-background-tertiary: rgba(255, 232, 239, 0.9);
+        --apple-background-quaternary: #FFEBF0;
+        
+        /* Labels: Dark text for readability */
+        --apple-label: #2D1B2E;
+        --apple-label-secondary: #4A2B4D;
+        --apple-label-tertiary: #6B4C6D;
+        
+        /* Summer Pink Colors - Beautiful gradients */
+        --apple-blue: #FF6B9D;
+        --apple-blue-light: #FF8FB3;
+        --apple-blue-dark: #E55A87;
+        --apple-pink-gradient: linear-gradient(135deg, #FF6B9D 0%, #FFB6C1 50%, #FFC0CB 100%);
+        --apple-pink-light: #FFB6C1;
+        --apple-pink-medium: #FF91A4;
+        --apple-pink-dark: #E55A87;
+        
+        /* Grays with warm tones */
+        --apple-gray: #8B7D8B;
+        --apple-gray-2: #A695A6;
+        --apple-gray-3: #C1B6C1;
+        --apple-gray-4: #DCD6DC;
+        --apple-gray-5: #F0ECF0;
+        --apple-gray-6: #F8F5F8;
+        
+        --apple-separator: rgba(229, 90, 135, 0.2);
+    }
+
+    .light-theme .apple-bg {
+        background: 
+            radial-gradient(ellipse at top left, rgba(255, 107, 157, 0.1) 0%, transparent 60%),
+            radial-gradient(ellipse at bottom right, rgba(255, 182, 193, 0.08) 0%, transparent 60%),
+            linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%);
+    }
+
+    .light-theme .apple-card {
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.9) 0%, 
+            rgba(255, 248, 250, 0.85) 50%, 
+            rgba(255, 240, 245, 0.8) 100%);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 107, 157, 0.2);
+        box-shadow: 
+            0 8px 32px rgba(255, 107, 157, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    .light-theme .apple-card:hover {
+        transform: translateY(-2px);
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.95) 0%, 
+            rgba(255, 245, 248, 0.9) 50%, 
+            rgba(255, 232, 239, 0.85) 100%);
+        box-shadow: 
+            0 12px 40px rgba(255, 107, 157, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    }
+
+    .light-theme .apple-card h4,
+    .light-theme .apple-card h5 {
+        color: #2D1B2E !important;
+    }
+
+    .light-theme .apple-card p {
+        color: #4A2B4D !important;
+    }
+
+    .light-theme .apple-table {
+        background: linear-gradient(135deg, 
+            rgba(255, 208, 220, 0.9) 0%, 
+            rgba(255, 192, 203, 0.85) 50%, 
+            rgba(255, 182, 193, 0.8) 100%);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 107, 157, 0.3);
+        box-shadow: 0 8px 32px rgba(255, 107, 157, 0.2);
+    }
+
+    .light-theme .apple-table thead {
+        background: linear-gradient(135deg, 
+            rgba(255, 200, 213, 0.95) 0%, 
+            rgba(255, 182, 193, 0.9) 50%, 
+            rgba(255, 174, 185, 0.85) 100%);
+        backdrop-filter: blur(10px);
+    }
+
+    .light-theme .apple-table tbody tr:hover {
+        background: rgba(255, 107, 157, 0.15);
+    }
+
+    .light-theme .apple-table th {
+        color: #2D1B2E !important;
+        font-weight: 600;
+    }
+
+    .light-theme .apple-table td {
+        color: #2D1B2E !important;
+    }
+
+    .light-theme .apple-avatar {
+        border: 2px solid #FF91A4;
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.95) 0%, 
+            rgba(255, 248, 250, 0.9) 100%);
+        box-shadow: 
+            0 4px 16px rgba(255, 107, 157, 0.25),
+            0 0 0 1px rgba(255, 255, 255, 0.8);
+    }
+
+    .light-theme .apple-avatar:hover {
+        border-color: #FF6B9D;
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.98) 0%, 
+            rgba(255, 245, 248, 0.95) 100%);
+        box-shadow: 
+            0 6px 20px rgba(255, 107, 157, 0.3),
+            0 0 0 1px rgba(255, 255, 255, 0.9);
+    }
+
+    /* Responsive table improvements for mobile */
+    @media (max-width: 768px) {
+        .light-theme .apple-table tr {
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.95) 0%, 
+                rgba(255, 248, 250, 0.9) 100%) !important;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 107, 157, 0.2);
+            box-shadow: 0 4px 16px rgba(255, 107, 157, 0.1);
+        }
+        
+        .light-theme .apple-table td {
+            color: #2D1B2E !important;
+        }
+        
+        .light-theme .apple-table td::before {
+            color: #6B4C6D !important;
+        }
+    }
+
+    /* Additional summer-themed improvements */
+    .light-theme .apple-title-3 {
+        color: #FF6B9D !important;
+    }
+
+    .light-theme .apple-title-1 {
+        color: #E55A87 !important;
+    }
+
+    .light-theme .apple-headline {
+        color: #2D1B2E !important;
+    }
+
+    .light-theme .apple-body {
+        color: #4A2B4D !important;
+    }
+
+    .light-theme .apple-subheadline {
+        color: #6B4C6D !important;
+    }
+
+    .light-theme .apple-display {
+        color: #000000 !important;
+    }
+
+    /* Special styling for employee cards with more pink gradient */
+    .light-theme .apple-card:nth-of-type(1),
+    .light-theme .apple-card:nth-of-type(2) {
+        background: linear-gradient(135deg, 
+            rgba(255, 228, 239, 0.9) 0%, 
+            rgba(255, 209, 220, 0.85) 30%,
+            rgba(255, 192, 203, 0.8) 70%,
+            rgba(255, 182, 193, 0.75) 100%) !important;
+    }
+
+    .light-theme .apple-card:nth-of-type(1):hover,
+    .light-theme .apple-card:nth-of-type(2):hover {
+        background: linear-gradient(135deg, 
+            rgba(255, 218, 230, 0.95) 0%, 
+            rgba(255, 200, 213, 0.9) 30%,
+            rgba(255, 182, 193, 0.85) 70%,
+            rgba(255, 174, 185, 0.8) 100%) !important;
+    }
+
+    /* Vision card with enhanced pink gradient */
+    .light-theme section:last-of-type .apple-card {
+        background: linear-gradient(135deg, 
+            rgba(255, 240, 245, 0.9) 0%, 
+            rgba(255, 228, 239, 0.85) 25%,
+            rgba(255, 209, 220, 0.8) 50%,
+            rgba(255, 192, 203, 0.75) 75%,
+            rgba(255, 182, 193, 0.7) 100%) !important;
+        border: 1px solid rgba(255, 107, 157, 0.3);
+    }
+
+    .light-theme section:last-of-type .apple-card:hover {
+        background: linear-gradient(135deg, 
+            rgba(255, 232, 239, 0.95) 0%, 
+            rgba(255, 218, 230, 0.9) 25%,
+            rgba(255, 200, 213, 0.85) 50%,
+            rgba(255, 182, 193, 0.8) 75%,
+            rgba(255, 174, 185, 0.75) 100%) !important;
+    }
+
+    /* White icons for employee cards */
+    .light-theme .apple-card svg {
+        color: #FFFFFF !important;
+        filter: drop-shadow(0 2px 4px rgba(255, 107, 157, 0.3));
+    }
+
+    /* Vision card book icon in white */
+    .light-theme section:last-of-type .apple-card svg {
+        color: #FFFFFF !important;
+        filter: drop-shadow(0 2px 4px rgba(255, 107, 157, 0.4));
     }
 </style>
 <div class="apple-bg"></div>

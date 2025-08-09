@@ -110,48 +110,49 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Light Theme Styles */
+        /* Light Theme Styles - Original Summer Pink */
         .light-theme {
-            --apple-background: #F8FBFF;
-            --apple-background-secondary: rgba(248, 251, 255, 0.8);
-            --apple-separator: rgba(26, 26, 26, 0.15);
-            --apple-blue: #0066CC;
-            --apple-label: #1A1A1A;
-            --apple-label-secondary: #666666;
-            --apple-label-tertiary: #999999;
+            --apple-background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%);
+            --apple-background-secondary: rgba(255, 240, 245, 0.8);
+            --apple-separator: rgba(255, 107, 157, 0.25);
+            --apple-blue: #FF6B9D;
+            --apple-label: #2D1B2E;
+            --apple-label-secondary: #4A2B4D;
+            --apple-label-tertiary: #6B4C6D;
         }
 
         .light-theme body {
-            background: var(--apple-background);
+            background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%);
+            background-attachment: fixed;
             color: var(--apple-label);
         }
 
         .light-theme .apple-bg {
             background: 
-                radial-gradient(ellipse at top left, rgba(0, 122, 255, 0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at bottom right, rgba(0, 122, 255, 0.06) 0%, transparent 50%),
-                linear-gradient(135deg, #E1F1FF 0%, #D6EEFF 50%, #CCE7FF 100%);
+                radial-gradient(ellipse at top left, rgba(255, 107, 157, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom right, rgba(255, 192, 203, 0.06) 0%, transparent 50%),
+                linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%);
         }
 
         .light-theme .page-title {
-            color: var(--apple-label);
+            color: #000000 !important;
             text-shadow: none;
         }
 
         .light-theme .login-field {
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(29, 53, 87, 0.1);
+            background: rgba(255, 240, 245, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 107, 157, 0.3);
             color: var(--apple-label);
             box-shadow: 
-                0 2px 8px rgba(0, 122, 255, 0.1),
+                0 4px 16px rgba(255, 107, 157, 0.1),
                 inset 0 1px 0 rgba(255, 255, 255, 0.8);
         }
 
         .light-theme .login-field:focus {
             border-color: var(--apple-blue);
-            box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.3);
+            box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.3);
         }
 
         .light-theme .login-field::placeholder {
@@ -159,10 +160,15 @@
         }
 
         .light-theme .login-button {
-            background: var(--apple-blue);
+            background: linear-gradient(135deg, #FF6B9D 0%, #FF91A4 100%);
             box-shadow: 
-                0 4px 12px rgba(0, 102, 204, 0.3),
+                0 6px 20px rgba(255, 107, 157, 0.4),
                 inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+
+        .light-theme .login-button:hover {
+            background: linear-gradient(135deg, #E55A87 0%, #FF6B9D 100%);
+            filter: none;
         }
     </style>
 </head>

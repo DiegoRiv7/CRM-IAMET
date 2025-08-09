@@ -9,6 +9,25 @@
     <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script type="text/javascript">
+    // Apply theme immediately to prevent flash
+    (function() {
+        try {
+            const saved = localStorage.getItem('designPreferences');
+            if (saved) {
+                const preferences = JSON.parse(saved);
+                const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
+                
+                if (!isDarkMode) {
+                    document.documentElement.classList.add('light-theme');
+                }
+            }
+        } catch (error) {
+            console.log('Using default theme settings');
+        }
+    })();
+    </script>
+
     <style>
         :root {
             /* Apple Color System - macOS inspired */
@@ -33,6 +52,72 @@
             
             /* Apple Typography */
             --apple-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif;
+        }
+
+        /* Light theme variables - Summer Pink Edition */
+        .light-theme {
+            --apple-blue: #FF6B9D;
+            --apple-blue-light: #FF8FB3;
+            --apple-blue-dark: #E55A87;
+            --apple-gray: #8B7D8B;
+            --apple-gray-2: #A695A6;
+            --apple-gray-3: #C1B6C1;
+            --apple-gray-4: #DCD6DC;
+            --apple-gray-5: #F0ECF0;
+            --apple-gray-6: #F8F5F8;
+            --apple-background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%);
+            --apple-background-secondary: rgba(255, 240, 245, 0.8);
+            --apple-background-tertiary: rgba(255, 232, 239, 0.9);
+            --apple-background-quaternary: #FFEBF0;
+            --apple-label: #2D1B2E;
+            --apple-label-secondary: #4A2B4D;
+            --apple-label-tertiary: #6B4C6D;
+            --apple-label-quaternary: #8B7D8B;
+            --apple-separator: rgba(255, 107, 157, 0.25);
+            --apple-pink-gradient: linear-gradient(135deg, #FF6B9D 0%, #FFB6C1 50%, #FFC0CB 100%);
+        }
+
+        /* Light theme text fixes and background */
+        .light-theme body {
+            background: var(--apple-background) !important;
+            background-attachment: fixed;
+        }
+        
+        .light-theme .text-white {
+            color: var(--apple-label) !important;
+        }
+        
+        .light-theme h1.text-white {
+            color: var(--apple-label) !important;
+        }
+        
+        /* Update button styles for summer theme */
+        .light-theme .btn-primary {
+            background: var(--apple-pink-gradient) !important;
+            border: 1px solid rgba(255, 107, 157, 0.3);
+            box-shadow: 0 4px 12px rgba(255, 107, 157, 0.3);
+            color: #FFFFFF !important;
+        }
+        
+        .light-theme .btn-primary:hover {
+            background: linear-gradient(135deg, #E55A87 0%, #FF6B9D 100%) !important;
+            box-shadow: 0 6px 20px rgba(255, 107, 157, 0.4);
+        }
+        
+        /* Form styling improvements */
+        .light-theme .form-control,
+        .light-theme .form-select {
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.9) 0%, 
+                rgba(255, 248, 250, 0.85) 100%);
+            border: 1px solid rgba(255, 107, 157, 0.2);
+            color: var(--apple-label);
+        }
+        
+        .light-theme .form-control:focus,
+        .light-theme .form-select:focus {
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.15);
         }
         
         body {

@@ -6,6 +6,108 @@
 {% endblock %}
 
 {% block content %}
+<script type="text/javascript">
+// Apply theme immediately to prevent flash
+(function() {
+    try {
+        const saved = localStorage.getItem('designPreferences');
+        if (saved) {
+            const preferences = JSON.parse(saved);
+            const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
+            
+            if (!isDarkMode) {
+                document.documentElement.classList.add('light-theme');
+            }
+        }
+    } catch (error) {
+        console.log('Using default theme settings');
+    }
+})();
+</script>
+
+<style>
+    /* Light theme styles - Summer Pink Edition */
+    .light-theme body {
+        background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%) !important;
+        background-attachment: fixed;
+    }
+    
+    .light-theme .glass-card {
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.9) 0%, 
+            rgba(255, 248, 250, 0.85) 50%, 
+            rgba(255, 240, 245, 0.8) 100%) !important;
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 107, 157, 0.2) !important;
+        color: #2D1B2E !important;
+    }
+    
+    .light-theme .text-gray-100 {
+        color: #2D1B2E !important;
+    }
+    
+    .light-theme .text-gray-300 {
+        color: #4A2B4D !important;
+    }
+    
+    .light-theme .text-white {
+        color: #2D1B2E !important;
+    }
+    
+    .light-theme .text-blue-400 {
+        color: #FF6B9D !important;
+    }
+    
+    .light-theme .bg-gray-800\/80 {
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.9) 0%, 
+            rgba(255, 248, 250, 0.85) 100%) !important;
+        border-color: rgba(255, 107, 157, 0.2) !important;
+    }
+    
+    .light-theme .text-gray-400 {
+        color: #6B4C6D !important;
+    }
+    
+    .light-theme .divide-gray-700 {
+        border-color: rgba(255, 107, 157, 0.2) !important;
+    }
+    
+    .light-theme .glass-table {
+        background: linear-gradient(135deg, 
+            rgba(255, 208, 220, 0.9) 0%, 
+            rgba(255, 192, 203, 0.85) 50%, 
+            rgba(255, 182, 193, 0.8) 100%) !important;
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 107, 157, 0.3);
+    }
+    
+    .light-theme .glass-table th {
+        background: linear-gradient(135deg, 
+            rgba(255, 200, 213, 0.95) 0%, 
+            rgba(255, 182, 193, 0.9) 50%, 
+            rgba(255, 174, 185, 0.85) 100%);
+        color: #2D1B2E !important;
+    }
+    
+    .light-theme .glass-table td {
+        color: #2D1B2E !important;
+    }
+    
+    .light-theme .bg-blue-600 {
+        background: linear-gradient(135deg, #FF6B9D 0%, #FF91A4 100%) !important;
+    }
+    
+    .light-theme .bg-blue-600:hover,
+    .light-theme .hover\\:bg-blue-700:hover {
+        background: linear-gradient(135deg, #E55A87 0%, #FF6B9D 100%) !important;
+    }
+    
+    .light-theme .focus\\:ring-blue-500:focus {
+        --tw-ring-color: rgba(255, 107, 157, 0.3) !important;
+    }
+</style>
+
 <div class="mt-8 bg-white/10 backdrop-blur-lg text-gray-100 p-8 rounded-2xl shadow-2xl border border-gray-700 glass-card animate-fade-in dashboard-container">
 
 <style>

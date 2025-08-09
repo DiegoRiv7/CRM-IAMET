@@ -4,6 +4,25 @@
 {% block title %}Cotizaciones de {{ oportunidad.oportunidad }}{% endblock %}
 
 {% block content %}
+<script type="text/javascript">
+// Apply theme immediately to prevent flash
+(function() {
+    try {
+        const saved = localStorage.getItem('designPreferences');
+        if (saved) {
+            const preferences = JSON.parse(saved);
+            const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
+            
+            if (!isDarkMode) {
+                document.documentElement.classList.add('light-theme');
+            }
+        }
+    } catch (error) {
+        console.log('Using default theme settings');
+    }
+})();
+</script>
+
 <style>
     :root {
         --apple-background-secondary: rgba(29, 29, 31, 0.7);
@@ -13,6 +32,42 @@
         --apple-yellow: #FFD60A;
         --apple-label: #FFFFFF;
         --apple-label-secondary: #EBEBF599;
+    }
+
+    /* Light theme variables - Summer Pink Edition */
+    .light-theme {
+        --apple-background-secondary: rgba(255, 240, 245, 0.8);
+        --apple-separator: rgba(255, 107, 157, 0.25);
+        --apple-blue: #FF6B9D;
+        --apple-green: #FF91A4;
+        --apple-yellow: #FFB6C1;
+        --apple-label: #2D1B2E;
+        --apple-label-secondary: #4A2B4D99;
+        
+        /* Summer background gradients */
+        background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%);
+    }
+    
+    /* Apply summer gradient to light theme body */
+    .light-theme body {
+        background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%) !important;
+        background-attachment: fixed;
+    }
+    
+    /* Enhanced table styling */
+    .light-theme .apple-table-container {
+        background: linear-gradient(135deg, 
+            rgba(255, 208, 220, 0.9) 0%, 
+            rgba(255, 192, 203, 0.85) 50%, 
+            rgba(255, 182, 193, 0.8) 100%);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 107, 157, 0.3);
+    }
+    
+    .light-theme .apple-table th,
+    .light-theme .apple-table td {
+        color: #2D1B2E;
     }
 
     .apple-container { width: 100%; max-width: 1400px; margin: 2rem auto; padding: 2rem; animation: appleFadeIn 0.5s ease-out; }
@@ -27,6 +82,14 @@
         padding: 2rem;
         margin-bottom: 2.5rem;
         text-align: center;
+    }
+    
+    .light-theme .apple-header-card {
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.9) 0%, 
+            rgba(255, 248, 250, 0.85) 50%, 
+            rgba(255, 240, 245, 0.8) 100%);
+        border: 1px solid rgba(255, 107, 157, 0.2);
     }
 
     .apple-title { font-size: 2.5rem; font-weight: 600; color: var(--apple-label); margin-bottom: 0.5rem; }
@@ -62,6 +125,78 @@
     .action-button.view { color: var(--apple-green); }
     .action-button.download { color: var(--apple-blue); }
     .action-button.edit { color: var(--apple-yellow); }
+
+    /* Subtle download notification */
+    .download-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--apple-background-secondary);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        z-index: 1000;
+        transform: translateX(100%);
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        min-width: 280px;
+    }
+
+    .download-notification.show {
+        transform: translateX(0);
+    }
+
+    .download-notification.success {
+        border-color: var(--apple-blue);
+        background: linear-gradient(135deg, var(--apple-background-secondary) 0%, rgba(0, 122, 255, 0.1) 100%);
+    }
+
+    .download-spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--apple-separator);
+        border-top: 2px solid var(--apple-blue);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    .download-check {
+        width: 20px;
+        height: 20px;
+        color: var(--apple-blue);
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Light theme notification */
+    .light-theme .download-notification {
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.95) 0%, 
+            rgba(255, 248, 250, 0.9) 100%);
+        border: 1px solid rgba(255, 107, 157, 0.2);
+        color: var(--apple-label);
+        box-shadow: 0 8px 32px rgba(255, 107, 157, 0.15);
+    }
+
+    .light-theme .download-notification.success {
+        border-color: var(--apple-blue);
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.98) 0%, 
+            rgba(255, 107, 157, 0.05) 100%);
+    }
+
+    .light-theme .download-spinner {
+        border: 2px solid rgba(255, 107, 157, 0.3);
+        border-top: 2px solid var(--apple-blue);
+    }
 
 </style>
 
@@ -103,7 +238,7 @@
                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                 Ver
                             </a>
-                            <a href="{% url 'generate_cotizacion_pdf' cotizacion.id %}" class="action-button download" title="Descargar PDF">
+                            <a href="{% url 'generate_cotizacion_pdf' cotizacion.id %}" class="action-button download" title="Descargar PDF" onclick="showDownloadNotification(this, event)">
                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                 Descargar
                             </a>
@@ -119,4 +254,69 @@
         </table>
     </div>
 </div>
+
+<script>
+function showDownloadNotification(element, event) {
+    event.preventDefault();
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'download-notification';
+    notification.innerHTML = `
+        <div class="download-spinner"></div>
+        <div>
+            <div style="font-weight: 500; margin-bottom: 2px;">Generando PDF...</div>
+            <div style="font-size: 13px; opacity: 0.7;">Esto puede tomar unos segundos</div>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Show notification
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+    
+    // Start download
+    const downloadUrl = element.href;
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = '';
+    
+    // Simulate download completion after a delay
+    setTimeout(() => {
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Update notification to success
+        notification.classList.add('success');
+        notification.innerHTML = `
+            <div class="download-check">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <div>
+                <div style="font-weight: 500; margin-bottom: 2px;">¡PDF descargado!</div>
+                <div style="font-size: 13px; opacity: 0.7;">Regresando a la página...</div>
+            </div>
+        `;
+        
+        // Hide notification and redirect after 2 seconds
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+                // Refresh the current page to stay in cotizaciones por oportunidad
+                window.location.reload();
+            }, 300);
+        }, 2000);
+        
+    }, 1000); // Simulate 1 second processing time
+}
+</script>
+
 {% endblock %}

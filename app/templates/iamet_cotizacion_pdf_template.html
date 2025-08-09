@@ -265,6 +265,11 @@
       <div>
         <h2 style="color: #2c5364; font-size: 20px; margin-bottom: 6px;">Cliente</h2>
         <p class="client-name-only-large" style="font-size: 24px; color: #0f2027;">{{ cotizacion.cliente.nombre_empresa }}</p>
+        {% if cotizacion.usuario_final %}
+        <p style="font-size: 18px; font-weight: 500; color: #2c5364; margin: 8px 0; padding: 8px 0; border-top: 1px solid #e5e7eb;">
+          <strong>Usuario Final:</strong> {{ cotizacion.usuario_final }}
+        </p>
+        {% endif %}
       </div>
       <div style="text-align: right;">
         <h2 style="color: #2c5364; font-size: 20px; margin-bottom: 6px;">Cotización</h2>
@@ -324,6 +329,18 @@
     <div class="section" style="background: #f8fafc; border: none; box-shadow: 0 2px 8px rgba(44,83,100,0.04); border-radius: 16px;">
       <h2 style="color: #2c5364;">Notas</h2>
       <p class="notes">{{ cotizacion.descripcion }}</p>
+      
+      {% if cotizacion.comentarios %}
+      <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
+        <h3 style="color: #2c5364; font-size: 16px; margin-bottom: 8px;">Comentarios:</h3>
+        <p class="notes" style="color: #374151;">{{ cotizacion.comentarios|linebreaks }}</p>
+      </div>
+      {% endif %}
+    </div>
+    {% elif cotizacion.comentarios %}
+    <div class="section" style="background: #f8fafc; border: none; box-shadow: 0 2px 8px rgba(44,83,100,0.04); border-radius: 16px;">
+      <h2 style="color: #2c5364;">Comentarios</h2>
+      <p class="notes" style="color: #374151;">{{ cotizacion.comentarios|linebreaks }}</p>
     </div>
     {% endif %}
 

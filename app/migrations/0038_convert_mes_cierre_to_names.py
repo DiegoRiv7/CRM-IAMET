@@ -37,7 +37,7 @@ def reverse_convert_names_to_codes(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('app', '0037_alter_cotizacion_titulo_alter_todoitem_mes_cierre_and_more'),  # Use the latest migration
+        ('app', '0032_alter_todoitem_mes_cierre'),  # Use the actual latest migration
     ]
 
     operations = [
