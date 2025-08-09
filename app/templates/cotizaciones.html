@@ -101,6 +101,61 @@
 
     .apple-button:hover { filter: brightness(1.1); }
 
+    /* Spotlight-like Search Bar */
+    .apple-search-bar {
+        display: flex;
+        align-items: center;
+        background: rgba(118, 118, 128, 0.24); /* A subtle dark grey for the search bar background */
+        border-radius: 10px; /* Rounded corners */
+        padding: 8px 12px; /* Internal padding */
+        box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1); /* Subtle inner shadow */
+        transition: all 0.2s ease-in-out;
+        margin-top: 1.5rem; /* Moved from inline style */
+        max-width: 400px; /* Moved from inline style */
+        margin-left: auto; /* Moved from inline style */
+        margin-right: auto; /* Moved from inline style */
+    }
+
+    .apple-search-bar:focus-within {
+        background: rgba(118, 118, 128, 0.36); /* Slightly lighter on focus */
+        box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 0 0 3px rgba(0, 122, 255, 0.3); /* Blue glow on focus */
+    }
+
+    .apple-search-icon {
+        color: var(--apple-label-secondary); /* Grey icon */
+        margin-right: 8px;
+    }
+
+    .apple-search-input {
+        flex-grow: 1; /* Take up remaining space */
+        background: transparent; /* No background for the input itself */
+        border: none; /* No border */
+        outline: none; /* No outline on focus */
+        color: var(--apple-label); /* White text */
+        font-size: 1.05rem; /* Slightly larger font */
+        padding: 0; /* Remove default input padding */
+        -webkit-appearance: none; /* Remove default input styles for consistency */
+    }
+
+    .apple-search-input::placeholder {
+        color: var(--apple-label-secondary); /* Grey placeholder text */
+        opacity: 1; /* Ensure placeholder is visible */
+    }
+
+    /* Refinements for client list items */
+    .client-item {
+        padding: 15px 20px; /* Slightly less vertical padding for a denser list */
+    }
+
+    .client-name {
+        font-size: 1rem; /* Slightly smaller font for client names */
+        font-weight: 400; /* Lighter weight */
+    }
+
+    .apple-button {
+        padding: 6px 14px; /* Slightly smaller button */
+        font-size: 0.85rem; /* Smaller font for button */
+    }
 </style>
 
 <div class="apple-container">
@@ -109,7 +164,7 @@
         <p class="apple-subtitle">Selecciona un cliente para ver todas sus cotizaciones. Las nuevas cotizaciones se crean desde la sección de Oportunidades.</p>
         
         <!-- Search Bar -->
-        <div class="apple-search-bar" style="margin-top: 1.5rem; max-width: 400px; margin-left: auto; margin-right: auto;">
+        <div class="apple-search-bar">
             <svg class="apple-search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
             </svg>
