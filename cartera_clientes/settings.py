@@ -80,7 +80,7 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # Configuración de cookies para iframes
 SESSION_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SECURE = False  # TEMPORAL: Para desarrollo local HTTP
-CSRF_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SECURE = False     # TEMPORAL: Para desarrollo local HTTP
 
 ROOT_URLCONF = 'cartera_clientes.urls'
