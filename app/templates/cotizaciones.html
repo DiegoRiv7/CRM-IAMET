@@ -108,14 +108,12 @@
         <h1 class="apple-title">Cotizaciones por Cliente</h1>
         <p class="apple-subtitle">Selecciona un cliente para ver todas sus cotizaciones. Las nuevas cotizaciones se crean desde la sección de Oportunidades.</p>
         
-        <!-- Search Button -->
-        <div style="margin-top: 1.5rem;">
-            <button id="openSearchModal" class="apple-button">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
-                Buscar Cliente
-            </button>
+        <!-- Search Bar -->
+        <div class="apple-search-bar" style="margin-top: 1.5rem; max-width: 400px; margin-left: auto; margin-right: auto;">
+            <svg class="apple-search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            <input id="searchCliente" type="text" placeholder="Buscar cliente..." class="apple-search-input">
         </div>
     </div>
 
