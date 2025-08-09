@@ -289,6 +289,11 @@
     <div class="quote-header">
       <div class="client-info">
         <div class="client-name">{{ cotizacion.cliente.nombre_empresa }}</div>
+        {% if cotizacion.nombre_cliente %}
+        <div style="font-size: 16px; font-weight: 500; color: #333; margin: 5px 0 10px 0;">
+          {{ cotizacion.nombre_cliente }}
+        </div>
+        {% endif %}
         <div class="client-address">
           <!-- Aquí podrías agregar la dirección del cliente si está disponible -->
           {% if cotizacion.cliente.direccion %}
@@ -365,6 +370,12 @@
       <br><br>
       <strong>Notas adicionales:</strong><br>
       {{ cotizacion.descripcion }}
+      {% endif %}
+      
+      {% if cotizacion.comentarios %}
+      <br><br>
+      <strong>Comentarios:</strong><br>
+      {{ cotizacion.comentarios|linebreaks }}
       {% endif %}
     </div>
   </div>

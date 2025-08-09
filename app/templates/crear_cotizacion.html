@@ -223,6 +223,28 @@
                 </div>
             </div>
         </div>
+        {% elif oportunidad_seleccionada %}
+        <!-- Notification when coming from opportunity management page -->
+        <div class="mb-6 p-4 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl border border-blue-400/30 mx-4">
+            <div class="flex items-center space-x-3">
+                <div class="flex-shrink-0">
+                    <svg class="w-6 h-6 text-blue-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-sm font-semibold text-white">📋 Cotización para Oportunidad Específica</h3>
+                    <p class="text-xs text-blue-100 mt-1">
+                        Creando cotización para la oportunidad: 
+                        <span class="font-medium">"{{ oportunidad_seleccionada.oportunidad }}"</span>
+                        {% if oportunidad_seleccionada.cliente %}
+                        del cliente <span class="font-medium">{{ oportunidad_seleccionada.cliente.nombre_empresa }}</span>
+                        {% endif %}
+                    </p>
+                    <p class="text-xs text-blue-200 mt-2">✨ Cliente y oportunidad han sido pre-seleccionados automáticamente.</p>
+                </div>
+            </div>
+        </div>
         {% endif %}
 
                 <form id="cotizacion-form" method="post" action="{% if form_action_url %}{{ form_action_url }}{% elif cliente_id_inicial %}{% url 'crear_cotizacion_with_id' cliente_id_inicial %}{% else %}{% url 'crear_cotizacion' %}{% endif %}">
@@ -252,6 +274,15 @@
                             <ul class="errorlist">{% for error in form.cliente.errors %}<li>{{ error }}</li>{% endfor %}</ul>
                         {% endif %}
                     </div>
+                    <div>
+                        <label for="id_nombre_cliente" class="block text-sm font-medium text-gray-300 mb-1">Nombre del Cliente</label>
+                        <input type="text" id="id_nombre_cliente" name="nombre_cliente" class="input-field" placeholder="Ej. Juan Pérez" value="{{ form.nombre_cliente.value|default:'' }}" data-intro="👤 Ingresa el nombre específico de la persona de contacto del cliente." data-step="3.5">
+                        <p class="text-xs text-gray-400 mt-1">💡 Este nombre aparecerá en el PDF debajo del nombre de la empresa.</p>
+                        <div id="nombre-cliente-help" class="nethive-help-text"></div>
+                        {% if form.nombre_cliente.errors %}
+                            <ul class="errorlist">{% for error in form.nombre_cliente.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="mt-6 text-center">
                     <label for="id_oportunidad" class="block text-sm font-medium text-gray-300 mb-1">Oportunidad Bitrix24</label>
@@ -268,17 +299,28 @@
                         <ul class="errorlist">{% for error in form.oportunidad.errors %}<li>{{ error }}</li>{% endfor %}</ul>
                     {% endif %}
                 </div>
+                
+                <!-- Sección de comentarios adicionales -->
+                <div class="mt-6">
+                    <label for="id_comentarios" class="block text-sm font-medium text-gray-300 mb-1">Comentarios Adicionales</label>
+                    <textarea id="id_comentarios" name="comentarios" class="textarea-field w-full" rows="4" placeholder="Comentarios que aparecerán en el PDF de la cotización..." data-intro="📝 Agrega comentarios adicionales que se mostrarán en el PDF final de la cotización para aclarar detalles importantes." data-step="7">{{ form.comentarios.value|default:'' }}</textarea>
+                    <p class="text-xs text-gray-400 mt-1">💡 Estos comentarios aparecerán en el PDF de la cotización para proporcionar información adicional al cliente.</p>
+                    <div id="comentarios-help" class="nethive-help-text"></div>
+                    {% if form.comentarios.errors %}
+                        <ul class="errorlist">{% for error in form.comentarios.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                    {% endif %}
+                </div>
             </div>
 
             <div class="card p-6 shadow-md-dark">
                 <h2 class="text-xl font-semibold text-white mb-4">Detalles de Productos</h2>
 
                 <div class="flex justify-between items-center mb-4">
-                    <button type="button" id="add-row-btn" class="btn-primary flex items-center justify-center" data-intro="📋 Agrega productos uno por uno usando este botón. Cada fila representa un producto en tu cotización." data-step="7">
+                    <button type="button" id="add-row-btn" class="btn-primary flex items-center justify-center" data-intro="📋 Agrega productos uno por uno usando este botón. Cada fila representa un producto en tu cotización." data-step="8">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                         Agregar Fila
                     </button>
-                    <button type="button" id="toggle-paste-area-btn" class="btn-secondary flex items-center justify-center" data-intro="📊 ¿Tienes los datos en Excel? Usa esta función para copiar y pegar múltiples productos de una vez." data-step="8">
+                    <button type="button" id="toggle-paste-area-btn" class="btn-secondary flex items-center justify-center" data-intro="📊 ¿Tienes los datos en Excel? Usa esta función para copiar y pegar múltiples productos de una vez." data-step="9">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-2m-6-11h-2a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-2"></path></svg>
                         Pegar Datos de Excel
                     </button>
@@ -352,7 +394,7 @@
 
                         <!-- Nuevo campo para la institución -->
                         <label for="tipo-cotizacion-select" class="block text-sm font-medium text-gray-300 mt-4 mb-1">Institución</label>
-                        <select id="tipo-cotizacion-select" class="input-field w-full text-sm" name="tipo_cotizacion" required data-intro="🏢 Selecciona la institución que aparecerá en el PDF de la cotización (BAJANET o IAMET)." data-step="9">
+                        <select id="tipo-cotizacion-select" class="input-field w-full text-sm" name="tipo_cotizacion" required data-intro="🏢 Selecciona la institución que aparecerá en el PDF de la cotización (BAJANET o IAMET)." data-step="10">
                             <option value="">Seleccione una institución</option> <!-- Añadida opción vacía y requerida -->
                             <option value="Bajanet">BAJANET</option>
                             <option value="Iamet">IAMET</option>
@@ -363,7 +405,7 @@
 
             <div class="flex justify-end space-x-4 mt-8">
                 <button type="button" class="btn-secondary" onclick="window.history.back()">Regresar</button>
-                <button type="submit" class="btn-primary" data-intro="✅ Una vez completado todo, haz clic aquí para generar la cotización y su PDF automáticamente." data-step="10">{% if editing_mode %}Crear Nueva Cotización{% else %}Crear Cotización{% endif %}</button>
+                <button type="submit" class="btn-primary" data-intro="✅ Una vez completado todo, haz clic aquí para generar la cotización y su PDF automáticamente." data-step="11">{% if editing_mode %}Crear Nueva Cotización{% else %}Crear Cotización{% endif %}</button>
             </div>
         </form>
     </div>
@@ -934,22 +976,41 @@
 
             cotizacionForm.addEventListener('submit', (event) => {
                 loadingModal.classList.remove('hidden'); // Show loading modal
+                
+                // Auto-hide modal after 8 seconds as fallback
+                setTimeout(() => {
+                    loadingModal.classList.add('hidden');
+                }, 8000);
+            });
+            
+            // Hide loading modal when page unloads (navigation)
+            window.addEventListener('beforeunload', () => {
+                loadingModal.classList.add('hidden');
             });
         });
     </script>
     <!-- Loading Modal -->
-    <div id="loading-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
-        <div class="bg-gray-800 rounded-lg shadow-xl p-8 flex flex-col items-center">
-            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
-            <p class="text-white text-lg">Generando cotización y PDF...</p>
+    <div id="loading-modal" class="fixed inset-0 bg-gray-900 bg-opacity-85 flex items-center justify-center z-50 hidden backdrop-blur-sm">
+        <div class="bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800 rounded-2xl shadow-2xl p-10 flex flex-col items-center border border-gray-600/30 max-w-md mx-4 loading-modal-content">
+            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-16 w-16 mb-6"></div>
+            <h3 class="text-white text-xl font-semibold mb-2">Generando Cotización</h3>
+            <p class="text-gray-300 text-center leading-relaxed">
+                Estamos creando tu cotización y generando el PDF profesional...
+            </p>
+            <div class="mt-4 flex items-center space-x-2">
+                <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                <div class="w-2 h-2 bg-blue-400 rounded-full animate-pulse animation-delay-200"></div>
+                <div class="w-2 h-2 bg-blue-300 rounded-full animate-pulse animation-delay-400"></div>
+            </div>
         </div>
     </div>
 
     <style>
         .loader {
-            border-top-color: #3498db; /* Blue */
-            -webkit-animation: spinner 1.5s linear infinite;
-            animation: spinner 1.5s linear infinite;
+            border-top-color: #3b82f6; /* Blue-500 */
+            border-right-color: #60a5fa; /* Blue-400 */
+            -webkit-animation: spinner 1.2s linear infinite;
+            animation: spinner 1.2s linear infinite;
         }
 
         @-webkit-keyframes spinner {
@@ -960,6 +1021,46 @@
         @keyframes spinner {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+
+        /* Loading modal animations */
+        .loading-modal-content {
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        /* Staggered pulse animation */
+        .animation-delay-200 {
+            animation-delay: 0.2s;
+        }
+
+        .animation-delay-400 {
+            animation-delay: 0.4s;
+        }
+
+        /* Add smooth transitions for modal show/hide */
+        #loading-modal {
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        #loading-modal.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #loading-modal:not(.hidden) {
+            opacity: 1;
+            pointer-events: auto;
         }
     </style>
 

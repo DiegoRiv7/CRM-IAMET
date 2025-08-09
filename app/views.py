@@ -1442,7 +1442,17 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                 messages.error(request, f"Error al generar o subir PDF a Bitrix24: {e}")
                 return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Error al generar o subir PDF a Bitrix24: {str(e)}'}]}}, status=500)
             
-            return redirect('generate_cotizacion_pdf', cotizacion_id=cotizacion.id)
+            # Si hay una oportunidad seleccionada, redirigir a cotizaciones por oportunidad
+            # sino, al PDF directo como antes
+            oportunidad_para_redirect = form.cleaned_data.get('oportunidad')
+            if oportunidad_para_redirect:
+                # Crear URL que descarga PDF y luego redirige a cotizaciones por oportunidad
+                return redirect('download_and_redirect_cotizacion', 
+                              cotizacion_id=cotizacion.id, 
+                              oportunidad_id=oportunidad_para_redirect.id)
+            else:
+                # Flujo original para cotizaciones sin oportunidad
+                return redirect('generate_cotizacion_pdf', cotizacion_id=cotizacion.id)
 
         else:
             errors_dict = {}
@@ -1551,6 +1561,7 @@ def editar_cotizacion_view(request, cotizacion_id):
         'cliente': cotizacion_original.cliente.id,
         'oportunidad': cotizacion_original.oportunidad.id if cotizacion_original.oportunidad else None,
         'descripcion': cotizacion_original.descripcion,
+        'comentarios': cotizacion_original.comentarios,
         'nombre_cotizacion': cotizacion_original.nombre_cotizacion,
         'iva_rate': cotizacion_original.iva_rate,
         'moneda': cotizacion_original.moneda,
@@ -1577,6 +1588,38 @@ def editar_cotizacion_view(request, cotizacion_id):
 
 
 @login_required
+def download_and_redirect_cotizacion(request, cotizacion_id, oportunidad_id):
+    """
+    Vista que muestra una página que descarga el PDF automáticamente y luego redirige 
+    a la página de cotizaciones por oportunidad.
+    """
+    print(f"DEBUG: download_and_redirect_cotizacion - cotizacion_id: {cotizacion_id}, oportunidad_id: {oportunidad_id}")
+    
+    # Verificar que la cotización existe y el usuario tiene permisos
+    cotizacion = get_object_or_404(Cotizacion, pk=cotizacion_id)
+    if not is_supervisor(request.user) and cotizacion.created_by != request.user:
+        messages.error(request, "No tienes permisos para descargar esta cotización.")
+        return redirect('cotizaciones')
+    
+    # Verificar que la oportunidad existe
+    oportunidad = get_object_or_404(TodoItem, pk=oportunidad_id)
+    if not is_supervisor(request.user) and oportunidad.usuario != request.user:
+        messages.error(request, "No tienes permisos para acceder a esta oportunidad.")
+        return redirect('todos')
+    
+    # URLs necesarias para la página de descarga y redirección
+    pdf_download_url = reverse('generate_cotizacion_pdf', args=[cotizacion_id])
+    redirect_url = reverse('cotizaciones_por_oportunidad', args=[oportunidad_id])
+    
+    context = {
+        'cotizacion': cotizacion,
+        'oportunidad': oportunidad,
+        'pdf_download_url': pdf_download_url,
+        'redirect_url': redirect_url
+    }
+    
+    return render(request, 'download_and_redirect.html', context)
+
 def generate_cotizacion_pdf(request, cotizacion_id):
     """
     View to generate the PDF of a specific quote.

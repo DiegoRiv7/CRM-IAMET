@@ -227,19 +227,23 @@ class CotizacionForm(forms.ModelForm):
 
     class Meta:
         model = Cotizacion
-        fields = ['titulo', 'cliente', 'oportunidad', 'descripcion', 'moneda', 'iva_rate']
+        fields = ['titulo', 'cliente', 'nombre_cliente', 'oportunidad', 'descripcion', 'comentarios', 'moneda', 'iva_rate']
         labels = {
             'titulo': 'Título de la Cotización',
             'cliente': 'Cliente',
+            'nombre_cliente': 'Nombre del Cliente',
             'oportunidad': 'Oportunidad de Venta (Opcional)',
             'descripcion': 'Descripción General',
+            'comentarios': 'Comentarios Adicionales',
             'moneda': 'Moneda',
             'iva_rate': 'Tasa de IVA (ej. 0.16 para 16%)',
         }
         widgets = {
             'titulo': forms.TextInput(attrs={'class': 'input-field'}),
             'cliente': forms.Select(attrs={'class': 'input-field'}),
-            'descripcion': forms.Textarea(attrs={'rows': 3, 'class': 'input-field'}),
+            'nombre_cliente': forms.TextInput(attrs={'class': 'input-field', 'placeholder': 'Ej. Juan Pérez'}),
+            'descripcion': forms.Textarea(attrs={'rows': 3, 'class': 'textarea-field'}),
+            'comentarios': forms.Textarea(attrs={'rows': 4, 'class': 'textarea-field', 'placeholder': 'Comentarios que aparecerán en el PDF de la cotización...'}),
             'moneda': forms.Select(attrs={'class': 'input-field'}),
             'iva_rate': forms.NumberInput(attrs={'class': 'input-field', 'step': '0.01'}),
         }

@@ -66,6 +66,9 @@ urlpatterns = [
     # Esta es la ruta clave que faltaba para que el PDF se descargue.
     # Recibe el ID de la cotización y lo pasa a la vista generate_cotizacion_pdf.
     path('cotizacion/pdf/<int:cotizacion_id>/', views.generate_cotizacion_pdf, name='generate_cotizacion_pdf'),
+    
+    # RUTA NUEVA: Para descargar PDF y redirigir a cotizaciones por oportunidad
+    path('cotizacion/download-and-redirect/<int:cotizacion_id>/oportunidad/<int:oportunidad_id>/', views.download_and_redirect_cotizacion, name='download_and_redirect_cotizacion'),
 
     # Ruta para visualizar el PDF de una cotización en el navegador
     path('cotizacion/view/<int:cotizacion_id>/', views.view_cotizacion_pdf, name='view_cotizacion_pdf'),

@@ -151,6 +151,7 @@ class Cotizacion(models.Model):
     
     titulo = models.CharField(max_length=255, default="Cotización", verbose_name="Título de la Cotización")
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='cotizaciones', verbose_name="Cliente")
+    nombre_cliente = models.CharField(max_length=255, blank=True, null=True, verbose_name="Nombre del Cliente")
     oportunidad = models.ForeignKey(TodoItem, on_delete=models.SET_NULL, null=True, blank=True, related_name='cotizaciones', verbose_name="Oportunidad de Venta") # NUEVO CAMPO
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
 
@@ -176,6 +177,9 @@ class Cotizacion(models.Model):
 
     # Campo para controlar la visibilidad de la columna de descuento
     descuento_visible = models.BooleanField(default=True, verbose_name="Mostrar Columna de Descuento")
+
+    # Campo para comentarios adicionales de la cotización
+    comentarios = models.TextField(blank=True, null=True, verbose_name="Comentarios Adicionales", help_text="Comentarios que aparecerán en el PDF de la cotización")
 
     # Usuario que creó la cotización
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Creado por")
