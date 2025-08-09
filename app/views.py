@@ -799,6 +799,8 @@ def register(request):
         form = UserCreationForm()
     return render(request, 'register.html', {'form': form})
 
+from django.views.decorators.csrf import csrf_exempt
+
 def user_login(request):
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
@@ -809,6 +811,9 @@ def user_login(request):
     else:
         form = AuthenticationForm()
     return render(request, 'login.html', {'form': form, 'hide_dock': True}) # Pasar hide_dock=True para ocultar el dock
+
+@csrf_exempt
+def user_login(request):
 
 @login_required
 def user_logout(request):
