@@ -56,8 +56,3 @@
     </div>
 </div>
 {% endblock %}
-
-docker-compose exec web python -c "import re; content = open('app/migrations/0038_convert_mes_cierre_to_names.py', 
-'r').read(); content = content.replace(\"'0037_alter_cotizacion_titulo_alter_todoitem_mes_cierre_and_more'\", 
-\"'0032_alter_todoitem_mes_cierre'\"); open('app/migrations/0038_convert_mes_cierre_to_names.py', 'w').write(content); 
-print('Archivo modificado correctamente')"
