@@ -516,7 +516,8 @@
         // Parse the clients data passed from Django
         const clientesData = JSON.parse('{{ clientes_data_json|escapejs }}');
         const clienteIdInicial = '{{ cliente_id_inicial|default:"" }}'; // Get initial client ID if provided
-        const oportunidadIdInicial = '{{ oportunidad_id_inicial|default:"" }}'; // Get initial opportunity ID if provided
+        const oportunidadIdInicialRaw = '{{ oportunidad_id_inicial|default:"" }}'; // Get initial opportunity ID if provided
+        const oportunidadIdInicial = oportunidadIdInicialRaw.replace(/,/g, '').trim(); // Clean commas and spaces
         
         console.log(`DEBUG JS: clienteIdInicial = "${clienteIdInicial}"`);
         console.log(`DEBUG JS: oportunidadIdInicial = "${oportunidadIdInicial}"`);
@@ -730,7 +731,8 @@
                 // Cargar oportunidades sin cliente específico pero con la oportunidad inicial
                 setTimeout(async () => {
                     try {
-                        const url = `/app/api/get-oportunidades-por-cliente/?oportunidad_inicial_id=${oportunidadIdInicial}`;
+                        const cleanOportunidadId = oportunidadIdInicial.replace(/,/g, '').trim();
+                        const url = `/app/api/get-oportunidades-por-cliente/?oportunidad_inicial_id=${cleanOportunidadId}`;
                         console.log(`DEBUG JS: Cargando oportunidades desde: ${url}`);
                         
                         const response = await fetch(url);
@@ -749,8 +751,8 @@
                             
                             // Preseleccionar la oportunidad inicial
                             if (oportunidades.length > 0) {
-                                oportunidadSelect.value = oportunidadIdInicial;
-                                console.log(`DEBUG JS: Oportunidad preseleccionada: ${oportunidadIdInicial}`);
+                                oportunidadSelect.value = cleanOportunidadId;
+                                console.log(`DEBUG JS: Oportunidad preseleccionada: ${cleanOportunidadId}`);
                             }
                         }
                     } catch (error) {
@@ -775,8 +777,10 @@
                 // Construir URL con parámetro adicional si hay oportunidad inicial
                 let url = `/app/api/get-oportunidades-por-cliente/?cliente_id=${clientId}`;
                 if (oportunidadIdInicial && oportunidadIdInicial.trim() !== '') {
-                    url += `&oportunidad_inicial_id=${oportunidadIdInicial}`;
-                    console.log(`DEBUG JS: Solicitando oportunidades con oportunidad inicial: ${oportunidadIdInicial}`);
+                    // Limpiar el ID antes de enviarlo
+                    const cleanOportunidadId = oportunidadIdInicial.replace(/,/g, '').trim();
+                    url += `&oportunidad_inicial_id=${cleanOportunidadId}`;
+                    console.log(`DEBUG JS: Solicitando oportunidades con oportunidad inicial: ${cleanOportunidadId} (original: ${oportunidadIdInicial})`);
                 }
                 
                 console.log(`DEBUG JS: Fetching opportunities from: ${url}`);
@@ -799,21 +803,24 @@
                 if (oportunidadIdInicial && oportunidadIdInicial.trim() !== '') {
                     console.log(`DEBUG JS: Intentando preseleccionar oportunidad ID: ${oportunidadIdInicial}`);
                     
+                    // Limpiar el ID para la búsqueda
+                    const cleanOportunidadId = oportunidadIdInicial.replace(/,/g, '').trim();
+                    
                     // Verificar inmediatamente si la opción existe
-                    const oportunidadOption = oportunidadSelect.querySelector(`option[value="${oportunidadIdInicial}"]`);
+                    const oportunidadOption = oportunidadSelect.querySelector(`option[value="${cleanOportunidadId}"]`);
                     if (oportunidadOption) {
-                        oportunidadSelect.value = oportunidadIdInicial;
+                        oportunidadSelect.value = cleanOportunidadId;
                         console.log(`DEBUG JS: Oportunidad preseleccionada correctamente: ${oportunidadOption.textContent}`);
                         
                         // Trigger change event if needed
                         oportunidadSelect.dispatchEvent(new Event('change'));
                     } else {
-                        console.warn(`DEBUG JS: No se encontró la opción con ID ${oportunidadIdInicial} en el dropdown`);
+                        console.warn(`DEBUG JS: No se encontró la opción con ID ${cleanOportunidadId} en el dropdown`);
                         console.log('DEBUG JS: Opciones disponibles:', Array.from(oportunidadSelect.options).map(opt => ({ value: opt.value, text: opt.textContent })));
                         
                         // Si no se encuentra, intentar cargar esa oportunidad específica
-                        console.log(`DEBUG JS: Intentando cargar oportunidad específica: ${oportunidadIdInicial}`);
-                        await loadSpecificOpportunity(oportunidadIdInicial);
+                        console.log(`DEBUG JS: Intentando cargar oportunidad específica: ${cleanOportunidadId}`);
+                        await loadSpecificOpportunity(cleanOportunidadId);
                     }
                 } else {
                     console.log(`DEBUG JS: No hay oportunidad inicial para preseleccionar`);
@@ -827,8 +834,10 @@
         // Function to load a specific opportunity if it wasn't found in the regular list
         async function loadSpecificOpportunity(opportunityId) {
             try {
-                console.log(`DEBUG JS: Cargando oportunidad específica: ${opportunityId}`);
-                const response = await fetch(`/app/api/oportunidad/${opportunityId}/detalle/`);
+                // Limpiar el ID de comas y espacios
+                const cleanOpportunityId = opportunityId.toString().replace(/,/g, '').trim();
+                console.log(`DEBUG JS: Cargando oportunidad específica: ${cleanOpportunityId} (original: ${opportunityId})`);
+                const response = await fetch(`/app/api/oportunidad/${cleanOpportunityId}/detalle/`);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
