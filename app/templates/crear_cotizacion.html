@@ -223,28 +223,6 @@
                 </div>
             </div>
         </div>
-        {% elif oportunidad_seleccionada %}
-        <!-- Notification when coming from opportunity management page -->
-        <div class="mb-6 p-4 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl border border-blue-400/30 mx-4">
-            <div class="flex items-center space-x-3">
-                <div class="flex-shrink-0">
-                    <svg class="w-6 h-6 text-blue-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-                <div class="flex-1">
-                    <h3 class="text-sm font-semibold text-white">📋 Cotización para Oportunidad Específica</h3>
-                    <p class="text-xs text-blue-100 mt-1">
-                        Creando cotización para la oportunidad: 
-                        <span class="font-medium">"{{ oportunidad_seleccionada.oportunidad }}"</span>
-                        {% if oportunidad_seleccionada.cliente %}
-                        del cliente <span class="font-medium">{{ oportunidad_seleccionada.cliente.nombre_empresa }}</span>
-                        {% endif %}
-                    </p>
-                    <p class="text-xs text-blue-200 mt-2">✨ Cliente y oportunidad han sido pre-seleccionados automáticamente.</p>
-                </div>
-            </div>
-        </div>
         {% endif %}
 
                 <form id="cotizacion-form" method="post" action="{% if form_action_url %}{{ form_action_url }}{% elif cliente_id_inicial %}{% url 'crear_cotizacion_with_id' cliente_id_inicial %}{% else %}{% url 'crear_cotizacion' %}{% endif %}">
@@ -283,32 +261,21 @@
                             <ul class="errorlist">{% for error in form.usuario_final.errors %}<li>{{ error }}</li>{% endfor %}</ul>
                         {% endif %}
                     </div>
-                </div>
-                <div class="mt-6 text-center">
-                    <label for="id_oportunidad" class="block text-sm font-medium text-gray-300 mb-1">Oportunidad Bitrix24</label>
-                    <div class="flex justify-center items-center space-x-2">
-                        <select id="id_oportunidad" name="oportunidad" class="input-field" style="max-width: 500px;" data-intro="🎯 Opcionalmente, vincula esta cotización con una oportunidad de Bitrix24 para mejor seguimiento." data-step="5">
-                            <option value="">-- Seleccione una oportunidad --</option>
-                        </select>
-                        <button type="button" id="add-opportunity-btn" class="btn-secondary py-2 px-4" data-intro="🆕 Crea una nueva oportunidad directamente en Bitrix24 desde aquí." data-step="6">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                        </button>
+                    <div>
+                        <label for="id_oportunidad" class="block text-sm font-medium text-gray-300 mb-1">Oportunidad Bitrix24</label>
+                        <div class="flex items-center space-x-2">
+                            <select id="id_oportunidad" name="oportunidad" class="input-field flex-grow" data-intro="🎯 Opcionalmente, vincula esta cotización con una oportunidad de Bitrix24 para mejor seguimiento." data-step="5">
+                                <option value="">-- Seleccione una oportunidad --</option>
+                            </select>
+                            <button type="button" id="add-opportunity-btn" class="btn-secondary py-2 px-4" data-intro="🆕 Crea una nueva oportunidad directamente en Bitrix24 desde aquí." data-step="6">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                            </button>
+                        </div>
+                        <div id="oportunidad-help" class="nethive-help-text"></div>
+                        {% if form.oportunidad.errors %}
+                            <ul class="errorlist">{% for error in form.oportunidad.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                        {% endif %}
                     </div>
-                    <div id="oportunidad-help" class="nethive-help-text"></div>
-                    {% if form.oportunidad.errors %}
-                        <ul class="errorlist">{% for error in form.oportunidad.errors %}<li>{{ error }}</li>{% endfor %}</ul>
-                    {% endif %}
-                </div>
-                
-                <!-- Sección de comentarios adicionales -->
-                <div class="mt-6">
-                    <label for="id_comentarios" class="block text-sm font-medium text-gray-300 mb-1">Comentarios Adicionales</label>
-                    <textarea id="id_comentarios" name="comentarios" class="textarea-field w-full" rows="4" placeholder="Comentarios que aparecerán en el PDF de la cotización..." data-intro="📝 Agrega comentarios adicionales que se mostrarán en el PDF final de la cotización para aclarar detalles importantes." data-step="7">{{ form.comentarios.value|default:'' }}</textarea>
-                    <p class="text-xs text-gray-400 mt-1">💡 Estos comentarios aparecerán en el PDF de la cotización para proporcionar información adicional al cliente.</p>
-                    <div id="comentarios-help" class="nethive-help-text"></div>
-                    {% if form.comentarios.errors %}
-                        <ul class="errorlist">{% for error in form.comentarios.errors %}<li>{{ error }}</li>{% endfor %}</ul>
-                    {% endif %}
                 </div>
             </div>
 
@@ -316,10 +283,16 @@
                 <h2 class="text-xl font-semibold text-white mb-4">Detalles de Productos</h2>
 
                 <div class="flex justify-between items-center mb-4">
-                    <button type="button" id="add-row-btn" class="btn-primary flex items-center justify-center" data-intro="📋 Agrega productos uno por uno usando este botón. Cada fila representa un producto en tu cotización." data-step="8">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                        Agregar Fila
-                    </button>
+                    <div class="flex space-x-3">
+                        <button type="button" id="add-row-btn" class="btn-primary flex items-center justify-center" data-intro="📋 Agrega productos uno por uno usando este botón. Cada fila representa un producto en tu cotización." data-step="8">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                            Agregar Fila
+                        </button>
+                        <button type="button" id="toggle-comments-btn" class="btn-secondary flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                            Agregar Comentarios
+                        </button>
+                    </div>
                     <button type="button" id="toggle-paste-area-btn" class="btn-secondary flex items-center justify-center" data-intro="📊 ¿Tienes los datos en Excel? Usa esta función para copiar y pegar múltiples productos de una vez." data-step="9">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-2m-6-11h-2a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-2"></path></svg>
                         Pegar Datos de Excel
@@ -359,6 +332,27 @@
                             <!-- Las filas de productos se añadirán aquí dinámicamente -->
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Sección de comentarios adicionales (oculta por defecto) -->
+            <div id="comments-section" class="card p-6 mt-8 shadow-md-dark hidden">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-white">Comentarios Adicionales</h2>
+                    <button type="button" id="close-comments-btn" class="text-gray-400 hover:text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div>
+                    <label for="id_comentarios" class="block text-sm font-medium text-gray-300 mb-1">Comentarios que aparecerán en el PDF</label>
+                    <textarea id="id_comentarios" name="comentarios" class="textarea-field w-full" rows="4" placeholder="Comentarios que aparecerán en el PDF de la cotización..." data-intro="📝 Agrega comentarios adicionales que se mostrarán en el PDF final de la cotización para aclarar detalles importantes." data-step="7">{{ form.comentarios.value|default:'' }}</textarea>
+                    <p class="text-xs text-gray-400 mt-1">💡 Estos comentarios aparecerán en el PDF de la cotización para proporcionar información adicional al cliente.</p>
+                    <div id="comentarios-help" class="nethive-help-text"></div>
+                    {% if form.comentarios.errors %}
+                        <ul class="errorlist">{% for error in form.comentarios.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                    {% endif %}
                 </div>
             </div>
 
@@ -728,6 +722,18 @@
             if (clienteIdInicial) {
                 fetchOportunidadesForClient(clienteIdInicial);
             }
+            
+            // If there's an initial opportunity ID but no initial client, try to preselect it anyway
+            if (oportunidadIdInicial && !clienteIdInicial) {
+                // Delay to allow the page to load
+                setTimeout(() => {
+                    const oportunidadSelect = document.getElementById('id_oportunidad');
+                    if (oportunidadSelect.options.length > 1) {
+                        oportunidadSelect.value = oportunidadIdInicial;
+                        console.log(`DEBUG JS: Preseleccionando oportunidad sin cliente específico: ${oportunidadIdInicial}`);
+                    }
+                }, 500);
+            }
         }
 
         // Function to fetch opportunities for a given client
@@ -760,18 +766,23 @@
                 });
 
                 // Preseleccionar oportunidad inicial si existe
-                if (oportunidadIdInicial) {
+                if (oportunidadIdInicial && oportunidadIdInicial.trim() !== '') {
                     console.log(`DEBUG JS: Intentando preseleccionar oportunidad ID: ${oportunidadIdInicial}`);
-                    oportunidadSelect.value = oportunidadIdInicial;
-                    console.log(`DEBUG JS: Valor actual del select después de asignar: ${oportunidadSelect.value}`);
                     
-                    // Verificar si la opción realmente existe
-                    const selectedOption = oportunidadSelect.querySelector(`option[value="${oportunidadIdInicial}"]`);
-                    if (selectedOption) {
-                        console.log(`DEBUG JS: Oportunidad preseleccionada correctamente: ${selectedOption.textContent}`);
-                    } else {
-                        console.warn(`DEBUG JS: No se encontró la opción con ID ${oportunidadIdInicial} en el dropdown`);
-                    }
+                    // Usar setTimeout para asegurar que las opciones estén completamente cargadas
+                    setTimeout(() => {
+                        const oportunidadOption = oportunidadSelect.querySelector(`option[value="${oportunidadIdInicial}"]`);
+                        if (oportunidadOption) {
+                            oportunidadSelect.value = oportunidadIdInicial;
+                            console.log(`DEBUG JS: Oportunidad preseleccionada correctamente: ${oportunidadOption.textContent}`);
+                            
+                            // Trigger change event if needed
+                            oportunidadSelect.dispatchEvent(new Event('change'));
+                        } else {
+                            console.warn(`DEBUG JS: No se encontró la opción con ID ${oportunidadIdInicial} en el dropdown`);
+                            console.log('DEBUG JS: Opciones disponibles:', Array.from(oportunidadSelect.options).map(opt => ({ value: opt.value, text: opt.textContent })));
+                        }
+                    }, 100);
                 }
             } catch (error) {
                 console.error('Error fetching opportunities:', error);
@@ -1037,6 +1048,27 @@
             document.getElementById('iva-rate').addEventListener('change', calculateTotals);
             document.getElementById('currency-select').addEventListener('change', calculateTotals);
 
+            // Funcionalidad para mostrar/ocultar comentarios
+            const commentsSection = document.getElementById('comments-section');
+            const toggleCommentsBtn = document.getElementById('toggle-comments-btn');
+            const closeCommentsBtn = document.getElementById('close-comments-btn');
+
+            toggleCommentsBtn.addEventListener('click', function() {
+                commentsSection.classList.toggle('hidden');
+                if (!commentsSection.classList.contains('hidden')) {
+                    // Scroll suavemente hacia la sección de comentarios
+                    commentsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Focus en el textarea
+                    setTimeout(() => {
+                        document.getElementById('id_comentarios').focus();
+                    }, 300);
+                }
+            });
+
+            closeCommentsBtn.addEventListener('click', function() {
+                commentsSection.classList.add('hidden');
+            });
+
             const togglePasteAreaBtn = document.getElementById('toggle-paste-area-btn');
             const pasteAreaContainer = document.getElementById('paste-area-container');
             const processPasteBtn = document.getElementById('process-paste-btn');
@@ -1175,6 +1207,50 @@
         #loading-modal:not(.hidden) {
             opacity: 1;
             pointer-events: auto;
+        }
+
+        /* Animaciones para la sección de comentarios */
+        #comments-section {
+            transition: all 0.3s ease-in-out;
+        }
+
+        #comments-section.hidden {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            border: none;
+        }
+
+        #comments-section:not(.hidden) {
+            max-height: 500px;
+            opacity: 1;
+            overflow: visible;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                max-height: 0;
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                max-height: 500px;
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Mejorar el estilo del botón de comentarios */
+        #toggle-comments-btn {
+            transition: all 0.2s ease-in-out;
+        }
+
+        #toggle-comments-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
     </style>
 
