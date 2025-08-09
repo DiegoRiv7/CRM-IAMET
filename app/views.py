@@ -803,14 +803,21 @@ from django.views.decorators.csrf import csrf_exempt
 
 @csrf_exempt
 def user_login(request):
+    print(f"DEBUG: user_login view called. Method: {request.method}")
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
+        print(f"DEBUG: Form created. Is valid: {form.is_valid()}")
         if form.is_valid():
             user = form.get_user()
+            print(f"DEBUG: User {user.username} authenticated. Attempting login.")
             login(request, user)
-            return redirect('home') # Redirigir a 'home' después de iniciar sesión
+            print(f"DEBUG: User {user.username} logged in. Redirecting to {settings.LOGIN_REDIRECT_URL}")
+            return redirect(settings.LOGIN_REDIRECT_URL) # Redirigir a 'home' después de iniciar sesión
+        else:
+            print(f"DEBUG: Form is NOT valid. Errors: {form.errors}")
     else:
         form = AuthenticationForm()
+        print("DEBUG: GET request. Displaying login form.")
     return render(request, 'login.html', {'form': form, 'hide_dock': True}) # Pasar hide_dock=True para ocultar el dock
 
 @login_required
