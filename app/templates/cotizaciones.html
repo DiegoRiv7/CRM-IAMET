@@ -55,6 +55,8 @@
         margin: 2rem auto;
         padding: 2rem;
         opacity: 1; /* Ensure visibility */
+        z-index: 1; /* Ensure it's above apple-bg */
+        position: relative; /* z-index requires a positioned element */
         /* animation: appleFadeIn 0.5s ease-out; */ /* Removed to prevent initial hidden state */
     }
 
