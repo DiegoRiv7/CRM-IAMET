@@ -77,11 +77,25 @@ MIDDLEWARE = [
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Configuración de cookies para iframes
-SESSION_COOKIE_SAMESITE = 'Lax'
-SESSION_COOKIE_SECURE = False  # TEMPORAL: Para desarrollo local HTTP
-CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_SECURE = False     # TEMPORAL: Para desarrollo local HTTP
+# Configuración de cookies para iframes y cross-site requests
+if not DEBUG:
+    # Configuración para producción (HTTPS)
+    SESSION_COOKIE_SAMESITE = 'None'
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SAMESITE = 'None'
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = False  # Necesario para que JavaScript pueda acceder al token CSRF
+    # Configuración adicional para cross-site requests
+    X_FRAME_OPTIONS = 'SAMEORIGIN'  # Permite iframes del mismo origen
+else:
+    # Configuración para desarrollo local (HTTP)
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SECURE = False
+    SESSION_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SECURE = False
+    CSRF_COOKIE_HTTPONLY = False
 
 ROOT_URLCONF = 'cartera_clientes.urls'
 
