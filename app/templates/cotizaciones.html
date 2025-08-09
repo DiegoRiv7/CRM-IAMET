@@ -4,13 +4,49 @@
 {% block title %}Cotizaciones{% endblock %}
 
 {% block content %}
+<div class="apple-bg"></div>
 <style>
     :root {
-        --apple-background-secondary: rgba(29, 29, 31, 0.7);
+        --apple-background: #000000; /* Added for consistency */
+        --apple-background-secondary: #1D1D1F; /* Updated to solid color */
         --apple-separator: #38383A;
         --apple-blue: #007AFF;
         --apple-label: #FFFFFF;
         --apple-label-secondary: #EBEBF599;
+        --apple-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif; /* Added font family */
+    }
+
+    body {
+        background: var(--apple-background);
+        color: var(--apple-label);
+    }
+
+    /* Apple Gentle Animations (from bienvenida.html) */
+    .apple-float {
+        animation: appleFloat 6s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+    }
+    @keyframes appleFloat {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-6px); }
+    }
+    
+    .apple-fade-in {
+        animation: appleFadeIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    @keyframes appleFadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .apple-bg {
+        position: fixed; 
+        inset: 0; 
+        z-index: 0;
+        pointer-events: none;
+        background: 
+            radial-gradient(ellipse at top left, rgba(0, 122, 255, 0.1) 0%, transparent 50%),
+            radial-gradient(ellipse at bottom right, rgba(0, 122, 255, 0.05) 0%, transparent 50%),
+            linear-gradient(180deg, var(--apple-background) 0%, var(--apple-background-secondary) 100%);
     }
 
     .apple-container {
@@ -18,7 +54,8 @@
         max-width: 1200px;
         margin: 2rem auto;
         padding: 2rem;
-        animation: appleFadeIn 0.5s ease-out;
+        opacity: 1; /* Ensure visibility */
+        /* animation: appleFadeIn 0.5s ease-out; Removed to prevent initial hidden state */
     }
 
     @keyframes appleFadeIn {
