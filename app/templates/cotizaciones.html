@@ -107,6 +107,16 @@
     <div class="apple-header">
         <h1 class="apple-title">Cotizaciones por Cliente</h1>
         <p class="apple-subtitle">Selecciona un cliente para ver todas sus cotizaciones. Las nuevas cotizaciones se crean desde la sección de Oportunidades.</p>
+        
+        <!-- Search Button -->
+        <div style="margin-top: 1.5rem;">
+            <button id="openSearchModal" class="apple-button">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                Buscar Cliente
+            </button>
+        </div>
     </div>
 
     <div class="apple-list-container">
@@ -127,4 +137,218 @@
         </ul>
     </div>
 </div>
+
+<!-- Search Modal -->
+<div id="searchModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4 transform transition-all">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-white">Buscar Cliente</h3>
+                <button id="closeSearchModal" class="text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="relative mb-4">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+                <input id="clientSearchInput" type="text" placeholder="Escribe el nombre del cliente..." 
+                       class="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+            </div>
+            
+            <div id="searchResults" class="max-h-64 overflow-y-auto">
+                <!-- Loading spinner -->
+                <div id="searchSpinner" class="flex items-center justify-center py-8 hidden">
+                    <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span class="ml-2 text-gray-400">Buscando...</span>
+                </div>
+                
+                <!-- No results message -->
+                <div id="noResults" class="text-center py-8 text-gray-400 hidden">
+                    <svg class="w-12 h-12 mx-auto mb-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.5-.94-6.071-2.469l-.102-.102A7.962 7.962 0 014 12c0-1.85.63-3.55 1.686-4.9L5.889 7M20 12a8 8 0 11-16 0 8 8 0 0116 0z"></path>
+                    </svg>
+                    <p>No se encontraron clientes</p>
+                </div>
+                
+                <!-- Results list -->
+                <div id="resultsList" class="space-y-2">
+                    <!-- Results will be populated here -->
+                </div>
+                
+                <!-- Initial state message -->
+                <div id="initialMessage" class="text-center py-8 text-gray-400">
+                    <svg class="w-12 h-12 mx-auto mb-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <p>Escribe para buscar clientes</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchModal = document.getElementById('searchModal');
+    const openSearchBtn = document.getElementById('openSearchModal');
+    const closeSearchBtn = document.getElementById('closeSearchModal');
+    const searchInput = document.getElementById('clientSearchInput');
+    const searchResults = document.getElementById('searchResults');
+    const searchSpinner = document.getElementById('searchSpinner');
+    const noResults = document.getElementById('noResults');
+    const resultsList = document.getElementById('resultsList');
+    const initialMessage = document.getElementById('initialMessage');
+    
+    let searchTimeout;
+    
+    // Open modal
+    openSearchBtn.addEventListener('click', function() {
+        searchModal.classList.remove('hidden');
+        searchInput.focus();
+    });
+    
+    // Close modal
+    function closeModal() {
+        searchModal.classList.add('hidden');
+        searchInput.value = '';
+        showInitialState();
+    }
+    
+    closeSearchBtn.addEventListener('click', closeModal);
+    
+    // Close modal on outside click
+    searchModal.addEventListener('click', function(e) {
+        if (e.target === searchModal) {
+            closeModal();
+        }
+    });
+    
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !searchModal.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+    
+    // Show initial state
+    function showInitialState() {
+        searchSpinner.classList.add('hidden');
+        noResults.classList.add('hidden');
+        resultsList.classList.add('hidden');
+        initialMessage.classList.remove('hidden');
+    }
+    
+    // Show loading state
+    function showLoading() {
+        searchSpinner.classList.remove('hidden');
+        noResults.classList.add('hidden');
+        resultsList.classList.add('hidden');
+        initialMessage.classList.add('hidden');
+    }
+    
+    // Show results
+    function showResults(results) {
+        searchSpinner.classList.add('hidden');
+        initialMessage.classList.add('hidden');
+        
+        if (results.length === 0) {
+            noResults.classList.remove('hidden');
+            resultsList.classList.add('hidden');
+        } else {
+            noResults.classList.add('hidden');
+            resultsList.classList.remove('hidden');
+            
+            resultsList.innerHTML = results.map(client => `
+                <div class="bg-gray-700 rounded-lg p-3 hover:bg-gray-600 transition-colors cursor-pointer" 
+                     onclick="window.location.href='/app/cotizaciones/cliente/${client.id}/'">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="text-white font-medium">${client.nombre_empresa}</h4>
+                            ${client.contacto_principal ? `<p class="text-gray-400 text-sm">${client.contacto_principal}</p>` : ''}
+                        </div>
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+    
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const query = searchInput.value.trim();
+        
+        // Clear previous timeout
+        clearTimeout(searchTimeout);
+        
+        if (query.length === 0) {
+            showInitialState();
+            return;
+        }
+        
+        if (query.length < 2) {
+            return;
+        }
+        
+        // Show loading after a short delay
+        searchTimeout = setTimeout(() => {
+            showLoading();
+            
+            // Simulate API call (replace with actual endpoint)
+            fetch(`/app/api/search-clientes/?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    showResults(data.clientes || []);
+                })
+                .catch(error => {
+                    console.error('Error searching clients:', error);
+                    showResults([]);
+                });
+        }, 300);
+    });
+    
+    showInitialState();
+});
+</script>
+
+<style>
+/* Modal animations */
+#searchModal {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+#searchModal > div {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Search results hover effects */
+#resultsList > div {
+    transition: all 0.2s ease-in-out;
+}
+
+#resultsList > div:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+</style>
+
 {% endblock %}

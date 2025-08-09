@@ -2846,3 +2846,51 @@ def sync_bitrix_manual(request):
             'success': False,
             'error': f'Error general en sincronización: {str(e)}'
         })
+
+@login_required
+def search_clientes_api(request):
+    """
+    API endpoint para buscar clientes por nombre de empresa.
+    Permite búsqueda parcial insensible a mayúsculas y minúsculas.
+    """
+    query = request.GET.get('q', '').strip()
+    
+    if not query or len(query) < 2:
+        return JsonResponse({'clientes': []})
+    
+    try:
+        # Filtrar clientes basado en permisos del usuario
+        if is_supervisor(request.user):
+            # Supervisores pueden ver todos los clientes
+            clientes_queryset = Cliente.objects.filter(
+                nombre_empresa__icontains=query
+            ).order_by('nombre_empresa')[:20]  # Limitar a 20 resultados
+        else:
+            # Usuarios normales solo ven sus clientes asignados
+            clientes_queryset = Cliente.objects.filter(
+                asignado_a=request.user,
+                nombre_empresa__icontains=query
+            ).order_by('nombre_empresa')[:20]
+        
+        # Serializar los resultados
+        clientes_data = []
+        for cliente in clientes_queryset:
+            clientes_data.append({
+                'id': cliente.id,
+                'nombre_empresa': cliente.nombre_empresa,
+                'contacto_principal': cliente.contacto_principal,
+                'email': cliente.email,
+                'telefono': cliente.telefono,
+            })
+        
+        return JsonResponse({
+            'clientes': clientes_data,
+            'total': len(clientes_data)
+        })
+        
+    except Exception as e:
+        print(f"ERROR: Error en búsqueda de clientes: {e}")
+        return JsonResponse({
+            'clientes': [],
+            'error': 'Error interno del servidor'
+        }, status=500)

@@ -22,6 +22,8 @@ urlpatterns = [
 
     # API para obtener clientes por usuario
     path('api/clients-for-user/', views.get_user_clients_api, name='clients_for_user_api'),
+    # API para buscar clientes por nombre
+    path('api/search-clientes/', views.search_clientes_api, name='search_clientes_api'),
     # API para detalle de oportunidad (actualización de fila tras edición)
     path('api/oportunidad/<int:id>/detalle/', views.oportunidad_detalle_api, name='oportunidad_detalle_api'),
 

@@ -814,68 +814,182 @@
 
             addClientForm.addEventListener('submit', async (event) => {
                 event.preventDefault();
-                const formData = new FormData(addClientForm);
-                const response = await fetch('{% url "crear_cliente_api" %}', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}'
+                
+                // Show loading animation
+                const submitBtn = addClientForm.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.innerHTML = `
+                    <div class="flex items-center justify-center">
+                        <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        Creando...
+                    </div>
+                `;
+                submitBtn.disabled = true;
+                
+                try {
+                    const formData = new FormData(addClientForm);
+                    const response = await fetch('{% url "crear_cliente_api" %}', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        }
+                    });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // Show success animation
+                        submitBtn.innerHTML = `
+                            <div class="flex items-center justify-center">
+                                <svg class="w-4 h-4 mr-2 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                ¡Cliente creado!
+                            </div>
+                        `;
+                        
+                        const clientSelect = document.getElementById('id_cliente');
+                        const newOption = document.createElement('option');
+                        newOption.value = result.cliente.id;
+                        newOption.textContent = result.cliente.nombre_empresa;
+                        newOption.selected = true;
+                        clientSelect.appendChild(newOption);
+                        clientSelect.dispatchEvent(new Event('change'));
+                        
+                        // Close modal after short delay
+                        setTimeout(() => {
+                            addClientModal.classList.add('hidden');
+                            addClientForm.reset();
+                            submitBtn.innerHTML = originalBtnText;
+                            submitBtn.disabled = false;
+                        }, 1000);
+                    } else {
+                        // Show error and restore button
+                        submitBtn.innerHTML = `
+                            <div class="flex items-center justify-center">
+                                <svg class="w-4 h-4 mr-2 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                                Error al crear
+                            </div>
+                        `;
+                        setTimeout(() => {
+                            submitBtn.innerHTML = originalBtnText;
+                            submitBtn.disabled = false;
+                        }, 2000);
+                        console.error('Error creating client:', result.errors);
                     }
-                });
-                const result = await response.json();
-                if (result.success) {
-                    const clientSelect = document.getElementById('id_cliente');
-                    const newOption = document.createElement('option');
-                    newOption.value = result.cliente.id;
-                    newOption.textContent = result.cliente.nombre_empresa;
-                    newOption.selected = true;
-                    clientSelect.appendChild(newOption);
-                    clientSelect.dispatchEvent(new Event('change'));
-                    addClientModal.classList.add('hidden');
-                    addClientForm.reset();
-                } else {
-                    // Handle errors
-                    console.error('Error creating client:', result.errors);
+                } catch (error) {
+                    // Handle network errors
+                    submitBtn.innerHTML = `
+                        <div class="flex items-center justify-center">
+                            <svg class="w-4 h-4 mr-2 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            Error de conexión
+                        </div>
+                    `;
+                    setTimeout(() => {
+                        submitBtn.innerHTML = originalBtnText;
+                        submitBtn.disabled = false;
+                    }, 2000);
+                    console.error('Network error:', error);
                 }
             });
 
             addOpportunityForm.addEventListener('submit', async (event) => {
                 event.preventDefault();
-                const formData = new FormData(addOpportunityForm);
-                const clienteId = document.getElementById('id_cliente').value;
-                const cotizacionTitulo = document.getElementById('titulo_cotizacion').value;
+                
+                // Show loading animation
+                const submitBtn = addOpportunityForm.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.innerHTML = `
+                    <div class="flex items-center justify-center">
+                        <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        Creando oportunidad...
+                    </div>
+                `;
+                submitBtn.disabled = true;
+                
+                try {
+                    const formData = new FormData(addOpportunityForm);
+                    const clienteId = document.getElementById('id_cliente').value;
+                    const cotizacionTitulo = document.getElementById('titulo_cotizacion').value;
 
-                formData.append('cliente', clienteId);
-                formData.append('oportunidad', cotizacionTitulo);
+                    formData.append('cliente', clienteId);
+                    formData.append('oportunidad', cotizacionTitulo);
 
-                // Format the monto value before sending
-                const montoInput = document.getElementById('opportunity-monto');
-                const montoValue = parseFloat(montoInput.value.replace(/[^0-9.-]+/g,""));
-                formData.set('monto', montoValue);
+                    // Format the monto value before sending
+                    const montoInput = document.getElementById('opportunity-monto');
+                    const montoValue = parseFloat(montoInput.value.replace(/[^0-9.-]+/g,""));
+                    formData.set('monto', montoValue);
 
-
-                const response = await fetch('{% url "crear_oportunidad_api" %}', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}'
+                    const response = await fetch('{% url "crear_oportunidad_api" %}', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        }
+                    });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // Show success animation
+                        submitBtn.innerHTML = `
+                            <div class="flex items-center justify-center">
+                                <svg class="w-4 h-4 mr-2 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                ¡Oportunidad creada!
+                            </div>
+                        `;
+                        
+                        const oportunidadSelect = document.getElementById('id_oportunidad');
+                        const newOption = document.createElement('option');
+                        newOption.value = result.oportunidad.id;
+                        newOption.textContent = result.oportunidad.nombre;
+                        newOption.selected = true;
+                        oportunidadSelect.appendChild(newOption);
+                        oportunidadSelect.dispatchEvent(new Event('change'));
+                        
+                        // Close modal after short delay
+                        setTimeout(() => {
+                            addOpportunityModal.classList.add('hidden');
+                            addOpportunityForm.reset();
+                            submitBtn.innerHTML = originalBtnText;
+                            submitBtn.disabled = false;
+                        }, 1000);
+                    } else {
+                        // Show error and restore button
+                        submitBtn.innerHTML = `
+                            <div class="flex items-center justify-center">
+                                <svg class="w-4 h-4 mr-2 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                                Error al crear
+                            </div>
+                        `;
+                        setTimeout(() => {
+                            submitBtn.innerHTML = originalBtnText;
+                            submitBtn.disabled = false;
+                        }, 2000);
+                        console.error('Error creating opportunity:', result.errors);
                     }
-                });
-                const result = await response.json();
-                if (result.success) {
-                    const oportunidadSelect = document.getElementById('id_oportunidad');
-                    const newOption = document.createElement('option');
-                    newOption.value = result.oportunidad.id;
-                    newOption.textContent = result.oportunidad.nombre;
-                    newOption.selected = true;
-                    oportunidadSelect.appendChild(newOption);
-                    oportunidadSelect.dispatchEvent(new Event('change'));
-                    addOpportunityModal.classList.add('hidden');
-                    addOpportunityForm.reset();
-                } else {
-                    // Handle errors
-                    console.error('Error creating opportunity:', result.errors);
-                    alert('Error al crear oportunidad: ' + JSON.stringify(result.errors));
+                } catch (error) {
+                    // Handle network errors
+                    submitBtn.innerHTML = `
+                        <div class="flex items-center justify-center">
+                            <svg class="w-4 h-4 mr-2 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            Error de conexión
+                        </div>
+                    `;
+                    setTimeout(() => {
+                        submitBtn.innerHTML = originalBtnText;
+                        submitBtn.disabled = false;
+                    }, 2000);
+                    console.error('Network error:', error);
                 }
             });
 
