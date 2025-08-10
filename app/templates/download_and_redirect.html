@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Función para redirigir a cotizaciones por oportunidades
     function redirect() {
         console.log('🔄 Redirigiendo a cotizaciones por oportunidades...');
-        window.location.href = '/app/todos/{{ oportunidad.id }}/cotizaciones/';
+        window.location.href = '{% url "cotizaciones_por_oportunidad" oportunidad.id %}';
     }
     
     // Secuencia automática
