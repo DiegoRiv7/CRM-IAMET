@@ -9,13 +9,13 @@ log() {
 log "🐳 Iniciando contenedor Django..."
 
 # Esperar a que la base de datos esté disponible (si es necesario)
-if [ "$DATABASE_HOST" ]; then
-    log "⏳ Esperando a que la base de datos esté disponible..."
-    while ! nc -z $DATABASE_HOST ${DATABASE_PORT:-5432}; do
-        log "Base de datos no disponible, esperando..."
+if [ "$DB_HOST" ]; then
+    log "⏳ Esperando a que la base de datos en $DB_HOST:${DB_PORT:-3306} esté disponible..."
+    while ! nc -z $DB_HOST ${DB_PORT:-3306}; do
+        log "Base de datos no disponible, esperando 1 segundo..."
         sleep 1
     done
-    log "✅ Base de datos disponible"
+    log "✅ Base de datos disponible."
 fi
 
 # Ejecutar migraciones
