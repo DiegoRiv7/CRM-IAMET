@@ -395,12 +395,4 @@ El contador de páginas en HTML solo funciona automáticamente si usas herramien
 En navegadores o impresión directa desde el navegador, el script JS solo puede mostrar 1/1 por defecto.
 -->
 
-docker run -d \
-    --name gestion-ventas-sqlite \
-    -p 8000:8000 \
-    -v $(pwd)/db.sqlite3:/app/db.sqlite3 \
-    -e DJANGO_DEBUG=False \
-    -e DJANGO_ALLOWED_HOSTS=nethive.mx,localhost,127.0.0.1 \
-    -e DJANGO_SECRET_KEY=clave-super-secreta-cambiar \
-    -e DB_ENGINE=sqlite \
-    gestion-ventas-fixed
+
