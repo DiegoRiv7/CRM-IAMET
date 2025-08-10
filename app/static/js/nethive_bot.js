@@ -2262,8 +2262,47 @@ document.addEventListener('DOMContentLoaded', () => {
     initNethive();
 });
 
-// Exportar funciones globales
-window.showNethiveAssistant = showNethiveAssistant;
-window.showAdvancedNethiveChat = showAdvancedNethiveChat;
-window.updateNethiveMood = updateNethiveMood;
-window.showProactiveBot = showProactiveBot;
+// ==================== EXPORTAR FUNCIONES GLOBALES ====================
+// Asegurar que todas las funciones estén disponibles globalmente
+console.log("🔧 Exportando funciones de Koti Bot...");
+
+// Funciones principales del asistente
+if (typeof window.showNethiveAssistant !== 'function') {
+    console.log("⚠️ showNethiveAssistant not found, attempting to define...");
+}
+window.showNethiveAssistant = window.showNethiveAssistant || function() {
+    console.log("🤖 showNethiveAssistant called");
+    const modal = document.getElementById('nethive-assistant-modal');
+    const container = document.getElementById('nethive-bot-container');
+    
+    if (modal && container) {
+        console.log("✅ Opening bot modal...");
+        container.classList.remove('hidden');
+        modal.classList.remove('hidden');
+    } else {
+        console.error("❌ Bot elements not found");
+    }
+};
+
+window.closeNethiveAssistant = window.closeNethiveAssistant || function() {
+    const modal = document.getElementById('nethive-assistant-modal');
+    const container = document.getElementById('nethive-bot-container');
+    
+    if (container) container.classList.add('hidden');
+    if (modal) modal.classList.add('hidden');
+};
+
+window.openAdvancedChatFromBasic = window.openAdvancedChatFromBasic || function() {
+    const basicModal = document.getElementById('nethive-assistant-modal');
+    const advancedChat = document.getElementById('nethive-advanced-chat');
+    
+    if (basicModal) basicModal.classList.add('hidden');
+    if (advancedChat) advancedChat.classList.remove('hidden');
+};
+
+// Funciones auxiliares
+window.showAdvancedNethiveChat = window.showAdvancedNethiveChat || function() {};
+window.updateNethiveMood = window.updateNethiveMood || function() {};
+window.showProactiveBot = window.showProactiveBot || function() {};
+
+console.log("✅ Koti Bot functions exported globally");

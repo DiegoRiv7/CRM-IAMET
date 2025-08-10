@@ -10,14 +10,27 @@
         {% endblock %}
     </title>
     
-    <!-- Favicon y iconos -->
+    <!-- Favicon y iconos con fallbacks -->
+    <!-- SVG Favicon para navegadores modernos -->
     <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
+    
+    <!-- Favicon ICO como fallback -->
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
+    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
+    
+    <!-- PNG Favicons para diferentes tamaños -->
     <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
     <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
+    
+    <!-- Android Chrome Icons -->
     <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/android-chrome-192x192.png' %}">
     <link rel="icon" type="image/png" sizes="512x512" href="{% static 'images/android-chrome-512x512.png' %}">
+    
+    <!-- Inline SVG favicon como último recurso -->
+    <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAwN0FGRiIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzU4NTZENiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHg9IjIiIHk9IjIiIHdpZHRoPSIyOCIgaGVpZ2h0PSIyOCIgcng9IjYiIGZpbGw9InVybCgjYmcpIi8+PHJlY3QgeD0iNyIgeT0iMjAiIHdpZHRoPSIzIiBoZWlnaHQ9IjYiIGZpbGw9IiNGRkYiIHJ4PSIxIi8+PHJlY3QgeD0iMTIiIHk9IjE2IiB3aWR0aD0iMyIgaGVpZ2h0PSIxMCIgZmlsbD0iI0ZGRiIgcng9IjEiLz48cmVjdCB4PSIxNyIgeT0iMTIiIHdpZHRoPSIzIiBoZWlnaHQ9IjE0IiBmaWxsPSIjRkZGIiByeD0iMSIvPjxyZWN0IHg9IjIyIiB5PSI4IiB3aWR0aD0iMyIgaGVpZ2h0PSIxOCIgZmlsbD0iI0ZGRiIgcng9IjEiLz48L3N2Zz4=">
     
     <!-- Meta tags para mejor presentación -->
     <meta name="description" content="Sistema de Gestión de Ventas - Administra oportunidades, clientes y cotizaciones de manera eficiente">
@@ -274,10 +287,29 @@
     {% include 'nethive_bot.html' %}
     
     <!-- Script principal de Nethive -->
-    <script src="{% static 'js/nethive_bot.js' %}"></script>
+    <script src="{% static 'js/nethive_bot.js' %}" onerror="console.error('❌ Failed to load nethive_bot.js')"></script>
     
     <!-- Script de diagnóstico simple -->
-    <script src="{% static 'js/debug_simple.js' %}"></script>
+    <script src="{% static 'js/debug_simple.js' %}" onerror="console.error('❌ Failed to load debug_simple.js')"></script>
+    
+    <!-- Verificación de carga de scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔧 DOM loaded, checking bot functions...');
+            console.log('showNethiveAssistant exists:', typeof window.showNethiveAssistant === 'function');
+            console.log('closeNethiveAssistant exists:', typeof window.closeNethiveAssistant === 'function');
+            
+            // Verificar elementos del bot
+            const modal = document.getElementById('nethive-assistant-modal');
+            const container = document.getElementById('nethive-bot-container');
+            console.log('Bot modal found:', !!modal);
+            console.log('Bot container found:', !!container);
+            
+            if (!modal || !container) {
+                console.error('❌ Bot elements missing from DOM');
+            }
+        });
+    </script>
     
     <!-- Configuración simplificada -->
     <script>
@@ -324,6 +356,30 @@
 
         console.log('🤖 Configuración de Koti cargada');
         console.log('📱 Utilidades responsivas cargadas');
+        
+        // Test button para debuggar el bot
+        if (window.location.search.includes('debug=bot')) {
+            const testBtn = document.createElement('button');
+            testBtn.textContent = '🤖 TEST BOT';
+            testBtn.style.cssText = 'position:fixed;top:10px;right:10px;z-index:9999;padding:10px;background:#007AFF;color:white;border:none;border-radius:8px;font-weight:bold;';
+            testBtn.onclick = function() {
+                console.log('🔧 Test button clicked');
+                if (typeof window.showNethiveAssistant === 'function') {
+                    window.showNethiveAssistant();
+                } else {
+                    console.error('Function not available');
+                    // Manual fallback
+                    const modal = document.getElementById('nethive-assistant-modal');
+                    const container = document.getElementById('nethive-bot-container');
+                    if (modal && container) {
+                        container.classList.remove('hidden');
+                        modal.classList.remove('hidden');
+                        console.log('✅ Manual bot open attempted');
+                    }
+                }
+            };
+            document.body.appendChild(testBtn);
+        }
     </script>
 </body>
 </html>

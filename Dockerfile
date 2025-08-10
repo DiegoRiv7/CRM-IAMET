@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     fonts-noto-color-emoji \
     libpangoft2-1.0-0 \
     libharfbuzz-icu0 \
+    netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia el archivo de requisitos e instala las dependencias de Python
@@ -28,8 +29,18 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia todo el código de la aplicación al contenedor
 COPY . .
 
+# Copia y hace ejecutable el script de entrada
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Crea el directorio para archivos estáticos
+RUN mkdir -p staticfiles
+
 # Expone el puerto en el que Gunicorn se ejecutará
 EXPOSE 8000
 
+# Configura el entrypoint
+ENTRYPOINT ["docker-entrypoint.sh"]
+
 # Comando para ejecutar la aplicación con Gunicorn
-CMD ["gunicorn", "cartera_clientes.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "cartera_clientes.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--worker-class", "gevent"]

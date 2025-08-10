@@ -1497,11 +1497,27 @@ window.addEventListener('error', function(e) {
             if (btn) {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
+                    originalConsole.log('🤖 Assistant button clicked!');
+                    
                     // Call the main assistant function from nethive_bot.js
                     if (typeof window.showNethiveAssistant === 'function') {
+                        originalConsole.log('🤖 Calling showNethiveAssistant...');
                         window.showNethiveAssistant();
                     } else {
-                        originalConsole.warn('showNethiveAssistant function not available');
+                        originalConsole.warn('⚠️ showNethiveAssistant function not available');
+                        originalConsole.log('Available functions:', Object.keys(window).filter(key => key.includes('Nethive')));
+                        
+                        // Try alternative ways to open the bot
+                        const modal = document.getElementById('nethive-assistant-modal');
+                        const container = document.getElementById('nethive-bot-container');
+                        
+                        if (modal && container) {
+                            originalConsole.log('🤖 Trying manual modal opening...');
+                            container.classList.remove('hidden');
+                            modal.classList.remove('hidden');
+                        } else {
+                            originalConsole.error('❌ Bot modal elements not found');
+                        }
                     }
                 });
             }
