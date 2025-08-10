@@ -126,7 +126,15 @@ WSGI_APPLICATION = 'cartera_clientes.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 # Configuración de base de datos inteligente para producción y desarrollo
-if os.environ.get('DB_NAME'):
+if os.environ.get('DB_ENGINE') == 'sqlite':
+    # Configuración forzada para SQLite
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+elif os.environ.get('DB_NAME'):
     # Configuración de producción (MySQL) - Lee desde variables de entorno
     DATABASES = {
         'default': {
