@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -8,11 +9,46 @@
             Administración de Ventas
         {% endblock %}
     </title>
+    
+    <!-- Favicon y iconos -->
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/android-chrome-192x192.png' %}">
+    <link rel="icon" type="image/png" sizes="512x512" href="{% static 'images/android-chrome-512x512.png' %}">
+    
+    <!-- Meta tags para mejor presentación -->
+    <meta name="description" content="Sistema de Gestión de Ventas - Administra oportunidades, clientes y cotizaciones de manera eficiente">
+    <meta name="keywords" content="ventas, CRM, cotizaciones, oportunidades, clientes, Bitrix24">
+    <meta name="author" content="Sistema de Gestión de Ventas">
+    <meta name="robots" content="noindex, nofollow">
+    
+    <!-- Open Graph para redes sociales -->
+    <meta property="og:title" content="{% block og_title %}Sistema de Gestión de Ventas{% endblock %}">
+    <meta property="og:description" content="Administra tus ventas, clientes y oportunidades de negocio de manera eficiente">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="{% static 'images/android-chrome-512x512.png' %}">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{% block twitter_title %}Sistema de Gestión de Ventas{% endblock %}">
+    <meta name="twitter:description" content="Administra tus ventas, clientes y oportunidades de negocio">
+    
+    <!-- PWA Support -->
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="theme-color" content="#007AFF">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Gestión Ventas">
+    
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    {% load static %}
     <link rel="stylesheet" href="{% static 'css/oportunidad_detail.css' %}">
+    <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
     
     <!-- Intro.js for Tutorial -->
     <script src="https://unpkg.com/intro.js/intro.js"></script>
@@ -133,7 +169,7 @@
             animation: slide-in 0.5s ease-out;
         }
 
-        /* Light Theme Liquid Glass Effects */
+        /* Light Theme Responsive Glass Effects */
         .light-theme .glass-card {
             background: rgba(235, 245, 255, 0.6);
             backdrop-filter: blur(20px);
@@ -142,6 +178,14 @@
             box-shadow: 
                 0 8px 32px rgba(0, 122, 255, 0.15),
                 inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+        
+        @media (max-width: 768px) {
+            .light-theme .glass-card {
+                background: rgba(235, 245, 255, 0.8);
+                backdrop-filter: blur(15px);
+                -webkit-backdrop-filter: blur(15px);
+            }
         }
 
         .light-theme .glass-table {
@@ -153,6 +197,68 @@
                 0 8px 32px rgba(0, 122, 255, 0.12),
                 inset 0 1px 0 rgba(255, 255, 255, 0.9);
         }
+        /* Form responsiveness */
+        @media (max-width: 768px) {
+            .form-container {
+                padding: 1rem;
+            }
+            
+            .form-group {
+                margin-bottom: 1rem;
+            }
+            
+            input, select, textarea {
+                width: 100%;
+                padding: 0.75rem;
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+            
+            button {
+                width: 100%;
+                padding: 0.875rem;
+                font-size: 1rem;
+            }
+        }
+        
+        /* Button responsiveness */
+        @media (max-width: 768px) {
+            .btn-group {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
+        /* Modal responsiveness */
+        @media (max-width: 768px) {
+            .modal-dialog {
+                margin: 1rem;
+                max-width: calc(100% - 2rem);
+            }
+            
+            .modal-content {
+                border-radius: 1rem;
+            }
+        }
+        
+        /* Navigation responsiveness */
+        @media (max-width: 768px) {
+            .nav-tabs {
+                flex-wrap: wrap;
+                border: none;
+            }
+            
+            .nav-tabs .nav-link {
+                flex: 1;
+                text-align: center;
+                border-radius: 0.5rem;
+                margin: 0.25rem;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col" {% if is_supervisor or user.is_superuser %}data-user-is-supervisor="true"{% endif %}>
@@ -162,12 +268,6 @@
         {% endblock %}
     </div>
     {% include 'dock.html' %}
-    <!-- Pie de Página (Opcional) -->
-    <footer class="bg-gray-800 text-gray-400 text-center p-4 mt-8">
-        <div class="container mx-auto">
-            <p>&copy; 2025 Gestión de Ventas. Todos los derechos reservados.</p>
-        </div>
-    </footer>
 
     <!-- ==================== KOTI BOT - SISTEMA HÍBRIDO ==================== -->
     <!-- Contenedor principal del bot Koti -->
@@ -188,8 +288,42 @@
             opportunityWatchEnabled: true,
             debugMode: true
         };
+        
+        // Responsive utilities
+        window.ResponsiveUtils = {
+            isMobile: () => window.innerWidth <= 768,
+            isTablet: () => window.innerWidth > 768 && window.innerWidth <= 1024,
+            isDesktop: () => window.innerWidth > 1024,
+            isCurvedMonitor: () => window.innerWidth > 2560 || (window.innerWidth > 1920 && window.screen.width / window.screen.height > 2),
+            isUltraWide: () => window.innerWidth > 2560,
+            
+            // Add responsive classes to body
+            updateBodyClasses: () => {
+                const body = document.body;
+                body.classList.remove('is-mobile', 'is-tablet', 'is-desktop', 'is-curved', 'is-ultrawide');
+                
+                if (window.ResponsiveUtils.isMobile()) body.classList.add('is-mobile');
+                else if (window.ResponsiveUtils.isTablet()) body.classList.add('is-tablet');
+                else if (window.ResponsiveUtils.isDesktop()) body.classList.add('is-desktop');
+                
+                if (window.ResponsiveUtils.isCurvedMonitor()) body.classList.add('is-curved');
+                if (window.ResponsiveUtils.isUltraWide()) body.classList.add('is-ultrawide');
+            }
+        };
+        
+        // Update classes on load and resize
+        window.ResponsiveUtils.updateBodyClasses();
+        
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                window.ResponsiveUtils.updateBodyClasses();
+            }, 150);
+        });
 
         console.log('🤖 Configuración de Koti cargada');
+        console.log('📱 Utilidades responsivas cargadas');
     </script>
 </body>
 </html>

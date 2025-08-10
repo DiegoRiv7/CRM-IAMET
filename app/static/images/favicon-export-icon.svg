@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <!-- Gradiente azul profesional -->
+    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2E5BBA;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Fondo negro profesional -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a1a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Sombra profesional -->
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Fondo con esquinas redondeadas estilo Apple -->
+  <rect x="0" y="0" width="32" height="32" rx="7" ry="7" fill="url(#bgGradient)" />
+  
+  <!-- El ícono de exportación/proceso adaptado -->
+  
+  <!-- Base del documento/tabla -->
+  <rect x="4" y="8" width="16" height="16" rx="2" ry="2" 
+        fill="none" stroke="url(#blueGradient)" stroke-width="2" 
+        filter="url(#shadow)" />
+  
+  <!-- Líneas horizontales que representan datos/filas -->
+  <line x1="6" y1="12" x2="12" y2="12" 
+        stroke="url(#blueGradient)" stroke-width="1.5" stroke-linecap="round" />
+  <line x1="6" y1="16" x2="14" y2="16" 
+        stroke="url(#blueGradient)" stroke-width="1.5" stroke-linecap="round" />
+  <line x1="6" y1="20" x2="10" y2="20" 
+        stroke="url(#blueGradient)" stroke-width="1.5" stroke-linecap="round" />
+  
+  <!-- Flecha de exportación -->
+  <path d="M 18 16 L 24 16 M 21 13 L 24 16 L 21 19" 
+        fill="none" stroke="url(#blueGradient)" stroke-width="2.5" 
+        stroke-linecap="round" stroke-linejoin="round" 
+        filter="url(#shadow)" />
+  
+  <!-- Conectores en el lado izquierdo (representan entrada de datos) -->
+  <circle cx="4" cy="10" r="1" fill="url(#blueGradient)" />
+  <circle cx="4" cy="14" r="1" fill="url(#blueGradient)" />
+  <circle cx="4" cy="18" r="1" fill="url(#blueGradient)" />
+  <circle cx="4" cy="22" r="1" fill="url(#blueGradient)" />
+  
+  <!-- Highlight sutil -->
+  <path d="M 1 1 L 1 8 L 8 1 Z" 
+        fill="rgba(255,255,255,0.1)" />
+</svg>

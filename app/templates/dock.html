@@ -508,6 +508,93 @@
         color: white;
     }
 
+    /* Responsive breakpoints and device detection */
+    @media (max-width: 768px) {
+        /* Mobile devices - force dock to bottom */
+        .macos-dock {
+            opacity: 0 !important;
+            visibility: hidden !important;
+        }
+        
+        #dock-bottom {
+            opacity: 1 !important;
+            visibility: visible !important;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            flex-direction: row;
+            padding: 6px;
+            border-radius: 16px;
+        }
+        
+        .dock-item {
+            width: 44px;
+            height: 44px;
+            margin: 0 4px;
+        }
+        
+        .dock-icon {
+            width: 24px;
+            height: 24px;
+        }
+    }
+    
+    @media (min-width: 769px) and (max-width: 1024px) {
+        /* Tablets/iPads - optimize spacing */
+        .macos-dock {
+            padding: 10px;
+        }
+        
+        .dock-item {
+            width: 48px;
+            height: 48px;
+        }
+    }
+    
+    @media (min-width: 1025px) and (max-width: 1440px) {
+        /* Standard monitors */
+        .macos-dock {
+            padding: 8px;
+        }
+    }
+    
+    @media (min-width: 1441px) and (max-width: 2560px) {
+        /* Large monitors and curved displays */
+        .macos-dock {
+            padding: 12px;
+            border-radius: 24px;
+        }
+        
+        .dock-item {
+            width: 56px;
+            height: 56px;
+        }
+        
+        .dock-icon {
+            width: 36px;
+            height: 36px;
+        }
+    }
+    
+    @media (min-width: 2561px) {
+        /* Ultra-wide and TV displays */
+        .macos-dock {
+            padding: 16px;
+            border-radius: 28px;
+        }
+        
+        .dock-item {
+            width: 64px;
+            height: 64px;
+            margin: 8px 0;
+        }
+        
+        .dock-icon {
+            width: 40px;
+            height: 40px;
+        }
+    }
+
     /* Dock position variants - Fixed positions */
     #dock-left {
         left: 12px;
@@ -1017,6 +1104,9 @@ window.addEventListener('error', function(e) {
         let isNightShiftOn = false;
         let currentDockPosition = 'left';
         
+        // Auto-detect mobile and set dock position
+        detectDeviceAndSetDock();
+        
         // Load saved preferences (except dock position which is handled by CSS)
         loadPreferencesWithoutDockPosition();
         
@@ -1349,6 +1439,74 @@ window.addEventListener('error', function(e) {
                 updatePanelPositions(currentDockPosition);
             }
         }
+        
+        // Device detection and automatic dock positioning
+        function detectDeviceAndSetDock() {
+            const isMobile = window.innerWidth <= 768;
+            const isTablet = window.innerWidth > 768 && window.innerWidth <= 1024;
+            const isCurvedMonitor = window.innerWidth > 2560 || (window.innerWidth > 1920 && window.screen.width / window.screen.height > 2);
+            
+            // Check if user has a saved preference
+            const saved = localStorage.getItem('designPreferences');
+            let hasUserPreference = false;
+            
+            if (saved) {
+                const preferences = JSON.parse(saved);
+                hasUserPreference = preferences.dockPosition !== undefined;
+            }
+            
+            // Only auto-position if no user preference exists
+            if (!hasUserPreference) {
+                if (isMobile) {
+                    // Force bottom dock on mobile
+                    setDockPosition('bottom');
+                } else if (isTablet) {
+                    // Default to left for tablets but allow user choice
+                    setDockPosition('left');
+                } else if (isCurvedMonitor) {
+                    // Curved monitors work better with side docks
+                    setDockPosition('right');
+                } else {
+                    // Standard monitors default to left
+                    setDockPosition('left');
+                }
+            }
+        }
+        
+        // Listen for window resize to re-evaluate device type
+        let resizeTimeout;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(function() {
+                // Only re-detect on significant size changes
+                const wasMobile = window.innerWidth <= 768;
+                detectDeviceAndSetDock();
+            }, 250);
+        });
+        
+        // ==================== ASSISTANT BOT BUTTON HANDLERS ====================
+        // Add event listeners for all assistant buttons in all dock positions
+        const assistantButtons = [
+            document.getElementById('assistant-btn'),
+            document.getElementById('assistant-btn-right'),
+            document.getElementById('assistant-btn-top'),
+            document.getElementById('assistant-btn-bottom')
+        ].filter(btn => btn); // Remove null elements
+        
+        assistantButtons.forEach(btn => {
+            if (btn) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // Call the main assistant function from nethive_bot.js
+                    if (typeof window.showNethiveAssistant === 'function') {
+                        window.showNethiveAssistant();
+                    } else {
+                        originalConsole.warn('showNethiveAssistant function not available');
+                    }
+                });
+            }
+        });
+        
         } catch (error) {
             originalConsole.error('Error initializing design panel:', error);
             // Try to suppress the external script error

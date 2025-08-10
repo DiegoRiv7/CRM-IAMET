@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <!-- Gradiente azul más elegante y profesional -->
+    <linearGradient id="professionalBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2E5BBA;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Fondo negro profesional -->
+    <linearGradient id="professionalBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a1a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Sombra profesional -->
+    <filter id="professionalShadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  
+  <!-- Fondo con esquinas perfectamente redondeadas -->
+  <rect x="0" y="0" width="32" height="32" rx="7" ry="7" fill="url(#professionalBg)" />
+  
+  <!-- N profesional y bien proporcionada -->
+  <path d="M 7 25 L 7 7 L 11.5 7 L 20.5 19.5 L 20.5 7 L 25 7 L 25 25 L 20.5 25 L 11.5 12.5 L 11.5 25 Z" 
+        fill="url(#professionalBlue)" 
+        filter="url(#professionalShadow)" />
+  
+  <!-- Highlight sutil y elegante -->
+  <path d="M 7.5 7.5 L 7.5 10.5 L 10.5 7.5 Z" 
+        fill="rgba(255,255,255,0.15)" />
+</svg>
