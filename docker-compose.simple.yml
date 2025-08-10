@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: gestion-ventas-web
+    ports:
+      - "8000:8000"
+    volumes:
+      # Opcional: para persistir archivos estáticos
+      - static_files:/app/staticfiles
+      # Opcional: para persistir uploads
+      - media_files:/app/media
+    environment:
+      - DJANGO_DEBUG=False
+      - DJANGO_ALLOWED_HOSTS=nethive.mx,localhost,127.0.0.1
+      - DJANGO_SECRET_KEY=tu-clave-secreta-super-segura-cambiar-en-produccion
+      # Variables opcionales para crear superusuario automáticamente
+      - DJANGO_SUPERUSER_EMAIL=admin@nethive.mx
+      - DJANGO_SUPERUSER_PASSWORD=admin123
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/app/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  static_files:
+  media_files:

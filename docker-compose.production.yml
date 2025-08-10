@@ -3,6 +3,7 @@ version: '3.8'
 services:
   web:
     build: .
+    container_name: gestion-ventas-web
     ports:
       - "8000:8000"
     volumes:
@@ -48,9 +49,10 @@ services:
   # Nginx para servir archivos estáticos (opcional pero recomendado)
   nginx:
     image: nginx:alpine
+    container_name: gestion-ventas-nginx
     ports:
-      - "80:80"
-      - "443:443"
+      - "8080:80"  # Cambiado a puerto 8080 para evitar conflictos
+      # - "443:443"  # Comentado hasta tener certificados SSL
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - static_files:/usr/share/nginx/html/static:ro
