@@ -1850,6 +1850,14 @@ function handleNewOpportunityDetected(opportunity) {
 
 function handleNewBitrixOpportunityDetected(bitrixOpportunity) {
     console.log('🎯 Procesando nueva oportunidad desde Bitrix24:', bitrixOpportunity);
+    
+    // Verificar si el usuario ya descartó esta oportunidad
+    const dismissedKey = `bitrix_opportunity_dismissed_${bitrixOpportunity.bitrix_id}`;
+    if (localStorage.getItem(dismissedKey) === 'true') {
+        console.log('🚫 Oportunidad ya descartada por el usuario, no mostrar');
+        return;
+    }
+    
     updateNethiveMood('excited', '¡Nueva oportunidad desde Bitrix24!');
     hideProactiveBot?.();
     
@@ -1924,9 +1932,14 @@ function showPersistentBitrixOpportunityNotification(opportunity) {
     if (existing) existing.remove();
 
     const notificationHTML = `
-        <div id="nethive-opportunity-notification" class="fixed top-4 right-4 z-[9999] animate-slide-in-right">
+        <div id="nethive-opportunity-notification" class="fixed top-4 right-4 z-[99999] animate-slide-in-right" style="z-index: 999999 !important;">
             <div class="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 rounded-2xl shadow-2xl border border-blue-400/30 max-w-sm">
                 <div class="absolute inset-0 bg-blue-400/20 rounded-2xl animate-pulse"></div>
+                
+                <!-- Indicador de persistencia -->
+                <div class="absolute -top-2 -left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold animate-bounce">
+                    ¡IMPORTANTE!
+                </div>
                 
                 <div class="relative p-4">
                     <div class="flex items-start space-x-3">
@@ -1946,18 +1959,18 @@ function showPersistentBitrixOpportunityNotification(opportunity) {
                                 <p class="text-blue-200 text-xs">Monto: $${opportunity.monto_estimado || '0'} USD</p>
                             </div>
                             
-                            <div class="space-y-2">
+                            <div class="space-y-3">
                                 <button onclick="acceptBitrixOpportunityQuotation('${opportunity.id}')" 
-                                        class="w-full bg-white/20 hover:bg-white/30 text-white font-semibold py-2 px-3 rounded-lg text-xs transition-all hover:scale-105 border border-white/20">
-                                    ⚡ Crear Cotización Inmediatamente
+                                        class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg text-sm transition-all hover:scale-105 border-2 border-green-400 shadow-lg">
+                                    ⚡ SÍ - Crear Cotización
                                 </button>
                                 <button onclick="importBitrixOpportunity('${opportunity.id}')" 
-                                        class="w-full bg-green-500/20 hover:bg-green-500/40 text-green-100 py-1.5 px-3 rounded-lg text-xs transition-all border border-green-400/20">
-                                    📥 Solo Importar a Sistema
+                                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-3 rounded-lg text-xs transition-all border border-blue-400">
+                                    📥 Solo Importar
                                 </button>
-                                <button onclick="dismissOpportunityNotification()" 
-                                        class="w-full bg-red-500/20 hover:bg-red-500/40 text-red-100 py-1.5 px-3 rounded-lg text-xs transition-all border border-red-400/20">
-                                    Recordar más tarde
+                                <button onclick="dismissOpportunityPermanently()" 
+                                        class="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded-lg text-xs transition-all border border-gray-400">
+                                    ❌ NO - Descartar
                                 </button>
                             </div>
                         </div>
@@ -2589,15 +2602,16 @@ function startOpportunityWatcher() {
     // Verificar inmediatamente para establecer el conteo inicial
     checkForNewOpportunities();
     
-    // Verificar cada 30 segundos
-    setInterval(checkForNewOpportunities, 30000);
+    // Verificar cada 10 segundos para detección más rápida
+    setInterval(checkForNewOpportunities, 10000);
 }
 
-// Auto-inicializar si estamos en la página de todos/oportunidades
-if (window.location.pathname.includes('/app/todos/') || window.location.pathname.includes('/app/')) {
-    console.log('🎯 Iniciando detección de oportunidades...');
-    setTimeout(startOpportunityWatcher, 2000); // Esperar 2 segundos después del load
-}
+// Auto-inicializar EN TODAS LAS PÁGINAS para detección global
+console.log('🎯 Iniciando detección global de oportunidades...');
+setTimeout(startOpportunityWatcher, 2000); // Esperar 2 segundos después del load
+
+// Log para debug
+console.log(`📍 Bot iniciado en página: ${window.location.pathname}`);
 
 // Funciones específicas para manejar oportunidades de Bitrix24
 window.acceptBitrixOpportunityQuotation = function(bitrixId) {
@@ -2715,4 +2729,26 @@ window.completeBitrixData = function() {
             </div>
         `, 'bot');
     }, 1000);
+};
+
+// Función para descarte permanente
+window.dismissOpportunityPermanently = function() {
+    updateNethiveMood('understanding', 'Usuario descartó la oportunidad');
+    
+    const notification = document.getElementById('nethive-opportunity-notification');
+    if (notification) {
+        notification.style.transform = 'translateX(100%)';
+        notification.style.opacity = '0';
+        setTimeout(() => notification.remove(), 300);
+    }
+    
+    // Marcar como procesada para no volver a mostrar
+    if (window.currentDetectedOpportunity) {
+        localStorage.setItem(
+            `bitrix_opportunity_dismissed_${window.currentDetectedOpportunity.id}`, 
+            'true'
+        );
+    }
+    
+    console.log('📝 Oportunidad descartada permanentemente por el usuario');
 };
