@@ -2306,3 +2306,195 @@ window.updateNethiveMood = window.updateNethiveMood || function() {};
 window.showProactiveBot = window.showProactiveBot || function() {};
 
 console.log("✅ Koti Bot functions exported globally");
+
+// ==================== DETECCIÓN PROACTIVA DE NUEVAS OPORTUNIDADES ====================
+let lastOpportunityCount = 0;
+let isFirstLoad = true;
+
+// Función para contar oportunidades en la página actual
+function countOpportunitiesOnPage() {
+    const opportunityRows = document.querySelectorAll('.oportunidad-item, [data-oportunidad-id]');
+    return opportunityRows.length;
+}
+
+// Función para obtener la última oportunidad de la página
+function getLatestOpportunityFromPage() {
+    const opportunityRows = document.querySelectorAll('.oportunidad-item');
+    if (opportunityRows.length === 0) return null;
+    
+    // Asumir que la primera fila es la más reciente (si están ordenadas por fecha)
+    const firstRow = opportunityRows[0];
+    const nameElement = firstRow.querySelector('a[href*="cotizaciones_por_oportunidad"]');
+    const clientElement = firstRow.querySelector('td[data-label="Cliente"]');
+    
+    if (nameElement) {
+        // Extraer ID de oportunidad de la URL
+        const href = nameElement.getAttribute('href');
+        const idMatch = href.match(/\/(\d+)\/$/);
+        const opportunityId = idMatch ? parseInt(idMatch[1]) : null;
+        
+        return {
+            id: opportunityId,
+            name: nameElement.textContent.trim(),
+            client_name: clientElement ? clientElement.textContent.trim() : null
+        };
+    }
+    
+    return null;
+}
+
+// Función para verificar nuevas oportunidades usando el DOM
+function checkForNewOpportunities() {
+    try {
+        const currentCount = countOpportunitiesOnPage();
+        
+        console.log(`📊 Oportunidades en página: ${currentCount}, anteriores: ${lastOpportunityCount}`);
+        
+        // Si hay más oportunidades que antes y no es la primera carga
+        if (currentCount > lastOpportunityCount && !isFirstLoad && lastOpportunityCount > 0) {
+            const latestOpportunity = getLatestOpportunityFromPage();
+            
+            if (latestOpportunity) {
+                console.log('🎉 ¡Nueva oportunidad detectada en la página!', latestOpportunity);
+                showNewOpportunityBot(latestOpportunity);
+            }
+        }
+        
+        lastOpportunityCount = currentCount;
+        isFirstLoad = false;
+        
+    } catch (error) {
+        console.log('Error verificando oportunidades:', error);
+    }
+}
+
+// Observador de mutaciones para detectar cambios en la tabla
+function setupOpportunityObserver() {
+    const opportunityTable = document.querySelector('#tablaOportunidades, .apple-table tbody');
+    if (!opportunityTable) {
+        console.log('⚠️ No se encontró tabla de oportunidades para observar');
+        return;
+    }
+    
+    const observer = new MutationObserver((mutations) => {
+        let hasNewRows = false;
+        
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'childList') {
+                // Verificar si se agregaron nuevas filas
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === 1 && node.classList && node.classList.contains('oportunidad-item')) {
+                        hasNewRows = true;
+                    }
+                });
+            }
+        });
+        
+        if (hasNewRows) {
+            console.log('🔄 Se detectaron cambios en la tabla de oportunidades');
+            setTimeout(checkForNewOpportunities, 1000); // Esperar un poco para que el DOM se estabilice
+        }
+    });
+    
+    observer.observe(opportunityTable, {
+        childList: true,
+        subtree: true
+    });
+    
+    console.log('👀 Observador de oportunidades iniciado');
+}
+
+// Función para detectar si la página se recargó con nueva oportunidad
+function checkForNewOpportunityOnLoad() {
+    // Verificar si hay parámetros en la URL que indiquen una nueva oportunidad
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromBitrix = urlParams.get('from_bitrix');
+    const newOpportunity = urlParams.get('new_opportunity');
+    
+    if (fromBitrix === 'true' || newOpportunity === 'true') {
+        console.log('🎯 Detectada nueva oportunidad desde Bitrix');
+        setTimeout(() => {
+            const latestOpportunity = getLatestOpportunityFromPage();
+            if (latestOpportunity) {
+                showNewOpportunityBot(latestOpportunity);
+            }
+        }, 2000); // Esperar a que la página cargue completamente
+    }
+}
+
+// Función para mostrar el bot cuando se detecta nueva oportunidad
+function showNewOpportunityBot(opportunity) {
+    console.log('🤖 Mostrando bot proactivo para nueva oportunidad');
+    
+    const proactiveBot = document.getElementById('nethive-proactive-bot');
+    if (!proactiveBot) return;
+    
+    // Configurar el contenido del bot proactivo
+    const messageElement = proactiveBot.querySelector('#proactive-message');
+    const buttonsElement = proactiveBot.querySelector('#proactive-buttons');
+    
+    if (messageElement) {
+        messageElement.innerHTML = `
+            ¡Detecté una nueva oportunidad!<br>
+            <strong>"${opportunity.name}"</strong><br>
+            <small>Cliente: ${opportunity.client_name || 'Sin cliente'}</small>
+        `;
+    }
+    
+    if (buttonsElement) {
+        buttonsElement.innerHTML = `
+            <button onclick="createQuoteForOpportunity(${opportunity.id})" 
+                    class="w-full bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-xs font-medium transition-colors mb-2">
+                📄 Crear Cotización
+            </button>
+            <button onclick="hideProactiveBot()" 
+                    class="w-full bg-gray-400 hover:bg-gray-500 text-white px-3 py-2 rounded text-xs transition-colors">
+                Ahora no
+            </button>
+        `;
+    }
+    
+    // Mostrar el bot
+    proactiveBot.classList.remove('hidden');
+    
+    // Auto-ocultar después de 15 segundos si no hay acción
+    setTimeout(() => {
+        if (!proactiveBot.classList.contains('hidden')) {
+            hideProactiveBot();
+        }
+    }, 15000);
+}
+
+// Función para ir al formulario de cotización con datos pre-llenados
+window.createQuoteForOpportunity = function(opportunityId) {
+    console.log(`🚀 Redirigiendo a crear cotización para oportunidad ${opportunityId}`);
+    hideProactiveBot();
+    
+    // Redirigir al formulario con la oportunidad pre-seleccionada
+    window.location.href = `/app/crear-cotizacion/oportunidad/${opportunityId}/`;
+};
+
+// Función para ocultar el bot proactivo
+window.hideProactiveBot = function() {
+    const proactiveBot = document.getElementById('nethive-proactive-bot');
+    if (proactiveBot) {
+        proactiveBot.classList.add('hidden');
+    }
+};
+
+// Inicializar la verificación periódica de oportunidades
+function startOpportunityWatcher() {
+    console.log('👀 Iniciando vigilancia de nuevas oportunidades...');
+    
+    // Verificar inmediatamente para establecer el conteo inicial
+    checkForNewOpportunities();
+    
+    // Verificar cada 30 segundos
+    setInterval(checkForNewOpportunities, 30000);
+}
+
+// Auto-inicializar si estamos en la página de todos/oportunidades
+if (window.location.pathname.includes('/app/todos/') || window.location.pathname.includes('/app/')) {
+    console.log('🎯 Iniciando detección de oportunidades...');
+    setTimeout(startOpportunityWatcher, 2000); // Esperar 2 segundos después del load
+}

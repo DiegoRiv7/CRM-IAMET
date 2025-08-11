@@ -24,34 +24,13 @@
             </div>
         </div>
 
-        <!-- Status Steps -->
-        <div class="space-y-3 mb-6">
-            <div id="step-1" class="flex items-center text-left p-3 rounded-lg bg-blue-50 border-l-4 border-blue-500">
-                <div class="flex-shrink-0 mr-3">
-                    <div class="w-6 h-6 border-2 border-blue-500 rounded-full animate-spin border-t-transparent"></div>
+        <!-- Single Status Step -->
+        <div class="mb-6">
+            <div id="main-step" class="flex items-center justify-center p-4 rounded-lg bg-blue-50 border border-blue-200">
+                <div class="flex-shrink-0 mr-4">
+                    <div class="w-8 h-8 border-3 border-blue-500 rounded-full animate-spin border-t-transparent"></div>
                 </div>
-                <span class="text-blue-700 font-medium">Generando PDF...</span>
-            </div>
-            
-            <div id="step-2" class="flex items-center text-left p-3 rounded-lg bg-gray-50 border-l-4 border-gray-300 opacity-50">
-                <div class="flex-shrink-0 mr-3">
-                    <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
-                </div>
-                <span class="text-gray-600">Descargando archivo...</span>
-            </div>
-            
-            <div id="step-3" class="flex items-center text-left p-3 rounded-lg bg-gray-50 border-l-4 border-gray-300 opacity-50">
-                <div class="flex-shrink-0 mr-3">
-                    <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
-                </div>
-                <span class="text-gray-600">Sincronizando con Bitrix24...</span>
-            </div>
-            
-            <div id="step-4" class="flex items-center text-left p-3 rounded-lg bg-gray-50 border-l-4 border-gray-300 opacity-50">
-                <div class="flex-shrink-0 mr-3">
-                    <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
-                </div>
-                <span class="text-gray-600">Redirigiendo...</span>
+                <span class="text-blue-700 font-semibold text-lg">Generando PDF...</span>
             </div>
         </div>
 
@@ -95,16 +74,23 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = '{% url "cotizaciones_por_oportunidad" oportunidad.id %}';
     }
     
-    // Secuencia automática
+    // Secuencia automática más rápida
+    const progressBar = document.getElementById('progress-bar');
+    
+    // Iniciar inmediatamente al cargar
+    progressBar.style.width = '100%';
+    statusMessage.textContent = 'Generando y descargando PDF...';
+    
+    // Descargar casi inmediatamente
     setTimeout(function() {
         startDownload();
         
-        // Redirigir después de 2 segundos
+        // Redirigir más rápido
         setTimeout(function() {
             redirect();
-        }, 2000);
+        }, 1500);
         
-    }, 500); // Esperar medio segundo antes de iniciar
+    }, 200); // Solo 200ms de espera
 });
 </script>
 
