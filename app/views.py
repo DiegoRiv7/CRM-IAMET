@@ -2910,3 +2910,118 @@ def search_clientes_api(request):
             'clientes': [],
             'error': 'Error interno del servidor'
         }, status=500)
+
+@login_required
+def check_new_bitrix_opportunities(request):
+    """
+    API endpoint para detectar nuevas oportunidades directamente desde Bitrix24.
+    Esta función consulta la API de Bitrix para detectar oportunidades creadas recientemente.
+    """
+    from .bitrix_integration import get_all_bitrix_deals
+    from datetime import datetime, timedelta
+    from django.utils import timezone as django_timezone
+    
+    try:
+        # Obtener timestamp de la última verificación desde el parámetro GET
+        last_check_timestamp = request.GET.get('last_check')
+        
+        if not last_check_timestamp:
+            return JsonResponse({
+                'success': False,
+                'error': 'Falta el parámetro last_check'
+            })
+        
+        # Convertir timestamp a datetime
+        last_check = datetime.fromtimestamp(int(last_check_timestamp) / 1000, tz=django_timezone.utc)
+        
+        # Obtener el ID de usuario de Bitrix24 para este usuario de Django
+        try:
+            user_profile = request.user.userprofile
+            user_bitrix_id = str(user_profile.bitrix_user_id) if user_profile.bitrix_user_id else None
+        except:
+            user_bitrix_id = None
+            
+        if not user_bitrix_id:
+            return JsonResponse({
+                'success': True,
+                'new_opportunities': [],
+                'count': 0,
+                'message': 'Usuario no tiene ID de Bitrix24 configurado'
+            })
+        
+        # Consultar todas las oportunidades desde Bitrix24
+        bitrix_deals = get_all_bitrix_deals(request)
+        
+        if not bitrix_deals:
+            return JsonResponse({
+                'success': True,
+                'new_opportunities': [],
+                'count': 0,
+                'message': 'No se pudieron obtener oportunidades de Bitrix24'
+            })
+        
+        # Filtrar solo oportunidades asignadas a este usuario en Bitrix24
+        user_deals = [deal for deal in bitrix_deals if deal.get('ASSIGNED_BY_ID') == user_bitrix_id]
+        
+        print(f"DEBUG Bot: Usuario Django {request.user.username} → Bitrix ID {user_bitrix_id}")
+        print(f"DEBUG Bot: Encontradas {len(user_deals)} oportunidades para este usuario de {len(bitrix_deals)} totales")
+        
+        # Filtrar oportunidades nuevas (que no existen en nuestro sistema)
+        recent_deals = []
+        
+        for deal in user_deals[:10]:  # Solo las 10 más recientes del usuario
+            # Verificar si esta oportunidad ya existe en nuestro sistema
+            deal_id = deal.get('ID')
+            if deal_id:
+                existing_opportunity = TodoItem.objects.filter(
+                    bitrix_deal_id=deal_id
+                ).first()
+                
+                if not existing_opportunity:
+                    # Esta es una nueva oportunidad que no tenemos en nuestro sistema
+                    # Obtener datos de la compañía si existe
+                    company_name = 'Cliente por definir'
+                    if deal.get('COMPANY_ID'):
+                        try:
+                            from .bitrix_integration import get_bitrix_company_details
+                            company_data = get_bitrix_company_details(deal.get('COMPANY_ID'), request)
+                            if company_data and company_data.get('TITLE'):
+                                company_name = company_data.get('TITLE')
+                        except Exception as e:
+                            print(f"Error obteniendo datos de compañía: {e}")
+                    
+                    recent_deals.append({
+                        'id': deal_id,
+                        'bitrix_id': deal_id,
+                        'titulo': deal.get('TITLE', 'Sin título'),
+                        'monto_estimado': deal.get('OPPORTUNITY', '0'),
+                        'company_id': deal.get('COMPANY_ID'),
+                        'company_name': company_name,
+                        'contact_id': deal.get('CONTACT_ID'),
+                        'stage_id': deal.get('STAGE_ID'),
+                        'comentarios': deal.get('COMMENTS', ''),
+                        'assigned_by_id': deal.get('ASSIGNED_BY_ID'),
+                        # Mapear campos personalizados
+                        'producto_bitrix_id': deal.get('UF_CRM_1752859685662'),
+                        'area_bitrix_id': deal.get('UF_CRM_1752859525038'),
+                        'mes_cierre_bitrix_id': deal.get('UF_CRM_1752859877756'),
+                        'probabilidad_bitrix_id': deal.get('UF_CRM_1752855787179'),
+                        'is_from_bitrix': True,
+                        'detected_at': django_timezone.now().isoformat()
+                    })
+        
+        print(f"DEBUG Bot: Encontradas {len(recent_deals)} nuevas oportunidades desde Bitrix24")
+        
+        return JsonResponse({
+            'success': True,
+            'new_opportunities': recent_deals,
+            'count': len(recent_deals),
+            'last_check': django_timezone.now().timestamp() * 1000  # Nuevo timestamp
+        })
+        
+    except Exception as e:
+        print(f"ERROR Bot: Error al verificar oportunidades desde Bitrix24: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': f'Error al verificar oportunidades desde Bitrix24: {str(e)}'
+        }, status=500)

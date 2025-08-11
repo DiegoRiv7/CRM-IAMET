@@ -1792,7 +1792,9 @@ async function checkForNewOpportunities() {
     if (!window.nethiveState.isWatchingOpportunities) return;
 
     try {
-        const response = await fetch(`/app/api/check-new-local-opportunities/?last_check=${window.nethiveState.lastOpportunityCheck}`, {
+        // Primero intentar detectar desde Bitrix24 directamente
+        console.log('🔍 Verificando nuevas oportunidades desde Bitrix24...');
+        const bitrixResponse = await fetch(`/app/api/check-new-bitrix-opportunities/?last_check=${window.nethiveState.lastOpportunityCheck}`, {
             method: 'GET',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
@@ -1801,19 +1803,42 @@ async function checkForNewOpportunities() {
             credentials: 'same-origin'
         });
 
-        if (response.ok) {
-            const data = await response.json();
+        if (bitrixResponse.ok) {
+            const bitrixData = await bitrixResponse.json();
+            
+            if (bitrixData.success && bitrixData.new_opportunities && bitrixData.new_opportunities.length > 0) {
+                console.log('🎯 Nueva oportunidad detectada desde Bitrix24:', bitrixData.new_opportunities);
+                handleNewBitrixOpportunityDetected(bitrixData.new_opportunities[0]);
 
-            if (data.new_opportunities && data.new_opportunities.length > 0) {
-                console.log('🎯 Nueva oportunidad detectada:', data.new_opportunities);
-                handleNewOpportunityDetected(data.new_opportunities[0]);
+                window.nethiveState.lastOpportunityCheck = Date.now();
+                sessionStorage.setItem('lastOpportunityCheck', window.nethiveState.lastOpportunityCheck);
+                return; // Salir temprano si encontramos algo desde Bitrix
+            }
+        }
+
+        // Si no encontramos nada desde Bitrix, verificar oportunidades locales como fallback
+        const localResponse = await fetch(`/app/api/check-new-local-opportunities/?last_check=${window.nethiveState.lastOpportunityCheck}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin'
+        });
+
+        if (localResponse.ok) {
+            const localData = await localResponse.json();
+
+            if (localData.new_opportunities && localData.new_opportunities.length > 0) {
+                console.log('🎯 Nueva oportunidad detectada localmente:', localData.new_opportunities);
+                handleNewOpportunityDetected(localData.new_opportunities[0]);
 
                 window.nethiveState.lastOpportunityCheck = Date.now();
                 sessionStorage.setItem('lastOpportunityCheck', window.nethiveState.lastOpportunityCheck);
             }
         }
     } catch (error) {
-        console.log('Error checking local opportunities:', error);
+        console.log('Error checking opportunities:', error);
     }
 }
 
@@ -1821,6 +1846,26 @@ function handleNewOpportunityDetected(opportunity) {
     updateNethiveMood('excited', '¡Nueva oportunidad detectada!');
     hideProactiveBot?.();
     showPersistentOpportunityNotification(opportunity);
+}
+
+function handleNewBitrixOpportunityDetected(bitrixOpportunity) {
+    console.log('🎯 Procesando nueva oportunidad desde Bitrix24:', bitrixOpportunity);
+    updateNethiveMood('excited', '¡Nueva oportunidad desde Bitrix24!');
+    hideProactiveBot?.();
+    
+    // Convertir datos de Bitrix al formato esperado
+    const formattedOpportunity = {
+        id: bitrixOpportunity.bitrix_id,
+        titulo: bitrixOpportunity.titulo || 'Nueva Oportunidad',
+        cliente_nombre: bitrixOpportunity.company_name || 'Cliente de Bitrix24',
+        monto_estimado: bitrixOpportunity.monto_estimado || '0',
+        probabilidad: '50', // Default
+        is_from_bitrix: true,
+        bitrix_data: bitrixOpportunity, // Datos completos para uso posterior
+        created_at: bitrixOpportunity.detected_at
+    };
+    
+    showPersistentBitrixOpportunityNotification(formattedOpportunity);
 }
 
 function showPersistentOpportunityNotification(opportunity) {
@@ -1864,6 +1909,61 @@ function showPersistentOpportunityNotification(opportunity) {
                         
                         <div class="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-ping"></div>
                         <div class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', notificationHTML);
+    window.currentDetectedOpportunity = opportunity;
+}
+
+function showPersistentBitrixOpportunityNotification(opportunity) {
+    const existing = document.getElementById('nethive-opportunity-notification');
+    if (existing) existing.remove();
+
+    const notificationHTML = `
+        <div id="nethive-opportunity-notification" class="fixed top-4 right-4 z-[9999] animate-slide-in-right">
+            <div class="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 rounded-2xl shadow-2xl border border-blue-400/30 max-w-sm">
+                <div class="absolute inset-0 bg-blue-400/20 rounded-2xl animate-pulse"></div>
+                
+                <div class="relative p-4">
+                    <div class="flex items-start space-x-3">
+                        <div class="scale-75 animate-bounce">
+                            ${createNethiveAvatar()}
+                        </div>
+                        
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <h3 class="font-bold text-white text-sm">🚀 ¡Nueva desde Bitrix24!</h3>
+                                <div class="w-2 h-2 bg-blue-300 rounded-full animate-pulse"></div>
+                            </div>
+                            
+                            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-3 mb-3">
+                                <p class="text-blue-100 text-xs font-medium">${opportunity.titulo || 'Nueva oportunidad'}</p>
+                                <p class="text-blue-200 text-xs mt-1">Cliente: ${opportunity.cliente_nombre || 'Por definir'}</p>
+                                <p class="text-blue-200 text-xs">Monto: $${opportunity.monto_estimado || '0'} USD</p>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <button onclick="acceptBitrixOpportunityQuotation('${opportunity.id}')" 
+                                        class="w-full bg-white/20 hover:bg-white/30 text-white font-semibold py-2 px-3 rounded-lg text-xs transition-all hover:scale-105 border border-white/20">
+                                    ⚡ Crear Cotización Inmediatamente
+                                </button>
+                                <button onclick="importBitrixOpportunity('${opportunity.id}')" 
+                                        class="w-full bg-green-500/20 hover:bg-green-500/40 text-green-100 py-1.5 px-3 rounded-lg text-xs transition-all border border-green-400/20">
+                                    📥 Solo Importar a Sistema
+                                </button>
+                                <button onclick="dismissOpportunityNotification()" 
+                                        class="w-full bg-red-500/20 hover:bg-red-500/40 text-red-100 py-1.5 px-3 rounded-lg text-xs transition-all border border-red-400/20">
+                                    Recordar más tarde
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="absolute -top-1 -right-1 w-4 h-4 bg-blue-400 rounded-full animate-ping"></div>
+                        <div class="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full"></div>
                     </div>
                 </div>
             </div>
@@ -2498,3 +2598,121 @@ if (window.location.pathname.includes('/app/todos/') || window.location.pathname
     console.log('🎯 Iniciando detección de oportunidades...');
     setTimeout(startOpportunityWatcher, 2000); // Esperar 2 segundos después del load
 }
+
+// Funciones específicas para manejar oportunidades de Bitrix24
+window.acceptBitrixOpportunityQuotation = function(bitrixId) {
+    updateNethiveMood('celebrating', '¡Usuario quiere crear cotización desde Bitrix!');
+    
+    const opportunity = window.currentDetectedOpportunity;
+    if (!opportunity || !opportunity.bitrix_data) {
+        console.error('No se encontraron datos de la oportunidad de Bitrix');
+        return;
+    }
+    
+    dismissOpportunityNotification();
+    
+    // Abrir el chat avanzado con datos pre-llenados de Bitrix
+    showAdvancedChat();
+    addChatMessage(`🚀 ¡Perfecto! He detectado esta nueva oportunidad desde tu Bitrix24. Te ayudo a crear la cotización inmediatamente.`, 'bot');
+    
+    // Preparar datos pre-llenados
+    const prefilledData = {
+        titulo: opportunity.titulo,
+        cliente: opportunity.cliente_nombre,
+        monto: opportunity.monto_estimado || '0',
+        from_bitrix: true,
+        bitrix_id: bitrixId,
+        bitrix_data: opportunity.bitrix_data
+    };
+    
+    setTimeout(() => {
+        addChatMessage(`Los datos que tengo desde Bitrix24:<br><br>` +
+            `📋 <strong>Título:</strong> ${opportunity.titulo}<br>` +
+            `👤 <strong>Cliente:</strong> ${opportunity.cliente_nombre}<br>` +
+            `💰 <strong>Monto:</strong> $${opportunity.monto_estimado || '0'} USD<br>` +
+            `🏢 <strong>Origen:</strong> Bitrix24 CRM<br><br>` +
+            `¿Quieres proceder con estos datos o prefieres que te ayude a completar más información?`, 'bot');
+            
+        // Guardar datos para el proceso de cotización
+        window.quotationWizardData = prefilledData;
+        
+        setTimeout(() => {
+            addChatMessage(`
+                <div class="flex space-x-2 mt-3">
+                    <button onclick="proceedWithBitrixQuotation()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+                        ⚡ Crear Cotización Ya
+                    </button>
+                    <button onclick="completeBitrixData()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+                        📝 Completar Datos
+                    </button>
+                </div>
+            `, 'bot');
+        }, 1000);
+    }, 1500);
+};
+
+window.importBitrixOpportunity = function(bitrixId) {
+    updateNethiveMood('helpful', 'Usuario quiere solo importar');
+    
+    const opportunity = window.currentDetectedOpportunity;
+    if (!opportunity || !opportunity.bitrix_data) {
+        console.error('No se encontraron datos de la oportunidad de Bitrix');
+        return;
+    }
+    
+    dismissOpportunityNotification();
+    
+    // Importar la oportunidad al sistema sin crear cotización
+    addChatMessage(`📥 Importando oportunidad "${opportunity.titulo}" desde Bitrix24 a tu sistema...`, 'bot');
+    
+    // Aquí podrías llamar a una API para importar la oportunidad
+    // Por ahora solo simularemos el proceso
+    setTimeout(() => {
+        addChatMessage(`✅ ¡Oportunidad importada exitosamente! Ya puedes verla en tu lista de oportunidades. ¿Necesitas ayuda con algo más?`, 'bot');
+    }, 2000);
+};
+
+window.proceedWithBitrixQuotation = function() {
+    if (!window.quotationWizardData) {
+        addChatMessage(`❌ Error: No se encontraron los datos de la oportunidad.`, 'bot');
+        return;
+    }
+    
+    addChatMessage(`🔄 Creando cotización con los datos de Bitrix24...`, 'bot');
+    
+    // Redirigir al formulario de cotización con datos pre-llenados
+    setTimeout(() => {
+        const params = new URLSearchParams({
+            from_bitrix: 'true',
+            bitrix_id: window.quotationWizardData.bitrix_id,
+            titulo: window.quotationWizardData.titulo || '',
+            cliente: window.quotationWizardData.cliente || '',
+            monto: window.quotationWizardData.monto || '0'
+        });
+        
+        window.location.href = `/app/crear_cotizacion/?${params.toString()}`;
+    }, 1500);
+};
+
+window.completeBitrixData = function() {
+    addChatMessage(`📝 Perfecto, vamos a completar los datos de la oportunidad. ¿Qué información adicional necesitas agregar?`, 'bot');
+    
+    setTimeout(() => {
+        addChatMessage(`
+            <div class="space-y-2 mt-3">
+                <button onclick="addClientInfo()" class="block w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
+                    👤 Información del Cliente
+                </button>
+                <button onclick="addProductDetails()" class="block w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm">
+                    📦 Detalles del Producto
+                </button>
+                <button onclick="adjustBudget()" class="block w-full bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm">
+                    💰 Ajustar Presupuesto
+                </button>
+                <button onclick="proceedWithBitrixQuotation()" class="block w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm">
+                    ➡️ Continuar con datos actuales
+                </button>
+            </div>
+        `, 'bot');
+    }, 1000);
+};
