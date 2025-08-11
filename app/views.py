@@ -1418,18 +1418,30 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             
             for item_data in productos_list:
                 try:
+                    # Manejo seguro del precio unitario
+                    precio_str = str(item_data.get('precio', '0.00')).strip()
+                    if not precio_str or precio_str == '':
+                        precio_str = '0.00'
+                    precio_unitario = Decimal(precio_str)
+                    
+                    # Manejo seguro del descuento
+                    descuento_str = str(item_data.get('descuento', '0.00')).strip()
+                    if not descuento_str or descuento_str == '':
+                        descuento_str = '0.00'
+                    descuento_porcentaje = Decimal(descuento_str)
+                    
                     DetalleCotizacion.objects.create(
                         cotizacion=cotizacion,
                         nombre_producto=item_data.get('nombre_producto', ''),
                         descripcion=item_data.get('descripcion', ''),
                         cantidad=int(item_data.get('cantidad', 1)),
-                        precio_unitario=Decimal(item_data.get('precio', '0.00')),
-                        descuento_porcentaje=Decimal(item_data.get('descuento', '0.00')),
+                        precio_unitario=precio_unitario,
+                        descuento_porcentaje=descuento_porcentaje,
                         marca=item_data.get('marca', ''),
                         no_parte=item_data.get('no_parte', '')
                     )
                     print(f"DEBUG: Product detail created: {item_data.get('nombre_producto')}")
-                except (ValueError, TypeError) as e:
+                except (ValueError, TypeError, decimal.InvalidOperation) as e:
                     cotizacion.delete()
                     return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Invalid product data in row. Error: {e}'}]}}, status=400)
 

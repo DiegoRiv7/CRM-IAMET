@@ -1886,7 +1886,7 @@ function showPersistentBitrixOpportunityNotification(opportunity) {
     const existing = document.getElementById('nethive-opportunity-notification');
     if (existing) existing.remove();
 
-    const notificationHTML = \`
+    const notificationHTML = `
         <div id="nethive-opportunity-notification" class="fixed top-4 right-4 z-[9999] animate-slide-in-right">
             <div class="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 rounded-2xl shadow-2xl border border-blue-400/30 max-w-sm">
                 <div class="absolute inset-0 bg-blue-400/20 rounded-2xl animate-pulse"></div>
@@ -1894,7 +1894,7 @@ function showPersistentBitrixOpportunityNotification(opportunity) {
                 <div class="relative p-4">
                     <div class="flex items-start space-x-3">
                         <div class="scale-75 animate-bounce">
-                            \${createNethiveAvatar()}
+                            ${createNethiveAvatar()}
                         </div>
                         
                         <div class="flex-1">
