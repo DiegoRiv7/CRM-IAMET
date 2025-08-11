@@ -65,15 +65,56 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const statusMessage = document.getElementById('status-message');
+    const progressBar = document.getElementById('progress-bar');
+    const mainTitle = document.getElementById('main-title');
+    const mainDescription = document.getElementById('main-description');
+    
+    // Función para actualizar el progreso visual
+    function updateProgress(step, progress, title, message) {
+        // Actualizar barra de progreso
+        progressBar.style.width = progress + '%';
+        
+        // Actualizar títulos
+        if (title) mainTitle.textContent = title;
+        statusMessage.textContent = message;
+        
+        // Actualizar pasos visuales
+        for (let i = 1; i <= 4; i++) {
+            const stepElement = document.getElementById(`step-${i}`);
+            const circle = stepElement.querySelector('div div');
+            const text = stepElement.querySelector('span');
+            
+            if (i < step) {
+                // Paso completado
+                stepElement.className = 'flex items-center text-left p-3 rounded-lg bg-green-50 border-l-4 border-green-500';
+                circle.className = 'w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs';
+                circle.innerHTML = '✓';
+                text.className = 'text-green-700 font-medium';
+            } else if (i === step) {
+                // Paso actual
+                stepElement.className = 'flex items-center text-left p-3 rounded-lg bg-blue-50 border-l-4 border-blue-500';
+                circle.className = 'w-6 h-6 border-2 border-blue-500 rounded-full animate-spin border-t-transparent';
+                circle.innerHTML = '';
+                text.className = 'text-blue-700 font-medium';
+            } else {
+                // Paso pendiente
+                stepElement.className = 'flex items-center text-left p-3 rounded-lg bg-gray-50 border-l-4 border-gray-300 opacity-50';
+                circle.className = 'w-6 h-6 border-2 border-gray-300 rounded-full';
+                circle.innerHTML = '';
+                text.className = 'text-gray-600';
+            }
+        }
+    }
     
     // Función para iniciar descarga
     function startDownload() {
-        console.log('🚀 Iniciando descarga automática del PDF...');
+        console.log('📥 Iniciando descarga del PDF...');
+        updateProgress(2, 50, 'Descargando cotización...', 'Tu archivo se está descargando automáticamente');
         
         // Crear enlace invisible para descarga
         const link = document.createElement('a');
         link.href = '{{ pdf_download_url }}';
-        link.download = ''; // Permite que el servidor defina el nombre
+        link.download = '';
         link.style.display = 'none';
         
         // Agregar al DOM y hacer clic
@@ -83,28 +124,47 @@ document.addEventListener('DOMContentLoaded', function() {
         // Limpiar
         document.body.removeChild(link);
         
-        // Actualizar mensaje
-        statusMessage.textContent = 'PDF descargado. Redirigiendo a cotizaciones por oportunidades...';
-        
-        console.log('✅ Descarga iniciada. Redirigiendo en 2 segundos...');
+        console.log('✅ Descarga iniciada');
     }
     
-    // Función para redirigir a cotizaciones por oportunidades
+    // Función para sincronizar con Bitrix
+    function syncBitrix() {
+        console.log('🔗 Sincronizando con Bitrix24...');
+        updateProgress(3, 75, 'Sincronizando con Bitrix24...', 'Guardando la cotización en tu CRM');
+    }
+    
+    // Función para redirigir
     function redirect() {
-        console.log('🔄 Redirigiendo a cotizaciones por oportunidades...');
-        window.location.href = '{% url "cotizaciones_por_oportunidad" oportunidad.id %}';
+        console.log('🔄 Redirigiendo a cotizaciones por oportunidad...');
+        updateProgress(4, 100, '¡Proceso completado!', 'Redirigiendo a cotizaciones...');
+        
+        setTimeout(() => {
+            window.location.href = '{% url "cotizaciones_por_oportunidad" oportunidad.id %}';
+        }, 1000);
     }
     
-    // Secuencia automática
-    setTimeout(function() {
+    // Secuencia automática mejorada
+    console.log('🚀 Iniciando proceso de generación de cotización...');
+    
+    // Paso 1: PDF ya se está generando (mostrado inmediatamente)
+    updateProgress(1, 25, 'Generando tu cotización...', 'Creando el archivo PDF con todos los detalles');
+    
+    // Paso 2: Descargar (después de 2 segundos)
+    setTimeout(() => {
         startDownload();
         
-        // Redirigir después de 2 segundos
-        setTimeout(function() {
-            redirect();
-        }, 2000);
+        // Paso 3: Bitrix (después de 1 segundo más)
+        setTimeout(() => {
+            syncBitrix();
+            
+            // Paso 4: Redirección (después de 2 segundos más)
+            setTimeout(() => {
+                redirect();
+            }, 2000);
+            
+        }, 1000);
         
-    }, 500); // Esperar medio segundo antes de iniciar
+    }, 2000);
 });
 </script>
 
