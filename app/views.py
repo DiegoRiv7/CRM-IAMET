@@ -15,6 +15,7 @@ from django.db.models import Value
 from datetime import date
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal
+import decimal
 from django.utils.html import json_script
 import json
 from django.urls import reverse
@@ -1373,22 +1374,36 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             for item_data in productos_list:
                 try:
                     cantidad = int(item_data.get('cantidad', 0))
-                    precio = Decimal(item_data.get('precio', '0.00'))
-                    descuento = Decimal(item_data.get('descuento', '0.00'))
+                    
+                    # Manejo seguro del precio
+                    precio_str = str(item_data.get('precio', '0.00')).strip()
+                    if not precio_str or precio_str == '':
+                        precio_str = '0.00'
+                    precio = Decimal(precio_str)
+                    
+                    # Manejo seguro del descuento
+                    descuento_str = str(item_data.get('descuento', '0.00')).strip()
+                    if not descuento_str or descuento_str == '':
+                        descuento_str = '0.00'
+                    descuento = Decimal(descuento_str)
                     
                     item_total = cantidad * precio
                     item_total -= item_total * (descuento / Decimal('100.00'))
                     calculated_subtotal += item_total.quantize(Decimal('0.01'))
                     print(f"DEBUG_CALC: Item: {item_data.get('nombre')}, Quantity: {cantidad}, Price: {precio}, Discount: {descuento}, Item Total (rounded): {item_total.quantize(Decimal('0.01'))}")
-                except (ValueError, TypeError) as e:
+                except (ValueError, TypeError, decimal.InvalidOperation) as e:
+                    print(f"DEBUG_ERROR: Error processing item {item_data}: {e}")
                     cotizacion.delete()
                     return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Invalid product data in row. Error: {e}'}]}}, status=400)
 
             cotizacion.subtotal = calculated_subtotal.quantize(Decimal('0.01'))
             
             try:
-                cotizacion.iva_rate = Decimal(request.POST.get('iva_rate', '0.00'))
-            except (ValueError, TypeError):
+                iva_rate_str = str(request.POST.get('iva_rate', '0.00')).strip()
+                if not iva_rate_str or iva_rate_str == '':
+                    iva_rate_str = '0.00'
+                cotizacion.iva_rate = Decimal(iva_rate_str)
+            except (ValueError, TypeError, decimal.InvalidOperation):
                 cotizacion.iva_rate = Decimal('0.00')
 
             cotizacion.iva_amount = (cotizacion.subtotal * cotizacion.iva_rate).quantize(Decimal('0.01'))

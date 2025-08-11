@@ -1876,6 +1876,89 @@ function handleNewBitrixOpportunityDetected(bitrixOpportunity) {
     showPersistentBitrixOpportunityNotification(formattedOpportunity);
 }
 
+function showPersistentBitrixOpportunityNotification(opportunity) {
+    console.log('🔔 Creando notificación persistente para oportunidad Bitrix:', opportunity);
+    
+    // Guardar referencia global para persistencia
+    window.currentDetectedOpportunity = opportunity;
+    
+    // Remover cualquier notificación existente
+    const existing = document.getElementById('nethive-opportunity-notification');
+    if (existing) existing.remove();
+
+    const notificationHTML = \`
+        <div id="nethive-opportunity-notification" class="fixed top-4 right-4 z-[9999] animate-slide-in-right">
+            <div class="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 rounded-2xl shadow-2xl border border-blue-400/30 max-w-sm">
+                <div class="absolute inset-0 bg-blue-400/20 rounded-2xl animate-pulse"></div>
+                
+                <div class="relative p-4">
+                    <div class="flex items-start space-x-3">
+                        <div class="scale-75 animate-bounce">
+                            \${createNethiveAvatar()}
+                        </div>
+                        
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <h3 class="font-bold text-white text-sm">🚀 ¡Nueva Oportunidad desde Bitrix24!</h3>
+                                <div class="w-2 h-2 bg-blue-300 rounded-full animate-pulse"></div>
+                            </div>
+                            
+                            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-3 mb-3">
+                                <p class="text-blue-100 text-xs font-medium">\${opportunity.titulo || 'Nueva oportunidad'}</p>
+                                <p class="text-blue-200 text-xs mt-1">Cliente: \${opportunity.cliente_nombre || 'Sin especificar'}</p>
+                                <p class="text-blue-200 text-xs">Monto: $\${opportunity.monto_estimado || 'N/A'}</p>
+                                <p class="text-blue-200 text-xs">Bitrix ID: \${opportunity.id}</p>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <button onclick="acceptBitrixOpportunityQuotation('\${opportunity.id}')" 
+                                        class="w-full bg-white/20 hover:bg-white/30 text-white font-semibold py-2 px-3 rounded-lg text-xs transition-all hover:scale-105 border border-white/20">
+                                    ✨ SÍ, Crear Cotización
+                                </button>
+                                <button onclick="importBitrixOpportunity('\${opportunity.id}')" 
+                                        class="w-full bg-green-500/20 hover:bg-green-500/40 text-green-100 py-1.5 px-3 rounded-lg text-xs transition-all border border-green-400/20">
+                                    📥 Solo Importar
+                                </button>
+                                <button onclick="dismissOpportunityPermanently()" 
+                                        class="w-full bg-red-500/20 hover:bg-red-500/40 text-red-100 py-1.5 px-3 rounded-lg text-xs transition-all border border-red-400/20">
+                                    ❌ NO, Descartar
+                                </button>
+                            </div>
+                            
+                            <p class="text-blue-200/70 text-[10px] text-center mt-2">
+                                Esta notificación permanecerá hasta que elijas una opción
+                            </p>
+                        </div>
+                        
+                        <div class="absolute -top-1 -right-1 w-4 h-4 bg-blue-400 rounded-full animate-ping"></div>
+                        <div class="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    \`;
+
+    document.body.insertAdjacentHTML('beforeend', notificationHTML);
+    
+    // Añadir CSS de animación si no existe
+    if (!document.getElementById('nethive-notification-styles')) {
+        const styles = document.createElement('style');
+        styles.id = 'nethive-notification-styles';
+        styles.textContent = \`
+            @keyframes slide-in-right {
+                0% { transform: translateX(100%); opacity: 0; }
+                100% { transform: translateX(0); opacity: 1; }
+            }
+            .animate-slide-in-right {
+                animation: slide-in-right 0.5s ease-out;
+            }
+        \`;
+        document.head.appendChild(styles);
+    }
+    
+    console.log('✅ Notificación persistente creada - no desaparecerá hasta que el usuario responda');
+}
+
 function showPersistentOpportunityNotification(opportunity) {
     const existing = document.getElementById('nethive-opportunity-notification');
     if (existing) existing.remove();
@@ -2752,3 +2835,44 @@ window.dismissOpportunityPermanently = function() {
     
     console.log('📝 Oportunidad descartada permanentemente por el usuario');
 };
+
+// ==================== INICIALIZACIÓN AUTOMÁTICA DEL SISTEMA ====================
+// Activar el sistema de detección de oportunidades automáticamente
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Iniciando sistema de detección automática de oportunidades...');
+    
+    // Activar el watching de oportunidades
+    window.nethiveState.isWatchingOpportunities = true;
+    
+    // Ejecutar la primera verificación después de 2 segundos
+    setTimeout(() => {
+        checkForNewOpportunities();
+    }, 2000);
+    
+    // Configurar intervalo de verificación cada 10 segundos
+    window.nethiveState.opportunityWatchInterval = setInterval(() => {
+        checkForNewOpportunities();
+    }, 10000);
+    
+    console.log('✅ Sistema de detección automática activado - verificando cada 10 segundos');
+});
+
+// También activar si la página ya está cargada
+if (document.readyState === 'loading') {
+    // El DOM aún se está cargando, esperar el evento DOMContentLoaded
+} else {
+    // El DOM ya está cargado, inicializar inmediatamente
+    console.log('🚀 Página ya cargada, iniciando detección inmediata...');
+    window.nethiveState.isWatchingOpportunities = true;
+    
+    setTimeout(() => {
+        checkForNewOpportunities();
+    }, 1000);
+    
+    if (!window.nethiveState.opportunityWatchInterval) {
+        window.nethiveState.opportunityWatchInterval = setInterval(() => {
+            checkForNewOpportunities();
+        }, 10000);
+    }
+}

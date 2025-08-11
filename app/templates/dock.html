@@ -1499,24 +1499,41 @@ window.addEventListener('error', function(e) {
                     e.preventDefault();
                     originalConsole.log('🤖 Assistant button clicked!');
                     
-                    // Call the main assistant function from nethive_bot.js
-                    if (typeof window.showNethiveAssistant === 'function') {
-                        originalConsole.log('🤖 Calling showNethiveAssistant...');
-                        window.showNethiveAssistant();
-                    } else {
-                        originalConsole.warn('⚠️ showNethiveAssistant function not available');
-                        originalConsole.log('Available functions:', Object.keys(window).filter(key => key.includes('Nethive')));
+                    // Wait a bit for scripts to load if needed
+                    const tryShowBot = () => {
+                        if (typeof window.showNethiveAssistant === 'function') {
+                            originalConsole.log('🤖 Calling showNethiveAssistant...');
+                            window.showNethiveAssistant();
+                            return true;
+                        }
+                        return false;
+                    };
+                    
+                    // Try immediately first
+                    if (!tryShowBot()) {
+                        originalConsole.warn('⚠️ showNethiveAssistant not ready, trying manual opening...');
                         
-                        // Try alternative ways to open the bot
+                        // Try manual opening
                         const modal = document.getElementById('nethive-assistant-modal');
                         const container = document.getElementById('nethive-bot-container');
                         
                         if (modal && container) {
-                            originalConsole.log('🤖 Trying manual modal opening...');
+                            originalConsole.log('🤖 Manual modal opening...');
                             container.classList.remove('hidden');
                             modal.classList.remove('hidden');
                         } else {
-                            originalConsole.error('❌ Bot modal elements not found');
+                            originalConsole.error('❌ Bot elements not found, retrying in 500ms...');
+                            // Try again after a delay
+                            setTimeout(() => {
+                                if (!tryShowBot()) {
+                                    const modal2 = document.getElementById('nethive-assistant-modal');
+                                    const container2 = document.getElementById('nethive-bot-container');
+                                    if (modal2 && container2) {
+                                        container2.classList.remove('hidden');
+                                        modal2.classList.remove('hidden');
+                                    }
+                                }
+                            }, 500);
                         }
                     }
                 });
