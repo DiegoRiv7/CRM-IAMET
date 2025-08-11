@@ -1845,6 +1845,9 @@ async function checkForNewOpportunities() {
 function handleNewOpportunityDetected(opportunity) {
     updateNethiveMood('excited', '¡Nueva oportunidad detectada!');
     hideProactiveBot?.();
+    
+    // Aparecer como buen asistente automáticamente
+    showNethiveAssistantWithOpportunity(opportunity);
     showPersistentOpportunityNotification(opportunity);
 }
 
@@ -1873,6 +1876,8 @@ function handleNewBitrixOpportunityDetected(bitrixOpportunity) {
         created_at: bitrixOpportunity.detected_at
     };
     
+    // Aparecer como buen asistente automáticamente
+    showNethiveAssistantWithBitrixOpportunity(formattedOpportunity);
     showPersistentBitrixOpportunityNotification(formattedOpportunity);
 }
 
@@ -1936,7 +1941,7 @@ function showPersistentBitrixOpportunityNotification(opportunity) {
                 </div>
             </div>
         </div>
-    \`;
+    `;
 
     document.body.insertAdjacentHTML('beforeend', notificationHTML);
     
@@ -1944,7 +1949,7 @@ function showPersistentBitrixOpportunityNotification(opportunity) {
     if (!document.getElementById('nethive-notification-styles')) {
         const styles = document.createElement('style');
         styles.id = 'nethive-notification-styles';
-        styles.textContent = \`
+        styles.textContent = `
             @keyframes slide-in-right {
                 0% { transform: translateX(100%); opacity: 0; }
                 100% { transform: translateX(0); opacity: 1; }
@@ -1952,7 +1957,7 @@ function showPersistentBitrixOpportunityNotification(opportunity) {
             .animate-slide-in-right {
                 animation: slide-in-right 0.5s ease-out;
             }
-        \`;
+        `;
         document.head.appendChild(styles);
     }
     
@@ -2695,6 +2700,98 @@ setTimeout(startOpportunityWatcher, 2000); // Esperar 2 segundos después del lo
 
 // Log para debug
 console.log(`📍 Bot iniciado en página: ${window.location.pathname}`);
+
+// ==================== FUNCIONES DE ASISTENTE PROACTIVO ====================
+
+// Mostrar asistente automáticamente con mensaje específico para nueva oportunidad local
+function showNethiveAssistantWithOpportunity(opportunity) {
+    console.log('🤖 Mostrando asistente proactivo para nueva oportunidad local:', opportunity);
+    
+    // Preparar mensaje específico para la oportunidad
+    const welcomeMessage = `¡Hola! 🎉 Acabo de detectar una nueva oportunidad: **"${opportunity.titulo}"**
+    
+**Detalles de la oportunidad:**
+• **Cliente:** ${opportunity.cliente_nombre || 'No especificado'}
+• **Monto estimado:** $${parseFloat(opportunity.monto_estimado || 0).toLocaleString('es-ES', {minimumFractionDigits: 2})}
+• **Probabilidad:** ${opportunity.probabilidad || '50'}%
+
+**¿Qué te gustaría hacer?**
+• Crear una cotización profesional
+• Revisar los detalles de la oportunidad
+• Obtener consejos para cerrar la venta
+
+Como tu asistente especializado en ventas, estoy aquí para ayudarte a aprovechar al máximo esta oportunidad. 💪`;
+
+    // Abrir el asistente con este mensaje personalizado
+    showNethiveAssistantWithCustomMessage(welcomeMessage, opportunity);
+}
+
+// Mostrar asistente automáticamente con mensaje específico para nueva oportunidad de Bitrix24
+function showNethiveAssistantWithBitrixOpportunity(opportunity) {
+    console.log('🤖 Mostrando asistente proactivo para nueva oportunidad Bitrix24:', opportunity);
+    
+    // Preparar mensaje específico para la oportunidad de Bitrix24
+    const welcomeMessage = `¡Excelente! 🚀 He detectado una nueva oportunidad desde **Bitrix24**: **"${opportunity.titulo}"**
+    
+**Información sincronizada desde Bitrix24:**
+• **Empresa:** ${opportunity.cliente_nombre || 'Cliente de Bitrix24'}
+• **Valor estimado:** $${parseFloat(opportunity.monto_estimado || 0).toLocaleString('es-ES', {minimumFractionDigits: 2})}
+• **Origen:** Sincronización automática con CRM
+• **ID Bitrix:** ${opportunity.id}
+
+**¿Qué quieres hacer con esta oportunidad?**
+✅ **Crear cotización inmediatamente** - Con datos pre-llenados
+📋 **Solo importar al sistema** - Para trabajar después
+🔍 **Revisar detalles completos** - Ver toda la información
+
+Como tu asistente inteligente, puedo ayudarte a convertir esta oportunidad en una venta exitosa. Los datos ya están listos para crear una cotización profesional. 💼`;
+
+    // Abrir el asistente con este mensaje personalizado
+    showNethiveAssistantWithCustomMessage(welcomeMessage, opportunity);
+}
+
+// Función generalizada para mostrar el asistente con mensaje personalizado
+function showNethiveAssistantWithCustomMessage(customMessage, opportunityData = null) {
+    try {
+        // Almacenar el contexto de la oportunidad
+        if (opportunityData) {
+            window.currentOpportunityContext = opportunityData;
+        }
+        
+        // Establecer el mensaje personalizado antes de abrir
+        window.customNethiveMessage = customMessage;
+        
+        // Mostrar el asistente
+        if (typeof window.showNethiveAssistant === 'function') {
+            console.log('✅ Abriendo asistente con mensaje personalizado...');
+            window.showNethiveAssistant();
+            
+            // Esperar un momento y luego inyectar el mensaje personalizado
+            setTimeout(() => {
+                if (window.customNethiveMessage) {
+                    // Limpiar chat anterior
+                    const chatMessages = document.getElementById('chat-messages');
+                    if (chatMessages) {
+                        chatMessages.innerHTML = '';
+                    }
+                    
+                    // Agregar el mensaje personalizado del asistente
+                    addChatMessage(window.customNethiveMessage, 'bot');
+                    
+                    // Limpiar el mensaje temporal
+                    delete window.customNethiveMessage;
+                    
+                    console.log('✅ Mensaje personalizado inyectado en el chat');
+                }
+            }, 200);
+            
+        } else {
+            console.error('❌ showNethiveAssistant no está disponible');
+        }
+    } catch (error) {
+        console.error('❌ Error mostrando asistente personalizado:', error);
+    }
+}
 
 // Funciones específicas para manejar oportunidades de Bitrix24
 window.acceptBitrixOpportunityQuotation = function(bitrixId) {
