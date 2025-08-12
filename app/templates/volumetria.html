@@ -194,28 +194,8 @@ function crearVolumetria(tipo) {
             color = '#6b7280';
     }
     
-    // Mostrar modal de confirmación con SweetAlert2 si está disponible, sino usar confirm nativo
-    if (typeof Swal !== 'undefined') {
-        Swal.fire({
-            title: `¿Crear ${titulo}?`,
-            text: descripcion,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: color,
-            cancelButtonColor: '#6b7280',
-            confirmButtonText: 'Sí, crear',
-            cancelButtonText: 'Cancelar'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                iniciarVolumetria(tipo, titulo);
-            }
-        });
-    } else {
-        // Fallback con confirm nativo
-        if (confirm(`¿Deseas crear una ${titulo}?\n\n${descripcion}`)) {
-            iniciarVolumetria(tipo, titulo);
-        }
-    }
+    // Mostrar formulario directamente
+    iniciarVolumetria(tipo, titulo);
 }
 
 // Función para iniciar el proceso de volumetría
@@ -247,28 +227,38 @@ function iniciarVolumetria(tipo, titulo) {
 
 // Función para mostrar el formulario de nodos de red
 function mostrarFormularioNodos() {
+    // Ocultar contenido principal
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.style.display = 'none';
+    }
+    
     const formularioHTML = `
-        <div id="formulario-nodos" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" style="display: none;">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                <div class="sticky top-0 bg-white dark:bg-gray-800 p-6 border-b border-gray-200 dark:border-gray-700 rounded-t-xl">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-2 rounded-lg">
-                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div id="formulario-nodos" class="min-h-screen apple-bg">
+            <div class="bg-white dark:bg-gray-800 min-h-screen">
+                <div class="glass-card p-8 max-w-4xl mx-auto animate-fade-in">
+                    <div class="flex items-center justify-between mb-8">
+                        <div class="flex items-center space-x-4">
+                            <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
+                                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
                                 </svg>
                             </div>
-                            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Formulario Nodos de Red</h2>
+                            <div>
+                                <h1 class="text-3xl font-bold text-gray-800 dark:text-white drop-shadow-glow">
+                                    Formulario Nodos de Red
+                                </h1>
+                                <p class="text-gray-600 dark:text-gray-300 mt-1">
+                                    Configuración de volumetría para infraestructura de red
+                                </p>
+                            </div>
                         </div>
-                        <button onclick="cerrarFormulario()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
+                        <button onclick="cerrarFormulario()" class="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200">
+                            ← Regresar
                         </button>
                     </div>
-                </div>
                 
-                <form id="form-nodos" class="p-6 space-y-6">
+                    <form id="form-nodos" class="space-y-8">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Categoría</label>
@@ -369,21 +359,21 @@ function mostrarFormularioNodos() {
                         </div>
                     </div>
                     
-                    <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <button type="button" onclick="cerrarFormulario()" class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg transition-colors duration-200">
-                            Cancelar
-                        </button>
-                        <button type="submit" class="px-6 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg transition-all duration-200">
-                            Crear Volumetría
-                        </button>
-                    </div>
-                </form>
+                        <div class="flex justify-center space-x-4 pt-8 border-t border-gray-200 dark:border-gray-700 mt-8">
+                            <button type="button" onclick="cerrarFormulario()" class="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-medium py-3 px-8 rounded-lg transition duration-200">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-3 px-8 rounded-lg transition duration-200 shadow-lg">
+                                🚀 Crear Volumetría
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     `;
     
     document.body.insertAdjacentHTML('beforeend', formularioHTML);
-    document.getElementById('formulario-nodos').style.display = 'flex';
     
     // Agregar event listener al formulario
     document.getElementById('form-nodos').addEventListener('submit', function(e) {
@@ -397,6 +387,12 @@ function cerrarFormulario() {
     const formulario = document.getElementById('formulario-nodos');
     if (formulario) {
         formulario.remove();
+    }
+    
+    // Mostrar contenido principal de nuevo
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.style.display = 'block';
     }
 }
 
@@ -490,20 +486,34 @@ function generarVolumetria(datos) {
 // Función para mostrar la tabla de volumetría
 function mostrarTablaVolumetria(datos) {
     const tablaHTML = `
-        <div id="tabla-volumetria" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" style="overflow-y: auto;">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-7xl w-full max-h-[95vh] overflow-y-auto">
-                <div class="sticky top-0 bg-white dark:bg-gray-800 p-6 border-b border-gray-200 dark:border-gray-700 rounded-t-xl">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Volumetría de Nodos de Red</h2>
-                        <button onclick="cerrarTablaVolumetria()" class="text-gray-500 hover:text-gray-700">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
+        <div id="tabla-volumetria" class="min-h-screen apple-bg">
+            <div class="bg-white dark:bg-gray-800 min-h-screen overflow-y-auto">
+                <div class="glass-card p-8 max-w-full mx-auto animate-fade-in">
+                    <div class="flex items-center justify-between mb-8">
+                        <div class="flex items-center space-x-4">
+                            <div class="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl shadow-lg">
+                                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 class="text-3xl font-bold text-gray-800 dark:text-white drop-shadow-glow">
+                                    Volumetría de Nodos de Red
+                                </h1>
+                                <p class="text-gray-600 dark:text-gray-300 mt-1">
+                                    Análisis completo de costos y rentabilidad del proyecto
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex space-x-3">
+                            <button onclick="exportarPDF()" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200 shadow-lg">
+                                📄 Guardar PDF
+                            </button>
+                            <button onclick="cerrarTablaVolumetria()" class="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200">
+                                ← Regresar
+                            </button>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="p-6">
                     <!-- Resumen de datos -->
                     <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg mb-6">
                         <h3 class="font-semibold text-blue-800 dark:text-blue-200 mb-2">Resumen del Proyecto</h3>
@@ -519,8 +529,8 @@ function mostrarTablaVolumetria(datos) {
                     <div class="mb-8">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="text-xl font-semibold text-gray-800 dark:text-white">Tabla de Precios y Costos</h3>
-                            <div class="flex items-center bg-yellow-100 dark:bg-yellow-900/30 px-3 py-1 rounded-full text-sm">
-                                <span class="text-yellow-800 dark:text-yellow-200">✏️ Celdas amarillas son editables</span>
+                            <div class="flex items-center bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full text-sm">
+                                <span class="text-blue-800 dark:text-blue-200">✏️ Hover para editar celdas</span>
                             </div>
                         </div>
                         <div class="overflow-x-auto">
@@ -528,19 +538,59 @@ function mostrarTablaVolumetria(datos) {
                                 .editable {
                                     transition: all 0.2s ease;
                                     position: relative;
+                                    cursor: pointer;
+                                    border: 1px dashed transparent !important;
                                 }
-                                .editable:hover::before {
+                                .editable:hover {
+                                    background-color: #374151 !important;
+                                    border: 1px dashed #6b7280 !important;
+                                }
+                                .editable:hover::after {
                                     content: '✏️';
                                     position: absolute;
                                     top: 2px;
-                                    right: 2px;
-                                    font-size: 10px;
-                                    opacity: 0.7;
+                                    right: 4px;
+                                    font-size: 12px;
+                                    opacity: 0.8;
                                 }
                                 .editable:focus {
-                                    background-color: #fef3c7 !important;
-                                    outline: 2px solid #f59e0b;
+                                    background-color: #1f2937 !important;
+                                    outline: 2px solid #3b82f6 !important;
                                     outline-offset: -2px;
+                                    color: #ffffff !important;
+                                }
+                                .delete-btn {
+                                    background: #ef4444;
+                                    color: white;
+                                    border: none;
+                                    width: 24px;
+                                    height: 24px;
+                                    border-radius: 50%;
+                                    cursor: pointer;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    font-size: 12px;
+                                    transition: all 0.2s ease;
+                                }
+                                .delete-btn:hover {
+                                    background: #dc2626;
+                                    transform: scale(1.1);
+                                }
+                                .add-row-btn {
+                                    background: #10b981;
+                                    color: white;
+                                    border: none;
+                                    padding: 8px 16px;
+                                    border-radius: 6px;
+                                    cursor: pointer;
+                                    font-size: 12px;
+                                    font-weight: 600;
+                                    transition: all 0.2s ease;
+                                }
+                                .add-row-btn:hover {
+                                    background: #059669;
+                                    transform: scale(1.05);
                                 }
                             </style>
                             <table class="w-full border-collapse border border-gray-300 dark:border-gray-600 text-sm">
@@ -552,8 +602,10 @@ function mostrarTablaVolumetria(datos) {
                                         <th colspan="4" class="border border-gray-300 dark:border-gray-600 p-3 text-center font-semibold text-green-600 dark:text-green-400">
                                             COSTOS INTERNOS
                                         </th>
-                                        <th class="border border-gray-300 dark:border-gray-600 p-3 text-center font-semibold text-purple-600 dark:text-purple-400">
-                                            GANANCIA
+                                        <th class="border border-gray-300 dark:border-gray-600 p-3 text-center">
+                                            <button onclick="agregarFila()" class="add-row-btn">
+                                                + Agregar Fila
+                                            </button>
                                         </th>
                                     </tr>
                                     <tr class="bg-gray-100 dark:bg-gray-600">
@@ -568,6 +620,7 @@ function mostrarTablaVolumetria(datos) {
                                         <th class="border border-gray-300 dark:border-gray-600 p-2">Costo Unitario</th>
                                         <th class="border border-gray-300 dark:border-gray-600 p-2">Total Costo</th>
                                         <th class="border border-gray-300 dark:border-gray-600 p-2">Ganancia</th>
+                                        <th class="border border-gray-300 dark:border-gray-600 p-2">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tabla-items">
@@ -590,21 +643,25 @@ function mostrarTablaVolumetria(datos) {
                         ${generarResumenVolumetria(datos)}
                     </div>
                     
-                    <!-- Botones de acción -->
-                    <div class="flex justify-end space-x-4 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <button onclick="cerrarTablaVolumetria()" class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg transition-colors">
-                            Cerrar
-                        </button>
-                        <button onclick="exportarPDF()" class="px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg transition-all">
-                            Guardar en PDF
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
     `;
     
+    // Ocultar contenido principal
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.style.display = 'none';
+    }
+    
     document.body.insertAdjacentHTML('beforeend', tablaHTML);
+    
+    // Configurar USD como moneda por defecto
+    const monedaSelect = document.getElementById('moneda-select');
+    if (monedaSelect) {
+        monedaSelect.value = 'USD';
+        monedaActual = 'USD';
+    }
 }
 
 // Función para generar las filas de la tabla
@@ -675,18 +732,23 @@ function generarFilasTabla(datos) {
         totalCosto += totalProductoCosto;
         
         filas += `
-            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700" data-fila="${productos.indexOf(producto)}">
                 <td class="border border-gray-300 dark:border-gray-600 p-2 font-mono text-xs">${producto.noParte}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable bg-yellow-50 hover:bg-yellow-100 cursor-pointer" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 1)">${producto.cantidad}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 editable bg-yellow-50 hover:bg-yellow-100 cursor-pointer" contenteditable="true">${producto.descripcion}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 text-right editable bg-yellow-50 hover:bg-yellow-100 cursor-pointer" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 3)">${formatearPesos(producto.precioLista)}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable bg-yellow-50 hover:bg-yellow-100 cursor-pointer" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 4)">${producto.descuentoCliente}%</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 1)">${producto.cantidad}</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 editable" contenteditable="true">${producto.descripcion}</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-right editable" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 3)">${formatearPesos(producto.precioLista)}</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 4)">${producto.descuentoCliente}%</td>
                 <td class="border border-gray-300 dark:border-gray-600 p-2 text-right">${formatearPesos(precioUnitario)}</td>
                 <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-blue-600">${formatearPesos(totalProductoCliente)}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable bg-yellow-50 hover:bg-yellow-100 cursor-pointer" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 7)">${producto.descuentoProveedor}%</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 7)">${producto.descuentoProveedor}%</td>
                 <td class="border border-gray-300 dark:border-gray-600 p-2 text-right">${formatearPesos(costoUnitario)}</td>
                 <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-green-600">${formatearPesos(totalProductoCosto)}</td>
                 <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-purple-600">${formatearPesos(ganancia)}</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center">
+                    <button onclick="eliminarFila(${productos.indexOf(producto)})" class="delete-btn">
+                        ×
+                    </button>
+                </td>
             </tr>
         `;
     });
@@ -702,6 +764,7 @@ function generarFilasTabla(datos) {
             <td class="border border-gray-300 dark:border-gray-600 p-2"></td>
             <td class="border border-gray-300 dark:border-gray-600 p-2 text-right text-green-600">${formatearPesos(totalCosto)}</td>
             <td class="border border-gray-300 dark:border-gray-600 p-2 text-right text-purple-600">${formatearPesos(gananciaTotalFila)}</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2"></td>
         </tr>
     `;
     
@@ -717,11 +780,20 @@ function generarResumenVolumetria(datos) {
     
     return `
         <div class="bg-blue-50 dark:bg-blue-900/30 p-6 rounded-lg">
-            <h4 class="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-4">Análisis de Costos - Cliente</h4>
+            <div class="flex items-center justify-between mb-4">
+                <h4 class="text-lg font-semibold text-blue-800 dark:text-blue-200">Análisis de Costos - Cliente</h4>
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Moneda:</span>
+                    <select id="moneda-select" onchange="cambiarMoneda()" class="px-2 py-1 border-2 border-blue-400 rounded-md text-sm font-semibold bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400">
+                        <option value="USD">USD ($)</option>
+                        <option value="MXN">MXN ($)</option>
+                    </select>
+                </div>
+            </div>
             <div class="space-y-3">
                 <div class="flex justify-between">
                     <span class="text-gray-700 dark:text-gray-300">Subtotal:</span>
-                    <span class="font-semibold text-gray-900 dark:text-white">${formatearPesos(totalCliente)}</span>
+                    <span class="font-semibold text-gray-900 dark:text-white" id="subtotal-display">${formatearMoneda(totalCliente)}</span>
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-gray-700 dark:text-gray-300 font-medium">IVA:</span>
@@ -732,25 +804,60 @@ function generarResumenVolumetria(datos) {
                 </div>
                 <div class="flex justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">Monto IVA:</span>
-                    <span id="monto-iva" class="font-semibold text-gray-900 dark:text-white">${formatearPesos(totalCliente * 0.16)}</span>
+                    <span id="monto-iva" class="font-semibold text-gray-900 dark:text-white">${formatearMoneda(totalCliente * 0.16)}</span>
                 </div>
                 <div class="border-t-2 border-blue-200 pt-3 flex justify-between font-bold text-lg">
                     <span class="text-gray-800 dark:text-gray-200">Total Cliente:</span>
-                    <span id="total-cliente" class="text-blue-700 dark:text-blue-400">${formatearPesos(totalCliente * 1.16)}</span>
+                    <span id="total-cliente" class="text-blue-700 dark:text-blue-400">${formatearMoneda(totalCliente * 1.16)}</span>
+                </div>
+                <div class="mt-3 p-2 bg-blue-100 dark:bg-blue-800/30 rounded text-xs">
+                    <div class="flex justify-between">
+                        <span>Tipo de Cambio:</span>
+                        <span class="font-mono">1 USD = ${tipoCambio.toFixed(2)} MXN</span>
+                    </div>
                 </div>
             </div>
         </div>
         
         <div class="bg-green-50 dark:bg-green-900/30 p-6 rounded-lg">
-            <h4 class="text-lg font-semibold text-green-800 dark:text-green-200 mb-4">Análisis de Rentabilidad</h4>
+            <h4 class="text-lg font-semibold text-green-800 dark:text-green-200 mb-4">Análisis de Rentabilidad Avanzado</h4>
             <div class="space-y-3">
                 <div class="flex justify-between">
-                    <span class="text-gray-700 dark:text-gray-300">Porcentaje de Utilidad:</span>
+                    <span class="text-gray-700 dark:text-gray-300">Margen de Utilidad:</span>
                     <span class="font-semibold text-green-700 dark:text-green-400">${porcentajeUtilidad.toFixed(1)}%</span>
                 </div>
                 <div class="flex justify-between">
-                    <span class="text-gray-700 dark:text-gray-300">Ganancia Total:</span>
-                    <span class="font-bold text-green-700 dark:text-green-400 text-lg">${formatearPesos(gananciaTotalDolares)}</span>
+                    <span class="text-gray-700 dark:text-gray-300">Ganancia Bruta:</span>
+                    <span class="font-bold text-green-700 dark:text-green-400 text-lg" id="ganancia-display">${formatearMoneda(gananciaTotalDolares)}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">ROI (Return on Investment):</span>
+                    <span class="font-semibold text-green-600">${((gananciaTotalDolares / calcularTotalCosto({})) * 100).toFixed(1)}%</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Costo por Nodo:</span>
+                    <span class="font-mono text-xs" id="costo-nodo">${formatearMoneda(calcularTotalCosto({}) / (datos.cantidadNodos || 20))}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Precio por Nodo:</span>
+                    <span class="font-mono text-xs" id="precio-nodo">${formatearMoneda(totalCliente / (datos.cantidadNodos || 20))}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Utilidad por Nodo:</span>
+                    <span class="font-mono text-xs font-semibold text-green-600" id="utilidad-nodo">${formatearMoneda(gananciaTotalDolares / (datos.cantidadNodos || 20))}</span>
+                </div>
+                
+                <!-- Indicadores de Rentabilidad -->
+                <div class="mt-4 pt-3 border-t border-green-200 dark:border-green-700">
+                    <div class="flex items-center justify-between text-xs">
+                        <span>Estado del Proyecto:</span>
+                        <span class="px-2 py-1 rounded-full text-white font-semibold ${porcentajeUtilidad >= 30 ? 'bg-green-500' : porcentajeUtilidad >= 15 ? 'bg-yellow-500' : 'bg-red-500'}">
+                            ${porcentajeUtilidad >= 30 ? '🟢 Excelente' : porcentajeUtilidad >= 15 ? '🟡 Aceptable' : '🔴 Revisar'}
+                        </span>
+                    </div>
+                    <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        ${porcentajeUtilidad >= 30 ? 'Margen muy saludable para el negocio' : porcentajeUtilidad >= 15 ? 'Margen aceptable, considerar optimizaciones' : 'Margen bajo, revisar precios o costos'}
+                    </div>
                 </div>
             </div>
         </div>
@@ -835,10 +942,10 @@ function actualizarIVA() {
     const totalFinal = subtotal + montoIvaCalculado;
     
     if (montoIva) {
-        montoIva.textContent = formatearPesos(montoIvaCalculado);
+        montoIva.textContent = formatearMoneda(montoIvaCalculado);
     }
     if (totalClienteElement) {
-        totalClienteElement.textContent = formatearPesos(totalFinal);
+        totalClienteElement.textContent = formatearMoneda(totalFinal);
     }
 }
 
@@ -848,20 +955,207 @@ function cerrarTablaVolumetria() {
     if (tabla) {
         tabla.remove();
     }
+    
+    // Mostrar contenido principal de nuevo
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.style.display = 'block';
+    }
 }
 
-// Función para formatear números como pesos mexicanos
+// Variable global para moneda actual
+let monedaActual = 'USD'; // Por defecto USD
+let tipoCambio = 18.50; // 1 USD = 18.50 MXN (actualizar según API)
+
+// Función para formatear números según la moneda seleccionada
+function formatearMoneda(numero, moneda = null) {
+    const monedaUsar = moneda || monedaActual;
+    
+    if (monedaUsar === 'USD') {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2
+        }).format(numero);
+    } else {
+        return new Intl.NumberFormat('es-MX', {
+            style: 'currency',
+            currency: 'MXN',
+            minimumFractionDigits: 2
+        }).format(numero);
+    }
+}
+
+// Función legacy para mantener compatibilidad
 function formatearPesos(numero) {
-    return new Intl.NumberFormat('es-MX', {
-        style: 'currency',
-        currency: 'MXN',
-        minimumFractionDigits: 2
-    }).format(numero);
+    return formatearMoneda(numero);
+}
+
+// Función para convertir entre monedas
+function convertirMoneda(cantidad, deMoneda, aMoneda) {
+    if (deMoneda === aMoneda) return cantidad;
+    
+    if (deMoneda === 'USD' && aMoneda === 'MXN') {
+        return cantidad * tipoCambio;
+    } else if (deMoneda === 'MXN' && aMoneda === 'USD') {
+        return cantidad / tipoCambio;
+    }
+    
+    return cantidad;
+}
+
+// Función para cambiar moneda
+function cambiarMoneda() {
+    const monedaSelector = document.getElementById('moneda-select');
+    const nuevaMoneda = monedaSelector.value;
+    const monedaAnterior = monedaActual;
+    
+    monedaActual = nuevaMoneda;
+    
+    // Actualizar todas las celdas de la tabla
+    actualizarMonedaTabla(monedaAnterior, nuevaMoneda);
+    
+    // Actualizar el resumen
+    actualizarResumenMoneda();
+    
+    // Recalcular totales
+    recalcularTotales();
+}
+
+// Función para actualizar moneda en toda la tabla
+function actualizarMonedaTabla(dMoneda, aMoneda) {
+    const tabla = document.getElementById('tabla-items');
+    const filas = tabla.children;
+    
+    for (let i = 0; i < filas.length; i++) {
+        const fila = filas[i];
+        const celdas = fila.children;
+        
+        // Actualizar celdas de precios (índices 3, 5, 6, 8, 9, 10)
+        const indicesPrecios = [3, 5, 6, 8, 9, 10];
+        
+        indicesPrecios.forEach(indice => {
+            if (celdas[indice] && celdas[indice].textContent) {
+                const valorNumerico = parseFloat(celdas[indice].textContent.replace(/[^0-9.-]+/g, ''));
+                if (!isNaN(valorNumerico)) {
+                    const valorConvertido = convertirMoneda(valorNumerico, dMoneda, aMoneda);
+                    celdas[indice].textContent = formatearMoneda(valorConvertido);
+                }
+            }
+        });
+    }
+}
+
+// Función para actualizar el resumen con nueva moneda
+function actualizarResumenMoneda() {
+    const elementos = [
+        'subtotal-display',
+        'monto-iva', 
+        'total-cliente',
+        'ganancia-display',
+        'costo-nodo',
+        'precio-nodo',
+        'utilidad-nodo'
+    ];
+    
+    elementos.forEach(id => {
+        const elemento = document.getElementById(id);
+        if (elemento && elemento.textContent) {
+            const valorNumerico = parseFloat(elemento.textContent.replace(/[^0-9.-]+/g, ''));
+            if (!isNaN(valorNumerico)) {
+                elemento.textContent = formatearMoneda(valorNumerico);
+            }
+        }
+    });
 }
 
 // Función para exportar a PDF
 function exportarPDF() {
     alert('Funcionalidad de exportación a PDF en desarrollo. Se integrará con el sistema de reportes existente.');
+}
+
+// Función para agregar una nueva fila
+function agregarFila() {
+    const tabla = document.getElementById('tabla-items');
+    const filasActuales = tabla.children.length - 1; // Excluir fila de totales
+    
+    // Crear nueva fila con valores por defecto
+    const nuevaFila = `
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700" data-fila="${filasActuales}">
+            <td class="border border-gray-300 dark:border-gray-600 p-2 font-mono text-xs editable" contenteditable="true">NUEVO-ITEM</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${filasActuales}, 1)">1</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 editable" contenteditable="true">Nuevo Producto</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right editable" contenteditable="true" onblur="manejarCambioTabla(this, ${filasActuales}, 3)">$0.00 MXN</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${filasActuales}, 4)">0%</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right">$0.00 MXN</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-blue-600">$0.00 MXN</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${filasActuales}, 7)">0%</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right">$0.00 MXN</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-green-600">$0.00 MXN</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-purple-600">$0.00 MXN</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-center">
+                <button onclick="eliminarFila(${filasActuales})" class="delete-btn">×</button>
+            </td>
+        </tr>
+    `;
+    
+    // Insertar antes de la fila de totales (última fila)
+    const filaTotales = tabla.children[tabla.children.length - 1];
+    filaTotales.insertAdjacentHTML('beforebegin', nuevaFila);
+    
+    // Recalcular totales
+    recalcularTotales();
+}
+
+// Función para eliminar una fila
+function eliminarFila(indice) {
+    const tabla = document.getElementById('tabla-items');
+    const filas = tabla.children;
+    
+    // No permitir eliminar si solo hay una fila de producto (más la de totales)
+    if (filas.length <= 2) {
+        alert('Debe mantener al menos un producto en la tabla');
+        return;
+    }
+    
+    // Encontrar la fila por el data-fila o por índice
+    for (let i = 0; i < filas.length - 1; i++) { // Excluir fila de totales
+        const fila = filas[i];
+        if (fila.getAttribute('data-fila') == indice || i == indice) {
+            fila.remove();
+            break;
+        }
+    }
+    
+    // Reindexar las filas restantes
+    reindexarFilas();
+    
+    // Recalcular totales
+    recalcularTotales();
+}
+
+// Función para reindexar las filas después de eliminar
+function reindexarFilas() {
+    const tabla = document.getElementById('tabla-items');
+    const filas = tabla.children;
+    
+    for (let i = 0; i < filas.length - 1; i++) { // Excluir fila de totales
+        const fila = filas[i];
+        fila.setAttribute('data-fila', i);
+        
+        // Actualizar los eventos onblur con el nuevo índice
+        const celdas = fila.children;
+        if (celdas[1].hasAttribute('onblur')) celdas[1].setAttribute('onblur', `manejarCambioTabla(this, ${i}, 1)`);
+        if (celdas[3].hasAttribute('onblur')) celdas[3].setAttribute('onblur', `manejarCambioTabla(this, ${i}, 3)`);
+        if (celdas[4].hasAttribute('onblur')) celdas[4].setAttribute('onblur', `manejarCambioTabla(this, ${i}, 4)`);
+        if (celdas[7].hasAttribute('onblur')) celdas[7].setAttribute('onblur', `manejarCambioTabla(this, ${i}, 7)`);
+        
+        // Actualizar botón de eliminar
+        const botonEliminar = celdas[11].querySelector('.delete-btn');
+        if (botonEliminar) {
+            botonEliminar.setAttribute('onclick', `eliminarFila(${i})`);
+        }
+    }
 }
 
 // Función para manejar cambios en celdas editables
@@ -929,7 +1223,7 @@ function actualizarResumen(totalCliente, totalCosto) {
     // Actualizar elementos del resumen si existen
     const subtotalElement = document.querySelector('#resumen-volumetria .bg-blue-50 .space-y-3 .flex:first-child span:last-child');
     if (subtotalElement) {
-        subtotalElement.textContent = formatearPesos(totalCliente);
+        subtotalElement.textContent = formatearMoneda(totalCliente);
     }
     
     // Actualizar IVA
@@ -943,7 +1237,7 @@ function actualizarResumen(totalCliente, totalCosto) {
     
     const gananciaElement = document.querySelector('#resumen-volumetria .bg-green-50 .space-y-3 .flex:last-child span:last-child');
     if (gananciaElement) {
-        gananciaElement.textContent = formatearPesos(gananciaTotalDolares);
+        gananciaElement.textContent = formatearMoneda(gananciaTotalDolares);
     }
 }
 
