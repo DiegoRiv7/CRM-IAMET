@@ -6,7 +6,7 @@
 {% block content %}
 <div class="min-h-screen apple-bg">
     <div class="main-content">
-        <div class="apple-glass-card p-8 max-w-6xl mx-auto animate-fade-in">
+        <div class="apple-glass-card p-6 mx-4 animate-fade-in">
             <div class="flex items-center justify-between mb-8">
                 <div class="flex items-center space-x-4">
                     <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
@@ -19,7 +19,7 @@
                             {{ page_title }}
                         </h1>
                         <p class="apple-text-secondary mt-1">
-                            Sistema de <span class="text-blue-400 font-medium">análisis</span> y <span class="text-blue-400 font-medium">cálculo volumétrico</span>
+                            Sistema de <span class="apple-text-primary font-medium">análisis</span> y <span class="apple-text-primary font-medium">cálculo volumétrico</span>
                         </p>
                     </div>
                 </div>
@@ -31,7 +31,7 @@
 
             <!-- Sección Principal - Tipos de Volumetría -->
             <div class="mt-4">
-                <div class="apple-glass-card p-8">
+                <div class="apple-glass-card p-6">
                     <h2 class="text-2xl font-semibold apple-text-primary mb-6 flex items-center">
                         <svg class="w-8 h-8 mr-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.78 0-2.678-2.153-1.415-3.414l5-5A2 2 0 009 9.172V5L8 4z"/>
@@ -39,9 +39,9 @@
                         <span class="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">Crear Volumetría</span> por Categoría
                     </h2>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <!-- Volumetría CCTV -->
-                        <div class="apple-card p-6 transition-all duration-500 border-l-4 border-blue-500">
+                        <div class="apple-card p-6 transition-all duration-500">
                             <div class="flex items-center mb-4">
                                 <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg transition-transform duration-300">
                                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -53,7 +53,7 @@
                                 </h3>
                             </div>
                             <p class="apple-text-secondary mb-6">
-                                Cálculo volumétrico para sistemas de <span class="text-blue-400 font-medium">videovigilancia</span>, <span class="text-blue-400 font-medium">cámaras IP</span>, <span class="text-blue-400 font-medium">DVR/NVR</span>, y infraestructura de <span class="text-blue-400 font-medium">seguridad</span>.
+                                Cálculo volumétrico para sistemas de <span class="apple-text-primary font-medium">videovigilancia</span>, <span class="apple-text-primary font-medium">cámaras IP</span>, <span class="apple-text-primary font-medium">DVR/NVR</span>, y infraestructura de <span class="apple-text-primary font-medium">seguridad</span>.
                             </p>
                             <div class="flex space-x-3">
                                 <button onclick="crearVolumetria('cctv')" class="apple-btn-primary flex-1 py-2 px-4 text-sm font-medium transition duration-200">
@@ -66,7 +66,7 @@
                         </div>
 
                         <!-- Volumetría Nodos de Red -->
-                        <div class="apple-card p-6 transition-all duration-500 border-l-4 border-blue-500">
+                        <div class="apple-card p-6 transition-all duration-500">
                             <div class="flex items-center mb-4">
                                 <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg transition-transform duration-300">
                                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -78,7 +78,7 @@
                                 </h3>
                             </div>
                             <p class="apple-text-secondary mb-6">
-                                Análisis volumétrico para <span class="text-blue-400 font-medium">infraestructura de red</span>, <span class="text-blue-400 font-medium">switches</span>, <span class="text-blue-400 font-medium">routers</span>, <span class="text-blue-400 font-medium">cableado estructurado</span> y puntos de acceso.
+                                Análisis volumétrico para <span class="apple-text-primary font-medium">infraestructura de red</span>, <span class="apple-text-primary font-medium">switches</span>, <span class="apple-text-primary font-medium">routers</span>, <span class="apple-text-primary font-medium">cableado estructurado</span> y puntos de acceso.
                             </p>
                             <div class="flex space-x-3">
                                 <button onclick="crearVolumetria('nodos')" class="apple-btn-primary flex-1 py-2 px-4 text-sm font-medium transition duration-200">
@@ -91,7 +91,7 @@
                         </div>
 
                         <!-- Volumetría Control de Acceso -->
-                        <div class="apple-card p-6 transition-all duration-500 border-l-4 border-blue-500">
+                        <div class="apple-card p-6 transition-all duration-500">
                             <div class="flex items-center mb-4">
                                 <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg transition-transform duration-300">
                                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,7 +103,7 @@
                                 </h3>
                             </div>
                             <p class="apple-text-secondary mb-6">
-                                Volumetría para sistemas de <span class="text-blue-400 font-medium">control de acceso</span>, <span class="text-blue-400 font-medium">lectores biométricos</span>, <span class="text-blue-400 font-medium">cerraduras electrónicas</span> y paneles de control.
+                                Volumetría para sistemas de <span class="apple-text-primary font-medium">control de acceso</span>, <span class="apple-text-primary font-medium">lectores biométricos</span>, <span class="apple-text-primary font-medium">cerraduras electrónicas</span> y paneles de control.
                             </p>
                             <div class="flex space-x-3">
                                 <button onclick="crearVolumetria('acceso')" class="apple-btn-primary flex-1 py-2 px-4 text-sm font-medium transition duration-200">
@@ -116,7 +116,7 @@
                         </div>
 
                         <!-- Volumetría General -->
-                        <div class="apple-card p-6 transition-all duration-500 border-l-4 border-blue-500">
+                        <div class="apple-card p-6 transition-all duration-500">
                             <div class="flex items-center mb-4">
                                 <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg transition-transform duration-300">
                                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -128,7 +128,7 @@
                                 </h3>
                             </div>
                             <p class="apple-text-secondary mb-6">
-                                Cálculo volumétrico <span class="text-blue-400 font-medium">personalizado</span> para <span class="text-blue-400 font-medium">proyectos mixtos</span> o sistemas no categorizados específicamente.
+                                Cálculo volumétrico <span class="apple-text-primary font-medium">personalizado</span> para <span class="apple-text-primary font-medium">proyectos mixtos</span> o sistemas no categorizados específicamente.
                             </p>
                             <div class="flex space-x-3">
                                 <button onclick="crearVolumetria('general')" class="apple-btn-primary flex-1 py-2 px-4 text-sm font-medium transition duration-200">
@@ -244,7 +244,7 @@ function mostrarFormularioNodos() {
     const formularioHTML = `
         <div id="formulario-nodos" class="min-h-screen apple-bg">
             <div class="apple-bg min-h-screen">
-                <div class="apple-glass-card p-8 max-w-4xl mx-auto animate-fade-in">
+                <div class="apple-glass-card p-6 mx-4 animate-fade-in">
                     <div class="flex items-center justify-between mb-8">
                         <div class="flex items-center space-x-4">
                             <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
@@ -496,7 +496,7 @@ function mostrarTablaVolumetria(datos) {
     const tablaHTML = `
         <div id="tabla-volumetria" class="min-h-screen apple-bg">
             <div class="apple-bg min-h-screen overflow-y-auto">
-                <div class="apple-glass-card p-8 max-w-full mx-auto animate-fade-in">
+                <div class="apple-glass-card p-6 mx-4 animate-fade-in">
                     <div class="flex items-center justify-between mb-8">
                         <div class="flex items-center space-x-4">
                             <div class="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl shadow-lg">
@@ -1209,7 +1209,7 @@ function mostrarListaVolumetrias(tipo, titulo, descripcion) {
     const listaHTML = `
         <div id="lista-volumetrias" class="min-h-screen apple-bg">
             <div class="apple-bg min-h-screen overflow-y-auto">
-                <div class="apple-glass-card p-8 max-w-6xl mx-auto animate-fade-in">
+                <div class="apple-glass-card p-6 mx-4 animate-fade-in">
                     <div class="flex items-center justify-between mb-8">
                         <div class="flex items-center space-x-4">
                             <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
