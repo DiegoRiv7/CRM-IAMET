@@ -6,7 +6,7 @@
 {% block content %}
 <div class="min-h-screen apple-bg">
     <div class="main-content">
-        <div class="glass-card p-8 max-w-6xl mx-auto animate-fade-in">
+        <div class="apple-glass-card p-8 max-w-6xl mx-auto animate-fade-in">
             <div class="flex items-center justify-between mb-8">
                 <div class="flex items-center space-x-4">
                     <div class="bg-gradient-to-r from-blue-500 to-purple-600 p-3 rounded-xl shadow-lg">
@@ -31,7 +31,7 @@
 
             <!-- Sección Principal - Tipos de Volumetría -->
             <div class="mt-4">
-                <div class="glass-card p-8">
+                <div class="apple-glass-card p-8">
                     <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center">
                         <svg class="w-8 h-8 mr-3 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.78 0-2.678-2.153-1.415-3.414l5-5A2 2 0 009 9.172V5L8 4z"/>
@@ -41,7 +41,7 @@
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Volumetría CCTV -->
-                        <div class="glass-card p-6 hover:shadow-xl transition-all duration-300 cursor-pointer group" onclick="crearVolumetria('cctv')">
+                        <div class="apple-card p-6 hover:shadow-xl transition-all duration-500 cursor-pointer group" onclick="crearVolumetria('cctv')">
                             <div class="flex items-center mb-4">
                                 <div class="bg-gradient-to-r from-red-500 to-red-600 p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
                                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -64,7 +64,7 @@
                         </div>
 
                         <!-- Volumetría Nodos de Red -->
-                        <div class="glass-card p-6 hover:shadow-xl transition-all duration-300 cursor-pointer group" onclick="crearVolumetria('nodos')">
+                        <div class="apple-card p-6 hover:shadow-xl transition-all duration-500 cursor-pointer group" onclick="crearVolumetria('nodos')">
                             <div class="flex items-center mb-4">
                                 <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
                                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,7 +87,7 @@
                         </div>
 
                         <!-- Volumetría Control de Acceso -->
-                        <div class="glass-card p-6 hover:shadow-xl transition-all duration-300 cursor-pointer group" onclick="crearVolumetria('acceso')">
+                        <div class="apple-card p-6 hover:shadow-xl transition-all duration-500 cursor-pointer group" onclick="crearVolumetria('acceso')">
                             <div class="flex items-center mb-4">
                                 <div class="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
                                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -110,7 +110,7 @@
                         </div>
 
                         <!-- Volumetría General -->
-                        <div class="glass-card p-6 hover:shadow-xl transition-all duration-300 cursor-pointer group" onclick="crearVolumetria('general')">
+                        <div class="apple-card p-6 hover:shadow-xl transition-all duration-500 cursor-pointer group" onclick="crearVolumetria('general')">
                             <div class="flex items-center mb-4">
                                 <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
                                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -235,8 +235,8 @@ function mostrarFormularioNodos() {
     
     const formularioHTML = `
         <div id="formulario-nodos" class="min-h-screen apple-bg">
-            <div class="bg-white dark:bg-gray-800 min-h-screen">
-                <div class="glass-card p-8 max-w-4xl mx-auto animate-fade-in">
+            <div class="apple-bg min-h-screen">
+                <div class="apple-glass-card p-8 max-w-4xl mx-auto animate-fade-in">
                     <div class="flex items-center justify-between mb-8">
                         <div class="flex items-center space-x-4">
                             <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
@@ -487,8 +487,8 @@ function generarVolumetria(datos) {
 function mostrarTablaVolumetria(datos) {
     const tablaHTML = `
         <div id="tabla-volumetria" class="min-h-screen apple-bg">
-            <div class="bg-white dark:bg-gray-800 min-h-screen overflow-y-auto">
-                <div class="glass-card p-8 max-w-full mx-auto animate-fade-in">
+            <div class="apple-bg min-h-screen overflow-y-auto">
+                <div class="apple-glass-card p-8 max-w-full mx-auto animate-fade-in">
                     <div class="flex items-center justify-between mb-8">
                         <div class="flex items-center space-x-4">
                             <div class="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl shadow-lg">
@@ -529,35 +529,44 @@ function mostrarTablaVolumetria(datos) {
                     <div class="mb-8">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="text-xl font-semibold text-gray-800 dark:text-white">Tabla de Precios y Costos</h3>
-                            <div class="flex items-center bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full text-sm">
-                                <span class="text-blue-800 dark:text-blue-200">✏️ Hover para editar celdas</span>
-                            </div>
                         </div>
                         <div class="overflow-x-auto">
                             <style>
                                 .editable {
-                                    transition: all 0.2s ease;
+                                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                                     position: relative;
                                     cursor: pointer;
-                                    border: 1px dashed transparent !important;
+                                    border: 1px solid transparent !important;
+                                    border-radius: 8px;
+                                    background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+                                    backdrop-filter: blur(10px);
                                 }
                                 .editable:hover {
-                                    background-color: #374151 !important;
-                                    border: 1px dashed #6b7280 !important;
+                                    background: linear-gradient(145deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.05)) !important;
+                                    border: 1px solid rgba(59, 130, 246, 0.3) !important;
+                                    transform: translateY(-1px);
+                                    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
                                 }
                                 .editable:hover::after {
                                     content: '✏️';
                                     position: absolute;
                                     top: 2px;
                                     right: 4px;
-                                    font-size: 12px;
-                                    opacity: 0.8;
+                                    font-size: 11px;
+                                    opacity: 0.7;
+                                    animation: fadeInScale 0.2s ease-out;
                                 }
                                 .editable:focus {
-                                    background-color: #1f2937 !important;
-                                    outline: 2px solid #3b82f6 !important;
+                                    background: linear-gradient(145deg, rgba(59, 130, 246, 0.2), rgba(147, 51, 234, 0.1)) !important;
+                                    outline: 2px solid rgba(59, 130, 246, 0.6) !important;
                                     outline-offset: -2px;
                                     color: #ffffff !important;
+                                    transform: translateY(-1px);
+                                    box-shadow: 0 12px 32px rgba(59, 130, 246, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+                                }
+                                @keyframes fadeInScale {
+                                    0% { opacity: 0; transform: scale(0.8); }
+                                    100% { opacity: 0.7; transform: scale(1); }
                                 }
                                 .delete-btn {
                                     background: #ef4444;
@@ -591,6 +600,55 @@ function mostrarTablaVolumetria(datos) {
                                 .add-row-btn:hover {
                                     background: #059669;
                                     transform: scale(1.05);
+                                }
+                                
+                                /* Apple-style Classes */
+                                .apple-glass-card {
+                                    background: linear-gradient(145deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1));
+                                    backdrop-filter: blur(20px);
+                                    -webkit-backdrop-filter: blur(20px);
+                                    border: 1px solid rgba(255, 255, 255, 0.2);
+                                    border-radius: 20px;
+                                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1), 
+                                               0 8px 16px rgba(0, 0, 0, 0.08),
+                                               inset 0 1px 0 rgba(255, 255, 255, 0.3);
+                                }
+                                
+                                .apple-card {
+                                    background: linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+                                    backdrop-filter: blur(15px);
+                                    -webkit-backdrop-filter: blur(15px);
+                                    border: 1px solid rgba(255, 255, 255, 0.18);
+                                    border-radius: 16px;
+                                    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+                                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 
+                                               inset 0 1px 0 rgba(255, 255, 255, 0.25);
+                                }
+                                
+                                .apple-card:hover {
+                                    transform: translateY(-8px) scale(1.02);
+                                    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15), 
+                                               0 15px 30px rgba(0, 0, 0, 0.1),
+                                               inset 0 1px 0 rgba(255, 255, 255, 0.4);
+                                    border: 1px solid rgba(255, 255, 255, 0.3);
+                                }
+                                
+                                .apple-bg {
+                                    background: linear-gradient(135deg, 
+                                        #667eea 0%, 
+                                        #764ba2 25%, 
+                                        #f093fb 50%, 
+                                        #f5576c 75%, 
+                                        #4facfe 100%);
+                                    min-height: 100vh;
+                                    background-size: 400% 400%;
+                                    animation: gradientShift 15s ease infinite;
+                                }
+                                
+                                @keyframes gradientShift {
+                                    0% { background-position: 0% 50%; }
+                                    50% { background-position: 100% 50%; }
+                                    100% { background-position: 0% 50%; }
                                 }
                             </style>
                             <table class="w-full border-collapse border border-gray-300 dark:border-gray-600 text-sm">
@@ -736,11 +794,11 @@ function generarFilasTabla(datos) {
                 <td class="border border-gray-300 dark:border-gray-600 p-2 font-mono text-xs">${producto.noParte}</td>
                 <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 1)">${producto.cantidad}</td>
                 <td class="border border-gray-300 dark:border-gray-600 p-2 editable" contenteditable="true">${producto.descripcion}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 text-right editable" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 3)">${formatearPesos(producto.precioLista)}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 4)">${producto.descuentoCliente}%</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-right editable" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 3)" data-tipo="precio">${formatearPesos(producto.precioLista)}</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 4)" data-tipo="porcentaje">${producto.descuentoCliente}%</td>
                 <td class="border border-gray-300 dark:border-gray-600 p-2 text-right">${formatearPesos(precioUnitario)}</td>
                 <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-blue-600">${formatearPesos(totalProductoCliente)}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 7)">${producto.descuentoProveedor}%</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 7)" data-tipo="porcentaje">${producto.descuentoProveedor}%</td>
                 <td class="border border-gray-300 dark:border-gray-600 p-2 text-right">${formatearPesos(costoUnitario)}</td>
                 <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-green-600">${formatearPesos(totalProductoCosto)}</td>
                 <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-purple-600">${formatearPesos(ganancia)}</td>
@@ -782,12 +840,8 @@ function generarResumenVolumetria(datos) {
         <div class="bg-blue-50 dark:bg-blue-900/30 p-6 rounded-lg">
             <div class="flex items-center justify-between mb-4">
                 <h4 class="text-lg font-semibold text-blue-800 dark:text-blue-200">Análisis de Costos - Cliente</h4>
-                <div class="flex items-center space-x-2">
-                    <span class="text-sm text-gray-600 dark:text-gray-400">Moneda:</span>
-                    <select id="moneda-select" onchange="cambiarMoneda()" class="px-2 py-1 border-2 border-blue-400 rounded-md text-sm font-semibold bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400">
-                        <option value="USD">USD ($)</option>
-                        <option value="MXN">MXN ($)</option>
-                    </select>
+                <div class="bg-blue-100 dark:bg-blue-800/30 px-3 py-1 rounded-full">
+                    <span class="text-sm font-semibold text-blue-700 dark:text-blue-300">💰 USD</span>
                 </div>
             </div>
             <div class="space-y-3">
@@ -810,12 +864,6 @@ function generarResumenVolumetria(datos) {
                     <span class="text-gray-800 dark:text-gray-200">Total Cliente:</span>
                     <span id="total-cliente" class="text-blue-700 dark:text-blue-400">${formatearMoneda(totalCliente * 1.16)}</span>
                 </div>
-                <div class="mt-3 p-2 bg-blue-100 dark:bg-blue-800/30 rounded text-xs">
-                    <div class="flex justify-between">
-                        <span>Tipo de Cambio:</span>
-                        <span class="font-mono">1 USD = ${tipoCambio.toFixed(2)} MXN</span>
-                    </div>
-                </div>
             </div>
         </div>
         
@@ -832,11 +880,11 @@ function generarResumenVolumetria(datos) {
                 </div>
                 <div class="flex justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">ROI (Return on Investment):</span>
-                    <span class="font-semibold text-green-600">${((gananciaTotalDolares / calcularTotalCosto({})) * 100).toFixed(1)}%</span>
+                    <span class="font-semibold text-green-600">${((gananciaTotalDolares / calcularTotalCosto(datos)) * 100).toFixed(1)}%</span>
                 </div>
                 <div class="flex justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">Costo por Nodo:</span>
-                    <span class="font-mono text-xs" id="costo-nodo">${formatearMoneda(calcularTotalCosto({}) / (datos.cantidadNodos || 20))}</span>
+                    <span class="font-mono text-xs" id="costo-nodo">${formatearMoneda(calcularTotalCosto(datos) / (datos.cantidadNodos || 20))}</span>
                 </div>
                 <div class="flex justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">Precio por Nodo:</span>
@@ -963,45 +1011,18 @@ function cerrarTablaVolumetria() {
     }
 }
 
-// Variable global para moneda actual
-let monedaActual = 'USD'; // Por defecto USD
-let tipoCambio = 18.50; // 1 USD = 18.50 MXN (actualizar según API)
-
-// Función para formatear números según la moneda seleccionada
-function formatearMoneda(numero, moneda = null) {
-    const monedaUsar = moneda || monedaActual;
-    
-    if (monedaUsar === 'USD') {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 2
-        }).format(numero);
-    } else {
-        return new Intl.NumberFormat('es-MX', {
-            style: 'currency',
-            currency: 'MXN',
-            minimumFractionDigits: 2
-        }).format(numero);
-    }
+// Función para formatear números en USD
+function formatearMoneda(numero) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2
+    }).format(numero);
 }
 
 // Función legacy para mantener compatibilidad
 function formatearPesos(numero) {
     return formatearMoneda(numero);
-}
-
-// Función para convertir entre monedas
-function convertirMoneda(cantidad, deMoneda, aMoneda) {
-    if (deMoneda === aMoneda) return cantidad;
-    
-    if (deMoneda === 'USD' && aMoneda === 'MXN') {
-        return cantidad * tipoCambio;
-    } else if (deMoneda === 'MXN' && aMoneda === 'USD') {
-        return cantidad / tipoCambio;
-    }
-    
-    return cantidad;
 }
 
 // Función para cambiar moneda
@@ -1085,14 +1106,14 @@ function agregarFila() {
             <td class="border border-gray-300 dark:border-gray-600 p-2 font-mono text-xs editable" contenteditable="true">NUEVO-ITEM</td>
             <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${filasActuales}, 1)">1</td>
             <td class="border border-gray-300 dark:border-gray-600 p-2 editable" contenteditable="true">Nuevo Producto</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right editable" contenteditable="true" onblur="manejarCambioTabla(this, ${filasActuales}, 3)">$0.00 MXN</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${filasActuales}, 4)">0%</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right">$0.00 MXN</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-blue-600">$0.00 MXN</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${filasActuales}, 7)">0%</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right">$0.00 MXN</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-green-600">$0.00 MXN</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-purple-600">$0.00 MXN</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right editable" contenteditable="true" onblur="manejarCambioTabla(this, ${filasActuales}, 3)" data-tipo="precio">$0.00</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${filasActuales}, 4)" data-tipo="porcentaje">0%</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right">$0.00</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-blue-600">$0.00</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${filasActuales}, 7)" data-tipo="porcentaje">0%</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right">$0.00</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-green-600">$0.00</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-purple-600">$0.00</td>
             <td class="border border-gray-300 dark:border-gray-600 p-2 text-center">
                 <button onclick="eliminarFila(${filasActuales})" class="delete-btn">×</button>
             </td>
@@ -1158,8 +1179,24 @@ function reindexarFilas() {
     }
 }
 
-// Función para manejar cambios en celdas editables
+// Función para manejar cambios en celdas editables con formateo automático
 function manejarCambioTabla(elemento, fila, columna) {
+    const tipoElemento = elemento.getAttribute('data-tipo');
+    let valorTexto = elemento.textContent.trim();
+    
+    // Aplicar formato automático según el tipo
+    if (tipoElemento === 'porcentaje') {
+        // Extraer solo números y punto decimal
+        const numeroSolo = valorTexto.replace(/[^0-9.-]/g, '');
+        const valor = parseFloat(numeroSolo) || 0;
+        elemento.textContent = valor + '%';
+    } else if (tipoElemento === 'precio') {
+        // Extraer solo números y punto decimal
+        const numeroSolo = valorTexto.replace(/[^0-9.-]/g, '');
+        const valor = parseFloat(numeroSolo) || 0;
+        elemento.textContent = formatearMoneda(valor);
+    }
+    
     const valor = parseFloat(elemento.textContent.replace(/[^0-9.-]+/g, '')) || 0;
     const tabla = document.getElementById('tabla-items');
     const filaElemento = tabla.children[fila];
