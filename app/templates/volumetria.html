@@ -470,15 +470,16 @@ function cerrarAnimacionCarga() {
 // Función para generar la volumetría
 function generarVolumetria(datos) {
     cerrarAnimacionCarga();
-    
+
     // Calcular cantidades automáticas
-    const cantidadCable = Math.ceil(datos.distancia / 100) * datos.cantidadNodos; // Boxes de 100m
+    const totalMetrosCable = datos.distancia * datos.cantidadNodos;
+    const cantidadCable = Math.ceil(totalMetrosCable / 305);
     const cantidadFaceplates = datos.cantidadNodos;
     const cantidadJacksUsuario = datos.cantidadNodos; // 1 por nodo
     const cantidadJacksPatchpanel = datos.cantidadNodos; // 1 por nodo
     const cantidadPatchcordsUsuario = datos.cantidadNodos; // 1 por nodo (color usuario)
     const cantidadPatchcordsPatchpanel = datos.cantidadNodos; // 1 por nodo (color patchpanel)
-    
+
     // Crear tabla de volumetría
     mostrarTablaVolumetria({
         ...datos,
@@ -809,62 +810,147 @@ function mostrarTablaVolumetria(datos) {
 
 // Función para generar las filas de la tabla
 function generarFilasTabla(datos) {
-    const productos = [
-        {
+    const productos = [];
+
+    // Lógica para Cable
+    if (datos.categoria === 'CAT6') {
+        const precioListaCable = 540;
+        const costoUnitarioCable = 274;
+        const descuentoProveedorCable = (1 - (costoUnitarioCable / precioListaCable)) * 100;
+
+        productos.push({
+            noParte: 'PUC6004 - ' + datos.color.toUpperCase(),
+            cantidad: datos.cantidadCable,
+            descripcion: `Bobina de Cable UTP 305 m. de Cobre, TX6000™ PanNet, Reelex, ${datos.color}, Categoría 6 Mejorado (23 AWG), LSZH (Bajo Humo, Cero Halógenos), de 4 pares`,
+            precioLista: precioListaCable,
+            descuentoCliente: 0,
+            descuentoProveedor: descuentoProveedorCable
+        });
+    } else {
+        // Lógica existente para otras categorías (ej. CAT6A)
+        productos.push({
             noParte: 'CBL-' + datos.categoria + '-' + datos.color.toUpperCase(),
             cantidad: datos.cantidadCable,
             descripcion: `Cable ${datos.categoria} ${datos.color} - Caja 305m`,
-            precioLista: 285.50,
+            precioLista: 285.50, // Precio genérico para otras categorías
             descuentoCliente: 15,
             descuentoProveedor: 20
-        },
-        {
-            noParte: 'FP-DUAL-' + datos.colorJackUsuario.toUpperCase(),
-            cantidad: datos.cantidadFaceplates,
-            descripcion: `Faceplate Dual ${datos.colorJackUsuario}`,
-            precioLista: 45.25,
-            descuentoCliente: 20,
-            descuentoProveedor: 20
-        },
-        {
-            noParte: 'JCK-' + datos.categoria + '-USR-' + datos.colorJackUsuario.toUpperCase(),
+        });
+    }
+
+    // Lógica para Faceplate (aplica a CAT6 y CAT6A)
+    const precioListaFaceplate = 6;
+    const costoUnitarioFaceplate = 2.54;
+    const descuentoProveedorFaceplate = (1 - (costoUnitarioFaceplate / precioListaFaceplate)) * 100;
+
+    productos.push({
+        noParte: 'CFPE1WHY',
+        cantidad: datos.cantidadFaceplates,
+        descripcion: 'Placa de Pared Vertical Ejecutiva, Salida Para 1 Puerto Mini-Com, Con Espacios Para Etiquetas, Color Blanco',
+        precioLista: precioListaFaceplate,
+        descuentoCliente: 0,
+        descuentoProveedor: descuentoProveedorFaceplate
+    });
+
+    // Lógica para Jacks
+    if (datos.categoria === 'CAT6') {
+        const precioListaJack = 22;
+        const costoUnitarioJack = 10.50;
+        const descuentoProveedorJack = (1 - (costoUnitarioJack / precioListaJack)) * 100;
+
+        // Jack Usuario
+        productos.push({
+            noParte: 'CJ688TG - ' + datos.colorJackUsuario.toUpperCase(),
             cantidad: datos.cantidadJacksUsuario,
-            descripcion: `Jack RJ45 ${datos.categoria} ${datos.colorJackUsuario} Usuario`,
-            precioLista: 12.75,
-            descuentoCliente: 25,
-            descuentoProveedor: 20
-        },
-        {
-            noParte: 'JCK-' + datos.categoria + '-PP-' + datos.colorJackPatchpanel.toUpperCase(),
+            descripcion: `Conector Jack RJ45 Estilo TG, Mini-Com, Categoría 6, de 8 posiciones y 8 cables, color: ${datos.colorJackUsuario}`,
+            precioLista: precioListaJack,
+            descuentoCliente: 0,
+            descuentoProveedor: descuentoProveedorJack
+        });
+
+        // Jack Patchpanel
+        productos.push({
+            noParte: 'CJ688TG - ' + datos.colorJackPatchpanel.toUpperCase(),
             cantidad: datos.cantidadJacksPatchpanel,
-            descripcion: `Jack RJ45 ${datos.categoria} ${datos.colorJackPatchpanel} Patchpanel`,
-            precioLista: 12.75,
-            descuentoCliente: 25,
-            descuentoProveedor: 20
-        },
-        {
-            noParte: 'PC-' + datos.categoria + '-USR-' + datos.colorPatchcordUsuario.toUpperCase(),
+            descripcion: `Conector Jack RJ45 Estilo TG, Mini-Com, Categoría 6, de 8 posiciones y 8 cables, color: ${datos.colorJackPatchpanel}`,
+            precioLista: precioListaJack,
+            descuentoCliente: 0,
+            descuentoProveedor: descuentoProveedorJack
+        });
+    } else {
+        // Lógica genérica para Jacks en otras categorías
+        productos.push(
+            {
+                noParte: 'JCK-' + datos.categoria + '-USR-' + datos.colorJackUsuario.toUpperCase(),
+                cantidad: datos.cantidadJacksUsuario,
+                descripcion: `Jack RJ45 ${datos.categoria} ${datos.colorJackUsuario} Usuario`,
+                precioLista: 12.75,
+                descuentoCliente: 25,
+                descuentoProveedor: 20
+            },
+            {
+                noParte: 'JCK-' + datos.categoria + '-PP-' + datos.colorJackPatchpanel.toUpperCase(),
+                cantidad: datos.cantidadJacksPatchpanel,
+                descripcion: `Jack RJ45 ${datos.categoria} ${datos.colorJackPatchpanel} Patchpanel`,
+                precioLista: 12.75,
+                descuentoCliente: 25,
+                descuentoProveedor: 20
+            }
+        );
+    }
+
+    // Lógica para Patchcords
+    if (datos.categoria === 'CAT6') {
+        const precioListaPatchcord = 27;
+        const costoUnitarioPatchcord = 11.72;
+        const descuentoProveedorPatchcord = (1 - (costoUnitarioPatchcord / precioListaPatchcord)) * 100;
+
+        // Patchcord Usuario
+        productos.push({
+            noParte: 'UTPSP7 - ' + datos.colorPatchcordUsuario.toUpperCase(),
             cantidad: datos.cantidadPatchcordsUsuario,
-            descripcion: `Patchcord ${datos.categoria} ${datos.colorPatchcordUsuario} Usuario 3 pies`,
-            precioLista: 18.90,
-            descuentoCliente: 18,
-            descuentoProveedor: 20
-        },
-        {
-            noParte: 'PC-' + datos.categoria + '-PP-' + datos.colorPatchcordPatchpanel.toUpperCase(),
+            descripcion: `Cable de Parcheo TX6, UTP Cat6, 24 AWG, CM, Color ${datos.colorPatchcordUsuario}, 7ft`,
+            precioLista: precioListaPatchcord,
+            descuentoCliente: 0,
+            descuentoProveedor: descuentoProveedorPatchcord
+        });
+
+        // Patchcord Patchpanel
+        productos.push({
+            noParte: 'UTPSP7 - ' + datos.colorPatchcordPatchpanel.toUpperCase(),
             cantidad: datos.cantidadPatchcordsPatchpanel,
-            descripcion: `Patchcord ${datos.categoria} ${datos.colorPatchcordPatchpanel} Patchpanel 3 pies`,
-            precioLista: 18.90,
-            descuentoCliente: 18,
-            descuentoProveedor: 20
-        }
-    ];
+            descripcion: `Cable de Parcheo TX6, UTP Cat6, 24 AWG, CM, Color ${datos.colorPatchcordPatchpanel}, 7ft`,
+            precioLista: precioListaPatchcord,
+            descuentoCliente: 0,
+            descuentoProveedor: descuentoProveedorPatchcord
+        });
+    } else {
+        // Lógica genérica para Patchcords en otras categorías (CAT6A)
+        productos.push(
+            {
+                noParte: 'PC-' + datos.categoria + '-USR-' + datos.colorPatchcordUsuario.toUpperCase(),
+                cantidad: datos.cantidadPatchcordsUsuario,
+                descripcion: `Patchcord ${datos.categoria} ${datos.colorPatchcordUsuario} Usuario 3 pies`,
+                precioLista: 18.90,
+                descuentoCliente: 18,
+                descuentoProveedor: 20
+            },
+            {
+                noParte: 'PC-' + datos.categoria + '-PP-' + datos.colorPatchcordPatchpanel.toUpperCase(),
+                cantidad: datos.cantidadPatchcordsPatchpanel,
+                descripcion: `Patchcord ${datos.categoria} ${datos.colorPatchcordPatchpanel} Patchpanel 3 pies`,
+                precioLista: 18.90,
+                descuentoCliente: 18,
+                descuentoProveedor: 20
+            }
+        );
+    }
     
     let filas = '';
     let totalCliente = 0;
     let totalCosto = 0;
     
-    productos.forEach(producto => {
+    productos.forEach((producto, index) => {
         const precioUnitario = producto.precioLista * (1 - producto.descuentoCliente / 100);
         const totalProductoCliente = precioUnitario * producto.cantidad;
         const costoUnitario = producto.precioLista * (1 - producto.descuentoProveedor / 100);
@@ -875,20 +961,20 @@ function generarFilasTabla(datos) {
         totalCosto += totalProductoCosto;
         
         filas += `
-            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700" data-fila="${productos.indexOf(producto)}">
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700" data-fila="${index}">
                 <td class="border border-gray-300 dark:border-gray-600 p-2 font-mono text-xs">${producto.noParte}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 1)">${producto.cantidad}</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${index}, 1)">${producto.cantidad}</td>
                 <td class="border border-gray-300 dark:border-gray-600 p-2 editable" contenteditable="true">${producto.descripcion}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 text-right editable" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 3)" data-tipo="precio">${formatearPesos(producto.precioLista)}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 4)" data-tipo="porcentaje">${producto.descuentoCliente}%</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-right editable" contenteditable="true" onblur="manejarCambioTabla(this, ${index}, 3)" data-tipo="precio">${formatearPesos(producto.precioLista)}</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${index}, 4)" data-tipo="porcentaje">${typeof producto.descuentoCliente === 'number' ? producto.descuentoCliente.toFixed(2) : producto.descuentoCliente}%</td>
                 <td class="border border-gray-300 dark:border-gray-600 p-2 text-right">${formatearPesos(precioUnitario)}</td>
                 <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-blue-600">${formatearPesos(totalProductoCliente)}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 7)" data-tipo="porcentaje">${producto.descuentoProveedor}%</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${index}, 7)" data-tipo="porcentaje">${typeof producto.descuentoProveedor === 'number' ? producto.descuentoProveedor.toFixed(2) : producto.descuentoProveedor}%</td>
                 <td class="border border-gray-300 dark:border-gray-600 p-2 text-right">${formatearPesos(costoUnitario)}</td>
                 <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-green-600">${formatearPesos(totalProductoCosto)}</td>
                 <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-purple-600">${formatearPesos(ganancia)}</td>
                 <td class="border border-gray-300 dark:border-gray-600 p-2 text-center">
-                    <button onclick="eliminarFila(${productos.indexOf(producto)})" class="delete-btn">
+                    <button onclick="eliminarFila(${index})" class="delete-btn">
                         ×
                     </button>
                 </td>
