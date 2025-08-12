@@ -433,16 +433,20 @@ function generarVolumetria(datos) {
     // Calcular cantidades automáticas
     const cantidadCable = Math.ceil(datos.distancia / 100) * datos.cantidadNodos; // Boxes de 100m
     const cantidadFaceplates = datos.cantidadNodos;
-    const cantidadJacks = datos.cantidadNodos * 2;
-    const cantidadPatchcords = datos.cantidadNodos * 2;
+    const cantidadJacksUsuario = datos.cantidadNodos; // 1 por nodo
+    const cantidadJacksPatchpanel = datos.cantidadNodos; // 1 por nodo
+    const cantidadPatchcordsUsuario = datos.cantidadNodos; // 1 por nodo (color usuario)
+    const cantidadPatchcordsPatchpanel = datos.cantidadNodos; // 1 por nodo (color patchpanel)
     
     // Crear tabla de volumetría
     mostrarTablaVolumetria({
         ...datos,
         cantidadCable,
         cantidadFaceplates,
-        cantidadJacks,
-        cantidadPatchcords
+        cantidadJacksUsuario,
+        cantidadJacksPatchpanel,
+        cantidadPatchcordsUsuario,
+        cantidadPatchcordsPatchpanel
     });
 }
 
@@ -476,15 +480,39 @@ function mostrarTablaVolumetria(datos) {
                     
                     <!-- Tabla Principal de Precios -->
                     <div class="mb-8">
-                        <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Tabla de Precios y Costos</h3>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-semibold text-gray-800 dark:text-white">Tabla de Precios y Costos</h3>
+                            <div class="flex items-center bg-yellow-100 dark:bg-yellow-900/30 px-3 py-1 rounded-full text-sm">
+                                <span class="text-yellow-800 dark:text-yellow-200">✏️ Celdas amarillas son editables</span>
+                            </div>
+                        </div>
                         <div class="overflow-x-auto">
+                            <style>
+                                .editable {
+                                    transition: all 0.2s ease;
+                                    position: relative;
+                                }
+                                .editable:hover::before {
+                                    content: '✏️';
+                                    position: absolute;
+                                    top: 2px;
+                                    right: 2px;
+                                    font-size: 10px;
+                                    opacity: 0.7;
+                                }
+                                .editable:focus {
+                                    background-color: #fef3c7 !important;
+                                    outline: 2px solid #f59e0b;
+                                    outline-offset: -2px;
+                                }
+                            </style>
                             <table class="w-full border-collapse border border-gray-300 dark:border-gray-600 text-sm">
                                 <thead>
                                     <tr class="bg-gray-50 dark:bg-gray-700">
-                                        <th colspan="6" class="border border-gray-300 dark:border-gray-600 p-3 text-center font-semibold text-blue-600 dark:text-blue-400">
+                                        <th colspan="7" class="border border-gray-300 dark:border-gray-600 p-3 text-center font-semibold text-blue-600 dark:text-blue-400">
                                             PRECIOS CLIENTE
                                         </th>
-                                        <th colspan="3" class="border border-gray-300 dark:border-gray-600 p-3 text-center font-semibold text-green-600 dark:text-green-400">
+                                        <th colspan="4" class="border border-gray-300 dark:border-gray-600 p-3 text-center font-semibold text-green-600 dark:text-green-400">
                                             COSTOS INTERNOS
                                         </th>
                                         <th class="border border-gray-300 dark:border-gray-600 p-3 text-center font-semibold text-purple-600 dark:text-purple-400">
@@ -496,9 +524,10 @@ function mostrarTablaVolumetria(datos) {
                                         <th class="border border-gray-300 dark:border-gray-600 p-2">Cantidad</th>
                                         <th class="border border-gray-300 dark:border-gray-600 p-2">Descripción</th>
                                         <th class="border border-gray-300 dark:border-gray-600 p-2">Precio Lista</th>
-                                        <th class="border border-gray-300 dark:border-gray-600 p-2">Descuento</th>
+                                        <th class="border border-gray-300 dark:border-gray-600 p-2">Desc. Cliente</th>
                                         <th class="border border-gray-300 dark:border-gray-600 p-2">Precio Unitario</th>
                                         <th class="border border-gray-300 dark:border-gray-600 p-2">Total Cliente</th>
+                                        <th class="border border-gray-300 dark:border-gray-600 p-2">Desc. Proveedor</th>
                                         <th class="border border-gray-300 dark:border-gray-600 p-2">Costo Unitario</th>
                                         <th class="border border-gray-300 dark:border-gray-600 p-2">Total Costo</th>
                                         <th class="border border-gray-300 dark:border-gray-600 p-2">Ganancia</th>
@@ -549,40 +578,48 @@ function generarFilasTabla(datos) {
             cantidad: datos.cantidadCable,
             descripcion: `Cable ${datos.categoria} ${datos.color} - Caja 305m`,
             precioLista: 285.50,
-            descuento: 15,
-            costoUnitario: 198.75
+            descuentoCliente: 15,
+            descuentoProveedor: 20
         },
         {
             noParte: 'FP-DUAL-' + datos.colorJackUsuario.toUpperCase(),
             cantidad: datos.cantidadFaceplates,
             descripcion: `Faceplate Dual ${datos.colorJackUsuario}`,
             precioLista: 45.25,
-            descuento: 20,
-            costoUnitario: 28.50
+            descuentoCliente: 20,
+            descuentoProveedor: 20
         },
         {
             noParte: 'JCK-' + datos.categoria + '-USR-' + datos.colorJackUsuario.toUpperCase(),
-            cantidad: datos.cantidadJacks,
+            cantidad: datos.cantidadJacksUsuario,
             descripcion: `Jack RJ45 ${datos.categoria} ${datos.colorJackUsuario} Usuario`,
             precioLista: 12.75,
-            descuento: 25,
-            costoUnitario: 7.80
+            descuentoCliente: 25,
+            descuentoProveedor: 20
         },
         {
             noParte: 'JCK-' + datos.categoria + '-PP-' + datos.colorJackPatchpanel.toUpperCase(),
-            cantidad: datos.cantidadJacks,
+            cantidad: datos.cantidadJacksPatchpanel,
             descripcion: `Jack RJ45 ${datos.categoria} ${datos.colorJackPatchpanel} Patchpanel`,
             precioLista: 12.75,
-            descuento: 25,
-            costoUnitario: 7.80
+            descuentoCliente: 25,
+            descuentoProveedor: 20
         },
         {
-            noParte: 'PC-' + datos.categoria + '-3FT',
-            cantidad: datos.cantidadPatchcords,
-            descripcion: `Patchcord ${datos.categoria} 3 pies`,
+            noParte: 'PC-' + datos.categoria + '-USR-' + datos.colorJackUsuario.toUpperCase(),
+            cantidad: datos.cantidadPatchcordsUsuario,
+            descripcion: `Patchcord ${datos.categoria} ${datos.colorJackUsuario} Usuario 3 pies`,
             precioLista: 18.90,
-            descuento: 18,
-            costoUnitario: 12.25
+            descuentoCliente: 18,
+            descuentoProveedor: 20
+        },
+        {
+            noParte: 'PC-' + datos.categoria + '-PP-' + datos.colorJackPatchpanel.toUpperCase(),
+            cantidad: datos.cantidadPatchcordsPatchpanel,
+            descripcion: `Patchcord ${datos.categoria} ${datos.colorJackPatchpanel} Patchpanel 3 pies`,
+            precioLista: 18.90,
+            descuentoCliente: 18,
+            descuentoProveedor: 20
         }
     ];
     
@@ -591,9 +628,10 @@ function generarFilasTabla(datos) {
     let totalCosto = 0;
     
     productos.forEach(producto => {
-        const precioUnitario = producto.precioLista * (1 - producto.descuento / 100);
+        const precioUnitario = producto.precioLista * (1 - producto.descuentoCliente / 100);
         const totalProductoCliente = precioUnitario * producto.cantidad;
-        const totalProductoCosto = producto.costoUnitario * producto.cantidad;
+        const costoUnitario = producto.precioLista * (1 - producto.descuentoProveedor / 100);
+        const totalProductoCosto = costoUnitario * producto.cantidad;
         const ganancia = totalProductoCliente - totalProductoCosto;
         
         totalCliente += totalProductoCliente;
@@ -602,15 +640,16 @@ function generarFilasTabla(datos) {
         filas += `
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
                 <td class="border border-gray-300 dark:border-gray-600 p-2 font-mono text-xs">${producto.noParte}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center">${producto.cantidad}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2">${producto.descripcion}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 text-right">$${producto.precioLista.toFixed(2)}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center">${producto.descuento}%</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 text-right">$${precioUnitario.toFixed(2)}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-blue-600">$${totalProductoCliente.toFixed(2)}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 text-right">$${producto.costoUnitario.toFixed(2)}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-green-600">$${totalProductoCosto.toFixed(2)}</td>
-                <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-purple-600">$${ganancia.toFixed(2)}</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable bg-yellow-50 hover:bg-yellow-100 cursor-pointer" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 1)">${producto.cantidad}</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 editable bg-yellow-50 hover:bg-yellow-100 cursor-pointer" contenteditable="true">${producto.descripcion}</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-right editable bg-yellow-50 hover:bg-yellow-100 cursor-pointer" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 3)">${formatearPesos(producto.precioLista)}</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable bg-yellow-50 hover:bg-yellow-100 cursor-pointer" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 4)">${producto.descuentoCliente}%</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-right">${formatearPesos(precioUnitario)}</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-blue-600">${formatearPesos(totalProductoCliente)}</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable bg-yellow-50 hover:bg-yellow-100 cursor-pointer" contenteditable="true" onblur="manejarCambioTabla(this, ${productos.indexOf(producto)}, 7)">${producto.descuentoProveedor}%</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-right">${formatearPesos(costoUnitario)}</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-green-600">${formatearPesos(totalProductoCosto)}</td>
+                <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-purple-600">${formatearPesos(ganancia)}</td>
             </tr>
         `;
     });
@@ -619,11 +658,13 @@ function generarFilasTabla(datos) {
     const gananciaTotalFila = totalCliente - totalCosto;
     filas += `
         <tr class="bg-gray-100 dark:bg-gray-600 font-bold">
-            <td colspan="6" class="border border-gray-300 dark:border-gray-600 p-2 text-right">TOTALES:</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right text-blue-600">$${totalCliente.toFixed(2)}</td>
+            <td colspan="5" class="border border-gray-300 dark:border-gray-600 p-2 text-right">TOTALES:</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right text-blue-600">${formatearPesos(totalCliente)}</td>
             <td class="border border-gray-300 dark:border-gray-600 p-2"></td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right text-green-600">$${totalCosto.toFixed(2)}</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right text-purple-600">$${gananciaTotalFila.toFixed(2)}</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2"></td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2"></td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right text-green-600">${formatearPesos(totalCosto)}</td>
+            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right text-purple-600">${formatearPesos(gananciaTotalFila)}</td>
         </tr>
     `;
     
@@ -640,39 +681,39 @@ function generarResumenVolumetria(datos) {
     return `
         <div class="bg-blue-50 dark:bg-blue-900/30 p-6 rounded-lg">
             <h4 class="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-4">Análisis de Costos - Cliente</h4>
-            <div class="space-y-2">
+            <div class="space-y-3">
                 <div class="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span class="font-semibold">$${totalCliente.toFixed(2)}</span>
+                    <span class="text-gray-700 dark:text-gray-300">Subtotal:</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">${formatearPesos(totalCliente)}</span>
                 </div>
                 <div class="flex justify-between items-center">
-                    <span>IVA:</span>
-                    <select id="iva-select" onchange="actualizarIVA()" class="px-2 py-1 border rounded text-sm">
+                    <span class="text-gray-700 dark:text-gray-300 font-medium">IVA:</span>
+                    <select id="iva-select" onchange="actualizarIVA()" class="px-3 py-1 border-2 border-gray-400 dark:border-gray-500 rounded-md text-sm font-semibold bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                         <option value="16">16%</option>
                         <option value="8">8%</option>
                     </select>
                 </div>
-                <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-                    <span>Monto IVA:</span>
-                    <span id="monto-iva">$${(totalCliente * 0.16).toFixed(2)}</span>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Monto IVA:</span>
+                    <span id="monto-iva" class="font-semibold text-gray-900 dark:text-white">${formatearPesos(totalCliente * 0.16)}</span>
                 </div>
-                <div class="border-t pt-2 flex justify-between font-bold text-lg">
-                    <span>Total Cliente:</span>
-                    <span id="total-cliente" class="text-blue-600 dark:text-blue-400">$${(totalCliente * 1.16).toFixed(2)}</span>
+                <div class="border-t-2 border-blue-200 pt-3 flex justify-between font-bold text-lg">
+                    <span class="text-gray-800 dark:text-gray-200">Total Cliente:</span>
+                    <span id="total-cliente" class="text-blue-700 dark:text-blue-400">${formatearPesos(totalCliente * 1.16)}</span>
                 </div>
             </div>
         </div>
         
         <div class="bg-green-50 dark:bg-green-900/30 p-6 rounded-lg">
             <h4 class="text-lg font-semibold text-green-800 dark:text-green-200 mb-4">Análisis de Rentabilidad</h4>
-            <div class="space-y-2">
+            <div class="space-y-3">
                 <div class="flex justify-between">
-                    <span>Porcentaje de Utilidad:</span>
-                    <span class="font-semibold text-green-600">${porcentajeUtilidad.toFixed(1)}%</span>
+                    <span class="text-gray-700 dark:text-gray-300">Porcentaje de Utilidad:</span>
+                    <span class="font-semibold text-green-700 dark:text-green-400">${porcentajeUtilidad.toFixed(1)}%</span>
                 </div>
                 <div class="flex justify-between">
-                    <span>Ganancia Total:</span>
-                    <span class="font-bold text-green-600 text-lg">$${gananciaTotalDolares.toFixed(2)} USD</span>
+                    <span class="text-gray-700 dark:text-gray-300">Ganancia Total:</span>
+                    <span class="font-bold text-green-700 dark:text-green-400 text-lg">${formatearPesos(gananciaTotalDolares)}</span>
                 </div>
             </div>
         </div>
@@ -685,20 +726,23 @@ function calcularTotalCliente(datos) {
     
     const cantidadCable = Math.ceil(datos.distancia / 100) * datos.cantidadNodos;
     const cantidadFaceplates = datos.cantidadNodos;
-    const cantidadJacks = datos.cantidadNodos * 2;
-    const cantidadPatchcords = datos.cantidadNodos * 2;
+    const cantidadJacksUsuario = datos.cantidadNodos; // 1 por nodo
+    const cantidadJacksPatchpanel = datos.cantidadNodos; // 1 por nodo
+    const cantidadPatchcordsUsuario = datos.cantidadNodos; // 1 por nodo (color usuario)
+    const cantidadPatchcordsPatchpanel = datos.cantidadNodos; // 1 por nodo (color patchpanel)
     
     const productos = [
-        { precioLista: 285.50, descuento: 15, cantidad: cantidadCable },
-        { precioLista: 45.25, descuento: 20, cantidad: cantidadFaceplates },
-        { precioLista: 12.75, descuento: 25, cantidad: cantidadJacks },
-        { precioLista: 12.75, descuento: 25, cantidad: cantidadJacks },
-        { precioLista: 18.90, descuento: 18, cantidad: cantidadPatchcords }
+        { precioLista: 285.50, descuentoCliente: 15, cantidad: cantidadCable },
+        { precioLista: 45.25, descuentoCliente: 20, cantidad: cantidadFaceplates },
+        { precioLista: 12.75, descuentoCliente: 25, cantidad: cantidadJacksUsuario },
+        { precioLista: 12.75, descuentoCliente: 25, cantidad: cantidadJacksPatchpanel },
+        { precioLista: 18.90, descuentoCliente: 18, cantidad: cantidadPatchcordsUsuario },
+        { precioLista: 18.90, descuentoCliente: 18, cantidad: cantidadPatchcordsPatchpanel }
     ];
     
     let total = 0;
     productos.forEach(producto => {
-        const precioUnitario = producto.precioLista * (1 - producto.descuento / 100);
+        const precioUnitario = producto.precioLista * (1 - producto.descuentoCliente / 100);
         total += precioUnitario * producto.cantidad;
     });
     
@@ -711,20 +755,24 @@ function calcularTotalCosto(datos) {
     
     const cantidadCable = Math.ceil(datos.distancia / 100) * datos.cantidadNodos;
     const cantidadFaceplates = datos.cantidadNodos;
-    const cantidadJacks = datos.cantidadNodos * 2;
-    const cantidadPatchcords = datos.cantidadNodos * 2;
+    const cantidadJacksUsuario = datos.cantidadNodos; // 1 por nodo
+    const cantidadJacksPatchpanel = datos.cantidadNodos; // 1 por nodo
+    const cantidadPatchcordsUsuario = datos.cantidadNodos; // 1 por nodo (color usuario)
+    const cantidadPatchcordsPatchpanel = datos.cantidadNodos; // 1 por nodo (color patchpanel)
     
-    const costosUnitarios = [
-        { costoUnitario: 198.75, cantidad: cantidadCable },
-        { costoUnitario: 28.50, cantidad: cantidadFaceplates },
-        { costoUnitario: 7.80, cantidad: cantidadJacks },
-        { costoUnitario: 7.80, cantidad: cantidadJacks },
-        { costoUnitario: 12.25, cantidad: cantidadPatchcords }
+    const productos = [
+        { precioLista: 285.50, descuentoProveedor: 20, cantidad: cantidadCable },
+        { precioLista: 45.25, descuentoProveedor: 20, cantidad: cantidadFaceplates },
+        { precioLista: 12.75, descuentoProveedor: 20, cantidad: cantidadJacksUsuario },
+        { precioLista: 12.75, descuentoProveedor: 20, cantidad: cantidadJacksPatchpanel },
+        { precioLista: 18.90, descuentoProveedor: 20, cantidad: cantidadPatchcordsUsuario },
+        { precioLista: 18.90, descuentoProveedor: 20, cantidad: cantidadPatchcordsPatchpanel }
     ];
     
     let total = 0;
-    costosUnitarios.forEach(producto => {
-        total += producto.costoUnitario * producto.cantidad;
+    productos.forEach(producto => {
+        const costoUnitario = producto.precioLista * (1 - producto.descuentoProveedor / 100);
+        total += costoUnitario * producto.cantidad;
     });
     
     return total;
@@ -734,15 +782,27 @@ function calcularTotalCosto(datos) {
 function actualizarIVA() {
     const ivaSelect = document.getElementById('iva-select');
     const montoIva = document.getElementById('monto-iva');
-    const totalCliente = document.getElementById('total-cliente');
+    const totalClienteElement = document.getElementById('total-cliente');
     
-    const subtotal = calcularTotalCliente({});
+    // Obtener el subtotal actual desde el resumen
+    const subtotalElement = document.querySelector('#resumen-volumetria .bg-blue-50 .space-y-3 .flex:first-child span:last-child');
+    let subtotal = calcularTotalCliente({});
+    
+    if (subtotalElement) {
+        const subtotalText = subtotalElement.textContent.replace(/[^0-9.-]+/g, '');
+        subtotal = parseFloat(subtotalText) || subtotal;
+    }
+    
     const porcentajeIva = parseFloat(ivaSelect.value) / 100;
     const montoIvaCalculado = subtotal * porcentajeIva;
     const totalFinal = subtotal + montoIvaCalculado;
     
-    montoIva.textContent = `$${montoIvaCalculado.toFixed(2)}`;
-    totalCliente.textContent = `$${totalFinal.toFixed(2)}`;
+    if (montoIva) {
+        montoIva.textContent = formatearPesos(montoIvaCalculado);
+    }
+    if (totalClienteElement) {
+        totalClienteElement.textContent = formatearPesos(totalFinal);
+    }
 }
 
 // Función para cerrar la tabla de volumetría
@@ -753,9 +813,101 @@ function cerrarTablaVolumetria() {
     }
 }
 
+// Función para formatear números como pesos mexicanos
+function formatearPesos(numero) {
+    return new Intl.NumberFormat('es-MX', {
+        style: 'currency',
+        currency: 'MXN',
+        minimumFractionDigits: 2
+    }).format(numero);
+}
+
 // Función para exportar a PDF
 function exportarPDF() {
     alert('Funcionalidad de exportación a PDF en desarrollo. Se integrará con el sistema de reportes existente.');
+}
+
+// Función para manejar cambios en celdas editables
+function manejarCambioTabla(elemento, fila, columna) {
+    const valor = parseFloat(elemento.textContent.replace(/[^0-9.-]+/g, '')) || 0;
+    const tabla = document.getElementById('tabla-items');
+    const filaElemento = tabla.children[fila];
+    
+    // Recalcular la fila con la nueva estructura
+    const cantidad = parseFloat(filaElemento.children[1].textContent) || 0;
+    const precioLista = parseFloat(filaElemento.children[3].textContent.replace(/[^0-9.-]+/g, '')) || 0;
+    const descuentoCliente = parseFloat(filaElemento.children[4].textContent.replace('%', '')) || 0;
+    const descuentoProveedor = parseFloat(filaElemento.children[7].textContent.replace('%', '')) || 0;
+    
+    const precioUnitario = precioLista * (1 - descuentoCliente / 100);
+    const totalCliente = precioUnitario * cantidad;
+    const costoUnitario = precioLista * (1 - descuentoProveedor / 100);
+    const totalCosto = costoUnitario * cantidad;
+    const ganancia = totalCliente - totalCosto;
+    
+    // Actualizar valores calculados
+    filaElemento.children[5].textContent = formatearPesos(precioUnitario); // Precio Unitario
+    filaElemento.children[6].textContent = formatearPesos(totalCliente);   // Total Cliente
+    filaElemento.children[8].textContent = formatearPesos(costoUnitario);  // Costo Unitario
+    filaElemento.children[9].textContent = formatearPesos(totalCosto);     // Total Costo
+    filaElemento.children[10].textContent = formatearPesos(ganancia);      // Ganancia
+    
+    // Recalcular totales
+    recalcularTotales();
+}
+
+// Función para recalcular totales de la tabla
+function recalcularTotales() {
+    const tabla = document.getElementById('tabla-items');
+    let totalCliente = 0;
+    let totalCosto = 0;
+    
+    // Sumar todas las filas (excepto la última que es de totales)
+    for (let i = 0; i < tabla.children.length - 1; i++) {
+        const fila = tabla.children[i];
+        const totalClienteFila = parseFloat(fila.children[6].textContent.replace(/[^0-9.-]+/g, '')) || 0; // Total Cliente
+        const totalCostoFila = parseFloat(fila.children[9].textContent.replace(/[^0-9.-]+/g, '')) || 0;   // Total Costo
+        
+        totalCliente += totalClienteFila;
+        totalCosto += totalCostoFila;
+    }
+    
+    const gananciaTotalFila = totalCliente - totalCosto;
+    
+    // Actualizar fila de totales con los nuevos índices
+    const filaTotales = tabla.children[tabla.children.length - 1];
+    filaTotales.children[5].textContent = formatearPesos(totalCliente);      // Precio Unitario (donde va total cliente)
+    filaTotales.children[9].textContent = formatearPesos(totalCosto);        // Total Costo
+    filaTotales.children[10].textContent = formatearPesos(gananciaTotalFila); // Ganancia
+    
+    // Actualizar resumen
+    actualizarResumen(totalCliente, totalCosto);
+}
+
+// Función para actualizar el resumen con nuevos totales
+function actualizarResumen(totalCliente, totalCosto) {
+    const porcentajeUtilidad = ((totalCliente - totalCosto) / totalCosto * 100);
+    const gananciaTotalDolares = totalCliente - totalCosto;
+    
+    // Actualizar elementos del resumen si existen
+    const subtotalElement = document.querySelector('#resumen-volumetria .bg-blue-50 .space-y-3 .flex:first-child span:last-child');
+    if (subtotalElement) {
+        subtotalElement.textContent = formatearPesos(totalCliente);
+    }
+    
+    // Actualizar IVA
+    actualizarIVA();
+    
+    // Actualizar utilidad
+    const utilidadElement = document.querySelector('#resumen-volumetria .bg-green-50 .space-y-3 .flex:first-child span:last-child');
+    if (utilidadElement) {
+        utilidadElement.textContent = `${porcentajeUtilidad.toFixed(1)}%`;
+    }
+    
+    const gananciaElement = document.querySelector('#resumen-volumetria .bg-green-50 .space-y-3 .flex:last-child span:last-child');
+    if (gananciaElement) {
+        gananciaElement.textContent = formatearPesos(gananciaTotalDolares);
+    }
 }
 
 // Animaciones de entrada
