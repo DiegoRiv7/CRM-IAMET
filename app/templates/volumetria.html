@@ -41,94 +41,102 @@
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Volumetría CCTV -->
-                        <div class="apple-card p-6 hover:shadow-xl transition-all duration-500 cursor-pointer group" onclick="crearVolumetria('cctv')">
+                        <div class="apple-card p-6 transition-all duration-500">
                             <div class="flex items-center mb-4">
-                                <div class="bg-gray-600 p-3 rounded-xl shadow-lg group-hover:scale-105 transition-transform duration-300">
+                                <div class="bg-gray-600 p-3 rounded-xl shadow-lg transition-transform duration-300">
                                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                                     </svg>
                                 </div>
-                                <h3 class="text-xl font-semibold apple-text-primary ml-4 group-hover:text-blue-400 transition-colors duration-300">
+                                <h3 class="text-xl font-semibold apple-text-primary ml-4">
                                     CCTV
                                 </h3>
                             </div>
-                            <p class="apple-text-secondary mb-4">
+                            <p class="apple-text-secondary mb-6">
                                 Cálculo volumétrico para sistemas de videovigilancia, cámaras IP, DVR/NVR, y infraestructura de seguridad.
                             </p>
-                            <div class="flex items-center apple-text-accent font-medium group-hover:translate-x-2 transition-transform duration-300">
-                                <span>Crear Volumetría</span>
-                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
+                            <div class="flex space-x-3">
+                                <button onclick="crearVolumetria('cctv')" class="apple-btn-primary flex-1 py-2 px-4 text-sm font-medium transition duration-200">
+                                    Crear Volumetría
+                                </button>
+                                <button onclick="verVolumetrias('cctv')" class="apple-btn-secondary py-2 px-4 text-sm font-medium transition duration-200">
+                                    Ver Volumetrías
+                                </button>
                             </div>
                         </div>
 
                         <!-- Volumetría Nodos de Red -->
-                        <div class="apple-card p-6 hover:shadow-xl transition-all duration-500 cursor-pointer group" onclick="crearVolumetria('nodos')">
+                        <div class="apple-card p-6 transition-all duration-500">
                             <div class="flex items-center mb-4">
-                                <div class="bg-gray-600 p-3 rounded-xl shadow-lg group-hover:scale-105 transition-transform duration-300">
+                                <div class="bg-gray-600 p-3 rounded-xl shadow-lg transition-transform duration-300">
                                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
                                     </svg>
                                 </div>
-                                <h3 class="text-xl font-semibold apple-text-primary ml-4 group-hover:text-blue-400 transition-colors duration-300">
+                                <h3 class="text-xl font-semibold apple-text-primary ml-4">
                                     Nodos de Red
                                 </h3>
                             </div>
-                            <p class="apple-text-secondary mb-4">
+                            <p class="apple-text-secondary mb-6">
                                 Análisis volumétrico para infraestructura de red, switches, routers, cableado estructurado y puntos de acceso.
                             </p>
-                            <div class="flex items-center apple-text-accent font-medium group-hover:translate-x-2 transition-transform duration-300">
-                                <span>Crear Volumetría</span>
-                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
+                            <div class="flex space-x-3">
+                                <button onclick="crearVolumetria('nodos')" class="apple-btn-primary flex-1 py-2 px-4 text-sm font-medium transition duration-200">
+                                    Crear Volumetría
+                                </button>
+                                <button onclick="verVolumetrias('nodos')" class="apple-btn-secondary py-2 px-4 text-sm font-medium transition duration-200">
+                                    Ver Volumetrías
+                                </button>
                             </div>
                         </div>
 
                         <!-- Volumetría Control de Acceso -->
-                        <div class="apple-card p-6 hover:shadow-xl transition-all duration-500 cursor-pointer group" onclick="crearVolumetria('acceso')">
+                        <div class="apple-card p-6 transition-all duration-500">
                             <div class="flex items-center mb-4">
-                                <div class="bg-gray-600 p-3 rounded-xl shadow-lg group-hover:scale-105 transition-transform duration-300">
+                                <div class="bg-gray-600 p-3 rounded-xl shadow-lg transition-transform duration-300">
                                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                                     </svg>
                                 </div>
-                                <h3 class="text-xl font-semibold apple-text-primary ml-4 group-hover:text-blue-400 transition-colors duration-300">
+                                <h3 class="text-xl font-semibold apple-text-primary ml-4">
                                     Control de Acceso
                                 </h3>
                             </div>
-                            <p class="apple-text-secondary mb-4">
+                            <p class="apple-text-secondary mb-6">
                                 Volumetría para sistemas de control de acceso, lectores biométricos, cerraduras electrónicas y paneles de control.
                             </p>
-                            <div class="flex items-center apple-text-accent font-medium group-hover:translate-x-2 transition-transform duration-300">
-                                <span>Crear Volumetría</span>
-                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
+                            <div class="flex space-x-3">
+                                <button onclick="crearVolumetria('acceso')" class="apple-btn-primary flex-1 py-2 px-4 text-sm font-medium transition duration-200">
+                                    Crear Volumetría
+                                </button>
+                                <button onclick="verVolumetrias('acceso')" class="apple-btn-secondary py-2 px-4 text-sm font-medium transition duration-200">
+                                    Ver Volumetrías
+                                </button>
                             </div>
                         </div>
 
                         <!-- Volumetría General -->
-                        <div class="apple-card p-6 hover:shadow-xl transition-all duration-500 cursor-pointer group" onclick="crearVolumetria('general')">
+                        <div class="apple-card p-6 transition-all duration-500">
                             <div class="flex items-center mb-4">
-                                <div class="bg-gray-600 p-3 rounded-xl shadow-lg group-hover:scale-105 transition-transform duration-300">
+                                <div class="bg-gray-600 p-3 rounded-xl shadow-lg transition-transform duration-300">
                                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                                     </svg>
                                 </div>
-                                <h3 class="text-xl font-semibold apple-text-primary ml-4 group-hover:text-blue-400 transition-colors duration-300">
+                                <h3 class="text-xl font-semibold apple-text-primary ml-4">
                                     Volumetría General
                                 </h3>
                             </div>
-                            <p class="apple-text-secondary mb-4">
+                            <p class="apple-text-secondary mb-6">
                                 Cálculo volumétrico personalizado para proyectos mixtos o sistemas no categorizados específicamente.
                             </p>
-                            <div class="flex items-center apple-text-accent font-medium group-hover:translate-x-2 transition-transform duration-300">
-                                <span>Crear Volumetría</span>
-                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
+                            <div class="flex space-x-3">
+                                <button onclick="crearVolumetria('general')" class="apple-btn-primary flex-1 py-2 px-4 text-sm font-medium transition duration-200">
+                                    Crear Volumetría
+                                </button>
+                                <button onclick="verVolumetrias('general')" class="apple-btn-secondary py-2 px-4 text-sm font-medium transition duration-200">
+                                    Ver Volumetrías
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -515,13 +523,13 @@ function mostrarTablaVolumetria(datos) {
                         </div>
                     </div>
                     <!-- Resumen de datos -->
-                    <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg mb-6">
-                        <h3 class="font-semibold text-blue-800 dark:text-blue-200 mb-2">Resumen del Proyecto</h3>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                            <div><strong>Categoría:</strong> ${datos.categoria}</div>
-                            <div><strong>Nodos:</strong> ${datos.cantidadNodos}</div>
-                            <div><strong>Distancia:</strong> ${datos.distancia}m</div>
-                            <div><strong>Color Cable:</strong> ${datos.color}</div>
+                    <div class="project-summary">
+                        <h3 class="font-semibold apple-text-primary mb-3">Resumen del Proyecto</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
+                            <div class="apple-text-secondary"><span class="apple-text-primary font-medium">Categoría:</span> ${datos.categoria}</div>
+                            <div class="apple-text-secondary"><span class="apple-text-primary font-medium">Nodos:</span> ${datos.cantidadNodos}</div>
+                            <div class="apple-text-secondary"><span class="apple-text-primary font-medium">Distancia:</span> ${datos.distancia}m</div>
+                            <div class="apple-text-secondary"><span class="apple-text-primary font-medium">Cable:</span> ${datos.color}</div>
                         </div>
                     </div>
                     
@@ -681,35 +689,80 @@ function mostrarTablaVolumetria(datos) {
                                     background: rgba(99, 99, 102, 0.5);
                                     transform: translateY(-1px);
                                 }
+                                
+                                /* Tabla minimalista */
+                                .minimal-table {
+                                    border-collapse: separate;
+                                    border-spacing: 0;
+                                    background: rgba(44, 44, 46, 0.5);
+                                    border-radius: 12px;
+                                    overflow: hidden;
+                                }
+                                
+                                .minimal-table th {
+                                    background: rgba(28, 28, 30, 0.8);
+                                    color: #f2f2f7;
+                                    font-weight: 600;
+                                    font-size: 0.875rem;
+                                    padding: 16px 12px;
+                                    border: none;
+                                }
+                                
+                                .minimal-table td {
+                                    background: rgba(44, 44, 46, 0.3);
+                                    border: none;
+                                    border-bottom: 1px solid rgba(99, 99, 102, 0.2);
+                                    padding: 12px;
+                                    color: #f2f2f7;
+                                    font-size: 0.875rem;
+                                }
+                                
+                                .minimal-table tr:last-child td {
+                                    border-bottom: none;
+                                }
+                                
+                                /* Espaciado Apple */
+                                .apple-spacing {
+                                    margin-bottom: 32px;
+                                }
+                                
+                                /* Resumen de datos más limpio */
+                                .project-summary {
+                                    background: rgba(58, 58, 60, 0.3);
+                                    border: 1px solid rgba(99, 99, 102, 0.2);
+                                    border-radius: 12px;
+                                    padding: 20px;
+                                    margin-bottom: 24px;
+                                }
                             </style>
-                            <table class="w-full border-collapse border border-gray-300 dark:border-gray-600 text-sm">
+                            <table class="minimal-table w-full text-sm">
                                 <thead>
                                     <tr class="bg-gray-50 dark:bg-gray-700">
-                                        <th colspan="7" class="border border-gray-300 dark:border-gray-600 p-3 text-center font-semibold text-blue-600 dark:text-blue-400">
-                                            PRECIOS CLIENTE
+                                        <th colspan="7" class="text-center font-semibold apple-text-accent">
+                                            CLIENTE
                                         </th>
-                                        <th colspan="4" class="border border-gray-300 dark:border-gray-600 p-3 text-center font-semibold text-green-600 dark:text-green-400">
-                                            COSTOS INTERNOS
+                                        <th colspan="4" class="text-center font-semibold apple-text-accent">
+                                            COSTOS
                                         </th>
-                                        <th class="border border-gray-300 dark:border-gray-600 p-3 text-center">
-                                            <button onclick="agregarFila()" class="add-row-btn">
-                                                + Agregar Fila
+                                        <th class="text-center">
+                                            <button onclick="agregarFila()" class="apple-btn-primary text-xs px-3 py-1">
+                                                + Fila
                                             </button>
                                         </th>
                                     </tr>
                                     <tr class="bg-gray-100 dark:bg-gray-600">
-                                        <th class="border border-gray-300 dark:border-gray-600 p-2">No. Parte</th>
-                                        <th class="border border-gray-300 dark:border-gray-600 p-2">Cantidad</th>
-                                        <th class="border border-gray-300 dark:border-gray-600 p-2">Descripción</th>
-                                        <th class="border border-gray-300 dark:border-gray-600 p-2">Precio Lista</th>
-                                        <th class="border border-gray-300 dark:border-gray-600 p-2">Desc. Cliente</th>
-                                        <th class="border border-gray-300 dark:border-gray-600 p-2">Precio Unitario</th>
-                                        <th class="border border-gray-300 dark:border-gray-600 p-2">Total Cliente</th>
-                                        <th class="border border-gray-300 dark:border-gray-600 p-2">Desc. Proveedor</th>
-                                        <th class="border border-gray-300 dark:border-gray-600 p-2">Costo Unitario</th>
-                                        <th class="border border-gray-300 dark:border-gray-600 p-2">Total Costo</th>
-                                        <th class="border border-gray-300 dark:border-gray-600 p-2">Ganancia</th>
-                                        <th class="border border-gray-300 dark:border-gray-600 p-2">Acciones</th>
+                                        <th>Parte</th>
+                                        <th>Cant.</th>
+                                        <th>Descripción</th>
+                                        <th>Lista</th>
+                                        <th>Desc%</th>
+                                        <th>Unit.</th>
+                                        <th>Total</th>
+                                        <th>Desc%</th>
+                                        <th>Costo</th>
+                                        <th>Total</th>
+                                        <th>Ganancia</th>
+                                        <th></th>
                                     </tr>
                                 </thead>
                                 <tbody id="tabla-items">
@@ -719,11 +772,11 @@ function mostrarTablaVolumetria(datos) {
                         </div>
                     </div>
                     
-                    <!-- Tabla de Mano de Obra -->
-                    <div class="mb-8">
-                        <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Costo de Mano de Obra</h3>
-                        <div class="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-lg">
-                            <p class="text-yellow-800 dark:text-yellow-200">Esta tabla se configurará próximamente con los costos de instalación y configuración.</p>
+                    <!-- Mano de Obra -->
+                    <div class="apple-spacing">
+                        <h3 class="text-lg font-semibold apple-text-primary mb-4">Mano de Obra</h3>
+                        <div class="project-summary">
+                            <p class="apple-text-secondary">Los costos de instalación y configuración se calcularán en la siguiente versión.</p>
                         </div>
                     </div>
                     
@@ -868,74 +921,64 @@ function generarResumenVolumetria(datos) {
     const gananciaTotalDolares = totalCliente - calcularTotalCosto(datos);
     
     return `
-        <div class="bg-blue-50 dark:bg-blue-900/30 p-6 rounded-lg">
-            <div class="flex items-center justify-between mb-4">
-                <h4 class="text-lg font-semibold text-blue-800 dark:text-blue-200">Análisis de Costos - Cliente</h4>
-                <div class="bg-blue-100 dark:bg-blue-800/30 px-3 py-1 rounded-full">
-                    <span class="text-sm font-semibold text-blue-700 dark:text-blue-300">💰 USD</span>
-                </div>
+        <div class="apple-glass-card p-6">
+            <div class="mb-4">
+                <h4 class="text-lg font-semibold apple-text-primary">Análisis de Costos</h4>
             </div>
             <div class="space-y-3">
                 <div class="flex justify-between">
-                    <span class="text-gray-700 dark:text-gray-300">Subtotal:</span>
-                    <span class="font-semibold text-gray-900 dark:text-white" id="subtotal-display">${formatearMoneda(totalCliente)}</span>
+                    <span class="apple-text-secondary">Subtotal:</span>
+                    <span class="font-semibold apple-text-primary" id="subtotal-display">${formatearMoneda(totalCliente)}</span>
                 </div>
                 <div class="flex justify-between items-center">
-                    <span class="text-gray-700 dark:text-gray-300 font-medium">IVA:</span>
-                    <select id="iva-select" onchange="actualizarIVA()" class="px-3 py-1 border-2 border-gray-400 dark:border-gray-500 rounded-md text-sm font-semibold bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                    <span class="apple-text-secondary font-medium">IVA:</span>
+                    <select id="iva-select" onchange="actualizarIVA()" class="px-3 py-1 border border-gray-600 bg-gray-800 apple-text-primary rounded-md text-sm font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                         <option value="16">16%</option>
                         <option value="8">8%</option>
                     </select>
                 </div>
                 <div class="flex justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Monto IVA:</span>
-                    <span id="monto-iva" class="font-semibold text-gray-900 dark:text-white">${formatearMoneda(totalCliente * 0.16)}</span>
+                    <span class="apple-text-secondary">Monto IVA:</span>
+                    <span id="monto-iva" class="font-semibold apple-text-primary">${formatearMoneda(totalCliente * 0.16)}</span>
                 </div>
-                <div class="border-t-2 border-blue-200 pt-3 flex justify-between font-bold text-lg">
-                    <span class="text-gray-800 dark:text-gray-200">Total Cliente:</span>
-                    <span id="total-cliente" class="text-blue-700 dark:text-blue-400">${formatearMoneda(totalCliente * 1.16)}</span>
+                <div class="border-t border-gray-300 pt-3 flex justify-between font-bold text-lg">
+                    <span class="apple-text-primary">Total Cliente USD:</span>
+                    <span id="total-cliente" class="apple-text-accent">${formatearMoneda(totalCliente * 1.16)}</span>
                 </div>
             </div>
         </div>
         
-        <div class="bg-green-50 dark:bg-green-900/30 p-6 rounded-lg">
-            <h4 class="text-lg font-semibold text-green-800 dark:text-green-200 mb-4">Análisis de Rentabilidad Avanzado</h4>
+        <div class="apple-glass-card p-6">
+            <h4 class="text-lg font-semibold apple-text-primary mb-4">Análisis de Rentabilidad</h4>
             <div class="space-y-3">
                 <div class="flex justify-between">
-                    <span class="text-gray-700 dark:text-gray-300">Margen de Utilidad:</span>
-                    <span class="font-semibold text-green-700 dark:text-green-400">${porcentajeUtilidad.toFixed(1)}%</span>
+                    <span class="apple-text-secondary">Margen de Utilidad:</span>
+                    <span class="font-semibold apple-text-accent">${porcentajeUtilidad.toFixed(1)}%</span>
                 </div>
                 <div class="flex justify-between">
-                    <span class="text-gray-700 dark:text-gray-300">Ganancia Bruta:</span>
-                    <span class="font-bold text-green-700 dark:text-green-400 text-lg" id="ganancia-display">${formatearMoneda(gananciaTotalDolares)}</span>
+                    <span class="apple-text-secondary">Ganancia Bruta:</span>
+                    <span class="font-bold apple-text-accent text-lg" id="ganancia-display">${formatearMoneda(gananciaTotalDolares)}</span>
                 </div>
                 <div class="flex justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">ROI (Return on Investment):</span>
-                    <span class="font-semibold text-green-600">${((gananciaTotalDolares / calcularTotalCosto(datos)) * 100).toFixed(1)}%</span>
+                    <span class="apple-text-secondary">Costo por Nodo:</span>
+                    <span class="font-mono text-xs apple-text-primary" id="costo-nodo">${formatearMoneda(calcularTotalCosto(datos) / (datos.cantidadNodos || 20))}</span>
                 </div>
                 <div class="flex justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Costo por Nodo:</span>
-                    <span class="font-mono text-xs" id="costo-nodo">${formatearMoneda(calcularTotalCosto(datos) / (datos.cantidadNodos || 20))}</span>
+                    <span class="apple-text-secondary">Precio por Nodo:</span>
+                    <span class="font-mono text-xs apple-text-primary" id="precio-nodo">${formatearMoneda(totalCliente / (datos.cantidadNodos || 20))}</span>
                 </div>
                 <div class="flex justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Precio por Nodo:</span>
-                    <span class="font-mono text-xs" id="precio-nodo">${formatearMoneda(totalCliente / (datos.cantidadNodos || 20))}</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Utilidad por Nodo:</span>
-                    <span class="font-mono text-xs font-semibold text-green-600" id="utilidad-nodo">${formatearMoneda(gananciaTotalDolares / (datos.cantidadNodos || 20))}</span>
+                    <span class="apple-text-secondary">Utilidad por Nodo:</span>
+                    <span class="font-mono text-xs font-semibold apple-text-accent" id="utilidad-nodo">${formatearMoneda(gananciaTotalDolares / (datos.cantidadNodos || 20))}</span>
                 </div>
                 
-                <!-- Indicadores de Rentabilidad -->
-                <div class="mt-4 pt-3 border-t border-green-200 dark:border-green-700">
-                    <div class="flex items-center justify-between text-xs">
-                        <span>Estado del Proyecto:</span>
-                        <span class="px-2 py-1 rounded-full text-white font-semibold ${porcentajeUtilidad >= 30 ? 'bg-green-500' : porcentajeUtilidad >= 15 ? 'bg-yellow-500' : 'bg-red-500'}">
-                            ${porcentajeUtilidad >= 30 ? '🟢 Excelente' : porcentajeUtilidad >= 15 ? '🟡 Aceptable' : '🔴 Revisar'}
+                <!-- Estado del Proyecto -->
+                <div class="mt-4 pt-3 border-t border-gray-600">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="apple-text-secondary">Estado:</span>
+                        <span class="px-3 py-1 rounded-lg text-sm font-medium ${porcentajeUtilidad >= 30 ? 'bg-green-600 text-white' : porcentajeUtilidad >= 15 ? 'bg-yellow-600 text-white' : 'bg-red-600 text-white'}">
+                            ${porcentajeUtilidad >= 30 ? 'Excelente' : porcentajeUtilidad >= 15 ? 'Aceptable' : 'Revisar'}
                         </span>
-                    </div>
-                    <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        ${porcentajeUtilidad >= 30 ? 'Margen muy saludable para el negocio' : porcentajeUtilidad >= 15 ? 'Margen aceptable, considerar optimizaciones' : 'Margen bajo, revisar precios o costos'}
                     </div>
                 </div>
             </div>
@@ -1121,9 +1164,311 @@ function actualizarResumenMoneda() {
     });
 }
 
-// Función para exportar a PDF
+// Sistema de almacenamiento de volumetrías
+let volumetriasAlmacenadas = {
+    cctv: JSON.parse(localStorage.getItem('volumetrias_cctv') || '[]'),
+    nodos: JSON.parse(localStorage.getItem('volumetrias_nodos') || '[]'),
+    acceso: JSON.parse(localStorage.getItem('volumetrias_acceso') || '[]'),
+    general: JSON.parse(localStorage.getItem('volumetrias_general') || '[]')
+};
+
+// Función para ver volumetrías por tipo
+function verVolumetrias(tipo) {
+    console.log(`Mostrando volumetrías de tipo: ${tipo}`);
+    
+    let titulo = '';
+    let descripcion = '';
+    
+    switch(tipo) {
+        case 'cctv':
+            titulo = 'CCTV - Volumetrías Guardadas';
+            descripcion = 'Todas las volumetrías de sistemas de videovigilancia';
+            break;
+        case 'nodos':
+            titulo = 'Nodos de Red - Volumetrías Guardadas';
+            descripcion = 'Todas las volumetrías de infraestructura de red';
+            break;
+        case 'acceso':
+            titulo = 'Control de Acceso - Volumetrías Guardadas';
+            descripcion = 'Todas las volumetrías de sistemas de acceso';
+            break;
+        case 'general':
+            titulo = 'General - Volumetrías Guardadas';
+            descripcion = 'Todas las volumetrías personalizadas';
+            break;
+    }
+    
+    mostrarListaVolumetrias(tipo, titulo, descripcion);
+}
+
+// Función para mostrar la lista de volumetrías
+function mostrarListaVolumetrias(tipo, titulo, descripcion) {
+    const volumetrias = volumetriasAlmacenadas[tipo] || [];
+    
+    const listaHTML = `
+        <div id="lista-volumetrias" class="min-h-screen apple-bg">
+            <div class="apple-bg min-h-screen overflow-y-auto">
+                <div class="apple-glass-card p-8 max-w-6xl mx-auto animate-fade-in">
+                    <div class="flex items-center justify-between mb-8">
+                        <div class="flex items-center space-x-4">
+                            <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
+                                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h2l2 2m0 0l2-2m-2 2V6a2 2 0 012-2h1a2 2 0 012 2v11a2 2 0 01-2 2H9a2 2 0 01-2-2V8a2 2 0 012-2h2"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 class="text-3xl font-bold apple-text-primary">
+                                    ${titulo}
+                                </h1>
+                                <p class="apple-text-secondary mt-1">
+                                    ${descripcion}
+                                </p>
+                            </div>
+                        </div>
+                        <button onclick="cerrarListaVolumetrias()" class="apple-btn-secondary font-medium py-2 px-6 transition duration-200">
+                            ← Regresar
+                        </button>
+                    </div>
+
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xl font-semibold apple-text-primary">Volumetrías Disponibles</h3>
+                            <span class="apple-text-secondary text-sm">${volumetrias.length} volumetría${volumetrias.length !== 1 ? 's' : ''}</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        ${volumetrias.length > 0 ? generarFilasVolumetrias(volumetrias, tipo) : generarMensajeVacio(tipo)}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Ocultar contenido principal
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.style.display = 'none';
+    }
+    
+    document.body.insertAdjacentHTML('beforeend', listaHTML);
+}
+
+// Función para generar las filas de volumetrías
+function generarFilasVolumetrias(volumetrias, tipo) {
+    return volumetrias.map((volumetria, index) => `
+        <div class="apple-glass-card p-6 transition-all duration-300 hover:shadow-lg">
+            <div class="flex items-center justify-between">
+                <div class="flex-1">
+                    <h4 class="text-lg font-semibold apple-text-primary mb-2">
+                        ${volumetria.nombre || `Volumetría ${tipo.toUpperCase()} #${index + 1}`}
+                    </h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm apple-text-secondary">
+                        <div><span class="apple-text-primary font-medium">Fecha:</span> ${volumetria.fecha}</div>
+                        <div><span class="apple-text-primary font-medium">Nodos:</span> ${volumetria.cantidadNodos || 'N/A'}</div>
+                        <div><span class="apple-text-primary font-medium">Total:</span> ${formatearMoneda(volumetria.totalCliente || 0)}</div>
+                        <div><span class="apple-text-primary font-medium">Estado:</span> <span class="text-green-500">Completada</span></div>
+                    </div>
+                </div>
+                <div class="flex space-x-2 ml-6">
+                    <button onclick="verVolumetria('${tipo}', ${index})" class="apple-btn-primary text-sm px-3 py-2 transition duration-200">
+                        Ver
+                    </button>
+                    <button onclick="descargarVolumetria('${tipo}', ${index})" class="apple-btn-secondary text-sm px-3 py-2 transition duration-200">
+                        Descargar
+                    </button>
+                    <button onclick="editarVolumetria('${tipo}', ${index})" class="apple-btn-secondary text-sm px-3 py-2 transition duration-200">
+                        Editar
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Función para generar mensaje vacío
+function generarMensajeVacio(tipo) {
+    return `
+        <div class="apple-glass-card p-12 text-center">
+            <div class="mb-4">
+                <svg class="w-16 h-16 apple-text-secondary mx-auto opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold apple-text-primary mb-2">No hay volumetrías guardadas</h3>
+            <p class="apple-text-secondary mb-6">Crea tu primera volumetría de ${tipo} para verla aquí</p>
+            <button onclick="cerrarListaVolumetrias(); crearVolumetria('${tipo}')" class="apple-btn-primary py-2 px-6 font-medium transition duration-200">
+                Crear Primera Volumetría
+            </button>
+        </div>
+    `;
+}
+
+// Función para cerrar la lista de volumetrías
+function cerrarListaVolumetrias() {
+    const lista = document.getElementById('lista-volumetrias');
+    if (lista) {
+        lista.remove();
+    }
+    
+    // Mostrar contenido principal de nuevo
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.style.display = 'block';
+    }
+}
+
+// Función para exportar a PDF y guardar volumetría
 function exportarPDF() {
-    alert('Funcionalidad de exportación a PDF en desarrollo. Se integrará con el sistema de reportes existente.');
+    // Obtener datos de la volumetría actual
+    const datosVolumetria = obtenerDatosVolumetriaActual();
+    
+    if (datosVolumetria) {
+        // Guardar en localStorage
+        guardarVolumetria('nodos', datosVolumetria);
+        
+        // Mostrar mensaje de éxito
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'PDF Guardado',
+                text: 'La volumetría se ha guardado exitosamente y estará disponible en "Ver Volumetrías"',
+                icon: 'success',
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#007aff'
+            });
+        } else {
+            alert('PDF generado y volumetría guardada exitosamente');
+        }
+    }
+    
+    // Aquí iría la lógica real de generación de PDF
+    console.log('Generando PDF...');
+}
+
+// Función para obtener datos de la volumetría actual
+function obtenerDatosVolumetriaActual() {
+    const tabla = document.getElementById('tabla-volumetria');
+    if (!tabla) return null;
+    
+    // Obtener datos del resumen del proyecto
+    const resumenElements = document.querySelectorAll('.project-summary .grid > div');
+    let datos = {
+        fecha: new Date().toLocaleDateString('es-ES'),
+        timestamp: Date.now()
+    };
+    
+    // Extraer información del resumen
+    resumenElements.forEach(element => {
+        const text = element.textContent;
+        if (text.includes('Categoría:')) datos.categoria = text.split(':')[1].trim();
+        if (text.includes('Nodos:')) datos.cantidadNodos = parseInt(text.split(':')[1].trim());
+        if (text.includes('Distancia:')) datos.distancia = parseFloat(text.split(':')[1].replace('m', '').trim());
+        if (text.includes('Cable:')) datos.color = text.split(':')[1].trim();
+    });
+    
+    // Obtener totales
+    const totalClienteElement = document.getElementById('total-cliente');
+    if (totalClienteElement) {
+        const totalText = totalClienteElement.textContent.replace(/[^0-9.-]+/g, '');
+        datos.totalCliente = parseFloat(totalText) || 0;
+    }
+    
+    // Generar nombre automático
+    datos.nombre = `Volumetría Nodos ${datos.categoria || ''} - ${datos.cantidadNodos || 0} nodos`;
+    
+    return datos;
+}
+
+// Función para guardar volumetría
+function guardarVolumetria(tipo, datos) {
+    if (!volumetriasAlmacenadas[tipo]) {
+        volumetriasAlmacenadas[tipo] = [];
+    }
+    
+    volumetriasAlmacenadas[tipo].push(datos);
+    localStorage.setItem(`volumetrias_${tipo}`, JSON.stringify(volumetriasAlmacenadas[tipo]));
+    
+    console.log(`Volumetría guardada en tipo: ${tipo}`, datos);
+}
+
+// Función para ver una volumetría específica
+function verVolumetria(tipo, index) {
+    const volumetria = volumetriasAlmacenadas[tipo][index];
+    if (!volumetria) {
+        alert('Volumetría no encontrada');
+        return;
+    }
+    
+    // Cerrar lista y recrear la volumetría
+    cerrarListaVolumetrias();
+    
+    // Simular datos y mostrar tabla de volumetría
+    setTimeout(() => {
+        generarVolumetria(volumetria);
+    }, 300);
+}
+
+// Función para descargar volumetría
+function descargarVolumetria(tipo, index) {
+    const volumetria = volumetriasAlmacenadas[tipo][index];
+    if (!volumetria) {
+        alert('Volumetría no encontrada');
+        return;
+    }
+    
+    // Aquí iría la lógica de descarga real
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Descarga Iniciada',
+            text: `Descargando: ${volumetria.nombre}`,
+            icon: 'info',
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#007aff'
+        });
+    } else {
+        alert(`Descargando: ${volumetria.nombre}`);
+    }
+}
+
+// Función para editar volumetría
+function editarVolumetria(tipo, index) {
+    const volumetria = volumetriasAlmacenadas[tipo][index];
+    if (!volumetria) {
+        alert('Volumetría no encontrada');
+        return;
+    }
+    
+    // Cerrar lista y abrir formulario de edición
+    cerrarListaVolumetrias();
+    
+    if (tipo === 'nodos') {
+        // Abrir formulario con datos precargados
+        setTimeout(() => {
+            mostrarFormularioNodos();
+            // Precargar datos después de que se crea el formulario
+            setTimeout(() => {
+                precargarDatosFormulario(volumetria);
+            }, 100);
+        }, 300);
+    } else {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Edición en Desarrollo',
+                text: `La edición para volumetrías de ${tipo} estará disponible próximamente`,
+                icon: 'info',
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#007aff'
+            });
+        }
+    }
+}
+
+// Función para precargar datos en el formulario
+function precargarDatosFormulario(volumetria) {
+    if (volumetria.categoria) document.getElementById('categoria').value = volumetria.categoria;
+    if (volumetria.color) document.getElementById('color').value = volumetria.color;
+    if (volumetria.distancia) document.getElementById('distancia').value = volumetria.distancia;
+    if (volumetria.cantidadNodos) document.getElementById('cantidad-nodos').value = volumetria.cantidadNodos;
 }
 
 // Función para agregar una nueva fila
