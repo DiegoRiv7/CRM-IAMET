@@ -237,9 +237,14 @@ function iniciarVolumetria(tipo, titulo) {
 
 // Función para precargar datos de oportunidad desde la sesión
 function precargarDatosOportunidad() {
+    console.log('DEBUG: Iniciando precargarDatosOportunidad()');
+    
     // Obtener datos de oportunidad del template usando Django json_script
     const oportunidadDataElement = document.getElementById('oportunidad-data');
+    console.log('DEBUG: Elemento oportunidad-data encontrado:', oportunidadDataElement);
+    
     const oportunidadData = oportunidadDataElement ? JSON.parse(oportunidadDataElement.textContent) : null;
+    console.log('DEBUG: Datos parseados de oportunidad:', oportunidadData);
     
     if (oportunidadData && oportunidadData.oportunidad_id) {
         console.log('DEBUG: Precargando datos de oportunidad:', oportunidadData);
@@ -249,6 +254,10 @@ function precargarDatosOportunidad() {
         
         // Mostrar mensaje informativo en la interfaz
         mostrarMensajeOportunidadCargada(oportunidadData);
+        
+        console.log('DEBUG: Datos de oportunidad guardados en window.oportunidadPrecargada');
+    } else {
+        console.log('DEBUG: No se encontraron datos válidos de oportunidad o falta oportunidad_id');
     }
 }
 
@@ -340,7 +349,11 @@ function populateClientSelectVolumetria() {
 
 // Función para precargar cliente y oportunidad desde los datos de sesión
 function precargarClienteYOportunidad(clientSelect) {
+    console.log('DEBUG: Verificando datos de oportunidad precargada:', window.oportunidadPrecargada);
+    
     if (window.oportunidadPrecargada && window.oportunidadPrecargada.cliente_id) {
+        console.log('DEBUG: Precargando cliente ID:', window.oportunidadPrecargada.cliente_id);
+        
         // Seleccionar el cliente
         clientSelect.value = window.oportunidadPrecargada.cliente_id;
         
@@ -348,10 +361,14 @@ function precargarClienteYOportunidad(clientSelect) {
         const event = new Event('change');
         clientSelect.dispatchEvent(event);
         
+        console.log('DEBUG: Cliente seleccionado, cargando campos en 500ms');
+        
         // Precargar otros campos después de un breve delay
         setTimeout(() => {
             precargarCamposFormulario();
         }, 500);
+    } else {
+        console.log('DEBUG: No hay datos de oportunidad precargada o falta cliente_id');
     }
 }
 
