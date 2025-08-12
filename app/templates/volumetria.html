@@ -336,6 +336,39 @@ function mostrarFormularioNodos() {
                         </div>
                     </div>
                     
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                        <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-4">Colores de Patchcord</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Color del Patchcord Usuario</label>
+                                <select id="color-patchcord-usuario" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                                    <option value="azul">Azul</option>
+                                    <option value="gris">Gris</option>
+                                    <option value="amarillo">Amarillo</option>
+                                    <option value="verde">Verde</option>
+                                    <option value="rojo">Rojo</option>
+                                    <option value="negro">Negro</option>
+                                    <option value="blanco">Blanco</option>
+                                    <option value="naranja">Naranja</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Color del Patchcord Patchpanel</label>
+                                <select id="color-patchcord-patchpanel" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                                    <option value="azul">Azul</option>
+                                    <option value="gris">Gris</option>
+                                    <option value="amarillo">Amarillo</option>
+                                    <option value="verde">Verde</option>
+                                    <option value="rojo">Rojo</option>
+                                    <option value="negro">Negro</option>
+                                    <option value="blanco">Blanco</option>
+                                    <option value="naranja">Naranja</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
                         <button type="button" onclick="cerrarFormulario()" class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg transition-colors duration-200">
                             Cancelar
@@ -375,6 +408,8 @@ function procesarFormularioNodos() {
     const cantidadNodos = parseInt(document.getElementById('cantidad-nodos').value);
     const colorJackUsuario = document.getElementById('color-jack-usuario').value;
     const colorJackPatchpanel = document.getElementById('color-jack-patchpanel').value;
+    const colorPatchcordUsuario = document.getElementById('color-patchcord-usuario').value;
+    const colorPatchcordPatchpanel = document.getElementById('color-patchcord-patchpanel').value;
     
     // Validaciones
     if (!distancia || distancia <= 0) {
@@ -398,7 +433,9 @@ function procesarFormularioNodos() {
             distancia,
             cantidadNodos,
             colorJackUsuario,
-            colorJackPatchpanel
+            colorJackPatchpanel,
+            colorPatchcordUsuario,
+            colorPatchcordPatchpanel
         });
     }, 2000);
 }
@@ -606,17 +643,17 @@ function generarFilasTabla(datos) {
             descuentoProveedor: 20
         },
         {
-            noParte: 'PC-' + datos.categoria + '-USR-' + datos.colorJackUsuario.toUpperCase(),
+            noParte: 'PC-' + datos.categoria + '-USR-' + datos.colorPatchcordUsuario.toUpperCase(),
             cantidad: datos.cantidadPatchcordsUsuario,
-            descripcion: `Patchcord ${datos.categoria} ${datos.colorJackUsuario} Usuario 3 pies`,
+            descripcion: `Patchcord ${datos.categoria} ${datos.colorPatchcordUsuario} Usuario 3 pies`,
             precioLista: 18.90,
             descuentoCliente: 18,
             descuentoProveedor: 20
         },
         {
-            noParte: 'PC-' + datos.categoria + '-PP-' + datos.colorJackPatchpanel.toUpperCase(),
+            noParte: 'PC-' + datos.categoria + '-PP-' + datos.colorPatchcordPatchpanel.toUpperCase(),
             cantidad: datos.cantidadPatchcordsPatchpanel,
-            descripcion: `Patchcord ${datos.categoria} ${datos.colorJackPatchpanel} Patchpanel 3 pies`,
+            descripcion: `Patchcord ${datos.categoria} ${datos.colorPatchcordPatchpanel} Patchpanel 3 pies`,
             precioLista: 18.90,
             descuentoCliente: 18,
             descuentoProveedor: 20
