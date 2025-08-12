@@ -36,6 +36,9 @@ import os
 def is_supervisor(user):
     return user.groups.filter(name='Supervisores').exists()
 
+def is_engineer(user):
+    return user.groups.filter(name='Ingenieros').exists()
+
 # Función auxiliar para obtener el display de un valor de choice
 def _get_display_for_value(value, choices_list):
     return dict(choices_list).get(value, value)
@@ -1501,7 +1504,17 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             errors_dict = {}
             for field, field_errors in form.errors.items():
                 errors_dict[field] = [{'message': str(e), 'code': e.code if hasattr(e, 'code') else 'invalid'} for e in field_errors]
+            
+            # Enhanced debugging information
+            print(f"DEBUG: Form validation failed for crear_cotizacion_view")
             print(f"DEBUG: Form errors: {errors_dict}")
+            print(f"DEBUG: Form data received: {dict(request.POST.items())}")
+            print(f"DEBUG: Form cleaned_data (if available): {getattr(form, 'cleaned_data', 'N/A')}")
+            print(f"DEBUG: Form non_field_errors: {form.non_field_errors()}")
+            print(f"DEBUG: User: {request.user.username if request.user.is_authenticated else 'Anonymous'}")
+            print(f"DEBUG: Request method: {request.method}")
+            print(f"DEBUG: Content type: {request.content_type}")
+            
             return JsonResponse({'success': False, 'errors': errors_dict}, status=400)
 
     else: # If the request is GET
@@ -3052,3 +3065,21 @@ def check_new_bitrix_opportunities(request):
             'success': False,
             'error': f'Error al verificar oportunidades desde Bitrix24: {str(e)}'
         }, status=500)
+
+
+@login_required
+def volumetria(request):
+    """
+    Vista para la sección de Volumetría - Solo para ingenieros y superusuarios
+    """
+    # Verificar permisos: solo ingenieros y superusuarios
+    if not (is_engineer(request.user) or request.user.is_superuser):
+        messages.error(request, "No tienes permisos para acceder a esta sección.")
+        return redirect('home')
+    
+    context = {
+        'page_title': 'Volumetría',
+        'user_role': 'Ingeniero' if is_engineer(request.user) else 'Superusuario'
+    }
+    
+    return render(request, 'volumetria.html', context)

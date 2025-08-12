@@ -24,7 +24,7 @@ window.nethiveState = {
     scrollBehavior: { position: 0, stuckTime: 0 },
     sessionStartTime: Date.now(),
     lastOpportunityCheck: parseInt(sessionStorage.getItem('lastOpportunityCheck') || Date.now()),
-    isWatchingOpportunities: false,
+    isWatchingOpportunities: true,  // HABILITADO POR DEFECTO PARA TODOS LOS USUARIOS
     opportunityWatchInterval: null
 };
 
@@ -1789,7 +1789,13 @@ function initializeOpportunityWatcher() {
 }
 
 async function checkForNewOpportunities() {
-    if (!window.nethiveState.isWatchingOpportunities) return;
+    if (!window.nethiveState.isWatchingOpportunities) {
+        console.log('⚠️ Detección de oportunidades deshabilitada');
+        return;
+    }
+
+    const currentTime = new Date().toLocaleTimeString();
+    console.log(`🔄 [${currentTime}] Verificando nuevas oportunidades (Usuario: ${document.body.dataset.userIsSupervisor === 'true' ? 'supervisor/superuser' : 'usuario normal'})...`);
 
     try {
         // Primero intentar detectar desde Bitrix24 directamente
@@ -1803,20 +1809,28 @@ async function checkForNewOpportunities() {
             credentials: 'same-origin'
         });
 
+        console.log('📡 Respuesta de Bitrix24:', bitrixResponse.status, bitrixResponse.ok);
+        
         if (bitrixResponse.ok) {
             const bitrixData = await bitrixResponse.json();
+            console.log('📊 Datos de Bitrix24 recibidos:', bitrixData);
             
             if (bitrixData.success && bitrixData.new_opportunities && bitrixData.new_opportunities.length > 0) {
-                console.log('🎯 Nueva oportunidad detectada desde Bitrix24:', bitrixData.new_opportunities);
+                console.log('🎯 ¡NUEVA OPORTUNIDAD DETECTADA DESDE BITRIX24!', bitrixData.new_opportunities);
                 handleNewBitrixOpportunityDetected(bitrixData.new_opportunities[0]);
 
                 window.nethiveState.lastOpportunityCheck = Date.now();
                 sessionStorage.setItem('lastOpportunityCheck', window.nethiveState.lastOpportunityCheck);
                 return; // Salir temprano si encontramos algo desde Bitrix
+            } else {
+                console.log('ℹ️ No hay nuevas oportunidades desde Bitrix24');
             }
+        } else {
+            console.log('❌ Error en respuesta de Bitrix24:', await bitrixResponse.text());
         }
 
         // Si no encontramos nada desde Bitrix, verificar oportunidades locales como fallback
+        console.log('🔍 Verificando oportunidades locales como fallback...');
         const localResponse = await fetch(`/app/api/check-new-local-opportunities/?last_check=${window.nethiveState.lastOpportunityCheck}`, {
             method: 'GET',
             headers: {
@@ -1826,33 +1840,48 @@ async function checkForNewOpportunities() {
             credentials: 'same-origin'
         });
 
+        console.log('📡 Respuesta local:', localResponse.status, localResponse.ok);
+
         if (localResponse.ok) {
             const localData = await localResponse.json();
+            console.log('📊 Datos locales recibidos:', localData);
 
             if (localData.new_opportunities && localData.new_opportunities.length > 0) {
-                console.log('🎯 Nueva oportunidad detectada localmente:', localData.new_opportunities);
+                console.log('🎯 ¡NUEVA OPORTUNIDAD DETECTADA LOCALMENTE!', localData.new_opportunities);
                 handleNewOpportunityDetected(localData.new_opportunities[0]);
 
                 window.nethiveState.lastOpportunityCheck = Date.now();
                 sessionStorage.setItem('lastOpportunityCheck', window.nethiveState.lastOpportunityCheck);
+            } else {
+                console.log('ℹ️ No hay nuevas oportunidades locales');
             }
+        } else {
+            console.log('❌ Error en respuesta local:', await localResponse.text());
         }
+        
+        console.log('✅ Verificación completada');
     } catch (error) {
-        console.log('Error checking opportunities:', error);
+        console.error('❌ Error checking opportunities:', error);
     }
 }
 
 function handleNewOpportunityDetected(opportunity) {
+    console.log('🚨 ¡ACTIVANDO BOT PROACTIVO PARA OPORTUNIDAD LOCAL!', opportunity);
     updateNethiveMood('excited', '¡Nueva oportunidad detectada!');
     hideProactiveBot?.();
     
     // Aparecer como buen asistente automáticamente
+    console.log('🤖 Llamando a showNethiveAssistantWithOpportunity...');
     showNethiveAssistantWithOpportunity(opportunity);
+    
+    console.log('🔔 Mostrando notificación persistente...');
     showPersistentOpportunityNotification(opportunity);
+    
+    console.log('✅ Manejo de nueva oportunidad local completado');
 }
 
 function handleNewBitrixOpportunityDetected(bitrixOpportunity) {
-    console.log('🎯 Procesando nueva oportunidad desde Bitrix24:', bitrixOpportunity);
+    console.log('🚨 ¡ACTIVANDO BOT PROACTIVO PARA OPORTUNIDAD BITRIX24!', bitrixOpportunity);
     
     // Verificar si el usuario ya descartó esta oportunidad
     const dismissedKey = `bitrix_opportunity_dismissed_${bitrixOpportunity.bitrix_id}`;
@@ -1876,9 +1905,16 @@ function handleNewBitrixOpportunityDetected(bitrixOpportunity) {
         created_at: bitrixOpportunity.detected_at
     };
     
+    console.log('📋 Oportunidad formateada para el bot:', formattedOpportunity);
+    
     // Aparecer como buen asistente automáticamente
+    console.log('🤖 Llamando a showNethiveAssistantWithBitrixOpportunity...');
     showNethiveAssistantWithBitrixOpportunity(formattedOpportunity);
+    
+    console.log('🔔 Mostrando notificación persistente Bitrix24...');
     showPersistentBitrixOpportunityNotification(formattedOpportunity);
+    
+    console.log('✅ Manejo de nueva oportunidad Bitrix24 completado');
 }
 
 function showPersistentBitrixOpportunityNotification(opportunity) {
@@ -2694,8 +2730,14 @@ function startOpportunityWatcher() {
     setInterval(checkForNewOpportunities, 10000);
 }
 
-// Auto-inicializar EN TODAS LAS PÁGINAS para detección global
-console.log('🎯 Iniciando detección global de oportunidades...');
+// Auto-inicializar EN TODAS LAS PÁGINAS para detección global - PARA TODOS LOS USUARIOS
+console.log('🎯 Iniciando detección global de oportunidades para TODOS LOS USUARIOS...');
+
+// Verificar permisos de usuario
+const userType = document.body.dataset.userIsSupervisor === 'true' ? 'supervisor/superuser' : 'regular user';
+console.log(`👤 Tipo de usuario detectado: ${userType}`);
+console.log('✅ Bot habilitado para todos los tipos de usuario');
+
 setTimeout(startOpportunityWatcher, 2000); // Esperar 2 segundos después del load
 
 // Log para debug

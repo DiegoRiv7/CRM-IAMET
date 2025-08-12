@@ -113,6 +113,9 @@ urlpatterns = [
     path('incrementa/', views.incrementa_view, name='incrementa'),
     path('incrementa/pdf/view/<int:quote_id>/', views.view_incrementa_pdf, name='view_incrementa_pdf'),
     path('incrementa/pdf/download/<int:quote_id>/', views.download_incrementa_pdf, name='download_incrementa_pdf'),
+    
+    # Volumetría - Solo para ingenieros y superusuarios
+    path('volumetria/', views.volumetria, name='volumetria'),
     path('api/crear-cliente/', views.crear_cliente_api, name='crear_cliente_api'),
     # API endpoint para detectar nuevas oportunidades locales (Crown Jewel Feature)
     path('api/check-new-local-opportunities/', views.check_new_local_opportunities, name='check_new_local_opportunities'),
