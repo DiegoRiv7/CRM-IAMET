@@ -116,6 +116,14 @@ urlpatterns = [
     
     # Volumetría - Solo para ingenieros y superusuarios
     path('volumetria/', views.volumetria, name='volumetria'),
+    # Crear volumetría desde oportunidad específica
+    path('crear-volumetria/oportunidad/<int:oportunidad_id>/', views.crear_volumetria_with_opportunity, name='crear_volumetria_with_opportunity'),
+    # API para generar PDF de volumetría
+    path('api/generar-pdf-volumetria/', views.generar_pdf_volumetria, name='generar_pdf_volumetria'),
+    # API para limpiar datos de oportunidad de volumetría
+    path('api/limpiar-datos-oportunidad-volumetria/', views.limpiar_datos_oportunidad_volumetria, name='limpiar_datos_oportunidad_volumetria'),
+    # API para crear cotización automática desde volumetría
+    path('api/crear-cotizacion-desde-volumetria/', views.crear_cotizacion_desde_volumetria, name='crear_cotizacion_desde_volumetria'),
     path('api/crear-cliente/', views.crear_cliente_api, name='crear_cliente_api'),
     # API endpoint para detectar nuevas oportunidades locales (Crown Jewel Feature)
     path('api/check-new-local-opportunities/', views.check_new_local_opportunities, name='check_new_local_opportunities'),

@@ -3077,9 +3077,390 @@ def volumetria(request):
         messages.error(request, "No tienes permisos para acceder a esta sección.")
         return redirect('home')
     
+    # Obtener datos de oportunidad de la sesión si existen
+    oportunidad_data = request.session.get('volumetria_oportunidad_data', None)
+    
     context = {
         'page_title': 'Volumetría',
-        'user_role': 'Ingeniero' if is_engineer(request.user) else 'Superusuario'
+        'user_role': 'Ingeniero' if is_engineer(request.user) else 'Superusuario',
+        'oportunidad_data': oportunidad_data
     }
     
     return render(request, 'volumetria.html', context)
+
+@login_required
+def crear_volumetria_with_opportunity(request, oportunidad_id):
+    """
+    Vista para crear volumetría desde una oportunidad específica
+    """
+    # Verificar permisos: solo ingenieros y superusuarios
+    if not (is_engineer(request.user) or request.user.is_superuser):
+        messages.error(request, "No tienes permisos para crear volumetrías.")
+        return redirect('home')
+    
+    try:
+        # Obtener la oportunidad
+        oportunidad = get_object_or_404(TodoItem, pk=oportunidad_id)
+        
+        # Verificar que el usuario tenga acceso a esta oportunidad
+        if not is_supervisor(request.user) and oportunidad.usuario != request.user:
+            messages.error(request, "No tienes permisos para acceder a esta oportunidad.")
+            return redirect('todos')
+        
+        print(f"DEBUG: Creando volumetría para oportunidad {oportunidad.id}: {oportunidad.oportunidad}")
+        
+        # Guardar datos de la oportunidad en la sesión
+        request.session['volumetria_oportunidad_data'] = {
+            'oportunidad_id': oportunidad.id,
+            'oportunidad_nombre': oportunidad.oportunidad,
+            'cliente_id': oportunidad.cliente.id if oportunidad.cliente else None,
+            'cliente_nombre': oportunidad.cliente.nombre_empresa if oportunidad.cliente else None,
+            'monto': float(oportunidad.monto) if oportunidad.monto else 0,
+            'timestamp': timezone.now().timestamp()
+        }
+        
+        # Configurar expiración de la sesión para 30 minutos
+        request.session.set_expiry(1800)  # 30 minutos
+        
+        messages.success(request, f'Datos de la oportunidad "{oportunidad.oportunidad}" cargados. Selecciona el tipo de volumetría.')
+        
+        # Redirigir a la sección de volumetrías
+        return redirect('volumetria')
+        
+    except Exception as e:
+        print(f"ERROR: Error al procesar oportunidad para volumetría: {str(e)}")
+        messages.error(request, "Error al cargar los datos de la oportunidad.")
+        return redirect('todos')
+
+@csrf_exempt
+@login_required
+def generar_pdf_volumetria(request):
+    """
+    Vista para generar el PDF de una volumetría
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        # Verificar permisos
+        if not (is_engineer(request.user) or request.user.is_superuser):
+            return JsonResponse({'error': 'No tienes permisos para generar PDFs de volumetría'}, status=403)
+        
+        # Parsear datos JSON
+        data = json.loads(request.body)
+        print(f"DEBUG: Datos recibidos para PDF volumetría: {data}")
+        
+        # Obtener información del cliente y oportunidad si están disponibles
+        cliente_nombre = "No especificado"
+        oportunidad_nombre = "Sin oportunidad asignada"
+        
+        if data.get('cliente_id'):
+            try:
+                cliente = Cliente.objects.get(id=data['cliente_id'])
+                cliente_nombre = cliente.nombre_empresa
+            except Cliente.DoesNotExist:
+                pass
+        
+        if data.get('oportunidad_id'):
+            try:
+                oportunidad = TodoItem.objects.get(id=data['oportunidad_id'])
+                oportunidad_nombre = oportunidad.oportunidad
+            except TodoItem.DoesNotExist:
+                pass
+        
+        # Calcular valores financieros
+        subtotal = float(data.get('subtotal', 0))
+        iva_rate = 0.16  # 16% IVA por defecto
+        iva = subtotal * iva_rate
+        total = subtotal + iva
+        
+        # Calcular métricas de rentabilidad basadas en los items
+        items = data.get('items', [])
+        total_costo_proveedor = sum(float(item.get('total_proveedor', 0)) for item in items)
+        ganancia_total = subtotal - total_costo_proveedor
+        margen_utilidad = (ganancia_total / total_costo_proveedor * 100) if total_costo_proveedor > 0 else 0
+        
+        cantidad_nodos = int(data.get('cantidad_nodos', 1))
+        precio_por_nodo = total / cantidad_nodos if cantidad_nodos > 0 else 0
+        costo_por_nodo = total_costo_proveedor / cantidad_nodos if cantidad_nodos > 0 else 0
+        
+        # Preparar contexto para el template
+        context = {
+            'volumetria': {
+                'nombre_volumetria': data.get('nombre_volumetria', 'Análisis Volumétrico'),
+                'cliente_nombre': cliente_nombre,
+                'usuario_final': data.get('usuario_final', ''),
+                'oportunidad_nombre': oportunidad_nombre,
+                'elaborado_por': data.get('elaborado_por', request.user.get_full_name() or request.user.username),
+                'fecha': data.get('fecha', datetime.now().strftime('%d/%m/%Y')),
+                'categoria': data.get('categoria', 'CAT6'),
+                'color': data.get('color', 'Azul'),
+                'cantidad_nodos': cantidad_nodos,
+                'distancia': data.get('distancia', 0),
+                'subtotal': subtotal,
+                'iva': iva,
+                'total': total,
+                'precio_por_nodo': precio_por_nodo,
+                'costo_por_nodo': costo_por_nodo,
+                'ganancia_total': ganancia_total,
+                'margen_utilidad': margen_utilidad,
+                'items': data.get('items', [])
+            },
+            'logo_base64': get_logo_base64(),
+            'current_date': datetime.now().strftime('%d/%m/%Y')
+        }
+        
+        # Renderizar template HTML
+        html_string = render_to_string('volumetria_pdf_template.html', context)
+        
+        # Generar PDF usando WeasyPrint
+        pdf_file = HTML(string=html_string).write_pdf()
+        
+        # Crear el proyecto en Bitrix24 y subir el PDF
+        project_result = None
+        try:
+            from .bitrix_integration import create_project_and_upload_volumetria
+            import base64
+            
+            # Convertir PDF a base64 para Bitrix24
+            pdf_base64 = base64.b64encode(pdf_file).decode('utf-8')
+            filename = f"Volumetria_{data.get('nombre_volumetria', 'Analisis')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+            
+            # Crear proyecto con el nombre de la volumetría
+            project_name = data.get('nombre_volumetria', 'Análisis Volumétrico')
+            project_description = f"""
+Proyecto automatizado desde Nethive para volumetría: {project_name}
+
+Cliente: {cliente_nombre}
+Oportunidad: {oportunidad_nombre}
+Elaborado por: {data.get('elaborado_por', request.user.get_full_name() or request.user.username)}
+Fecha: {data.get('fecha', datetime.now().strftime('%d/%m/%Y'))}
+
+Categoría: {data.get('categoria', 'CAT6')}
+Cantidad de nodos: {cantidad_nodos}
+Total: ${total:,.2f} USD
+
+Este proyecto contiene la documentación técnica y volumetría del proyecto.
+            """.strip()
+            
+            project_result = create_project_and_upload_volumetria(
+                project_name=project_name,
+                file_name=filename,
+                file_content_base64=pdf_base64,
+                description=project_description,
+                request=request
+            )
+            
+            if project_result:
+                print(f"DEBUG: Proyecto Bitrix24 creado exitosamente: {project_result}")
+            else:
+                print("WARNING: No se pudo crear el proyecto en Bitrix24, pero continuando con descarga de PDF")
+                
+        except Exception as e:
+            print(f"WARNING: Error creando proyecto en Bitrix24: {e}")
+            # No interrumpir el flujo si falla Bitrix24
+        
+        # Crear respuesta HTTP con el PDF
+        response = HttpResponse(pdf_file, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        print(f"DEBUG: PDF de volumetría generado exitosamente: {filename}")
+        return response
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Datos JSON inválidos'}, status=400)
+    except Exception as e:
+        print(f"ERROR: Error generando PDF de volumetría: {str(e)}")
+        return JsonResponse({'error': f'Error interno del servidor: {str(e)}'}, status=500)
+
+def get_logo_base64():
+    """
+    Función auxiliar para obtener el logo en base64
+    """
+    try:
+        logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'img', 'bajanet_logo.png')
+        with open(logo_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode('utf-8')
+    except FileNotFoundError:
+        return ""
+
+@csrf_exempt
+@login_required
+def limpiar_datos_oportunidad_volumetria(request):
+    """
+    Vista para limpiar los datos de oportunidad de la sesión
+    """
+    if request.method == 'POST':
+        try:
+            # Limpiar datos de la sesión
+            if 'volumetria_oportunidad_data' in request.session:
+                del request.session['volumetria_oportunidad_data']
+                print("DEBUG: Datos de oportunidad limpiados de la sesión")
+            
+            return JsonResponse({'success': True, 'message': 'Datos limpiados correctamente'})
+        except Exception as e:
+            print(f"ERROR: Error limpiando datos de oportunidad: {str(e)}")
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@csrf_exempt
+@login_required
+def crear_cotizacion_desde_volumetria(request):
+    """
+    Vista para crear cotización automáticamente desde una volumetría
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        # Parsear datos de la volumetría
+        data = json.loads(request.body)
+        print(f"DEBUG: Creando cotización desde volumetría: {data}")
+        
+        # Validar datos requeridos
+        if not data.get('cliente_id'):
+            return JsonResponse({'success': False, 'error': 'Cliente requerido'})
+        
+        if not data.get('items') or len(data.get('items', [])) == 0:
+            return JsonResponse({'success': False, 'error': 'Items requeridos'})
+        
+        # Obtener cliente
+        try:
+            cliente = Cliente.objects.get(id=data['cliente_id'])
+        except Cliente.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Cliente no encontrado'})
+        
+        # Obtener oportunidad si está especificada
+        oportunidad = None
+        if data.get('oportunidad_id'):
+            try:
+                oportunidad = TodoItem.objects.get(id=data['oportunidad_id'])
+            except TodoItem.DoesNotExist:
+                print(f"WARNING: Oportunidad {data['oportunidad_id']} no encontrada")
+        
+        # Determinar quién debe aparecer como creador de la cotización
+        vendedor_responsable = request.user  # Por defecto el usuario actual (ingeniero)
+        if oportunidad and oportunidad.usuario:
+            # Si hay oportunidad, usar el vendedor responsable de la oportunidad
+            vendedor_responsable = oportunidad.usuario
+            print(f"DEBUG: Cotización asignada al vendedor responsable: {vendedor_responsable.get_full_name() or vendedor_responsable.username}")
+        else:
+            print(f"DEBUG: No hay oportunidad o vendedor asignado, usando usuario actual: {request.user.username}")
+        
+        # Crear cotización
+        cotizacion = Cotizacion.objects.create(
+            cliente=cliente,
+            nombre_cotizacion=data.get('nombre_cotizacion', 'Cotización desde Volumetría'),
+            descripcion=f"Cotización generada automáticamente desde volumetría por {request.user.get_full_name() or request.user.username}",
+            usuario_final=data.get('usuario_final', ''),
+            iva_rate=Decimal(str(data.get('iva_rate', 0.16))),
+            moneda=data.get('moneda', 'USD'),
+            created_by=vendedor_responsable,  # Vendedor responsable de la oportunidad
+            # Vincular a la oportunidad si existe
+            bitrix_deal_id=oportunidad.bitrix_deal_id if oportunidad and oportunidad.bitrix_deal_id else None
+        )
+        
+        print(f"DEBUG: Cotización creada con ID: {cotizacion.id}")
+        
+        # Crear detalles de cotización (items)
+        total_cotizacion = Decimal('0')
+        for item_data in data['items']:
+            try:
+                precio_unitario = Decimal(str(item_data.get('precio_unitario', 0)))
+                cantidad = Decimal(str(item_data.get('cantidad', 1)))
+                descuento = Decimal(str(item_data.get('descuento', 0)))
+                
+                # Calcular precio con descuento
+                precio_con_descuento = precio_unitario * (1 - descuento / 100)
+                total_item = precio_con_descuento * cantidad
+                
+                DetalleCotizacion.objects.create(
+                    cotizacion=cotizacion,
+                    numero_parte=item_data.get('numero_parte', ''),
+                    descripcion=item_data.get('descripcion', ''),
+                    cantidad=cantidad,
+                    precio_unitario=precio_unitario,
+                    descuento_porcentaje=descuento,
+                    precio_con_descuento=precio_con_descuento,
+                    total=total_item
+                )
+                
+                total_cotizacion += total_item
+                
+            except (ValueError, TypeError) as e:
+                print(f"ERROR: Error procesando item {item_data}: {str(e)}")
+                continue
+        
+        # Actualizar total de cotización
+        cotizacion.total = total_cotizacion
+        cotizacion.save()
+        
+        print(f"DEBUG: Cotización completada con total: {total_cotizacion}")
+        
+        # Generar PDF de la cotización
+        pdf_url = None
+        bitrix_comentario = False
+        try:
+            pdf_url = request.build_absolute_uri(reverse('generate_cotizacion_pdf', args=[cotizacion.id]))
+            
+            # Si hay oportunidad con Bitrix ID, agregar comentario
+            if oportunidad and oportunidad.bitrix_deal_id:
+                try:
+                    # Generar PDF para adjuntar a Bitrix
+                    html_string = render_to_string('cotizacion_pdf_template.html', {
+                        'cotizacion': cotizacion,
+                        'detalles_cotizacion': cotizacion.detalles.all(),
+                        'request_user': vendedor_responsable,  # Usar vendedor responsable en lugar del ingeniero
+                        'current_date': date.today(),
+                        'company_name': 'BAJANET S.A. de C.V.',
+                        'company_address': 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México',
+                        'company_phone': '+52 55 1234 5678',
+                        'company_email': 'ventas@bajanet.com',
+                        'logo_base64': get_logo_base64(),
+                        'iva_rate_percentage': (cotizacion.iva_rate * Decimal('100')).quantize(Decimal('1')),
+                    })
+                    
+                    pdf_file_content = HTML(string=html_string).write_pdf()
+                    pdf_base64 = base64.b64encode(pdf_file_content).decode('utf-8')
+                    
+                    # Agregar comentario con PDF a Bitrix24
+                    from .bitrix_integration import add_comment_with_attachment_to_deal
+                    file_name = f"{cotizacion.nombre_cotizacion}.pdf"
+                    comment_text = f"Cotización automática generada desde volumetría: {cotizacion.nombre_cotizacion}"
+                    
+                    bitrix_success = add_comment_with_attachment_to_deal(
+                        oportunidad.bitrix_deal_id, 
+                        file_name, 
+                        pdf_base64, 
+                        comment_text, 
+                        request=request
+                    )
+                    
+                    bitrix_comentario = bitrix_success
+                    print(f"DEBUG: Comentario Bitrix24: {'Exitoso' if bitrix_success else 'Falló'}")
+                    
+                except Exception as e:
+                    print(f"ERROR: Error en integración Bitrix24: {str(e)}")
+                    bitrix_comentario = False
+                    
+        except Exception as e:
+            print(f"ERROR: Error generando PDF para cotización: {str(e)}")
+        
+        # Respuesta exitosa
+        return JsonResponse({
+            'success': True,
+            'cotizacion_id': cotizacion.id,
+            'cotizacion_nombre': cotizacion.nombre_cotizacion,
+            'cotizacion_url': pdf_url,
+            'total_cotizacion': float(total_cotizacion),
+            'bitrix_comentario': bitrix_comentario,
+            'pdf_generado': True,
+            'message': 'Cotización creada exitosamente desde volumetría'
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Datos JSON inválidos'}, status=400)
+    except Exception as e:
+        print(f"ERROR: Error creando cotización desde volumetría: {str(e)}")
+        return JsonResponse({'success': False, 'error': f'Error interno: {str(e)}'}, status=500)

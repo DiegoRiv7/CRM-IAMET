@@ -571,3 +571,148 @@ def add_comment_with_attachment_to_deal(deal_id, file_name, file_content_base64,
         if request:
             messages.error(request, f"Excepción al añadir el comentario a Bitrix: {e}")
         return False
+
+def create_bitrix_project(project_name, description=None, request=None):
+    """
+    Crea un proyecto público en Bitrix24
+    """
+    if not BITRIX_WEBHOOK_URL:
+        if request:
+            messages.error(request, "Error: La URL del webhook de Bitrix24 no está configurada.")
+        print("Error: La URL del webhook de Bitrix24 no está configurada.")
+        return None
+
+    # URL para crear grupos de trabajo/proyectos
+    create_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "sonet_group.create.json")
+    
+    # Configuración del proyecto
+    project_data = {
+        'fields': {
+            'NAME': project_name,
+            'DESCRIPTION': description or f'Proyecto automatizado: {project_name}',
+            'PROJECT': 'Y',  # Marcar como proyecto
+            'VISIBLE': 'Y',  # Hacer público/visible
+            'OPENED': 'Y',   # Proyecto abierto (público)
+            'SUBJECT_ID': 1, # ID del tema del proyecto (1 = General)
+            'KEYWORDS': 'Volumetría, Nethive, Automatizado',
+            'PROJECT_DATE_START': '',  # Se puede configurar fecha de inicio
+            'PROJECT_DATE_FINISH': '', # Se puede configurar fecha de fin
+        }
+    }
+    
+    try:
+        print(f"DEBUG Bitrix: Creando proyecto '{project_name}' en Bitrix24")
+        response = requests.post(create_url, json=project_data)
+        response.raise_for_status()
+        json_response = response.json()
+        
+        if 'result' in json_response:
+            project_id = json_response.get('result')
+            print(f"DEBUG Bitrix: Proyecto '{project_name}' creado con éxito. ID: {project_id}")
+            return project_id
+        else:
+            print(f"DEBUG Bitrix: Error al crear proyecto: {json_response}")
+            if request:
+                messages.error(request, f"Error al crear proyecto en Bitrix24: {json_response.get('error_description', 'Error desconocido')}")
+            return None
+            
+    except requests.exceptions.RequestException as e:
+        print(f"DEBUG Bitrix: Excepción al crear proyecto: {e}")
+        if request:
+            messages.error(request, f"Excepción al crear proyecto en Bitrix24: {e}")
+        return None
+
+def upload_file_to_project_drive(project_id, file_name, file_content_base64, request=None):
+    """
+    Sube un archivo al drive de un proyecto específico en Bitrix24
+    """
+    if not BITRIX_WEBHOOK_URL:
+        if request:
+            messages.error(request, "Error: La URL del webhook de Bitrix24 no está configurada.")
+        print("Error: La URL del webhook de Bitrix24 no está configurada.")
+        return False
+
+    # Primero obtener el storage ID del proyecto
+    storage_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "disk.storage.getlist.json")
+    
+    try:
+        # Obtener todos los storages y buscar el del proyecto
+        storage_response = requests.post(storage_url)
+        storage_response.raise_for_status()
+        storage_data = storage_response.json()
+        
+        project_storage_id = None
+        if 'result' in storage_data:
+            for storage in storage_data['result']:
+                # Los storages de proyectos tienen un entityId que corresponde al proyecto
+                if (storage.get('entityType') == 'group' and 
+                    str(storage.get('entityId')) == str(project_id)):
+                    project_storage_id = storage.get('id')
+                    break
+        
+        if not project_storage_id:
+            print(f"DEBUG Bitrix: No se encontró storage para el proyecto {project_id}")
+            return False
+            
+        print(f"DEBUG Bitrix: Storage del proyecto encontrado: {project_storage_id}")
+        
+        # Ahora subir el archivo al storage del proyecto
+        upload_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "disk.folder.uploadfile.json")
+        
+        upload_data = {
+            'id': project_storage_id,  # ID del storage del proyecto
+            'data': {
+                'NAME': file_name
+            },
+            'fileContent': [file_name, file_content_base64]
+        }
+        
+        print(f"DEBUG Bitrix: Subiendo archivo '{file_name}' al proyecto {project_id}")
+        upload_response = requests.post(upload_url, json=upload_data)
+        upload_response.raise_for_status()
+        upload_result = upload_response.json()
+        
+        if 'result' in upload_result:
+            print(f"DEBUG Bitrix: Archivo '{file_name}' subido con éxito al proyecto {project_id}")
+            return True
+        else:
+            print(f"DEBUG Bitrix: Error al subir archivo: {upload_result}")
+            if request:
+                messages.error(request, f"Error al subir archivo al proyecto: {upload_result.get('error_description', 'Error desconocido')}")
+            return False
+            
+    except requests.exceptions.RequestException as e:
+        print(f"DEBUG Bitrix: Excepción al subir archivo al proyecto: {e}")
+        if request:
+            messages.error(request, f"Excepción al subir archivo al proyecto: {e}")
+        return False
+
+def create_project_and_upload_volumetria(project_name, file_name, file_content_base64, description=None, request=None):
+    """
+    Función completa que crea un proyecto y sube la volumetría
+    """
+    print(f"DEBUG Bitrix: Iniciando creación de proyecto y subida de volumetría")
+    
+    # 1. Crear el proyecto
+    project_id = create_bitrix_project(project_name, description, request)
+    if not project_id:
+        return None
+        
+    # 2. Subir el archivo al drive del proyecto
+    upload_success = upload_file_to_project_drive(project_id, file_name, file_content_base64, request)
+    
+    if upload_success:
+        print(f"DEBUG Bitrix: Proceso completo exitoso. Proyecto {project_id} creado con archivo '{file_name}'")
+        return {
+            'project_id': project_id,
+            'project_name': project_name,
+            'file_uploaded': True
+        }
+    else:
+        print(f"DEBUG Bitrix: Proyecto creado pero falló la subida del archivo")
+        return {
+            'project_id': project_id,
+            'project_name': project_name,
+            'file_uploaded': False
+        }
+    return None

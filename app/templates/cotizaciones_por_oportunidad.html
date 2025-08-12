@@ -108,6 +108,16 @@
     }
     .apple-button:hover { filter: brightness(1.1); }
     .apple-button-secondary { background: var(--apple-background-tertiary); color: var(--apple-label); }
+    .apple-button-volumetria { 
+        background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%); 
+        color: #FFFFFF; 
+        border: none;
+    }
+    .apple-button-volumetria:hover { 
+        background: linear-gradient(135deg, #FF5722 0%, #E68900 100%); 
+        box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4); 
+        transform: translateY(-1px);
+    }
 
     .apple-table-container { background: var(--apple-background-secondary); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; overflow: hidden; }
     .apple-table { width: 100%; border-collapse: collapse; }
@@ -232,6 +242,7 @@
     <div class="apple-actions">
         <a href="{% url 'todos' %}" class="apple-button apple-button-secondary">&#8592; Volver</a>
         <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="apple-button">+ Nueva Cotización</a>
+        <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="apple-button apple-button-volumetria">📊 Nueva Volumetría</a>
     </div>
 
     <div class="apple-table-container">

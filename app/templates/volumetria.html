@@ -4,6 +4,8 @@
 {% block title %}{{ page_title }} - Sistema de Gestión de Ventas{% endblock %}
 
 {% block content %}
+<!-- Script JSON para datos de oportunidad -->
+{{ oportunidad_data|json_script:"oportunidad-data" }}
 <div class="min-h-screen apple-bg">
     <div class="main-content">
         <div class="apple-glass-card p-6 mx-4 animate-fade-in">
@@ -233,6 +235,180 @@ function iniciarVolumetria(tipo, titulo) {
     console.log(`Creando volumetría de tipo: ${tipo}`);
 }
 
+// Función para precargar datos de oportunidad desde la sesión
+function precargarDatosOportunidad() {
+    // Obtener datos de oportunidad del template usando Django json_script
+    const oportunidadDataElement = document.getElementById('oportunidad-data');
+    const oportunidadData = oportunidadDataElement ? JSON.parse(oportunidadDataElement.textContent) : null;
+    
+    if (oportunidadData && oportunidadData.oportunidad_id) {
+        console.log('DEBUG: Precargando datos de oportunidad:', oportunidadData);
+        
+        // Almacenar datos globalmente para uso posterior
+        window.oportunidadPrecargada = oportunidadData;
+        
+        // Mostrar mensaje informativo en la interfaz
+        mostrarMensajeOportunidadCargada(oportunidadData);
+    }
+}
+
+// Función para mostrar mensaje de oportunidad cargada
+function mostrarMensajeOportunidadCargada(data) {
+    const mensajeHTML = `
+        <div id="mensaje-oportunidad-cargada" class="apple-glass-card p-4 mx-4 mb-4 border-l-4 border-blue-500 animate-fade-in">
+            <div class="flex items-center">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-2 rounded-lg mr-3">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="flex-grow">
+                    <p class="font-semibold apple-text-primary">Oportunidad Cargada</p>
+                    <p class="text-sm apple-text-secondary mt-1">
+                        <strong>${data.oportunidad_nombre}</strong>
+                        ${data.cliente_nombre ? ` - Cliente: ${data.cliente_nombre}` : ''}
+                    </p>
+                    <p class="text-xs apple-text-secondary mt-1">
+                        Los datos se cargarán automáticamente al crear una volumetría
+                    </p>
+                </div>
+                <button onclick="cerrarMensajeOportunidad()" class="ml-3 text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Insertar mensaje después del header principal
+    const container = document.querySelector('.main-content .apple-glass-card');
+    if (container) {
+        container.insertAdjacentHTML('afterend', mensajeHTML);
+    }
+}
+
+// Función para cerrar el mensaje de oportunidad
+function cerrarMensajeOportunidad() {
+    const mensaje = document.getElementById('mensaje-oportunidad-cargada');
+    if (mensaje) {
+        mensaje.remove();
+    }
+    
+    // Limpiar datos de oportunidad de la sesión
+    limpiarDatosOportunidad();
+}
+
+// Función para limpiar datos de oportunidad de la sesión
+function limpiarDatosOportunidad() {
+    fetch('/app/api/limpiar-datos-oportunidad-volumetria/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    }).catch(error => {
+        console.log('Info: No se pudieron limpiar los datos de sesión:', error);
+    });
+}
+
+// Función para poblar selector de clientes en volumetría
+function populateClientSelectVolumetria() {
+    const clientSelect = document.getElementById('cliente-volumetria');
+    if (!clientSelect) return;
+    
+    // Parse the clients data (similar to quotations)
+    fetch('/app/api/get-clientes/')
+        .then(response => response.json())
+        .then(clientesData => {
+            clientSelect.innerHTML = '<option value="">-- Seleccione un cliente --</option>';
+            
+            clientesData.forEach(client => {
+                const option = document.createElement('option');
+                option.value = client.id;
+                option.textContent = client.nombre_empresa;
+                clientSelect.appendChild(option);
+            });
+            
+            // Precargar cliente si viene de una oportunidad
+            precargarClienteYOportunidad(clientSelect);
+        })
+        .catch(error => {
+            console.error('Error cargando clientes:', error);
+        });
+}
+
+// Función para precargar cliente y oportunidad desde los datos de sesión
+function precargarClienteYOportunidad(clientSelect) {
+    if (window.oportunidadPrecargada && window.oportunidadPrecargada.cliente_id) {
+        // Seleccionar el cliente
+        clientSelect.value = window.oportunidadPrecargada.cliente_id;
+        
+        // Disparar evento de cambio para cargar oportunidades
+        const event = new Event('change');
+        clientSelect.dispatchEvent(event);
+        
+        // Precargar otros campos después de un breve delay
+        setTimeout(() => {
+            precargarCamposFormulario();
+        }, 500);
+    }
+}
+
+// Función para precargar campos del formulario con datos de oportunidad
+function precargarCamposFormulario() {
+    if (!window.oportunidadPrecargada) return;
+    
+    const data = window.oportunidadPrecargada;
+    
+    // Precargar nombre de volumetría
+    const nombreInput = document.getElementById('nombre-volumetria');
+    if (nombreInput && !nombreInput.value) {
+        const nombreSugerido = `Volumetría - ${data.oportunidad_nombre}`;
+        nombreInput.value = nombreSugerido;
+    }
+    
+    // Precargar oportunidad
+    const oportunidadSelect = document.getElementById('oportunidad-volumetria');
+    if (oportunidadSelect && data.oportunidad_id) {
+        setTimeout(() => {
+            oportunidadSelect.value = data.oportunidad_id;
+        }, 750);
+    }
+    
+    console.log('DEBUG: Campos precargados con datos de oportunidad');
+}
+
+// Función para configurar listener de cambio de cliente
+function setupOpportunityChangeListener() {
+    const clientSelect = document.getElementById('cliente-volumetria');
+    const oportunidadSelect = document.getElementById('oportunidad-volumetria');
+    
+    if (!clientSelect || !oportunidadSelect) return;
+    
+    clientSelect.addEventListener('change', function() {
+        const clienteId = this.value;
+        oportunidadSelect.innerHTML = '<option value="">-- Seleccione una oportunidad --</option>';
+        
+        if (!clienteId) return;
+        
+        // Fetch opportunities for the selected client
+        fetch(`/app/api/get-oportunidades-por-cliente/?cliente_id=${clienteId}`)
+            .then(response => response.json())
+            .then(oportunidades => {
+                oportunidades.forEach(oportunidad => {
+                    const option = document.createElement('option');
+                    option.value = oportunidad.id;
+                    option.textContent = oportunidad.nombre;
+                    oportunidadSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error cargando oportunidades:', error);
+            });
+    });
+}
+
 // Función para mostrar el formulario de nodos de red
 function mostrarFormularioNodos() {
     // Ocultar contenido principal
@@ -267,7 +443,45 @@ function mostrarFormularioNodos() {
                     </div>
                 
                     <form id="form-nodos" class="space-y-8">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <!-- Información del Proyecto -->
+                    <div class="border-b border-gray-200 dark:border-gray-700 pb-6">
+                        <h3 class="text-lg font-medium apple-text-primary mb-4">Información del Proyecto</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Nombre de la Volumetría</label>
+                                <input type="text" id="nombre-volumetria" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: Volumetría Campus Universitario" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Cliente</label>
+                                <div class="flex items-center space-x-2">
+                                    <select id="cliente-volumetria" class="flex-grow px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                                        <option value="">-- Seleccione un cliente --</option>
+                                    </select>
+                                    <button type="button" class="apple-btn-secondary py-2 px-3 text-sm">+</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Usuario Final</label>
+                                <input type="text" id="usuario-final" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: Juan Pérez">
+                                <p class="text-xs mt-1 apple-text-secondary">💡 Persona de contacto específica del cliente</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Oportunidad Bitrix24</label>
+                                <div class="flex items-center space-x-2">
+                                    <select id="oportunidad-volumetria" class="flex-grow px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500">
+                                        <option value="">-- Seleccione una oportunidad --</option>
+                                    </select>
+                                    <button type="button" class="apple-btn-secondary py-2 px-3 text-sm">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Configuración Técnica -->
+                    <div>
+                        <h3 class="text-lg font-medium apple-text-primary mb-4">Configuración Técnica</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-sm font-medium apple-text-primary mb-2">Categoría</label>
                             <select id="categoria" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500">
@@ -388,6 +602,13 @@ function mostrarFormularioNodos() {
         e.preventDefault();
         procesarFormularioNodos();
     });
+    
+    // Poblar selectores de cliente y oportunidad
+    populateClientSelectVolumetria();
+    setupOpportunityChangeListener();
+    
+    // Precargar datos de oportunidad si vienen desde una oportunidad específica
+    precargarDatosOportunidad();
 }
 
 // Función para cerrar el formulario
@@ -406,6 +627,13 @@ function cerrarFormulario() {
 
 // Función para procesar el formulario de nodos
 function procesarFormularioNodos() {
+    // Información del proyecto
+    const nombreVolumetria = document.getElementById('nombre-volumetria').value;
+    const clienteId = document.getElementById('cliente-volumetria').value;
+    const usuarioFinal = document.getElementById('usuario-final').value;
+    const oportunidadId = document.getElementById('oportunidad-volumetria').value;
+    
+    // Configuración técnica
     const categoria = document.getElementById('categoria').value;
     const color = document.getElementById('color').value;
     const distancia = parseFloat(document.getElementById('distancia').value);
@@ -415,7 +643,18 @@ function procesarFormularioNodos() {
     const colorPatchcordUsuario = document.getElementById('color-patchcord-usuario').value;
     const colorPatchcordPatchpanel = document.getElementById('color-patchcord-patchpanel').value;
     
-    // Validaciones
+    // Validaciones proyecto
+    if (!nombreVolumetria.trim()) {
+        alert('Por favor, ingresa el nombre de la volumetría');
+        return;
+    }
+    
+    if (!clienteId) {
+        alert('Por favor, selecciona un cliente');
+        return;
+    }
+    
+    // Validaciones técnicas
     if (!distancia || distancia <= 0) {
         alert('Por favor, ingresa una distancia válida');
         return;
@@ -432,6 +671,12 @@ function procesarFormularioNodos() {
     // Simular procesamiento
     setTimeout(() => {
         generarVolumetria({
+            // Información del proyecto
+            nombreVolumetria,
+            clienteId,
+            usuarioFinal,
+            oportunidadId,
+            // Configuración técnica
             categoria,
             color,
             distancia,
@@ -469,6 +714,9 @@ function cerrarAnimacionCarga() {
 
 // Función para generar la volumetría
 function generarVolumetria(datos) {
+    // Guardar datos globalmente para el PDF
+    window.currentVolumetriaData = datos;
+    
     cerrarAnimacionCarga();
 
     // Calcular cantidades automáticas
@@ -1088,7 +1336,89 @@ function generarResumenVolumetria(datos) {
                 </div>
             </div>
         </div>
+        
+        <div class="apple-glass-card p-6 md:col-span-2">
+            <h4 class="text-lg font-semibold apple-text-primary mb-4">Información del Proyecto</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="apple-text-secondary">Nombre:</span>
+                        <span class="font-semibold apple-text-primary">${datos.nombreVolumetria || 'Sin especificar'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="apple-text-secondary">Cliente:</span>
+                        <span class="font-semibold apple-text-primary" id="cliente-display">Cargando...</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="apple-text-secondary">Usuario Final:</span>
+                        <span class="font-semibold apple-text-primary">${datos.usuarioFinal || 'Sin especificar'}</span>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="apple-text-secondary">Oportunidad:</span>
+                        <span class="font-semibold apple-text-primary" id="oportunidad-display">Cargando...</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="apple-text-secondary">Fecha:</span>
+                        <span class="font-semibold apple-text-primary">${new Date().toLocaleDateString('es-ES')}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="apple-text-secondary">Elaborado por:</span>
+                        <span class="font-semibold apple-text-primary">{{ user.get_full_name|default:user.username }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     `;
+    
+    // Cargar nombres de cliente y oportunidad después de renderizar
+    setTimeout(() => {
+        if (datos.clienteId) {
+            cargarNombreCliente(datos.clienteId);
+        }
+        if (datos.oportunidadId) {
+            cargarNombreOportunidad(datos.oportunidadId);
+        }
+    }, 100);
+}
+
+// Función para cargar nombre del cliente
+function cargarNombreCliente(clienteId) {
+    fetch(`/app/api/get-cliente/${clienteId}/`)
+        .then(response => response.json())
+        .then(cliente => {
+            const clienteDisplay = document.getElementById('cliente-display');
+            if (clienteDisplay) {
+                clienteDisplay.textContent = cliente.nombre_empresa || 'Cliente no encontrado';
+            }
+        })
+        .catch(error => {
+            console.error('Error cargando cliente:', error);
+            const clienteDisplay = document.getElementById('cliente-display');
+            if (clienteDisplay) {
+                clienteDisplay.textContent = 'Error cargando cliente';
+            }
+        });
+}
+
+// Función para cargar nombre de la oportunidad
+function cargarNombreOportunidad(oportunidadId) {
+    fetch(`/app/api/oportunidad/${oportunidadId}/detalle/`)
+        .then(response => response.json())
+        .then(oportunidad => {
+            const oportunidadDisplay = document.getElementById('oportunidad-display');
+            if (oportunidadDisplay) {
+                oportunidadDisplay.textContent = oportunidad.oportunidad || 'Sin oportunidad';
+            }
+        })
+        .catch(error => {
+            console.error('Error cargando oportunidad:', error);
+            const oportunidadDisplay = document.getElementById('oportunidad-display');
+            if (oportunidadDisplay) {
+                oportunidadDisplay.textContent = 'Sin oportunidad';
+            }
+        });
 }
 
 // Función auxiliar para calcular total cliente
@@ -1403,26 +1733,239 @@ function exportarPDF() {
     // Obtener datos de la volumetría actual
     const datosVolumetria = obtenerDatosVolumetriaActual();
     
-    if (datosVolumetria) {
-        // Guardar en localStorage
-        guardarVolumetria('nodos', datosVolumetria);
+    if (!datosVolumetria) {
+        alert('Error: No se pudieron obtener los datos de la volumetría');
+        return;
+    }
+    
+    // Guardar en localStorage
+    guardarVolumetria('nodos', datosVolumetria);
+    
+    // Mostrar indicador de carga
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Procesando Volumetría',
+            html: `
+                <div class="text-left">
+                    <p>📄 Generando PDF...</p>
+                    <p>💾 Guardando volumetría...</p>
+                    <p>📋 Preparando cotización automática...</p>
+                </div>
+            `,
+            icon: 'info',
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+    }
+    
+    // Preparar datos para el PDF
+    const pdfData = {
+        // Información del proyecto
+        nombre_volumetria: datosVolumetria.nombreVolumetria || '',
+        cliente_id: datosVolumetria.clienteId || '',
+        usuario_final: datosVolumetria.usuarioFinal || '',
+        oportunidad_id: datosVolumetria.oportunidadId || '',
+        fecha: datosVolumetria.fecha,
+        elaborado_por: '{{ user.get_full_name|default:user.username }}',
         
-        // Mostrar mensaje de éxito
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                title: 'PDF Guardado',
-                text: 'La volumetría se ha guardado exitosamente y estará disponible en "Ver Volumetrías"',
-                icon: 'success',
-                confirmButtonText: 'Entendido',
-                confirmButtonColor: '#007aff'
-            });
+        // Datos técnicos
+        categoria: datosVolumetria.categoria,
+        color: datosVolumetria.color,
+        distancia: datosVolumetria.distancia,
+        cantidad_nodos: datosVolumetria.cantidadNodos,
+        
+        // Datos financieros
+        subtotal: datosVolumetria.subtotal || 0,
+        iva: datosVolumetria.iva || 0,
+        total: datosVolumetria.total || 0,
+        
+        // Datos de la tabla (items)
+        items: obtenerItemsTabla() || []
+    };
+    
+    // Realizar petición para generar PDF
+    fetch('/app/api/generar-pdf-volumetria/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(pdfData)
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.blob();
+        }
+        throw new Error('Error al generar el PDF');
+    })
+    .then(blob => {
+        // Crear enlace de descarga
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Volumetria_${datosVolumetria.nombreVolumetria || 'Nodos'}_${new Date().getTime()}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        // PDF generado exitosamente, ahora crear cotización automática
+        console.log('PDF generado exitosamente, creando cotización automática...');
+        crearCotizacionAutomatica(datosVolumetria);
+    })
+    .catch(error => {
+        console.error('Error generando PDF:', error);
+        
+        // Aún así, intentar crear la cotización
+        console.log('PDF falló, pero continuando con cotización automática...');
+        crearCotizacionAutomatica(datosVolumetria);
+    });
+}
+
+// Función para crear cotización automática desde volumetría
+function crearCotizacionAutomatica(datosVolumetria) {
+    console.log('DEBUG: Iniciando creación de cotización automática', datosVolumetria);
+    
+    // Extraer datos para cotización (sin costos internos)
+    const items = obtenerItemsTabla();
+    const datosCotizacion = {
+        // Información del proyecto (igual que volumetría)
+        nombre_cotizacion: datosVolumetria.nombreVolumetria ? `Cotización - ${datosVolumetria.nombreVolumetria}` : 'Cotización desde Volumetría',
+        cliente_id: datosVolumetria.clienteId,
+        usuario_final: datosVolumetria.usuarioFinal,
+        oportunidad_id: datosVolumetria.oportunidadId,
+        
+        // Items solo con datos visibles al cliente (sin costos internos)
+        items: items.map(item => ({
+            numero_parte: item.numero_parte,
+            cantidad: item.cantidad,
+            descripcion: item.descripcion,
+            precio_unitario: item.precio_cliente,
+            descuento: item.descuento_cliente,
+            total: item.precio_final_cliente
+        })),
+        
+        // Totales para el cliente
+        subtotal: datosVolumetria.subtotal || 0,
+        iva_rate: 0.16, // 16%
+        moneda: 'USD',
+        
+        // Metadata
+        creado_desde_volumetria: true,
+        volumetria_referencia: datosVolumetria.timestamp
+    };
+    
+    // Enviar al backend para crear cotización
+    fetch('/app/api/crear-cotizacion-desde-volumetria/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(datosCotizacion)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            mostrarMensajeExito(result);
         } else {
-            alert('PDF generado y volumetría guardada exitosamente');
+            mostrarMensajeError(result);
+        }
+    })
+    .catch(error => {
+        console.error('Error creando cotización automática:', error);
+        mostrarMensajeError({ error: 'Error de conexión al crear cotización' });
+    });
+}
+
+// Función para mostrar mensaje de éxito completo
+function mostrarMensajeExito(result) {
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: '¡Proceso Completado!',
+            html: `
+                <div class="text-left space-y-2">
+                    <p>✅ <strong>PDF de volumetría:</strong> ${result.pdf_generado ? 'Descargado' : 'Guardado localmente'}</p>
+                    <p>✅ <strong>Volumetría guardada:</strong> Disponible en "Ver Volumetrías"</p>
+                    <p>✅ <strong>Cotización creada:</strong> ${result.cotizacion_nombre}</p>
+                    ${result.bitrix_comentario ? '<p>✅ <strong>Bitrix24:</strong> Comentario agregado</p>' : ''}
+                </div>
+                <hr class="my-3">
+                <p class="text-sm text-gray-600">El vendedor ya puede acceder a la cotización generada automáticamente.</p>
+            `,
+            icon: 'success',
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#007aff',
+            showDenyButton: true,
+            denyButtonText: 'Ver Cotización',
+            denyButtonColor: '#28a745'
+        }).then((result) => {
+            if (result.isDenied && result.cotizacion_url) {
+                window.open(result.cotizacion_url, '_blank');
+            }
+        });
+    } else {
+        alert('Proceso completado: PDF descargado, volumetría guardada y cotización creada automáticamente.');
+    }
+}
+
+// Función para mostrar mensaje de error
+function mostrarMensajeError(result) {
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Proceso Parcialmente Completado',
+            html: `
+                <div class="text-left space-y-2">
+                    <p>✅ <strong>Volumetría guardada:</strong> Disponible en "Ver Volumetrías"</p>
+                    <p>⚠️ <strong>Cotización automática:</strong> ${result.error || 'Error desconocido'}</p>
+                </div>
+                <hr class="my-3">
+                <p class="text-sm text-gray-600">La volumetría se guardó correctamente. La cotización deberá crearse manualmente.</p>
+            `,
+            icon: 'warning',
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#007aff'
+        });
+    } else {
+        alert(`Volumetría guardada, pero error en cotización: ${result.error || 'Error desconocido'}`);
+    }
+}
+
+// Función para obtener los items de la tabla para el PDF
+function obtenerItemsTabla() {
+    const tabla = document.getElementById('tabla-items');
+    if (!tabla) return [];
+    
+    const items = [];
+    const filas = tabla.children;
+    
+    // Procesar todas las filas excepto la última (totales)
+    for (let i = 0; i < filas.length - 1; i++) {
+        const fila = filas[i];
+        const celdas = fila.children;
+        
+        if (celdas.length >= 11) {
+            const item = {
+                numero_parte: celdas[0].textContent.trim(),
+                cantidad: parseInt(celdas[1].textContent) || 0,
+                descripcion: celdas[2].textContent.trim(),
+                precio_cliente: parseFloat(celdas[3].textContent.replace(/[^\d.-]/g, '')) || 0,
+                descuento_cliente: parseFloat(celdas[4].textContent.replace(/[^\d.-]/g, '')) || 0,
+                subtotal_cliente: parseFloat(celdas[5].textContent.replace(/[^\d.-]/g, '')) || 0,
+                precio_final_cliente: parseFloat(celdas[6].textContent.replace(/[^\d.-]/g, '')) || 0,
+                descuento_proveedor: parseFloat(celdas[7].textContent.replace(/[^\d.-]/g, '')) || 0,
+                costo_proveedor: parseFloat(celdas[8].textContent.replace(/[^\d.-]/g, '')) || 0,
+                total_proveedor: parseFloat(celdas[9].textContent.replace(/[^\d.-]/g, '')) || 0,
+                ganancia: parseFloat(celdas[10].textContent.replace(/[^\d.-]/g, '')) || 0
+            };
+            items.push(item);
         }
     }
     
-    // Aquí iría la lógica real de generación de PDF
-    console.log('Generando PDF...');
+    return items;
 }
 
 // Función para obtener datos de la volumetría actual
@@ -1437,7 +1980,26 @@ function obtenerDatosVolumetriaActual() {
         timestamp: Date.now()
     };
     
-    // Extraer información del resumen
+    // Obtener IDs guardados globalmente (si están disponibles)
+    if (window.currentVolumetriaData) {
+        datos.clienteId = window.currentVolumetriaData.clienteId;
+        datos.oportunidadId = window.currentVolumetriaData.oportunidadId;
+    }
+    
+    // Extraer información del proyecto desde el resumen visible
+    const nombreElement = document.querySelector('#resumen-volumetria .apple-glass-card:last-child');
+    if (nombreElement) {
+        const projectInfoElements = nombreElement.querySelectorAll('.flex.justify-between');
+        projectInfoElements.forEach(element => {
+            const text = element.textContent;
+            if (text.includes('Nombre:')) datos.nombreVolumetria = text.split('Nombre:')[1].trim();
+            if (text.includes('Cliente:')) datos.clienteNombre = text.split('Cliente:')[1].trim();
+            if (text.includes('Usuario Final:')) datos.usuarioFinal = text.split('Usuario Final:')[1].trim();
+            if (text.includes('Oportunidad:')) datos.oportunidadNombre = text.split('Oportunidad:')[1].trim();
+        });
+    }
+    
+    // Extraer información del resumen técnico
     resumenElements.forEach(element => {
         const text = element.textContent;
         if (text.includes('Categoría:')) datos.categoria = text.split(':')[1].trim();
@@ -1545,6 +2107,11 @@ function editarVolumetria(tipo, index) {
 
 // Función para precargar datos en el formulario
 function precargarDatosFormulario(volumetria) {
+    // Información del proyecto
+    if (volumetria.nombreVolumetria) document.getElementById('nombre-volumetria').value = volumetria.nombreVolumetria;
+    if (volumetria.usuarioFinal) document.getElementById('usuario-final').value = volumetria.usuarioFinal;
+    
+    // Configuración técnica
     if (volumetria.categoria) document.getElementById('categoria').value = volumetria.categoria;
     if (volumetria.color) document.getElementById('color').value = volumetria.color;
     if (volumetria.distancia) document.getElementById('distancia').value = volumetria.distancia;
@@ -1681,6 +2248,12 @@ function manejarCambioTabla(elemento, fila, columna) {
 }
 
 let volumetriaConfig = { cantidadNodos: 1 };
+
+// Script de inicialización al cargar la página principal
+document.addEventListener('DOMContentLoaded', function() {
+    // Ejecutar precarga de datos de oportunidad si están disponibles
+    precargarDatosOportunidad();
+});
 
 // Función para recalcular totales de la tabla y actualizar el resumen
 function recalcularTotales() {

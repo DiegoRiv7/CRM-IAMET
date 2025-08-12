@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Volumetría - {{ volumetria.nombre_volumetria|default:"Análisis Volumétrico" }}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    * { box-sizing: border-box; }
+    
+    body {
+      margin: 0;
+      padding: 10px;
+      font-family: 'Inter', sans-serif;
+      color: #333;
+      background: #fff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+      background: #fff;
+    }
+    
+    /* Encabezado con logo y datos de contacto */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 15px 10px;
+      margin-bottom: 20px;
+      border-bottom: 3px solid #333;
+      background: #f8f9fa;
+    }
+    
+    .logo {
+      flex: 1;
+    }
+    
+    .logo img {
+      max-height: 60px;
+      width: auto;
+    }
+    
+    .contact-info {
+      flex: 1;
+      text-align: right;
+      font-size: 12px;
+      color: #666;
+      line-height: 1.6;
+    }
+    
+    .contact-info .phone {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 2px;
+    }
+    
+    .contact-info .schedule {
+      font-size: 11px;
+      color: #888;
+    }
+    
+    /* Título del documento */
+    .document-title {
+      text-align: center;
+      margin: 20px 0 15px 0;
+      padding: 10px;
+      background: #f8f9fa;
+      border-left: 4px solid #333;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    .document-title h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+      color: #333;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    /* Información del proyecto */
+    .project-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #fff;
+    }
+    
+    .client-info {
+      flex: 2;
+    }
+    
+    .client-info h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin: 0 0 15px 0;
+      text-transform: uppercase;
+    }
+    
+    .client-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: #000;
+      margin: 5px 0 15px 0;
+      line-height: 1.2;
+    }
+    
+    .client-details {
+      color: #666;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    
+    .project-info {
+      flex: 1;
+      text-align: right;
+      background: #f8f9fa;
+      color: #333;
+      border: 2px solid #333;
+      padding: 15px;
+      margin: -15px -15px -15px 15px;
+    }
+    
+    .project-info .volumetry-id {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    
+    .project-info .date {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    
+    .project-info .author {
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    /* Configuración técnica */
+    .technical-config {
+      margin: 25px 0;
+      padding: 15px;
+      background: #f8f9fa;
+      border-left: 4px solid #333;
+    }
+    
+    .technical-config h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #333;
+      margin: 0 0 15px 0;
+      text-transform: uppercase;
+    }
+    
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+    }
+    
+    .tech-item {
+      text-align: center;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid #ddd;
+    }
+    
+    .tech-item .label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    
+    .tech-item .value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #333;
+    }
+    
+    /* Tabla de volumetría */
+    .products-section {
+      margin: 20px 0;
+    }
+    
+    .products-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    
+    .products-table th {
+      background: #f8f9fa;
+      color: #333;
+      font-weight: 600;
+      padding: 10px 6px;
+      text-align: left;
+      border-top: 2px solid #333;
+      border-bottom: 2px solid #333;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    
+    .products-table td {
+      padding: 8px 6px;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+    }
+    
+    .text-right {
+      text-align: right;
+    }
+    
+    .text-center {
+      text-align: center;
+    }
+    
+    .product-name {
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .part-number {
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-weight: 600;
+      color: #000;
+    }
+    
+    /* Totales */
+    .totals-section {
+      display: flex;
+      justify-content: flex-end;
+      margin: 20px 0;
+    }
+    
+    .totals-table {
+      width: 280px;
+      font-size: 14px;
+    }
+    
+    .totals-table td {
+      padding: 10px 15px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .totals-table .label {
+      font-weight: 600;
+      text-align: left;
+      color: #333;
+    }
+    
+    .totals-table .value {
+      text-align: right;
+      font-weight: 600;
+    }
+    
+    .totals-table .total-row {
+      background: #f8f9fa;
+      color: #333;
+      border-top: 2px solid #333;
+      border-bottom: 2px solid #333;
+      font-weight: 700;
+      font-size: 16px;
+    }
+    
+    .totals-table .total-row td {
+      border-bottom: none;
+      padding: 15px;
+    }
+    
+    /* Análisis de rentabilidad */
+    .profitability-section {
+      margin: 25px 0;
+      padding: 15px;
+      background: #f8f9fa;
+      border-left: 4px solid #333;
+    }
+    
+    .profitability-section h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #333;
+      margin: 0 0 15px 0;
+      text-transform: uppercase;
+    }
+    
+    .profit-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    
+    .profit-item {
+      text-align: center;
+      padding: 15px;
+      background: #fff;
+      border: 1px solid #ddd;
+    }
+    
+    .profit-item .label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    
+    .profit-item .value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #333;
+    }
+    
+    .profit-item.highlight .value {
+      color: #28a745;
+    }
+    
+    /* Términos y condiciones */
+    .terms {
+      margin-top: 25px;
+      padding: 15px;
+      background: #f8f9fa;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #666;
+    }
+    
+    /* Paginación */
+    @page {
+      margin: 12mm;
+      @bottom-right {
+        content: counter(page) "/" counter(pages);
+        font-size: 10px;
+        color: #666;
+      }
+    }
+    
+    /* Responsive para impresión */
+    @media print {
+      .container {
+        max-width: none;
+      }
+      
+      .project-header {
+        page-break-inside: avoid;
+      }
+      
+      .products-table {
+        page-break-inside: auto;
+      }
+      
+      .products-table thead {
+        display: table-header-group;
+      }
+      
+      .products-table tbody tr {
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Encabezado con logo y contacto -->
+    <div class="header">
+      <div class="logo">
+        {% if logo_base64 %}
+          <img src="data:image/png;base64,{{ logo_base64 }}" alt="Logo BAJANET">
+        {% else %}
+          <img src="http://www.baja-net.com/images/logo.png" alt="Logo BAJANET">
+        {% endif %}
+      </div>
+      <div class="contact-info">
+        <div class="phone">664 380 8965</div>
+        <div>baja-net.com</div>
+        <div class="schedule">Análisis Volumétrico</div>
+      </div>
+    </div>
+    
+    <!-- Título del documento -->
+    <div class="document-title">
+      <h1>{{ volumetria.nombre_volumetria|default:"Análisis Volumétrico" }}</h1>
+    </div>
+
+    <!-- Información del proyecto -->
+    <div class="project-header">
+      <div class="client-info">
+        <h2>Información del Cliente</h2>
+        <div class="client-name">{{ volumetria.cliente_nombre|default:"Cliente no especificado" }}</div>
+        <div class="client-details">
+          {% if volumetria.usuario_final %}
+          <div style="font-size: 16px; font-weight: 500; color: #333; margin: 5px 0 10px 0;">
+            {{ volumetria.usuario_final }}
+          </div>
+          {% endif %}
+          {% if volumetria.oportunidad_nombre and volumetria.oportunidad_nombre != "Sin oportunidad asignada" %}
+          <div><strong>Oportunidad:</strong> {{ volumetria.oportunidad_nombre }}</div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="project-info">
+        <div class="volumetry-id">VOLUMETRÍA</div>
+        <div class="date">{{ volumetria.fecha|default:"Fecha no disponible" }}</div>
+        <div class="author">{{ volumetria.elaborado_por|default:"Sistema" }}</div>
+      </div>
+    </div>
+
+    <!-- Configuración técnica -->
+    <div class="technical-config">
+      <h3>Configuración Técnica del Proyecto</h3>
+      <div class="tech-grid">
+        <div class="tech-item">
+          <div class="label">Categoría</div>
+          <div class="value">{{ volumetria.categoria|default:"CAT6" }}</div>
+        </div>
+        <div class="tech-item">
+          <div class="label">Color Cable</div>
+          <div class="value">{{ volumetria.color|default:"Azul" }}</div>
+        </div>
+        <div class="tech-item">
+          <div class="label">Nodos</div>
+          <div class="value">{{ volumetria.cantidad_nodos|default:"0" }}</div>
+        </div>
+        <div class="tech-item">
+          <div class="label">Distancia</div>
+          <div class="value">{{ volumetria.distancia|default:"0" }}m</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de volumetría -->
+    <div class="products-section">
+      <table class="products-table">
+        <thead>
+          <tr>
+            <th style="width: 15%;">No. Parte</th>
+            <th style="width: 8%;">Cant.</th>
+            <th style="width: 35%;">Descripción del Producto</th>
+            <th style="width: 12%;">Precio Unit.</th>
+            <th style="width: 8%;">Desc. %</th>
+            <th style="width: 12%;">Total Cliente</th>
+            <th style="width: 12%;">Costo Prov.</th>
+            <th style="width: 12%;">Ganancia</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in volumetria.items %}
+          <tr>
+            <td class="part-number">{{ item.numero_parte }}</td>
+            <td class="text-center">{{ item.cantidad }}</td>
+            <td class="product-name">{{ item.descripcion }}</td>
+            <td class="text-right">${{ item.precio_cliente|floatformat:2 }}</td>
+            <td class="text-center">{{ item.descuento_cliente|floatformat:1 }}%</td>
+            <td class="text-right">${{ item.precio_final_cliente|floatformat:2 }}</td>
+            <td class="text-right">${{ item.total_proveedor|floatformat:2 }}</td>
+            <td class="text-right">${{ item.ganancia|floatformat:2 }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 20px; color: #666; font-style: italic;">
+              No hay productos especificados para esta volumetría
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Totales -->
+    <div class="totals-section">
+      <table class="totals-table">
+        <tr>
+          <td class="label">Subtotal:</td>
+          <td class="value">${{ volumetria.subtotal|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <td class="label">IVA (16%):</td>
+          <td class="value">${{ volumetria.iva|floatformat:2 }}</td>
+        </tr>
+        <tr class="total-row">
+          <td class="label">TOTAL:</td>
+          <td class="value">${{ volumetria.total|floatformat:2 }}</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Análisis de rentabilidad -->
+    <div class="profitability-section">
+      <h3>Análisis de Rentabilidad del Proyecto</h3>
+      <div class="profit-grid">
+        <div class="profit-item">
+          <div class="label">Margen de Utilidad</div>
+          <div class="value">{{ volumetria.margen_utilidad|default:"0"|floatformat:1 }}%</div>
+        </div>
+        <div class="profit-item highlight">
+          <div class="label">Ganancia Bruta</div>
+          <div class="value">${{ volumetria.ganancia_total|default:"0"|floatformat:2 }}</div>
+        </div>
+        <div class="profit-item">
+          <div class="label">Precio por Nodo</div>
+          <div class="value">${{ volumetria.precio_por_nodo|default:"0"|floatformat:2 }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Información adicional -->
+    <div class="terms">
+      <p><strong>Análisis Volumétrico de Infraestructura de Red</strong></p>
+      <p>Este documento contiene el análisis detallado de los componentes necesarios para la implementación de {{ volumetria.cantidad_nodos|default:"0" }} nodos de red utilizando cable {{ volumetria.categoria|default:"CAT6" }} categoría {{ volumetria.color|default:"azul" }}.</p>
+      
+      <p><strong>Especificaciones técnicas:</strong></p>
+      <ul style="margin: 10px 0; padding-left: 20px;">
+        <li>Distancia total del proyecto: {{ volumetria.distancia|default:"0" }} metros</li>
+        <li>Categoría de cable: {{ volumetria.categoria|default:"CAT6" }}</li>
+        <li>Color de cable: {{ volumetria.color|default:"Azul" }}</li>
+        <li>Cantidad de nodos: {{ volumetria.cantidad_nodos|default:"0" }}</li>
+      </ul>
+      
+      <p style="margin-top: 15px; font-size: 11px; color: #888;">
+        <strong>Documento generado el {{ volumetria.fecha|default:"fecha no disponible" }} por {{ volumetria.elaborado_por|default:"Sistema de Gestión" }}.</strong><br>
+        Este análisis volumétrico ha sido elaborado utilizando estándares de la industria y componentes de calidad profesional.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
