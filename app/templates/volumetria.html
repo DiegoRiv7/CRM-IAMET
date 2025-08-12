@@ -494,6 +494,8 @@ function generarVolumetria(datos) {
 
 // Función para mostrar la tabla de volumetría
 function mostrarTablaVolumetria(datos) {
+    volumetriaConfig.cantidadNodos = datos.cantidadNodos || 1;
+
     const tablaHTML = `
         <div id="tabla-volumetria" class="min-h-screen apple-bg">
             <div class="apple-bg min-h-screen overflow-y-auto">
@@ -806,6 +808,7 @@ function mostrarTablaVolumetria(datos) {
         monedaSelect.value = 'USD';
         monedaActual = 'USD';
     }
+    recalcularTotales(); // Recalcular una vez al inicio
 }
 
 // Función para generar las filas de la tabla
@@ -1004,9 +1007,24 @@ function generarFilasTabla(datos) {
 function generarResumenVolumetria(datos) {
     // Recalcular totales para el resumen
     const totalCliente = calcularTotalCliente(datos);
-    const porcentajeUtilidad = ((totalCliente - calcularTotalCosto(datos)) / calcularTotalCosto(datos) * 100);
-    const gananciaTotalDolares = totalCliente - calcularTotalCosto(datos);
+    const totalCosto = calcularTotalCosto(datos);
+    const gananciaTotalDolares = totalCliente - totalCosto;
+    const porcentajeUtilidad = totalCosto > 0 ? (gananciaTotalDolares / totalCosto * 100) : 0;
+    const cantidadNodos = datos.cantidadNodos || 1;
+    const costoPorNodo = totalCosto / cantidadNodos;
+    const precioPorNodo = totalCliente / cantidadNodos;
+    const utilidadPorNodo = gananciaTotalDolares / cantidadNodos;
     
+    let estadoClase = 'bg-red-600 text-white';
+    let estadoTexto = 'Revisar';
+    if (porcentajeUtilidad >= 30) {
+        estadoClase = 'bg-green-600 text-white';
+        estadoTexto = 'Excelente';
+    } else if (porcentajeUtilidad >= 15) {
+        estadoClase = 'bg-yellow-600 text-white';
+        estadoTexto = 'Aceptable';
+    }
+
     return `
         <div class="apple-glass-card p-6">
             <div class="mb-4">
@@ -1019,7 +1037,7 @@ function generarResumenVolumetria(datos) {
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="apple-text-secondary font-medium">IVA:</span>
-                    <select id="iva-select" onchange="actualizarIVA()" class="px-3 py-1 border border-gray-600 bg-gray-800 apple-text-primary rounded-md text-sm font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                    <select id="iva-select" onchange="recalcularTotales()" class="px-3 py-1 border border-gray-600 bg-gray-800 apple-text-primary rounded-md text-sm font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                         <option value="16">16%</option>
                         <option value="8">8%</option>
                     </select>
@@ -1040,7 +1058,7 @@ function generarResumenVolumetria(datos) {
             <div class="space-y-3">
                 <div class="flex justify-between">
                     <span class="apple-text-secondary">Margen de Utilidad:</span>
-                    <span class="font-semibold apple-text-accent">${porcentajeUtilidad.toFixed(1)}%</span>
+                    <span class="font-semibold apple-text-accent" id="margen-utilidad-display">${porcentajeUtilidad.toFixed(1)}%</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="apple-text-secondary">Ganancia Bruta:</span>
@@ -1048,23 +1066,23 @@ function generarResumenVolumetria(datos) {
                 </div>
                 <div class="flex justify-between text-sm">
                     <span class="apple-text-secondary">Costo por Nodo:</span>
-                    <span class="font-mono text-xs apple-text-primary" id="costo-nodo">${formatearMoneda(calcularTotalCosto(datos) / (datos.cantidadNodos || 20))}</span>
+                    <span class="font-mono text-xs apple-text-primary" id="costo-nodo-display">${formatearMoneda(costoPorNodo)}</span>
                 </div>
                 <div class="flex justify-between text-sm">
                     <span class="apple-text-secondary">Precio por Nodo:</span>
-                    <span class="font-mono text-xs apple-text-primary" id="precio-nodo">${formatearMoneda(totalCliente / (datos.cantidadNodos || 20))}</span>
+                    <span class="font-mono text-xs apple-text-primary" id="precio-nodo-display">${formatearMoneda(precioPorNodo)}</span>
                 </div>
                 <div class="flex justify-between text-sm">
                     <span class="apple-text-secondary">Utilidad por Nodo:</span>
-                    <span class="font-mono text-xs font-semibold apple-text-accent" id="utilidad-nodo">${formatearMoneda(gananciaTotalDolares / (datos.cantidadNodos || 20))}</span>
+                    <span class="font-mono text-xs font-semibold apple-text-accent" id="utilidad-nodo-display">${formatearMoneda(utilidadPorNodo)}</span>
                 </div>
                 
                 <!-- Estado del Proyecto -->
                 <div class="mt-4 pt-3 border-t border-gray-600">
                     <div class="flex items-center justify-between text-sm">
                         <span class="apple-text-secondary">Estado:</span>
-                        <span class="px-3 py-1 rounded-lg text-sm font-medium ${porcentajeUtilidad >= 30 ? 'bg-green-600 text-white' : porcentajeUtilidad >= 15 ? 'bg-yellow-600 text-white' : 'bg-red-600 text-white'}">
-                            ${porcentajeUtilidad >= 30 ? 'Excelente' : porcentajeUtilidad >= 15 ? 'Aceptable' : 'Revisar'}
+                        <span id="estado-proyecto-display" class="px-3 py-1 rounded-lg text-sm font-medium ${estadoClase}">
+                            ${estadoTexto}
                         </span>
                     </div>
                 </div>
@@ -1131,32 +1149,7 @@ function calcularTotalCosto(datos) {
     return total;
 }
 
-// Función para actualizar IVA
-function actualizarIVA() {
-    const ivaSelect = document.getElementById('iva-select');
-    const montoIva = document.getElementById('monto-iva');
-    const totalClienteElement = document.getElementById('total-cliente');
-    
-    // Obtener el subtotal actual desde el resumen
-    const subtotalElement = document.querySelector('#resumen-volumetria .bg-blue-50 .space-y-3 .flex:first-child span:last-child');
-    let subtotal = calcularTotalCliente({});
-    
-    if (subtotalElement) {
-        const subtotalText = subtotalElement.textContent.replace(/[^0-9.-]+/g, '');
-        subtotal = parseFloat(subtotalText) || subtotal;
-    }
-    
-    const porcentajeIva = parseFloat(ivaSelect.value) / 100;
-    const montoIvaCalculado = subtotal * porcentajeIva;
-    const totalFinal = subtotal + montoIvaCalculado;
-    
-    if (montoIva) {
-        montoIva.textContent = formatearMoneda(montoIvaCalculado);
-    }
-    if (totalClienteElement) {
-        totalClienteElement.textContent = formatearMoneda(totalFinal);
-    }
-}
+
 
 // Función para cerrar la tabla de volumetría
 function cerrarTablaVolumetria() {
@@ -1687,17 +1680,21 @@ function manejarCambioTabla(elemento, fila, columna) {
     recalcularTotales();
 }
 
-// Función para recalcular totales de la tabla
+let volumetriaConfig = { cantidadNodos: 1 };
+
+// Función para recalcular totales de la tabla y actualizar el resumen
 function recalcularTotales() {
     const tabla = document.getElementById('tabla-items');
     let totalCliente = 0;
     let totalCosto = 0;
     
+    if (!tabla) return;
+
     // Sumar todas las filas (excepto la última que es de totales)
     for (let i = 0; i < tabla.children.length - 1; i++) {
         const fila = tabla.children[i];
-        const totalClienteFila = parseFloat(fila.children[6].textContent.replace(/[^0-9.-]+/g, '')) || 0; // Total Cliente
-        const totalCostoFila = parseFloat(fila.children[9].textContent.replace(/[^0-9.-]+/g, '')) || 0;   // Total Costo
+        const totalClienteFila = parseFloat(fila.children[6].textContent.replace(/[^0-9.-]+/g, '')) || 0;
+        const totalCostoFila = parseFloat(fila.children[9].textContent.replace(/[^0-9.-]+/g, '')) || 0;
         
         totalCliente += totalClienteFila;
         totalCosto += totalCostoFila;
@@ -1705,40 +1702,55 @@ function recalcularTotales() {
     
     const gananciaTotalFila = totalCliente - totalCosto;
     
-    // Actualizar fila de totales con los nuevos índices
+    // Actualizar fila de totales
     const filaTotales = tabla.children[tabla.children.length - 1];
-    filaTotales.children[5].textContent = formatearPesos(totalCliente);      // Precio Unitario (donde va total cliente)
-    filaTotales.children[9].textContent = formatearPesos(totalCosto);        // Total Costo
-    filaTotales.children[10].textContent = formatearPesos(gananciaTotalFila); // Ganancia
+    if (filaTotales && filaTotales.children.length > 10) {
+        filaTotales.children[5].textContent = formatearMoneda(totalCliente);
+        filaTotales.children[9].textContent = formatearMoneda(totalCosto);
+        filaTotales.children[10].textContent = formatearMoneda(gananciaTotalFila);
+    }
     
-    // Actualizar resumen
+    // Actualizar el resumen completo
     actualizarResumen(totalCliente, totalCosto);
 }
 
 // Función para actualizar el resumen con nuevos totales
 function actualizarResumen(totalCliente, totalCosto) {
-    const porcentajeUtilidad = ((totalCliente - totalCosto) / totalCosto * 100);
-    const gananciaTotalDolares = totalCliente - totalCosto;
-    
-    // Actualizar elementos del resumen si existen
-    const subtotalElement = document.querySelector('#resumen-volumetria .bg-blue-50 .space-y-3 .flex:first-child span:last-child');
-    if (subtotalElement) {
-        subtotalElement.textContent = formatearMoneda(totalCliente);
+    const cantidadNodos = volumetriaConfig.cantidadNodos || 1;
+    const gananciaTotal = totalCliente - totalCosto;
+    const margenUtilidad = totalCosto > 0 ? (gananciaTotal / totalCosto) * 100 : 0;
+    const costoPorNodo = totalCosto / cantidadNodos;
+    const precioPorNodo = totalCliente / cantidadNodos;
+    const utilidadPorNodo = gananciaTotal / cantidadNodos;
+
+    // Actualizar Costos
+    document.getElementById('subtotal-display').textContent = formatearMoneda(totalCliente);
+    const ivaSelect = document.getElementById('iva-select');
+    const porcentajeIva = parseFloat(ivaSelect.value) / 100;
+    const montoIvaCalculado = totalCliente * porcentajeIva;
+    document.getElementById('monto-iva').textContent = formatearMoneda(montoIvaCalculado);
+    document.getElementById('total-cliente').textContent = formatearMoneda(totalCliente + montoIvaCalculado);
+
+    // Actualizar Rentabilidad
+    document.getElementById('ganancia-display').textContent = formatearMoneda(gananciaTotal);
+    document.getElementById('margen-utilidad-display').textContent = `${margenUtilidad.toFixed(1)}%`;
+    document.getElementById('costo-nodo-display').textContent = formatearMoneda(costoPorNodo);
+    document.getElementById('precio-nodo-display').textContent = formatearMoneda(precioPorNodo);
+    document.getElementById('utilidad-nodo-display').textContent = formatearMoneda(utilidadPorNodo);
+
+    // Actualizar Estado del Proyecto
+    const estadoDisplay = document.getElementById('estado-proyecto-display');
+    let estadoClase = 'bg-red-600 text-white';
+    let estadoTexto = 'Revisar';
+    if (margenUtilidad >= 30) {
+        estadoClase = 'bg-green-600 text-white';
+        estadoTexto = 'Excelente';
+    } else if (margenUtilidad >= 15) {
+        estadoClase = 'bg-yellow-600 text-white';
+        estadoTexto = 'Aceptable';
     }
-    
-    // Actualizar IVA
-    actualizarIVA();
-    
-    // Actualizar utilidad
-    const utilidadElement = document.querySelector('#resumen-volumetria .bg-green-50 .space-y-3 .flex:first-child span:last-child');
-    if (utilidadElement) {
-        utilidadElement.textContent = `${porcentajeUtilidad.toFixed(1)}%`;
-    }
-    
-    const gananciaElement = document.querySelector('#resumen-volumetria .bg-green-50 .space-y-3 .flex:last-child span:last-child');
-    if (gananciaElement) {
-        gananciaElement.textContent = formatearMoneda(gananciaTotalDolares);
-    }
+    estadoDisplay.className = `px-3 py-1 rounded-lg text-sm font-medium ${estadoClase}`;
+    estadoDisplay.textContent = estadoTexto;
 }
 
 // Animaciones de entrada
