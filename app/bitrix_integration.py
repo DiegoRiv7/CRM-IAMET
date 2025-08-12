@@ -7,6 +7,7 @@ from django.http import JsonResponse
 
 
 BITRIX_WEBHOOK_URL = os.getenv("BITRIX_WEBHOOK_URL")
+BITRIX_PROJECTS_WEBHOOK_URL = os.getenv("BITRIX_PROJECTS_WEBHOOK_URL", "https://bajanet.bitrix24.mx/rest/86/hwpxu5dr31b6wve3/sonet_group.create.json")
 
 def get_or_create_bitrix_company(company_name, email=None, contact_name=None, request=None):
     normalized_company_name = company_name.strip().upper() # Normalizar el nombre
@@ -572,18 +573,18 @@ def add_comment_with_attachment_to_deal(deal_id, file_name, file_content_base64,
             messages.error(request, f"Excepción al añadir el comentario a Bitrix: {e}")
         return False
 
-def create_bitrix_project(project_name, description=None, request=None):
+def create_bitrix_project(project_name, description=None, vendedor_responsable=None, request=None):
     """
     Crea un proyecto público en Bitrix24
     """
-    if not BITRIX_WEBHOOK_URL:
+    if not BITRIX_PROJECTS_WEBHOOK_URL:
         if request:
-            messages.error(request, "Error: La URL del webhook de Bitrix24 no está configurada.")
-        print("Error: La URL del webhook de Bitrix24 no está configurada.")
+            messages.error(request, "Error: La URL del webhook de proyectos de Bitrix24 no está configurada.")
+        print("Error: La URL del webhook de proyectos de Bitrix24 no está configurada.")
         return None
 
-    # URL para crear grupos de trabajo/proyectos
-    create_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "sonet_group.create.json")
+    # URL para crear grupos de trabajo/proyectos - usar webhook específico para proyectos
+    create_url = BITRIX_PROJECTS_WEBHOOK_URL
     
     # Configuración del proyecto
     project_data = {
@@ -599,6 +600,23 @@ def create_bitrix_project(project_name, description=None, request=None):
             'PROJECT_DATE_FINISH': '', # Se puede configurar fecha de fin
         }
     }
+    
+    # Asignar responsable del proyecto (vendedor de la oportunidad)
+    if vendedor_responsable:
+        try:
+            from .models import UserProfile
+            profile = UserProfile.objects.get(user=vendedor_responsable)
+            if profile.bitrix_user_id:
+                project_data['fields']['OWNER_ID'] = profile.bitrix_user_id
+                print(f"DEBUG Bitrix: Asignando proyecto al vendedor {vendedor_responsable.get_full_name()} (Bitrix ID: {profile.bitrix_user_id})")
+            else:
+                print(f"WARNING Bitrix: El vendedor {vendedor_responsable.get_full_name()} no tiene bitrix_user_id configurado")
+        except UserProfile.DoesNotExist:
+            print(f"WARNING Bitrix: No existe perfil para el vendedor {vendedor_responsable.get_full_name()}")
+        except Exception as e:
+            print(f"WARNING Bitrix: Error obteniendo perfil del vendedor: {e}")
+    else:
+        print("DEBUG Bitrix: No se especificó vendedor responsable, se asignará al creador del webhook")
     
     try:
         print(f"DEBUG Bitrix: Creando proyecto '{project_name}' en Bitrix24")
@@ -626,14 +644,14 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
     """
     Sube un archivo al drive de un proyecto específico en Bitrix24
     """
-    if not BITRIX_WEBHOOK_URL:
+    if not BITRIX_PROJECTS_WEBHOOK_URL:
         if request:
-            messages.error(request, "Error: La URL del webhook de Bitrix24 no está configurada.")
-        print("Error: La URL del webhook de Bitrix24 no está configurada.")
+            messages.error(request, "Error: La URL del webhook de proyectos de Bitrix24 no está configurada.")
+        print("Error: La URL del webhook de proyectos de Bitrix24 no está configurada.")
         return False
 
-    # Primero obtener el storage ID del proyecto
-    storage_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "disk.storage.getlist.json")
+    # Primero obtener el storage ID del proyecto - usar webhook de proyectos
+    storage_url = BITRIX_PROJECTS_WEBHOOK_URL.replace("sonet_group.create.json", "disk.storage.getlist.json")
     
     try:
         # Obtener todos los storages y buscar el del proyecto
@@ -657,7 +675,7 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
         print(f"DEBUG Bitrix: Storage del proyecto encontrado: {project_storage_id}")
         
         # Ahora subir el archivo al storage del proyecto
-        upload_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "disk.folder.uploadfile.json")
+        upload_url = BITRIX_PROJECTS_WEBHOOK_URL.replace("sonet_group.create.json", "disk.folder.uploadfile.json")
         
         upload_data = {
             'id': project_storage_id,  # ID del storage del proyecto
@@ -687,14 +705,14 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
             messages.error(request, f"Excepción al subir archivo al proyecto: {e}")
         return False
 
-def create_project_and_upload_volumetria(project_name, file_name, file_content_base64, description=None, request=None):
+def create_project_and_upload_volumetria(project_name, file_name, file_content_base64, description=None, vendedor_responsable=None, request=None):
     """
     Función completa que crea un proyecto y sube la volumetría
     """
     print(f"DEBUG Bitrix: Iniciando creación de proyecto y subida de volumetría")
     
     # 1. Crear el proyecto
-    project_id = create_bitrix_project(project_name, description, request)
+    project_id = create_bitrix_project(project_name, description, vendedor_responsable, request)
     if not project_id:
         return None
         

@@ -3153,6 +3153,7 @@ def generar_pdf_volumetria(request):
         # Obtener información del cliente y oportunidad si están disponibles
         cliente_nombre = "No especificado"
         oportunidad_nombre = "Sin oportunidad asignada"
+        vendedor_responsable = None  # Para el responsable del proyecto
         
         if data.get('cliente_id'):
             try:
@@ -3165,6 +3166,8 @@ def generar_pdf_volumetria(request):
             try:
                 oportunidad = TodoItem.objects.get(id=data['oportunidad_id'])
                 oportunidad_nombre = oportunidad.oportunidad
+                vendedor_responsable = oportunidad.usuario  # Obtener el vendedor responsable
+                print(f"DEBUG: Vendedor responsable de la oportunidad: {vendedor_responsable.get_full_name() if vendedor_responsable else 'No definido'}")
             except TodoItem.DoesNotExist:
                 pass
         
@@ -3248,6 +3251,7 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
                 file_name=filename,
                 file_content_base64=pdf_base64,
                 description=project_description,
+                vendedor_responsable=vendedor_responsable,
                 request=request
             )
             
