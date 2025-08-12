@@ -327,7 +327,7 @@ function populateClientSelectVolumetria() {
     if (!clientSelect) return;
     
     // Parse the clients data (similar to quotations)
-    fetch('/app/api/get-clientes/')
+    fetch('/app/api/clients-for-user/')
         .then(response => response.json())
         .then(clientesData => {
             clientSelect.innerHTML = '<option value="">-- Seleccione un cliente --</option>';
