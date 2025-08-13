@@ -549,7 +549,7 @@ def add_comment_with_attachment_to_deal(deal_id, file_name, file_content_base64,
             'ENTITY_ID': deal_id,
             'ENTITY_TYPE': 'deal',
             'COMMENT': comment_text,
-            'FILES': [file_data_for_api]
+            'UF_CRM_COMMENT_FILES': [file_data_for_api]
         }
     }
     
