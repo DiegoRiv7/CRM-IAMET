@@ -1062,6 +1062,9 @@ function mostrarTablaVolumetria(datos) {
     
     document.body.insertAdjacentHTML('beforeend', tablaHTML);
     
+    // Resolver nombres de cliente y oportunidad
+    resolverNombresClienteYOportunidad(datos);
+    
     // Configurar USD como moneda por defecto
     const monedaSelect = document.getElementById('moneda-select');
     if (monedaSelect) {
@@ -1069,6 +1072,63 @@ function mostrarTablaVolumetria(datos) {
         monedaActual = 'USD';
     }
     recalcularTotales(); // Recalcular una vez al inicio
+}
+
+// Función para resolver los nombres de cliente y oportunidad
+function resolverNombresClienteYOportunidad(datos) {
+    console.log('DEBUG: Resolviendo nombres para cliente ID:', datos.clienteId, 'y oportunidad ID:', datos.oportunidadId);
+    
+    // Resolver nombre del cliente
+    if (datos.clienteId) {
+        fetch(`/app/api/clients-for-user/`)
+            .then(response => response.json())
+            .then(clientes => {
+                const cliente = clientes.find(c => c.id == datos.clienteId);
+                const clienteDisplay = document.getElementById('cliente-display');
+                if (clienteDisplay && cliente) {
+                    clienteDisplay.textContent = cliente.name;
+                    console.log('DEBUG: Cliente resuelto:', cliente.name);
+                } else {
+                    console.log('ERROR: No se encontró cliente con ID:', datos.clienteId);
+                    if (clienteDisplay) {
+                        clienteDisplay.textContent = 'Cliente no encontrado';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error obteniendo clientes:', error);
+                const clienteDisplay = document.getElementById('cliente-display');
+                if (clienteDisplay) {
+                    clienteDisplay.textContent = 'Error cargando cliente';
+                }
+            });
+    }
+    
+    // Resolver nombre de la oportunidad
+    if (datos.oportunidadId && datos.clienteId) {
+        fetch(`/app/api/get-opportunities-by-client/${datos.clienteId}/`)
+            .then(response => response.json())
+            .then(oportunidades => {
+                const oportunidad = oportunidades.find(o => o.id == datos.oportunidadId);
+                const oportunidadDisplay = document.getElementById('oportunidad-display');
+                if (oportunidadDisplay && oportunidad) {
+                    oportunidadDisplay.textContent = oportunidad.oportunidad;
+                    console.log('DEBUG: Oportunidad resuelta:', oportunidad.oportunidad);
+                } else {
+                    console.log('ERROR: No se encontró oportunidad con ID:', datos.oportunidadId);
+                    if (oportunidadDisplay) {
+                        oportunidadDisplay.textContent = 'Oportunidad no encontrada';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error obteniendo oportunidades:', error);
+                const oportunidadDisplay = document.getElementById('oportunidad-display');
+                if (oportunidadDisplay) {
+                    oportunidadDisplay.textContent = 'Error cargando oportunidad';
+                }
+            });
+    }
 }
 
 // Función para generar las filas de la tabla
