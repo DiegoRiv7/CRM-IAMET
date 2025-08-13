@@ -352,10 +352,31 @@ function precargarClienteYOportunidad(clientSelect) {
     console.log('DEBUG: Verificando datos de oportunidad precargada:', window.oportunidadPrecargada);
     
     if (window.oportunidadPrecargada && window.oportunidadPrecargada.cliente_id) {
-        console.log('DEBUG: Precargando cliente ID:', window.oportunidadPrecargada.cliente_id);
+        const clienteId = window.oportunidadPrecargada.cliente_id;
+        const clienteNombre = window.oportunidadPrecargada.cliente_nombre;
+        console.log(`DEBUG: Precargando cliente ID: ${clienteId}, Nombre: ${clienteNombre}`);
         
-        // Seleccionar el cliente
-        clientSelect.value = window.oportunidadPrecargada.cliente_id;
+        // Verificar si el cliente ya existe en el select
+        let optionExists = false;
+        for (let i = 0; i < clientSelect.options.length; i++) {
+            if (clientSelect.options[i].value == clienteId) {
+                optionExists = true;
+                break;
+            }
+        }
+        
+        // Si no existe, añadirlo
+        if (!optionExists) {
+            console.log('DEBUG: El cliente no estaba en la lista, agregándolo.');
+            const option = document.createElement('option');
+            option.value = clienteId;
+            option.textContent = clienteNombre;
+            option.selected = true;
+            clientSelect.appendChild(option);
+        } else {
+            console.log('DEBUG: El cliente ya estaba en la lista.');
+            clientSelect.value = clienteId;
+        }
         
         // Disparar evento de cambio para cargar oportunidades
         const event = new Event('change');
@@ -1985,57 +2006,105 @@ function obtenerItemsTabla() {
     return items;
 }
 
-// Función para obtener datos de la volumetría actual
 function obtenerDatosVolumetriaActual() {
-    const tabla = document.getElementById('tabla-volumetria');
-    if (!tabla) return null;
+    // Start with the globally stored project data, which has the core IDs and technical specs
+    if (!window.currentVolumetriaData) {
+        console.error("No se encontraron datos de volumetría actuales (window.currentVolumetriaData).");
+        return null;
+    }
+    // Create a mutable copy
+    let datos = { ...window.currentVolumetriaData };
+
+    // Add table items from the DOM
+    datos.items = obtenerItemsTabla();
+    if (!datos.items || datos.items.length === 0) {
+        console.error("No se encontraron items en la tabla.");
+        // Don't fail here, maybe the user wants to save an empty volumetry
+    }
+
+    // Add final calculated totals from the summary display DOM elements
+    datos.subtotal = parseFloat(document.getElementById('subtotal-display').textContent.replace(/[^0-9.-]+/g, '')) || 0;
+    datos.iva = parseFloat(document.getElementById('monto-iva').textContent.replace(/[^0-9.-]+/g, '')) || 0;
+    datos.total = parseFloat(document.getElementById('total-cliente').textContent.replace(/[^0-9.-]+/g, '')) || 0;
+    datos.ganancia_total = parseFloat(document.getElementById('ganancia-display').textContent.replace(/[^0-9.-]+/g, '')) || 0;
+    datos.margen_utilidad = parseFloat(document.getElementById('margen-utilidad-display').textContent.replace(/[^0-9.-]+/g, '')) || 0;
+
+    // Add timestamp for local storage
+    datos.fecha = new Date().toLocaleDateString('es-ES');
+    datos.timestamp = Date.now();
     
-    // Obtener datos del resumen del proyecto
-    const resumenElements = document.querySelectorAll('.project-summary .grid > div');
-    let datos = {
-        fecha: new Date().toLocaleDateString('es-ES'),
-        timestamp: Date.now()
-    };
+    console.log("DEBUG: Datos de volumetría actualizados y completos:", datos);
+    return datos;
+}
+
+// Función para exportar a PDF y guardar volumetría
+function exportarPDF() {
+    const datosVolumetria = obtenerDatosVolumetriaActual();
     
-    // Obtener IDs guardados globalmente (si están disponibles)
-    if (window.currentVolumetriaData) {
-        datos.clienteId = window.currentVolumetriaData.clienteId;
-        datos.oportunidadId = window.currentVolumetriaData.oportunidadId;
+    if (!datosVolumetria) {
+        Swal.fire('Error', 'No se pudieron obtener los datos completos de la volumetría para generar el PDF.', 'error');
+        return;
     }
     
-    // Extraer información del proyecto desde el resumen visible
-    const nombreElement = document.querySelector('#resumen-volumetria .apple-glass-card:last-child');
-    if (nombreElement) {
-        const projectInfoElements = nombreElement.querySelectorAll('.flex.justify-between');
-        projectInfoElements.forEach(element => {
-            const text = element.textContent;
-            if (text.includes('Nombre:')) datos.nombreVolumetria = text.split('Nombre:')[1].trim();
-            if (text.includes('Cliente:')) datos.clienteNombre = text.split('Cliente:')[1].trim();
-            if (text.includes('Usuario Final:')) datos.usuarioFinal = text.split('Usuario Final:')[1].trim();
-            if (text.includes('Oportunidad:')) datos.oportunidadNombre = text.split('Oportunidad:')[1].trim();
-        });
-    }
+    // Guardar en localStorage
+    guardarVolumetria('nodos', datosVolumetria);
     
-    // Extraer información del resumen técnico
-    resumenElements.forEach(element => {
-        const text = element.textContent;
-        if (text.includes('Categoría:')) datos.categoria = text.split(':')[1].trim();
-        if (text.includes('Nodos:')) datos.cantidadNodos = parseInt(text.split(':')[1].trim());
-        if (text.includes('Distancia:')) datos.distancia = parseFloat(text.split(':')[1].replace('m', '').trim());
-        if (text.includes('Cable:')) datos.color = text.split(':')[1].trim();
+    Swal.fire({
+        title: 'Procesando Volumetría',
+        html: '📄 Generando PDF y preparando cotización...', 
+        icon: 'info',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
     });
     
-    // Obtener totales
-    const totalClienteElement = document.getElementById('total-cliente');
-    if (totalClienteElement) {
-        const totalText = totalClienteElement.textContent.replace(/[^0-9.-]+/g, '');
-        datos.totalCliente = parseFloat(totalText) || 0;
-    }
+    // The payload for the API is the entire data object.
+    // The backend will pick what it needs.
+    const pdfData = datosVolumetria;
     
-    // Generar nombre automático
-    datos.nombre = `Volumetría Nodos ${datos.categoria || ''} - ${datos.cantidadNodos || 0} nodos`;
-    
-    return datos;
+    fetch('/app/api/generar-pdf-volumetria/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(pdfData)
+    })
+    .then(response => {
+        if (response.ok) {
+            const filenameDisposition = response.headers.get('Content-Disposition');
+            let filename = "volumetria.pdf"; // default
+            if (filenameDisposition) {
+                const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(filenameDisposition);
+                if (matches != null && matches[1]) { 
+                  filename = matches[1].replace(/['"]/g, '');
+                }
+            }
+            return response.blob().then(blob => ({ blob, filename }));
+        }
+        return response.json().then(err => { throw new Error(err.error || 'Error al generar el PDF') });
+    })
+    .then(({ blob, filename }) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        console.log('PDF generado exitosamente, creando cotización automática...');
+        crearCotizacionAutomatica(datosVolumetria);
+    })
+    .catch(error => {
+        console.error('Error generando PDF:', error);
+        Swal.fire('Error de PDF', error.message, 'error');
+        // Still try to create the quote
+        crearCotizacionAutomatica(datosVolumetria);
+    });
 }
 
 // Función para guardar volumetría
@@ -2123,154 +2192,456 @@ function editarVolumetria(tipo, index) {
 }
 
 // Función para precargar datos en el formulario
-function precargarDatosFormulario(volumetria) {
-    // Información del proyecto
-    if (volumetria.nombreVolumetria) document.getElementById('nombre-volumetria').value = volumetria.nombreVolumetria;
-    if (volumetria.usuarioFinal) document.getElementById('usuario-final').value = volumetria.usuarioFinal;
+function precargarDatosFormulario() {
+    if (!window.oportunidadPrecargada) return;
     
-    // Configuración técnica
-    if (volumetria.categoria) document.getElementById('categoria').value = volumetria.categoria;
-    if (volumetria.color) document.getElementById('color').value = volumetria.color;
-    if (volumetria.distancia) document.getElementById('distancia').value = volumetria.distancia;
-    if (volumetria.cantidadNodos) document.getElementById('cantidad-nodos').value = volumetria.cantidadNodos;
+    const data = window.oportunidadPrecargada;
+    
+    const nombreInput = document.getElementById('nombre-volumetria');
+    if (nombreInput && !nombreInput.value) {
+        const nombreSugerido = `Volumetría - ${data.oportunidad_nombre}`;
+        nombreInput.value = nombreSugerido;
+    }
+    
+    const oportunidadSelect = document.getElementById('oportunidad-volumetria');
+    if (oportunidadSelect && data.oportunidad_id) {
+        // Dar tiempo a que se carguen las oportunidades del cliente
+        setTimeout(() => {
+            let opt = oportunidadSelect.querySelector(`option[value="${data.oportunidad_id}"]`);
+            if (opt) {
+                oportunidadSelect.value = data.oportunidad_id;
+            } else {
+                opt = document.createElement('option');
+                opt.value = data.oportunidad_id;
+                opt.textContent = data.oportunidad_nombre;
+                opt.selected = true;
+                oportunidadSelect.appendChild(opt);
+            }
+        }, 800); // Aumentar delay para asegurar carga de oportunidades
+    }
+    
+    console.log('DEBUG: Campos precargados con datos de oportunidad');
 }
 
-// Función para agregar una nueva fila
-function agregarFila() {
-    const tabla = document.getElementById('tabla-items');
-    const filasActuales = tabla.children.length - 1; // Excluir fila de totales
+// Función para configurar listener de cambio de cliente
+function setupOpportunityChangeListener() {
+    const clientSelect = document.getElementById('cliente-volumetria');
+    const oportunidadSelect = document.getElementById('oportunidad-volumetria');
     
-    // Crear nueva fila con valores por defecto
-    const nuevaFila = `
-        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700" data-fila="${filasActuales}">
-            <td class="border border-gray-300 dark:border-gray-600 p-2 font-mono text-xs editable" contenteditable="true">NUEVO-ITEM</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${filasActuales}, 1)">1</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 editable" contenteditable="true">Nuevo Producto</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right editable" contenteditable="true" onblur="manejarCambioTabla(this, ${filasActuales}, 3)" data-tipo="precio">$0.00</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${filasActuales}, 4)" data-tipo="porcentaje">0%</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right">$0.00</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-blue-600">$0.00</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-center editable" contenteditable="true" onblur="manejarCambioTabla(this, ${filasActuales}, 7)" data-tipo="porcentaje">0%</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right">$0.00</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-green-600">$0.00</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-right font-semibold text-purple-600">$0.00</td>
-            <td class="border border-gray-300 dark:border-gray-600 p-2 text-center">
-                <button onclick="eliminarFila(${filasActuales})" class="delete-btn">×</button>
-            </td>
-        </tr>
+    if (!clientSelect || !oportunidadSelect) return;
+    
+    clientSelect.addEventListener('change', function() {
+        const clienteId = this.value;
+        oportunidadSelect.innerHTML = '<option value="">-- Seleccione una oportunidad --</option>';
+        
+        if (!clienteId) return;
+        
+        // Fetch opportunities for the selected client
+        fetch(`/app/api/get-oportunidades-por-cliente/?cliente_id=${clienteId}`)
+            .then(response => response.json())
+            .then(oportunidades => {
+                oportunidades.forEach(oportunidad => {
+                    const option = document.createElement('option');
+                    option.value = oportunidad.id;
+                    option.textContent = oportunidad.nombre;
+                    oportunidadSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error cargando oportunidades:', error);
+            });
+    });
+}
+
+// Función para mostrar el formulario de nodos de red
+function mostrarFormularioNodos() {
+    // Ocultar contenido principal
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.style.display = 'none';
+    }
+    
+    const formularioHTML = `
+        <div id="formulario-nodos" class="min-h-screen apple-bg">
+            <div class="apple-bg min-h-screen">
+                <div class="apple-glass-card p-6 mx-4 animate-fade-in">
+                    <div class="flex items-center justify-between mb-8">
+                        <div class="flex items-center space-x-4">
+                            <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
+                                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 class="text-3xl font-bold apple-text-primary">
+                                    Formulario Nodos de Red
+                                </h1>
+                                <p class="apple-text-secondary mt-1">
+                                    Configuración de volumetría para infraestructura de red
+                                </p>
+                            </div>
+                        </div>
+                        <button onclick="cerrarFormulario()" class="apple-btn-secondary font-medium py-2 px-6 transition duration-200">
+                            ← Regresar
+                        </button>
+                    </div>
+                
+                    <form id="form-nodos" class="space-y-8">
+                    
+                    <!-- Información del Proyecto -->
+                    <div class="border-b border-gray-200 dark:border-gray-700 pb-6">
+                        <h3 class="text-lg font-medium apple-text-primary mb-4">Información del Proyecto</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Nombre de la Volumetría</label>
+                                <input type="text" id="nombre-volumetria" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: Volumetría Campus Universitario" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Cliente</label>
+                                <div class="flex items-center space-x-2">
+                                    <select id="cliente-volumetria" class="flex-grow px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                                        <option value="">-- Seleccione un cliente --</option>
+                                    </select>
+                                    <button type="button" class="apple-btn-secondary py-2 px-3 text-sm">+</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Usuario Final</label>
+                                <input type="text" id="usuario-final" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: Juan Pérez">
+                                <p class="text-xs mt-1 apple-text-secondary">💡 Persona de contacto específica del cliente</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Oportunidad Bitrix24</label>
+                                <div class="flex items-center space-x-2">
+                                    <select id="oportunidad-volumetria" class="flex-grow px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500">
+                                        <option value="">-- Seleccione una oportunidad --</option>
+                                    </select>
+                                    <button type="button" class="apple-btn-secondary py-2 px-3 text-sm">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Configuración Técnica -->
+                    <div>
+                        <h3 class="text-lg font-medium apple-text-primary mb-4">Configuración Técnica</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium apple-text-primary mb-2">Categoría</label>
+                            <select id="categoria" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="CAT6A">CAT6A</option>
+                                <option value="CAT6">CAT6</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium apple-text-primary mb-2">Color del Cable</label>
+                            <select id="color" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="azul">Azul</option>
+                                <option value="gris">Gris</option>
+                                <option value="amarillo">Amarillo</option>
+                                <option value="verde">Verde</option>
+                                <option value="rojo">Rojo</option>
+                                <option value="negro">Negro</option>
+                                <option value="blanco">Blanco</option>
+                                <option value="naranja">Naranja</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium apple-text-primary mb-2">Distancia (metros)</label>
+                            <input type="number" id="distancia" min="1" step="0.1" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: 100.5">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium apple-text-primary mb-2">Cantidad de Nodos</label>
+                            <input type="number" id="cantidad-nodos" min="1" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: 50">
+                        </div>
+                    </div>
+                    
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                        <h3 class="text-lg font-medium apple-text-primary mb-4">Colores de Jack</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Color del Jack Usuario</label>
+                                <select id="color-jack-usuario" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="azul">Azul</option>
+                                    <option value="gris">Gris</option>
+                                    <option value="amarillo">Amarillo</option>
+                                    <option value="verde">Verde</option>
+                                    <option value="rojo">Rojo</option>
+                                    <option value="negro">Negro</option>
+                                    <option value="blanco">Blanco</option>
+                                    <option value="naranja">Naranja</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Color del Jack Patchpanel</label>
+                                <select id="color-jack-patchpanel" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="azul">Azul</option>
+                                    <option value="gris">Gris</option>
+                                    <option value="amarillo">Amarillo</option>
+                                    <option value="verde">Verde</option>
+                                    <option value="rojo">Rojo</option>
+                                    <option value="negro">Negro</option>
+                                    <option value="blanco">Blanco</option>
+                                    <option value="naranja">Naranja</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                        <h3 class="text-lg font-medium apple-text-primary mb-4">Colores de Patchcord</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Color del Patchcord Usuario</label>
+                                <select id="color-patchcord-usuario" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="azul">Azul</option>
+                                    <option value="gris">Gris</option>
+                                    <option value="amarillo">Amarillo</option>
+                                    <option value="verde">Verde</option>
+                                    <option value="rojo">Rojo</option>
+                                    <option value="negro">Negro</option>
+                                    <option value="blanco">Blanco</option>
+                                    <option value="naranja">Naranja</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Color del Patchcord Patchpanel</label>
+                                <select id="color-patchcord-patchpanel" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="azul">Azul</option>
+                                    <option value="gris">Gris</option>
+                                    <option value="amarillo">Amarillo</option>
+                                    <option value="verde">Verde</option>
+                                    <option value="rojo">Rojo</option>
+                                    <option value="negro">Negro</option>
+                                    <option value="blanco">Blanco</option>
+                                    <option value="naranja">Naranja</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                        <div class="flex justify-center space-x-4 pt-8 border-t border-gray-200 dark:border-gray-700 mt-8">
+                            <button type="button" onclick="cerrarFormulario()" class="apple-btn-secondary font-medium py-3 px-8 transition duration-200">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="apple-btn-primary font-medium py-3 px-8 transition duration-200 shadow-lg">
+                                Crear Volumetría
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     `;
     
-    // Insertar antes de la fila de totales (última fila)
-    const filaTotales = tabla.children[tabla.children.length - 1];
-    filaTotales.insertAdjacentHTML('beforebegin', nuevaFila);
+    document.body.insertAdjacentHTML('beforeend', formularioHTML);
     
-    // Recalcular totales
-    recalcularTotales();
+    // Agregar event listener al formulario
+    document.getElementById('form-nodos').addEventListener('submit', function(e) {
+        e.preventDefault();
+        procesarFormularioNodos();
+    });
+    
+    // Poblar selectores de cliente y oportunidad
+    populateClientSelectVolumetria();
+    setupOpportunityChangeListener();
 }
 
-// Función para eliminar una fila
-function eliminarFila(indice) {
-    const tabla = document.getElementById('tabla-items');
-    const filas = tabla.children;
+// Función para cerrar el formulario
+function cerrarFormulario() {
+    const formulario = document.getElementById('formulario-nodos');
+    if (formulario) {
+        formulario.remove();
+    }
     
-    // No permitir eliminar si solo hay una fila de producto (más la de totales)
-    if (filas.length <= 2) {
-        alert('Debe mantener al menos un producto en la tabla');
+    // Mostrar contenido principal de nuevo
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.style.display = 'block';
+    }
+}
+
+// Función para procesar el formulario de nodos
+function procesarFormularioNodos() {
+    // Información del proyecto
+    const nombreVolumetria = document.getElementById('nombre-volumetria').value;
+    const clienteId = document.getElementById('cliente-volumetria').value;
+    const usuarioFinal = document.getElementById('usuario-final').value;
+    const oportunidadId = document.getElementById('oportunidad-volumetria').value;
+    
+    // Configuración técnica
+    const categoria = document.getElementById('categoria').value;
+    const color = document.getElementById('color').value;
+    const distancia = parseFloat(document.getElementById('distancia').value);
+    const cantidadNodos = parseInt(document.getElementById('cantidad-nodos').value);
+    const colorJackUsuario = document.getElementById('color-jack-usuario').value;
+    const colorJackPatchpanel = document.getElementById('color-jack-patchpanel').value;
+    const colorPatchcordUsuario = document.getElementById('color-patchcord-usuario').value;
+    const colorPatchcordPatchpanel = document.getElementById('color-patchcord-patchpanel').value;
+    
+    // Validaciones proyecto
+    if (!nombreVolumetria.trim()) {
+        alert('Por favor, ingresa el nombre de la volumetría');
         return;
     }
     
-    // Encontrar la fila por el data-fila o por índice
-    for (let i = 0; i < filas.length - 1; i++) { // Excluir fila de totales
-        const fila = filas[i];
-        if (fila.getAttribute('data-fila') == indice || i == indice) {
-            fila.remove();
-            break;
+    if (!clienteId) {
+        alert('Por favor, selecciona un cliente');
+        return;
+    }
+    
+    // Validaciones técnicas
+    if (!distancia || distancia <= 0) {
+        alert('Por favor, ingresa una distancia válida');
+        return;
+    }
+    
+    if (!cantidadNodos || cantidadNodos <= 0) {
+        alert('Por favor, ingresa una cantidad de nodos válida');
+        return;
+    }
+    
+    cerrarFormulario();
+    mostrarAnimacionCarga();
+    
+    // Simular procesamiento
+    setTimeout(() => {
+        generarVolumetria({
+            // Información del proyecto
+            nombreVolumetria,
+            clienteId,
+            usuarioFinal,
+            oportunidadId,
+            // Configuración técnica
+            categoria,
+            color,
+            distancia,
+            cantidadNodos,
+            colorJackUsuario,
+            colorJackPatchpanel,
+            colorPatchcordUsuario,
+            colorPatchcordPatchpanel
+        });
+    }, 2000);
+}
+
+// Función para mostrar animación de carga
+function mostrarAnimacionCarga() {
+    const loadingHTML = `
+        <div id="loading-volumetria" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-2xl text-center max-w-md">
+                <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">Generando Volumetría</h3>
+                <p class="text-gray-600 dark:text-gray-300">Calculando precios y creando tablas...</p>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', loadingHTML);
+}
+
+// Función para cerrar la animación de carga
+function cerrarAnimacionCarga() {
+    const loading = document.getElementById('loading-volumetria');
+    if (loading) {
+        loading.remove();
+    }
+}
+
+// Función para generar la volumetría
+function generarVolumetria(datos) {
+    // Guardar datos globalmente para el PDF
+    window.currentVolumetriaData = datos;
+    
+    cerrarAnimacionCarga();
+
+    // Calcular cantidades automáticas
+    const totalMetrosCable = datos.distancia * datos.cantidadNodos;
+    const cantidadCable = Math.ceil(totalMetrosCable / 305);
+    const cantidadFaceplates = datos.cantidadNodos;
+    const cantidadJacksUsuario = datos.cantidadNodos; // 1 por nodo
+    const cantidadJacksPatchpanel = datos.cantidadNodos; // 1 por nodo
+    const cantidadPatchcordsUsuario = datos.cantidadNodos; // 1 por nodo (color usuario)
+    const cantidadPatchcordsPatchpanel = datos.cantidadNodos; // 1 por nodo (color patchpanel)
+
+    // Crear tabla de volumetría
+    mostrarTablaVolumetria({
+        ...datos,
+        cantidadCable,
+        cantidadFaceplates,
+        cantidadJacksUsuario,
+        cantidadJacksPatchpanel,
+        cantidadPatchcordsUsuario,
+        cantidadPatchcordsPatchpanel
+    });
+}
+
+// Función para exportar a PDF y guardar volumetría
+function exportarPDF() {
+    const datosVolumetria = obtenerDatosVolumetriaActual();
+    
+    if (!datosVolumetria) {
+        Swal.fire('Error', 'No se pudieron obtener los datos completos de la volumetría para generar el PDF.', 'error');
+        return;
+    }
+    
+    // Guardar en localStorage
+    guardarVolumetria('nodos', datosVolumetria);
+    
+    Swal.fire({
+        title: 'Procesando Volumetría',
+        html: '📄 Generando PDF y preparando cotización...',
+        icon: 'info',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+            Swal.showLoading();
         }
-    }
+    });
     
-    // Reindexar las filas restantes
-    reindexarFilas();
+    // The payload for the API is the entire data object
+    const pdfData = datosVolumetria;
     
-    // Recalcular totales
-    recalcularTotales();
-}
-
-// Función para reindexar las filas después de eliminar
-function reindexarFilas() {
-    const tabla = document.getElementById('tabla-items');
-    const filas = tabla.children;
-    
-    for (let i = 0; i < filas.length - 1; i++) { // Excluir fila de totales
-        const fila = filas[i];
-        fila.setAttribute('data-fila', i);
-        
-        // Actualizar los eventos onblur con el nuevo índice
-        const celdas = fila.children;
-        if (celdas[1].hasAttribute('onblur')) celdas[1].setAttribute('onblur', `manejarCambioTabla(this, ${i}, 1)`);
-        if (celdas[3].hasAttribute('onblur')) celdas[3].setAttribute('onblur', `manejarCambioTabla(this, ${i}, 3)`);
-        if (celdas[4].hasAttribute('onblur')) celdas[4].setAttribute('onblur', `manejarCambioTabla(this, ${i}, 4)`);
-        if (celdas[7].hasAttribute('onblur')) celdas[7].setAttribute('onblur', `manejarCambioTabla(this, ${i}, 7)`);
-        
-        // Actualizar botón de eliminar
-        const botonEliminar = celdas[11].querySelector('.delete-btn');
-        if (botonEliminar) {
-            botonEliminar.setAttribute('onclick', `eliminarFila(${i})`);
+    fetch('/app/api/generar-pdf-volumetria/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(pdfData)
+    })
+    .then(response => {
+        if (response.ok) {
+            const filename = response.headers.get('Content-Disposition').split('filename=')[1].replace(/"/g, '');
+            return response.blob().then(blob => ({ blob, filename }));
         }
-    }
+        return response.json().then(err => { throw new Error(err.error || 'Error al generar el PDF') });
+    })
+    .then(({ blob, filename }) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        console.log('PDF generado exitosamente, creando cotización automática...');
+        crearCotizacionAutomatica(datosVolumetria);
+    })
+    .catch(error => {
+        console.error('Error generando PDF:', error);
+        Swal.fire('Error de PDF', error.message, 'error');
+        // Still try to create the quote
+        crearCotizacionAutomatica(datosVolumetria);
+    });
 }
-
-// Función para manejar cambios en celdas editables con formateo automático
-function manejarCambioTabla(elemento, fila, columna) {
-    const tipoElemento = elemento.getAttribute('data-tipo');
-    let valorTexto = elemento.textContent.trim();
-    
-    // Aplicar formato automático según el tipo
-    if (tipoElemento === 'porcentaje') {
-        // Extraer solo números y punto decimal
-        const numeroSolo = valorTexto.replace(/[^0-9.-]/g, '');
-        const valor = parseFloat(numeroSolo) || 0;
-        elemento.textContent = valor + '%';
-    } else if (tipoElemento === 'precio') {
-        // Extraer solo números y punto decimal
-        const numeroSolo = valorTexto.replace(/[^0-9.-]/g, '');
-        const valor = parseFloat(numeroSolo) || 0;
-        elemento.textContent = formatearMoneda(valor);
-    }
-    
-    const valor = parseFloat(elemento.textContent.replace(/[^0-9.-]+/g, '')) || 0;
-    const tabla = document.getElementById('tabla-items');
-    const filaElemento = tabla.children[fila];
-    
-    // Recalcular la fila con la nueva estructura
-    const cantidad = parseFloat(filaElemento.children[1].textContent) || 0;
-    const precioLista = parseFloat(filaElemento.children[3].textContent.replace(/[^0-9.-]+/g, '')) || 0;
-    const descuentoCliente = parseFloat(filaElemento.children[4].textContent.replace('%', '')) || 0;
-    const descuentoProveedor = parseFloat(filaElemento.children[7].textContent.replace('%', '')) || 0;
-    
-    const precioUnitario = precioLista * (1 - descuentoCliente / 100);
-    const totalCliente = precioUnitario * cantidad;
-    const costoUnitario = precioLista * (1 - descuentoProveedor / 100);
-    const totalCosto = costoUnitario * cantidad;
-    const ganancia = totalCliente - totalCosto;
-    
-    // Actualizar valores calculados
-    filaElemento.children[5].textContent = formatearPesos(precioUnitario); // Precio Unitario
-    filaElemento.children[6].textContent = formatearPesos(totalCliente);   // Total Cliente
-    filaElemento.children[8].textContent = formatearPesos(costoUnitario);  // Costo Unitario
-    filaElemento.children[9].textContent = formatearPesos(totalCosto);     // Total Costo
-    filaElemento.children[10].textContent = formatearPesos(ganancia);      // Ganancia
-    
-    // Recalcular totales
-    recalcularTotales();
-}
-
-let volumetriaConfig = { cantidadNodos: 1 };
-
-// Script de inicialización al cargar la página principal
-document.addEventListener('DOMContentLoaded', function() {
-    // Ejecutar precarga de datos de oportunidad si están disponibles
-    precargarDatosOportunidad();
-});
 
 // Función para recalcular totales de la tabla y actualizar el resumen
 function recalcularTotales() {
