@@ -698,14 +698,13 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
         print(f"DEBUG Bitrix: Confirmando upload_data['id'] antes de enviar: {upload_data['id']}")
         # Prepare the file for multipart/form-data upload
         files = {
-            'fileContent': (file_name, base64.b64decode(file_content_base64))
+            'fileContent': base64.b64decode(file_content_base64)
         }
 
-        # Prepare the data payload (id and other optional parameters)
+        # Prepare the data payload (id and file_name)
         data_payload = {
             'id': project_storage_id,
-            # Add other optional parameters here if needed, e.g., 'data[NAME]': file_name
-            # For now, let's keep it minimal
+            'name': file_name # Explicitly pass file_name as a data parameter
         }
 
         # Send the request as multipart/form-data
