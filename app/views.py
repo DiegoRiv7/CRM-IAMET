@@ -3324,7 +3324,9 @@ def crear_cotizacion_desde_volumetria(request):
         print(f"ERROR: Método no permitido: {request.method}")
         return JsonResponse({'error': 'Método no permitido'}, status=405)
     
+    print(f"DEBUG: Llegamos después del check de método")
     print(f"DEBUG: Request body: {request.body}")
+    print(f"DEBUG: About to parse JSON")
     data = json.loads(request.body)
     print(f"DEBUG: JSON parseado exitosamente")
     print(f"DEBUG: Creando cotización desde volumetría: {data}")
