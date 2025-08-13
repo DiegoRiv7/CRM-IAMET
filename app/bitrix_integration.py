@@ -687,9 +687,6 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
 
         upload_data = {
             'id': project_storage_id,  # ID del storage del proyecto
-            'data': {
-                'NAME': file_name
-            },
             'fileContent': [file_name, file_content_base64]
         }
 
