@@ -9,6 +9,7 @@ from django.http import JsonResponse
 
 BITRIX_WEBHOOK_URL = os.getenv("BITRIX_WEBHOOK_URL")
 BITRIX_PROJECTS_WEBHOOK_URL = os.getenv("BITRIX_PROJECTS_WEBHOOK_URL", "https://bajanet.bitrix24.mx/rest/86/hwpxu5dr31b6wve3/sonet_group.create.json")
+BITRIX_DISK_UPLOAD_WEBHOOK_URL = os.getenv("BITRIX_DISK_UPLOAD_WEBHOOK_URL")
 
 def get_or_create_bitrix_company(company_name, email=None, contact_name=None, request=None):
     normalized_company_name = company_name.strip().upper() # Normalizar el nombre
@@ -683,8 +684,8 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
         print(f"DEBUG Bitrix: Storage del proyecto encontrado: {project_storage_id}")
 
         # Ahora subir el archivo al storage del proyecto
-        # Use BITRIX_PROJECTS_WEBHOOK_URL as base for project disk operations
-        upload_url = BITRIX_PROJECTS_WEBHOOK_URL.replace("sonet_group.create.json", "disk.folder.uploadfile.json")
+        # Use the new dedicated webhook for disk uploads
+        upload_url = BITRIX_DISK_UPLOAD_WEBHOOK_URL
 
         upload_data = {
             'id': project_storage_id,  # ID del storage del proyecto
