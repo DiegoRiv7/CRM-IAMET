@@ -683,7 +683,8 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
         print(f"DEBUG Bitrix: Storage del proyecto encontrado: {project_storage_id}")
 
         # Ahora subir el archivo al storage del proyecto
-        upload_url = BITRIX_PROJECTS_WEBHOOK_URL.replace("sonet_group.create.json", "disk.folder.uploadfile.json")
+        # Use BITRIX_WEBHOOK_URL as base, assuming it has disk permissions
+        upload_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "disk.folder.uploadfile.json")
 
         upload_data = {
             'id': project_storage_id,  # ID del storage del proyecto
