@@ -689,6 +689,68 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
 
         print(f"DEBUG Bitrix: Storage del proyecto encontrado: {project_storage_id}, Carpeta raíz: {root_folder_id}")
 
+        # MÉTODO SIMPLIFICADO: Usar misma estrategia que funciona para cotizaciones
+        print(f"DEBUG Bitrix: Intentando subida SIMPLIFICADA usando método probado")
+        print(f"DEBUG Bitrix: Archivo: {file_name}")
+        print(f"DEBUG Bitrix: Storage ID: {project_storage_id}, Root: {root_folder_id}")
+        
+        try:
+            # Usar el endpoint más simple que sabemos que funciona
+            simple_upload_url = BITRIX_PROJECTS_WEBHOOK_URL.replace("sonet_group.create.json", "disk.folder.uploadfile.json")
+            
+            print(f"DEBUG Bitrix: URL simplificada: {simple_upload_url}")
+            print(f"DEBUG Bitrix: Intentando con root folder ID: {root_folder_id}")
+            
+            # Formato simple - igual que funciona en cotizaciones
+            simple_data = {
+                'id': root_folder_id,
+                'fileContent': [file_name, file_content_base64]
+            }
+            
+            print(f"DEBUG Bitrix: Enviando petición simple...")
+            response = requests.post(simple_upload_url, json=simple_data, timeout=20)
+            
+            print(f"DEBUG Bitrix: Status: {response.status_code}")
+            print(f"DEBUG Bitrix: Response: {response.text[:200]}...")
+            
+            if response.status_code == 200:
+                result = response.json()
+                if 'result' in result and result['result']:
+                    print(f"SUCCESS Bitrix: Archivo subido con método simple!")
+                    return True
+                else:
+                    print(f"WARNING Bitrix: Respuesta sin resultado: {result}")
+            else:
+                print(f"ERROR Bitrix: Status {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            print(f"ERROR Bitrix: Excepción en método simple: {e}")
+        
+        # Si falla, intentar con storage ID en lugar de root folder
+        try:
+            print(f"DEBUG Bitrix: Intentando con storage ID en lugar de root folder...")
+            simple_data_storage = {
+                'id': project_storage_id,
+                'fileContent': [file_name, file_content_base64]
+            }
+            
+            response2 = requests.post(simple_upload_url, json=simple_data_storage, timeout=20)
+            print(f"DEBUG Bitrix: Status método 2: {response2.status_code}")
+            print(f"DEBUG Bitrix: Response método 2: {response2.text[:200]}...")
+            
+            if response2.status_code == 200:
+                result2 = response2.json()
+                if 'result' in result2 and result2['result']:
+                    print(f"SUCCESS Bitrix: Archivo subido con storage ID!")
+                    return True
+                    
+        except Exception as e:
+            print(f"ERROR Bitrix: Excepción método 2: {e}")
+        
+        print(f"ERROR Bitrix: Ambos métodos simples fallaron")
+        return False
+        
+        # TODO: Código complejo comentado hasta resolver issue simple
         # Intentar múltiples métodos de subida
         print(f"DEBUG Bitrix: Iniciando subida de archivo '{file_name}' al proyecto {project_id}")
         
