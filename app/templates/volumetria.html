@@ -290,9 +290,25 @@ function precargarDatosOportunidad() {
                     
                     clienteSelect.value = oportunidadData.cliente_id;
                     
+                    // Forzar actualización visual del select (múltiples métodos)
+                    clienteSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                    
+                    // Método adicional: forzar re-renderizado
+                    setTimeout(() => {
+                        clienteSelect.style.display = 'none';
+                        clienteSelect.offsetHeight; // Trigger reflow
+                        clienteSelect.style.display = '';
+                    }, 10);
+                    
                     // Verificar si se seleccionó correctamente
                     if (clienteSelect.value === oportunidadData.cliente_id) {
                         console.log('DEBUG: Cliente auto-seleccionado exitosamente:', oportunidadData.cliente_id);
+                        
+                        // Actualizar el texto mostrado del select (solución para problema visual)
+                        const selectedOption = clienteSelect.options[clienteSelect.selectedIndex];
+                        if (selectedOption) {
+                            console.log('DEBUG: Texto del cliente seleccionado:', selectedOption.text);
+                        }
                         
                         // Cargar oportunidades del cliente
                         cargarOportunidadesPorCliente(oportunidadData.cliente_id);
