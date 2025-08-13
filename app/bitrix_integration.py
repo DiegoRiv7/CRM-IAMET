@@ -646,19 +646,38 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
     
     try:
         # Obtener todos los storages y buscar el del proyecto
-        storage_response = requests.post(storage_url, json={
-            'filter': {
-                'ENTITY_ID': project_id,
-                'ENTITY_TYPE': 'group'
-            }
-        })
-        storage_response.raise_for_status()
-        storage_data = storage_response.json()
-
         project_storage_id = None
-        if 'result' in storage_data and len(storage_data['result']) > 0:
-            # If filtered, there should be only one result
-            project_storage_id = storage_data['result'][0].get('id')
+    max_retries = 5
+    retry_delay = 2 # seconds
+
+    for attempt in range(max_retries):
+        try:
+            print(f"DEBUG Bitrix: Intento {attempt + 1}/{max_retries} para encontrar storage del proyecto {project_id}")
+            storage_response = requests.post(storage_url, json={
+                'filter': {
+                    'ENTITY_ID': project_id,
+                    'ENTITY_TYPE': 'group'
+                }
+            })
+            storage_response.raise_for_status()
+            storage_data = storage_response.json()
+
+            if 'result' in storage_data and len(storage_data['result']) > 0:
+                project_storage_id = storage_data['result'][0].get('id')
+                if project_storage_id:
+                    print(f"DEBUG Bitrix: Storage del proyecto {project_id} encontrado en el intento {attempt + 1}: {project_storage_id}")
+                    break # Found it, exit loop
+            
+            print(f"DEBUG Bitrix: Storage no encontrado en intento {attempt + 1}. Reintentando en {retry_delay} segundos...")
+            time.sleep(retry_delay) # Wait before retrying
+
+        except requests.exceptions.RequestException as e:
+            print(f"DEBUG Bitrix: Excepción en intento {attempt + 1} al obtener storage: {e}")
+            time.sleep(retry_delay) # Wait before retrying
+
+    if not project_storage_id:
+        print(f"DEBUG Bitrix: No se encontró storage para el proyecto {project_id} después de {max_retries} intentos.")
+        return False
         
         if not project_storage_id:
             print(f"DEBUG Bitrix: No se encontró storage para el proyecto {project_id}")
