@@ -310,17 +310,8 @@ function precargarDatosOportunidad() {
                             console.log('DEBUG: Texto del cliente seleccionado:', selectedOption.text);
                         }
                         
-                        // Cargar oportunidades del cliente
-                        cargarOportunidadesPorCliente(oportunidadData.cliente_id);
-                        
-                        // Esperar un momento y seleccionar la oportunidad
-                        setTimeout(() => {
-                            const oportunidadSelect = document.getElementById('oportunidad-volumetria');
-                            if (oportunidadSelect && oportunidadData.oportunidad_id) {
-                                oportunidadSelect.value = oportunidadData.oportunidad_id;
-                                console.log('DEBUG: Oportunidad auto-seleccionada:', oportunidadData.oportunidad_id);
-                            }
-                        }, 1500);
+                        // Cargar oportunidades del cliente y auto-seleccionar la oportunidad específica
+                        cargarOportunidadesPorCliente(oportunidadData.cliente_id, oportunidadData.oportunidad_id);
                     } else {
                         console.log('ERROR: No se pudo seleccionar el cliente. Valor esperado:', oportunidadData.cliente_id, 'Valor actual:', clienteSelect.value);
                     }
@@ -342,11 +333,14 @@ function precargarDatosOportunidad() {
 }
 
 // Función para cargar oportunidades por cliente
-function cargarOportunidadesPorCliente(clienteId) {
+function cargarOportunidadesPorCliente(clienteId, oportunidadIdToSelect = null) {
     const oportunidadSelect = document.getElementById('oportunidad-volumetria');
     if (!oportunidadSelect || !clienteId) return;
     
     console.log('DEBUG: Cargando oportunidades para cliente:', clienteId);
+    if (oportunidadIdToSelect) {
+        console.log('DEBUG: Se auto-seleccionará oportunidad:', oportunidadIdToSelect);
+    }
     
     fetch(`/app/api/get-opportunities-by-client/${clienteId}/`)
         .then(response => response.json())
@@ -360,6 +354,25 @@ function cargarOportunidadesPorCliente(clienteId) {
                 option.textContent = oportunidad.oportunidad;
                 oportunidadSelect.appendChild(option);
             });
+            
+            // Si se especificó una oportunidad para seleccionar automáticamente
+            if (oportunidadIdToSelect) {
+                setTimeout(() => {
+                    oportunidadSelect.value = oportunidadIdToSelect;
+                    console.log('DEBUG: Oportunidad auto-seleccionada:', oportunidadIdToSelect);
+                    
+                    // Verificar si se seleccionó correctamente
+                    if (oportunidadSelect.value == oportunidadIdToSelect) {
+                        console.log('DEBUG: ✅ Oportunidad seleccionada exitosamente');
+                        const selectedOption = oportunidadSelect.options[oportunidadSelect.selectedIndex];
+                        if (selectedOption) {
+                            console.log('DEBUG: Texto de la oportunidad seleccionada:', selectedOption.text);
+                        }
+                    } else {
+                        console.log('ERROR: ❌ No se pudo seleccionar la oportunidad:', oportunidadIdToSelect);
+                    }
+                }, 100);
+            }
         })
         .catch(error => {
             console.error('Error cargando oportunidades:', error);
