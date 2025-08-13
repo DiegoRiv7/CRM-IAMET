@@ -618,68 +618,7 @@ function cerrarFormulario() {
 }
 
 // Función para procesar el formulario de nodos
-function procesarFormularioNodos() {
-    // Información del proyecto
-    const nombreVolumetria = document.getElementById('nombre-volumetria').value;
-    const clienteId = document.getElementById('cliente-volumetria').value;
-    const usuarioFinal = document.getElementById('usuario-final').value;
-    const oportunidadId = document.getElementById('oportunidad-volumetria').value;
-    
-    // Configuración técnica
-    const categoria = document.getElementById('categoria').value;
-    const color = document.getElementById('color').value;
-    const distancia = parseFloat(document.getElementById('distancia').value);
-    const cantidadNodos = parseInt(document.getElementById('cantidad-nodos').value);
-    const colorJackUsuario = document.getElementById('color-jack-usuario').value;
-    const colorJackPatchpanel = document.getElementById('color-jack-patchpanel').value;
-    const colorPatchcordUsuario = document.getElementById('color-patchcord-usuario').value;
-    const colorPatchcordPatchpanel = document.getElementById('color-patchcord-patchpanel').value;
-    
-    // Validaciones proyecto
-    if (!nombreVolumetria.trim()) {
-        alert('Por favor, ingresa el nombre de la volumetría');
-        return;
-    }
-    
-    if (!clienteId) {
-        alert('Por favor, selecciona un cliente');
-        return;
-    }
-    
-    // Validaciones técnicas
-    if (!distancia || distancia <= 0) {
-        alert('Por favor, ingresa una distancia válida');
-        return;
-    }
-    
-    if (!cantidadNodos || cantidadNodos <= 0) {
-        alert('Por favor, ingresa una cantidad de nodos válida');
-        return;
-    }
-    
-    cerrarFormulario();
-    mostrarAnimacionCarga();
-    
-    // Simular procesamiento
-    setTimeout(() => {
-        generarVolumetria({
-            // Información del proyecto
-            nombreVolumetria,
-            clienteId,
-            usuarioFinal,
-            oportunidadId,
-            // Configuración técnica
-            categoria,
-            color,
-            distancia,
-            cantidadNodos,
-            colorJackUsuario,
-            colorJackPatchpanel,
-            colorPatchcordUsuario,
-            colorPatchcordPatchpanel
-        });
-    }, 2000);
-}
+
 
 // Función para mostrar animación de carga
 function mostrarAnimacionCarga() {
@@ -1244,174 +1183,9 @@ function generarFilasTabla(datos) {
 }
 
 // Función para generar el resumen de la volumetría
-function generarResumenVolumetria(datos) {
-    // Recalcular totales para el resumen
-    const totalCliente = calcularTotalCliente(datos);
-    const totalCosto = calcularTotalCosto(datos);
-    const gananciaTotalDolares = totalCliente - totalCosto;
-    const porcentajeUtilidad = totalCosto > 0 ? (gananciaTotalDolares / totalCosto * 100) : 0;
-    const cantidadNodos = datos.cantidadNodos || 1;
-    const costoPorNodo = totalCosto / cantidadNodos;
-    const precioPorNodo = totalCliente / cantidadNodos;
-    const utilidadPorNodo = gananciaTotalDolares / cantidadNodos;
-    
-    let estadoClase = 'bg-red-600 text-white';
-    let estadoTexto = 'Revisar';
-    if (porcentajeUtilidad >= 30) {
-        estadoClase = 'bg-green-600 text-white';
-        estadoTexto = 'Excelente';
-    } else if (porcentajeUtilidad >= 15) {
-        estadoClase = 'bg-yellow-600 text-white';
-        estadoTexto = 'Aceptable';
-    }
 
-    return `
-        <div class="apple-glass-card p-6">
-            <div class="mb-4">
-                <h4 class="text-lg font-semibold apple-text-primary">Análisis de Costos</h4>
-            </div>
-            <div class="space-y-3">
-                <div class="flex justify-between">
-                    <span class="apple-text-secondary">Subtotal:</span>
-                    <span class="font-semibold apple-text-primary" id="subtotal-display">${formatearMoneda(totalCliente)}</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="apple-text-secondary font-medium">IVA:</span>
-                    <select id="iva-select" onchange="recalcularTotales()" class="px-3 py-1 border border-gray-600 bg-gray-800 apple-text-primary rounded-md text-sm font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
-                        <option value="16">16%</option>
-                        <option value="8">8%</option>
-                    </select>
-                </div>
-                <div class="flex justify-between text-sm">
-                    <span class="apple-text-secondary">Monto IVA:</span>
-                    <span id="monto-iva" class="font-semibold apple-text-primary">${formatearMoneda(totalCliente * 0.16)}</span>
-                </div>
-                <div class="border-t border-gray-300 pt-3 flex justify-between font-bold text-lg">
-                    <span class="apple-text-primary">Total Cliente USD:</span>
-                    <span id="total-cliente" class="apple-text-accent">${formatearMoneda(totalCliente * 1.16)}</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="apple-glass-card p-6">
-            <h4 class="text-lg font-semibold apple-text-primary mb-4">Análisis de Rentabilidad</h4>
-            <div class="space-y-3">
-                <div class="flex justify-between">
-                    <span class="apple-text-secondary">Margen de Utilidad:</span>
-                    <span class="font-semibold apple-text-accent" id="margen-utilidad-display">${porcentajeUtilidad.toFixed(1)}%</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="apple-text-secondary">Ganancia Bruta:</span>
-                    <span class="font-bold apple-text-accent text-lg" id="ganancia-display">${formatearMoneda(gananciaTotalDolares)}</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                    <span class="apple-text-secondary">Costo por Nodo:</span>
-                    <span class="font-mono text-xs apple-text-primary" id="costo-nodo-display">${formatearMoneda(costoPorNodo)}</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                    <span class="apple-text-secondary">Precio por Nodo:</span>
-                    <span class="font-mono text-xs apple-text-primary" id="precio-nodo-display">${formatearMoneda(precioPorNodo)}</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                    <span class="apple-text-secondary">Utilidad por Nodo:</span>
-                    <span class="font-mono text-xs font-semibold apple-text-accent" id="utilidad-nodo-display">${formatearMoneda(utilidadPorNodo)}</span>
-                </div>
-                
-                <!-- Estado del Proyecto -->
-                <div class="mt-4 pt-3 border-t border-gray-600">
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="apple-text-secondary">Estado:</span>
-                        <span id="estado-proyecto-display" class="px-3 py-1 rounded-lg text-sm font-medium ${estadoClase}">
-                            ${estadoTexto}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="apple-glass-card p-6 md:col-span-2">
-            <h4 class="text-lg font-semibold apple-text-primary mb-4">Información del Proyecto</h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="space-y-3">
-                    <div class="flex justify-between">
-                        <span class="apple-text-secondary">Nombre:</span>
-                        <span class="font-semibold apple-text-primary">${datos.nombreVolumetria || 'Sin especificar'}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="apple-text-secondary">Cliente:</span>
-                        <span class="font-semibold apple-text-primary" id="cliente-display">Cargando...</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="apple-text-secondary">Usuario Final:</span>
-                        <span class="font-semibold apple-text-primary">${datos.usuarioFinal || 'Sin especificar'}</span>
-                    </div>
-                </div>
-                <div class="space-y-3">
-                    <div class="flex justify-between">
-                        <span class="apple-text-secondary">Oportunidad:</span>
-                        <span class="font-semibold apple-text-primary" id="oportunidad-display">Cargando...</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="apple-text-secondary">Fecha:</span>
-                        <span class="font-semibold apple-text-primary">${new Date().toLocaleDateString('es-ES')}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="apple-text-secondary">Elaborado por:</span>
-                        <span class="font-semibold apple-text-primary">{{ user.get_full_name|default:user.username }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Cargar nombres de cliente y oportunidad después de renderizar
-    setTimeout(() => {
-        if (datos.clienteId) {
-            cargarNombreCliente(datos.clienteId);
-        }
-        if (datos.oportunidadId) {
-            cargarNombreOportunidad(datos.oportunidadId);
-        }
-    }, 100);
-}
 
-// Función para cargar nombre del cliente
-function cargarNombreCliente(clienteId) {
-    fetch(`/app/api/get-cliente/${clienteId}/`)
-        .then(response => response.json())
-        .then(cliente => {
-            const clienteDisplay = document.getElementById('cliente-display');
-            if (clienteDisplay) {
-                clienteDisplay.textContent = cliente.nombre_empresa || 'Cliente no encontrado';
-            }
-        })
-        .catch(error => {
-            console.error('Error cargando cliente:', error);
-            const clienteDisplay = document.getElementById('cliente-display');
-            if (clienteDisplay) {
-                clienteDisplay.textContent = 'Error cargando cliente';
-            }
-        });
-}
-
-// Función para cargar nombre de la oportunidad
-function cargarNombreOportunidad(oportunidadId) {
-    fetch(`/app/api/oportunidad/${oportunidadId}/detalle/`)
-        .then(response => response.json())
-        .then(oportunidad => {
-            const oportunidadDisplay = document.getElementById('oportunidad-display');
-            if (oportunidadDisplay) {
-                oportunidadDisplay.textContent = oportunidad.oportunidad || 'Sin oportunidad';
-            }
-        })
-        .catch(error => {
-            console.error('Error cargando oportunidad:', error);
-            const oportunidadDisplay = document.getElementById('oportunidad-display');
-            if (oportunidadDisplay) {
-                oportunidadDisplay.textContent = 'Sin oportunidad';
-            }
-        });
-}
+// Funciones eliminadas para ser reemplazadas
 
 // Función auxiliar para calcular total cliente
 function calcularTotalCliente(datos) {
@@ -2421,68 +2195,7 @@ function cerrarFormulario() {
 }
 
 // Función para procesar el formulario de nodos
-function procesarFormularioNodos() {
-    // Información del proyecto
-    const nombreVolumetria = document.getElementById('nombre-volumetria').value;
-    const clienteId = document.getElementById('cliente-volumetria').value;
-    const usuarioFinal = document.getElementById('usuario-final').value;
-    const oportunidadId = document.getElementById('oportunidad-volumetria').value;
-    
-    // Configuración técnica
-    const categoria = document.getElementById('categoria').value;
-    const color = document.getElementById('color').value;
-    const distancia = parseFloat(document.getElementById('distancia').value);
-    const cantidadNodos = parseInt(document.getElementById('cantidad-nodos').value);
-    const colorJackUsuario = document.getElementById('color-jack-usuario').value;
-    const colorJackPatchpanel = document.getElementById('color-jack-patchpanel').value;
-    const colorPatchcordUsuario = document.getElementById('color-patchcord-usuario').value;
-    const colorPatchcordPatchpanel = document.getElementById('color-patchcord-patchpanel').value;
-    
-    // Validaciones proyecto
-    if (!nombreVolumetria.trim()) {
-        alert('Por favor, ingresa el nombre de la volumetría');
-        return;
-    }
-    
-    if (!clienteId) {
-        alert('Por favor, selecciona un cliente');
-        return;
-    }
-    
-    // Validaciones técnicas
-    if (!distancia || distancia <= 0) {
-        alert('Por favor, ingresa una distancia válida');
-        return;
-    }
-    
-    if (!cantidadNodos || cantidadNodos <= 0) {
-        alert('Por favor, ingresa una cantidad de nodos válida');
-        return;
-    }
-    
-    cerrarFormulario();
-    mostrarAnimacionCarga();
-    
-    // Simular procesamiento
-    setTimeout(() => {
-        generarVolumetria({
-            // Información del proyecto
-            nombreVolumetria,
-            clienteId,
-            usuarioFinal,
-            oportunidadId,
-            // Configuración técnica
-            categoria,
-            color,
-            distancia,
-            cantidadNodos,
-            colorJackUsuario,
-            colorJackPatchpanel,
-            colorPatchcordUsuario,
-            colorPatchcordPatchpanel
-        });
-    }, 2000);
-}
+
 
 // Función para mostrar animación de carga
 function mostrarAnimacionCarga() {
@@ -2684,5 +2397,169 @@ document.addEventListener('DOMContentLoaded', function() {
         }, index * 200);
     });
 });
+function procesarFormularioNodos() {
+    // Información del proyecto
+    const nombreVolumetria = document.getElementById('nombre-volumetria').value;
+    const clienteSelect = document.getElementById('cliente-volumetria');
+    const clienteId = clienteSelect.value;
+    const clienteNombre = clienteSelect.options[clienteSelect.selectedIndex].text;
+    const usuarioFinal = document.getElementById('usuario-final').value;
+    const oportunidadSelect = document.getElementById('oportunidad-volumetria');
+    const oportunidadId = oportunidadSelect.value;
+    const oportunidadNombre = oportunidadSelect.options[oportunidadSelect.selectedIndex].text;
+
+    // Configuración técnica
+    const categoria = document.getElementById('categoria').value;
+    const color = document.getElementById('color').value;
+    const distancia = parseFloat(document.getElementById('distancia').value);
+    const cantidadNodos = parseInt(document.getElementById('cantidad-nodos').value);
+    const colorJackUsuario = document.getElementById('color-jack-usuario').value;
+    const colorJackPatchpanel = document.getElementById('color-jack-patchpanel').value;
+    const colorPatchcordUsuario = document.getElementById('color-patchcord-usuario').value;
+    const colorPatchcordPatchpanel = document.getElementById('color-patchcord-patchpanel').value;
+    
+    // Validaciones
+    if (!nombreVolumetria.trim()) {
+        alert('Por favor, ingresa el nombre de la volumetría');
+        return;
+    }
+    if (!clienteId) {
+        alert('Por favor, selecciona un cliente');
+        return;
+    }
+    if (!distancia || distancia <= 0) {
+        alert('Por favor, ingresa una distancia válida');
+        return;
+    }
+    if (!cantidadNodos || cantidadNodos <= 0) {
+        alert('Por favor, ingresa una cantidad de nodos válida');
+        return;
+    }
+    
+    cerrarFormulario();
+    mostrarAnimacionCarga();
+    
+    setTimeout(() => {
+        generarVolumetria({
+            nombreVolumetria, clienteId, clienteNombre, usuarioFinal, oportunidadId, oportunidadNombre,
+            categoria, color, distancia, cantidadNodos, colorJackUsuario, colorJackPatchpanel, colorPatchcordUsuario, colorPatchcordPatchpanel
+        });
+    }, 1000);
+}
+
+function generarResumenVolumetria(datos) {
+    const totalCliente = calcularTotalCliente(datos);
+    const totalCosto = calcularTotalCosto(datos);
+    const gananciaTotalDolares = totalCliente - totalCosto;
+    const porcentajeUtilidad = totalCosto > 0 ? (gananciaTotalDolares / totalCosto * 100) : 0;
+    const cantidadNodos = datos.cantidadNodos || 1;
+    const costoPorNodo = totalCosto / cantidadNodos;
+    const precioPorNodo = totalCliente / cantidadNodos;
+    const utilidadPorNodo = gananciaTotalDolares / cantidadNodos;
+    
+    let estadoClase = 'bg-red-600 text-white';
+    let estadoTexto = 'Revisar';
+    if (porcentajeUtilidad >= 30) {
+        estadoClase = 'bg-green-600 text-white';
+        estadoTexto = 'Excelente';
+    } else if (porcentajeUtilidad >= 15) {
+        estadoClase = 'bg-yellow-600 text-white';
+        estadoTexto = 'Aceptable';
+    }
+
+    return `
+        <div class="apple-glass-card p-6">
+            <h4 class="text-lg font-semibold apple-text-primary mb-4">Análisis de Costos</h4>
+            <div class="space-y-3">
+                <div class="flex justify-between">
+                    <span class="apple-text-secondary">Subtotal:</span>
+                    <span class="font-semibold apple-text-primary" id="subtotal-display">${formatearMoneda(totalCliente)}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="apple-text-secondary font-medium">IVA:</span>
+                    <select id="iva-select" onchange="recalcularTotales()" class="px-3 py-1 border border-gray-600 bg-gray-800 apple-text-primary rounded-md text-sm font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                        <option value="16">16%</option>
+                        <option value="8">8%</option>
+                    </select>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="apple-text-secondary">Monto IVA:</span>
+                    <span id="monto-iva" class="font-semibold apple-text-primary">${formatearMoneda(totalCliente * 0.16)}</span>
+                </div>
+                <div class="border-t border-gray-300 pt-3 flex justify-between font-bold text-lg">
+                    <span class="apple-text-primary">Total Cliente USD:</span>
+                    <span id="total-cliente" class="apple-text-accent">${formatearMoneda(totalCliente * 1.16)}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="apple-glass-card p-6">
+            <h4 class="text-lg font-semibold apple-text-primary mb-4">Análisis de Rentabilidad</h4>
+            <div class="space-y-3">
+                <div class="flex justify-between">
+                    <span class="apple-text-secondary">Margen de Utilidad:</span>
+                    <span class="font-semibold apple-text-accent" id="margen-utilidad-display">${porcentajeUtilidad.toFixed(1)}%</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="apple-text-secondary">Ganancia Bruta:</span>
+                    <span class="font-bold apple-text-accent text-lg" id="ganancia-display">${formatearMoneda(gananciaTotalDolares)}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="apple-text-secondary">Costo por Nodo:</span>
+                    <span class="font-mono text-xs apple-text-primary" id="costo-nodo-display">${formatearMoneda(costoPorNodo)}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="apple-text-secondary">Precio por Nodo:</span>
+                    <span class="font-mono text-xs apple-text-primary" id="precio-nodo-display">${formatearMoneda(precioPorNodo)}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="apple-text-secondary">Utilidad por Nodo:</span>
+                    <span class="font-mono text-xs font-semibold apple-text-accent" id="utilidad-nodo-display">${formatearMoneda(utilidadPorNodo)}</span>
+                </div>
+                <div class="mt-4 pt-3 border-t border-gray-600">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="apple-text-secondary">Estado:</span>
+                        <span id="estado-proyecto-display" class="px-3 py-1 rounded-lg text-sm font-medium ${estadoClase}">${estadoTexto}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="apple-glass-card p-6 md:col-span-2">
+            <h4 class="text-lg font-semibold apple-text-primary mb-4">Información del Proyecto</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="apple-text-secondary">Nombre:</span>
+                        <span class="font-semibold apple-text-primary">${datos.nombreVolumetria || 'Sin especificar'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="apple-text-secondary">Cliente:</span>
+                        <span class="font-semibold apple-text-primary">${datos.clienteNombre || 'Sin especificar'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="apple-text-secondary">Usuario Final:</span>
+                        <span class="font-semibold apple-text-primary">${datos.usuarioFinal || 'Sin especificar'}</span>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="apple-text-secondary">Oportunidad:</span>
+                        <span class="font-semibold apple-text-primary">${datos.oportunidadNombre || 'Sin especificar'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="apple-text-secondary">Fecha:</span>
+                        <span class="font-semibold apple-text-primary">${new Date().toLocaleDateString('es-ES')}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="apple-text-secondary">Elaborado por:</span>
+                        <span class="font-semibold apple-text-primary">{{ user.get_full_name|default:user.username }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 </script>
 {% endblock %}
