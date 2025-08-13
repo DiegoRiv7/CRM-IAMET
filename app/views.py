@@ -3386,6 +3386,13 @@ def crear_cotizacion_desde_volumetria(request):
         
         pdf_url = request.build_absolute_uri(reverse('generate_cotizacion_pdf', args=[cotizacion.id]))
         bitrix_comentario = False
+        
+        print(f"DEBUG: Verificando condiciones para Bitrix24:")
+        print(f"DEBUG: - Oportunidad existe: {oportunidad is not None}")
+        if oportunidad:
+            print(f"DEBUG: - Oportunidad ID: {oportunidad.id}")
+            print(f"DEBUG: - Bitrix Deal ID: {oportunidad.bitrix_deal_id}")
+        
         if oportunidad and oportunidad.bitrix_deal_id:
             # Generar PDF y adjuntarlo a Bitrix24
             print(f"DEBUG: Intentando adjuntar cotización a Bitrix24 deal {oportunidad.bitrix_deal_id}")
@@ -3451,6 +3458,11 @@ Volumetría origen: {data.get('volumetria_nombre', 'N/A')}
             except Exception as e:
                 print(f"ERROR: Excepción adjuntando PDF a Bitrix24: {str(e)}")
                 bitrix_comentario = False
+        else:
+            if not oportunidad:
+                print("DEBUG: No hay oportunidad, no se puede adjuntar a Bitrix24")
+            elif not oportunidad.bitrix_deal_id:
+                print("DEBUG: La oportunidad no tiene bitrix_deal_id, no se puede adjuntar a Bitrix24")
 
         return JsonResponse({
             'success': True,
