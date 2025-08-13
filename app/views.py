@@ -3323,13 +3323,13 @@ def crear_cotizacion_desde_volumetria(request):
         data = json.loads(request.body)
         print(f"DEBUG: Creando cotización desde volumetría: {data}")
         
-        if not data.get('clienteId'):
+        if not data.get('cliente_id'):
             return JsonResponse({'success': False, 'error': 'Cliente requerido'})
         
         if not data.get('items') or len(data.get('items', [])) == 0:
             return JsonResponse({'success': False, 'error': 'Items requeridos'})
         
-        cliente = get_object_or_404(Cliente, id=data['clienteId'])
+        cliente = get_object_or_404(Cliente, id=data['cliente_id'])
         
         oportunidad = None
         if data.get('oportunidadId'):
