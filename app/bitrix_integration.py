@@ -590,14 +590,6 @@ def create_bitrix_project(project_name, description=None, vendedor_responsable=N
     project_data = {
         'fields': {
             'NAME': project_name,
-            'DESCRIPTION': description or f'Proyecto automatizado: {project_name}',
-            'PROJECT': 'Y',  # Marcar como proyecto
-            'VISIBLE': 'Y',  # Hacer público/visible
-            'OPENED': 'Y',   # Proyecto abierto (público)
-            'SUBJECT_ID': 1, # ID del tema del proyecto (1 = General)
-            'KEYWORDS': 'Volumetría, Nethive, Automatizado',
-            'PROJECT_DATE_START': None,  # Se puede configurar fecha de inicio
-            'PROJECT_DATE_FINISH': None, # Se puede configurar fecha de fin
         }
     }
     
