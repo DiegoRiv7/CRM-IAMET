@@ -709,6 +709,8 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
 
         # Send the request as multipart/form-data
         upload_response = requests.post(upload_url, data=data_payload, files=files, timeout=30)
+        print(f"DEBUG Bitrix: Status de respuesta de subida: {upload_response.status_code}") # Add this line
+        print(f"DEBUG Bitrix: Contenido raw de respuesta de subida: {upload_response.text}") # Add this line
         upload_response.raise_for_status()
         upload_result = upload_response.json()
         print(f"DEBUG Bitrix: Respuesta de subida de archivo: {json.dumps(upload_result, indent=2)}") # Add this line
