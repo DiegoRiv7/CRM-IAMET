@@ -648,6 +648,7 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
 
     try:
         project_storage_id = None
+        root_folder_id = None
         max_retries = 10
         retry_delay = 5 # seconds
 
@@ -665,10 +666,14 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                 print(f"DEBUG Bitrix: Respuesta de disk.storage.getlist para proyecto {project_id}: {json.dumps(storage_data, indent=2)}") # Add this line
 
                 if 'result' in storage_data and len(storage_data['result']) > 0:
-                    project_storage_id = storage_data['result'][0].get('ID')
-                    print(f"DEBUG Bitrix: Valor de project_storage_id después de get('ID'): {project_storage_id} (Tipo: {type(project_storage_id)})") # Add this line
-                    if project_storage_id:
-                        print(f"DEBUG Bitrix: Storage del proyecto {project_id} encontrado en el intento {attempt + 1}: {project_storage_id}")
+                    storage_info = storage_data['result'][0]
+                    project_storage_id = storage_info.get('ID')
+                    root_folder_id = storage_info.get('ROOT_OBJECT_ID')
+                    
+                    print(f"DEBUG Bitrix: Storage ID: {project_storage_id}, Root Folder ID: {root_folder_id}")
+                    
+                    if project_storage_id and root_folder_id:
+                        print(f"DEBUG Bitrix: Storage del proyecto {project_id} encontrado - Storage: {project_storage_id}, Root: {root_folder_id}")
                         break # Found it, exit loop
                 
                 print(f"DEBUG Bitrix: Storage no encontrado en intento {attempt + 1}. Reintentando en {retry_delay} segundos...")
@@ -678,11 +683,11 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                 print(f"DEBUG Bitrix: Excepción en intento {attempt + 1} al obtener storage: {e}")
                 time.sleep(retry_delay) # Wait before retrying
 
-        if not project_storage_id:
-            print(f"DEBUG Bitrix: No se encontró storage para el proyecto {project_id} después de {max_retries} intentos.")
+        if not project_storage_id or not root_folder_id:
+            print(f"DEBUG Bitrix: No se encontró storage o carpeta raíz para el proyecto {project_id} después de {max_retries} intentos.")
             return False
 
-        print(f"DEBUG Bitrix: Storage del proyecto encontrado: {project_storage_id}")
+        print(f"DEBUG Bitrix: Storage del proyecto encontrado: {project_storage_id}, Carpeta raíz: {root_folder_id}")
 
         # Intentar múltiples métodos de subida
         print(f"DEBUG Bitrix: Iniciando subida de archivo '{file_name}' al proyecto {project_id}")
@@ -728,7 +733,7 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                     }
                     
                     data_payload = {
-                        'id': project_storage_id,
+                        'id': root_folder_id,  # Usar root folder en lugar de storage
                         'name': file_name
                     }
                     
@@ -741,7 +746,7 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                 else:
                     # Método JSON directo
                     json_payload = {
-                        'id': project_storage_id,
+                        'id': root_folder_id,  # Usar root folder en lugar de storage
                         'fileContent': [file_name, file_content_base64]
                     }
                     
