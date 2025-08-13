@@ -3387,8 +3387,65 @@ def crear_cotizacion_desde_volumetria(request):
         pdf_url = request.build_absolute_uri(reverse('generate_cotizacion_pdf', args=[cotizacion.id]))
         bitrix_comentario = False
         if oportunidad and oportunidad.bitrix_deal_id:
-            # Lógica para adjuntar a Bitrix
-            pass
+            # Generar PDF y adjuntarlo a Bitrix24
+            try:
+                from django.http import HttpRequest
+                from django.test import RequestFactory
+                
+                # Crear una petición temporal para generar el PDF
+                factory = RequestFactory()
+                pdf_request = factory.get(f'/app/cotizacion/{cotizacion.id}/pdf/')
+                pdf_request.user = request.user
+                
+                # Generar el PDF
+                from . import views_exportar
+                pdf_response = views_exportar.generate_cotizacion_pdf(pdf_request, cotizacion.id)
+                
+                if pdf_response.status_code == 200:
+                    # Convertir PDF a base64
+                    import base64
+                    pdf_content = pdf_response.content
+                    pdf_base64 = base64.b64encode(pdf_content).decode('utf-8')
+                    
+                    # Nombre del archivo
+                    pdf_filename = f"Cotizacion_{cotizacion.nombre_cotizacion}_{cotizacion.id}.pdf"
+                    
+                    # Comentario para Bitrix
+                    comentario_texto = f"""
+📋 Cotización Automática desde Volumetría
+
+Cotización: {cotizacion.nombre_cotizacion}
+Total: ${float(total_cotizacion):.2f} USD
+Generada por: {request.user.get_full_name() or request.user.username}
+Fecha: {timezone.now().strftime('%d/%m/%Y %H:%M')}
+
+Volumetría origen: {data.get('volumetria_nombre', 'N/A')}
+
+🔗 Creada automáticamente desde el sistema Nethive
+                    """.strip()
+                    
+                    # Subir a Bitrix24
+                    from .bitrix_integration import add_comment_with_attachment_to_deal
+                    resultado_bitrix = add_comment_with_attachment_to_deal(
+                        deal_id=oportunidad.bitrix_deal_id,
+                        file_name=pdf_filename,
+                        file_content_base64=pdf_base64,
+                        comment_text=comentario_texto,
+                        request=request
+                    )
+                    
+                    if resultado_bitrix:
+                        bitrix_comentario = True
+                        print(f"SUCCESS: PDF de cotización adjuntado a Bitrix24 deal {oportunidad.bitrix_deal_id}")
+                    else:
+                        print(f"ERROR: No se pudo adjuntar PDF a Bitrix24 deal {oportunidad.bitrix_deal_id}")
+                        
+                else:
+                    print(f"ERROR: No se pudo generar PDF. Status: {pdf_response.status_code}")
+                    
+            except Exception as e:
+                print(f"ERROR: Excepción adjuntando PDF a Bitrix24: {str(e)}")
+                bitrix_comentario = False
 
         return JsonResponse({
             'success': True,

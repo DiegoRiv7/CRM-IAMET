@@ -2369,6 +2369,10 @@ function crearCotizacionAutomatica(datosVolumetria) {
             
             // Mostrar notificación de éxito
             if (typeof Swal !== 'undefined') {
+                const bitrixStatus = data.bitrix_comentario ? 
+                    '<p style="color: #32D74B;">✅ PDF adjuntado en Bitrix24</p>' : 
+                    '<p style="color: #FF9500;">⚠️ No se pudo adjuntar en Bitrix24</p>';
+                    
                 Swal.fire({
                     title: '¡Cotización Creada!',
                     html: `
@@ -2376,6 +2380,8 @@ function crearCotizacionAutomatica(datosVolumetria) {
                         <strong>${data.cotizacion_nombre}</strong>
                         <br><br>
                         <p>Total: $${data.total_cotizacion?.toFixed(2) || '0.00'} ${datosCotizacion.moneda}</p>
+                        <br>
+                        ${bitrixStatus}
                     `,
                     icon: 'success',
                     confirmButtonText: 'Perfecto',
