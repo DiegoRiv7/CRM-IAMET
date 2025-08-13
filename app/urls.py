@@ -131,5 +131,9 @@ urlpatterns = [
     path('api/check-new-bitrix-opportunities/', views.check_new_bitrix_opportunities, name='check_new_bitrix_opportunities'),
     # API endpoint para sincronización manual de Bitrix (solo supervisores)
     path('api/sync-bitrix-manual/', views.sync_bitrix_manual, name='sync_bitrix_manual'),
+    # API para obtener datos de sesión (usado por volumetría)
+    path('api/get-session-data/', views.get_session_data, name='get_session_data'),
+    # API para obtener oportunidades por cliente (usado por volumetría)
+    path('api/get-opportunities-by-client/<int:cliente_id>/', views.get_opportunities_by_client_api, name='get_opportunities_by_client_api'),
     path('koti-bot-html/', TemplateView.as_view(template_name='nethive_bot.html'), name='koti_bot_html'),
 ]

@@ -238,10 +238,13 @@ function populateClientSelectVolumetria() {
     const clientSelect = document.getElementById('cliente-volumetria');
     if (!clientSelect) return;
     
+    console.log('DEBUG: Cargando clientes para volumetría...');
+    
     // Parse the clients data (similar to quotations)
-    fetch('/app/api/get-clientes/')
+    fetch('/app/api/clients-for-user/')
         .then(response => response.json())
         .then(clientesData => {
+            console.log('DEBUG: Clientes cargados:', clientesData);
             clientSelect.innerHTML = '<option value="">-- Seleccione un cliente --</option>';
             
             clientesData.forEach(client => {
@@ -250,9 +253,88 @@ function populateClientSelectVolumetria() {
                 option.textContent = client.nombre_empresa;
                 clientSelect.appendChild(option);
             });
+            
+            // Después de cargar los clientes, intentar precargar datos de oportunidad
+            precargarDatosOportunidad();
         })
         .catch(error => {
             console.error('Error cargando clientes:', error);
+        });
+}
+
+// Función para precargar datos de oportunidad desde la sesión
+function precargarDatosOportunidad() {
+    console.log('DEBUG: Verificando datos de oportunidad en sesión...');
+    
+    // Verificar si hay datos de oportunidad en la sesión
+    fetch('/app/api/get-session-data/', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('DEBUG: Datos de sesión recibidos:', data);
+        
+        if (data.volumetria_oportunidad_data) {
+            const oportunidadData = data.volumetria_oportunidad_data;
+            console.log('DEBUG: Auto-llenando formulario con datos de oportunidad:', oportunidadData);
+            
+            // Auto-llenar cliente
+            const clienteSelect = document.getElementById('cliente-volumetria');
+            if (clienteSelect && oportunidadData.cliente_id) {
+                clienteSelect.value = oportunidadData.cliente_id;
+                console.log('DEBUG: Cliente auto-seleccionado:', oportunidadData.cliente_id);
+                
+                // Cargar oportunidades del cliente
+                cargarOportunidadesPorCliente(oportunidadData.cliente_id);
+                
+                // Esperar un momento y seleccionar la oportunidad
+                setTimeout(() => {
+                    const oportunidadSelect = document.getElementById('oportunidad-volumetria');
+                    if (oportunidadSelect && oportunidadData.oportunidad_id) {
+                        oportunidadSelect.value = oportunidadData.oportunidad_id;
+                        console.log('DEBUG: Oportunidad auto-seleccionada:', oportunidadData.oportunidad_id);
+                    }
+                }, 1000);
+            }
+            
+            // Auto-llenar nombre de volumetría (opcional - usar nombre de oportunidad como base)
+            const nombreInput = document.getElementById('nombre-volumetria');
+            if (nombreInput && oportunidadData.oportunidad_nombre) {
+                nombreInput.value = `Volumetría - ${oportunidadData.oportunidad_nombre}`;
+                console.log('DEBUG: Nombre de volumetría auto-llenado');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error obteniendo datos de sesión:', error);
+    });
+}
+
+// Función para cargar oportunidades por cliente
+function cargarOportunidadesPorCliente(clienteId) {
+    const oportunidadSelect = document.getElementById('oportunidad-volumetria');
+    if (!oportunidadSelect || !clienteId) return;
+    
+    console.log('DEBUG: Cargando oportunidades para cliente:', clienteId);
+    
+    fetch(`/app/api/get-opportunities-by-client/${clienteId}/`)
+        .then(response => response.json())
+        .then(oportunidades => {
+            console.log('DEBUG: Oportunidades cargadas:', oportunidades);
+            oportunidadSelect.innerHTML = '<option value="">-- Seleccione una oportunidad --</option>';
+            
+            oportunidades.forEach(oportunidad => {
+                const option = document.createElement('option');
+                option.value = oportunidad.id;
+                option.textContent = oportunidad.oportunidad;
+                oportunidadSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error cargando oportunidades:', error);
         });
 }
 
@@ -270,19 +352,7 @@ function setupOpportunityChangeListener() {
         if (!clienteId) return;
         
         // Fetch opportunities for the selected client
-        fetch(`/app/api/get-oportunidades-por-cliente/?cliente_id=${clienteId}`)
-            .then(response => response.json())
-            .then(oportunidades => {
-                oportunidades.forEach(oportunidad => {
-                    const option = document.createElement('option');
-                    option.value = oportunidad.id;
-                    option.textContent = oportunidad.nombre;
-                    oportunidadSelect.appendChild(option);
-                });
-            })
-            .catch(error => {
-                console.error('Error cargando oportunidades:', error);
-            });
+        cargarOportunidadesPorCliente(clienteId);
     });
 }
 

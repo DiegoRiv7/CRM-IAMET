@@ -3403,3 +3403,49 @@ def crear_cotizacion_desde_volumetria(request):
     except Exception as e:
         print(f"ERROR: Error creando cotización desde volumetría: {str(e)}")
         return JsonResponse({'success': False, 'error': f'Error interno: {str(e)}'}, status=500)
+
+@login_required
+def get_session_data(request):
+    """
+    Endpoint para obtener datos almacenados en la sesión (usado por volumetría)
+    """
+    try:
+        session_data = {
+            'volumetria_oportunidad_data': request.session.get('volumetria_oportunidad_data'),
+        }
+        return JsonResponse(session_data)
+    except Exception as e:
+        print(f"ERROR: Error obteniendo datos de sesión: {str(e)}")
+        return JsonResponse({'error': 'Error obteniendo datos de sesión'}, status=500)
+
+@login_required
+def get_opportunities_by_client_api(request, cliente_id):
+    """
+    Endpoint para obtener oportunidades de un cliente específico (usado por volumetría)
+    """
+    try:
+        cliente = get_object_or_404(Cliente, pk=cliente_id)
+        
+        # Filtrar oportunidades por cliente
+        oportunidades = TodoItem.objects.filter(cliente=cliente).order_by('-fecha_creacion')
+        
+        # Si no es supervisor, solo mostrar las propias oportunidades
+        if not is_supervisor(request.user):
+            oportunidades = oportunidades.filter(usuario=request.user)
+        
+        # Serializar las oportunidades
+        oportunidades_data = []
+        for oportunidad in oportunidades:
+            oportunidades_data.append({
+                'id': oportunidad.id,
+                'oportunidad': oportunidad.oportunidad,
+                'monto': float(oportunidad.monto) if oportunidad.monto else 0,
+                'mes_cierre': oportunidad.get_mes_cierre_display(),
+                'probabilidad_cierre': oportunidad.probabilidad_cierre,
+            })
+        
+        return JsonResponse(oportunidades_data, safe=False)
+        
+    except Exception as e:
+        print(f"ERROR: Error obteniendo oportunidades por cliente: {str(e)}")
+        return JsonResponse({'error': 'Error obteniendo oportunidades'}, status=500)
