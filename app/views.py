@@ -3330,7 +3330,11 @@ def crear_cotizacion_desde_volumetria(request):
         print(f"DEBUG: Intentando acceder a request.body...")
         body = request.body
         print(f"DEBUG: Request body obtenido, tipo: {type(body)}, tamaño: {len(body) if body else 'None'}")
-        print(f"DEBUG: Request body content: {body}")
+        try:
+            print(f"DEBUG: Request body preview: {str(body)[:200]}...")  # Solo primeros 200 caracteres
+        except:
+            print(f"DEBUG: No se puede mostrar el body, pero existe")
+        
         print(f"DEBUG: About to parse JSON")
         data = json.loads(body)
     except Exception as body_error:
