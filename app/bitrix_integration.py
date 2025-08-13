@@ -693,10 +693,15 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
             'fileContent': [file_name, file_content_base64]
         }
 
-        print(f"DEBUG Bitrix: Subiendo archivo '{file_name}' al proyecto {project_id}")
+        print(f"DEBUG Bitrix: Preparando para subir archivo '{file_name}' a la carpeta {project_storage_id} del proyecto {project_id}") # Add this line
+        print(f"DEBUG Bitrix: URL de subida: {upload_url}") # Add this line
+        print(f"DEBUG Bitrix: Tamaño del contenido base64: {len(file_content_base64)} bytes")
+        print(f"DEBUG Bitrix: Datos de subida: {json.dumps(upload_data, indent=2)}") # Add this line
+
         upload_response = requests.post(upload_url, json=upload_data)
         upload_response.raise_for_status()
         upload_result = upload_response.json()
+        print(f"DEBUG Bitrix: Respuesta de subida de archivo: {json.dumps(upload_result, indent=2)}") # Add this line
 
         if 'result' in upload_result:
             print(f"DEBUG Bitrix: Archivo '{file_name}' subido con éxito al proyecto {project_id}")
