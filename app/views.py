@@ -603,7 +603,7 @@ def view_cotizacion_pdf(request, cotizacion_id):
         company_phone = '+52 55 1234 5678'
         company_email = 'ventas@bajanet.com'
         try:
-            logo_url = "http://www.baja-net.com/images/logo.png"
+            logo_url = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRV1xCutWCicl-yXCjMjH5P5jTZA0R993cG9g&s"
             response = requests.get(logo_url)
             response.raise_for_status() # Raise an exception for HTTP errors
             logo_base64 = base64.b64encode(response.content).decode('utf-8')
@@ -617,7 +617,7 @@ def view_cotizacion_pdf(request, cotizacion_id):
         company_phone = '+52 55 1234 5678'
         company_email = 'ventas@bajanet.com'
         try:
-            logo_url = "http://www.baja-net.com/images/logo.png"
+            logo_url = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRV1xCutWCicl-yXCjMjH5P5jTZA0R993cG9g&s"
             response = requests.get(logo_url)
             response.raise_for_status() # Raise an exception for HTTP errors
             logo_base64 = base64.b64encode(response.content).decode('utf-8')
@@ -1724,7 +1724,7 @@ def generate_cotizacion_pdf(request, cotizacion_id):
         company_phone = '+52 55 1234 5678'
         company_email = 'ventas@bajanet.com'
         try:
-            logo_url = "http://www.baja-net.com/images/logo.png"
+            logo_url = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRV1xCutWCicl-yXCjMjH5P5jTZA0R993cG9g&s"
             response = requests.get(logo_url)
             response.raise_for_status() # Raise an exception for HTTP errors
             logo_base64 = base64.b64encode(response.content).decode('utf-8')
@@ -1738,7 +1738,7 @@ def generate_cotizacion_pdf(request, cotizacion_id):
         company_phone = '+52 55 1234 5678'
         company_email = 'ventas@bajanet.com'
         try:
-            logo_url = "http://www.baja-net.com/images/logo.png"
+            logo_url = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRV1xCutWCicl-yXCjMjH5P5jTZA0R993cG9g&s"
             response = requests.get(logo_url)
             response.raise_for_status() # Raise an exception for HTTP errors
             logo_base64 = base64.b64encode(response.content).decode('utf-8')
