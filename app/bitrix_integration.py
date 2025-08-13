@@ -664,6 +664,7 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
 
                 if 'result' in storage_data and len(storage_data['result']) > 0:
                     project_storage_id = storage_data['result'][0].get('ID')
+                    print(f"DEBUG Bitrix: Valor de project_storage_id después de get('ID'): {project_storage_id} (Tipo: {type(project_storage_id)})") # Add this line
                     if project_storage_id:
                         print(f"DEBUG Bitrix: Storage del proyecto {project_id} encontrado en el intento {attempt + 1}: {project_storage_id}")
                         break # Found it, exit loop
