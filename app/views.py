@@ -3433,8 +3433,8 @@ def crear_cotizacion_desde_volumetria(request):
                 
                 # Generar el PDF
                 print(f"DEBUG: Generando PDF para cotización {cotizacion.id}")
-                from . import views_exportar
-                pdf_response = views_exportar.generate_cotizacion_pdf(pdf_request, cotizacion.id)
+                # from . import views_exportar # Removed as generate_cotizacion_pdf is in this file
+                pdf_response = generate_cotizacion_pdf(pdf_request, cotizacion.id)
                 print(f"DEBUG: PDF generado con status {pdf_response.status_code}")
                 
                 if pdf_response.status_code == 200:
