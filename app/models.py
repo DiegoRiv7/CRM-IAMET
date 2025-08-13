@@ -219,6 +219,8 @@ class DetalleCotizacion(models.Model):
     cantidad = models.PositiveIntegerField(default=1, verbose_name="Cantidad")
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Precio Unitario")
     descuento_porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'), verbose_name="Descuento (%)")
+    precio_con_descuento = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Precio con Descuento")
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Total por Ítem")
     marca = models.CharField(max_length=50, choices=MARCA_CHOICES, blank=True, null=True, verbose_name="Marca")
     no_parte = models.CharField(max_length=100, blank=True, null=True, verbose_name="Número de Parte")
 
