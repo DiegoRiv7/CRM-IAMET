@@ -3388,6 +3388,7 @@ def crear_cotizacion_desde_volumetria(request):
         bitrix_comentario = False
         if oportunidad and oportunidad.bitrix_deal_id:
             # Generar PDF y adjuntarlo a Bitrix24
+            print(f"DEBUG: Intentando adjuntar cotización a Bitrix24 deal {oportunidad.bitrix_deal_id}")
             try:
                 from django.http import HttpRequest
                 from django.test import RequestFactory
@@ -3398,8 +3399,10 @@ def crear_cotizacion_desde_volumetria(request):
                 pdf_request.user = request.user
                 
                 # Generar el PDF
+                print(f"DEBUG: Generando PDF para cotización {cotizacion.id}")
                 from . import views_exportar
                 pdf_response = views_exportar.generate_cotizacion_pdf(pdf_request, cotizacion.id)
+                print(f"DEBUG: PDF generado con status {pdf_response.status_code}")
                 
                 if pdf_response.status_code == 200:
                     # Convertir PDF a base64
@@ -3425,6 +3428,7 @@ Volumetría origen: {data.get('volumetria_nombre', 'N/A')}
                     """.strip()
                     
                     # Subir a Bitrix24
+                    print(f"DEBUG: Subiendo PDF '{pdf_filename}' a Bitrix24 deal {oportunidad.bitrix_deal_id}")
                     from .bitrix_integration import add_comment_with_attachment_to_deal
                     resultado_bitrix = add_comment_with_attachment_to_deal(
                         deal_id=oportunidad.bitrix_deal_id,
@@ -3433,6 +3437,7 @@ Volumetría origen: {data.get('volumetria_nombre', 'N/A')}
                         comment_text=comentario_texto,
                         request=request
                     )
+                    print(f"DEBUG: Resultado de subida a Bitrix24: {resultado_bitrix}")
                     
                     if resultado_bitrix:
                         bitrix_comentario = True
