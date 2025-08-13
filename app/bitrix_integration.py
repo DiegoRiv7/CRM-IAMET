@@ -672,7 +672,7 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                     
                     print(f"DEBUG Bitrix: Storage ID: {project_storage_id}, Root Folder ID: {root_folder_id}")
                     
-                    if project_storage_id and root_folder_id:
+                    if project_storage_id:  # Solo verificar storage_id
                         print(f"DEBUG Bitrix: Storage del proyecto {project_id} encontrado - Storage: {project_storage_id}, Root: {root_folder_id}")
                         break # Found it, exit loop
                 
@@ -683,11 +683,17 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                 print(f"DEBUG Bitrix: Excepción en intento {attempt + 1} al obtener storage: {e}")
                 time.sleep(retry_delay) # Wait before retrying
 
-        if not project_storage_id or not root_folder_id:
-            print(f"DEBUG Bitrix: No se encontró storage o carpeta raíz para el proyecto {project_id} después de {max_retries} intentos.")
+        # Verificar que tenemos los datos necesarios
+        if not project_storage_id:
+            print(f"ERROR Bitrix: No se encontró project_storage_id para el proyecto {project_id}")
             return False
+            
+        # Si no hay root_folder_id, usar storage_id como fallback
+        if not root_folder_id:
+            print(f"WARNING Bitrix: No hay root_folder_id, usando storage_id como fallback")
+            root_folder_id = project_storage_id
 
-        print(f"DEBUG Bitrix: Storage del proyecto encontrado: {project_storage_id}, Carpeta raíz: {root_folder_id}")
+        print(f"SUCCESS Bitrix: Datos encontrados - Storage: {project_storage_id}, Target Folder: {root_folder_id}")
 
         # MÉTODO SIMPLIFICADO: Usar misma estrategia que funciona para cotizaciones
         print(f"DEBUG Bitrix: Intentando subida SIMPLIFICADA usando método probado")
