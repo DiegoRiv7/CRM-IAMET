@@ -281,24 +281,36 @@ function precargarDatosOportunidad() {
             const oportunidadData = data.volumetria_oportunidad_data;
             console.log('DEBUG: Auto-llenando formulario con datos de oportunidad:', oportunidadData);
             
-            // Auto-llenar cliente
-            const clienteSelect = document.getElementById('cliente-volumetria');
-            if (clienteSelect && oportunidadData.cliente_id) {
-                clienteSelect.value = oportunidadData.cliente_id;
-                console.log('DEBUG: Cliente auto-seleccionado:', oportunidadData.cliente_id);
-                
-                // Cargar oportunidades del cliente
-                cargarOportunidadesPorCliente(oportunidadData.cliente_id);
-                
-                // Esperar un momento y seleccionar la oportunidad
-                setTimeout(() => {
-                    const oportunidadSelect = document.getElementById('oportunidad-volumetria');
-                    if (oportunidadSelect && oportunidadData.oportunidad_id) {
-                        oportunidadSelect.value = oportunidadData.oportunidad_id;
-                        console.log('DEBUG: Oportunidad auto-seleccionada:', oportunidadData.oportunidad_id);
+            // Auto-llenar cliente después de un breve delay para asegurar que las opciones estén cargadas
+            setTimeout(() => {
+                const clienteSelect = document.getElementById('cliente-volumetria');
+                if (clienteSelect && oportunidadData.cliente_id) {
+                    console.log('DEBUG: Intentando seleccionar cliente:', oportunidadData.cliente_id);
+                    console.log('DEBUG: Opciones disponibles:', Array.from(clienteSelect.options).map(opt => ({value: opt.value, text: opt.text})));
+                    
+                    clienteSelect.value = oportunidadData.cliente_id;
+                    
+                    // Verificar si se seleccionó correctamente
+                    if (clienteSelect.value === oportunidadData.cliente_id) {
+                        console.log('DEBUG: Cliente auto-seleccionado exitosamente:', oportunidadData.cliente_id);
+                        
+                        // Cargar oportunidades del cliente
+                        cargarOportunidadesPorCliente(oportunidadData.cliente_id);
+                        
+                        // Esperar un momento y seleccionar la oportunidad
+                        setTimeout(() => {
+                            const oportunidadSelect = document.getElementById('oportunidad-volumetria');
+                            if (oportunidadSelect && oportunidadData.oportunidad_id) {
+                                oportunidadSelect.value = oportunidadData.oportunidad_id;
+                                console.log('DEBUG: Oportunidad auto-seleccionada:', oportunidadData.oportunidad_id);
+                            }
+                        }, 1500);
+                    } else {
+                        console.log('ERROR: No se pudo seleccionar el cliente. Valor esperado:', oportunidadData.cliente_id, 'Valor actual:', clienteSelect.value);
                     }
-                }, 1000);
-            }
+                }
+            }, 500);
+            
             
             // Auto-llenar nombre de volumetría (opcional - usar nombre de oportunidad como base)
             const nombreInput = document.getElementById('nombre-volumetria');
