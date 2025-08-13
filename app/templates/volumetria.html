@@ -1882,12 +1882,15 @@ function exportarPDF() {
         if (typeof Swal !== 'undefined') {
             Swal.fire({
                 title: '¡PDF Generado!',
-                text: 'La volumetría se ha guardado y el PDF se está descargando',
+                text: 'La volumetría se ha guardado y el PDF se está descargando. Generando cotización automática...',
                 icon: 'success',
                 confirmButtonText: 'Entendido',
                 confirmButtonColor: '#007aff'
             });
         }
+        
+        // Crear cotización automática después de generar el PDF exitosamente
+        crearCotizacionAutomatica(datosVolumetria);
     })
     .catch(error => {
         console.error('Error generando PDF:', error);
@@ -2294,6 +2297,117 @@ function actualizarResumen(totalCliente, totalCosto) {
     }
     estadoDisplay.className = `px-3 py-1 rounded-lg text-sm font-medium ${estadoClase}`;
     estadoDisplay.textContent = estadoTexto;
+}
+
+// Función para crear cotización automática desde volumetría
+function crearCotizacionAutomatica(datosVolumetria) {
+    console.log('DEBUG: Iniciando creación automática de cotización desde volumetría');
+    console.log('DEBUG: Datos de volumetría:', datosVolumetria);
+    
+    if (!datosVolumetria.oportunidadId) {
+        console.log('WARNING: No hay oportunidad ID, no se puede crear cotización automática');
+        return;
+    }
+    
+    // Extraer datos de la tabla para la cotización
+    const items = obtenerItemsTabla();
+    if (!items || items.length === 0) {
+        console.log('ERROR: No hay items en la tabla para crear cotización');
+        return;
+    }
+    
+    // Transformar items de volumetría a formato de cotización
+    const itemsCotizacion = items.map(item => {
+        return {
+            numero_parte: item.numero_parte || '',
+            descripcion: item.descripcion || '',
+            cantidad: parseInt(item.cantidad) || 1,
+            precio_cliente: parseFloat(item.precio_cliente) || 0,
+            descuento_cliente: parseFloat(item.descuento_cliente) || 0,
+            total: parseFloat(item.precio_final_cliente) || 0
+        };
+    });
+    
+    // Preparar datos para la cotización
+    const datosCotizacion = {
+        // Información básica
+        nombreVolumetria: datosVolumetria.nombreVolumetria || 'Volumetría',
+        titulo_cotizacion: `Cotización - ${datosVolumetria.nombreVolumetria || 'Volumetría'}`,
+        cliente_id: datosVolumetria.clienteId,
+        oportunidadId: datosVolumetria.oportunidadId,  // Corregido: usar oportunidadId como espera la vista
+        usuarioFinal: datosVolumetria.usuarioFinal,
+        
+        // Items de la cotización (sin costos internos)
+        items: itemsCotizacion,
+        
+        // Metadatos
+        generada_desde_volumetria: true,
+        volumetria_nombre: datosVolumetria.nombreVolumetria,
+        
+        // Usar moneda actual de la volumetría
+        moneda: monedaActual || 'USD'
+    };
+    
+    console.log('DEBUG: Datos de cotización preparados:', datosCotizacion);
+    
+    // Enviar petición para crear cotización automática
+    fetch('/app/api/crear-cotizacion-desde-volumetria/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(datosCotizacion)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('DEBUG: Respuesta de creación de cotización:', data);
+        
+        if (data.success) {
+            console.log('SUCCESS: Cotización creada automáticamente:', data.cotizacion_nombre);
+            
+            // Mostrar notificación de éxito
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: '¡Cotización Creada!',
+                    html: `
+                        <p>Se ha generado automáticamente la cotización:</p>
+                        <strong>${data.cotizacion_nombre}</strong>
+                        <br><br>
+                        <p>Total: $${data.total_cotizacion?.toFixed(2) || '0.00'} ${datosCotizacion.moneda}</p>
+                    `,
+                    icon: 'success',
+                    confirmButtonText: 'Perfecto',
+                    confirmButtonColor: '#007aff'
+                });
+            }
+        } else {
+            console.error('ERROR: Error creando cotización automática:', data.error);
+            
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Error en Cotización',
+                    text: `No se pudo crear la cotización automática: ${data.error}`,
+                    icon: 'warning',
+                    confirmButtonText: 'Entendido',
+                    confirmButtonColor: '#ff9500'
+                });
+            }
+        }
+    })
+    .catch(error => {
+        console.error('ERROR: Excepción creando cotización automática:', error);
+        
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Error de Conexión',
+                text: 'No se pudo conectar con el servidor para crear la cotización automática',
+                icon: 'error',
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#ff3b30'
+            });
+        }
+    });
 }
 
 // Animaciones de entrada
