@@ -588,9 +588,7 @@ def create_bitrix_project(project_name, description=None, vendedor_responsable=N
     
     # Configuración del proyecto
     project_data = {
-        'fields': {
-            'NAME': project_name,
-        }
+        'NAME': project_name,
     }
     
     # Asignar responsable del proyecto (vendedor de la oportunidad)
