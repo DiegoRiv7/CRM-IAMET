@@ -1,6 +1,7 @@
 import os
 import requests
 import json
+import base64
 from django.contrib import messages
 import time
 
@@ -9,7 +10,7 @@ from django.http import JsonResponse
 
 BITRIX_WEBHOOK_URL = os.getenv("BITRIX_WEBHOOK_URL")
 BITRIX_PROJECTS_WEBHOOK_URL = os.getenv("BITRIX_PROJECTS_WEBHOOK_URL", "https://bajanet.bitrix24.mx/rest/86/hwpxu5dr31b6wve3/sonet_group.create.json")
-BITRIX_DISK_UPLOAD_WEBHOOK_URL = os.getenv("BITRIX_DISK_UPLOAD_WEBHOOK_URL")
+BITRIX_DISK_UPLOAD_WEBHOOK_URL = os.getenv("BITRIX_DISK_UPLOAD_WEBHOOK_URL", "https://bajanet.bitrix24.mx/rest/86/uti3hluszm31h1xr/disk.folder.uploadfile.json")
 
 def get_or_create_bitrix_company(company_name, email=None, contact_name=None, request=None):
     normalized_company_name = company_name.strip().upper() # Normalizar el nombre
@@ -683,48 +684,98 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
 
         print(f"DEBUG Bitrix: Storage del proyecto encontrado: {project_storage_id}")
 
-        # Ahora subir el archivo al storage del proyecto
-        # Use the new dedicated webhook for disk uploads
-        upload_url = BITRIX_DISK_UPLOAD_WEBHOOK_URL
-
-        upload_data = {
-            'id': project_storage_id,  # ID del storage del proyecto
-            'fileContent': [file_name, file_content_base64]
-        }
-
-        print(f"DEBUG Bitrix: Preparando para subir archivo '{file_name}' a la carpeta {project_storage_id} del proyecto {project_id}") # Add this line
-        print(f"DEBUG Bitrix: URL de subida: {upload_url}") # Add this line
-        print(f"DEBUG Bitrix: Tamaño del contenido base64: {len(file_content_base64)} bytes")
-        print(f"DEBUG Bitrix: Datos de subida: {json.dumps(upload_data, indent=2)}") # Add this line
-
-        print(f"DEBUG Bitrix: Confirmando upload_data['id'] antes de enviar: {upload_data['id']}")
-        # Prepare the file for multipart/form-data upload
-        files = {
-            'fileContent': base64.b64decode(file_content_base64)
-        }
-
-        # Prepare the data payload (id and file_name)
-        data_payload = {
-            'id': project_storage_id,
-            'name': file_name # Explicitly pass file_name as a data parameter
-        }
-
-        # Send the request as multipart/form-data
-        upload_response = requests.post(upload_url, data=data_payload, files=files, timeout=30)
-        print(f"DEBUG Bitrix: Status de respuesta de subida: {upload_response.status_code}") # Add this line
-        print(f"DEBUG Bitrix: Contenido raw de respuesta de subida: {upload_response.text}") # Add this line
-        upload_response.raise_for_status()
-        upload_result = upload_response.json()
-        print(f"DEBUG Bitrix: Respuesta de subida de archivo: {json.dumps(upload_result, indent=2)}") # Add this line
-
-        if 'result' in upload_result:
-            print(f"DEBUG Bitrix: Archivo '{file_name}' subido con éxito al proyecto {project_id}")
-            return True
-        else:
-            print(f"DEBUG Bitrix: Error al subir archivo: {upload_result}")
-            if request:
-                messages.error(request, f"Error al subir archivo al proyecto: {upload_result.get('error_description', 'Error desconocido')}")
-            return False
+        # Intentar múltiples métodos de subida
+        print(f"DEBUG Bitrix: Iniciando subida de archivo '{file_name}' al proyecto {project_id}")
+        
+        methods_to_try = [
+            {
+                'name': 'disk.folder.uploadfile',
+                'endpoint': 'disk.folder.uploadfile.json',
+                'use_multipart': True
+            },
+            {
+                'name': 'disk.storage.uploadfile', 
+                'endpoint': 'disk.storage.uploadfile.json',
+                'use_multipart': True
+            },
+            {
+                'name': 'disk.folder.uploadfile (JSON)',
+                'endpoint': 'disk.folder.uploadfile.json',
+                'use_multipart': False
+            }
+        ]
+        
+        # Decodificar el archivo una sola vez
+        file_binary = base64.b64decode(file_content_base64)
+        
+        for method in methods_to_try:
+            try:
+                print(f"DEBUG Bitrix: Probando método: {method['name']}")
+                
+                # Usar webhook dedicado si está disponible y es el primer método
+                if method['name'] == 'disk.folder.uploadfile' and BITRIX_DISK_UPLOAD_WEBHOOK_URL:
+                    upload_url = BITRIX_DISK_UPLOAD_WEBHOOK_URL
+                    print(f"DEBUG Bitrix: Usando webhook dedicado para disk")
+                else:
+                    upload_url = BITRIX_PROJECTS_WEBHOOK_URL.replace("sonet_group.create.json", method['endpoint'])
+                
+                print(f"DEBUG Bitrix: URL: {upload_url}")
+                
+                if method['use_multipart']:
+                    # Método multipart/form-data
+                    files = {
+                        'fileContent': (file_name, file_binary, 'application/pdf')
+                    }
+                    
+                    data_payload = {
+                        'id': project_storage_id,
+                        'name': file_name
+                    }
+                    
+                    upload_response = requests.post(
+                        upload_url, 
+                        data=data_payload, 
+                        files=files, 
+                        timeout=60
+                    )
+                else:
+                    # Método JSON directo
+                    json_payload = {
+                        'id': project_storage_id,
+                        'fileContent': [file_name, file_content_base64]
+                    }
+                    
+                    upload_response = requests.post(
+                        upload_url, 
+                        json=json_payload, 
+                        timeout=60
+                    )
+                
+                print(f"DEBUG Bitrix: Status: {upload_response.status_code}")
+                print(f"DEBUG Bitrix: Response: {upload_response.text[:300]}...")
+                
+                if upload_response.status_code == 200:
+                    try:
+                        result = upload_response.json()
+                        if 'result' in result and result['result']:
+                            print(f"SUCCESS Bitrix: Archivo subido con método {method['name']}")
+                            return True
+                        else:
+                            print(f"DEBUG Bitrix: Método {method['name']} - Sin resultado válido")
+                    except json.JSONDecodeError:
+                        print(f"DEBUG Bitrix: Método {method['name']} - Error parseando JSON")
+                else:
+                    print(f"DEBUG Bitrix: Método {method['name']} falló con status {upload_response.status_code}")
+                    
+            except Exception as e:
+                print(f"DEBUG Bitrix: Método {method['name']} - Excepción: {e}")
+                continue
+        
+        # Si llegamos aquí, ningún método funcionó
+        print(f"ERROR Bitrix: No se pudo subir el archivo '{file_name}' con ningún método")
+        if request:
+            messages.error(request, f"Error: No se pudo subir el archivo al proyecto")
+        return False
 
     except requests.exceptions.RequestException as e:
         print(f"DEBUG Bitrix: Excepción al subir archivo al proyecto: {e}")
