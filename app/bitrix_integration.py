@@ -723,6 +723,7 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
         file_binary = base64.b64decode(file_content_base64)
         
         for method in methods_to_try:
+            print(f"\n=== DEBUG Bitrix: INICIANDO MÉTODO {method['name']} ===")
             try:
                 print(f"DEBUG Bitrix: Probando método: {method['name']}")
                 
@@ -739,6 +740,13 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                 target_id = root_folder_id if method['use_root_folder'] else project_storage_id
                 print(f"DEBUG Bitrix: Usando ID {target_id} ({'root folder' if method['use_root_folder'] else 'storage'})")
                 
+                # Verificar que tenemos los datos necesarios
+                if not target_id:
+                    print(f"ERROR Bitrix: target_id es None para método {method['name']}")
+                    continue
+                    
+                print(f"DEBUG Bitrix: Preparando request para {method['name']}...")
+                
                 if method['use_multipart']:
                     # Método multipart/form-data
                     files = {
@@ -753,12 +761,14 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                     print(f"DEBUG Bitrix: Multipart payload: {data_payload}")
                     print(f"DEBUG Bitrix: File size: {len(file_binary)} bytes")
                     
+                    print(f"DEBUG Bitrix: Enviando request multipart...")
                     upload_response = requests.post(
                         upload_url, 
                         data=data_payload, 
                         files=files, 
-                        timeout=60
+                        timeout=30  # Reducir timeout
                     )
+                    print(f"DEBUG Bitrix: Request multipart completado")
                 else:
                     # Método JSON directo
                     json_payload = {
@@ -769,11 +779,13 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                     print(f"DEBUG Bitrix: JSON payload keys: {list(json_payload.keys())}")
                     print(f"DEBUG Bitrix: Base64 size: {len(file_content_base64)} chars")
                     
+                    print(f"DEBUG Bitrix: Enviando request JSON...")
                     upload_response = requests.post(
                         upload_url, 
                         json=json_payload, 
-                        timeout=60
+                        timeout=30  # Reducir timeout
                     )
+                    print(f"DEBUG Bitrix: Request JSON completado")
                 
                 print(f"DEBUG Bitrix: Status: {upload_response.status_code}")
                 print(f"DEBUG Bitrix: Response headers: {dict(upload_response.headers)}")
@@ -807,11 +819,19 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                     print(f"ERROR Bitrix: Método {method['name']} falló con status {upload_response.status_code}")
                     print(f"ERROR Bitrix: Response body: {upload_response.text}")
                     
+            except requests.exceptions.Timeout as e:
+                print(f"ERROR Bitrix: Método {method['name']} - TIMEOUT después de 30s: {e}")
+                continue
+            except requests.exceptions.ConnectionError as e:
+                print(f"ERROR Bitrix: Método {method['name']} - Error de conexión: {e}")
+                continue
             except Exception as e:
                 print(f"ERROR Bitrix: Método {method['name']} - Excepción: {e}")
                 import traceback
                 traceback.print_exc()
                 continue
+            finally:
+                print(f"=== DEBUG Bitrix: FINALIZANDO MÉTODO {method['name']} ===\n")
         
         # Si llegamos aquí, ningún método funcionó
         print(f"ERROR Bitrix: No se pudo subir el archivo '{file_name}' con ningún método")
