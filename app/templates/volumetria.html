@@ -280,6 +280,9 @@ function precargarDatosOportunidad() {
         if (data.volumetria_oportunidad_data) {
             const oportunidadData = data.volumetria_oportunidad_data;
             console.log('DEBUG: Auto-llenando formulario con datos de oportunidad:', oportunidadData);
+            console.log('DEBUG: ID de cliente a seleccionar:', oportunidadData.cliente_id);
+            console.log('DEBUG: ID de oportunidad a seleccionar:', oportunidadData.oportunidad_id);
+            console.log('DEBUG: Nombre de oportunidad:', oportunidadData.oportunidad_nombre);
             
             // Auto-llenar cliente después de un breve delay para asegurar que las opciones estén cargadas
             setTimeout(() => {
