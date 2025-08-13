@@ -153,6 +153,7 @@ class Cotizacion(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='cotizaciones', verbose_name="Cliente")
     usuario_final = models.CharField(max_length=255, blank=True, null=True, verbose_name="Nombre del Usuario Final")
     oportunidad = models.ForeignKey(TodoItem, on_delete=models.SET_NULL, null=True, blank=True, related_name='cotizaciones', verbose_name="Oportunidad de Venta") # NUEVO CAMPO
+    bitrix_deal_id = models.CharField(max_length=255, blank=True, null=True, verbose_name="Bitrix Deal ID")
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
 
     # Nuevo campo para la descripción general de la cotización
