@@ -696,7 +696,20 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
         print(f"DEBUG Bitrix: Datos de subida: {json.dumps(upload_data, indent=2)}") # Add this line
 
         print(f"DEBUG Bitrix: Confirmando upload_data['id'] antes de enviar: {upload_data['id']}")
-        upload_response = requests.post(upload_url, json=upload_data, timeout=30)
+        # Prepare the file for multipart/form-data upload
+        files = {
+            'fileContent': (file_name, base64.b64decode(file_content_base64))
+        }
+
+        # Prepare the data payload (id and other optional parameters)
+        data_payload = {
+            'id': project_storage_id,
+            # Add other optional parameters here if needed, e.g., 'data[NAME]': file_name
+            # For now, let's keep it minimal
+        }
+
+        # Send the request as multipart/form-data
+        upload_response = requests.post(upload_url, data=data_payload, files=files, timeout=30)
         upload_response.raise_for_status()
         upload_result = upload_response.json()
         print(f"DEBUG Bitrix: Respuesta de subida de archivo: {json.dumps(upload_result, indent=2)}") # Add this line
