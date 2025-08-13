@@ -304,7 +304,7 @@ function precargarDatosOportunidad() {
                     }, 10);
                     
                     // Verificar si se seleccionó correctamente
-                    if (clienteSelect.value === oportunidadData.cliente_id) {
+                    if (clienteSelect.value == oportunidadData.cliente_id) {
                         console.log('DEBUG: Cliente auto-seleccionado exitosamente:', oportunidadData.cliente_id);
                         
                         // Actualizar el texto mostrado del select (solución para problema visual)
