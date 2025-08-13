@@ -3341,7 +3341,10 @@ def crear_cotizacion_desde_volumetria(request):
         print(f"ERROR: Error accediendo al request.body: {body_error}")
         return JsonResponse({'success': False, 'error': f'Error en request body: {str(body_error)}'}, status=400)
     print(f"DEBUG: JSON parseado exitosamente")
+    print(f"DEBUG: Tipo de data: {type(data)}")
+    print(f"DEBUG: Keys en data: {list(data.keys()) if isinstance(data, dict) else 'No es dict'}")
     print(f"DEBUG: Creando cotización desde volumetría: {data}")
+    print(f"DEBUG: Iniciando validaciones...")
     
     try:
         
