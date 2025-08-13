@@ -2,6 +2,7 @@ import os
 import requests
 import json
 from django.contrib import messages
+import time
 
 from django.http import JsonResponse
 
@@ -705,6 +706,10 @@ def create_project_and_upload_volumetria(project_name, file_name, file_content_b
     project_id = create_bitrix_project(project_name, description, vendedor_responsable, request)
     if not project_id:
         return None
+        
+    # Add a delay here
+    print(f"DEBUG Bitrix: Proyecto {project_id} creado. Esperando 5 segundos para que el storage esté disponible...")
+    time.sleep(5)
         
     # 2. Subir el archivo al drive del proyecto
     upload_success = upload_file_to_project_drive(project_id, file_name, file_content_base64, request)
