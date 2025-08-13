@@ -603,11 +603,13 @@ def view_cotizacion_pdf(request, cotizacion_id):
         company_phone = '+52 55 1234 5678'
         company_email = 'ventas@bajanet.com'
         try:
-            logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'img', 'bajanet_logo.png')
-            with open(logo_path, "rb") as image_file:
-                logo_base64 = base64.b64encode(image_file.read()).decode('utf-8')
-        except FileNotFoundError:
-            logo_base64 = ""
+            logo_url = "http://www.baja-net.com/images/logo.png"
+            response = requests.get(logo_url)
+            response.raise_for_status() # Raise an exception for HTTP errors
+            logo_base64 = base64.b64encode(response.content).decode('utf-8')
+        except requests.exceptions.RequestException as e:
+            print(f"ERROR: Error fetching Bajanet logo from URL: {e}")
+            logo_base64 = "" # Fallback to empty string if fetching fails
     else: # Fallback to Bajanet if type is not recognized or None
         template_name = 'cotizacion_pdf_template.html'
         company_name = 'BAJANET S.A. de C.V.'
@@ -615,11 +617,13 @@ def view_cotizacion_pdf(request, cotizacion_id):
         company_phone = '+52 55 1234 5678'
         company_email = 'ventas@bajanet.com'
         try:
-            logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'img', 'bajanet_logo.png')
-            with open(logo_path, "rb") as image_file:
-                logo_base64 = base64.b64encode(image_file.read()).decode('utf-8')
-        except FileNotFoundError:
-            logo_base64 = ""
+            logo_url = "http://www.baja-net.com/images/logo.png"
+            response = requests.get(logo_url)
+            response.raise_for_status() # Raise an exception for HTTP errors
+            logo_base64 = base64.b64encode(response.content).decode('utf-8')
+        except requests.exceptions.RequestException as e:
+            print(f"ERROR: Error fetching Bajanet logo from URL: {e}")
+            logo_base64 = "" # Fallback to empty string if fetching fails
 
 
     context = {
@@ -1720,11 +1724,13 @@ def generate_cotizacion_pdf(request, cotizacion_id):
         company_phone = '+52 55 1234 5678'
         company_email = 'ventas@bajanet.com'
         try:
-            logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'img', 'bajanet_logo.png')
-            with open(logo_path, "rb") as image_file:
-                logo_base64 = base64.b64encode(image_file.read()).decode('utf-8')
-        except FileNotFoundError:
-            logo_base64 = ""
+            logo_url = "http://www.baja-net.com/images/logo.png"
+            response = requests.get(logo_url)
+            response.raise_for_status() # Raise an exception for HTTP errors
+            logo_base64 = base64.b64encode(response.content).decode('utf-8')
+        except requests.exceptions.RequestException as e:
+            print(f"ERROR: Error fetching Bajanet logo from URL: {e}")
+            logo_base64 = "" # Fallback to empty string if fetching fails
     else: # Fallback to Bajanet if type is not recognized or None
         template_name = 'cotizacion_pdf_template.html'
         company_name = 'BAJANET S.A. de C.V.'
@@ -1732,11 +1738,13 @@ def generate_cotizacion_pdf(request, cotizacion_id):
         company_phone = '+52 55 1234 5678'
         company_email = 'ventas@bajanet.com'
         try:
-            logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'img', 'bajanet_logo.png')
-            with open(logo_path, "rb") as image_file:
-                logo_base64 = base64.b64encode(image_file.read()).decode('utf-8')
-        except FileNotFoundError:
-            logo_base64 = ""
+            logo_url = "http://www.baja-net.com/images/logo.png"
+            response = requests.get(logo_url)
+            response.raise_for_status() # Raise an exception for HTTP errors
+            logo_base64 = base64.b64encode(response.content).decode('utf-8')
+        except requests.exceptions.RequestException as e:
+            print(f"ERROR: Error fetching Bajanet logo from URL: {e}")
+            logo_base64 = "" # Fallback to empty string if fetching fails
 
 
     context = {
