@@ -698,6 +698,7 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
         print(f"DEBUG Bitrix: Tamaño del contenido base64: {len(file_content_base64)} bytes")
         print(f"DEBUG Bitrix: Datos de subida: {json.dumps(upload_data, indent=2)}") # Add this line
 
+        print(f"DEBUG Bitrix: Confirmando upload_data['id'] antes de enviar: {upload_data['id']}")
         upload_response = requests.post(upload_url, json=upload_data)
         upload_response.raise_for_status()
         upload_result = upload_response.json()
