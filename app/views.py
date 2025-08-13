@@ -2961,7 +2961,7 @@ def check_new_bitrix_opportunities(request):
     from .bitrix_integration import get_all_bitrix_deals
     from datetime import datetime, timedelta
     from django.utils import timezone
-from datetime import datetime as django_timezone
+    from datetime import datetime as django_timezone
     
     try:
         # Obtener timestamp de la última verificación desde el parámetro GET
