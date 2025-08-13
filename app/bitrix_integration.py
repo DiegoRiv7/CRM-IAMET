@@ -646,8 +646,8 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
 
     try:
         project_storage_id = None
-        max_retries = 5
-        retry_delay = 2 # seconds
+        max_retries = 10
+        retry_delay = 5 # seconds
 
         for attempt in range(max_retries):
             try:
@@ -660,6 +660,7 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                 })
                 storage_response.raise_for_status()
                 storage_data = storage_response.json()
+                print(f"DEBUG Bitrix: Respuesta de disk.storage.getlist para proyecto {project_id}: {json.dumps(storage_data, indent=2)}") # Add this line
 
                 if 'result' in storage_data and len(storage_data['result']) > 0:
                     project_storage_id = storage_data['result'][0].get('id')
