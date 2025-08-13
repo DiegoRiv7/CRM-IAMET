@@ -696,17 +696,26 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
             {
                 'name': 'disk.folder.uploadfile',
                 'endpoint': 'disk.folder.uploadfile.json',
-                'use_multipart': True
+                'use_multipart': True,
+                'use_root_folder': True
             },
             {
                 'name': 'disk.storage.uploadfile', 
                 'endpoint': 'disk.storage.uploadfile.json',
-                'use_multipart': True
+                'use_multipart': True,
+                'use_root_folder': False  # Este usa storage ID
             },
             {
                 'name': 'disk.folder.uploadfile (JSON)',
                 'endpoint': 'disk.folder.uploadfile.json',
-                'use_multipart': False
+                'use_multipart': False,
+                'use_root_folder': True
+            },
+            {
+                'name': 'disk.file.upload',
+                'endpoint': 'disk.file.upload.json',
+                'use_multipart': True,
+                'use_root_folder': False
             }
         ]
         
@@ -726,6 +735,10 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                 
                 print(f"DEBUG Bitrix: URL: {upload_url}")
                 
+                # Decidir qué ID usar (root folder o storage)
+                target_id = root_folder_id if method['use_root_folder'] else project_storage_id
+                print(f"DEBUG Bitrix: Usando ID {target_id} ({'root folder' if method['use_root_folder'] else 'storage'})")
+                
                 if method['use_multipart']:
                     # Método multipart/form-data
                     files = {
@@ -733,9 +746,12 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                     }
                     
                     data_payload = {
-                        'id': root_folder_id,  # Usar root folder en lugar de storage
+                        'id': target_id,
                         'name': file_name
                     }
+                    
+                    print(f"DEBUG Bitrix: Multipart payload: {data_payload}")
+                    print(f"DEBUG Bitrix: File size: {len(file_binary)} bytes")
                     
                     upload_response = requests.post(
                         upload_url, 
@@ -746,9 +762,12 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                 else:
                     # Método JSON directo
                     json_payload = {
-                        'id': root_folder_id,  # Usar root folder en lugar de storage
+                        'id': target_id,
                         'fileContent': [file_name, file_content_base64]
                     }
+                    
+                    print(f"DEBUG Bitrix: JSON payload keys: {list(json_payload.keys())}")
+                    print(f"DEBUG Bitrix: Base64 size: {len(file_content_base64)} chars")
                     
                     upload_response = requests.post(
                         upload_url, 
@@ -757,23 +776,41 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                     )
                 
                 print(f"DEBUG Bitrix: Status: {upload_response.status_code}")
-                print(f"DEBUG Bitrix: Response: {upload_response.text[:300]}...")
+                print(f"DEBUG Bitrix: Response headers: {dict(upload_response.headers)}")
+                print(f"DEBUG Bitrix: Response: {upload_response.text[:500]}...")
                 
                 if upload_response.status_code == 200:
                     try:
                         result = upload_response.json()
-                        if 'result' in result and result['result']:
-                            print(f"SUCCESS Bitrix: Archivo subido con método {method['name']}")
-                            return True
+                        print(f"DEBUG Bitrix: JSON response: {json.dumps(result, indent=2)}")
+                        
+                        if 'result' in result:
+                            if result['result']:
+                                print(f"SUCCESS Bitrix: Archivo subido con método {method['name']}")
+                                print(f"SUCCESS Bitrix: File ID: {result['result']}")
+                                return True
+                            else:
+                                print(f"WARNING Bitrix: Método {method['name']} - resultado vacío")
                         else:
-                            print(f"DEBUG Bitrix: Método {method['name']} - Sin resultado válido")
-                    except json.JSONDecodeError:
-                        print(f"DEBUG Bitrix: Método {method['name']} - Error parseando JSON")
+                            print(f"WARNING Bitrix: Método {method['name']} - sin campo 'result'")
+                            
+                        # Verificar si hay errores en la respuesta
+                        if 'error' in result:
+                            print(f"ERROR Bitrix: {result['error']}")
+                            if 'error_description' in result:
+                                print(f"ERROR Bitrix: {result['error_description']}")
+                                
+                    except json.JSONDecodeError as e:
+                        print(f"ERROR Bitrix: Método {method['name']} - Error parseando JSON: {e}")
+                        print(f"ERROR Bitrix: Raw response: {upload_response.text}")
                 else:
-                    print(f"DEBUG Bitrix: Método {method['name']} falló con status {upload_response.status_code}")
+                    print(f"ERROR Bitrix: Método {method['name']} falló con status {upload_response.status_code}")
+                    print(f"ERROR Bitrix: Response body: {upload_response.text}")
                     
             except Exception as e:
-                print(f"DEBUG Bitrix: Método {method['name']} - Excepción: {e}")
+                print(f"ERROR Bitrix: Método {method['name']} - Excepción: {e}")
+                import traceback
+                traceback.print_exc()
                 continue
         
         # Si llegamos aquí, ningún método funcionó
