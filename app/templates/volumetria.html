@@ -238,26 +238,16 @@ function iniciarVolumetria(tipo, titulo) {
 // Función para precargar datos de oportunidad desde la sesión
 function precargarDatosOportunidad() {
     console.log('DEBUG: Iniciando precargarDatosOportunidad()');
-    
-    // Obtener datos de oportunidad del template usando Django json_script
     const oportunidadDataElement = document.getElementById('oportunidad-data');
-    console.log('DEBUG: Elemento oportunidad-data encontrado:', oportunidadDataElement);
-    
     const oportunidadData = oportunidadDataElement ? JSON.parse(oportunidadDataElement.textContent) : null;
-    console.log('DEBUG: Datos parseados de oportunidad:', oportunidadData);
     
     if (oportunidadData && oportunidadData.oportunidad_id) {
         console.log('DEBUG: Precargando datos de oportunidad:', oportunidadData);
-        
-        // Almacenar datos globalmente para uso posterior
         window.oportunidadPrecargada = oportunidadData;
-        
-        // Mostrar mensaje informativo en la interfaz
         mostrarMensajeOportunidadCargada(oportunidadData);
-        
         console.log('DEBUG: Datos de oportunidad guardados en window.oportunidadPrecargada');
     } else {
-        console.log('DEBUG: No se encontraron datos válidos de oportunidad o falta oportunidad_id');
+        console.log('DEBUG: No se encontraron datos válidos de oportunidad.');
     }
 }
 
@@ -289,8 +279,6 @@ function mostrarMensajeOportunidadCargada(data) {
             </div>
         </div>
     `;
-    
-    // Insertar mensaje después del header principal
     const container = document.querySelector('.main-content .apple-glass-card');
     if (container) {
         container.insertAdjacentHTML('afterend', mensajeHTML);
@@ -303,12 +291,11 @@ function cerrarMensajeOportunidad() {
     if (mensaje) {
         mensaje.remove();
     }
-    
-    // Limpiar datos de oportunidad de la sesión
-    limpiarDatosOportunidad();
+    window.oportunidadPrecargada = null; // Limpiar datos globales
+    limpiarDatosOportunidad(); // Limpiar sesión en backend
 }
 
-// Función para limpiar datos de oportunidad de la sesión
+// Función para limpiar datos de oportunidad de la sesión en el backend
 function limpiarDatosOportunidad() {
     fetch('/app/api/limpiar-datos-oportunidad-volumetria/', {
         method: 'POST',
@@ -326,20 +313,16 @@ function populateClientSelectVolumetria() {
     const clientSelect = document.getElementById('cliente-volumetria');
     if (!clientSelect) return;
     
-    // Parse the clients data (similar to quotations)
     fetch('/app/api/clients-for-user/')
         .then(response => response.json())
         .then(clientesData => {
             clientSelect.innerHTML = '<option value="">-- Seleccione un cliente --</option>';
-            
             clientesData.forEach(client => {
                 const option = document.createElement('option');
                 option.value = client.id;
-                option.textContent = client.nombre_empresa;
+                option.textContent = client.name; // El API usa 'name'
                 clientSelect.appendChild(option);
             });
-            
-            // Precargar cliente si viene de una oportunidad
             precargarClienteYOportunidad(clientSelect);
         })
         .catch(error => {
@@ -349,72 +332,30 @@ function populateClientSelectVolumetria() {
 
 // Función para precargar cliente y oportunidad desde los datos de sesión
 function precargarClienteYOportunidad(clientSelect) {
-    console.log('DEBUG: Verificando datos de oportunidad precargada:', window.oportunidadPrecargada);
-    
     if (window.oportunidadPrecargada && window.oportunidadPrecargada.cliente_id) {
-        const clienteId = window.oportunidadPrecargada.cliente_id;
-        const clienteNombre = window.oportunidadPrecargada.cliente_nombre;
-        console.log(`DEBUG: Precargando cliente ID: ${clienteId}, Nombre: ${clienteNombre}`);
+        const data = window.oportunidadPrecargada;
+        const clienteId = data.cliente_id;
+        const clienteNombre = data.cliente_nombre;
         
-        // Verificar si el cliente ya existe en el select
-        let optionExists = false;
-        for (let i = 0; i < clientSelect.options.length; i++) {
-            if (clientSelect.options[i].value == clienteId) {
-                optionExists = true;
-                break;
-            }
+        // Precargar nombre de la volumetría
+        const nombreInput = document.getElementById('nombre-volumetria');
+        if (nombreInput && !nombreInput.value) {
+            nombreInput.value = `Volumetría - ${data.oportunidad_nombre}`;
         }
-        
-        // Si no existe, añadirlo
+
+        // Verificar si el cliente ya existe en el select
+        let optionExists = Array.from(clientSelect.options).some(opt => opt.value == clienteId);
         if (!optionExists) {
-            console.log('DEBUG: El cliente no estaba en la lista, agregándolo.');
             const option = document.createElement('option');
             option.value = clienteId;
             option.textContent = clienteNombre;
-            option.selected = true;
             clientSelect.appendChild(option);
-        } else {
-            console.log('DEBUG: El cliente ya estaba en la lista.');
-            clientSelect.value = clienteId;
         }
         
-        // Disparar evento de cambio para cargar oportunidades
-        const event = new Event('change');
-        clientSelect.dispatchEvent(event);
-        
-        console.log('DEBUG: Cliente seleccionado, cargando campos en 500ms');
-        
-        // Precargar otros campos después de un breve delay
-        setTimeout(() => {
-            precargarCamposFormulario();
-        }, 500);
-    } else {
-        console.log('DEBUG: No hay datos de oportunidad precargada o falta cliente_id');
+        // Seleccionar el cliente y disparar el evento change para cargar las oportunidades
+        clientSelect.value = clienteId;
+        clientSelect.dispatchEvent(new Event('change'));
     }
-}
-
-// Función para precargar campos del formulario con datos de oportunidad
-function precargarCamposFormulario() {
-    if (!window.oportunidadPrecargada) return;
-    
-    const data = window.oportunidadPrecargada;
-    
-    // Precargar nombre de volumetría
-    const nombreInput = document.getElementById('nombre-volumetria');
-    if (nombreInput && !nombreInput.value) {
-        const nombreSugerido = `Volumetría - ${data.oportunidad_nombre}`;
-        nombreInput.value = nombreSugerido;
-    }
-    
-    // Precargar oportunidad
-    const oportunidadSelect = document.getElementById('oportunidad-volumetria');
-    if (oportunidadSelect && data.oportunidad_id) {
-        setTimeout(() => {
-            oportunidadSelect.value = data.oportunidad_id;
-        }, 750);
-    }
-    
-    console.log('DEBUG: Campos precargados con datos de oportunidad');
 }
 
 // Función para configurar listener de cambio de cliente
@@ -426,23 +367,38 @@ function setupOpportunityChangeListener() {
     
     clientSelect.addEventListener('change', function() {
         const clienteId = this.value;
-        oportunidadSelect.innerHTML = '<option value="">-- Seleccione una oportunidad --</option>';
+        oportunidadSelect.innerHTML = '<option value="">Cargando oportunidades...</option>';
         
-        if (!clienteId) return;
+        if (!clienteId) {
+            oportunidadSelect.innerHTML = '<option value="">-- Seleccione una oportunidad --</option>';
+            return;
+        }
         
-        // Fetch opportunities for the selected client
-        fetch(`/app/api/get-oportunidades-por-cliente/?cliente_id=${clienteId}`)
+        let apiUrl = `/app/api/get-oportunidades-por-cliente/?cliente_id=${clienteId}`;
+        // Asegurarse de que la oportunidad precargada se incluya en la lista si pertenece a este cliente
+        if (window.oportunidadPrecargada && window.oportunidadPrecargada.oportunidad_id) {
+            apiUrl += `&oportunidad_inicial_id=${window.oportunidadPrecargada.oportunidad_id}`;
+        }
+
+        fetch(apiUrl)
             .then(response => response.json())
             .then(oportunidades => {
+                oportunidadSelect.innerHTML = '<option value="">-- Seleccione una oportunidad --</option>';
                 oportunidades.forEach(oportunidad => {
                     const option = document.createElement('option');
                     option.value = oportunidad.id;
                     option.textContent = oportunidad.nombre;
                     oportunidadSelect.appendChild(option);
                 });
+
+                // Ahora que las oportunidades están cargadas, preseleccionar la correcta
+                if (window.oportunidadPrecargada && window.oportunidadPrecargada.oportunidad_id) {
+                    oportunidadSelect.value = window.oportunidadPrecargada.oportunidad_id;
+                }
             })
             .catch(error => {
                 console.error('Error cargando oportunidades:', error);
+                oportunidadSelect.innerHTML = '<option value="">Error al cargar</option>';
             });
     });
 }
@@ -644,9 +600,6 @@ function mostrarFormularioNodos() {
     // Poblar selectores de cliente y oportunidad
     populateClientSelectVolumetria();
     setupOpportunityChangeListener();
-    
-    // Precargar datos de oportunidad si vienen desde una oportunidad específica
-    precargarDatosOportunidad();
 }
 
 // Función para cerrar el formulario
