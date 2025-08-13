@@ -3317,7 +3317,11 @@ def crear_cotizacion_desde_volumetria(request):
     """
     Vista para crear cotización automáticamente desde una volumetría
     """
+    print(f"DEBUG: === INICIO crear_cotizacion_desde_volumetria ===")
+    print(f"DEBUG: Método: {request.method}")
+    
     if request.method != 'POST':
+        print(f"ERROR: Método no permitido: {request.method}")
         return JsonResponse({'error': 'Método no permitido'}, status=405)
     
     try:
