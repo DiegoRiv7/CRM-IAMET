@@ -3343,8 +3343,10 @@ def crear_cotizacion_desde_volumetria(request):
     print(f"DEBUG: JSON parseado exitosamente")
     print(f"DEBUG: Tipo de data: {type(data)}")
     print(f"DEBUG: Keys en data: {list(data.keys()) if isinstance(data, dict) else 'No es dict'}")
-    print(f"DEBUG: Creando cotización desde volumetría: {data}")
+    # Comentado temporalmente: print(f"DEBUG: Creando cotización desde volumetría: {data}")
     print(f"DEBUG: Iniciando validaciones...")
+    print(f"DEBUG: cliente_id en data: {data.get('cliente_id')}")
+    print(f"DEBUG: oportunidadId en data: {data.get('oportunidadId')}")
     
     try:
         
