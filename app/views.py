@@ -3325,7 +3325,9 @@ def crear_cotizacion_desde_volumetria(request):
         return JsonResponse({'error': 'Método no permitido'}, status=405)
     
     try:
+        print(f"DEBUG: Request body: {request.body}")
         data = json.loads(request.body)
+        print(f"DEBUG: JSON parseado exitosamente")
         print(f"DEBUG: Creando cotización desde volumetría: {data}")
         
         if not data.get('cliente_id'):
@@ -3480,7 +3482,9 @@ Volumetría origen: {data.get('volumetria_nombre', 'N/A')}
         })
         
     except Exception as e:
+        import traceback
         print(f"ERROR: Error creando cotización desde volumetría: {str(e)}")
+        print(f"ERROR: Traceback completo: {traceback.format_exc()}")
         return JsonResponse({'success': False, 'error': f'Error interno: {str(e)}'}, status=500)
 
 @login_required
