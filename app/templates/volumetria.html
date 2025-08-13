@@ -1770,27 +1770,18 @@ function exportarPDF() {
     const datosVolumetria = obtenerDatosVolumetriaActual();
     
     if (!datosVolumetria) {
-        Swal.fire('Error', 'No se pudieron obtener los datos completos de la volumetría para generar el PDF.', 'error');
+        Swal.fire('Error', 'No se pudieron obtener los datos completos de la volumetría.', 'error');
         return;
     }
     
-    // Guardar en localStorage
-    guardarVolumetria('nodos', datosVolumetria);
+    console.log("Paso 1: Datos de volumetría obtenidos.", datosVolumetria);
     
     Swal.fire({
-        title: 'Procesando Volumetría',
-        html: '📄 Generando PDF y preparando cotización...', 
-        icon: 'info',
+        title: 'Procesando...', 
+        html: 'Generando PDF de volumetría...', 
         allowOutsideClick: false,
-        showConfirmButton: false,
-        didOpen: () => {
-            Swal.showLoading();
-        }
+        didOpen: () => { Swal.showLoading(); }
     });
-    
-    // The payload for the API is the entire data object.
-    // The backend will pick what it needs.
-    const pdfData = datosVolumetria;
     
     fetch('/app/api/generar-pdf-volumetria/', {
         method: 'POST',
@@ -1798,39 +1789,59 @@ function exportarPDF() {
             'Content-Type': 'application/json',
             'X-CSRFToken': '{{ csrf_token }}'
         },
-        body: JSON.stringify(pdfData)
+        body: JSON.stringify(datosVolumetria)
     })
     .then(response => {
+        console.log("Paso 2: Respuesta recibida del servidor para generar PDF.");
         if (response.ok) {
-            const filenameDisposition = response.headers.get('Content-Disposition');
-            let filename = "volumetria.pdf"; // default
-            if (filenameDisposition) {
-                const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(filenameDisposition);
-                if (matches != null && matches[1]) { 
-                  filename = matches[1].replace(/['"]/g, '');
+            return response.blob().then(blob => {
+                // Intentar obtener el nombre del archivo de la cabecera
+                const disposition = response.headers.get('Content-Disposition');
+                let filename = `Volumetria_${datosVolumetria.nombreVolumetria || 'Proyecto'}.pdf`;
+                if (disposition && disposition.indexOf('attachment') !== -1) {
+                    const filenameRegex = /filename[^;=
+]*=((['"]).*?\2|[^;
+]*)/;
+                    const matches = filenameRegex.exec(disposition);
+                    if (matches != null && matches[1]) {
+                        filename = matches[1].replace(/['"]/g, '');
+                    }
                 }
-            }
-            return response.blob().then(blob => ({ blob, filename }));
+                return { blob, filename };
+            });
+        } else {
+            // Si hay un error, intentar leer el JSON de error
+            return response.json().then(err => {
+                throw new Error(err.error || 'Error desconocido al generar PDF');
+            });
         }
-        return response.json().then(err => { throw new Error(err.error || 'Error al generar el PDF') });
     })
     .then(({ blob, filename }) => {
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
+        console.log("Paso 3: PDF recibido, iniciando descarga.");
+        try {
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            console.log("Paso 4: Descarga de PDF completada.");
+        } catch (e) {
+            console.error("Error en la lógica de descarga del PDF:", e);
+        }
         
-        console.log('PDF generado exitosamente, creando cotización automática...');
+        // Llamar a la siguiente función sin importar si la descarga funcionó
+        console.log("Paso 5: Llamando a crearCotizacionAutomatica.");
         crearCotizacionAutomatica(datosVolumetria);
     })
     .catch(error => {
-        console.error('Error generando PDF:', error);
+        console.error("Error en el proceso de exportarPDF:", error);
         Swal.fire('Error de PDF', error.message, 'error');
-        // Still try to create the quote
+        
+        // Igualmente intentar crear la cotización como fallback
+        console.log("Paso 5 (Fallback): Ocurrió un error, pero se intentará crear la cotización de todas formas.");
         crearCotizacionAutomatica(datosVolumetria);
     });
 }
