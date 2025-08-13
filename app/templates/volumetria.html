@@ -358,11 +358,34 @@ function cargarOportunidadesPorCliente(clienteId, oportunidadIdToSelect = null) 
             // Si se especificó una oportunidad para seleccionar automáticamente
             if (oportunidadIdToSelect) {
                 setTimeout(() => {
-                    oportunidadSelect.value = oportunidadIdToSelect;
-                    console.log('DEBUG: Oportunidad auto-seleccionada:', oportunidadIdToSelect);
+                    console.log('DEBUG: Intentando seleccionar oportunidad:', oportunidadIdToSelect);
+                    console.log('DEBUG: Tipo de oportunidadIdToSelect:', typeof oportunidadIdToSelect);
+                    console.log('DEBUG: Opciones de oportunidades disponibles:', Array.from(oportunidadSelect.options).map(opt => ({value: opt.value, text: opt.text, tipo: typeof opt.value})));
                     
-                    // Verificar si se seleccionó correctamente
-                    if (oportunidadSelect.value == oportunidadIdToSelect) {
+                    // Intentar selección directa
+                    oportunidadSelect.value = oportunidadIdToSelect;
+                    
+                    // Si no funciona, intentar conversión a string
+                    if (oportunidadSelect.value != oportunidadIdToSelect) {
+                        console.log('DEBUG: Intentando conversión a string...');
+                        oportunidadSelect.value = String(oportunidadIdToSelect);
+                    }
+                    
+                    // Si aún no funciona, buscar manualmente
+                    if (oportunidadSelect.value != oportunidadIdToSelect && oportunidadSelect.value != String(oportunidadIdToSelect)) {
+                        console.log('DEBUG: Buscando opción manualmente...');
+                        for (let i = 0; i < oportunidadSelect.options.length; i++) {
+                            const option = oportunidadSelect.options[i];
+                            if (option.value == oportunidadIdToSelect || option.value == String(oportunidadIdToSelect)) {
+                                oportunidadSelect.selectedIndex = i;
+                                console.log('DEBUG: Opción encontrada y seleccionada en índice:', i);
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Verificar resultado final
+                    if (oportunidadSelect.value == oportunidadIdToSelect || oportunidadSelect.value == String(oportunidadIdToSelect)) {
                         console.log('DEBUG: ✅ Oportunidad seleccionada exitosamente');
                         const selectedOption = oportunidadSelect.options[oportunidadSelect.selectedIndex];
                         if (selectedOption) {
@@ -370,8 +393,9 @@ function cargarOportunidadesPorCliente(clienteId, oportunidadIdToSelect = null) 
                         }
                     } else {
                         console.log('ERROR: ❌ No se pudo seleccionar la oportunidad:', oportunidadIdToSelect);
+                        console.log('ERROR: Valor actual del select:', oportunidadSelect.value);
                     }
-                }, 100);
+                }, 200);
             }
         })
         .catch(error => {
