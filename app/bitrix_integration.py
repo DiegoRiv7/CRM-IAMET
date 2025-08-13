@@ -646,18 +646,19 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
     
     try:
         # Obtener todos los storages y buscar el del proyecto
-        storage_response = requests.post(storage_url)
+        storage_response = requests.post(storage_url, json={
+            'filter': {
+                'ENTITY_ID': project_id,
+                'ENTITY_TYPE': 'group'
+            }
+        })
         storage_response.raise_for_status()
         storage_data = storage_response.json()
-        
+
         project_storage_id = None
-        if 'result' in storage_data:
-            for storage in storage_data['result']:
-                # Los storages de proyectos tienen un entityId que corresponde al proyecto
-                if (storage.get('entityType') == 'group' and 
-                    str(storage.get('entityId')) == str(project_id)):
-                    project_storage_id = storage.get('id')
-                    break
+        if 'result' in storage_data and len(storage_data['result']) > 0:
+            # If filtered, there should be only one result
+            project_storage_id = storage_data['result'][0].get('id')
         
         if not project_storage_id:
             print(f"DEBUG Bitrix: No se encontró storage para el proyecto {project_id}")
