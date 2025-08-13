@@ -699,7 +699,7 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
         print(f"DEBUG Bitrix: Datos de subida: {json.dumps(upload_data, indent=2)}") # Add this line
 
         print(f"DEBUG Bitrix: Confirmando upload_data['id'] antes de enviar: {upload_data['id']}")
-        upload_response = requests.post(upload_url, json=upload_data)
+        upload_response = requests.post(upload_url, json=upload_data, timeout=30)
         upload_response.raise_for_status()
         upload_result = upload_response.json()
         print(f"DEBUG Bitrix: Respuesta de subida de archivo: {json.dumps(upload_result, indent=2)}") # Add this line
@@ -715,6 +715,12 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
 
     except requests.exceptions.RequestException as e:
         print(f"DEBUG Bitrix: Excepción al subir archivo al proyecto: {e}")
+        if isinstance(e, requests.exceptions.Timeout):
+            print(f"ERROR Bitrix: La subida del archivo excedió el tiempo de espera (timeout).")
+        elif hasattr(e, 'response') and e.response is not None:
+            print(f"ERROR Bitrix: Respuesta de error de Bitrix24: {e.response.text}")
+        import traceback
+        traceback.print_exc() # Print full traceback
         if request:
             messages.error(request, f"Excepción al subir archivo al proyecto: {e}")
         return False
