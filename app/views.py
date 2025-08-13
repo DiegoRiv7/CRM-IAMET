@@ -3182,7 +3182,42 @@ def generar_pdf_volumetria(request):
             except TodoItem.DoesNotExist:
                 pass
         
-        # Calcular valores financieros
+        # 1. Crear el proyecto en Bitrix24 PRIMERO
+        project_id = None
+        project_name = data.get('nombre_volumetria', 'Análisis Volumétrico')
+        project_description = f"""
+Proyecto automatizado desde Nethive para volumetría: {project_name}
+
+Cliente: {cliente_nombre}
+Oportunidad: {oportunidad_nombre}
+Elaborado por: {data.get('elaborado_por', request.user.get_full_name() or request.user.username)}
+Fecha: {data.get('fecha', datetime.now().strftime('%d/%m/%Y'))}
+
+Categoría: {data.get('categoria', 'CAT6')}
+Cantidad de nodos: {data.get('cantidad_nodos', 1)}
+Total: ${float(data.get('total', 0)):,.2f} USD
+
+Este proyecto contiene la documentación técnica y volumetría del proyecto.
+            """.strip()
+
+        try:
+            from .bitrix_integration import create_bitrix_project
+            project_id = create_bitrix_project(
+                project_name=project_name,
+                description=project_description,
+                vendedor_responsable=vendedor_responsable,
+                request=request
+            )
+            if project_id:
+                print(f"DEBUG: Proyecto Bitrix24 creado exitosamente: ID {project_id}")
+            else:
+                print("WARNING: No se pudo crear el proyecto en Bitrix24. La volumetría no se adjuntará al proyecto.")
+
+        except Exception as e:
+            print(f"WARNING: Error al intentar crear el proyecto en Bitrix24: {e}")
+            project_id = None # Asegurar que project_id sea None si la creación falla
+
+        # Calcular valores financieros (estos dependen de los datos de la volumetría, no del proyecto)
         subtotal = float(data.get('subtotal', 0))
         iva_rate = 0.16  # 16% IVA por defecto
         iva = subtotal * iva_rate
@@ -3230,51 +3265,28 @@ def generar_pdf_volumetria(request):
         # Generar PDF usando WeasyPrint
         pdf_file = HTML(string=html_string).write_pdf()
         
-        # Crear el proyecto en Bitrix24 y subir el PDF
-        project_result = None
-        try:
-            from .bitrix_integration import create_project_and_upload_volumetria
-            import base64
-            
-            # Convertir PDF a base64 para Bitrix24
-            pdf_base64 = base64.b64encode(pdf_file).decode('utf-8')
-            filename = f"Volumetria_{data.get('nombre_volumetria', 'Analisis')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-            
-            # Crear proyecto con el nombre de la volumetría
-            project_name = data.get('nombre_volumetria', 'Análisis Volumétrico')
-            project_description = f"""
-Proyecto automatizado desde Nethive para volumetría: {project_name}
-
-Cliente: {cliente_nombre}
-Oportunidad: {oportunidad_nombre}
-Elaborado por: {data.get('elaborado_por', request.user.get_full_name() or request.user.username)}
-Fecha: {data.get('fecha', datetime.now().strftime('%d/%m/%Y'))}
-
-Categoría: {data.get('categoria', 'CAT6')}
-Cantidad de nodos: {cantidad_nodos}
-Total: ${total:,.2f} USD
-
-Este proyecto contiene la documentación técnica y volumetría del proyecto.
-            """.strip()
-            
-            project_result = create_project_and_upload_volumetria(
-                project_name=project_name,
-                file_name=filename,
-                file_content_base64=pdf_base64,
-                description=project_description,
-                vendedor_responsable=vendedor_responsable,
-                request=request
-            )
-            
-            if project_result:
-                print(f"DEBUG: Proyecto Bitrix24 creado exitosamente: {project_result}")
-            else:
-                print("WARNING: No se pudo crear el proyecto en Bitrix24, pero continuando con descarga de PDF")
+        # 3. Si el proyecto fue creado, subir el PDF de la volumetría a su drive
+        if project_id:
+            try:
+                from .bitrix_integration import upload_file_to_project_drive
+                import base64
                 
-        except Exception as e:
-            print(f"WARNING: Error creando proyecto en Bitrix24: {e}")
-            # No interrumpir el flujo si falla Bitrix24
-        
+                pdf_base64 = base64.b64encode(pdf_file).decode('utf-8')
+                filename = f"Volumetria_{data.get('nombre_volumetria', 'Analisis')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+
+                upload_success = upload_file_to_project_drive(
+                    project_id=project_id,
+                    file_name=filename,
+                    file_content_base64=pdf_base64,
+                    request=request
+                )
+                if upload_success:
+                    print(f"DEBUG: PDF de volumetría subido exitosamente al proyecto Bitrix24 {project_id}")
+                else:
+                    print(f"WARNING: No se pudo subir el PDF de volumetría al proyecto Bitrix24 {project_id}")
+            except Exception as e:
+                print(f"WARNING: Error al intentar subir el PDF de volumetría al proyecto Bitrix24: {e}")
+
         # Crear respuesta HTTP con el PDF
         response = HttpResponse(pdf_file, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
