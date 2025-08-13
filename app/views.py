@@ -550,8 +550,9 @@ def get_user_clients_api(request):
         clients_data = []
         for client in clients_queryset:
             clients_data.append({
-                'id': str(client.id), # Convertir ID a string para consistencia con JSON
+                'id': client.id, # Convertir ID a número para consistencia
                 'name': client.nombre_empresa, # Mapear nombre_empresa a 'name'
+                'nombre_empresa': client.nombre_empresa, # Mantener también el nombre original
                 'address': client.direccion, # Mapear direccion a 'address'
                 'taxId': client.email # Mapear email a 'taxId' (o el campo que uses para ID Fiscal)
                 # Puedes añadir más campos aquí si los necesitas en el frontend

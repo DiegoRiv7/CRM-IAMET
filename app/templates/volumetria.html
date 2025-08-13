@@ -250,7 +250,7 @@ function populateClientSelectVolumetria() {
             clientesData.forEach(client => {
                 const option = document.createElement('option');
                 option.value = client.id;
-                option.textContent = client.nombre_empresa;
+                option.textContent = client.name; // Corregido: usar 'name' en lugar de 'nombre_empresa'
                 clientSelect.appendChild(option);
             });
             
