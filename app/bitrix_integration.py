@@ -695,10 +695,58 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
 
         print(f"SUCCESS Bitrix: Datos encontrados - Storage: {project_storage_id}, Target Folder: {root_folder_id}")
 
-        # MÉTODO SIMPLIFICADO: Usar misma estrategia que funciona para cotizaciones
-        print(f"DEBUG Bitrix: Intentando subida SIMPLIFICADA usando método probado")
-        print(f"DEBUG Bitrix: Archivo: {file_name}")
-        print(f"DEBUG Bitrix: Storage ID: {project_storage_id}, Root: {root_folder_id}")
+        # PASO 1: Crear carpeta "Volumetrías" en el proyecto
+        print(f"DEBUG Bitrix: Creando carpeta 'Volumetrías' en el proyecto...")
+        
+        volumetrias_folder_id = None
+        try:
+            create_folder_url = BITRIX_PROJECTS_WEBHOOK_URL.replace("sonet_group.create.json", "disk.folder.addsubfolder.json")
+            
+            folder_data = {
+                'id': root_folder_id,
+                'name': 'Volumetrías'
+            }
+            
+            print(f"DEBUG Bitrix: URL crear carpeta: {create_folder_url}")
+            print(f"DEBUG Bitrix: Datos carpeta: {folder_data}")
+            
+            folder_response = requests.post(create_folder_url, json=folder_data, timeout=20)
+            print(f"DEBUG Bitrix: Status crear carpeta: {folder_response.status_code}")
+            print(f"DEBUG Bitrix: Response crear carpeta: {folder_response.text[:200]}...")
+            
+            if folder_response.status_code == 200:
+                folder_result = folder_response.json()
+                if 'result' in folder_result and folder_result['result']:
+                    volumetrias_folder_id = folder_result['result']['ID']
+                    print(f"SUCCESS Bitrix: Carpeta 'Volumetrías' creada con ID: {volumetrias_folder_id}")
+                elif 'error' in folder_result and 'already exists' in str(folder_result['error']).lower():
+                    print(f"INFO Bitrix: Carpeta 'Volumetrías' ya existe, buscándola...")
+                    # Buscar la carpeta existente
+                    search_url = BITRIX_PROJECTS_WEBHOOK_URL.replace("sonet_group.create.json", "disk.folder.getchildren.json")
+                    search_response = requests.post(search_url, json={'id': root_folder_id}, timeout=20)
+                    if search_response.status_code == 200:
+                        search_result = search_response.json()
+                        if 'result' in search_result:
+                            for item in search_result['result']:
+                                if item.get('NAME') == 'Volumetrías' and item.get('TYPE') == 'folder':
+                                    volumetrias_folder_id = item.get('ID')
+                                    print(f"SUCCESS Bitrix: Carpeta 'Volumetrías' encontrada con ID: {volumetrias_folder_id}")
+                                    break
+            else:
+                print(f"WARNING Bitrix: No se pudo crear carpeta, usando root folder como fallback")
+                
+        except Exception as e:
+            print(f"WARNING Bitrix: Error creando carpeta: {e}")
+        
+        # Decidir qué carpeta usar para subir el archivo
+        target_folder_id = volumetrias_folder_id if volumetrias_folder_id else root_folder_id
+        folder_type = "carpeta Volumetrías" if volumetrias_folder_id else "root folder"
+        
+        print(f"DEBUG Bitrix: Subiendo archivo a {folder_type} (ID: {target_folder_id})")
+
+        # PASO 2: Subir archivo a la carpeta correcta
+        print(f"DEBUG Bitrix: Intentando subida de archivo '{file_name}'")
+        print(f"DEBUG Bitrix: Target folder: {target_folder_id}")
         
         try:
             # Usar el endpoint más simple que sabemos que funciona
@@ -709,7 +757,7 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
             
             # Formato simple - igual que funciona en cotizaciones
             simple_data = {
-                'id': root_folder_id,
+                'id': target_folder_id,  # Usar la carpeta correcta
                 'fileContent': [file_name, file_content_base64]
             }
             
@@ -732,9 +780,9 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
         except Exception as e:
             print(f"ERROR Bitrix: Excepción en método simple: {e}")
         
-        # Si falla, intentar con storage ID en lugar de root folder
+        # Si falla, intentar con storage ID como último recurso
         try:
-            print(f"DEBUG Bitrix: Intentando con storage ID en lugar de root folder...")
+            print(f"DEBUG Bitrix: Intentando con storage ID como último recurso...")
             simple_data_storage = {
                 'id': project_storage_id,
                 'fileContent': [file_name, file_content_base64]
