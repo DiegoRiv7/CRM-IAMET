@@ -3325,12 +3325,13 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
                 )
                 
                 print(f"DEBUG: Resultado de upload_file_to_project_drive: {upload_success}")
+                # Esta parte también está comentada dentro del if False:
                 if upload_success:
                     print(f"DEBUG: PDF de volumetría subido exitosamente al proyecto Bitrix24 {project_id}")
                 else:
                     print(f"WARNING: No se pudo subir el PDF de volumetría al proyecto Bitrix24 {project_id}")
-            except Exception as e:
-                print(f"WARNING: Error al intentar subir el PDF de volumetría al proyecto Bitrix24: {e}")
+                # except Exception as e:
+                #     print(f"WARNING: Error al intentar subir el PDF de volumetría al proyecto Bitrix24: {e}")
 
         # Crear respuesta HTTP con el PDF
         response = HttpResponse(pdf_file, content_type='application/pdf')
