@@ -3284,27 +3284,59 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
                 print(f"DEBUG: Codificación base64 exitosa")
                 
                 print(f"DEBUG: Calculando tamaños...")
-                pdf_size = len(pdf_file)
-                b64_size = len(pdf_base64)
-                print(f"DEBUG: Tamaño del PDF: {pdf_size} bytes")
-                print(f"DEBUG: Tamaño base64: {b64_size} characters")
+                try:
+                    pdf_size = len(pdf_file)
+                    print(f"DEBUG: Tamaño del PDF calculado: {pdf_size} bytes")
+                except Exception as size_error:
+                    print(f"ERROR: Fallo calculando tamaño del PDF: {size_error}")
+                    raise size_error
                 
+                try:
+                    b64_size = len(pdf_base64)
+                    print(f"DEBUG: Tamaño base64 calculado: {b64_size} characters")
+                except Exception as b64_size_error:
+                    print(f"ERROR: Fallo calculando tamaño base64: {b64_size_error}")
+                    raise b64_size_error
+                
+                print(f"DEBUG: Verificando límite de tamaño...")
                 # Verificar tamaño razonable (límite de 50MB en base64)
-                if len(pdf_base64) > 50 * 1024 * 1024:
-                    print(f"ERROR: PDF demasiado grande para Bitrix24: {len(pdf_base64)} chars")
-                    raise Exception("PDF demasiado grande")
+                try:
+                    if len(pdf_base64) > 50 * 1024 * 1024:
+                        print(f"ERROR: PDF demasiado grande para Bitrix24: {len(pdf_base64)} chars")
+                        raise Exception("PDF demasiado grande")
+                    print(f"DEBUG: Tamaño verificado - OK para subir")
+                except Exception as limit_error:
+                    print(f"ERROR: Fallo verificando límite de tamaño: {limit_error}")
+                    raise limit_error
 
                 print(f"DEBUG: Iniciando llamada a upload_file_to_project_drive...")
                 print(f"DEBUG: Parámetros - project_id: {project_id}, filename: {filename}")
                 
-                upload_success = upload_file_to_project_drive(
-                    project_id=project_id,
-                    file_name=filename,
-                    file_content_base64=pdf_base64,
-                    request=request
-                )
-                
-                print(f"DEBUG: Llamada a upload_file_to_project_drive completada.")
+                try:
+                    import signal
+                    
+                    def timeout_handler(signum, frame):
+                        raise Exception("Timeout en upload_file_to_project_drive después de 30 segundos")
+                    
+                    # Configurar timeout de 30 segundos
+                    signal.signal(signal.SIGALRM, timeout_handler)
+                    signal.alarm(30)
+                    
+                    upload_success = upload_file_to_project_drive(
+                        project_id=project_id,
+                        file_name=filename,
+                        file_content_base64=pdf_base64,
+                        request=request
+                    )
+                    
+                    # Cancelar el timeout si completó exitosamente
+                    signal.alarm(0)
+                    print(f"DEBUG: Llamada a upload_file_to_project_drive completada.")
+                    
+                except Exception as upload_timeout:
+                    signal.alarm(0)  # Cancelar timeout
+                    print(f"ERROR: Timeout o error en upload_file_to_project_drive: {upload_timeout}")
+                    upload_success = False
                 
                 print(f"DEBUG: Resultado de upload_file_to_project_drive: {upload_success}")
                 if upload_success:
