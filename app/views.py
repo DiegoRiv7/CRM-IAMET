@@ -3273,63 +3273,21 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
             filename = "Volumetria_SinProyecto.pdf"
         
         if project_id:
-            print(f"DEBUG: Proyecto {project_id} creado exitosamente. Intentando subida de archivo step-by-step.")
-            # REHABILITANDO PASO A PASO PARA DEBUGGING
+            print(f"DEBUG: Proyecto {project_id} creado exitosamente. Intentando subida de archivo.")
             try:
-                print(f"DEBUG: PASO 1 - Importando módulos...")
                 from .bitrix_integration import upload_file_to_project_drive
                 import base64
                 import re
-                print(f"DEBUG: PASO 1 COMPLETADO - Módulos importados exitosamente")
-                
-                print("DEBUG: PASO 2 - Verificando project_id...")
-                print("DEBUG: project_id type:", type(project_id))
-                print("DEBUG: project_id value:", repr(project_id))
-                
-                print("DEBUG: PASO 2 - Iniciando proceso de subida")
-                print("DEBUG: PASO 2 COMPLETADO - Proceso iniciado")
-                
-                # COMENTANDO EL RESTO TEMPORALMENTE
-                # Limpiar el nombre del archivo para evitar caracteres problemáticos
-                # nombre_limpio = re.sub(r'[^\w\s-]', '', data.get('nombre_volumetria', 'Analisis')).strip()
-                # nombre_limpio = re.sub(r'[-\s]+', '_', nombre_limpio)
-                
-                print(f"DEBUG: FINALIZANDO PASO A PASO - Todo OK hasta aquí")
-                
-            except Exception as e:
-                print(f"ERROR: Error en proceso de subida paso a paso: {e}")
-                import traceback
-                traceback.print_exc()
-                
-        # TODO EL CÓDIGO RESTANTE ESTÁ TEMPORALMENTE COMENTADO
-        """
-        CÓDIGO COMENTADO TEMPORALMENTE:
                 
                 print(f"DEBUG: Iniciando codificación base64...")
-                
-                try:
-                    pdf_base64 = base64.b64encode(pdf_file).decode('utf-8')
-                    print(f"DEBUG: Codificación base64 exitosa")
-                except Exception as b64_error:
-                    print(f"ERROR: Fallo en codificación base64: {b64_error}")
-                    raise b64_error
-                
-                print(f"DEBUG: Creando nombre de archivo...")
-                
-                # Simplificar al máximo para evitar cualquier problema
-                filename = f"Volumetria_Proyecto_{project_id}.pdf"
-                print(f"DEBUG: Nombre de archivo creado exitosamente: {filename}")
+                pdf_base64 = base64.b64encode(pdf_file).decode('utf-8')
+                print(f"DEBUG: Codificación base64 exitosa")
                 
                 print(f"DEBUG: Calculando tamaños...")
-                
-                try:
-                    pdf_size = len(pdf_file)
-                    b64_size = len(pdf_base64)
-                    print(f"DEBUG: Tamaño del PDF: {pdf_size} bytes")
-                    print(f"DEBUG: Tamaño base64: {b64_size} characters")
-                except Exception as size_error:
-                    print(f"ERROR: Fallo calculando tamaños: {size_error}")
-                    raise size_error
+                pdf_size = len(pdf_file)
+                b64_size = len(pdf_base64)
+                print(f"DEBUG: Tamaño del PDF: {pdf_size} bytes")
+                print(f"DEBUG: Tamaño base64: {b64_size} characters")
                 
                 # Verificar tamaño razonable (límite de 50MB en base64)
                 if len(pdf_base64) > 50 * 1024 * 1024:
@@ -3344,14 +3302,15 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
                 )
                 
                 print(f"DEBUG: Resultado de upload_file_to_project_drive: {upload_success}")
-                # Esta parte también está comentada dentro del if False:
                 if upload_success:
                     print(f"DEBUG: PDF de volumetría subido exitosamente al proyecto Bitrix24 {project_id}")
                 else:
                     print(f"WARNING: No se pudo subir el PDF de volumetría al proyecto Bitrix24 {project_id}")
-                # except Exception as e:
-                #     print(f"WARNING: Error al intentar subir el PDF de volumetría al proyecto Bitrix24: {e}")
-        """
+                    
+            except Exception as e:
+                print(f"WARNING: Error al intentar subir el PDF de volumetría al proyecto Bitrix24: {e}")
+                import traceback
+                traceback.print_exc()
         
         # Crear respuesta HTTP con el PDF
         response = HttpResponse(pdf_file, content_type='application/pdf')
