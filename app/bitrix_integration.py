@@ -644,7 +644,7 @@ def create_bitrix_project(project_name, description=None, vendedor_responsable=N
             messages.error(request, f"Excepción al crear proyecto en Bitrix24: {e}")
         return None
 
-def upload_file_to_project_drive(project_id, file_name, file_content_base64, request=None):
+def upload_file_to_project_drive(project_id, file_name, file_content_base64, request=None, volumetrias_folder_id=None):
     """
     Sube un archivo al drive de un proyecto específico en Bitrix24
     """
