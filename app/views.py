@@ -1429,29 +1429,44 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                     titulos_data[index][field] = value
             
             # Para nuevas cotizaciones: crear lista combinada en orden del DOM
-            # Para edición: respetar el orden de la base de datos (en editar_cotizacion_view)
+            # PROBLEMA: títulos y productos tienen sistemas de posición diferentes
+            # SOLUCIÓN: usar un mapa de posición unificado
             elementos_combinados = []
             
-            # Agregar títulos con su posición
+            # Crear mapa de todas las posiciones (títulos y productos)
+            mapa_posiciones = {}
+            
+            # Agregar títulos con su posición real del DOM
             for titulo_index, titulo_data in titulos_data.items():
                 if titulo_data.get('type') == 'title' and titulo_data.get('texto'):
                     posicion = int(titulo_data.get('position', 999))
-                    elementos_combinados.append({
+                    mapa_posiciones[posicion] = {
                         'tipo': 'titulo',
-                        'posicion': posicion,
                         'datos': titulo_data
-                    })
+                    }
+                    print(f"DEBUG POSITION: Título '{titulo_data.get('texto')}' en posición {posicion}")
             
-            # Agregar productos (su índice es su posición)
+            # Agregar productos con su posición (índice del array de productos)
             for producto_index, producto_data in productos_data.items():
-                elementos_combinados.append({
+                # IMPORTANTE: Los productos usan su índice como posición, que puede conflictuar
+                posicion = int(producto_index)
+                mapa_posiciones[posicion] = {
                     'tipo': 'producto', 
-                    'posicion': int(producto_index),
                     'datos': producto_data
-                })
+                }
+                print(f"DEBUG POSITION: Producto '{producto_data.get('nombre_producto', 'SIN_NOMBRE')}' en posición {posicion}")
             
-            # Ordenar por posición solo para nuevas cotizaciones
-            elementos_combinados.sort(key=lambda x: x['posicion'])
+            # Ordenar por posición y crear lista final
+            posiciones_ordenadas = sorted(mapa_posiciones.keys())
+            print(f"DEBUG POSITION: Posiciones ordenadas: {posiciones_ordenadas}")
+            
+            for posicion in posiciones_ordenadas:
+                elemento = mapa_posiciones[posicion]
+                elementos_combinados.append({
+                    'tipo': elemento['tipo'],
+                    'posicion': posicion,
+                    'datos': elemento['datos']
+                })
             
             print(f"DEBUG ORDER: Elementos en orden: {len(elementos_combinados)} elementos")
             for i, elemento in enumerate(elementos_combinados):
