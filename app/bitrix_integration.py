@@ -665,8 +665,8 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
     try:
         project_storage_id = None
         root_folder_id = None
-        max_retries = 3  # Reducir intentos para debugging
-        retry_delay = 2  # Reducir delay para debugging
+        max_retries = 3
+        retry_delay = 2
 
         for attempt in range(max_retries):
             try:
@@ -676,350 +676,110 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                         'ENTITY_ID': project_id,
                         'ENTITY_TYPE': 'group'
                     }
-                }, timeout=10)  # Agregar timeout específico
+                }, timeout=10)
                 storage_response.raise_for_status()
                 storage_data = storage_response.json()
                 print(f"DEBUG Bitrix: Respuesta de disk.storage.getlist para proyecto {project_id}: {json.dumps(storage_data, indent=2)}")
-                print(f"DEBUG Bitrix: PUNTO DE CONTROL 1 - Respuesta procesada")
                 
-                try:
-                    if 'result' in storage_data and len(storage_data['result']) > 0:
-                        print(f"DEBUG Bitrix: PUNTO DE CONTROL 2 - Entrando a procesar result")
-                        storage_info = storage_data['result'][0]
-                        print(f"DEBUG Bitrix: PUNTO DE CONTROL 3 - storage_info obtenido")
-                        
-                        project_storage_id = storage_info.get('ID')
-                        print(f"DEBUG Bitrix: PUNTO DE CONTROL 4 - project_storage_id: {project_storage_id}")
-                        
-                        root_folder_id = storage_info.get('ROOT_OBJECT_ID')
-                        print(f"DEBUG Bitrix: PUNTO DE CONTROL 5 - root_folder_id: {root_folder_id}")
-                        
-                        if project_storage_id:
-                            print(f"DEBUG Bitrix: PUNTO DE CONTROL 6 - Storage encontrado exitosamente")
-                            break # Found it, exit loop
-                        else:
-                            print(f"DEBUG Bitrix: PUNTO DE CONTROL 7 - project_storage_id es None")
-                    else:
-                        print(f"DEBUG Bitrix: PUNTO DE CONTROL 8 - No hay result en storage_data")
-                        
-                except Exception as inner_e:
-                    print(f"ERROR Bitrix: PUNTO DE CONTROL 9 - Excepción procesando storage_data: {inner_e}")
-                    import traceback
-                    traceback.print_exc()
+                if 'result' in storage_data and len(storage_data['result']) > 0:
+                    storage_info = storage_data['result'][0]
+                    project_storage_id = storage_info.get('ID')
+                    root_folder_id = storage_info.get('ROOT_OBJECT_ID')
+                    if project_storage_id:
+                        print(f"DEBUG Bitrix: Storage encontrado exitosamente - Storage ID: {project_storage_id}, Root Folder ID: {root_folder_id}")
+                        break
                 
-                # Solo reintentar si no se encontró storage exitosamente
                 if not project_storage_id:
                     print(f"DEBUG Bitrix: Storage no encontrado en intento {attempt + 1}. Reintentando en {retry_delay} segundos...")
-                    time.sleep(retry_delay) # Wait before retrying
+                    time.sleep(retry_delay)
 
-            except requests.exceptions.Timeout as e:
-                print(f"ERROR Bitrix: TIMEOUT en intento {attempt + 1} al obtener storage: {e}")
-                time.sleep(retry_delay)
             except requests.exceptions.RequestException as e:
                 print(f"DEBUG Bitrix: Excepción en intento {attempt + 1} al obtener storage: {e}")
                 time.sleep(retry_delay)
 
-        print(f"DEBUG Bitrix: PUNTO DE CONTROL 10 - Saliendo del loop de retry")
-        print(f"DEBUG Bitrix: PUNTO DE CONTROL 11 - project_storage_id: {project_storage_id}")
-        print(f"DEBUG Bitrix: PUNTO DE CONTROL 12 - root_folder_id: {root_folder_id}")
-        
-        # Verificar que tenemos los datos necesarios
         if not project_storage_id:
-            print(f"ERROR Bitrix: PUNTO DE CONTROL 13 - No se encontró project_storage_id")
+            print(f"ERROR Bitrix: No se encontró storage para el proyecto {project_id} después de {max_retries} intentos.")
             return False, None
             
-        print(f"DEBUG Bitrix: PUNTO DE CONTROL 14 - project_storage_id OK")
-        
-        # Si no hay root_folder_id, usar storage_id como fallback
         if not root_folder_id:
-            print(f"WARNING Bitrix: PUNTO DE CONTROL 15 - No hay root_folder_id, usando fallback")
+            print(f"WARNING Bitrix: No se encontró root_folder_id, usando project_storage_id como fallback.")
             root_folder_id = project_storage_id
+
+        # PASO 1: Determinar carpeta destino
+        target_folder_id = None
+        volumetrias_folder_id_new = None
+
+        if volumetrias_folder_id:
+            # Usar carpeta existente (proyecto reutilizado)
+            print(f"DEBUG Bitrix: Usando carpeta Volumetrías existente: {volumetrias_folder_id}")
+            target_folder_id = volumetrias_folder_id
         else:
-            print(f"DEBUG Bitrix: PUNTO DE CONTROL 16 - root_folder_id OK")
-
-        print(f"SUCCESS Bitrix: PUNTO DE CONTROL 17 - Datos finales - Storage: {project_storage_id}, Target: {root_folder_id}")
-        
-        # DEBUG DESHABILITADO - Continuando con la subida del archivo
-        print(f"DEBUG Bitrix: === CONTINUANDO CON LA SUBIDA DEL ARCHIVO ===")
-        # return True  # COMENTADO PARA HABILITAR SUBIDA REAL
-
-        # PASO 1: Crear carpeta "Volumetrías" en el proyecto
-        print(f"DEBUG Bitrix: Creando carpeta 'Volumetrías' en el proyecto...")
-        
-        volumetrias_folder_id = None
-        try:
-            create_folder_url = BITRIX_PROJECTS_WEBHOOK_URL.replace("sonet_group.create.json", "disk.folder.addsubfolder.json")
-            
-            folder_data = {
-                'id': root_folder_id,
-                'data': {
-                    'NAME': 'Volumetrías'
-                }
-            }
-            
-            print(f"DEBUG Bitrix: URL crear carpeta: {create_folder_url}")
-            print(f"DEBUG Bitrix: Datos carpeta: {folder_data}")
-            
-            folder_response = requests.post(create_folder_url, json=folder_data, timeout=20)
-            print(f"DEBUG Bitrix: Status crear carpeta: {folder_response.status_code}")
-            print(f"DEBUG Bitrix: Response crear carpeta: {folder_response.text[:200]}...")
-            
-            if folder_response.status_code == 200:
-                folder_result = folder_response.json()
-                if 'result' in folder_result and folder_result['result']:
-                    volumetrias_folder_id = folder_result['result']['ID']
-                    print(f"SUCCESS Bitrix: Carpeta 'Volumetrías' creada con ID: {volumetrias_folder_id}")
-                elif 'error' in folder_result and 'already exists' in str(folder_result['error']).lower():
-                    print(f"INFO Bitrix: Carpeta 'Volumetrías' ya existe, buscándola...")
-                    # Buscar la carpeta existente
-                    search_url = BITRIX_PROJECTS_WEBHOOK_URL.replace("sonet_group.create.json", "disk.folder.getchildren.json")
-                    search_response = requests.post(search_url, json={'id': root_folder_id}, timeout=20)
-                    if search_response.status_code == 200:
-                        search_result = search_response.json()
-                        if 'result' in search_result:
-                            for item in search_result['result']:
-                                if item.get('NAME') == 'Volumetrías' and item.get('TYPE') == 'folder':
-                                    volumetrias_folder_id = item.get('ID')
-                                    print(f"SUCCESS Bitrix: Carpeta 'Volumetrías' encontrada con ID: {volumetrias_folder_id}")
-                                    break
-            else:
-                print(f"WARNING Bitrix: No se pudo crear carpeta, usando root folder como fallback")
+            # Crear nueva carpeta "Volumetrías" (proyecto nuevo)
+            print(f"DEBUG Bitrix: Creando nueva carpeta 'Volumetrías' en el proyecto...")
+            try:
+                create_folder_url = BITRIX_PROJECTS_WEBHOOK_URL.replace("sonet_group.create.json", "disk.folder.addsubfolder.json")
+                folder_data = {'id': root_folder_id, 'data': {'NAME': 'Volumetrías'}}
                 
-        except Exception as e:
-            print(f"WARNING Bitrix: Error creando carpeta: {e}")
+                print(f"DEBUG Bitrix: URL crear carpeta: {create_folder_url}")
+                print(f"DEBUG Bitrix: Datos carpeta: {folder_data}")
+                
+                folder_response = requests.post(create_folder_url, json=folder_data, timeout=20)
+                print(f"DEBUG Bitrix: Status crear carpeta: {folder_response.status_code}")
+                print(f"DEBUG Bitrix: Response crear carpeta: {folder_response.text[:200]}...")
+                
+                if folder_response.status_code == 200:
+                    folder_result = folder_response.json()
+                    if 'result' in folder_result and folder_result['result']:
+                        volumetrias_folder_id_new = folder_result['result']['ID']
+                        print(f"SUCCESS Bitrix: Carpeta 'Volumetrías' creada con ID: {volumetrias_folder_id_new}")
+                    elif 'error' in folder_result and 'already exists' in str(folder_result['error']).lower():
+                        print(f"INFO Bitrix: Carpeta 'Volumetrías' ya existe, buscándola...")
+                        search_url = BITRIX_PROJECTS_WEBHOOK_URL.replace("sonet_group.create.json", "disk.folder.getchildren.json")
+                        search_response = requests.post(search_url, json={'id': root_folder_id}, timeout=20)
+                        if search_response.status_code == 200:
+                            search_result = search_response.json()
+                            if 'result' in search_result:
+                                for item in search_result['result']:
+                                    if item.get('NAME') == 'Volumetrías' and item.get('TYPE') == 'folder':
+                                        volumetrias_folder_id_new = item.get('ID')
+                                        print(f"SUCCESS Bitrix: Carpeta 'Volumetrías' encontrada con ID: {volumetrias_folder_id_new}")
+                                        break
+            except Exception as e:
+                print(f"WARNING Bitrix: Error creando o buscando carpeta 'Volumetrías': {e}")
+            
+            target_folder_id = volumetrias_folder_id_new if volumetrias_folder_id_new else root_folder_id
         
-        # Decidir qué carpeta usar para subir el archivo
-        target_folder_id = volumetrias_folder_id if volumetrias_folder_id else root_folder_id
-        folder_type = "carpeta Volumetrías" if volumetrias_folder_id else "root folder"
-        
-        print(f"DEBUG Bitrix: Subiendo archivo a {folder_type} (ID: {target_folder_id})")
+        print(f"DEBUG Bitrix: Subiendo archivo a la carpeta ID: {target_folder_id}")
 
         # PASO 2: Subir archivo a la carpeta correcta
-        print(f"DEBUG Bitrix: Intentando subida de archivo '{file_name}'")
-        print(f"DEBUG Bitrix: Target folder: {target_folder_id}")
-        
         try:
-            # Usar el endpoint más simple que sabemos que funciona
             simple_upload_url = BITRIX_PROJECTS_WEBHOOK_URL.replace("sonet_group.create.json", "disk.folder.uploadfile.json")
-            
-            print(f"DEBUG Bitrix: URL simplificada: {simple_upload_url}")
-            print(f"DEBUG Bitrix: Intentando con root folder ID: {root_folder_id}")
-            
-            # Formato correcto según documentación de Bitrix24
             simple_data = {
-                'id': target_folder_id,  # ID de la carpeta destino
-                'fileContent': [file_name, file_content_base64],  # Array con nombre y contenido
-                'data': {
-                    'NAME': file_name  # Parámetro NAME dentro de data
-                }
-            }
-            
-            print(f"DEBUG Bitrix: Datos que se enviarán: {json.dumps({k: v if k != 'fileContent' else [v[0], '<base64_data>'] for k, v in simple_data.items()}, indent=2)}")
-            print(f"DEBUG Bitrix: Enviando petición simple...")
-            response = requests.post(simple_upload_url, json=simple_data, timeout=20)
-            
-            print(f"DEBUG Bitrix: Status: {response.status_code}")
-            print(f"DEBUG Bitrix: Response: {response.text[:200]}...")
-            
-            if response.status_code == 200:
-                result = response.json()
-                if 'result' in result and result['result']:
-                    print(f"SUCCESS Bitrix: Archivo subido con método simple!")
-                    return True, target_folder_id
-                else:
-                    print(f"WARNING Bitrix: Respuesta sin resultado: {result}")
-            else:
-                print(f"ERROR Bitrix: Status {response.status_code}: {response.text}")
-                
-        except Exception as e:
-            print(f"ERROR Bitrix: Excepción en método simple: {e}")
-        
-        # Si falla, intentar con storage ID como último recurso
-        try:
-            print(f"DEBUG Bitrix: Intentando con storage ID como último recurso...")
-            simple_data_storage = {
-                'id': project_storage_id,
+                'id': target_folder_id,
                 'fileContent': [file_name, file_content_base64],
-                'data': {
-                    'NAME': file_name  # Parámetro NAME dentro de data
-                }
+                'data': {'NAME': file_name}
             }
             
-            response2 = requests.post(simple_upload_url, json=simple_data_storage, timeout=20)
-            print(f"DEBUG Bitrix: Status método 2: {response2.status_code}")
-            print(f"DEBUG Bitrix: Response método 2: {response2.text[:200]}...")
+            response = requests.post(simple_upload_url, json=simple_data, timeout=30)
             
-            if response2.status_code == 200:
-                result2 = response2.json()
-                if 'result' in result2 and result2['result']:
-                    print(f"SUCCESS Bitrix: Archivo subido con storage ID!")
-                    return True, target_folder_id
-                    
+            print(f"DEBUG Bitrix: Status de subida: {response.status_code}")
+            print(f"DEBUG Bitrix: Response de subida: {response.text[:200]}...")
+            
+            if response.status_code == 200 and 'result' in response.json() and response.json()['result']:
+                print(f"SUCCESS Bitrix: Archivo subido exitosamente a la carpeta {target_folder_id}")
+                return True, target_folder_id
+            else:
+                print(f"ERROR Bitrix: Falló la subida a la carpeta {target_folder_id}. Body: {response.text}")
+                return False, None
+                
         except Exception as e:
-            print(f"ERROR Bitrix: Excepción método 2: {e}")
-        
-        print(f"ERROR Bitrix: Ambos métodos simples fallaron")
-        return False, None
-        
-        # TODO: Código complejo comentado hasta resolver issue simple
-        # Intentar múltiples métodos de subida
-        print(f"DEBUG Bitrix: Iniciando subida de archivo '{file_name}' al proyecto {project_id}")
-        
-        methods_to_try = [
-            {
-                'name': 'disk.folder.uploadfile',
-                'endpoint': 'disk.folder.uploadfile.json',
-                'use_multipart': True,
-                'use_root_folder': True
-            },
-            {
-                'name': 'disk.storage.uploadfile', 
-                'endpoint': 'disk.storage.uploadfile.json',
-                'use_multipart': True,
-                'use_root_folder': False  # Este usa storage ID
-            },
-            {
-                'name': 'disk.folder.uploadfile (JSON)',
-                'endpoint': 'disk.folder.uploadfile.json',
-                'use_multipart': False,
-                'use_root_folder': True
-            },
-            {
-                'name': 'disk.file.upload',
-                'endpoint': 'disk.file.upload.json',
-                'use_multipart': True,
-                'use_root_folder': False
-            }
-        ]
-        
-        # Decodificar el archivo una sola vez
-        file_binary = base64.b64decode(file_content_base64)
-        
-        for method in methods_to_try:
-            print(f"\n=== DEBUG Bitrix: INICIANDO MÉTODO {method['name']} ===")
-            try:
-                print(f"DEBUG Bitrix: Probando método: {method['name']}")
-                
-                # Usar webhook dedicado si está disponible y es el primer método
-                if method['name'] == 'disk.folder.uploadfile' and BITRIX_DISK_UPLOAD_WEBHOOK_URL:
-                    upload_url = BITRIX_DISK_UPLOAD_WEBHOOK_URL
-                    print(f"DEBUG Bitrix: Usando webhook dedicado para disk")
-                else:
-                    upload_url = BITRIX_PROJECTS_WEBHOOK_URL.replace("sonet_group.create.json", method['endpoint'])
-                
-                print(f"DEBUG Bitrix: URL: {upload_url}")
-                
-                # Decidir qué ID usar (root folder o storage)
-                target_id = root_folder_id if method['use_root_folder'] else project_storage_id
-                print(f"DEBUG Bitrix: Usando ID {target_id} ({'root folder' if method['use_root_folder'] else 'storage'})")
-                
-                # Verificar que tenemos los datos necesarios
-                if not target_id:
-                    print(f"ERROR Bitrix: target_id es None para método {method['name']}")
-                    continue
-                    
-                print(f"DEBUG Bitrix: Preparando request para {method['name']}...")
-                
-                if method['use_multipart']:
-                    # Método multipart/form-data
-                    files = {
-                        'fileContent': (file_name, file_binary, 'application/pdf')
-                    }
-                    
-                    data_payload = {
-                        'id': target_id,
-                        'name': file_name
-                    }
-                    
-                    print(f"DEBUG Bitrix: Multipart payload: {data_payload}")
-                    print(f"DEBUG Bitrix: File size: {len(file_binary)} bytes")
-                    
-                    print(f"DEBUG Bitrix: Enviando request multipart...")
-                    upload_response = requests.post(
-                        upload_url, 
-                        data=data_payload, 
-                        files=files, 
-                        timeout=30  # Reducir timeout
-                    )
-                    print(f"DEBUG Bitrix: Request multipart completado")
-                else:
-                    # Método JSON directo
-                    json_payload = {
-                        'id': target_id,
-                        'fileContent': [file_name, file_content_base64]
-                    }
-                    
-                    print(f"DEBUG Bitrix: JSON payload keys: {list(json_payload.keys())}")
-                    print(f"DEBUG Bitrix: Base64 size: {len(file_content_base64)} chars")
-                    
-                    print(f"DEBUG Bitrix: Enviando request JSON...")
-                    upload_response = requests.post(
-                        upload_url, 
-                        json=json_payload, 
-                        timeout=30  # Reducir timeout
-                    )
-                    print(f"DEBUG Bitrix: Request JSON completado")
-                
-                print(f"DEBUG Bitrix: Status: {upload_response.status_code}")
-                print(f"DEBUG Bitrix: Response headers: {dict(upload_response.headers)}")
-                print(f"DEBUG Bitrix: Response: {upload_response.text[:500]}...")
-                
-                if upload_response.status_code == 200:
-                    try:
-                        result = upload_response.json()
-                        print(f"DEBUG Bitrix: JSON response: {json.dumps(result, indent=2)}")
-                        
-                        if 'result' in result:
-                            if result['result']:
-                                print(f"SUCCESS Bitrix: Archivo subido con método {method['name']}")
-                                print(f"SUCCESS Bitrix: File ID: {result['result']}")
-                                return True
-                            else:
-                                print(f"WARNING Bitrix: Método {method['name']} - resultado vacío")
-                        else:
-                            print(f"WARNING Bitrix: Método {method['name']} - sin campo 'result'")
-                            
-                        # Verificar si hay errores en la respuesta
-                        if 'error' in result:
-                            print(f"ERROR Bitrix: {result['error']}")
-                            if 'error_description' in result:
-                                print(f"ERROR Bitrix: {result['error_description']}")
-                                
-                    except json.JSONDecodeError as e:
-                        print(f"ERROR Bitrix: Método {method['name']} - Error parseando JSON: {e}")
-                        print(f"ERROR Bitrix: Raw response: {upload_response.text}")
-                else:
-                    print(f"ERROR Bitrix: Método {method['name']} falló con status {upload_response.status_code}")
-                    print(f"ERROR Bitrix: Response body: {upload_response.text}")
-                    
-            except requests.exceptions.Timeout as e:
-                print(f"ERROR Bitrix: Método {method['name']} - TIMEOUT después de 30s: {e}")
-                continue
-            except requests.exceptions.ConnectionError as e:
-                print(f"ERROR Bitrix: Método {method['name']} - Error de conexión: {e}")
-                continue
-            except Exception as e:
-                print(f"ERROR Bitrix: Método {method['name']} - Excepción: {e}")
-                import traceback
-                traceback.print_exc()
-                continue
-            finally:
-                print(f"=== DEBUG Bitrix: FINALIZANDO MÉTODO {method['name']} ===\n")
-        
-        # Si llegamos aquí, ningún método funcionó
-        print(f"ERROR Bitrix: No se pudo subir el archivo '{file_name}' con ningún método")
-        if request:
-            messages.error(request, f"Error: No se pudo subir el archivo al proyecto")
-        return False
+            print(f"ERROR Bitrix: Excepción en la subida de archivo: {e}")
+            return False, None
 
-    except requests.exceptions.RequestException as e:
-        print(f"DEBUG Bitrix: Excepción al subir archivo al proyecto: {e}")
-        if isinstance(e, requests.exceptions.Timeout):
-            print(f"ERROR Bitrix: La subida del archivo excedió el tiempo de espera (timeout).")
-        elif hasattr(e, 'response') and e.response is not None:
-            print(f"ERROR Bitrix: Respuesta de error de Bitrix24: {e.response.text}")
+    except Exception as e:
+        print(f"ERROR Bitrix: Excepción general en upload_file_to_project_drive: {e}")
         import traceback
-        traceback.print_exc() # Print full traceback
+        traceback.print_exc()
         if request:
             messages.error(request, f"Excepción al subir archivo al proyecto: {e}")
         return False, None
