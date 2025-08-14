@@ -3294,12 +3294,17 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
                     print(f"ERROR: PDF demasiado grande para Bitrix24: {len(pdf_base64)} chars")
                     raise Exception("PDF demasiado grande")
 
+                print(f"DEBUG: Iniciando llamada a upload_file_to_project_drive...")
+                print(f"DEBUG: Parámetros - project_id: {project_id}, filename: {filename}")
+                
                 upload_success = upload_file_to_project_drive(
                     project_id=project_id,
                     file_name=filename,
                     file_content_base64=pdf_base64,
                     request=request
                 )
+                
+                print(f"DEBUG: Llamada a upload_file_to_project_drive completada.")
                 
                 print(f"DEBUG: Resultado de upload_file_to_project_drive: {upload_success}")
                 if upload_success:

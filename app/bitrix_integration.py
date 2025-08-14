@@ -600,7 +600,7 @@ def create_bitrix_project(project_name, description=None, vendedor_responsable=N
             from .models import UserProfile
             profile = UserProfile.objects.get(user=vendedor_responsable)
             if profile.bitrix_user_id:
-                project_data['fields']['OWNER_ID'] = profile.bitrix_user_id
+                project_data['OWNER_ID'] = profile.bitrix_user_id
                 print(f"DEBUG Bitrix: Asignando proyecto al vendedor {vendedor_responsable.get_full_name()} (Bitrix ID: {profile.bitrix_user_id})")
             else:
                 print(f"WARNING Bitrix: El vendedor {vendedor_responsable.get_full_name()} no tiene bitrix_user_id configurado")
@@ -637,20 +637,25 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
     """
     Sube un archivo al drive de un proyecto específico en Bitrix24
     """
+    print(f"DEBUG Bitrix: ENTRADA a upload_file_to_project_drive - project_id: {project_id}")
+    
     if not BITRIX_PROJECTS_WEBHOOK_URL:
         if request:
             messages.error(request, "Error: La URL del webhook de proyectos de Bitrix24 no está configurada.")
-        print("Error: La URL del webhook de proyectos de Bitrix24 no está configurada.")
+        print("ERROR Bitrix: La URL del webhook de proyectos de Bitrix24 no está configurada.")
         return False
-
+    
+    print(f"DEBUG Bitrix: BITRIX_PROJECTS_WEBHOOK_URL configurado: {BITRIX_PROJECTS_WEBHOOK_URL[:50]}...")
+    
     # Primero obtener el storage ID del proyecto - usar webhook de proyectos
     storage_url = BITRIX_PROJECTS_WEBHOOK_URL.replace("sonet_group.create.json", "disk.storage.getlist.json")
+    print(f"DEBUG Bitrix: URL para obtener storage: {storage_url[:50]}...")
 
     try:
         project_storage_id = None
         root_folder_id = None
-        max_retries = 10
-        retry_delay = 5 # seconds
+        max_retries = 3  # Reducir intentos para debugging
+        retry_delay = 2  # Reducir delay para debugging
 
         for attempt in range(max_retries):
             try:
@@ -660,7 +665,7 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                         'ENTITY_ID': project_id,
                         'ENTITY_TYPE': 'group'
                     }
-                })
+                }, timeout=10)  # Agregar timeout específico
                 storage_response.raise_for_status()
                 storage_data = storage_response.json()
                 print(f"DEBUG Bitrix: Respuesta de disk.storage.getlist para proyecto {project_id}: {json.dumps(storage_data, indent=2)}")
@@ -696,9 +701,12 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                     print(f"DEBUG Bitrix: Storage no encontrado en intento {attempt + 1}. Reintentando en {retry_delay} segundos...")
                     time.sleep(retry_delay) # Wait before retrying
 
+            except requests.exceptions.Timeout as e:
+                print(f"ERROR Bitrix: TIMEOUT en intento {attempt + 1} al obtener storage: {e}")
+                time.sleep(retry_delay)
             except requests.exceptions.RequestException as e:
                 print(f"DEBUG Bitrix: Excepción en intento {attempt + 1} al obtener storage: {e}")
-                time.sleep(retry_delay) # Wait before retrying
+                time.sleep(retry_delay)
 
         print(f"DEBUG Bitrix: PUNTO DE CONTROL 10 - Saliendo del loop de retry")
         print(f"DEBUG Bitrix: PUNTO DE CONTROL 11 - project_storage_id: {project_storage_id}")
