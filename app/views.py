@@ -1878,24 +1878,27 @@ def generate_cotizacion_pdf(request, cotizacion_id):
         tipo_detalle = getattr(detalle, 'tipo', 'producto') or 'producto'
         
         print(f"DEBUG SECTIONS: Procesando detalle ID={detalle.id}, tipo='{tipo_detalle}', nombre='{detalle.nombre_producto}'")
+        print(f"DEBUG SECTIONS: Estado actual - sección_actual['titulo']='{seccion_actual['titulo']}', productos={len(seccion_actual['productos'])}")
         
         if tipo_detalle == 'titulo':
             # Si hay productos en la sección actual, guardarla ANTES de crear nueva sección
             if seccion_actual['productos']:
-                print(f"DEBUG SECTIONS: Guardando sección con título='{seccion_actual['titulo']}' y {len(seccion_actual['productos'])} productos")
+                print(f"DEBUG SECTIONS: 🟢 Guardando sección con título='{seccion_actual['titulo']}' y {len(seccion_actual['productos'])} productos")
+                for i, prod in enumerate(seccion_actual['productos']):
+                    print(f"  - Producto {i+1}: {prod.nombre_producto}")
                 secciones.append(seccion_actual)
             # Si hay una sección actual con título pero sin productos, también la guardamos
             elif seccion_actual['titulo']:
-                print(f"DEBUG SECTIONS: Guardando sección con título='{seccion_actual['titulo']}' SIN productos")
+                print(f"DEBUG SECTIONS: 🟡 Guardando sección con título='{seccion_actual['titulo']}' SIN productos")
                 secciones.append(seccion_actual)
                 
             # Iniciar nueva sección
             seccion_actual = {'titulo': detalle.nombre_producto, 'productos': []}
-            print(f"DEBUG SECTIONS: Nueva sección iniciada con título='{detalle.nombre_producto}'")
+            print(f"DEBUG SECTIONS: 🔵 Nueva sección iniciada con título='{detalle.nombre_producto}'")
         else:
             # Agregar producto a la sección actual
             seccion_actual['productos'].append(detalle)
-            print(f"DEBUG SECTIONS: Producto '{detalle.nombre_producto}' agregado a sección actual (título='{seccion_actual['titulo']}')")
+            print(f"DEBUG SECTIONS: ➕ Producto '{detalle.nombre_producto}' agregado a sección (título='{seccion_actual['titulo']}') - Total productos en sección: {len(seccion_actual['productos'])}")
     
     # Agregar la última sección (con o sin productos)
     if seccion_actual['titulo'] or seccion_actual['productos']:
@@ -1909,11 +1912,13 @@ def generate_cotizacion_pdf(request, cotizacion_id):
             print(f"DEBUG SECTIONS: Creando sección por defecto con {len(productos_sin_seccion)} productos")
             secciones.append({'titulo': None, 'productos': productos_sin_seccion})
     
+    print(f"DEBUG: ===== RESUMEN FINAL =====")
     print(f"DEBUG: Secciones organizadas: {len(secciones)} secciones encontradas")
     for i, seccion in enumerate(secciones):
-        print(f"DEBUG: Sección {i+1}: titulo='{seccion['titulo']}', productos={len(seccion['productos'])}")
+        print(f"DEBUG: 📋 Sección {i+1}: titulo='{seccion['titulo']}', productos={len(seccion['productos'])}")
         for j, producto in enumerate(seccion['productos']):
-            print(f"  Producto {j+1}: {producto.nombre_producto} (tipo: {getattr(producto, 'tipo', 'NO_DEFINIDO')})")
+            print(f"     📦 Producto {j+1}: {producto.nombre_producto} (tipo: {getattr(producto, 'tipo', 'NO_DEFINIDO')})")
+    print(f"DEBUG: =========================")
 
     pdf_name_raw = cotizacion.nombre_cotizacion or f"Cotizacion_{cotizacion.id}"
     pdf_name = "".join(c for c in pdf_name_raw if c.isalnum() or c in ('_', '-')).strip().replace(' ', '_')
