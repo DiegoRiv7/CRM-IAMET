@@ -589,10 +589,20 @@ def create_bitrix_project(project_name, description=None, vendedor_responsable=N
     # URL para crear grupos de trabajo/proyectos - usar webhook específico para proyectos
     create_url = BITRIX_PROJECTS_WEBHOOK_URL
     
-    # Configuración del proyecto
+    # Configuración del proyecto PÚBLICO
     project_data = {
         'NAME': project_name,
+        'VISIBLE': 'Y',           # Hacer el proyecto visible/público
+        'OPENED': 'Y',            # Permitir que otros se unan
+        'PROJECT': 'Y',           # Marcar como proyecto (no solo grupo)
+        'INITIATE_PERMS': 'E',    # Permisos para todos los empleados
+        'SPAM_PERMS': 'E',        # Permisos de publicación para empleados
+        'SUBJECT_ID': '1',        # ID del tema del proyecto (1 = general)
     }
+    
+    # Agregar descripción si se proporciona
+    if description:
+        project_data['DESCRIPTION'] = description
     
     # Asignar responsable del proyecto (vendedor de la oportunidad)
     if vendedor_responsable:
@@ -612,7 +622,8 @@ def create_bitrix_project(project_name, description=None, vendedor_responsable=N
         print("DEBUG Bitrix: No se especificó vendedor responsable, se asignará al creador del webhook")
     
     try:
-        print(f"DEBUG Bitrix: Creando proyecto '{project_name}' en Bitrix24")
+        print(f"DEBUG Bitrix: Creando proyecto PÚBLICO '{project_name}' en Bitrix24")
+        print(f"DEBUG Bitrix: Parámetros del proyecto: {project_data}")
         response = requests.post(create_url, json=project_data)
         response.raise_for_status()
         json_response = response.json()
