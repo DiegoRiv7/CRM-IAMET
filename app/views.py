@@ -1558,17 +1558,39 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                     productos_sin_seccion = [d for d in detalles_todos if getattr(d, 'tipo', 'producto') == 'producto']
                     if productos_sin_seccion:
                         secciones_pdf.append({'titulo': None, 'productos': productos_sin_seccion})
+                
+                # DEBUG: Mostrar las secciones generadas
+                print(f"DEBUG CREATE PDF: Secciones para Bitrix24: {len(secciones_pdf)} secciones encontradas")
+                for i, seccion in enumerate(secciones_pdf):
+                    print(f"DEBUG CREATE PDF: Sección {i+1}: titulo='{seccion['titulo']}', productos={len(seccion['productos'])}")
+                    for j, producto in enumerate(seccion['productos']):
+                        print(f"  Producto {j+1}: {producto.nombre_producto} (tipo: {getattr(producto, 'tipo', 'NO_DEFINIDO')})")
 
-                html_string = render_to_string('cotizacion_pdf_template.html', {
+                # Determinar el template y configuración según el tipo de cotización
+                tipo_cotizacion = cotizacion.tipo_cotizacion
+                template_name = 'cotizacion_pdf_template.html'  # Default (Bajanet)
+                company_name = 'BAJANET S.A. de C.V.'
+                company_address = 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México'
+                company_phone = '+52 55 1234 5678'
+                company_email = 'ventas@bajanet.com'
+                
+                if tipo_cotizacion and tipo_cotizacion.lower() == 'iamet':
+                    template_name = 'iamet_cotizacion_pdf_template.html'
+                    company_name = 'IAMET S.A. de C.V.'
+                    company_address = 'Av. Principal #456, Col. Centro, Guadalajara, Jalisco'
+                    company_phone = '+52 33 9876 5432'
+                    company_email = 'contacto@iamet.com'
+
+                html_string = render_to_string(template_name, {
                     'cotizacion': cotizacion,
                     'detalles_cotizacion': cotizacion.detalles.all(),  # Para compatibilidad con fallback
                     'secciones': secciones_pdf,  # Para mostrar por secciones sin títulos como productos
                     'request_user': request.user,
                     'current_date': date.today(),
-                    'company_name': 'BAJANET S.A. de C.V.',
-                    'company_address': 'Calle Ficticia #123, Colonia Ejemplo, Ciudad de México',
-                    'company_phone': '+52 55 1234 5678',
-                    'company_email': 'ventas@bajanet.com',
+                    'company_name': company_name,
+                    'company_address': company_address,
+                    'company_phone': company_phone,
+                    'company_email': company_email,
                     'logo_base64': '',
                     'iva_rate_percentage': (cotizacion.iva_rate * Decimal('100')).quantize(Decimal('1')),
                 })
@@ -1673,7 +1695,7 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
 @login_required
 def editar_cotizacion_view(request, cotizacion_id):
     cotizacion_original = get_object_or_404(Cotizacion, pk=cotizacion_id)
-    detalles_originales = DetalleCotizacion.objects.filter(cotizacion=cotizacion_original)
+    detalles_originales = DetalleCotizacion.objects.filter(cotizacion=cotizacion_original).order_by('id')
 
     # Formatear detalles para el JavaScript del template
     detalles_list = [{
