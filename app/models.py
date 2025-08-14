@@ -293,3 +293,152 @@ class DetalleCotizacion(models.Model):
         Representación en cadena del objeto DetalleCotizacion.
         """
         return f"{self.cantidad} x {self.nombre_producto} en Cotización {self.cotizacion.id}"
+
+class Volumetria(models.Model):
+    """
+    Modelo para representar una volumetría generada.
+    Similar a Cotizacion pero para volumetrías técnicas.
+    """
+    titulo = models.CharField(max_length=255, default="Análisis Volumétrico", verbose_name="Título de la Volumetría")
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='volumetrias', verbose_name="Cliente")
+    usuario_final = models.CharField(max_length=255, blank=True, null=True, verbose_name="Nombre del Usuario Final")
+    oportunidad = models.ForeignKey(TodoItem, on_delete=models.CASCADE, related_name='volumetrias', verbose_name="Oportunidad de Venta")
+    
+    # Datos técnicos de la volumetría
+    categoria = models.CharField(max_length=50, default='CAT6', verbose_name="Categoría de Cable")
+    color = models.CharField(max_length=50, default='Azul', verbose_name="Color de Cable")
+    cantidad_nodos = models.PositiveIntegerField(default=1, verbose_name="Cantidad de Nodos")
+    distancia = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Distancia (metros)")
+    
+    # Datos financieros
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Subtotal")
+    iva_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.16'), verbose_name="Tasa de IVA")
+    iva_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Monto de IVA")
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Total")
+    moneda = models.CharField(max_length=5, default='USD', verbose_name="Moneda")
+    
+    # Métricas de rentabilidad
+    total_costo_proveedor = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Costo Total Proveedor")
+    ganancia_total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Ganancia Total")
+    margen_utilidad = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'), verbose_name="Margen de Utilidad (%)")
+    precio_por_nodo = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Precio por Nodo")
+    costo_por_nodo = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Costo por Nodo")
+    
+    # Archivo PDF generado
+    pdf_content = models.BinaryField(blank=True, null=True, verbose_name="Contenido del PDF")
+    
+    # Información de proyecto Bitrix24
+    bitrix_project_id = models.CharField(max_length=100, blank=True, null=True, verbose_name="ID del Proyecto en Bitrix24")
+    
+    # Metadatos
+    elaborado_por = models.CharField(max_length=255, verbose_name="Elaborado por")
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Creado por")
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
+    fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Última Actualización")
+    
+    def __str__(self):
+        return f"Volumetría: {self.titulo} para {self.cliente.nombre_empresa} (ID: {self.id})"
+    
+    def get_filename(self):
+        """Genera el nombre del archivo PDF"""
+        if self.bitrix_project_id:
+            # Contar volumetrías para este proyecto para numeración
+            count = Volumetria.objects.filter(
+                oportunidad=self.oportunidad,
+                bitrix_project_id=self.bitrix_project_id,
+                id__lte=self.id
+            ).count()
+            if count > 1:
+                return f"Volumetria_Proyecto_{self.bitrix_project_id}_V{count}.pdf"
+            else:
+                return f"Volumetria_Proyecto_{self.bitrix_project_id}.pdf"
+        else:
+            return f"Volumetria_{self.id}.pdf"
+    
+    class Meta:
+        verbose_name = "Volumetría"
+        verbose_name_plural = "Volumetrías"
+        ordering = ['-fecha_creacion']
+
+class DetalleVolumetria(models.Model):
+    """
+    Modelo para representar cada línea de producto/servicio dentro de una volumetría.
+    """
+    volumetria = models.ForeignKey(Volumetria, on_delete=models.CASCADE, related_name='detalles', verbose_name="Volumetría")
+    nombre_producto = models.CharField(max_length=255, verbose_name="Nombre del Producto")
+    descripcion = models.TextField(blank=True, null=True, verbose_name="Descripción")
+    cantidad = models.PositiveIntegerField(default=1, verbose_name="Cantidad")
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Precio Unitario")
+    precio_proveedor = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Precio Proveedor")
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Total por Ítem")
+    total_proveedor = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Total Proveedor")
+    
+    def __str__(self):
+        return f"{self.cantidad} x {self.nombre_producto} en Volumetría {self.volumetria.id}"
+    
+    class Meta:
+        verbose_name = "Detalle de Volumetría"
+        verbose_name_plural = "Detalles de Volumetría"
+
+class OportunidadProyecto(models.Model):
+    """
+    Modelo para vincular oportunidades con proyectos de Bitrix24.
+    Evita crear proyectos duplicados para la misma oportunidad.
+    """
+    oportunidad = models.ForeignKey(
+        TodoItem, 
+        on_delete=models.CASCADE, 
+        related_name='proyectos_bitrix', 
+        verbose_name="Oportunidad de Venta"
+    )
+    bitrix_project_id = models.CharField(
+        max_length=100, 
+        verbose_name="ID del Proyecto en Bitrix24"
+    )
+    bitrix_deal_id = models.CharField(
+        max_length=100, 
+        blank=True, 
+        null=True, 
+        verbose_name="ID del Deal en Bitrix24"
+    )
+    proyecto_nombre = models.CharField(
+        max_length=255, 
+        verbose_name="Nombre del Proyecto"
+    )
+    carpeta_volumetrias_id = models.CharField(
+        max_length=100, 
+        blank=True, 
+        null=True, 
+        verbose_name="ID de la Carpeta Volumetrías"
+    )
+    created_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        verbose_name="Creado por"
+    )
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True, 
+        verbose_name="Fecha de Creación"
+    )
+    fecha_actualizacion = models.DateTimeField(
+        auto_now=True, 
+        verbose_name="Última Actualización"
+    )
+    
+    # Contador de volumetrías generadas para este proyecto
+    volumetrias_generadas = models.PositiveIntegerField(
+        default=0, 
+        verbose_name="Número de Volumetrías Generadas"
+    )
+
+    def __str__(self):
+        return f"Proyecto {self.bitrix_project_id} - {self.oportunidad.oportunidad}"
+
+    class Meta:
+        verbose_name = "Proyecto de Oportunidad"
+        verbose_name_plural = "Proyectos de Oportunidades"
+        ordering = ['-fecha_creacion']
+        # Asegurar que cada oportunidad tenga solo un proyecto asociado
+        unique_together = ('oportunidad', 'bitrix_project_id')

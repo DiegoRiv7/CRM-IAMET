@@ -6,7 +6,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria
 from . import views_exportar
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm
 from django.db.models import Sum, Count, F, Q
@@ -2161,7 +2161,7 @@ def cotizaciones_view(request):
 @login_required
 def cotizaciones_por_oportunidad_view(request, oportunidad_id):
     """
-    Vista para mostrar todas las cotizaciones de una oportunidad específica
+    Vista para mostrar todas las cotizaciones y volumetrías de una oportunidad específica
     """
     oportunidad = get_object_or_404(TodoItem, pk=oportunidad_id)
     
@@ -2170,16 +2170,29 @@ def cotizaciones_por_oportunidad_view(request, oportunidad_id):
         messages.error(request, "No tienes permisos para ver las cotizaciones de esta oportunidad.")
         return redirect('todos')
     
-    # Obtener todas las cotizaciones vinculadas a esta oportunidad
+    # Determinar qué tipo de contenido mostrar basado en el parámetro 'tipo'
+    tipo_contenido = request.GET.get('tipo', 'cotizaciones')  # Por defecto mostrar cotizaciones
+    
+    cotizaciones = []
+    volumetrias = []
+    
     if is_supervisor(request.user):
+        # Supervisores ven todo
         cotizaciones = Cotizacion.objects.filter(oportunidad=oportunidad).order_by('-fecha_creacion')
+        volumetrias = Volumetria.objects.filter(oportunidad=oportunidad).order_by('-fecha_creacion')
     else:
+        # Usuarios normales solo ven lo suyo
         cotizaciones = Cotizacion.objects.filter(oportunidad=oportunidad, created_by=request.user).order_by('-fecha_creacion')
+        volumetrias = Volumetria.objects.filter(oportunidad=oportunidad, created_by=request.user).order_by('-fecha_creacion')
     
     context = {
         'oportunidad': oportunidad,
         'cotizaciones': cotizaciones,
+        'volumetrias': volumetrias,
         'tiene_cotizaciones': cotizaciones.exists(),
+        'tiene_volumetrias': volumetrias.exists(),
+        'tipo_contenido': tipo_contenido,
+        'is_engineer': is_engineer(request.user),  # Para saber si puede crear volumetrías
     }
     
     return render(request, 'cotizaciones_por_oportunidad.html', context)
@@ -3183,10 +3196,42 @@ def generar_pdf_volumetria(request):
             except TodoItem.DoesNotExist:
                 pass
         
-        # 1. Crear el proyecto en Bitrix24 PRIMERO
+        # 1. VERIFICAR SI YA EXISTE UN PROYECTO PARA ESTA OPORTUNIDAD
         project_id = None
-        project_name = data.get('nombre_volumetria', 'Análisis Volumétrico')
-        project_description = f"""
+        carpeta_volumetrias_id = None
+        oportunidad_proyecto = None
+        oportunidad = None
+        
+        # Si hay una oportunidad asociada, verificar si ya existe un proyecto
+        if data.get('oportunidad_id'):
+            try:
+                from .models import OportunidadProyecto
+                oportunidad = TodoItem.objects.get(id=data['oportunidad_id'])
+                
+                # Buscar si ya existe un proyecto para esta oportunidad
+                try:
+                    oportunidad_proyecto = OportunidadProyecto.objects.get(oportunidad=oportunidad)
+                    project_id = oportunidad_proyecto.bitrix_project_id
+                    carpeta_volumetrias_id = oportunidad_proyecto.carpeta_volumetrias_id
+                    
+                    # Incrementar contador de volumetrías
+                    oportunidad_proyecto.volumetrias_generadas += 1
+                    oportunidad_proyecto.save()
+                    
+                    print(f"DEBUG: Proyecto existente encontrado: ID {project_id}")
+                    print(f"DEBUG: Esta será la volumetría #{oportunidad_proyecto.volumetrias_generadas} para este proyecto")
+                    
+                except OportunidadProyecto.DoesNotExist:
+                    print(f"DEBUG: No existe proyecto para oportunidad {data['oportunidad_id']}, se creará uno nuevo")
+                    
+            except TodoItem.DoesNotExist:
+                print(f"WARNING: Oportunidad {data['oportunidad_id']} no encontrada")
+                oportunidad = None
+        
+        # 2. Si NO existe proyecto, crear uno nuevo en Bitrix24
+        if not project_id:
+            project_name = data.get('nombre_volumetria', 'Análisis Volumétrico')
+            project_description = f"""
 Proyecto automatizado desde Nethive para volumetría: {project_name}
 
 Cliente: {cliente_nombre}
@@ -3199,24 +3244,41 @@ Cantidad de nodos: {data.get('cantidad_nodos', 1)}
 Total: ${float(data.get('total', 0)):,.2f} USD
 
 Este proyecto contiene la documentación técnica y volumetría del proyecto.
-            """.strip()
+                """.strip()
 
-        try:
-            from .bitrix_integration import create_bitrix_project
-            project_id = create_bitrix_project(
-                project_name=project_name,
-                description=project_description,
-                vendedor_responsable=vendedor_responsable,
-                request=request
-            )
-            if project_id:
-                print(f"DEBUG: Proyecto Bitrix24 creado exitosamente: ID {project_id}")
-            else:
-                print("WARNING: No se pudo crear el proyecto en Bitrix24. La volumetría no se adjuntará al proyecto.")
+            try:
+                from .bitrix_integration import create_bitrix_project
+                project_id = create_bitrix_project(
+                    project_name=project_name,
+                    description=project_description,
+                    vendedor_responsable=vendedor_responsable,
+                    request=request
+                )
+                
+                if project_id:
+                    print(f"DEBUG: Nuevo proyecto Bitrix24 creado exitosamente: ID {project_id}")
+                    
+                    # Crear registro en OportunidadProyecto si hay oportunidad
+                    if data.get('oportunidad_id') and oportunidad:
+                        try:
+                            from .models import OportunidadProyecto
+                            oportunidad_proyecto = OportunidadProyecto.objects.create(
+                                oportunidad=oportunidad,
+                                bitrix_project_id=project_id,
+                                bitrix_deal_id=str(oportunidad.bitrix_deal_id) if oportunidad.bitrix_deal_id else None,
+                                proyecto_nombre=project_name,
+                                created_by=request.user,
+                                volumetrias_generadas=1
+                            )
+                            print(f"DEBUG: Registro OportunidadProyecto creado: ID {oportunidad_proyecto.id}")
+                        except Exception as e:
+                            print(f"WARNING: Error creando registro OportunidadProyecto: {e}")
+                else:
+                    print("WARNING: No se pudo crear el proyecto en Bitrix24. La volumetría no se adjuntará al proyecto.")
 
-        except Exception as e:
-            print(f"WARNING: Error al intentar crear el proyecto en Bitrix24: {e}")
-            project_id = None # Asegurar que project_id sea None si la creación falla
+            except Exception as e:
+                print(f"WARNING: Error al intentar crear el proyecto en Bitrix24: {e}")
+                project_id = None # Asegurar que project_id sea None si la creación falla
 
         # Calcular valores financieros (estos dependen de los datos de la volumetría, no del proyecto)
         subtotal = float(data.get('subtotal', 0))
@@ -3266,10 +3328,63 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
         # Generar PDF usando WeasyPrint
         pdf_file = HTML(string=html_string).write_pdf()
         
-        # 3. Si el proyecto fue creado, subir el PDF de la volumetría a su drive
-        # Definir filename independientemente del project_id para evitar errores
+        # 3. GUARDAR VOLUMETRÍA EN LA BASE DE DATOS
+        volumetria_record = None
+        if oportunidad:  # Solo si tenemos una oportunidad
+            try:
+                # Crear registro de volumetría
+                volumetria_record = Volumetria.objects.create(
+                    titulo=data.get('nombre_volumetria', 'Análisis Volumétrico'),
+                    cliente_id=data.get('cliente_id') if data.get('cliente_id') else oportunidad.cliente.id,
+                    usuario_final=data.get('usuario_final', ''),
+                    oportunidad=oportunidad,
+                    categoria=data.get('categoria', 'CAT6'),
+                    color=data.get('color', 'Azul'),
+                    cantidad_nodos=cantidad_nodos,
+                    distancia=Decimal(str(data.get('distancia', 0))),
+                    subtotal=Decimal(str(subtotal)),
+                    iva_rate=Decimal(str(iva_rate)),
+                    iva_amount=Decimal(str(iva)),
+                    total=Decimal(str(total)),
+                    moneda='USD',
+                    total_costo_proveedor=Decimal(str(total_costo_proveedor)),
+                    ganancia_total=Decimal(str(ganancia_total)),
+                    margen_utilidad=Decimal(str(margen_utilidad)),
+                    precio_por_nodo=Decimal(str(precio_por_nodo)),
+                    costo_por_nodo=Decimal(str(costo_por_nodo)),
+                    pdf_content=pdf_file,
+                    bitrix_project_id=project_id,
+                    elaborado_por=data.get('elaborado_por', request.user.get_full_name() or request.user.username),
+                    created_by=request.user if request.user.is_authenticated else None
+                )
+                
+                # Crear detalles de volumetría
+                for item in items:
+                    DetalleVolumetria.objects.create(
+                        volumetria=volumetria_record,
+                        nombre_producto=item.get('nombre', ''),
+                        descripcion=item.get('descripcion', ''),
+                        cantidad=int(item.get('cantidad', 1)),
+                        precio_unitario=Decimal(str(item.get('precio_unitario', 0))),
+                        precio_proveedor=Decimal(str(item.get('precio_proveedor', 0))),
+                        total=Decimal(str(item.get('total', 0))),
+                        total_proveedor=Decimal(str(item.get('total_proveedor', 0)))
+                    )
+                
+                print(f"DEBUG: Volumetría guardada en BD con ID: {volumetria_record.id}")
+                
+            except Exception as e:
+                print(f"WARNING: Error guardando volumetría en BD: {e}")
+        
+        # 4. Si el proyecto fue creado, subir el PDF de la volumetría a su drive
+        # Definir filename con numeración única para proyectos reutilizados
         if project_id:
-            filename = f"Volumetria_Proyecto_{project_id}.pdf"
+            if oportunidad_proyecto and oportunidad_proyecto.volumetrias_generadas > 1:
+                # Proyecto reutilizado - usar numeración
+                filename = f"Volumetria_Proyecto_{project_id}_V{oportunidad_proyecto.volumetrias_generadas}.pdf"
+            else:
+                # Proyecto nuevo o primera volumetría
+                filename = f"Volumetria_Proyecto_{project_id}.pdf"
         else:
             filename = "Volumetria_SinProyecto.pdf"
         
@@ -3376,6 +3491,74 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
     except Exception as e:
         print(f"ERROR: Error generando PDF de volumetría: {str(e)}")
         return JsonResponse({'error': f'Error interno del servidor: {str(e)}'}, status=500)
+
+
+@login_required
+def view_volumetria_pdf(request, volumetria_id):
+    """
+    Vista para mostrar el PDF de una volumetría en el navegador
+    """
+    volumetria = get_object_or_404(Volumetria, id=volumetria_id)
+    
+    # Verificar permisos
+    if not (is_supervisor(request.user) or volumetria.created_by == request.user or volumetria.oportunidad.usuario == request.user):
+        return HttpResponse("No tienes permisos para ver esta volumetría.", status=403)
+    
+    if not volumetria.pdf_content:
+        return HttpResponse("PDF no disponible para esta volumetría.", status=404)
+    
+    response = HttpResponse(volumetria.pdf_content, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="{volumetria.get_filename()}"'
+    return response
+
+@login_required
+def download_volumetria_pdf(request, volumetria_id):
+    """
+    Vista para descargar el PDF de una volumetría
+    """
+    volumetria = get_object_or_404(Volumetria, id=volumetria_id)
+    
+    # Verificar permisos
+    if not (is_supervisor(request.user) or volumetria.created_by == request.user or volumetria.oportunidad.usuario == request.user):
+        return HttpResponse("No tienes permisos para descargar esta volumetría.", status=403)
+    
+    if not volumetria.pdf_content:
+        return HttpResponse("PDF no disponible para esta volumetría.", status=404)
+    
+    response = HttpResponse(volumetria.pdf_content, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{volumetria.get_filename()}"'
+    return response
+
+@login_required
+@require_http_methods(["POST"])
+def eliminar_volumetria(request, volumetria_id):
+    """
+    Vista para eliminar una volumetría
+    """
+    try:
+        volumetria = get_object_or_404(Volumetria, id=volumetria_id)
+        
+        # Verificar permisos - solo supervisores o el creador pueden eliminar
+        if not (is_supervisor(request.user) or volumetria.created_by == request.user):
+            return JsonResponse({'success': False, 'error': 'No tienes permisos para eliminar esta volumetría'}, status=403)
+        
+        # Guardar información antes de eliminar
+        titulo = volumetria.titulo
+        oportunidad_id = volumetria.oportunidad.id
+        
+        # Eliminar la volumetría (los detalles se eliminan automáticamente por cascade)
+        volumetria.delete()
+        
+        return JsonResponse({
+            'success': True, 
+            'message': f'Volumetría "{titulo}" eliminada exitosamente',
+            'redirect_url': f'/app/cotizaciones/oportunidad/{oportunidad_id}/?tipo=volumetrias'
+        })
+        
+    except Volumetria.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Volumetría no encontrada'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Error interno: {str(e)}'}, status=500)
 
 def get_logo_base64():
     """

@@ -144,5 +144,13 @@ urlpatterns = [
     path('api/delete-upload/<int:upload_id>/', views.delete_pending_upload, name='delete_pending_upload'),
     path('api/upload-status/', views.upload_status_api, name='upload_status_api'),
     
+    
+    # ===============================================
+    # RUTAS PARA GESTIÓN DE VOLUMETRÍAS
+    # ===============================================
+    path('volumetria/pdf/view/<int:volumetria_id>/', views.view_volumetria_pdf, name='view_volumetria_pdf'),
+    path('volumetria/pdf/download/<int:volumetria_id>/', views.download_volumetria_pdf, name='download_volumetria_pdf'),
+    path('api/eliminar-volumetria/<int:volumetria_id>/', views.eliminar_volumetria, name='eliminar_volumetria'),
+    
     path('koti-bot-html/', TemplateView.as_view(template_name='nethive_bot.html'), name='koti_bot_html'),
 ]

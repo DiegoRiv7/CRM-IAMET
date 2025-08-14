@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Cotizaciones de {{ oportunidad.oportunidad }}{% endblock %}
+{% block title %}{{ tipo_contenido|title }} de {{ oportunidad.oportunidad }}{% endblock %}
 
 {% block content %}
 <script type="text/javascript">
@@ -30,6 +30,7 @@
         --apple-blue: #007AFF;
         --apple-green: #32D74B;
         --apple-yellow: #FFD60A;
+        --apple-orange: #FF6B35;
         --apple-label: #FFFFFF;
         --apple-label-secondary: #EBEBF599;
     }
@@ -41,6 +42,7 @@
         --apple-blue: #FF6B9D;
         --apple-green: #FF91A4;
         --apple-yellow: #FFB6C1;
+        --apple-orange: #FF8C69;
         --apple-label: #2D1B2E;
         --apple-label-secondary: #4A2B4D99;
         
@@ -52,22 +54,6 @@
     .light-theme body {
         background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%) !important;
         background-attachment: fixed;
-    }
-    
-    /* Enhanced table styling */
-    .light-theme .apple-table-container {
-        background: linear-gradient(135deg, 
-            rgba(255, 208, 220, 0.9) 0%, 
-            rgba(255, 192, 203, 0.85) 50%, 
-            rgba(255, 182, 193, 0.8) 100%);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 107, 157, 0.3);
-    }
-    
-    .light-theme .apple-table th,
-    .light-theme .apple-table td {
-        color: #2D1B2E;
     }
 
     .apple-container { width: 100%; max-width: 1400px; margin: 2rem auto; padding: 2rem; animation: appleFadeIn 0.5s ease-out; }
@@ -96,6 +82,89 @@
     .apple-subtitle { font-size: 1.2rem; color: var(--apple-label-secondary); }
     .apple-info { color: var(--apple-green); font-weight: 500; }
 
+    /* SWITCH TOGGLE STYLES */
+    .content-switch-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 2rem;
+        margin: 2rem 0;
+        padding: 1rem;
+        background: var(--apple-background-secondary);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .light-theme .content-switch-container {
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.9) 0%, 
+            rgba(255, 248, 250, 0.85) 100%);
+        border: 1px solid rgba(255, 107, 157, 0.2);
+    }
+
+    .content-switch {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .switch-label {
+        font-weight: 500;
+        color: var(--apple-label);
+        font-size: 1.1rem;
+    }
+
+    .switch-toggle {
+        position: relative;
+        width: 60px;
+        height: 32px;
+        background: var(--apple-separator);
+        border-radius: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .switch-toggle.active-cotizaciones {
+        background: var(--apple-blue);
+    }
+
+    .switch-toggle.active-volumetrias {
+        background: var(--apple-orange);
+    }
+
+    .switch-slider {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 28px;
+        height: 28px;
+        background: white;
+        border-radius: 50%;
+        transition: transform 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .switch-toggle.active-volumetrias .switch-slider {
+        transform: translateX(28px);
+    }
+
+    .switch-counts {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 0.9rem;
+        color: var(--apple-label-secondary);
+    }
+
+    .count-badge {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        padding: 4px 12px;
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+
     .apple-actions {
         display: flex; justify-content: center; gap: 1rem; margin-bottom: 2.5rem;
     }
@@ -106,28 +175,99 @@
         font-size: 1rem; font-weight: 500; cursor: pointer; text-decoration: none;
         display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.3s;
     }
-    .apple-button:hover { filter: brightness(1.1); }
-    .apple-button-secondary { background: var(--apple-background-tertiary); color: var(--apple-label); }
+    .apple-button:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .apple-button-secondary { background: var(--apple-separator); color: var(--apple-label); }
     .apple-button-volumetria { 
-        background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%); 
-        color: #FFFFFF; 
-        border: none;
-    }
-    .apple-button-volumetria:hover { 
-        background: linear-gradient(135deg, #FF5722 0%, #E68900 100%); 
-        box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4); 
-        transform: translateY(-1px);
+        background: linear-gradient(135deg, var(--apple-orange) 0%, #F7931E 100%); 
     }
 
-    .apple-table-container { background: var(--apple-background-secondary); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; overflow: hidden; }
+    /* Conditional button visibility */
+    .create-button { display: none; }
+    .create-button.active { display: inline-flex; }
+
+    .apple-table-container { 
+        background: var(--apple-background-secondary); 
+        backdrop-filter: blur(12px); 
+        -webkit-backdrop-filter: blur(12px); 
+        border: 1px solid rgba(255, 255, 255, 0.1); 
+        border-radius: 12px; 
+        overflow: hidden; 
+        min-height: 200px;
+    }
+
+    .light-theme .apple-table-container {
+        background: linear-gradient(135deg, 
+            rgba(255, 208, 220, 0.9) 0%, 
+            rgba(255, 192, 203, 0.85) 50%, 
+            rgba(255, 182, 193, 0.8) 100%);
+        border: 1px solid rgba(255, 107, 157, 0.3);
+    }
+    
     .apple-table { width: 100%; border-collapse: collapse; }
     .apple-table th, .apple-table td { padding: 16px 20px; text-align: left; border-bottom: 1px solid var(--apple-separator); }
     .apple-table th { font-size: 0.8rem; text-transform: uppercase; color: var(--apple-label-secondary); }
     .apple-table tr:last-child td { border-bottom: none; }
     .apple-table tr:hover { background: rgba(255, 255, 255, 0.05); }
-    
-    /* Responsividad para tabla */
+
+    .light-theme .apple-table th,
+    .light-theme .apple-table td {
+        color: var(--apple-label);
+    }
+
+    .content-section { display: none; }
+    .content-section.active { display: block; }
+
+    .no-content {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--apple-label-secondary);
+    }
+
+    .no-content h3 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        color: var(--apple-label);
+    }
+
+    .no-content p {
+        font-size: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .action-button {
+        background: var(--apple-separator); 
+        color: var(--apple-label); 
+        border: none; 
+        border-radius: 6px;
+        padding: 6px 12px; 
+        font-size: 0.8rem; 
+        font-weight: 500; 
+        cursor: pointer; 
+        transition: all 0.2s;
+        display: inline-flex; 
+        align-items: center; 
+        gap: 0.4rem; 
+        text-decoration: none;
+        margin: 0 2px;
+    }
+    .action-button:hover { filter: brightness(1.2); transform: translateY(-1px); }
+    .action-button.view { color: var(--apple-green); }
+    .action-button.download { color: var(--apple-blue); }
+    .action-button.edit { color: var(--apple-yellow); }
+    .action-button.delete { color: #FF453A; }
+
+    /* Responsividad */
     @media (max-width: 768px) {
+        .content-switch-container {
+            flex-direction: column;
+            gap: 1rem;
+            padding: 1.5rem 1rem;
+        }
+        
+        .apple-actions {
+            flex-wrap: wrap;
+        }
+        
         .apple-table-container {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
@@ -147,89 +287,6 @@
             font-size: 0.75rem;
         }
     }
-
-    .action-button {
-        background: var(--apple-background-tertiary); color: var(--apple-label); border: none; border-radius: 6px;
-        padding: 6px 12px; font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: all 0.2s;
-        display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none;
-    }
-    .action-button:hover { filter: brightness(1.2); }
-    .action-button.view { color: var(--apple-green); }
-    .action-button.download { color: var(--apple-blue); }
-    .action-button.edit { color: var(--apple-yellow); }
-
-    /* Subtle download notification */
-    .download-notification {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: var(--apple-background-secondary);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        padding: 16px 20px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        z-index: 1000;
-        transform: translateX(100%);
-        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        min-width: 280px;
-    }
-
-    .download-notification.show {
-        transform: translateX(0);
-    }
-
-    .download-notification.success {
-        border-color: var(--apple-blue);
-        background: linear-gradient(135deg, var(--apple-background-secondary) 0%, rgba(0, 122, 255, 0.1) 100%);
-    }
-
-    .download-spinner {
-        width: 20px;
-        height: 20px;
-        border: 2px solid var(--apple-separator);
-        border-top: 2px solid var(--apple-blue);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }
-
-    .download-check {
-        width: 20px;
-        height: 20px;
-        color: var(--apple-blue);
-    }
-
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-
-    /* Light theme notification */
-    .light-theme .download-notification {
-        background: linear-gradient(135deg, 
-            rgba(255, 255, 255, 0.95) 0%, 
-            rgba(255, 248, 250, 0.9) 100%);
-        border: 1px solid rgba(255, 107, 157, 0.2);
-        color: var(--apple-label);
-        box-shadow: 0 8px 32px rgba(255, 107, 157, 0.15);
-    }
-
-    .light-theme .download-notification.success {
-        border-color: var(--apple-blue);
-        background: linear-gradient(135deg, 
-            rgba(255, 255, 255, 0.98) 0%, 
-            rgba(255, 107, 157, 0.05) 100%);
-    }
-
-    .light-theme .download-spinner {
-        border: 2px solid rgba(255, 107, 157, 0.3);
-        border-top: 2px solid var(--apple-blue);
-    }
-
 </style>
 
 <div class="apple-container">
@@ -239,117 +296,268 @@
         <p class="apple-subtitle">Monto: <span class="apple-info">${{ oportunidad.monto|floatformat:2 }}</span></p>
     </div>
 
-    <div class="apple-actions">
-        <a href="{% url 'todos' %}" class="apple-button apple-button-secondary">&#8592; Volver</a>
-        <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="apple-button">+ Nueva Cotización</a>
-        <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="apple-button apple-button-volumetria">📊 Nueva Volumetría</a>
+    <!-- CONTENT SWITCH -->
+    <div class="content-switch-container">
+        <div class="content-switch">
+            <span class="switch-label">Cotizaciones</span>
+            <div class="switch-toggle" id="contentSwitch" onclick="toggleContent()">
+                <div class="switch-slider"></div>
+            </div>
+            <span class="switch-label">Volumetrías</span>
+        </div>
+        
+        <div class="switch-counts">
+            <div class="count-badge">
+                📄 {{ cotizaciones.count }} cotizacion{{ cotizaciones.count|pluralize:"es" }}
+            </div>
+            <div class="count-badge">
+                📊 {{ volumetrias.count }} volumetría{{ volumetrias.count|pluralize:"s" }}
+            </div>
+        </div>
     </div>
 
-    <div class="apple-table-container">
-        <table class="apple-table">
-            <thead>
-                <tr>
-                    <th>Título</th>
-                    <th>Total</th>
-                    <th>Moneda</th>
-                    <th>Fecha</th>
-                    <th>Creado Por</th>
-                    <th class="text-center">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for cotizacion in cotizaciones %}
-                <tr>
-                    <td class="font-medium">{{ cotizacion.titulo }}</td>
-                    <td class="font-semibold text-green-400">${{ cotizacion.total|floatformat:2 }}</td>
-                    <td>{{ cotizacion.moneda }}</td>
-                    <td>{{ cotizacion.fecha_creacion|date:"d/m/Y" }}</td>
-                    <td>{{ cotizacion.created_by.first_name|default:cotizacion.created_by.username }}</td>
-                    <td class="text-center">
-                        <div class="flex justify-center space-x-2">
-                            <a href="{% url 'view_cotizacion_pdf' cotizacion.id %}" target="_blank" class="action-button view" title="Ver PDF">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                Ver
-                            </a>
-                            <a href="{% url 'generate_cotizacion_pdf' cotizacion.id %}" class="action-button download" title="Descargar PDF" onclick="showDownloadNotification(this, event)">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                Descargar
-                            </a>
-                            <a href="{% url 'editar_cotizacion' cotizacion.id %}" class="action-button edit" title="Editar Cotización">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg>
-                                Editar
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- ACTIONS -->
+    <div class="apple-actions">
+        <a href="{% url 'todos' %}" class="apple-button apple-button-secondary">&#8592; Volver</a>
+        <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="apple-button create-button" id="btnCotizacion">+ Nueva Cotización</a>
+        {% if is_engineer %}
+        <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="apple-button apple-button-volumetria create-button" id="btnVolumetria">📊 Nueva Volumetría</a>
+        {% endif %}
+    </div>
+
+    <!-- COTIZACIONES SECTION -->
+    <div class="content-section" id="cotizaciones-section">
+        <div class="apple-table-container">
+            {% if cotizaciones %}
+            <table class="apple-table">
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Total</th>
+                        <th>Moneda</th>
+                        <th>Fecha</th>
+                        <th>Creado Por</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cotizacion in cotizaciones %}
+                    <tr>
+                        <td class="font-medium">{{ cotizacion.titulo }}</td>
+                        <td class="font-semibold" style="color: var(--apple-green);">${{ cotizacion.total|floatformat:2 }}</td>
+                        <td>{{ cotizacion.moneda }}</td>
+                        <td>{{ cotizacion.fecha_creacion|date:"d/m/Y" }}</td>
+                        <td>{{ cotizacion.created_by.first_name|default:cotizacion.created_by.username }}</td>
+                        <td class="text-center">
+                            <div class="flex justify-center space-x-2">
+                                <a href="{% url 'view_cotizacion_pdf' cotizacion.id %}" target="_blank" class="action-button view" title="Ver PDF">
+                                    👁️ Ver
+                                </a>
+                                <a href="{% url 'generate_cotizacion_pdf' cotizacion.id %}" class="action-button download" title="Descargar PDF">
+                                    ⬇️ Descargar
+                                </a>
+                                <a href="{% url 'editar_cotizacion' cotizacion.id %}" class="action-button edit" title="Editar">
+                                    ✏️ Editar
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="no-content">
+                <h3>📄 No hay cotizaciones</h3>
+                <p>Esta oportunidad aún no tiene cotizaciones creadas</p>
+                <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="apple-button">+ Crear Primera Cotización</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- VOLUMETRÍAS SECTION -->
+    <div class="content-section" id="volumetrias-section">
+        <div class="apple-table-container">
+            {% if volumetrias %}
+            <table class="apple-table">
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Nodos</th>
+                        <th>Categoría</th>
+                        <th>Total</th>
+                        <th>Fecha</th>
+                        <th>Creado Por</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for volumetria in volumetrias %}
+                    <tr>
+                        <td class="font-medium">{{ volumetria.titulo }}</td>
+                        <td><span class="count-badge">{{ volumetria.cantidad_nodos }}</span></td>
+                        <td>{{ volumetria.categoria }} - {{ volumetria.color }}</td>
+                        <td class="font-semibold" style="color: var(--apple-green);">${{ volumetria.total|floatformat:2 }} {{ volumetria.moneda }}</td>
+                        <td>{{ volumetria.fecha_creacion|date:"d/m/Y" }}</td>
+                        <td>{{ volumetria.created_by.first_name|default:volumetria.created_by.username }}</td>
+                        <td class="text-center">
+                            <div class="flex justify-center space-x-2">
+                                <a href="{% url 'view_volumetria_pdf' volumetria.id %}" target="_blank" class="action-button view" title="Ver PDF">
+                                    👁️ Ver
+                                </a>
+                                <a href="{% url 'download_volumetria_pdf' volumetria.id %}" class="action-button download" title="Descargar PDF">
+                                    ⬇️ Descargar
+                                </a>
+                                {% if user.is_superuser or user == volumetria.created_by %}
+                                <button onclick="eliminarVolumetria({{ volumetria.id }}, '{{ volumetria.titulo|escapejs }}')" class="action-button delete" title="Eliminar">
+                                    🗑️ Eliminar
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="no-content">
+                <h3>📊 No hay volumetrías</h3>
+                <p>Esta oportunidad aún no tiene volumetrías creadas</p>
+                {% if is_engineer %}
+                <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="apple-button apple-button-volumetria">📊 Crear Primera Volumetría</a>
+                {% else %}
+                <p style="font-size: 0.9rem; color: var(--apple-label-secondary);">Solo ingenieros pueden crear volumetrías</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-function showDownloadNotification(element, event) {
-    event.preventDefault();
+let currentContent = '{{ tipo_contenido }}'; // 'cotizaciones' o 'volumetrias'
+
+function toggleContent() {
+    const switchElement = document.getElementById('contentSwitch');
+    const cotizacionesSection = document.getElementById('cotizaciones-section');
+    const volumetriasSection = document.getElementById('volumetrias-section');
+    const btnCotizacion = document.getElementById('btnCotizacion');
+    const btnVolumetria = document.getElementById('btnVolumetria');
     
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = 'download-notification';
-    notification.innerHTML = `
-        <div class="download-spinner"></div>
-        <div>
-            <div style="font-weight: 500; margin-bottom: 2px;">Generando PDF...</div>
-            <div style="font-size: 13px; opacity: 0.7;">Esto puede tomar unos segundos</div>
-        </div>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Show notification
-    setTimeout(() => {
-        notification.classList.add('show');
-    }, 100);
-    
-    // Start download
-    const downloadUrl = element.href;
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = '';
-    
-    // Simulate download completion after a delay
-    setTimeout(() => {
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    if (currentContent === 'cotizaciones') {
+        // Cambiar a volumetrías
+        currentContent = 'volumetrias';
+        switchElement.classList.remove('active-cotizaciones');
+        switchElement.classList.add('active-volumetrias');
+        cotizacionesSection.classList.remove('active');
+        volumetriasSection.classList.add('active');
+        btnCotizacion.classList.remove('active');
+        if (btnVolumetria) btnVolumetria.classList.add('active');
         
-        // Update notification to success
-        notification.classList.add('success');
-        notification.innerHTML = `
-            <div class="download-check">
-                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-            </div>
-            <div>
-                <div style="font-weight: 500; margin-bottom: 2px;">¡PDF descargado!</div>
-                <div style="font-size: 13px; opacity: 0.7;">Regresando a la página...</div>
-            </div>
-        `;
+        // Actualizar URL sin recargar página
+        const url = new URL(window.location);
+        url.searchParams.set('tipo', 'volumetrias');
+        window.history.pushState({}, '', url);
+        document.title = 'Volumetrías de {{ oportunidad.oportunidad }}';
         
-        // Hide notification and redirect after 2 seconds
-        setTimeout(() => {
-            notification.style.transform = 'translateX(100%)';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-                // Refresh the current page to stay in cotizaciones por oportunidad
-                window.location.reload();
-            }, 300);
-        }, 2000);
+    } else {
+        // Cambiar a cotizaciones
+        currentContent = 'cotizaciones';
+        switchElement.classList.remove('active-volumetrias');
+        switchElement.classList.add('active-cotizaciones');
+        volumetriasSection.classList.remove('active');
+        cotizacionesSection.classList.add('active');
+        if (btnVolumetria) btnVolumetria.classList.remove('active');
+        btnCotizacion.classList.add('active');
         
-    }, 1000); // Simulate 1 second processing time
+        // Actualizar URL sin recargar página
+        const url = new URL(window.location);
+        url.searchParams.set('tipo', 'cotizaciones');
+        window.history.pushState({}, '', url);
+        document.title = 'Cotizaciones de {{ oportunidad.oportunidad }}';
+    }
 }
+
+function eliminarVolumetria(volumetriaId, titulo) {
+    Swal.fire({
+        title: '¿Eliminar volumetría?',
+        text: `¿Estás seguro de eliminar "${titulo}"? Esta acción no se puede deshacer.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#FF453A',
+        cancelButtonColor: '#8E8E93',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        background: getComputedStyle(document.documentElement).getPropertyValue('--apple-background-secondary'),
+        color: getComputedStyle(document.documentElement).getPropertyValue('--apple-label')
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/app/api/eliminar-volumetria/${volumetriaId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Eliminada!',
+                        text: data.message,
+                        background: getComputedStyle(document.documentElement).getPropertyValue('--apple-background-secondary'),
+                        color: getComputedStyle(document.documentElement).getPropertyValue('--apple-label')
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.error,
+                        background: getComputedStyle(document.documentElement).getPropertyValue('--apple-background-secondary'),
+                        color: getComputedStyle(document.documentElement).getPropertyValue('--apple-label')
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error de conexión',
+                    background: getComputedStyle(document.documentElement).getPropertyValue('--apple-background-secondary'),
+                    color: getComputedStyle(document.documentElement).getPropertyValue('--apple-label')
+                });
+            });
+        }
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Inicializar estado basado en URL
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tipo = urlParams.get('tipo') || 'cotizaciones';
+    currentContent = tipo === 'volumetrias' ? 'cotizaciones' : 'volumetrias'; // Invertir para que toggle funcione
+    toggleContent(); // Ejecutar toggle para establecer estado correcto
+});
 </script>
 
 {% endblock %}
