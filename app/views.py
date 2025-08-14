@@ -3266,8 +3266,16 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
         pdf_file = HTML(string=html_string).write_pdf()
         
         # 3. Si el proyecto fue creado, subir el PDF de la volumetría a su drive
+        # Definir filename independientemente del project_id para evitar errores
         if project_id:
-            try:
+            filename = f"Volumetria_Proyecto_{project_id}.pdf"
+        else:
+            filename = "Volumetria_SinProyecto.pdf"
+        
+        if project_id:
+            print(f"DEBUG: Proyecto {project_id} creado exitosamente. SALTANDO subida de archivo temporalmente para debugging.")
+            # COMENTANDO TEMPORALMENTE PARA DEBUGGING
+            if False:  # Este bloque está temporalmente deshabilitado
                 from .bitrix_integration import upload_file_to_project_drive
                 import base64
                 import re
