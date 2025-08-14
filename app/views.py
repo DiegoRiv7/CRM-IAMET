@@ -3272,92 +3272,86 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
         else:
             filename = "Volumetria_SinProyecto.pdf"
         
+        # Intentar subir PDF al proyecto si fue creado (no bloquear descarga si falla)
         if project_id:
-            print(f"DEBUG: Proyecto {project_id} creado exitosamente. Intentando subida de archivo.")
-            try:
-                from .bitrix_integration import upload_file_to_project_drive
-                import base64
-                import re
-                
-                print(f"DEBUG: Verificando PDF antes de codificar...")
+            print(f"DEBUG: Proyecto {project_id} creado exitosamente. Iniciando proceso de subida de archivo.")
+            
+            # Usar un approach separado para no bloquear la descarga del PDF
+            def upload_pdf_to_project():
                 try:
+                    from .bitrix_integration import upload_file_to_project_drive
+                    import base64
+                    import signal
+                    
+                    print(f"DEBUG: Verificando PDF antes de codificar...")
                     pdf_size_bytes = len(pdf_file)
                     print(f"DEBUG: Tamaño del PDF: {pdf_size_bytes} bytes ({pdf_size_bytes / 1024 / 1024:.2f} MB)")
                     
                     if pdf_size_bytes > 100 * 1024 * 1024:  # 100MB limit
                         print(f"ERROR: PDF demasiado grande para procesar: {pdf_size_bytes} bytes")
-                        raise Exception(f"PDF demasiado grande: {pdf_size_bytes} bytes")
-                        
-                except Exception as pdf_check_error:
-                    print(f"ERROR: Error verificando PDF: {pdf_check_error}")
-                    raise pdf_check_error
-                
-                print(f"DEBUG: Iniciando codificación base64...")
-                try:
-                    pdf_base64 = base64.b64encode(pdf_file).decode('utf-8')
-                    print(f"DEBUG: Codificación base64 exitosa - {len(pdf_base64)} caracteres")
-                except MemoryError as mem_error:
-                    print(f"ERROR: Memoria insuficiente para codificación base64: {mem_error}")
-                    raise mem_error
-                except Exception as b64_error:
-                    print(f"ERROR: Error en codificación base64: {b64_error}")
-                    raise b64_error
-                
-                print(f"DEBUG: Validando tamaños para Bitrix24...")
-                try:
-                    # Usar los valores ya calculados
+                        return False
+                    
+                    print(f"DEBUG: Iniciando codificación base64 con timeout...")
+                    
+                    # Timeout específico para la codificación
+                    def encoding_timeout_handler(signum, frame):
+                        raise Exception("Timeout en codificación base64 después de 10 segundos")
+                    
+                    signal.signal(signal.SIGALRM, encoding_timeout_handler)
+                    signal.alarm(10)  # 10 segundos para codificación
+                    
+                    try:
+                        pdf_base64 = base64.b64encode(pdf_file).decode('utf-8')
+                        signal.alarm(0)  # Cancelar timeout
+                        print(f"DEBUG: Codificación base64 exitosa - {len(pdf_base64)} caracteres")
+                    except Exception as encoding_error:
+                        signal.alarm(0)  # Cancelar timeout
+                        print(f"ERROR: Error/timeout en codificación base64: {encoding_error}")
+                        return False
+                    
+                    # Validar tamaños
                     b64_size = len(pdf_base64)
-                    print(f"DEBUG: Tamaños validados - PDF: {pdf_size_bytes} bytes, Base64: {b64_size} chars")
-                    
-                    # Verificar tamaño razonable (límite de 50MB en base64)
-                    if b64_size > 50 * 1024 * 1024:
+                    if b64_size > 50 * 1024 * 1024:  # 50MB limit
                         print(f"ERROR: PDF demasiado grande para Bitrix24: {b64_size} chars")
-                        raise Exception("PDF demasiado grande")
-                    print(f"DEBUG: Tamaño verificado - OK para subir")
+                        return False
                     
-                except Exception as validation_error:
-                    print(f"ERROR: Fallo en validación de tamaños: {validation_error}")
-                    raise validation_error
-
-                print(f"DEBUG: Iniciando llamada a upload_file_to_project_drive...")
-                print(f"DEBUG: Parámetros - project_id: {project_id}, filename: {filename}")
-                
-                try:
-                    import signal
+                    print(f"DEBUG: Iniciando subida a Bitrix24...")
                     
-                    def timeout_handler(signum, frame):
-                        raise Exception("Timeout en upload_file_to_project_drive después de 30 segundos")
+                    # Timeout para la subida
+                    def upload_timeout_handler(signum, frame):
+                        raise Exception("Timeout en subida después de 30 segundos")
                     
-                    # Configurar timeout de 30 segundos
-                    signal.signal(signal.SIGALRM, timeout_handler)
-                    signal.alarm(30)
+                    signal.signal(signal.SIGALRM, upload_timeout_handler)
+                    signal.alarm(30)  # 30 segundos para subida
                     
-                    upload_success = upload_file_to_project_drive(
-                        project_id=project_id,
-                        file_name=filename,
-                        file_content_base64=pdf_base64,
-                        request=request
-                    )
-                    
-                    # Cancelar el timeout si completó exitosamente
-                    signal.alarm(0)
-                    print(f"DEBUG: Llamada a upload_file_to_project_drive completada.")
-                    
-                except Exception as upload_timeout:
-                    signal.alarm(0)  # Cancelar timeout
-                    print(f"ERROR: Timeout o error en upload_file_to_project_drive: {upload_timeout}")
-                    upload_success = False
-                
-                print(f"DEBUG: Resultado de upload_file_to_project_drive: {upload_success}")
-                if upload_success:
+                    try:
+                        upload_success = upload_file_to_project_drive(
+                            project_id=project_id,
+                            file_name=filename,
+                            file_content_base64=pdf_base64,
+                            request=request
+                        )
+                        signal.alarm(0)  # Cancelar timeout
+                        return upload_success
+                    except Exception as upload_error:
+                        signal.alarm(0)  # Cancelar timeout
+                        print(f"ERROR: Error/timeout en subida: {upload_error}")
+                        return False
+                        
+                except Exception as e:
+                    print(f"WARNING: Error general en proceso de subida: {e}")
+                    return False
+            
+            # Ejecutar la subida (no bloquear si falla)
+            try:
+                upload_result = upload_pdf_to_project()
+                if upload_result:
                     print(f"DEBUG: PDF de volumetría subido exitosamente al proyecto Bitrix24 {project_id}")
                 else:
-                    print(f"WARNING: No se pudo subir el PDF de volumetría al proyecto Bitrix24 {project_id}")
-                    
+                    print(f"WARNING: No se pudo subir el PDF al proyecto Bitrix24 {project_id}, pero el PDF se descargará normalmente")
             except Exception as e:
-                print(f"WARNING: Error al intentar subir el PDF de volumetría al proyecto Bitrix24: {e}")
-                import traceback
-                traceback.print_exc()
+                print(f"WARNING: Excepción en proceso de subida: {e}")
+                print(f"INFO: Continuando con la descarga del PDF...")
         
         # Crear respuesta HTTP con el PDF
         response = HttpResponse(pdf_file, content_type='application/pdf')
