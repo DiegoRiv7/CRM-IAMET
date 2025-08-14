@@ -3278,12 +3278,25 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
                 nombre_limpio = re.sub(r'[^\w\s-]', '', data.get('nombre_volumetria', 'Analisis')).strip()
                 nombre_limpio = re.sub(r'[-\s]+', '_', nombre_limpio)
                 
-                pdf_base64 = base64.b64encode(pdf_file).decode('utf-8')
+                print(f"DEBUG: Iniciando codificación base64...")
+                
+                try:
+                    pdf_base64 = base64.b64encode(pdf_file).decode('utf-8')
+                    print(f"DEBUG: Codificación base64 exitosa")
+                except Exception as b64_error:
+                    print(f"ERROR: Fallo en codificación base64: {b64_error}")
+                    raise b64_error
+                
                 filename = f"Volumetria_{nombre_limpio}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
                 
                 print(f"DEBUG: Archivo a subir: {filename}")
                 print(f"DEBUG: Tamaño del PDF: {len(pdf_file)} bytes")
                 print(f"DEBUG: Tamaño base64: {len(pdf_base64)} characters")
+                
+                # Verificar tamaño razonable (límite de 50MB en base64)
+                if len(pdf_base64) > 50 * 1024 * 1024:
+                    print(f"ERROR: PDF demasiado grande para Bitrix24: {len(pdf_base64)} chars")
+                    raise Exception("PDF demasiado grande")
 
                 upload_success = upload_file_to_project_drive(
                     project_id=project_id,
