@@ -631,6 +631,7 @@ def view_cotizacion_pdf(request, cotizacion_id):
     context = {
         'cotizacion': cotizacion,
         'detalles_cotizacion': detalles_cotizacion,
+        'secciones': secciones,
         'request_user': request.user,
         'current_date': date.today(),
         'company_name': company_name,
@@ -1731,8 +1732,35 @@ def generate_cotizacion_pdf(request, cotizacion_id):
         print(f"DEBUG: Access denied for user {request.user.username} to quote {cotizacion.id}")
         return HttpResponse("Acceso denegado.", status=403)
 
-    detalles_cotizacion = DetalleCotizacion.objects.filter(cotizacion=cotizacion)
+    detalles_cotizacion = DetalleCotizacion.objects.filter(cotizacion=cotizacion).order_by('id')
     iva_rate_percentage = (cotizacion.iva_rate * Decimal('100')).quantize(Decimal('1'))
+    
+    # Organizar productos en secciones basadas en títulos
+    secciones = []
+    seccion_actual = {'titulo': None, 'productos': []}
+    
+    for detalle in detalles_cotizacion:
+        if detalle.tipo == 'titulo':
+            # Si hay productos en la sección actual, guardarla
+            if seccion_actual['productos']:
+                secciones.append(seccion_actual)
+            # Iniciar nueva sección
+            seccion_actual = {'titulo': detalle.nombre_producto, 'productos': []}
+        else:
+            # Agregar producto a la sección actual
+            seccion_actual['productos'].append(detalle)
+    
+    # Agregar la última sección si tiene productos
+    if seccion_actual['productos']:
+        secciones.append(seccion_actual)
+    
+    # Si no hay títulos, crear una sección por defecto
+    if not secciones:
+        productos_sin_seccion = [d for d in detalles_cotizacion if d.tipo == 'producto']
+        if productos_sin_seccion:
+            secciones.append({'titulo': None, 'productos': productos_sin_seccion})
+    
+    print(f"DEBUG: Secciones organizadas: {len(secciones)} secciones encontradas")
 
     pdf_name_raw = cotizacion.nombre_cotizacion or f"Cotizacion_{cotizacion.id}"
     pdf_name = "".join(c for c in pdf_name_raw if c.isalnum() or c in ('_', '-')).strip().replace(' ', '_')
@@ -1786,6 +1814,7 @@ def generate_cotizacion_pdf(request, cotizacion_id):
     context = {
         'cotizacion': cotizacion,
         'detalles_cotizacion': detalles_cotizacion,
+        'secciones': secciones,
         'request_user': request.user,
         'current_date': date.today(),
         'company_name': company_name,
