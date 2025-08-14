@@ -6,7 +6,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload
 from . import views_exportar
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm
 from django.db.models import Sum, Count, F, Q
@@ -14,6 +14,7 @@ from django.db.models.functions import Upper, Coalesce
 from django.db.models import Value
 from datetime import date
 from dateutil.relativedelta import relativedelta
+from django.utils import timezone
 from decimal import Decimal
 import decimal
 from django.utils.html import json_script
@@ -3272,72 +3273,96 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
         else:
             filename = "Volumetria_SinProyecto.pdf"
         
-        # Intentar subir PDF al proyecto si fue creado (no bloquear descarga si falla)
+        # NUEVO SISTEMA: Subida en background + opción manual
         if project_id:
-            print(f"DEBUG: Proyecto {project_id} creado exitosamente. Iniciando proceso de subida de archivo.")
+            print(f"DEBUG: Proyecto {project_id} creado exitosamente.")
+            print(f"DEBUG: Guardando archivo para subida en background...")
             
-            # Approach simplificado sin signals
-            def upload_pdf_to_project():
-                try:
-                    print(f"DEBUG: Iniciando proceso simplificado de subida...")
-                    
-                    # Verificación básica del PDF
-                    pdf_size_bytes = len(pdf_file)
-                    print(f"DEBUG: Tamaño del PDF: {pdf_size_bytes} bytes ({pdf_size_bytes / 1024 / 1024:.2f} MB)")
-                    
-                    if pdf_size_bytes > 100 * 1024 * 1024:  # 100MB limit
-                        print(f"ERROR: PDF demasiado grande para procesar")
-                        return False
-                    
-                    # Paso 1: Codificación base64 simple
-                    print(f"DEBUG: PASO 1 - Iniciando codificación base64...")
-                    try:
-                        import base64
-                        pdf_base64 = base64.b64encode(pdf_file).decode('utf-8')
-                        print(f"DEBUG: PASO 1 COMPLETADO - Codificación exitosa: {len(pdf_base64)} chars")
-                    except Exception as e:
-                        print(f"ERROR: PASO 1 FALLÓ - Error en codificación: {e}")
-                        return False
-                    
-                    # Paso 2: Validación de tamaños
-                    print(f"DEBUG: PASO 2 - Validando tamaños...")
-                    if len(pdf_base64) > 50 * 1024 * 1024:  # 50MB limit
-                        print(f"ERROR: PASO 2 FALLÓ - PDF demasiado grande para Bitrix24")
-                        return False
-                    print(f"DEBUG: PASO 2 COMPLETADO - Tamaños OK")
-                    
-                    # Paso 3: Subida a Bitrix24
-                    print(f"DEBUG: PASO 3 - Iniciando subida a Bitrix24...")
-                    try:
-                        from .bitrix_integration import upload_file_to_project_drive
-                        upload_success = upload_file_to_project_drive(
-                            project_id=project_id,
-                            file_name=filename,
-                            file_content_base64=pdf_base64,
-                            request=request
-                        )
-                        print(f"DEBUG: PASO 3 COMPLETADO - Resultado: {upload_success}")
-                        return upload_success
-                    except Exception as e:
-                        print(f"ERROR: PASO 3 FALLÓ - Error en subida: {e}")
-                        return False
-                        
-                except Exception as e:
-                    print(f"ERROR: FALLO GENERAL en upload_pdf_to_project: {e}")
-                    import traceback
-                    traceback.print_exc()
-                    return False
-            
-            # Ejecutar la subida (no bloquear si falla)
+            # Guardar el archivo en la base de datos para subida posterior
             try:
-                upload_result = upload_pdf_to_project()
-                if upload_result:
-                    print(f"DEBUG: PDF de volumetría subido exitosamente al proyecto Bitrix24 {project_id}")
-                else:
-                    print(f"WARNING: No se pudo subir el PDF al proyecto Bitrix24 {project_id}, pero el PDF se descargará normalmente")
+                from .models import PendingFileUpload
+                
+                pending_upload = PendingFileUpload.objects.create(
+                    project_id=project_id,
+                    filename=filename,
+                    file_content=pdf_file,
+                    file_size=len(pdf_file),
+                    created_by=request.user if request.user.is_authenticated else None,
+                    oportunidad_id=data.get('oportunidad_id')
+                )
+                
+                print(f"DEBUG: Archivo guardado para subida (ID: {pending_upload.id})")
+                
+                # Iniciar tarea en background
+                def upload_file_in_background():
+                    import time
+                    print(f"DEBUG BACKGROUND: Iniciando tarea de subida para proyecto {project_id}")
+                    
+                    # Esperar 10 segundos para que el proyecto esté completamente creado en Bitrix24
+                    time.sleep(10)
+                    
+                    try:
+                        from .models import PendingFileUpload
+                        from .bitrix_integration import upload_file_to_project_drive
+                        import base64
+                        
+                        # Obtener el registro pendiente
+                        upload_record = PendingFileUpload.objects.get(id=pending_upload.id)
+                        
+                        if upload_record.status != 'pending':
+                            print(f"DEBUG BACKGROUND: Archivo ya procesado ({upload_record.status})")
+                            return
+                        
+                        # Marcar como en progreso
+                        upload_record.status = 'in_progress'
+                        upload_record.attempts += 1
+                        upload_record.save()
+                        
+                        print(f"DEBUG BACKGROUND: Iniciando subida (intento {upload_record.attempts})")
+                        
+                        # Codificar archivo
+                        pdf_base64 = base64.b64encode(upload_record.file_content).decode('utf-8')
+                        
+                        # Intentar subir
+                        success = upload_file_to_project_drive(
+                            project_id=upload_record.project_id,
+                            file_name=upload_record.filename,
+                            file_content_base64=pdf_base64,
+                            request=None
+                        )
+                        
+                        if success:
+                            upload_record.status = 'success'
+                            upload_record.completed_at = timezone.now()
+                            print(f"SUCCESS BACKGROUND: Archivo subido exitosamente al proyecto {project_id}")
+                        else:
+                            upload_record.status = 'failed'
+                            upload_record.error_message = "La función upload_file_to_project_drive retornó False"
+                            print(f"ERROR BACKGROUND: Falló la subida al proyecto {project_id}")
+                        
+                        upload_record.save()
+                        
+                    except Exception as e:
+                        print(f"ERROR BACKGROUND: Excepción en subida: {e}")
+                        try:
+                            upload_record.status = 'failed'
+                            upload_record.error_message = str(e)
+                            upload_record.save()
+                        except:
+                            pass
+                
+                # Ejecutar en hilo separado
+                import threading
+                upload_thread = threading.Thread(target=upload_file_in_background)
+                upload_thread.daemon = True
+                upload_thread.start()
+                
+                print(f"INFO: Tarea de subida en background iniciada para proyecto {project_id}")
+                print(f"INFO: El PDF se descargará inmediatamente. La subida se procesará en segundo plano.")
+                
             except Exception as e:
-                print(f"WARNING: Excepción en proceso de subida: {e}")
-                print(f"INFO: Continuando con la descarga del PDF...")
+                print(f"WARNING: Error creando tarea de subida en background: {e}")
+                print(f"INFO: El PDF se descargará normalmente.")
         
         # Crear respuesta HTTP con el PDF
         response = HttpResponse(pdf_file, content_type='application/pdf')
@@ -3624,3 +3649,163 @@ def get_opportunities_by_client_api(request, cliente_id):
     except Exception as e:
         print(f"ERROR: Error obteniendo oportunidades por cliente: {str(e)}")
         return JsonResponse({'error': 'Error obteniendo oportunidades'}, status=500)
+
+# ===============================================
+# NUEVAS FUNCIONES PARA SUBIDA MANUAL DE ARCHIVOS
+# ===============================================
+
+@login_required
+def pending_file_uploads(request):
+    """
+    Vista para mostrar archivos pendientes de subir al usuario
+    """
+    if request.user.is_authenticated:
+        # Si es supervisor, ver todos los archivos
+        if is_supervisor(request.user):
+            uploads = PendingFileUpload.objects.all()
+        else:
+            # Si no, solo los propios
+            uploads = PendingFileUpload.objects.filter(created_by=request.user)
+    else:
+        uploads = PendingFileUpload.objects.none()
+    
+    return render(request, 'pending_file_uploads.html', {
+        'uploads': uploads
+    })
+
+@login_required
+def retry_file_upload(request, upload_id):
+    """
+    Endpoint para reintentar la subida manual de un archivo
+    """
+    if request.method == 'POST':
+        try:
+            upload = get_object_or_404(PendingFileUpload, id=upload_id)
+            
+            # Verificar permisos
+            if not is_supervisor(request.user) and upload.created_by != request.user:
+                return JsonResponse({'error': 'Sin permisos para este archivo'}, status=403)
+            
+            # Verificar que no se exceda el máximo de intentos
+            if upload.attempts >= upload.max_attempts:
+                return JsonResponse({'error': 'Máximo de intentos excedido'}, status=400)
+            
+            # Marcar como en progreso
+            upload.status = 'in_progress'
+            upload.attempts += 1
+            upload.error_message = None
+            upload.save()
+            
+            print(f"DEBUG MANUAL: Reintentando subida manual para archivo {upload.filename}")
+            
+            # Ejecutar subida en background para no bloquear la respuesta
+            def manual_upload_background():
+                import time
+                time.sleep(2)  # Pequeña pausa
+                
+                try:
+                    from .bitrix_integration import upload_file_to_project_drive
+                    import base64
+                    
+                    # Codificar archivo
+                    pdf_base64 = base64.b64encode(upload.file_content).decode('utf-8')
+                    
+                    print(f"DEBUG MANUAL: Iniciando subida manual para proyecto {upload.project_id}")
+                    
+                    # Intentar subir
+                    success = upload_file_to_project_drive(
+                        project_id=upload.project_id,
+                        file_name=upload.filename,
+                        file_content_base64=pdf_base64,
+                        request=None
+                    )
+                    
+                    if success:
+                        upload.status = 'success'
+                        upload.completed_at = timezone.now()
+                        upload.error_message = None
+                        print(f"SUCCESS MANUAL: Archivo {upload.filename} subido exitosamente")
+                    else:
+                        upload.status = 'failed'
+                        upload.error_message = "La función upload_file_to_project_drive retornó False"
+                        print(f"ERROR MANUAL: Falló la subida manual de {upload.filename}")
+                    
+                    upload.save()
+                    
+                except Exception as e:
+                    print(f"ERROR MANUAL: Excepción en subida manual: {e}")
+                    upload.status = 'failed'
+                    upload.error_message = str(e)
+                    upload.save()
+            
+            # Ejecutar en hilo separado
+            import threading
+            upload_thread = threading.Thread(target=manual_upload_background)
+            upload_thread.daemon = True
+            upload_thread.start()
+            
+            return JsonResponse({
+                'success': True, 
+                'message': f'Reintentando subida del archivo {upload.filename}',
+                'attempts': upload.attempts
+            })
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@login_required 
+def delete_pending_upload(request, upload_id):
+    """
+    Endpoint para eliminar un archivo pendiente
+    """
+    if request.method == 'POST':
+        try:
+            upload = get_object_or_404(PendingFileUpload, id=upload_id)
+            
+            # Verificar permisos
+            if not is_supervisor(request.user) and upload.created_by != request.user:
+                return JsonResponse({'error': 'Sin permisos para este archivo'}, status=403)
+            
+            filename = upload.filename
+            upload.delete()
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Archivo {filename} eliminado exitosamente'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@login_required
+def upload_status_api(request):
+    """
+    API para obtener el estado de las subidas pendientes
+    """
+    if request.user.is_authenticated:
+        if is_supervisor(request.user):
+            uploads = PendingFileUpload.objects.all()
+        else:
+            uploads = PendingFileUpload.objects.filter(created_by=request.user)
+    else:
+        uploads = PendingFileUpload.objects.none()
+    
+    uploads_data = []
+    for upload in uploads.order_by('-created_at')[:20]:  # Últimas 20
+        uploads_data.append({
+            'id': upload.id,
+            'project_id': upload.project_id,
+            'filename': upload.filename,
+            'status': upload.status,
+            'attempts': upload.attempts,
+            'max_attempts': upload.max_attempts,
+            'error_message': upload.error_message,
+            'created_at': upload.created_at.strftime('%d/%m/%Y %H:%M'),
+            'completed_at': upload.completed_at.strftime('%d/%m/%Y %H:%M') if upload.completed_at else None,
+        })
+    
+    return JsonResponse({'uploads': uploads_data})

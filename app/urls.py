@@ -135,5 +135,14 @@ urlpatterns = [
     path('api/get-session-data/', views.get_session_data, name='get_session_data'),
     # API para obtener oportunidades por cliente (usado por volumetría)
     path('api/get-opportunities-by-client/<int:cliente_id>/', views.get_opportunities_by_client_api, name='get_opportunities_by_client_api'),
+    
+    # ===============================================
+    # NUEVAS RUTAS PARA SUBIDA MANUAL DE ARCHIVOS
+    # ===============================================
+    path('pending-uploads/', views.pending_file_uploads, name='pending_file_uploads'),
+    path('api/retry-upload/<int:upload_id>/', views.retry_file_upload, name='retry_file_upload'),
+    path('api/delete-upload/<int:upload_id>/', views.delete_pending_upload, name='delete_pending_upload'),
+    path('api/upload-status/', views.upload_status_api, name='upload_status_api'),
+    
     path('koti-bot-html/', TemplateView.as_view(template_name='nethive_bot.html'), name='koti_bot_html'),
 ]

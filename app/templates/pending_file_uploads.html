@@ -1,0 +1,441 @@
+{% extends 'base.html' %}
+
+{% block title %}Archivos Pendientes de Subir{% endblock %}
+
+{% block extra_head %}
+<style>
+.upload-status {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-in_progress {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.status-success {
+    background-color: #d1edcc;
+    color: #155724;
+}
+
+.status-failed {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.upload-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 10px 0;
+    background-color: #f9f9f9;
+}
+
+.upload-actions {
+    margin-top: 10px;
+}
+
+.btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.alert {
+    margin: 15px 0;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+.refresh-section {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background-color: #e9ecef;
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 10px 0;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #007bff;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.status-in_progress {
+    animation: pulse 2s infinite;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>📁 Archivos Pendientes de Subir a Bitrix24</h2>
+            <p class="text-muted">Gestiona los archivos que están pendientes de subir al drive de los proyectos en Bitrix24</p>
+            
+            <!-- Botón de actualizar -->
+            <div class="refresh-section">
+                <button class="btn btn-primary" onclick="refreshUploads()">
+                    🔄 Actualizar Estado
+                </button>
+                <span id="last-updated" class="text-muted ml-2"></span>
+            </div>
+
+            <!-- Alerta informativa -->
+            <div class="alert alert-info">
+                <strong>💡 ¿Cómo funciona?</strong><br>
+                • Los archivos se suben automáticamente en segundo plano<br>
+                • Si falla la subida automática, puedes reintentarla manualmente<br>
+                • Los archivos exitosos se pueden eliminar de esta lista<br>
+                • Máximo 3 intentos por archivo
+            </div>
+
+            <!-- Contador de archivos -->
+            <div id="upload-stats" class="mb-3">
+                <span class="badge badge-secondary" id="total-count">0 archivos</span>
+                <span class="badge badge-warning" id="pending-count">0 pendientes</span>
+                <span class="badge badge-info" id="progress-count">0 en progreso</span>
+                <span class="badge badge-success" id="success-count">0 exitosos</span>
+                <span class="badge badge-danger" id="failed-count">0 fallidos</span>
+            </div>
+
+            <!-- Lista de archivos -->
+            <div id="uploads-container">
+                {% if uploads %}
+                    {% for upload in uploads %}
+                    <div class="upload-card" data-upload-id="{{ upload.id }}">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h5>📄 {{ upload.filename }}</h5>
+                                <p class="text-muted mb-1">
+                                    <strong>Proyecto:</strong> {{ upload.project_id }} |
+                                    <strong>Tamaño:</strong> {{ upload.file_size|filesizeformat }} |
+                                    <strong>Creado:</strong> {{ upload.created_at|date:"d/m/Y H:i" }}
+                                    {% if upload.created_by %}
+                                    | <strong>Por:</strong> {{ upload.created_by.get_full_name|default:upload.created_by.username }}
+                                    {% endif %}
+                                </p>
+                                {% if upload.oportunidad_id %}
+                                <p class="text-muted mb-1">
+                                    <strong>Oportunidad:</strong> {{ upload.oportunidad_id }}
+                                </p>
+                                {% endif %}
+                                {% if upload.error_message %}
+                                <p class="text-danger mb-1">
+                                    <strong>Error:</strong> {{ upload.error_message }}
+                                </p>
+                                {% endif %}
+                                {% if upload.completed_at %}
+                                <p class="text-success mb-1">
+                                    <strong>Completado:</strong> {{ upload.completed_at|date:"d/m/Y H:i" }}
+                                </p>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 text-right">
+                                <span class="upload-status status-{{ upload.status }}">
+                                    {{ upload.get_status_display }}
+                                </span>
+                                <br>
+                                <small class="text-muted">
+                                    Intentos: {{ upload.attempts }}/{{ upload.max_attempts }}
+                                </small>
+                                
+                                <div class="upload-actions">
+                                    {% if upload.status == 'pending' or upload.status == 'failed' %}
+                                        {% if upload.attempts < upload.max_attempts %}
+                                        <button class="btn btn-sm btn-warning retry-btn" 
+                                                data-upload-id="{{ upload.id }}"
+                                                onclick="retryUpload({{ upload.id }})">
+                                            🔄 Reintentar
+                                        </button>
+                                        {% endif %}
+                                    {% endif %}
+                                    
+                                    {% if upload.status == 'success' or upload.attempts >= upload.max_attempts %}
+                                    <button class="btn btn-sm btn-danger delete-btn"
+                                            data-upload-id="{{ upload.id }}" 
+                                            onclick="deleteUpload({{ upload.id }})">
+                                        🗑️ Eliminar
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Barra de progreso para archivos en progreso -->
+                        {% if upload.status == 'in_progress' %}
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 50%;"></div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="text-center py-5">
+                    <h4 class="text-muted">📂 No hay archivos pendientes</h4>
+                    <p class="text-muted">Los archivos aparecerán aquí cuando generes volumetrías con proyectos en Bitrix24</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Acción</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">¿Estás seguro de realizar esta acción?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="confirmBtn">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables globales
+let confirmAction = null;
+
+// Función para actualizar el estado de las subidas
+function refreshUploads() {
+    fetch('/app/api/upload-status/')
+        .then(response => response.json())
+        .then(data => {
+            updateUploadsList(data.uploads);
+            updateStats(data.uploads);
+            document.getElementById('last-updated').textContent = 'Actualizado: ' + new Date().toLocaleString();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Error al actualizar el estado', 'danger');
+        });
+}
+
+// Función para actualizar la lista de archivos
+function updateUploadsList(uploads) {
+    const container = document.getElementById('uploads-container');
+    
+    if (uploads.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <h4 class="text-muted">📂 No hay archivos pendientes</h4>
+                <p class="text-muted">Los archivos aparecerán aquí cuando generes volumetrías con proyectos en Bitrix24</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    uploads.forEach(upload => {
+        const statusClass = `status-${upload.status}`;
+        const isInProgress = upload.status === 'in_progress';
+        const canRetry = (upload.status === 'pending' || upload.status === 'failed') && upload.attempts < upload.max_attempts;
+        const canDelete = upload.status === 'success' || upload.attempts >= upload.max_attempts;
+        
+        html += `
+            <div class="upload-card" data-upload-id="${upload.id}">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5>📄 ${upload.filename}</h5>
+                        <p class="text-muted mb-1">
+                            <strong>Proyecto:</strong> ${upload.project_id} |
+                            <strong>Creado:</strong> ${upload.created_at}
+                        </p>
+                        ${upload.error_message ? `<p class="text-danger mb-1"><strong>Error:</strong> ${upload.error_message}</p>` : ''}
+                        ${upload.completed_at ? `<p class="text-success mb-1"><strong>Completado:</strong> ${upload.completed_at}</p>` : ''}
+                    </div>
+                    <div class="col-md-4 text-right">
+                        <span class="upload-status ${statusClass}">
+                            ${getStatusDisplay(upload.status)}
+                        </span>
+                        <br>
+                        <small class="text-muted">
+                            Intentos: ${upload.attempts}/${upload.max_attempts}
+                        </small>
+                        
+                        <div class="upload-actions">
+                            ${canRetry ? `<button class="btn btn-sm btn-warning retry-btn" onclick="retryUpload(${upload.id})">🔄 Reintentar</button>` : ''}
+                            ${canDelete ? `<button class="btn btn-sm btn-danger delete-btn" onclick="deleteUpload(${upload.id})">🗑️ Eliminar</button>` : ''}
+                        </div>
+                    </div>
+                </div>
+                ${isInProgress ? '<div class="progress-bar"><div class="progress-fill" style="width: 50%;"></div></div>' : ''}
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Función para obtener el texto del estado
+function getStatusDisplay(status) {
+    const statusMap = {
+        'pending': 'Pendiente',
+        'in_progress': 'En Progreso',
+        'success': 'Exitoso',
+        'failed': 'Falló'
+    };
+    return statusMap[status] || status;
+}
+
+// Función para actualizar estadísticas
+function updateStats(uploads) {
+    const stats = {
+        total: uploads.length,
+        pending: uploads.filter(u => u.status === 'pending').length,
+        progress: uploads.filter(u => u.status === 'in_progress').length,
+        success: uploads.filter(u => u.status === 'success').length,
+        failed: uploads.filter(u => u.status === 'failed').length
+    };
+    
+    document.getElementById('total-count').textContent = `${stats.total} archivos`;
+    document.getElementById('pending-count').textContent = `${stats.pending} pendientes`;
+    document.getElementById('progress-count').textContent = `${stats.progress} en progreso`;
+    document.getElementById('success-count').textContent = `${stats.success} exitosos`;
+    document.getElementById('failed-count').textContent = `${stats.failed} fallidos`;
+}
+
+// Función para reintentar subida
+function retryUpload(uploadId) {
+    confirmAction = () => {
+        fetch(`/app/api/retry-upload/${uploadId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                setTimeout(refreshUploads, 1000); // Actualizar después de 1 segundo
+            } else {
+                showAlert(data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Error al reintentar subida', 'danger');
+        });
+        $('#confirmModal').modal('hide');
+    };
+    
+    document.getElementById('confirmMessage').textContent = '¿Reintentar la subida de este archivo?';
+    $('#confirmModal').modal('show');
+}
+
+// Función para eliminar archivo
+function deleteUpload(uploadId) {
+    confirmAction = () => {
+        fetch(`/app/api/delete-upload/${uploadId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                refreshUploads();
+            } else {
+                showAlert(data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Error al eliminar archivo', 'danger');
+        });
+        $('#confirmModal').modal('hide');
+    };
+    
+    document.getElementById('confirmMessage').textContent = '¿Eliminar este archivo de la lista?';
+    $('#confirmModal').modal('show');
+}
+
+// Función para mostrar alertas
+function showAlert(message, type) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    `;
+    document.querySelector('.container-fluid').insertAdjacentHTML('afterbegin', alertHtml);
+}
+
+// Función para obtener cookie CSRF
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Event listeners
+document.getElementById('confirmBtn').addEventListener('click', () => {
+    if (confirmAction) {
+        confirmAction();
+    }
+});
+
+// Actualizar automáticamente cada 30 segundos
+setInterval(refreshUploads, 30000);
+
+// Actualizar al cargar la página
+document.addEventListener('DOMContentLoaded', () => {
+    refreshUploads();
+});
+</script>
+{% endblock %}

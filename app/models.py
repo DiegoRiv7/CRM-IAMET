@@ -18,6 +18,55 @@ class UserProfile(models.Model):
 def create_or_update_user_profile(sender, instance, created, **kwargs):
     UserProfile.objects.get_or_create(user=instance)
 
+class PendingFileUpload(models.Model):
+    """
+    Modelo para manejar archivos pendientes de subir al drive de proyectos de Bitrix24
+    """
+    UPLOAD_PENDING = 'pending'
+    UPLOAD_IN_PROGRESS = 'in_progress'  
+    UPLOAD_SUCCESS = 'success'
+    UPLOAD_FAILED = 'failed'
+    
+    UPLOAD_STATUS_CHOICES = [
+        (UPLOAD_PENDING, 'Pendiente'),
+        (UPLOAD_IN_PROGRESS, 'En Progreso'),
+        (UPLOAD_SUCCESS, 'Exitoso'),
+        (UPLOAD_FAILED, 'Falló'),
+    ]
+    
+    project_id = models.CharField(max_length=100, verbose_name="ID del Proyecto en Bitrix24")
+    filename = models.CharField(max_length=200, verbose_name="Nombre del Archivo")
+    file_content = models.BinaryField(verbose_name="Contenido del Archivo")
+    file_size = models.IntegerField(verbose_name="Tamaño del Archivo (bytes)")
+    
+    status = models.CharField(
+        max_length=20,
+        choices=UPLOAD_STATUS_CHOICES,
+        default=UPLOAD_PENDING,
+        verbose_name="Estado de la Subida"
+    )
+    
+    attempts = models.IntegerField(default=0, verbose_name="Intentos de Subida")
+    max_attempts = models.IntegerField(default=3, verbose_name="Máximo de Intentos")
+    
+    error_message = models.TextField(blank=True, null=True, verbose_name="Mensaje de Error")
+    
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Última Actualización")
+    completed_at = models.DateTimeField(blank=True, null=True, verbose_name="Fecha de Finalización")
+    
+    # Información adicional
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Creado por")
+    oportunidad_id = models.CharField(max_length=100, blank=True, null=True, verbose_name="ID de la Oportunidad")
+    
+    def __str__(self):
+        return f"{self.filename} - Proyecto {self.project_id} ({self.status})"
+    
+    class Meta:
+        verbose_name = "Archivo Pendiente de Subir"
+        verbose_name_plural = "Archivos Pendientes de Subir"
+        ordering = ['-created_at']
+
 class Cliente(models.Model):
     """
     Modelo para representar un cliente en la base de datos.
