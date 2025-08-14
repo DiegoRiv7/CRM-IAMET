@@ -89,7 +89,7 @@
         box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
         opacity: 0;
         visibility: hidden;
-        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         z-index: 1400;
         gap: 6px;
     }
@@ -113,9 +113,6 @@
 
     /* Panel positioning classes added by JavaScript */
     .design-panel.position-left {
-        left: 76px;
-        top: 50%;
-        transform: translateY(-50%) translateY(60px) translateX(-10px) scale(0.9);
         flex-direction: row;
         right: auto;
         bottom: auto;
@@ -126,9 +123,6 @@
     }
 
     .design-panel.position-right {
-        right: 76px;
-        top: 50%;
-        transform: translateY(-50%) translateY(60px) translateX(10px) scale(0.9);
         flex-direction: row;
         left: auto;
         bottom: auto;
@@ -139,9 +133,6 @@
     }
 
     .design-panel.position-top {
-        top: 76px;
-        left: 50%;
-        transform: translateX(-50%) translateY(-10px) scale(0.9);
         flex-direction: column;
         right: auto;
         bottom: auto;
@@ -152,9 +143,6 @@
     }
 
     .design-panel.position-bottom {
-        bottom: 76px;
-        left: 50%;
-        transform: translateX(-50%) translateY(10px) scale(0.9);
         flex-direction: column;
         top: auto;
         right: auto;
@@ -398,7 +386,7 @@
         box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
         opacity: 0;
         visibility: hidden;
-        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         z-index: 1400;
         gap: 6px;
     }
@@ -826,15 +814,7 @@
             <span class="tooltip">Cotizaciones</span>
         </a>
         
-        {% if not is_engineer %}
-            <!-- Para usuarios normales y supervisores: Incrementa -->
-            <a href="{% url 'incrementa' %}" class="dock-item">
-                <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
-                </svg>
-                <span class="tooltip">Incrementa</span>
-            </a>
-        {% endif %}
+        
     {% endif %}
 
     <!-- Botones exclusivos para superusuarios -->
@@ -853,6 +833,14 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
             </svg>
             <span class="tooltip">Usuarios</span>
+        </a>
+
+        <!-- Botón Incrementa solo para superusuarios -->
+        <a href="{% url 'incrementa' %}" class="dock-item">
+            <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+            </svg>
+            <span class="tooltip">Incrementa</span>
         </a>
         
 
@@ -920,15 +908,7 @@
             <span class="tooltip">Cotizaciones</span>
         </a>
         
-        {% if not is_engineer %}
-            <!-- Para usuarios normales y supervisores: Incrementa -->
-            <a href="{% url 'incrementa' %}" class="dock-item">
-                <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
-                </svg>
-                <span class="tooltip">Incrementa</span>
-            </a>
-        {% endif %}
+        
     {% endif %}
 
     <!-- Botones exclusivos para superusuarios -->
@@ -947,6 +927,14 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
             </svg>
             <span class="tooltip">Usuarios</span>
+        </a>
+
+        <!-- Botón Incrementa solo para superusuarios -->
+        <a href="{% url 'incrementa' %}" class="dock-item">
+            <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+            </svg>
+            <span class="tooltip">Incrementa</span>
         </a>
         
 
@@ -1015,15 +1003,7 @@
             <span class="tooltip">Cotizaciones</span>
         </a>
         
-        {% if not is_engineer %}
-            <!-- Para usuarios normales y supervisores: Incrementa -->
-            <a href="{% url 'incrementa' %}" class="dock-item">
-                <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
-                </svg>
-                <span class="tooltip">Incrementa</span>
-            </a>
-        {% endif %}
+        
     {% endif %}
 
     <!-- Botones exclusivos para superusuarios -->
@@ -1040,6 +1020,14 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
             </svg>
             <span class="tooltip">Usuarios</span>
+        </a>
+
+        <!-- Botón Incrementa solo para superusuarios -->
+        <a href="{% url 'incrementa' %}" class="dock-item">
+            <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+            </svg>
+            <span class="tooltip">Incrementa</span>
         </a>
         
 
@@ -1108,15 +1096,7 @@
             <span class="tooltip">Cotizaciones</span>
         </a>
         
-        {% if not is_engineer %}
-            <!-- Para usuarios normales y supervisores: Incrementa -->
-            <a href="{% url 'incrementa' %}" class="dock-item">
-                <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
-                </svg>
-                <span class="tooltip">Incrementa</span>
-            </a>
-        {% endif %}
+        
     {% endif %}
 
     <!-- Botones exclusivos para superusuarios -->
@@ -1133,6 +1113,14 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
             </svg>
             <span class="tooltip">Usuarios</span>
+        </a>
+
+        <!-- Botón Incrementa solo para superusuarios -->
+        <a href="{% url 'incrementa' %}" class="dock-item">
+            <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+            </svg>
+            <span class="tooltip">Incrementa</span>
         </a>
         
 
@@ -1382,9 +1370,66 @@ window.addEventListener('error', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
             }
-            
+
             isDesignPanelOpen = !isDesignPanelOpen;
-            designPanel.classList.toggle('active', isDesignPanelOpen);
+            
+            // Always remove position classes to ensure dynamic positioning
+            if (designPanel.className) {
+                designPanel.className = designPanel.className.replace(/position-(left|right|top|bottom)/g, '');
+            }
+
+            if (isDesignPanelOpen) {
+                const button = e.currentTarget;
+                const buttonRect = button.getBoundingClientRect();
+                
+                // Make panel visible but off-screen to measure it
+                designPanel.style.visibility = 'hidden';
+                designPanel.style.display = 'flex';
+                const panelRect = designPanel.getBoundingClientRect();
+                designPanel.style.display = '';
+                designPanel.style.visibility = '';
+
+                let top, left;
+
+                switch (currentDockPosition) {
+                    case 'left':
+                        top = buttonRect.top + (buttonRect.height / 2) - (panelRect.height / 2);
+                        left = buttonRect.right + 12;
+                        break;
+                    case 'right':
+                        top = buttonRect.top + (buttonRect.height / 2) - (panelRect.height / 2);
+                        left = buttonRect.left - panelRect.width - 12;
+                        break;
+                    case 'top':
+                        top = buttonRect.bottom + 12;
+                        left = buttonRect.left + (buttonRect.width / 2) - (panelRect.width / 2);
+                        break;
+                    case 'bottom':
+                        top = buttonRect.top - panelRect.height - 12;
+                        left = buttonRect.left + (buttonRect.width / 2) - (panelRect.width / 2);
+                        break;
+                    default: // Fallback to left
+                        top = buttonRect.top + (buttonRect.height / 2) - (panelRect.height / 2);
+                        left = buttonRect.right + 12;
+                }
+
+                // Apply new position
+                designPanel.style.top = `${top}px`;
+                designPanel.style.left = `${left}px`;
+                designPanel.style.transform = 'scale(0.95) translateZ(0)';
+                designPanel.style.opacity = '0';
+                
+                designPanel.classList.add('active');
+
+                // Force a reflow, then apply final animation state
+                setTimeout(() => {
+                    designPanel.style.opacity = '1';
+                    designPanel.style.transform = 'scale(1) translateZ(0)';
+                }, 10);
+
+            } else {
+                designPanel.classList.remove('active');
+            }
         }
         
         // Close design panel when clicking outside
