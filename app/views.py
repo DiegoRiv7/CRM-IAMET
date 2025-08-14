@@ -1531,9 +1531,38 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             print(f"DEBUG: PDF URL generated: {pdf_url}")
 
             try:
+                # Organizar productos en secciones para el PDF (excluir títulos de Bitrix24)
+                detalles_todos = cotizacion.detalles.all().order_by('id')
+                secciones_pdf = []
+                seccion_actual_pdf = {'titulo': None, 'productos': []}
+                
+                for detalle in detalles_todos:
+                    tipo_detalle = getattr(detalle, 'tipo', 'producto') or 'producto'
+                    
+                    if tipo_detalle == 'titulo':
+                        # Si hay productos en la sección actual, guardarla
+                        if seccion_actual_pdf['productos']:
+                            secciones_pdf.append(seccion_actual_pdf)
+                        # Iniciar nueva sección
+                        seccion_actual_pdf = {'titulo': detalle.nombre_producto, 'productos': []}
+                    else:
+                        # Agregar producto a la sección actual
+                        seccion_actual_pdf['productos'].append(detalle)
+                
+                # Agregar la última sección si tiene productos
+                if seccion_actual_pdf['productos']:
+                    secciones_pdf.append(seccion_actual_pdf)
+                
+                # Si no hay títulos, crear una sección por defecto con productos solamente
+                if not secciones_pdf:
+                    productos_sin_seccion = [d for d in detalles_todos if getattr(d, 'tipo', 'producto') == 'producto']
+                    if productos_sin_seccion:
+                        secciones_pdf.append({'titulo': None, 'productos': productos_sin_seccion})
+
                 html_string = render_to_string('cotizacion_pdf_template.html', {
                     'cotizacion': cotizacion,
-                    'detalles_cotizacion': cotizacion.detalles.all(),
+                    'detalles_cotizacion': cotizacion.detalles.all(),  # Para compatibilidad con fallback
+                    'secciones': secciones_pdf,  # Para mostrar por secciones sin títulos como productos
                     'request_user': request.user,
                     'current_date': date.today(),
                     'company_name': 'BAJANET S.A. de C.V.',

@@ -735,8 +735,10 @@
                 <td>1</td>
                 <td style="display: none;"><input type="text" id="marca_${newRowNumber}" name="productos[${newRowNumber}][marca]" class="input-field" placeholder="Marca" value="${marca}"></td>
                 <td><input type="text" id="no_parte_${newRowNumber}" name="productos[${newRowNumber}][no_parte]" class="input-field" placeholder="No. Parte" value="${noParte}"></td>
-                <td><textarea id="descripcion_producto_${newRowNumber}" name="productos[${newRowNumber}][descripcion]" class="textarea-field" placeholder="Descripción detallada del producto" oninput="calculateTotals()">${description}</textarea></td>
-                <input type="hidden" id="nombre_producto_${newRowNumber}" name="productos[${newRowNumber}][nombre_producto]" value="${nombre_producto}">
+                <td>
+                    <textarea id="descripcion_producto_${newRowNumber}" name="productos[${newRowNumber}][descripcion]" class="textarea-field" placeholder="Descripción detallada del producto" oninput="calculateTotals()">${description}</textarea>
+                    <input type="hidden" id="nombre_producto_${newRowNumber}" name="productos[${newRowNumber}][nombre_producto]" value="${nombre_producto}">
+                </td>
                 <td><input type="number" id="cantidad_${newRowNumber}" name="productos[${newRowNumber}][cantidad]" class="input-field" value="${quantity}" min="1" oninput="calculateTotals()"></td>
                 <td><input type="number" id="precio_${newRowNumber}" name="productos[${newRowNumber}][precio]" class="input-field" value="${price}" min="0" step="0.01" oninput="calculateTotals()"></td>
                 <td class="descuento-cell"><input type="number" id="descuento_${newRowNumber}" name="productos[${newRowNumber}][descuento]" class="input-field" style="width:60px; min-width:40px; font-size:0.9rem; padding:0.3rem 0.4rem; text-align:center;" value="${discount}" min="0" max="100" oninput="calculateTotals()"></td>
@@ -1321,16 +1323,45 @@
             {% if detalles_cotizacion %}
             const detalles_existentes = {{ detalles_cotizacion|safe }};
             if (detalles_existentes && detalles_existentes.length > 0) {
-                detalles_existentes.forEach(d => {
+                const tbody = document.getElementById('productos-tbody');
+                
+                detalles_existentes.forEach((d, index) => {
                     if (d.tipo === 'titulo') {
-                        // Es un título, usar addTitleRow con el nombre del producto como título
-                        addTitleRow(d.nombre_producto);
+                        // Es un título, crear la fila manualmente para mantener el orden
+                        titleCounter++;
+                        const rowId = `title-row-${titleCounter}`;
+                        const title = d.nombre_producto || 'NUEVA SECCIÓN';
+                        
+                        const newRow = document.createElement('tr');
+                        newRow.id = rowId;
+                        newRow.className = 'title-row';
+                        newRow.innerHTML = `
+                            <td colspan="9" style="position: relative;">
+                                <input type="text" 
+                                       id="titulo_${titleCounter}" 
+                                       name="titulos[${titleCounter}][texto]" 
+                                       value="${title}" 
+                                       class="input-field" 
+                                       style="background: transparent; border: none; color: var(--apple-label); font-weight: 600; font-size: 1.1rem; text-align: center; width: calc(100% - 40px);" 
+                                       placeholder="Título de la sección">
+                                <input type="hidden" name="titulos[${titleCounter}][type]" value="title">
+                                <input type="hidden" name="titulos[${titleCounter}][position]" value="${index}">
+                                <button type="button" 
+                                        onclick="removeRow('${rowId}')" 
+                                        class="text-red-400 hover:text-red-600 text-xl font-bold leading-none" 
+                                        style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(255,0,0,0.1); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                                    &times;
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(newRow);
                     } else {
                         // Es un producto normal, usar addRow
                         addRow(d.marca, d.no_parte, d.descripcion, d.cantidad, d.precio, d.descuento, d.nombre_producto);
                     }
                 });
-                // Recalcular totales después de cargar todos los productos
+                // Actualizar numeración y recalcular totales después de cargar todos los productos
+                updateRowNumbers();
                 calculateTotals();
             }
             {% endif %}
