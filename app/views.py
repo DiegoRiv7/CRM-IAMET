@@ -3287,11 +3287,27 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
                     print(f"ERROR: Fallo en codificación base64: {b64_error}")
                     raise b64_error
                 
-                filename = f"Volumetria_{nombre_limpio}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                print(f"DEBUG: Creando nombre de archivo...")
                 
-                print(f"DEBUG: Archivo a subir: {filename}")
-                print(f"DEBUG: Tamaño del PDF: {len(pdf_file)} bytes")
-                print(f"DEBUG: Tamaño base64: {len(pdf_base64)} characters")
+                try:
+                    # Nombre simple y seguro para evitar problemas
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    filename = f"Volumetria_{timestamp}.pdf"
+                    print(f"DEBUG: Nombre de archivo creado: {filename}")
+                except Exception as filename_error:
+                    print(f"ERROR: Fallo creando nombre de archivo: {filename_error}")
+                    raise filename_error
+                
+                print(f"DEBUG: Calculando tamaños...")
+                
+                try:
+                    pdf_size = len(pdf_file)
+                    b64_size = len(pdf_base64)
+                    print(f"DEBUG: Tamaño del PDF: {pdf_size} bytes")
+                    print(f"DEBUG: Tamaño base64: {b64_size} characters")
+                except Exception as size_error:
+                    print(f"ERROR: Fallo calculando tamaños: {size_error}")
+                    raise size_error
                 
                 # Verificar tamaño razonable (límite de 50MB en base64)
                 if len(pdf_base64) > 50 * 1024 * 1024:
