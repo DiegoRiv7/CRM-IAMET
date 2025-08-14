@@ -3410,15 +3410,15 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
                 print(f"DEBUG: Archivo guardado para subida (ID: {pending_upload.id})")
                 
                 # Iniciar tarea en background
-                def upload_file_in_background():
+                def upload_file_in_background(volumetrias_folder_id_to_use=None):
                     import time
-                    print(f"DEBUG BACKGROUND: Iniciando tarea de subida para proyecto {project_id}")
+                    print(f"DEBUG BACKGROUND: Iniciando tarea de subida para proyecto {project_id} con folder_id {volumetrias_folder_id_to_use}")
                     
                     # Esperar 10 segundos para que el proyecto esté completamente creado en Bitrix24
                     time.sleep(10)
                     
                     try:
-                        from .models import PendingFileUpload
+                        from .models import PendingFileUpload, OportunidadProyecto
                         from .bitrix_integration import upload_file_to_project_drive
                         import base64
                         
@@ -3439,21 +3439,34 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
                         # Codificar archivo
                         pdf_base64 = base64.b64encode(upload_record.file_content).decode('utf-8')
                         
-                        # Intentar subir
-                        success = upload_file_to_project_drive(
+                        # Intentar subir, pasando el ID de la carpeta si existe
+                        success, returned_folder_id = upload_file_to_project_drive(
                             project_id=upload_record.project_id,
                             file_name=upload_record.filename,
                             file_content_base64=pdf_base64,
-                            request=None
+                            request=None,
+                            volumetrias_folder_id=volumetrias_folder_id_to_use
                         )
                         
                         if success:
                             upload_record.status = 'success'
                             upload_record.completed_at = timezone.now()
                             print(f"SUCCESS BACKGROUND: Archivo subido exitosamente al proyecto {project_id}")
+
+                            # Si la subida fue exitosa y se creó una nueva carpeta, guardamos su ID
+                            if returned_folder_id and not volumetrias_folder_id_to_use:
+                                try:
+                                    op_proyecto = OportunidadProyecto.objects.get(bitrix_project_id=upload_record.project_id)
+                                    op_proyecto.carpeta_volumetrias_id = returned_folder_id
+                                    op_proyecto.save(update_fields=['carpeta_volumetrias_id'])
+                                    print(f"SUCCESS BACKGROUND: ID de carpeta de volumetrías ({returned_folder_id}) guardado.")
+                                except OportunidadProyecto.DoesNotExist:
+                                    print(f"ERROR BACKGROUND: No se encontró OportunidadProyecto para guardar el ID de la carpeta.")
+                                except Exception as e:
+                                    print(f"ERROR BACKGROUND: No se pudo guardar el ID de la carpeta: {e}")
                         else:
                             upload_record.status = 'failed'
-                            upload_record.error_message = "La función upload_file_to_project_drive retornó False"
+                            upload_record.error_message = "La función upload_file_to_project_drive retornó False o un error."
                             print(f"ERROR BACKGROUND: Falló la subida al proyecto {project_id}")
                         
                         upload_record.save()
@@ -3467,9 +3480,9 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
                         except:
                             pass
                 
-                # Ejecutar en hilo separado
+                # Ejecutar en hilo separado, pasando el ID de la carpeta
                 import threading
-                upload_thread = threading.Thread(target=upload_file_in_background)
+                upload_thread = threading.Thread(target=upload_file_in_background, kwargs={'volumetrias_folder_id_to_use': carpeta_volumetrias_id})
                 upload_thread.daemon = True
                 upload_thread.start()
                 
@@ -3888,20 +3901,35 @@ def retry_file_upload(request, upload_id):
                 time.sleep(2)  # Pequeña pausa
                 
                 try:
+                    from .models import OportunidadProyecto, TodoItem
                     from .bitrix_integration import upload_file_to_project_drive
                     import base64
-                    
+
+                    # Obtener el ID de la carpeta de volumetrías si existe
+                    volumetrias_folder_id = None
+                    if upload.oportunidad_id:
+                        try:
+                            oportunidad = TodoItem.objects.get(id=upload.oportunidad_id)
+                            oportunidad_proyecto = OportunidadProyecto.objects.get(oportunidad=oportunidad)
+                            volumetrias_folder_id = oportunidad_proyecto.carpeta_volumetrias_id
+                            print(f"DEBUG MANUAL: Carpeta de volumetrías encontrada para reintento: {volumetrias_folder_id}")
+                        except (TodoItem.DoesNotExist, OportunidadProyecto.DoesNotExist):
+                            print(f"DEBUG MANUAL: No se encontró OportunidadProyecto para la oportunidad {upload.oportunidad_id}. Se subirá a la raíz del proyecto.")
+                        except Exception as e:
+                            print(f"ERROR MANUAL: Buscando carpeta de volumetrías: {e}")
+
                     # Codificar archivo
                     pdf_base64 = base64.b64encode(upload.file_content).decode('utf-8')
                     
                     print(f"DEBUG MANUAL: Iniciando subida manual para proyecto {upload.project_id}")
                     
-                    # Intentar subir
-                    success = upload_file_to_project_drive(
+                    # Intentar subir, pasando el ID de la carpeta
+                    success, returned_folder_id = upload_file_to_project_drive(
                         project_id=upload.project_id,
                         file_name=upload.filename,
                         file_content_base64=pdf_base64,
-                        request=None
+                        request=None,
+                        volumetrias_folder_id=volumetrias_folder_id
                     )
                     
                     if success:
@@ -3909,6 +3937,17 @@ def retry_file_upload(request, upload_id):
                         upload.completed_at = timezone.now()
                         upload.error_message = None
                         print(f"SUCCESS MANUAL: Archivo {upload.filename} subido exitosamente")
+                        # Si se retornó un ID de carpeta y no teníamos uno, lo guardamos.
+                        if returned_folder_id and not volumetrias_folder_id:
+                             if upload.oportunidad_id:
+                                try:
+                                    oportunidad = TodoItem.objects.get(id=upload.oportunidad_id)
+                                    op_proyecto, created = OportunidadProyecto.objects.get_or_create(oportunidad=oportunidad, defaults={'bitrix_project_id': upload.project_id})
+                                    op_proyecto.carpeta_volumetrias_id = returned_folder_id
+                                    op_proyecto.save(update_fields=['carpeta_volumetrias_id'])
+                                    print(f"SUCCESS MANUAL: ID de carpeta de volumetrías ({returned_folder_id}) guardado en reintento.")
+                                except Exception as e:
+                                    print(f"ERROR MANUAL: No se pudo guardar el ID de la carpeta en reintento: {e}")
                     else:
                         upload.status = 'failed'
                         upload.error_message = "La función upload_file_to_project_drive retornó False"

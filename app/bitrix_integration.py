@@ -654,7 +654,7 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
         if request:
             messages.error(request, "Error: La URL del webhook de proyectos de Bitrix24 no está configurada.")
         print("ERROR Bitrix: La URL del webhook de proyectos de Bitrix24 no está configurada.")
-        return False
+        return False, None
     
     print(f"DEBUG Bitrix: BITRIX_PROJECTS_WEBHOOK_URL configurado: {BITRIX_PROJECTS_WEBHOOK_URL[:50]}...")
     
@@ -726,7 +726,7 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
         # Verificar que tenemos los datos necesarios
         if not project_storage_id:
             print(f"ERROR Bitrix: PUNTO DE CONTROL 13 - No se encontró project_storage_id")
-            return False
+            return False, None
             
         print(f"DEBUG Bitrix: PUNTO DE CONTROL 14 - project_storage_id OK")
         
@@ -825,7 +825,7 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                 result = response.json()
                 if 'result' in result and result['result']:
                     print(f"SUCCESS Bitrix: Archivo subido con método simple!")
-                    return True
+                    return True, target_folder_id
                 else:
                     print(f"WARNING Bitrix: Respuesta sin resultado: {result}")
             else:
@@ -853,13 +853,13 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                 result2 = response2.json()
                 if 'result' in result2 and result2['result']:
                     print(f"SUCCESS Bitrix: Archivo subido con storage ID!")
-                    return True
+                    return True, target_folder_id
                     
         except Exception as e:
             print(f"ERROR Bitrix: Excepción método 2: {e}")
         
         print(f"ERROR Bitrix: Ambos métodos simples fallaron")
-        return False
+        return False, None
         
         # TODO: Código complejo comentado hasta resolver issue simple
         # Intentar múltiples métodos de subida
@@ -1022,7 +1022,7 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
         traceback.print_exc() # Print full traceback
         if request:
             messages.error(request, f"Excepción al subir archivo al proyecto: {e}")
-        return False
+        return False, None
 
 def create_project_and_upload_volumetria(project_name, file_name, file_content_base64, description=None, vendedor_responsable=None, request=None):
     """
