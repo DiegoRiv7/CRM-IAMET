@@ -4,6 +4,77 @@
 {% block title %}{{ page_title }} - Sistema de Gestión de Ventas{% endblock %}
 
 {% block content %}
+<style>
+    /* Summer Pink Light Theme Overrides for Volumetría */
+    .light-theme .apple-bg {
+        background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 100%);
+    }
+    .light-theme .apple-glass-card, .light-theme .apple-card {
+        background: rgba(255, 240, 245, 0.85);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(229, 90, 135, 0.2);
+        box-shadow: 0 8px 32px rgba(229, 90, 135, 0.1);
+    }
+    .light-theme .apple-card:hover {
+        background: rgba(255, 232, 239, 0.9);
+        border-color: rgba(229, 90, 135, 0.4);
+    }
+    .light-theme .apple-text-primary, .light-theme h1, .light-theme h2, .light-theme h3, .light-theme h4 {
+        color: #2D1B2E;
+    }
+    .light-theme .bg-gradient-to-r.from-blue-400.to-blue-600, .light-theme .bg-gradient-to-r.from-green-500.to-green-600, .light-theme .bg-gradient-to-r.from-blue-500.to-blue-600 {
+        background-image: linear-gradient(to right, #FF6B9D, #E55A87);
+    }
+    .light-theme .bg-gradient-to-r.from-blue-500.to-blue-600 .text-white {
+        color: white !important; /* Ensure icon color is white on pink gradient */
+    }
+    .light-theme .apple-text-secondary {
+        color: #6B4C6D;
+    }
+    .light-theme .apple-btn-primary {
+        background: #FF6B9D;
+        color: white;
+    }
+    .light-theme .apple-btn-primary:hover {
+        background: #E55A87;
+    }
+    .light-theme .apple-btn-secondary {
+        background: rgba(255, 107, 157, 0.1);
+        color: #E55A87;
+        border: 1px solid rgba(255, 107, 157, 0.2);
+    }
+    .light-theme .apple-btn-secondary:hover {
+        background: rgba(255, 107, 157, 0.2);
+    }
+    .light-theme input, .light-theme select, .light-theme textarea {
+        background-color: rgba(255, 255, 255, 0.7) !important;
+        border-color: rgba(229, 90, 135, 0.3) !important;
+        color: #2D1B2E !important;
+    }
+    .light-theme input::placeholder {
+        color: #6B4C6D99;
+    }
+    .light-theme .border-gray-200.dark\:border-gray-700 {
+        border-color: rgba(229, 90, 135, 0.2);
+    }
+    .light-theme .minimal-table th {
+        background: rgba(255, 228, 239, 0.8);
+        color: #2D1B2E;
+    }
+    .light-theme .minimal-table td {
+        background: rgba(255, 240, 245, 0.7);
+        border-bottom-color: rgba(229, 90, 135, 0.2);
+        color: #4A2B4D;
+    }
+    .light-theme .minimal-table tr:last-child td {
+        border-bottom: none;
+    }
+    .light-theme .project-summary {
+        background: rgba(255, 232, 239, 0.6);
+        border-color: rgba(229, 90, 135, 0.2);
+    }
+</style>
 <div class="min-h-screen apple-bg">
     <div class="main-content">
         <div class="apple-glass-card p-6 mx-4 animate-fade-in">

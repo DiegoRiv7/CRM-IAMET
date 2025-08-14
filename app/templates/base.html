@@ -51,6 +51,26 @@
     
     <!-- PWA Support -->
     <link rel="manifest" href="{% static 'manifest.json' %}">
+
+    <!-- THEME-SWITCHING SCRIPT to prevent flash of incorrect theme -->
+    <script type="text/javascript">
+        (function() {
+            try {
+                const saved = localStorage.getItem('designPreferences');
+                if (saved) {
+                    const preferences = JSON.parse(saved);
+                    // Check for the light mode flag. If isDarkMode is false, apply light-theme.
+                    const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
+                    if (!isDarkMode) {
+                        document.documentElement.classList.add('light-theme');
+                    }
+                }
+            } catch (error) {
+                // If something goes wrong, do nothing and let the default theme apply.
+                console.log('Could not apply theme from localStorage.');
+            }
+        })();
+    </script>
     <meta name="theme-color" content="#007AFF">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
