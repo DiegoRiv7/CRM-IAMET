@@ -663,18 +663,33 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                 })
                 storage_response.raise_for_status()
                 storage_data = storage_response.json()
-                print(f"DEBUG Bitrix: Respuesta de disk.storage.getlist para proyecto {project_id}: {json.dumps(storage_data, indent=2)}") # Add this line
-
-                if 'result' in storage_data and len(storage_data['result']) > 0:
-                    storage_info = storage_data['result'][0]
-                    project_storage_id = storage_info.get('ID')
-                    root_folder_id = storage_info.get('ROOT_OBJECT_ID')
-                    
-                    print(f"DEBUG Bitrix: Storage ID: {project_storage_id}, Root Folder ID: {root_folder_id}")
-                    
-                    if project_storage_id:  # Solo verificar storage_id
-                        print(f"DEBUG Bitrix: Storage del proyecto {project_id} encontrado - Storage: {project_storage_id}, Root: {root_folder_id}")
-                        break # Found it, exit loop
+                print(f"DEBUG Bitrix: Respuesta de disk.storage.getlist para proyecto {project_id}: {json.dumps(storage_data, indent=2)}")
+                print(f"DEBUG Bitrix: PUNTO DE CONTROL 1 - Respuesta procesada")
+                
+                try:
+                    if 'result' in storage_data and len(storage_data['result']) > 0:
+                        print(f"DEBUG Bitrix: PUNTO DE CONTROL 2 - Entrando a procesar result")
+                        storage_info = storage_data['result'][0]
+                        print(f"DEBUG Bitrix: PUNTO DE CONTROL 3 - storage_info obtenido")
+                        
+                        project_storage_id = storage_info.get('ID')
+                        print(f"DEBUG Bitrix: PUNTO DE CONTROL 4 - project_storage_id: {project_storage_id}")
+                        
+                        root_folder_id = storage_info.get('ROOT_OBJECT_ID')
+                        print(f"DEBUG Bitrix: PUNTO DE CONTROL 5 - root_folder_id: {root_folder_id}")
+                        
+                        if project_storage_id:
+                            print(f"DEBUG Bitrix: PUNTO DE CONTROL 6 - Storage encontrado exitosamente")
+                            break # Found it, exit loop
+                        else:
+                            print(f"DEBUG Bitrix: PUNTO DE CONTROL 7 - project_storage_id es None")
+                    else:
+                        print(f"DEBUG Bitrix: PUNTO DE CONTROL 8 - No hay result en storage_data")
+                        
+                except Exception as inner_e:
+                    print(f"ERROR Bitrix: PUNTO DE CONTROL 9 - Excepción procesando storage_data: {inner_e}")
+                    import traceback
+                    traceback.print_exc()
                 
                 print(f"DEBUG Bitrix: Storage no encontrado en intento {attempt + 1}. Reintentando en {retry_delay} segundos...")
                 time.sleep(retry_delay) # Wait before retrying
@@ -683,17 +698,29 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                 print(f"DEBUG Bitrix: Excepción en intento {attempt + 1} al obtener storage: {e}")
                 time.sleep(retry_delay) # Wait before retrying
 
+        print(f"DEBUG Bitrix: PUNTO DE CONTROL 10 - Saliendo del loop de retry")
+        print(f"DEBUG Bitrix: PUNTO DE CONTROL 11 - project_storage_id: {project_storage_id}")
+        print(f"DEBUG Bitrix: PUNTO DE CONTROL 12 - root_folder_id: {root_folder_id}")
+        
         # Verificar que tenemos los datos necesarios
         if not project_storage_id:
-            print(f"ERROR Bitrix: No se encontró project_storage_id para el proyecto {project_id}")
+            print(f"ERROR Bitrix: PUNTO DE CONTROL 13 - No se encontró project_storage_id")
             return False
             
+        print(f"DEBUG Bitrix: PUNTO DE CONTROL 14 - project_storage_id OK")
+        
         # Si no hay root_folder_id, usar storage_id como fallback
         if not root_folder_id:
-            print(f"WARNING Bitrix: No hay root_folder_id, usando storage_id como fallback")
+            print(f"WARNING Bitrix: PUNTO DE CONTROL 15 - No hay root_folder_id, usando fallback")
             root_folder_id = project_storage_id
+        else:
+            print(f"DEBUG Bitrix: PUNTO DE CONTROL 16 - root_folder_id OK")
 
-        print(f"SUCCESS Bitrix: Datos encontrados - Storage: {project_storage_id}, Target Folder: {root_folder_id}")
+        print(f"SUCCESS Bitrix: PUNTO DE CONTROL 17 - Datos finales - Storage: {project_storage_id}, Target: {root_folder_id}")
+        
+        # DETENER AQUÍ PARA DEBUG - Comentar cuando funcione
+        print(f"DEBUG Bitrix: === DETENIENDO PARA DEBUG - COMENTAR ESTA LÍNEA CUANDO FUNCIONE ===")
+        return True
 
         # PASO 1: Crear carpeta "Volumetrías" en el proyecto
         print(f"DEBUG Bitrix: Creando carpeta 'Volumetrías' en el proyecto...")
