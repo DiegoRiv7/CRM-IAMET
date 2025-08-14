@@ -555,8 +555,16 @@ function getCookie(name) {
 document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     const tipo = urlParams.get('tipo') || 'cotizaciones';
-    currentContent = tipo === 'volumetrias' ? 'cotizaciones' : 'volumetrias'; // Invertir para que toggle funcione
-    toggleContent(); // Ejecutar toggle para establecer estado correcto
+    
+    // Establecer estado inicial
+    if (tipo === 'volumetrias') {
+        currentContent = 'cotizaciones'; // Será invertido por toggleContent()
+        toggleContent(); // Cambiará a volumetrías y mostrará el botón correcto
+    } else {
+        // Por defecto mostrar cotizaciones
+        currentContent = 'volumetrias'; // Será invertido por toggleContent()  
+        toggleContent(); // Cambiará a cotizaciones y mostrará el botón correcto
+    }
 });
 </script>
 
