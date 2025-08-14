@@ -718,9 +718,9 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
 
         print(f"SUCCESS Bitrix: PUNTO DE CONTROL 17 - Datos finales - Storage: {project_storage_id}, Target: {root_folder_id}")
         
-        # DETENER AQUÍ PARA DEBUG - Comentar cuando funcione
-        print(f"DEBUG Bitrix: === DETENIENDO PARA DEBUG - COMENTAR ESTA LÍNEA CUANDO FUNCIONE ===")
-        return True
+        # DEBUG DESHABILITADO - Continuando con la subida del archivo
+        print(f"DEBUG Bitrix: === CONTINUANDO CON LA SUBIDA DEL ARCHIVO ===")
+        # return True  # COMENTADO PARA HABILITAR SUBIDA REAL
 
         # PASO 1: Crear carpeta "Volumetrías" en el proyecto
         print(f"DEBUG Bitrix: Creando carpeta 'Volumetrías' en el proyecto...")
