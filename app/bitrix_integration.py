@@ -805,13 +805,16 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
             print(f"DEBUG Bitrix: URL simplificada: {simple_upload_url}")
             print(f"DEBUG Bitrix: Intentando con root folder ID: {root_folder_id}")
             
-            # Formato correcto con parámetro NAME requerido
+            # Formato correcto según documentación de Bitrix24
             simple_data = {
-                'id': target_folder_id,  # Usar la carpeta correcta
-                'fileContent': [file_name, file_content_base64],
-                'NAME': file_name  # Parámetro NAME requerido por Bitrix24
+                'id': target_folder_id,  # ID de la carpeta destino
+                'fileContent': [file_name, file_content_base64],  # Array con nombre y contenido
+                'data': {
+                    'NAME': file_name  # Parámetro NAME dentro de data
+                }
             }
             
+            print(f"DEBUG Bitrix: Datos que se enviarán: {json.dumps({k: v if k != 'fileContent' else [v[0], '<base64_data>'] for k, v in simple_data.items()}, indent=2)}")
             print(f"DEBUG Bitrix: Enviando petición simple...")
             response = requests.post(simple_upload_url, json=simple_data, timeout=20)
             
@@ -837,7 +840,9 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
             simple_data_storage = {
                 'id': project_storage_id,
                 'fileContent': [file_name, file_content_base64],
-                'NAME': file_name  # Parámetro NAME requerido por Bitrix24
+                'data': {
+                    'NAME': file_name  # Parámetro NAME dentro de data
+                }
             }
             
             response2 = requests.post(simple_upload_url, json=simple_data_storage, timeout=20)
