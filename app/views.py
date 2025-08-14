@@ -3276,70 +3276,56 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
         if project_id:
             print(f"DEBUG: Proyecto {project_id} creado exitosamente. Iniciando proceso de subida de archivo.")
             
-            # Usar un approach separado para no bloquear la descarga del PDF
+            # Approach simplificado sin signals
             def upload_pdf_to_project():
                 try:
-                    from .bitrix_integration import upload_file_to_project_drive
-                    import base64
-                    import signal
+                    print(f"DEBUG: Iniciando proceso simplificado de subida...")
                     
-                    print(f"DEBUG: Verificando PDF antes de codificar...")
+                    # Verificación básica del PDF
                     pdf_size_bytes = len(pdf_file)
                     print(f"DEBUG: Tamaño del PDF: {pdf_size_bytes} bytes ({pdf_size_bytes / 1024 / 1024:.2f} MB)")
                     
                     if pdf_size_bytes > 100 * 1024 * 1024:  # 100MB limit
-                        print(f"ERROR: PDF demasiado grande para procesar: {pdf_size_bytes} bytes")
+                        print(f"ERROR: PDF demasiado grande para procesar")
                         return False
                     
-                    print(f"DEBUG: Iniciando codificación base64 con timeout...")
-                    
-                    # Timeout específico para la codificación
-                    def encoding_timeout_handler(signum, frame):
-                        raise Exception("Timeout en codificación base64 después de 10 segundos")
-                    
-                    signal.signal(signal.SIGALRM, encoding_timeout_handler)
-                    signal.alarm(10)  # 10 segundos para codificación
-                    
+                    # Paso 1: Codificación base64 simple
+                    print(f"DEBUG: PASO 1 - Iniciando codificación base64...")
                     try:
+                        import base64
                         pdf_base64 = base64.b64encode(pdf_file).decode('utf-8')
-                        signal.alarm(0)  # Cancelar timeout
-                        print(f"DEBUG: Codificación base64 exitosa - {len(pdf_base64)} caracteres")
-                    except Exception as encoding_error:
-                        signal.alarm(0)  # Cancelar timeout
-                        print(f"ERROR: Error/timeout en codificación base64: {encoding_error}")
+                        print(f"DEBUG: PASO 1 COMPLETADO - Codificación exitosa: {len(pdf_base64)} chars")
+                    except Exception as e:
+                        print(f"ERROR: PASO 1 FALLÓ - Error en codificación: {e}")
                         return False
                     
-                    # Validar tamaños
-                    b64_size = len(pdf_base64)
-                    if b64_size > 50 * 1024 * 1024:  # 50MB limit
-                        print(f"ERROR: PDF demasiado grande para Bitrix24: {b64_size} chars")
+                    # Paso 2: Validación de tamaños
+                    print(f"DEBUG: PASO 2 - Validando tamaños...")
+                    if len(pdf_base64) > 50 * 1024 * 1024:  # 50MB limit
+                        print(f"ERROR: PASO 2 FALLÓ - PDF demasiado grande para Bitrix24")
                         return False
+                    print(f"DEBUG: PASO 2 COMPLETADO - Tamaños OK")
                     
-                    print(f"DEBUG: Iniciando subida a Bitrix24...")
-                    
-                    # Timeout para la subida
-                    def upload_timeout_handler(signum, frame):
-                        raise Exception("Timeout en subida después de 30 segundos")
-                    
-                    signal.signal(signal.SIGALRM, upload_timeout_handler)
-                    signal.alarm(30)  # 30 segundos para subida
-                    
+                    # Paso 3: Subida a Bitrix24
+                    print(f"DEBUG: PASO 3 - Iniciando subida a Bitrix24...")
                     try:
+                        from .bitrix_integration import upload_file_to_project_drive
                         upload_success = upload_file_to_project_drive(
                             project_id=project_id,
                             file_name=filename,
                             file_content_base64=pdf_base64,
                             request=request
                         )
-                        signal.alarm(0)  # Cancelar timeout
+                        print(f"DEBUG: PASO 3 COMPLETADO - Resultado: {upload_success}")
                         return upload_success
-                    except Exception as upload_error:
-                        signal.alarm(0)  # Cancelar timeout
-                        print(f"ERROR: Error/timeout en subida: {upload_error}")
+                    except Exception as e:
+                        print(f"ERROR: PASO 3 FALLÓ - Error en subida: {e}")
                         return False
                         
                 except Exception as e:
-                    print(f"WARNING: Error general en proceso de subida: {e}")
+                    print(f"ERROR: FALLO GENERAL en upload_pdf_to_project: {e}")
+                    import traceback
+                    traceback.print_exc()
                     return False
             
             # Ejecutar la subida (no bloquear si falla)
