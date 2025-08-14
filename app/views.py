@@ -3279,35 +3279,45 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
                 import base64
                 import re
                 
+                print(f"DEBUG: Verificando PDF antes de codificar...")
+                try:
+                    pdf_size_bytes = len(pdf_file)
+                    print(f"DEBUG: Tamaño del PDF: {pdf_size_bytes} bytes ({pdf_size_bytes / 1024 / 1024:.2f} MB)")
+                    
+                    if pdf_size_bytes > 100 * 1024 * 1024:  # 100MB limit
+                        print(f"ERROR: PDF demasiado grande para procesar: {pdf_size_bytes} bytes")
+                        raise Exception(f"PDF demasiado grande: {pdf_size_bytes} bytes")
+                        
+                except Exception as pdf_check_error:
+                    print(f"ERROR: Error verificando PDF: {pdf_check_error}")
+                    raise pdf_check_error
+                
                 print(f"DEBUG: Iniciando codificación base64...")
-                pdf_base64 = base64.b64encode(pdf_file).decode('utf-8')
-                print(f"DEBUG: Codificación base64 exitosa")
-                
-                print(f"DEBUG: Calculando tamaños...")
                 try:
-                    pdf_size = len(pdf_file)
-                    print(f"DEBUG: Tamaño del PDF calculado: {pdf_size} bytes")
-                except Exception as size_error:
-                    print(f"ERROR: Fallo calculando tamaño del PDF: {size_error}")
-                    raise size_error
+                    pdf_base64 = base64.b64encode(pdf_file).decode('utf-8')
+                    print(f"DEBUG: Codificación base64 exitosa - {len(pdf_base64)} caracteres")
+                except MemoryError as mem_error:
+                    print(f"ERROR: Memoria insuficiente para codificación base64: {mem_error}")
+                    raise mem_error
+                except Exception as b64_error:
+                    print(f"ERROR: Error en codificación base64: {b64_error}")
+                    raise b64_error
                 
+                print(f"DEBUG: Validando tamaños para Bitrix24...")
                 try:
+                    # Usar los valores ya calculados
                     b64_size = len(pdf_base64)
-                    print(f"DEBUG: Tamaño base64 calculado: {b64_size} characters")
-                except Exception as b64_size_error:
-                    print(f"ERROR: Fallo calculando tamaño base64: {b64_size_error}")
-                    raise b64_size_error
-                
-                print(f"DEBUG: Verificando límite de tamaño...")
-                # Verificar tamaño razonable (límite de 50MB en base64)
-                try:
-                    if len(pdf_base64) > 50 * 1024 * 1024:
-                        print(f"ERROR: PDF demasiado grande para Bitrix24: {len(pdf_base64)} chars")
+                    print(f"DEBUG: Tamaños validados - PDF: {pdf_size_bytes} bytes, Base64: {b64_size} chars")
+                    
+                    # Verificar tamaño razonable (límite de 50MB en base64)
+                    if b64_size > 50 * 1024 * 1024:
+                        print(f"ERROR: PDF demasiado grande para Bitrix24: {b64_size} chars")
                         raise Exception("PDF demasiado grande")
                     print(f"DEBUG: Tamaño verificado - OK para subir")
-                except Exception as limit_error:
-                    print(f"ERROR: Fallo verificando límite de tamaño: {limit_error}")
-                    raise limit_error
+                    
+                except Exception as validation_error:
+                    print(f"ERROR: Fallo en validación de tamaños: {validation_error}")
+                    raise validation_error
 
                 print(f"DEBUG: Iniciando llamada a upload_file_to_project_drive...")
                 print(f"DEBUG: Parámetros - project_id: {project_id}, filename: {filename}")
