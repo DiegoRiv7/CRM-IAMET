@@ -272,6 +272,13 @@ class DetalleCotizacion(models.Model):
     total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Total por Ítem")
     marca = models.CharField(max_length=50, choices=MARCA_CHOICES, blank=True, null=True, verbose_name="Marca")
     no_parte = models.CharField(max_length=100, blank=True, null=True, verbose_name="Número de Parte")
+    
+    # Campo para distinguir entre productos normales y títulos de sección
+    TIPO_CHOICES = [
+        ('producto', 'Producto'),
+        ('titulo', 'Título de Sección'),
+    ]
+    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, default='producto', verbose_name="Tipo")
 
     class Meta:
         """
@@ -284,6 +291,10 @@ class DetalleCotizacion(models.Model):
 
     def get_total_item(self):
         """Calcula el total para este ítem de la cotización aplicando el descuento y redondeando a 2 decimales."""
+        # Los títulos no tienen cálculos de total
+        if self.tipo == 'titulo':
+            return Decimal('0.00')
+        
         item_total = self.cantidad * self.precio_unitario
         item_total -= item_total * (self.descuento_porcentaje / Decimal('100.00'))
         return item_total.quantize(Decimal('0.01')) # Redondea a 2 decimales

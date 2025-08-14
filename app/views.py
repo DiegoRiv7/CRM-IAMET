@@ -1456,6 +1456,40 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                     cotizacion.delete()
                     return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Invalid product data in row. Error: {e}'}]}}, status=400)
 
+            # Procesar títulos de sección enviados desde JavaScript
+            titulos_data = {}
+            for key, value in request.POST.items():
+                if key.startswith('titulos['):
+                    parts = key.split('[')
+                    index = parts[1].split(']')[0]
+                    field = parts[2].split(']')[0]
+
+                    if index not in titulos_data:
+                        titulos_data[index] = {}
+                    titulos_data[index][field] = value
+
+            titulos_list = [titulos_data[key] for key in sorted(titulos_data.keys(), key=int)]
+            print(f"DEBUG: titulos_list before saving: {titulos_list}")
+
+            for titulo_data in titulos_list:
+                try:
+                    if titulo_data.get('type') == 'title' and titulo_data.get('texto'):
+                        DetalleCotizacion.objects.create(
+                            cotizacion=cotizacion,
+                            nombre_producto=titulo_data.get('texto', ''),  # Usar el texto del título como nombre
+                            descripcion=titulo_data.get('texto', ''),     # También en descripción
+                            cantidad=0,  # Los títulos no tienen cantidad
+                            precio_unitario=Decimal('0.00'),  # Los títulos no tienen precio
+                            descuento_porcentaje=Decimal('0.00'),  # Los títulos no tienen descuento
+                            marca='',  # Los títulos no tienen marca
+                            no_parte='',  # Los títulos no tienen número de parte
+                            tipo='titulo'  # Marcar como título
+                        )
+                        print(f"DEBUG: Title created: {titulo_data.get('texto')}")
+                except Exception as e:
+                    print(f"WARNING: Error processing title {titulo_data}: {e}")
+                    # No eliminar la cotización por errores en títulos, solo continuar
+
             
 
             pdf_url = reverse('generate_cotizacion_pdf', args=[cotizacion.id])

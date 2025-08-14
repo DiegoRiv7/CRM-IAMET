@@ -191,6 +191,30 @@
         }
         .table-container {
             overflow-x: auto; /* Permite desplazamiento horizontal en tablas pequeñas */
+            max-height: 60vh; /* Altura máxima para activar scroll vertical */
+            overflow-y: auto; /* Permite scroll vertical dentro del contenedor */
+            position: relative;
+            border-radius: 0.75rem;
+        }
+        
+        /* Mejorar sticky headers para que funcionen solo dentro del contenedor */
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        .table-container::-webkit-scrollbar-track {
+            background: var(--apple-background-tertiary);
+            border-radius: 4px;
+        }
+        
+        .table-container::-webkit-scrollbar-thumb {
+            background: var(--apple-separator);
+            border-radius: 4px;
+        }
+        
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: var(--apple-gray);
         }
         .product-table {
             width: 100%;
@@ -210,6 +234,36 @@
             position: sticky;
             top: 0;
             z-index: 10;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Estilos para las filas de título */
+        .title-row {
+            background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-blue-light) 100%) !important;
+            color: white !important;
+        }
+        
+        .title-row td {
+            border: none !important;
+            font-weight: 600 !important;
+            font-size: 1.1rem !important;
+            text-align: center !important;
+            padding: 1rem !important;
+        }
+        
+        .title-row:hover {
+            background: linear-gradient(135deg, var(--apple-blue-dark) 0%, var(--apple-blue) 100%) !important;
+        }
+        
+        /* Estilo específico para tema claro */
+        .light-theme .title-row {
+            background: linear-gradient(135deg, var(--apple-blue) 0%, #FF8FB3 100%) !important;
+        }
+        
+        .light-theme .title-row:hover {
+            background: linear-gradient(135deg, #E55A87 0%, var(--apple-blue) 100%) !important;
         }
         .product-table tbody tr {
             background-color: var(--apple-background-secondary);
@@ -400,10 +454,14 @@
                 <h2 class="text-xl font-semibold mb-4" style="color: var(--apple-label);">Detalles de Productos</h2>
 
                 <div class="flex justify-between items-center mb-4">
-                    <div class="flex space-x-3">
+                    <div class="flex flex-wrap gap-3">
                         <button type="button" id="add-row-btn" class="btn-primary flex items-center justify-center" data-intro="📋 Agrega productos uno por uno usando este botón. Cada fila representa un producto en tu cotización." data-step="8">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                             Agregar Fila
+                        </button>
+                        <button type="button" id="add-title-btn" class="btn-secondary flex items-center justify-center" style="background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-blue-light) 100%); color: white;" data-intro="🏷️ Agrega títulos para organizar tu cotización en secciones (ej: Equipos, Consumibles, Servicios)." data-step="8.5">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                            Agregar Título
                         </button>
                         <button type="button" id="toggle-comments-btn" class="btn-secondary flex items-center justify-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
@@ -630,6 +688,7 @@
     <script>
         let rowCounter = 0;
         let stagingRowCounter = 0;
+        let titleCounter = 0;
         // Parse the clients data passed from Django
         const clientesData = JSON.parse('{{ clientes_data_json|escapejs }}');
         const clienteIdInicial = '{{ cliente_id_inicial|default:"" }}'; // Get initial client ID if provided
@@ -674,6 +733,7 @@
 
             const newRow = document.createElement('tr');
             newRow.id = rowId;
+            newRow.className = 'product-row'; // Add class for identification
             newRow.innerHTML = `
                 <td>${newRowNumber}</td>
                 <td style="display: none;"><input type="text" id="marca_${newRowNumber}" name="productos[${newRowNumber}][marca]" class="input-field" placeholder="Marca" value="${marca}"></td>
@@ -699,35 +759,66 @@
             calculateTotals(); // Recalculate totals when adding a row
         }
 
-        // Function to remove a product row from the main table
-        function removeRow(id) {
-            const row = document.getElementById(id);
-            if (row) {
-                row.remove();
-                updateRowNumbers();
-                calculateTotals(); // Recalculate totals when removing a row
+        // Function to add a title/section row to the main table
+        function addTitleRow(titleText = '') {
+            const tbody = document.getElementById('productos-tbody');
+            titleCounter++;
+            const rowId = `title-row-${titleCounter}`;
+            
+            // Create title input dialog
+            let title = titleText;
+            if (!title) {
+                title = prompt('Ingresa el título de la sección:', 'EQUIPOS');
+                if (!title) return; // User cancelled
             }
+            
+            const newRow = document.createElement('tr');
+            newRow.id = rowId;
+            newRow.className = 'title-row';
+            newRow.innerHTML = `
+                <td colspan="9" style="position: relative;">
+                    <input type="text" 
+                           id="titulo_${titleCounter}" 
+                           name="titulos[${titleCounter}][texto]" 
+                           value="${title}" 
+                           class="input-field" 
+                           style="background: transparent; border: none; color: white; font-weight: 600; font-size: 1.1rem; text-align: center; width: calc(100% - 40px);" 
+                           placeholder="Título de la sección">
+                    <input type="hidden" name="titulos[${titleCounter}][type]" value="title">
+                    <input type="hidden" name="titulos[${titleCounter}][position]" value="${tbody.rows.length}">
+                    <button type="button" 
+                            onclick="removeRow('${rowId}')" 
+                            class="text-red-200 hover:text-red-400 text-xl font-bold leading-none" 
+                            style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                        &times;
+                    </button>
+                </td>
+            `;
+            
+            tbody.appendChild(newRow);
+            
+            // Auto-focus on the title input for immediate editing
+            setTimeout(() => {
+                const titleInput = newRow.querySelector(`#titulo_${titleCounter}`);
+                titleInput.focus();
+                titleInput.select();
+            }, 100);
         }
 
-        function updateRowNumbers() {
-            const rows = document.querySelectorAll('#productos-tbody tr');
-            rows.forEach((row, index) => {
-                row.cells[0].textContent = index + 1;
-            });
-        }
-
-        // Function to calculate totals (subtotal, IVA, total)
+        // Function to calculate totals (subtotal, IVA, total) - Updated to skip title rows
         function calculateTotals() {
             let subtotal = 0;
             const currency = document.getElementById('currency-select').value;
             const ivaRate = parseFloat(document.getElementById('iva-rate').value);
 
-            document.querySelectorAll('#productos-tbody tr').forEach(row => {
+            document.querySelectorAll('#productos-tbody tr.product-row').forEach(row => {
                 const id = row.id.split('-')[1]; // Get the counter from the row ID
                 const cantidadInput = document.getElementById(`cantidad_${id}`);
                 const precioInput = document.getElementById(`precio_${id}`);
                 const descuentoInput = document.getElementById(`descuento_${id}`);
                 const totalProductoInput = document.getElementById(`total_producto_${id}`);
+
+                if (!cantidadInput || !precioInput || !descuentoInput || !totalProductoInput) return;
 
                 const quantity = parseFloat(cantidadInput.value) || 0;
                 const price = parseFloat(precioInput.value) || 0;
@@ -754,6 +845,23 @@
             document.getElementById('total').textContent = formatCurrency(total, currency);
 
             console.log(`DEBUG JS: Subtotal (rounded for display): ${subtotal}, IVARate: ${ivaRate}, IVA Amount (rounded for display): ${ivaAmount}, Total (rounded for display): ${total}`);
+        }
+
+        // Function to remove a product row from the main table
+        function removeRow(id) {
+            const row = document.getElementById(id);
+            if (row) {
+                row.remove();
+                updateRowNumbers();
+                calculateTotals(); // Recalculate totals when removing a row
+            }
+        }
+
+        function updateRowNumbers() {
+            const rows = document.querySelectorAll('#productos-tbody tr.product-row');
+            rows.forEach((row, index) => {
+                row.cells[0].textContent = index + 1;
+            });
         }
 
         // Helper function to format currency
@@ -1233,6 +1341,7 @@
             {% endif %}
 
             document.getElementById('add-row-btn').addEventListener('click', () => addRow('', '', '', 1, 0, 0));
+            document.getElementById('add-title-btn').addEventListener('click', () => addTitleRow());
             document.getElementById('iva-rate').addEventListener('change', calculateTotals);
             document.getElementById('currency-select').addEventListener('change', calculateTotals);
 
