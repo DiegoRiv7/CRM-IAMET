@@ -3289,20 +3289,9 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
                 
                 print(f"DEBUG: Creando nombre de archivo...")
                 
-                try:
-                    print(f"DEBUG: Generando timestamp...")
-                    import time
-                    timestamp = str(int(time.time()))  # Unix timestamp simple
-                    print(f"DEBUG: Timestamp generado: {timestamp}")
-                    
-                    print(f"DEBUG: Creando filename...")
-                    filename = f"Volumetria_{timestamp}.pdf"
-                    print(f"DEBUG: Nombre de archivo creado exitosamente: {filename}")
-                except Exception as filename_error:
-                    print(f"ERROR: Fallo creando nombre de archivo: {filename_error}")
-                    import traceback
-                    traceback.print_exc()
-                    raise filename_error
+                # Simplificar al máximo para evitar cualquier problema
+                filename = f"Volumetria_Proyecto_{project_id}.pdf"
+                print(f"DEBUG: Nombre de archivo creado exitosamente: {filename}")
                 
                 print(f"DEBUG: Calculando tamaños...")
                 
