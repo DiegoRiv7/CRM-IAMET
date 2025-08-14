@@ -320,9 +320,7 @@
     <div class="apple-actions">
         <a href="{% url 'todos' %}" class="apple-button apple-button-secondary">&#8592; Volver</a>
         <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="apple-button create-button" id="btnCotizacion">+ Nueva Cotización</a>
-        {% if is_engineer %}
         <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="apple-button apple-button-volumetria create-button" id="btnVolumetria">📊 Nueva Volumetría</a>
-        {% endif %}
     </div>
 
     <!-- COTIZACIONES SECTION -->
@@ -423,11 +421,7 @@
             <div class="no-content">
                 <h3>📊 No hay volumetrías</h3>
                 <p>Esta oportunidad aún no tiene volumetrías creadas</p>
-                {% if is_engineer %}
                 <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="apple-button apple-button-volumetria">📊 Crear Primera Volumetría</a>
-                {% else %}
-                <p style="font-size: 0.9rem; color: var(--apple-label-secondary);">Solo ingenieros pueden crear volumetrías</p>
-                {% endif %}
             </div>
             {% endif %}
         </div>
