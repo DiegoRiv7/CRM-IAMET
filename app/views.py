@@ -1433,38 +1433,45 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             # SOLUCIÓN: usar un mapa de posición unificado
             elementos_combinados = []
             
-            # Crear mapa de todas las posiciones (títulos y productos)
-            mapa_posiciones = {}
+            # Crear lista de todos los elementos con sus posiciones
+            elementos_con_posicion = []
             
             # Agregar títulos con su posición real del DOM
             for titulo_index, titulo_data in titulos_data.items():
                 if titulo_data.get('type') == 'title' and titulo_data.get('texto'):
                     posicion = int(titulo_data.get('position', 999))
-                    mapa_posiciones[posicion] = {
+                    elementos_con_posicion.append({
                         'tipo': 'titulo',
-                        'datos': titulo_data
-                    }
+                        'posicion': posicion,
+                        'datos': titulo_data,
+                        'nombre': titulo_data.get('texto', 'SIN_TITULO')
+                    })
                     print(f"DEBUG POSITION: Título '{titulo_data.get('texto')}' en posición {posicion}")
             
             # Agregar productos con su posición (índice del array de productos)
             for producto_index, producto_data in productos_data.items():
-                # IMPORTANTE: Los productos usan su índice como posición, que puede conflictuar
                 posicion = int(producto_index)
-                mapa_posiciones[posicion] = {
+                elementos_con_posicion.append({
                     'tipo': 'producto', 
-                    'datos': producto_data
-                }
+                    'posicion': posicion,
+                    'datos': producto_data,
+                    'nombre': producto_data.get('nombre_producto', 'SIN_NOMBRE')
+                })
                 print(f"DEBUG POSITION: Producto '{producto_data.get('nombre_producto', 'SIN_NOMBRE')}' en posición {posicion}")
             
-            # Ordenar por posición y crear lista final
-            posiciones_ordenadas = sorted(mapa_posiciones.keys())
-            print(f"DEBUG POSITION: Posiciones ordenadas: {posiciones_ordenadas}")
+            # Ordenar por posición, pero manejar conflictos (títulos antes que productos en misma posición)
+            elementos_con_posicion.sort(key=lambda x: (x['posicion'], x['tipo'] == 'producto'))
             
-            for posicion in posiciones_ordenadas:
-                elemento = mapa_posiciones[posicion]
+            print(f"DEBUG POSITION: Total elementos encontrados: {len(elementos_con_posicion)}")
+            print(f"DEBUG POSITION: Elementos ordenados:")
+            for i, elem in enumerate(elementos_con_posicion):
+                print(f"  {i+1}. {elem['tipo'].upper()}: '{elem['nombre']}' (posición: {elem['posicion']})")
+            
+            # Crear lista final
+            for elemento in elementos_con_posicion:
                 elementos_combinados.append({
                     'tipo': elemento['tipo'],
-                    'posicion': posicion,
+                    'posicion': elemento['posicion'],
                     'datos': elemento['datos']
                 })
             
