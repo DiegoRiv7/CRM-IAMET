@@ -3282,8 +3282,12 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
                 import re
                 print(f"DEBUG: PASO 1 COMPLETADO - Módulos importados exitosamente")
                 
-                print(f"DEBUG: PASO 2 - Iniciando proceso de subida para proyecto {project_id}")
-                print(f"DEBUG: PASO 2 COMPLETADO - Proceso iniciado")
+                print("DEBUG: PASO 2 - Verificando project_id...")
+                print("DEBUG: project_id type:", type(project_id))
+                print("DEBUG: project_id value:", repr(project_id))
+                
+                print("DEBUG: PASO 2 - Iniciando proceso de subida")
+                print("DEBUG: PASO 2 COMPLETADO - Proceso iniciado")
                 
                 # COMENTANDO EL RESTO TEMPORALMENTE
                 # Limpiar el nombre del archivo para evitar caracteres problemáticos
