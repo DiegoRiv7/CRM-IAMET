@@ -3273,18 +3273,33 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
             filename = "Volumetria_SinProyecto.pdf"
         
         if project_id:
-            print(f"DEBUG: Proyecto {project_id} creado exitosamente. SALTANDO subida de archivo temporalmente para debugging.")
-            # COMENTANDO TEMPORALMENTE PARA DEBUGGING
-            if False:  # Este bloque está temporalmente deshabilitado
+            print(f"DEBUG: Proyecto {project_id} creado exitosamente. Intentando subida de archivo step-by-step.")
+            # REHABILITANDO PASO A PASO PARA DEBUGGING
+            try:
+                print(f"DEBUG: PASO 1 - Importando módulos...")
                 from .bitrix_integration import upload_file_to_project_drive
                 import base64
                 import re
+                print(f"DEBUG: PASO 1 COMPLETADO - Módulos importados exitosamente")
                 
-                print(f"DEBUG: Iniciando proceso de subida para proyecto {project_id}")
+                print(f"DEBUG: PASO 2 - Iniciando proceso de subida para proyecto {project_id}")
+                print(f"DEBUG: PASO 2 COMPLETADO - Proceso iniciado")
                 
+                # COMENTANDO EL RESTO TEMPORALMENTE
                 # Limpiar el nombre del archivo para evitar caracteres problemáticos
-                nombre_limpio = re.sub(r'[^\w\s-]', '', data.get('nombre_volumetria', 'Analisis')).strip()
-                nombre_limpio = re.sub(r'[-\s]+', '_', nombre_limpio)
+                # nombre_limpio = re.sub(r'[^\w\s-]', '', data.get('nombre_volumetria', 'Analisis')).strip()
+                # nombre_limpio = re.sub(r'[-\s]+', '_', nombre_limpio)
+                
+                print(f"DEBUG: FINALIZANDO PASO A PASO - Todo OK hasta aquí")
+                
+            except Exception as e:
+                print(f"ERROR: Error en proceso de subida paso a paso: {e}")
+                import traceback
+                traceback.print_exc()
+                
+        # TODO EL CÓDIGO RESTANTE ESTÁ TEMPORALMENTE COMENTADO
+        """
+        CÓDIGO COMENTADO TEMPORALMENTE:
                 
                 print(f"DEBUG: Iniciando codificación base64...")
                 
@@ -3332,7 +3347,8 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
                     print(f"WARNING: No se pudo subir el PDF de volumetría al proyecto Bitrix24 {project_id}")
                 # except Exception as e:
                 #     print(f"WARNING: Error al intentar subir el PDF de volumetría al proyecto Bitrix24: {e}")
-
+        """
+        
         # Crear respuesta HTTP con el PDF
         response = HttpResponse(pdf_file, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
