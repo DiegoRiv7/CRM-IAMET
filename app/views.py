@@ -3270,9 +3270,20 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
             try:
                 from .bitrix_integration import upload_file_to_project_drive
                 import base64
+                import re
+                
+                print(f"DEBUG: Iniciando proceso de subida para proyecto {project_id}")
+                
+                # Limpiar el nombre del archivo para evitar caracteres problemáticos
+                nombre_limpio = re.sub(r'[^\w\s-]', '', data.get('nombre_volumetria', 'Analisis')).strip()
+                nombre_limpio = re.sub(r'[-\s]+', '_', nombre_limpio)
                 
                 pdf_base64 = base64.b64encode(pdf_file).decode('utf-8')
-                filename = f"Volumetria_{data.get('nombre_volumetria', 'Analisis')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                filename = f"Volumetria_{nombre_limpio}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                
+                print(f"DEBUG: Archivo a subir: {filename}")
+                print(f"DEBUG: Tamaño del PDF: {len(pdf_file)} bytes")
+                print(f"DEBUG: Tamaño base64: {len(pdf_base64)} characters")
 
                 upload_success = upload_file_to_project_drive(
                     project_id=project_id,
@@ -3280,6 +3291,8 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
                     file_content_base64=pdf_base64,
                     request=request
                 )
+                
+                print(f"DEBUG: Resultado de upload_file_to_project_drive: {upload_success}")
                 if upload_success:
                     print(f"DEBUG: PDF de volumetría subido exitosamente al proyecto Bitrix24 {project_id}")
                 else:
