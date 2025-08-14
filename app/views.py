@@ -588,22 +588,26 @@ def view_cotizacion_pdf(request, cotizacion_id):
         tipo_detalle = getattr(detalle, 'tipo', 'producto') or 'producto'
         
         if tipo_detalle == 'titulo':
-            # Si hay productos en la sección actual, guardarla
+            # Si hay productos en la sección actual, guardarla ANTES de crear nueva sección
             if seccion_actual['productos']:
                 secciones.append(seccion_actual)
+            # Si hay una sección actual con título pero sin productos, también la guardamos
+            elif seccion_actual['titulo']:
+                secciones.append(seccion_actual)
+                
             # Iniciar nueva sección
             seccion_actual = {'titulo': detalle.nombre_producto, 'productos': []}
         else:
             # Agregar producto a la sección actual
             seccion_actual['productos'].append(detalle)
     
-    # Agregar la última sección si tiene productos
-    if seccion_actual['productos']:
+    # Agregar la última sección (con o sin productos)
+    if seccion_actual['titulo'] or seccion_actual['productos']:
         secciones.append(seccion_actual)
     
     # Si no hay títulos, crear una sección por defecto
     if not secciones:
-        productos_sin_seccion = [d for d in detalles_cotizacion if d.tipo == 'producto']
+        productos_sin_seccion = [d for d in detalles_cotizacion if getattr(d, 'tipo', 'producto') == 'producto']
         if productos_sin_seccion:
             secciones.append({'titulo': None, 'productos': productos_sin_seccion})
     
@@ -1424,7 +1428,8 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                         titulos_data[index] = {}
                     titulos_data[index][field] = value
             
-            # Crear lista combinada en orden del DOM
+            # Para nuevas cotizaciones: crear lista combinada en orden del DOM
+            # Para edición: respetar el orden de la base de datos (en editar_cotizacion_view)
             elementos_combinados = []
             
             # Agregar títulos con su posición
@@ -1445,12 +1450,15 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                     'datos': producto_data
                 })
             
-            # Ordenar por posición
+            # Ordenar por posición solo para nuevas cotizaciones
             elementos_combinados.sort(key=lambda x: x['posicion'])
             
             print(f"DEBUG ORDER: Elementos en orden: {len(elementos_combinados)} elementos")
             for i, elemento in enumerate(elementos_combinados):
-                print(f"DEBUG ORDER: {i+1}. Tipo: {elemento['tipo']}, Posición: {elemento['posicion']}")
+                if elemento['tipo'] == 'titulo':
+                    print(f"DEBUG ORDER: {i+1}. TÍTULO: '{elemento['datos'].get('texto', 'SIN_TEXTO')}' (posición: {elemento['posicion']})")
+                else:
+                    print(f"DEBUG ORDER: {i+1}. PRODUCTO: '{elemento['datos'].get('nombre_producto', 'SIN_NOMBRE')}' (posición: {elemento['posicion']})")
             
             # Mantener productos_list para compatibilidad con el cálculo de totales
             productos_list = [productos_data[key] for key in sorted(productos_data.keys(), key=int)]
@@ -1571,8 +1579,11 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                     tipo_detalle = getattr(detalle, 'tipo', 'producto') or 'producto'
                     
                     if tipo_detalle == 'titulo':
-                        # Si hay productos en la sección actual, guardarla
+                        # Si hay productos en la sección actual, guardarla ANTES de crear nueva sección
                         if seccion_actual_pdf['productos']:
+                            secciones_pdf.append(seccion_actual_pdf)
+                        # Si hay una sección actual con título pero sin productos, también la guardamos
+                        elif seccion_actual_pdf['titulo']:
                             secciones_pdf.append(seccion_actual_pdf)
                         # Iniciar nueva sección
                         seccion_actual_pdf = {'titulo': detalle.nombre_producto, 'productos': []}
@@ -1580,8 +1591,8 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                         # Agregar producto a la sección actual
                         seccion_actual_pdf['productos'].append(detalle)
                 
-                # Agregar la última sección si tiene productos
-                if seccion_actual_pdf['productos']:
+                # Agregar la última sección (con o sin productos)
+                if seccion_actual_pdf['titulo'] or seccion_actual_pdf['productos']:
                     secciones_pdf.append(seccion_actual_pdf)
                 
                 # Si no hay títulos, crear una sección por defecto con productos solamente
@@ -1866,24 +1877,36 @@ def generate_cotizacion_pdf(request, cotizacion_id):
         # Manejar productos existentes que no tienen el campo tipo definido
         tipo_detalle = getattr(detalle, 'tipo', 'producto') or 'producto'
         
+        print(f"DEBUG SECTIONS: Procesando detalle ID={detalle.id}, tipo='{tipo_detalle}', nombre='{detalle.nombre_producto}'")
+        
         if tipo_detalle == 'titulo':
-            # Si hay productos en la sección actual, guardarla
+            # Si hay productos en la sección actual, guardarla ANTES de crear nueva sección
             if seccion_actual['productos']:
+                print(f"DEBUG SECTIONS: Guardando sección con título='{seccion_actual['titulo']}' y {len(seccion_actual['productos'])} productos")
                 secciones.append(seccion_actual)
+            # Si hay una sección actual con título pero sin productos, también la guardamos
+            elif seccion_actual['titulo']:
+                print(f"DEBUG SECTIONS: Guardando sección con título='{seccion_actual['titulo']}' SIN productos")
+                secciones.append(seccion_actual)
+                
             # Iniciar nueva sección
             seccion_actual = {'titulo': detalle.nombre_producto, 'productos': []}
+            print(f"DEBUG SECTIONS: Nueva sección iniciada con título='{detalle.nombre_producto}'")
         else:
             # Agregar producto a la sección actual
             seccion_actual['productos'].append(detalle)
+            print(f"DEBUG SECTIONS: Producto '{detalle.nombre_producto}' agregado a sección actual (título='{seccion_actual['titulo']}')")
     
-    # Agregar la última sección si tiene productos
-    if seccion_actual['productos']:
+    # Agregar la última sección (con o sin productos)
+    if seccion_actual['titulo'] or seccion_actual['productos']:
+        print(f"DEBUG SECTIONS: Guardando última sección: título='{seccion_actual['titulo']}', productos={len(seccion_actual['productos'])}")
         secciones.append(seccion_actual)
     
     # Si no hay títulos, crear una sección por defecto
     if not secciones:
-        productos_sin_seccion = [d for d in detalles_cotizacion if d.tipo == 'producto']
+        productos_sin_seccion = [d for d in detalles_cotizacion if getattr(d, 'tipo', 'producto') == 'producto']
         if productos_sin_seccion:
+            print(f"DEBUG SECTIONS: Creando sección por defecto con {len(productos_sin_seccion)} productos")
             secciones.append({'titulo': None, 'productos': productos_sin_seccion})
     
     print(f"DEBUG: Secciones organizadas: {len(secciones)} secciones encontradas")

@@ -1345,7 +1345,7 @@
                                        style="background: transparent; border: none; color: var(--apple-label); font-weight: 600; font-size: 1.1rem; text-align: center; width: calc(100% - 40px);" 
                                        placeholder="Título de la sección">
                                 <input type="hidden" name="titulos[${titleCounter}][type]" value="title">
-                                <input type="hidden" name="titulos[${titleCounter}][position]" value="${index}">
+                                <input type="hidden" name="titulos[${titleCounter}][position]" value="${tbody.rows.length}">
                                 <button type="button" 
                                         onclick="removeRow('${rowId}')" 
                                         class="text-red-400 hover:text-red-600 text-xl font-bold leading-none" 
