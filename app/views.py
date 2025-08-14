@@ -1413,6 +1413,46 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                         productos_data[index] = {}
                     productos_data[index][field] = value
 
+            # También recopilar títulos para crear orden combinado
+            titulos_data = {}
+            for key, value in request.POST.items():
+                if key.startswith('titulos['):
+                    parts = key.split('[')
+                    index = parts[1].split(']')[0]
+                    field = parts[2].split(']')[0]
+                    if index not in titulos_data:
+                        titulos_data[index] = {}
+                    titulos_data[index][field] = value
+            
+            # Crear lista combinada en orden del DOM
+            elementos_combinados = []
+            
+            # Agregar títulos con su posición
+            for titulo_index, titulo_data in titulos_data.items():
+                if titulo_data.get('type') == 'title' and titulo_data.get('texto'):
+                    posicion = int(titulo_data.get('position', 999))
+                    elementos_combinados.append({
+                        'tipo': 'titulo',
+                        'posicion': posicion,
+                        'datos': titulo_data
+                    })
+            
+            # Agregar productos (su índice es su posición)
+            for producto_index, producto_data in productos_data.items():
+                elementos_combinados.append({
+                    'tipo': 'producto', 
+                    'posicion': int(producto_index),
+                    'datos': producto_data
+                })
+            
+            # Ordenar por posición
+            elementos_combinados.sort(key=lambda x: x['posicion'])
+            
+            print(f"DEBUG ORDER: Elementos en orden: {len(elementos_combinados)} elementos")
+            for i, elemento in enumerate(elementos_combinados):
+                print(f"DEBUG ORDER: {i+1}. Tipo: {elemento['tipo']}, Posición: {elemento['posicion']}")
+            
+            # Mantener productos_list para compatibilidad con el cálculo de totales
             productos_list = [productos_data[key] for key in sorted(productos_data.keys(), key=int)]
             print(f"DEBUG: productos_list before saving details: {productos_list}")
 
@@ -1462,69 +1502,60 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             cotizacion.save(update_fields=['subtotal', 'iva_rate', 'iva_amount', 'total', 'descuento_visible', 'tipo_cotizacion', 'oportunidad'])
             print(f"DEBUG: Quote totals updated. Subtotal: {cotizacion.subtotal}, IVA: {cotizacion.iva_amount}, Total: {cotizacion.total}, Quote Type: {cotizacion.tipo_cotizacion}")
             
-            for item_data in productos_list:
-                try:
-                    # Manejo seguro del precio unitario
-                    precio_str = str(item_data.get('precio', '0.00')).strip()
-                    if not precio_str or precio_str == '':
-                        precio_str = '0.00'
-                    precio_unitario = Decimal(precio_str)
-                    
-                    # Manejo seguro del descuento
-                    descuento_str = str(item_data.get('descuento', '0.00')).strip()
-                    if not descuento_str or descuento_str == '':
-                        descuento_str = '0.00'
-                    descuento_porcentaje = Decimal(descuento_str)
-                    
-                    DetalleCotizacion.objects.create(
-                        cotizacion=cotizacion,
-                        nombre_producto=item_data.get('nombre_producto', ''),
-                        descripcion=item_data.get('descripcion', ''),
-                        cantidad=int(item_data.get('cantidad', 1)),
-                        precio_unitario=precio_unitario,
-                        descuento_porcentaje=descuento_porcentaje,
-                        marca=item_data.get('marca', ''),
-                        no_parte=item_data.get('no_parte', '')
-                    )
-                    print(f"DEBUG: Product detail created: {item_data.get('nombre_producto')}")
-                except (ValueError, TypeError, decimal.InvalidOperation) as e:
-                    cotizacion.delete()
-                    return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Invalid product data in row. Error: {e}'}]}}, status=400)
-
-            # Procesar títulos de sección enviados desde JavaScript
-            titulos_data = {}
-            for key, value in request.POST.items():
-                if key.startswith('titulos['):
-                    parts = key.split('[')
-                    index = parts[1].split(']')[0]
-                    field = parts[2].split(']')[0]
-
-                    if index not in titulos_data:
-                        titulos_data[index] = {}
-                    titulos_data[index][field] = value
-
-            titulos_list = [titulos_data[key] for key in sorted(titulos_data.keys(), key=int)]
-            print(f"DEBUG: titulos_list before saving: {titulos_list}")
-
-            for titulo_data in titulos_list:
-                try:
-                    if titulo_data.get('type') == 'title' and titulo_data.get('texto'):
+            # Guardar elementos en orden correcto (títulos Y productos)
+            for elemento in elementos_combinados:
+                if elemento['tipo'] == 'titulo':
+                    titulo_data = elemento['datos']
+                    try:
+                        if titulo_data.get('type') == 'title' and titulo_data.get('texto'):
+                            DetalleCotizacion.objects.create(
+                                cotizacion=cotizacion,
+                                nombre_producto=titulo_data.get('texto', ''),
+                                descripcion=titulo_data.get('texto', ''),
+                                cantidad=0,
+                                precio_unitario=Decimal('0.00'),
+                                descuento_porcentaje=Decimal('0.00'),
+                                marca='',
+                                no_parte='',
+                                tipo='titulo'
+                            )
+                            print(f"DEBUG ORDER: Title created: {titulo_data.get('texto')}")
+                    except Exception as e:
+                        print(f"WARNING: Error creating title {titulo_data}: {e}")
+                        
+                else:  # producto
+                    item_data = elemento['datos']
+                    try:
+                        # Manejo seguro del precio unitario
+                        precio_str = str(item_data.get('precio', '0.00')).strip()
+                        if not precio_str or precio_str == '':
+                            precio_str = '0.00'
+                        precio_unitario = Decimal(precio_str)
+                        
+                        # Manejo seguro del descuento
+                        descuento_str = str(item_data.get('descuento', '0.00')).strip()
+                        if not descuento_str or descuento_str == '':
+                            descuento_str = '0.00'
+                        descuento_porcentaje = Decimal(descuento_str)
+                        
                         DetalleCotizacion.objects.create(
                             cotizacion=cotizacion,
-                            nombre_producto=titulo_data.get('texto', ''),  # Usar el texto del título como nombre
-                            descripcion=titulo_data.get('texto', ''),     # También en descripción
-                            cantidad=0,  # Los títulos no tienen cantidad
-                            precio_unitario=Decimal('0.00'),  # Los títulos no tienen precio
-                            descuento_porcentaje=Decimal('0.00'),  # Los títulos no tienen descuento
-                            marca='',  # Los títulos no tienen marca
-                            no_parte='',  # Los títulos no tienen número de parte
-                            tipo='titulo'  # Marcar como título
+                            nombre_producto=item_data.get('nombre_producto', ''),
+                            descripcion=item_data.get('descripcion', ''),
+                            cantidad=int(item_data.get('cantidad', 1)),
+                            precio_unitario=precio_unitario,
+                            descuento_porcentaje=descuento_porcentaje,
+                            marca=item_data.get('marca', ''),
+                            no_parte=item_data.get('no_parte', ''),
+                            tipo='producto'
                         )
-                        print(f"DEBUG: Title created: {titulo_data.get('texto')}")
-                except Exception as e:
-                    print(f"WARNING: Error processing title {titulo_data}: {e}")
-                    # No eliminar la cotización por errores en títulos, solo continuar
+                        print(f"DEBUG ORDER: Product created: {item_data.get('nombre_producto')}")
+                    except (ValueError, TypeError, decimal.InvalidOperation) as e:
+                        cotizacion.delete()
+                        return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Invalid product data in row. Error: {e}'}]}}, status=400)
 
+            # Los títulos ya se procesaron en orden combinado arriba
+            print(f"DEBUG: Todos los elementos (productos y títulos) fueron guardados en orden correcto")
             
 
             pdf_url = reverse('generate_cotizacion_pdf', args=[cotizacion.id])
