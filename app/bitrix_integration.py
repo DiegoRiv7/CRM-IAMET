@@ -691,8 +691,10 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
                     import traceback
                     traceback.print_exc()
                 
-                print(f"DEBUG Bitrix: Storage no encontrado en intento {attempt + 1}. Reintentando en {retry_delay} segundos...")
-                time.sleep(retry_delay) # Wait before retrying
+                # Solo reintentar si no se encontró storage exitosamente
+                if not project_storage_id:
+                    print(f"DEBUG Bitrix: Storage no encontrado en intento {attempt + 1}. Reintentando en {retry_delay} segundos...")
+                    time.sleep(retry_delay) # Wait before retrying
 
             except requests.exceptions.RequestException as e:
                 print(f"DEBUG Bitrix: Excepción en intento {attempt + 1} al obtener storage: {e}")
