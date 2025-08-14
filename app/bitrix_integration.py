@@ -752,7 +752,9 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
             
             folder_data = {
                 'id': root_folder_id,
-                'name': 'Volumetrías'
+                'data': {
+                    'NAME': 'Volumetrías'
+                }
             }
             
             print(f"DEBUG Bitrix: URL crear carpeta: {create_folder_url}")
@@ -803,10 +805,11 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
             print(f"DEBUG Bitrix: URL simplificada: {simple_upload_url}")
             print(f"DEBUG Bitrix: Intentando con root folder ID: {root_folder_id}")
             
-            # Formato simple - igual que funciona en cotizaciones
+            # Formato correcto con parámetro NAME requerido
             simple_data = {
                 'id': target_folder_id,  # Usar la carpeta correcta
-                'fileContent': [file_name, file_content_base64]
+                'fileContent': [file_name, file_content_base64],
+                'NAME': file_name  # Parámetro NAME requerido por Bitrix24
             }
             
             print(f"DEBUG Bitrix: Enviando petición simple...")
@@ -833,7 +836,8 @@ def upload_file_to_project_drive(project_id, file_name, file_content_base64, req
             print(f"DEBUG Bitrix: Intentando con storage ID como último recurso...")
             simple_data_storage = {
                 'id': project_storage_id,
-                'fileContent': [file_name, file_content_base64]
+                'fileContent': [file_name, file_content_base64],
+                'NAME': file_name  # Parámetro NAME requerido por Bitrix24
             }
             
             response2 = requests.post(simple_upload_url, json=simple_data_storage, timeout=20)
