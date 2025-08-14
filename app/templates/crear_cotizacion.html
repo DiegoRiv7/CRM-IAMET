@@ -732,7 +732,7 @@
             newRow.id = rowId;
             newRow.className = 'product-row'; // Add class for identification
             newRow.innerHTML = `
-                <td>${newRowNumber}</td>
+                <td>1</td>
                 <td style="display: none;"><input type="text" id="marca_${newRowNumber}" name="productos[${newRowNumber}][marca]" class="input-field" placeholder="Marca" value="${marca}"></td>
                 <td><input type="text" id="no_parte_${newRowNumber}" name="productos[${newRowNumber}][no_parte]" class="input-field" placeholder="No. Parte" value="${noParte}"></td>
                 <td><textarea id="descripcion_producto_${newRowNumber}" name="productos[${newRowNumber}][descripcion]" class="textarea-field" placeholder="Descripción detallada del producto" oninput="calculateTotals()">${description}</textarea></td>
@@ -751,6 +751,7 @@
             const isDiscountVisible = document.getElementById('descuento_visible').value === 'true';
             newRow.querySelector('.descuento-cell').style.display = isDiscountVisible ? '' : 'none';
 
+            updateRowNumbers(); // Update row numbers after adding
             calculateTotals(); // Recalculate totals when adding a row
         }
 
@@ -787,6 +788,8 @@
             `;
             
             tbody.appendChild(newRow);
+            
+            updateRowNumbers(); // Update row numbers after adding title
             
             // Auto-focus on the title input for immediate editing
             setTimeout(() => {
@@ -843,15 +846,28 @@
             const row = document.getElementById(id);
             if (row) {
                 row.remove();
-                updateRowNumbers();
+                updateRowNumbers(); // Update row numbers after removing
                 calculateTotals(); // Recalculate totals when removing a row
             }
         }
 
         function updateRowNumbers() {
-            const rows = document.querySelectorAll('#productos-tbody tr.product-row');
-            rows.forEach((row, index) => {
-                row.cells[0].textContent = index + 1;
+            const allRows = document.querySelectorAll('#productos-tbody tr');
+            let currentSection = 1;
+            let productCountInSection = 0;
+            
+            allRows.forEach((row) => {
+                if (row.classList.contains('title-row')) {
+                    // Es un título - reiniciar contador de productos
+                    if (productCountInSection > 0) {
+                        currentSection++;
+                    }
+                    productCountInSection = 0;
+                } else if (row.classList.contains('product-row')) {
+                    // Es un producto - incrementar contador y actualizar número
+                    productCountInSection++;
+                    row.cells[0].textContent = productCountInSection;
+                }
             });
         }
 
@@ -1306,7 +1322,13 @@
             const detalles_existentes = {{ detalles_cotizacion|safe }};
             if (detalles_existentes && detalles_existentes.length > 0) {
                 detalles_existentes.forEach(d => {
-                    addRow(d.marca, d.no_parte, d.descripcion, d.cantidad, d.precio, d.descuento, d.nombre_producto);
+                    if (d.tipo === 'titulo') {
+                        // Es un título, usar addTitleRow con el nombre del producto como título
+                        addTitleRow(d.nombre_producto);
+                    } else {
+                        // Es un producto normal, usar addRow
+                        addRow(d.marca, d.no_parte, d.descripcion, d.cantidad, d.precio, d.descuento, d.nombre_producto);
+                    }
                 });
                 // Recalcular totales después de cargar todos los productos
                 calculateTotals();

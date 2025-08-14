@@ -608,6 +608,10 @@ def view_cotizacion_pdf(request, cotizacion_id):
             secciones.append({'titulo': None, 'productos': productos_sin_seccion})
     
     print(f"DEBUG: Secciones organizadas en view_cotizacion_pdf: {len(secciones)} secciones encontradas")
+    for i, seccion in enumerate(secciones):
+        print(f"DEBUG: Sección {i+1}: titulo='{seccion['titulo']}', productos={len(seccion['productos'])}")
+        for j, producto in enumerate(seccion['productos']):
+            print(f"  Producto {j+1}: {producto.nombre_producto} (tipo: {getattr(producto, 'tipo', 'NO_DEFINIDO')})")
 
     pdf_name_raw = cotizacion.nombre_cotizacion or f"Cotizacion_{cotizacion.id}"
     pdf_name = "".join(c for c in pdf_name_raw if c.isalnum() or c in ('_', '-')).strip().replace(' ', '_')
@@ -1651,6 +1655,7 @@ def editar_cotizacion_view(request, cotizacion_id):
         'cantidad': d.cantidad,
         'precio': str(d.precio_unitario),
         'descuento': str(d.descuento_porcentaje),
+        'tipo': getattr(d, 'tipo', 'producto') or 'producto',  # Incluir el tipo (producto o titulo)
     } for d in detalles_originales]
 
     # Obtener todos los clientes para el dropdown
@@ -1765,6 +1770,12 @@ def generate_cotizacion_pdf(request, cotizacion_id):
     detalles_cotizacion = DetalleCotizacion.objects.filter(cotizacion=cotizacion).order_by('id')
     iva_rate_percentage = (cotizacion.iva_rate * Decimal('100')).quantize(Decimal('1'))
     
+    # DEBUG: Mostrar todos los detalles antes de procesar
+    print(f"DEBUG: Total detalles encontrados: {len(detalles_cotizacion)}")
+    for detalle in detalles_cotizacion:
+        tipo_actual = getattr(detalle, 'tipo', 'NO_DEFINIDO')
+        print(f"DEBUG: Detalle ID={detalle.id}, nombre='{detalle.nombre_producto}', tipo='{tipo_actual}'")
+    
     # Organizar productos en secciones basadas en títulos
     secciones = []
     seccion_actual = {'titulo': None, 'productos': []}
@@ -1794,6 +1805,10 @@ def generate_cotizacion_pdf(request, cotizacion_id):
             secciones.append({'titulo': None, 'productos': productos_sin_seccion})
     
     print(f"DEBUG: Secciones organizadas: {len(secciones)} secciones encontradas")
+    for i, seccion in enumerate(secciones):
+        print(f"DEBUG: Sección {i+1}: titulo='{seccion['titulo']}', productos={len(seccion['productos'])}")
+        for j, producto in enumerate(seccion['productos']):
+            print(f"  Producto {j+1}: {producto.nombre_producto} (tipo: {getattr(producto, 'tipo', 'NO_DEFINIDO')})")
 
     pdf_name_raw = cotizacion.nombre_cotizacion or f"Cotizacion_{cotizacion.id}"
     pdf_name = "".join(c for c in pdf_name_raw if c.isalnum() or c in ('_', '-')).strip().replace(' ', '_')

@@ -328,15 +328,54 @@
 
     <!-- Tablas de productos por sección -->
     <div class="products-section">
-      {% for seccion in secciones %}
-        <!-- Título de la sección (si existe) -->
-        {% if seccion.titulo %}
-        <div class="section-title">
-          <h3>{{ seccion.titulo }}</h3>
-        </div>
-        {% endif %}
-        
-        <!-- Tabla de productos de esta sección -->
+      {% if secciones %}
+        {% for seccion in secciones %}
+          <!-- Título de la sección (si existe) -->
+          {% if seccion.titulo %}
+          <div class="section-title">
+            <h3>{{ seccion.titulo }}</h3>
+          </div>
+          {% endif %}
+          
+          <!-- Tabla de productos de esta sección -->
+          <table class="products-table">
+            <thead>
+              <tr>
+                <th>No. Partida</th>
+                <th>PRODUCTO</th>
+                <th>DESCRIPCIÓN</th>
+                <th>CANTIDAD</th>
+                <th>PRECIO UNITARIO</th>
+                {% if cotizacion.descuento_visible %}
+                <th>DESC. (%)</th>
+                {% endif %}
+                <th>TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for detalle in seccion.productos %}
+              <tr>
+                <td class="text-center">{{ forloop.counter }}</td>
+                <td class="product-name">{{ detalle.nombre_producto }}{% if detalle.no_parte %}<br><small>({{ detalle.no_parte }})</small>{% endif %}</td>
+                <td>{{ detalle.descripcion|default:"-"|linebreaksbr }}</td>
+                <td class="text-center">{{ detalle.cantidad }}</td>
+                <td class="text-right">${{ detalle.precio_unitario|floatformat:2 }}</td>
+                {% if cotizacion.descuento_visible %}
+                <td class="text-center">{{ detalle.descuento_porcentaje|floatformat:2 }}%</td>
+                {% endif %}
+                <td class="text-right">${{ detalle.get_total_item|floatformat:2 }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          
+          <!-- Espacio entre tablas -->
+          {% if not forloop.last %}
+          <div style="margin-bottom: 25px;"></div>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+        <!-- Fallback: Tabla tradicional si no hay secciones -->
         <table class="products-table">
           <thead>
             <tr>
@@ -352,9 +391,9 @@
             </tr>
           </thead>
           <tbody>
-            {% for detalle in seccion.productos %}
+            {% for detalle in detalles_cotizacion %}
             <tr>
-              <td class="text-center">{{ forloop.parentloop.counter }}.{{ forloop.counter }}</td>
+              <td class="text-center">{{ forloop.counter }}</td>
               <td class="product-name">{{ detalle.nombre_producto }}{% if detalle.no_parte %}<br><small>({{ detalle.no_parte }})</small>{% endif %}</td>
               <td>{{ detalle.descripcion|default:"-"|linebreaksbr }}</td>
               <td class="text-center">{{ detalle.cantidad }}</td>
@@ -367,12 +406,7 @@
             {% endfor %}
           </tbody>
         </table>
-        
-        <!-- Espacio entre tablas -->
-        {% if not forloop.last %}
-        <div style="margin-bottom: 25px;"></div>
-        {% endif %}
-      {% endfor %}
+      {% endif %}
     </div>
 
     <!-- Totales -->
