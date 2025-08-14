@@ -239,31 +239,21 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
         
-        /* Estilos para las filas de título */
+        /* Estilos para las filas de título - Discreto como filas normales */
         .title-row {
-            background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-blue-light) 100%) !important;
-            color: white !important;
+            background-color: var(--apple-background-secondary) !important;
         }
         
         .title-row td {
-            border: none !important;
             font-weight: 600 !important;
             font-size: 1.1rem !important;
             text-align: center !important;
             padding: 1rem !important;
+            color: var(--apple-label) !important;
         }
         
         .title-row:hover {
-            background: linear-gradient(135deg, var(--apple-blue-dark) 0%, var(--apple-blue) 100%) !important;
-        }
-        
-        /* Estilo específico para tema claro */
-        .light-theme .title-row {
-            background: linear-gradient(135deg, var(--apple-blue) 0%, #FF8FB3 100%) !important;
-        }
-        
-        .light-theme .title-row:hover {
-            background: linear-gradient(135deg, #E55A87 0%, var(--apple-blue) 100%) !important;
+            background-color: var(--apple-background-tertiary) !important;
         }
         .product-table tbody tr {
             background-color: var(--apple-background-secondary);
@@ -482,9 +472,9 @@
                 </div>
 
                 <div class="mb-4">
-                    <button type="button" id="show-discount-btn" onclick="toggleDiscountColumn()" class="btn-secondary" style="display:none;">Mostrar Columna de Descuento</button>
+                    <button type="button" id="show-discount-btn" onclick="toggleDiscountColumn()" class="btn-secondary">+ Mostrar Columna de Descuento</button>
                 </div>
-                <input type="hidden" name="descuento_visible" id="descuento_visible" value="true">
+                <input type="hidden" name="descuento_visible" id="descuento_visible" value="false">
                 <div class="table-container">
                     <table class="product-table">
                         <thead>
@@ -495,7 +485,7 @@
                                 <th class="w-1/4">Descripción</th>
                                 <th class="w-1/12">Cantidad</th>
                                 <th class="w-1/8">Precio Unitario</th>
-                                <th class="w-1/12" id="descuento-header">
+                                <th class="w-1/12" id="descuento-header" style="display: none;">
                                     Desc. Unitario (%)
                                     <button type="button" onclick="toggleDiscountColumn()" class="text-red-400 hover:text-red-600 font-bold ml-2" title="Ocultar columna de descuento">&times;</button>
                                 </th>
@@ -714,7 +704,14 @@
 
             // Toggle buttons
             document.getElementById('show-discount-btn').style.display = newVisibility ? 'none' : 'inline-block';
-            document.querySelector('#descuento-header button').style.display = newVisibility ? 'inline-block' : 'none';
+            const headerButton = document.querySelector('#descuento-header button');
+            if (headerButton) {
+                headerButton.style.display = newVisibility ? 'inline-block' : 'none';
+            }
+
+            // Update button text
+            const showBtn = document.getElementById('show-discount-btn');
+            showBtn.textContent = newVisibility ? '- Ocultar Columna de Descuento' : '+ Mostrar Columna de Descuento';
 
             // If hiding, set all discounts to 0 and recalculate
             if (!newVisibility) {
@@ -752,9 +749,7 @@
 
             // Ensure the new row's discount cell visibility matches the current state
             const isDiscountVisible = document.getElementById('descuento_visible').value === 'true';
-            if (!isDiscountVisible) {
-                newRow.querySelector('.descuento-cell').style.display = 'none';
-            }
+            newRow.querySelector('.descuento-cell').style.display = isDiscountVisible ? '' : 'none';
 
             calculateTotals(); // Recalculate totals when adding a row
         }
@@ -765,12 +760,8 @@
             titleCounter++;
             const rowId = `title-row-${titleCounter}`;
             
-            // Create title input dialog
-            let title = titleText;
-            if (!title) {
-                title = prompt('Ingresa el título de la sección:', 'EQUIPOS');
-                if (!title) return; // User cancelled
-            }
+            // Use default title if not provided
+            let title = titleText || 'NUEVA SECCIÓN';
             
             const newRow = document.createElement('tr');
             newRow.id = rowId;
@@ -782,14 +773,14 @@
                            name="titulos[${titleCounter}][texto]" 
                            value="${title}" 
                            class="input-field" 
-                           style="background: transparent; border: none; color: white; font-weight: 600; font-size: 1.1rem; text-align: center; width: calc(100% - 40px);" 
+                           style="background: transparent; border: none; color: var(--apple-label); font-weight: 600; font-size: 1.1rem; text-align: center; width: calc(100% - 40px);" 
                            placeholder="Título de la sección">
                     <input type="hidden" name="titulos[${titleCounter}][type]" value="title">
                     <input type="hidden" name="titulos[${titleCounter}][position]" value="${tbody.rows.length}">
                     <button type="button" 
                             onclick="removeRow('${rowId}')" 
-                            class="text-red-200 hover:text-red-400 text-xl font-bold leading-none" 
-                            style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                            class="text-red-400 hover:text-red-600 text-xl font-bold leading-none" 
+                            style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(255,0,0,0.1); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
                         &times;
                     </button>
                 </td>
@@ -1331,13 +1322,12 @@
             
             // Actualizar visibilidad de la columna de descuento
             const isDiscountVisible = '{{ cotizacion_original.descuento_visible|yesno:"true,false" }}' === 'true';
-            if (!isDiscountVisible) {
-                document.getElementById('descuento-header').style.display = 'none';
-                document.querySelectorAll('.descuento-cell').forEach(cell => {
-                    cell.style.display = 'none';
-                });
-                document.getElementById('show-discount-btn').style.display = 'inline-block';
-            }
+            document.getElementById('descuento_visible').value = isDiscountVisible ? 'true' : 'false';
+            document.getElementById('descuento-header').style.display = isDiscountVisible ? '' : 'none';
+            document.querySelectorAll('.descuento-cell').forEach(cell => {
+                cell.style.display = isDiscountVisible ? '' : 'none';
+            });
+            document.getElementById('show-discount-btn').style.display = isDiscountVisible ? 'none' : 'inline-block';
             {% endif %}
 
             document.getElementById('add-row-btn').addEventListener('click', () => addRow('', '', '', 1, 0, 0));
