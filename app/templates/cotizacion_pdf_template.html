@@ -157,6 +157,7 @@
       background: #f8f9fa;
       border-left: 4px solid #333;
       border-bottom: 1px solid #ddd;
+      text-align: center;
     }
     
     .section-title h3 {
@@ -203,6 +204,16 @@
     .product-name {
       font-weight: 600;
       color: #333;
+      line-height: 1.4;
+    }
+    
+    .product-name small {
+      display: block;
+      font-weight: 400;
+      color: #666;
+      font-size: 11px;
+      margin-top: 3px;
+      line-height: 1.3;
     }
     
     .delivery-time {
@@ -356,7 +367,7 @@
               {% for detalle in seccion.productos %}
               <tr>
                 <td class="text-center">{{ forloop.counter }}</td>
-                <td class="product-name">{{ detalle.nombre_producto }}{% if detalle.no_parte %}<br><small>({{ detalle.no_parte }})</small>{% endif %}</td>
+                <td class="product-name">{{ detalle.nombre_producto }}{% if detalle.no_parte %}<br><small>{{ detalle.no_parte }}</small>{% endif %}</td>
                 <td>{{ detalle.descripcion|default:"-"|linebreaksbr }}</td>
                 <td class="text-center">{{ detalle.cantidad }}</td>
                 <td class="text-right">${{ detalle.precio_unitario|floatformat:2 }}</td>
@@ -394,7 +405,7 @@
             {% for detalle in detalles_cotizacion %}
             <tr>
               <td class="text-center">{{ forloop.counter }}</td>
-              <td class="product-name">{{ detalle.nombre_producto }}{% if detalle.no_parte %}<br><small>({{ detalle.no_parte }})</small>{% endif %}</td>
+              <td class="product-name">{{ detalle.nombre_producto }}{% if detalle.no_parte %}<br><small>{{ detalle.no_parte }}</small>{% endif %}</td>
               <td>{{ detalle.descripcion|default:"-"|linebreaksbr }}</td>
               <td class="text-center">{{ detalle.cantidad }}</td>
               <td class="text-right">${{ detalle.precio_unitario|floatformat:2 }}</td>

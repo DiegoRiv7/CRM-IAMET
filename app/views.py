@@ -175,36 +175,32 @@ def bienvenida(request):
     # Fecha actual
     fecha_actual = timezone.localtime(timezone.now()).strftime('%A, %d de %B de %Y')
 
-    # Usuario del mes: más ventas cerradas (probabilidad 100%) del mes ANTERIOR, solo vendedores
+    # Usuario del mes: quien más oportunidades ha creado en el mes ACTUAL (calendario)
+    # Se calcula desde el día 1 del mes actual hasta hoy
     today = date.today()
     inicio_mes_actual = today.replace(day=1)
-    # Calcular el inicio y fin del mes anterior
-    inicio_mes_anterior = (inicio_mes_actual - relativedelta(months=1))
-    fin_mes_anterior = inicio_mes_actual - relativedelta(days=1)
-    ventas_mes = (
-        TodoItem.objects.filter(probabilidad_cierre=100, fecha_creacion__date__gte=inicio_mes_anterior, fecha_creacion__date__lte=fin_mes_anterior)
+    oportunidades_mes = (
+        TodoItem.objects.filter(fecha_creacion__date__gte=inicio_mes_actual, fecha_creacion__date__lte=today)
         .exclude(usuario__groups__name='Supervisores')
         .values('usuario')
-        .annotate(ventas_cerradas=Count('id'))
-        .order_by('-ventas_cerradas')
+        .annotate(oportunidades_creadas=Count('id'))
+        .order_by('-oportunidades_creadas')
     )
     usuario_mes = None
-    monto_vendido_mes = 0
-    if ventas_mes:
-        user_id = ventas_mes[0]['usuario']
+    if oportunidades_mes:
+        user_id = oportunidades_mes[0]['usuario']
         user = User.objects.get(id=user_id)
-        # Calcular el monto total vendido por este usuario en el mes anterior (probabilidad 100%)
-        monto_vendido_mes = TodoItem.objects.filter(
-            probabilidad_cierre=100,
-            fecha_creacion__date__gte=inicio_mes_anterior,
-            fecha_creacion__date__lte=fin_mes_anterior,
+        # Calcular el monto total de oportunidades creadas por este usuario en el mes actual
+        monto_total_mes = TodoItem.objects.filter(
+            fecha_creacion__date__gte=inicio_mes_actual,
+            fecha_creacion__date__lte=today,
             usuario=user
         ).aggregate(total=Sum('monto'))['total'] or 0
         usuario_mes = {
             'nombre': user.get_full_name() or user.username,
             'avatar_url': f'https://ui-avatars.com/api/?name={user.get_full_name() or user.username}&background=38bdf8&color=fff',
-            'ventas_cerradas': ventas_mes[0]['ventas_cerradas'],
-            'monto_vendido_mes': monto_vendido_mes,
+            'oportunidades_creadas': oportunidades_mes[0]['oportunidades_creadas'],
+            'monto_total_mes': monto_total_mes,
         }
 
     # Usuario del día: más oportunidades registradas hoy, solo vendedores

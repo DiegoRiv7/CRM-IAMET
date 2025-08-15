@@ -573,7 +573,8 @@
                      class="apple-avatar mx-auto mb-4"/>
                 <h5 class="apple-headline mb-2">{{ usuario_mes.nombre }}</h5>
                 <p class="apple-body">
-                    Monto vendido: <span style="color: var(--apple-blue); font-weight: 500;">${{ usuario_mes.monto_vendido_mes|format_currency_es }}</span>
+                    Oportunidades creadas: <span style="color: var(--apple-blue); font-weight: 500;">{{ usuario_mes.oportunidades_creadas }}</span><br>
+                    Monto total: <span style="color: var(--apple-blue); font-weight: 500;">${{ usuario_mes.monto_total_mes|format_currency_es }}</span>
                 </p>
             {% else %}
                 <div class="apple-avatar mx-auto mb-4 flex items-center justify-center" style="background: var(--apple-background-tertiary);">
