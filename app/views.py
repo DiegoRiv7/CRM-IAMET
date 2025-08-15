@@ -1548,9 +1548,9 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                                 marca='',
                                 no_parte='',
                                 tipo='titulo',
-                                orden=elemento['posicion']
+                                orden=elemento['posicion_final']
                             )
-                            print(f"DEBUG ORDER: Title created: {titulo_data.get('texto')}")
+                            print(f"DEBUG ORDER: Title created: {titulo_data.get('texto')} with orden {elemento['posicion_final']}")
                     except Exception as e:
                         print(f"WARNING: Error creating title {titulo_data}: {e}")
                         
@@ -1579,9 +1579,9 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                             marca=item_data.get('marca', ''),
                             no_parte=item_data.get('no_parte', ''),
                             tipo='producto',
-                            orden=elemento['posicion']
+                            orden=elemento['posicion_final']
                         )
-                        print(f"DEBUG ORDER: Product created: {item_data.get('nombre_producto')}")
+                        print(f"DEBUG ORDER: Product created: {item_data.get('nombre_producto')} with orden {elemento['posicion_final']}")
                     except (ValueError, TypeError, decimal.InvalidOperation) as e:
                         cotizacion.delete()
                         return JsonResponse({'success': False, 'errors': {'__all__': [{'message': f'Invalid product data in row. Error: {e}'}]}}, status=400)
