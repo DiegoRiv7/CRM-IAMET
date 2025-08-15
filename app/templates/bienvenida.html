@@ -669,7 +669,7 @@
                             <span style="font-weight: 500;">{{ o.nombre|truncatechars:30 }}</span>
                         </td>
                         <td data-label="Cliente">
-                            {{ o.get_nombre_cliente|default:'Sin cliente asignado'|truncatechars:20 }}
+                            {{ o.cliente|default:'Sin cliente asignado'|truncatechars:20 }}
                         </td>
                         <td data-label="Monto">
                             <span style="font-weight: 500; color: var(--apple-blue);">

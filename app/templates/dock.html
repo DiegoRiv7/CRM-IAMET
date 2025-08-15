@@ -1790,61 +1790,6 @@ window.addEventListener('error', function(e) {
             }, 250);
         });
         
-        // ==================== ASSISTANT BOT BUTTON HANDLERS ====================
-        // Add event listeners for all assistant buttons in all dock positions
-        const assistantButtons = [
-            document.getElementById('assistant-btn'),
-            document.getElementById('assistant-btn-right'),
-            document.getElementById('assistant-btn-top'),
-            document.getElementById('assistant-btn-bottom')
-        ].filter(btn => btn); // Remove null elements
-        
-        assistantButtons.forEach(btn => {
-            if (btn) {
-                btn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    originalConsole.log('🤖 Assistant button clicked!');
-                    
-                    // Wait a bit for scripts to load if needed
-                    const tryShowBot = () => {
-                        if (typeof window.showNethiveAssistant === 'function') {
-                            originalConsole.log('🤖 Calling showNethiveAssistant...');
-                            window.showNethiveAssistant();
-                            return true;
-                        }
-                        return false;
-                    };
-                    
-                    // Try immediately first
-                    if (!tryShowBot()) {
-                        originalConsole.warn('⚠️ showNethiveAssistant not ready, trying manual opening...');
-                        
-                        // Try manual opening
-                        const modal = document.getElementById('nethive-assistant-modal');
-                        const container = document.getElementById('nethive-bot-container');
-                        
-                        if (modal && container) {
-                            originalConsole.log('🤖 Manual modal opening...');
-                            container.classList.remove('hidden');
-                            modal.classList.remove('hidden');
-                        } else {
-                            originalConsole.error('❌ Bot elements not found, retrying in 500ms...');
-                            // Try again after a delay
-                            setTimeout(() => {
-                                if (!tryShowBot()) {
-                                    const modal2 = document.getElementById('nethive-assistant-modal');
-                                    const container2 = document.getElementById('nethive-bot-container');
-                                    if (modal2 && container2) {
-                                        container2.classList.remove('hidden');
-                                        modal2.classList.remove('hidden');
-                                    }
-                                }
-                            }, 500);
-                        }
-                    }
-                });
-            }
-        });
         
         } catch (error) {
             originalConsole.error('Error initializing design panel:', error);
