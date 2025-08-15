@@ -1547,7 +1547,8 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                                 descuento_porcentaje=Decimal('0.00'),
                                 marca='',
                                 no_parte='',
-                                tipo='titulo'
+                                tipo='titulo',
+                                orden=elemento['posicion']
                             )
                             print(f"DEBUG ORDER: Title created: {titulo_data.get('texto')}")
                     except Exception as e:
@@ -1577,7 +1578,8 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                             descuento_porcentaje=descuento_porcentaje,
                             marca=item_data.get('marca', ''),
                             no_parte=item_data.get('no_parte', ''),
-                            tipo='producto'
+                            tipo='producto',
+                            orden=elemento['posicion']
                         )
                         print(f"DEBUG ORDER: Product created: {item_data.get('nombre_producto')}")
                     except (ValueError, TypeError, decimal.InvalidOperation) as e:
