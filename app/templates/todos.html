@@ -359,7 +359,7 @@
         <div class="flex items-center gap-4">
             <div class="apple-search-bar">
                 <svg class="apple-search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                <input id="searchOportunidad" type="text" placeholder="Buscar oportunidad..." class="apple-search-input">
+                <input id="searchOportunidad" type="text" placeholder="Buscar en todas las oportunidades..." class="apple-search-input" value="{{ search_query }}">
             </div>
             <a href="{% url 'crear_cotizacion' %}" class="apple-button">+ Nueva Cotización</a>
         </div>
@@ -423,12 +423,17 @@
     <div class="mt-6 flex items-center justify-between">
         <div class="text-sm apple-text-secondary">
             {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }}
+            {% if search_query %}
+            <span class="ml-2 px-2 py-1 bg-blue-600 text-white text-xs rounded">
+                Buscando: "{{ search_query }}"
+            </span>
+            {% endif %}
         </div>
         
         <div class="flex items-center space-x-2">
             <!-- Botón Anterior -->
             {% if page_obj.has_previous %}
-            <a href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}" 
+            <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}" 
                class="px-3 py-2 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-500">
                 ← Anterior
             </a>
@@ -445,7 +450,7 @@
             
             <!-- Botón Siguiente -->
             {% if page_obj.has_next %}
-            <a href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}" 
+            <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}" 
                class="px-3 py-2 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-500">
                 Siguiente →
             </a>
@@ -468,22 +473,24 @@ document.addEventListener('DOMContentLoaded', function() {
         // Debounce para evitar búsquedas excesivas
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
-            const filter = this.value.toLowerCase().trim();
-            const rows = document.querySelectorAll('.oportunidad-item');
+            const searchValue = this.value.trim();
             
-            if (filter === '') {
-                // Mostrar todas las filas si no hay filtro
-                rows.forEach(row => row.style.display = '');
-                return;
+            // Construir URL con búsqueda global
+            const url = new URL(window.location);
+            
+            if (searchValue === '') {
+                // Si no hay búsqueda, quitar el parámetro
+                url.searchParams.delete('search');
+                url.searchParams.delete('page'); // Resetear página
+            } else {
+                // Agregar búsqueda y resetear página
+                url.searchParams.set('search', searchValue);
+                url.searchParams.delete('page'); // Ir a página 1
             }
             
-            // Búsqueda optimizada
-            rows.forEach(row => {
-                const nameCell = row.querySelector('td:first-child a');
-                const name = nameCell ? nameCell.textContent.toLowerCase() : '';
-                row.style.display = name.includes(filter) ? '' : 'none';
-            });
-        }, 150); // Esperar 150ms antes de buscar
+            // Recargar página con nueva búsqueda
+            window.location.href = url.toString();
+        }, 500); // Esperar 500ms para evitar demasiadas recargas
     });
 });
 </script>

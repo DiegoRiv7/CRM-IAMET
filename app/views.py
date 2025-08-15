@@ -743,6 +743,12 @@ def todos (request):
         # Ordenar por fecha_creación con índice optimizado
         items = items.order_by('-fecha_creacion')
 
+    # Manejar búsqueda global ANTES de la paginación
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        # Búsqueda global en todas las oportunidades
+        items = items.filter(oportunidad__icontains=search_query)
+
     # Implementar paginación optimizada - 20 elementos por página
     paginator = Paginator(items, 20)
     page_number = request.GET.get('page', 1)
@@ -755,12 +761,13 @@ def todos (request):
     except EmptyPage:
         # Si la página está fuera de rango, mostrar la última página
         page_obj = paginator.page(paginator.num_pages)
-
+    
     context = {
         "items": page_obj,  # Ahora items es el objeto page con paginación
         "page_obj": page_obj,  # También pasamos el objeto página para los controles
         "filter_form": filter_form,
         "is_supervisor": is_supervisor(request.user),
+        "search_query": search_query,  # Para mantener el valor en el input
     }
     return render (request, "todos.html", context)
 
