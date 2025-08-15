@@ -272,6 +272,7 @@ class DetalleCotizacion(models.Model):
     total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Total por Ítem")
     marca = models.CharField(max_length=50, choices=MARCA_CHOICES, blank=True, null=True, verbose_name="Marca")
     no_parte = models.CharField(max_length=100, blank=True, null=True, verbose_name="Número de Parte")
+    orden = models.PositiveIntegerField(default=0, verbose_name="Orden") # Nuevo campo para el orden
     
     # Campo para distinguir entre productos normales y títulos de sección
     TIPO_CHOICES = [
