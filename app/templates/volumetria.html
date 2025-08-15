@@ -80,7 +80,7 @@
             <!-- Título simplificado -->
             <div class="text-center mb-8">
                 <h1 class="text-3xl font-bold text-white mb-2">
-                    Elige el tipo de volumetría
+                    Selecciona el tipo de volumetría
                 </h1>
             </div>
 
@@ -108,9 +108,6 @@
                                 <button onclick="crearVolumetria('cctv')" class="apple-btn-primary flex-1 py-3 px-4 text-sm font-medium">
                                     Crear Volumetría
                                 </button>
-                                <button onclick="verVolumetrias('cctv')" class="apple-btn-secondary py-3 px-4 text-sm font-medium">
-                                    Ver Volumetrías
-                                </button>
                             </div>
                         </div>
 
@@ -132,9 +129,6 @@
                             <div class="flex space-x-3">
                                 <button onclick="crearVolumetria('nodos')" class="apple-btn-primary flex-1 py-3 px-4 text-sm font-medium">
                                     Crear Volumetría
-                                </button>
-                                <button onclick="verVolumetrias('nodos')" class="apple-btn-secondary py-3 px-4 text-sm font-medium">
-                                    Ver Volumetrías
                                 </button>
                             </div>
                         </div>
@@ -158,9 +152,6 @@
                                 <button onclick="crearVolumetria('acceso')" class="apple-btn-primary flex-1 py-3 px-4 text-sm font-medium">
                                     Crear Volumetría
                                 </button>
-                                <button onclick="verVolumetrias('acceso')" class="apple-btn-secondary py-3 px-4 text-sm font-medium">
-                                    Ver Volumetrías
-                                </button>
                             </div>
                         </div>
 
@@ -183,11 +174,15 @@
                                 <button onclick="crearVolumetria('general')" class="apple-btn-primary flex-1 py-3 px-4 text-sm font-medium">
                                     Crear Volumetría
                                 </button>
-                                <button onclick="verVolumetrias('general')" class="apple-btn-secondary py-3 px-4 text-sm font-medium">
-                                    Ver Volumetrías
-                                </button>
                             </div>
                         </div>
+                    </div>
+                    
+                    <!-- Botón Volver -->
+                    <div class="mt-8 text-center">
+                        <button onclick="window.history.back()" class="apple-btn-secondary py-3 px-6 text-sm font-medium">
+                            ← Volver
+                        </button>
                     </div>
 
                     <!-- Sección de acciones rápidas -->
@@ -207,7 +202,6 @@
             <!-- Footer de información -->
             <div class="mt-8 text-center">
                 <p class="text-sm apple-text-secondary">
-                    Acceso exclusivo para Ingenieros y Superusuarios | Sistema de Gestión de Ventas
                 </p>
             </div>
         </div>
@@ -1704,33 +1698,7 @@ let volumetriasAlmacenadas = {
 };
 
 // Función para ver volumetrías por tipo
-function verVolumetrias(tipo) {
-    console.log(`Mostrando volumetrías de tipo: ${tipo}`);
-    
-    let titulo = '';
-    let descripcion = '';
-    
-    switch(tipo) {
-        case 'cctv':
-            titulo = 'CCTV - Volumetrías Guardadas';
-            descripcion = 'Todas las volumetrías de sistemas de videovigilancia';
-            break;
-        case 'nodos':
-            titulo = 'Nodos de Red - Volumetrías Guardadas';
-            descripcion = 'Todas las volumetrías de infraestructura de red';
-            break;
-        case 'acceso':
-            titulo = 'Control de Acceso - Volumetrías Guardadas';
-            descripcion = 'Todas las volumetrías de sistemas de acceso';
-            break;
-        case 'general':
-            titulo = 'General - Volumetrías Guardadas';
-            descripcion = 'Todas las volumetrías personalizadas';
-            break;
-    }
-    
-    mostrarListaVolumetrias(tipo, titulo, descripcion);
-}
+// Función removida - ver volumetrías se maneja desde oportunidades
 
 // Función para mostrar la lista de volumetrías
 function mostrarListaVolumetrias(tipo, titulo, descripcion) {
