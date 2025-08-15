@@ -694,12 +694,14 @@
                     return;
                 }
                 
+                // Siempre prevenir el scroll cuando no estamos escribiendo
+                e.preventDefault();
+                
                 const currentTime = Date.now();
                 const timeDiff = currentTime - lastSpaceTime;
                 
                 // Double tap detected (within 400ms)
                 if (timeDiff < 400 && timeDiff > 50) {
-                    e.preventDefault();
                     openSpotlight();
                     lastSpaceTime = 0; // Reset
                     return;

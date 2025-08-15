@@ -4329,7 +4329,7 @@ def spotlight_search_api(request):
         # Búsqueda regular por ID como string
         cotizaciones_query |= Q(id__icontains=query)
     
-    cotizaciones = Cotizacion.objects.filter(cotizaciones_query).select_related('cliente', 'created_by')
+    cotizaciones = Cotizacion.objects.filter(cotizaciones_query).select_related('cliente', 'created_by', 'oportunidad')
     
     # Filtrar por permisos de usuario
     if not is_supervisor(request.user):
@@ -4339,6 +4339,13 @@ def spotlight_search_api(request):
         # Marcar si es una coincidencia exacta de número para priorizar
         is_exact_match = is_numeric_search and str(cotizacion.id) == numeric_query
         
+        # Si la cotización tiene una oportunidad asociada, ir a cotizaciones por oportunidad
+        # Si no, ir a la página general de cotizaciones
+        if cotizacion.oportunidad:
+            cotizacion_url = f'/app/cotizaciones/oportunidad/{cotizacion.oportunidad.id}/'
+        else:
+            cotizacion_url = f'/app/cotizaciones/'
+        
         results.append({
             'type': 'cotizacion',
             'id': cotizacion.id,
@@ -4347,7 +4354,7 @@ def spotlight_search_api(request):
             'description': f'Creada por {cotizacion.created_by.get_full_name() or cotizacion.created_by.username if cotizacion.created_by else "Usuario desconocido"}',
             'date': cotizacion.fecha_creacion.strftime('%d/%m/%Y'),
             'icon': 'document',
-            'url': f'/app/cotizaciones/',
+            'url': cotizacion_url,
             'priority': 1 if is_exact_match else 2,  # Para ordenamiento
             'actions': [
                 {'name': 'Ver', 'action': 'view', 'color': 'green'},
