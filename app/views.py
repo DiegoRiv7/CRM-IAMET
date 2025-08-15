@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login, logout
@@ -745,11 +746,24 @@ def todos (request):
     for item in items:
         print(f"DEBUG:    - ID: {item.id}, Oportunidad: {item.oportunidad}, Producto: {item.producto}, Usuario ID: {item.usuario.id}")
 
+    # Implementar paginación - 30 elementos por página
+    paginator = Paginator(items, 30)
+    page_number = request.GET.get('page', 1)
+    
+    try:
+        page_obj = paginator.get_page(page_number)
+    except PageNotAnInteger:
+        # Si la página no es un entero, mostrar la primera página
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        # Si la página está fuera de rango, mostrar la última página
+        page_obj = paginator.page(paginator.num_pages)
 
     context = {
-        "items":items,
+        "items": page_obj,  # Ahora items es el objeto page con paginación
+        "page_obj": page_obj,  # También pasamos el objeto página para los controles
         "filter_form": filter_form,
-        "is_supervisor": is_supervisor(request.user), # También pasamos esto al template de "todos"
+        "is_supervisor": is_supervisor(request.user),
     }
     return render (request, "todos.html", context)
 

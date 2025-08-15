@@ -417,6 +417,55 @@
             </tbody>
         </table>
     </div>
+    
+    <!-- Controles de paginación -->
+    {% if page_obj.has_other_pages %}
+    <div class="mt-6 flex items-center justify-between">
+        <div class="text-sm apple-text-secondary">
+            Mostrando {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ page_obj.paginator.count }} oportunidades
+        </div>
+        
+        <div class="flex items-center space-x-2">
+            <!-- Botón Anterior -->
+            {% if page_obj.has_previous %}
+            <a href="?{% if request.GET.area %}area={{ request.GET.area }}&{% endif %}{% if request.GET.producto %}producto={{ request.GET.producto }}&{% endif %}{% if request.GET.probabilidad_min %}probabilidad_min={{ request.GET.probabilidad_min }}&{% endif %}{% if request.GET.probabilidad_max %}probabilidad_max={{ request.GET.probabilidad_max }}&{% endif %}{% if request.GET.mes_cierre %}mes_cierre={{ request.GET.mes_cierre }}&{% endif %}{% if request.GET.orden_monto %}orden_monto={{ request.GET.orden_monto }}&{% endif %}page={{ page_obj.previous_page_number }}" 
+               class="px-3 py-2 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-500 transition-colors">
+                ← Anterior
+            </a>
+            {% else %}
+            <span class="px-3 py-2 text-sm font-medium text-gray-400 bg-gray-800 rounded-md cursor-not-allowed">
+                ← Anterior
+            </span>
+            {% endif %}
+            
+            <!-- Números de página -->
+            {% for page_number in page_obj.paginator.page_range %}
+                {% if page_number == page_obj.number %}
+                <span class="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md">
+                    {{ page_number }}
+                </span>
+                {% elif page_number|add:'-5' <= page_obj.number and page_number|add:'5' >= page_obj.number %}
+                <a href="?{% if request.GET.area %}area={{ request.GET.area }}&{% endif %}{% if request.GET.producto %}producto={{ request.GET.producto }}&{% endif %}{% if request.GET.probabilidad_min %}probabilidad_min={{ request.GET.probabilidad_min }}&{% endif %}{% if request.GET.probabilidad_max %}probabilidad_max={{ request.GET.probabilidad_max }}&{% endif %}{% if request.GET.mes_cierre %}mes_cierre={{ request.GET.mes_cierre }}&{% endif %}{% if request.GET.orden_monto %}orden_monto={{ request.GET.orden_monto }}&{% endif %}page={{ page_number }}" 
+                   class="px-3 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors">
+                    {{ page_number }}
+                </a>
+                {% endif %}
+            {% endfor %}
+            
+            <!-- Botón Siguiente -->
+            {% if page_obj.has_next %}
+            <a href="?{% if request.GET.area %}area={{ request.GET.area }}&{% endif %}{% if request.GET.producto %}producto={{ request.GET.producto }}&{% endif %}{% if request.GET.probabilidad_min %}probabilidad_min={{ request.GET.probabilidad_min }}&{% endif %}{% if request.GET.probabilidad_max %}probabilidad_max={{ request.GET.probabilidad_max }}&{% endif %}{% if request.GET.mes_cierre %}mes_cierre={{ request.GET.mes_cierre }}&{% endif %}{% if request.GET.orden_monto %}orden_monto={{ request.GET.orden_monto }}&{% endif %}page={{ page_obj.next_page_number }}" 
+               class="px-3 py-2 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-500 transition-colors">
+                Siguiente →
+            </a>
+            {% else %}
+            <span class="px-3 py-2 text-sm font-medium text-gray-400 bg-gray-800 rounded-md cursor-not-allowed">
+                Siguiente →
+            </span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <script>
