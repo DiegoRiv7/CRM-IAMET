@@ -1448,19 +1448,34 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                     })
                     print(f"DEBUG POSITION: Título '{titulo_data.get('texto')}' en posición {posicion}")
             
-            # Agregar productos con su posición (índice del array de productos)
-            for producto_index, producto_data in productos_data.items():
-                posicion = int(producto_index)
+            # NUEVA LÓGICA: Para productos, asignar posiciones que estén disponibles entre/después de títulos
+            # Primero obtener todas las posiciones ocupadas por títulos
+            posiciones_titulos = [int(titulo_data.get('position', 999)) for titulo_data in titulos_data.values() 
+                                if titulo_data.get('type') == 'title' and titulo_data.get('texto')]
+            posiciones_titulos.sort()
+            
+            # Agregar productos en posiciones intercaladas
+            productos_ordenados = [(int(k), v) for k, v in productos_data.items()]
+            productos_ordenados.sort()  # Ordenar por índice original
+            
+            # Asignar posiciones disponibles a productos
+            posicion_producto = 0
+            for producto_index, (original_index, producto_data) in enumerate(productos_ordenados):
+                # Encontrar la próxima posición disponible
+                while posicion_producto in posiciones_titulos:
+                    posicion_producto += 1
+                
                 elementos_con_posicion.append({
                     'tipo': 'producto', 
-                    'posicion': posicion,
+                    'posicion': posicion_producto,
                     'datos': producto_data,
                     'nombre': producto_data.get('nombre_producto', 'SIN_NOMBRE')
                 })
-                print(f"DEBUG POSITION: Producto '{producto_data.get('nombre_producto', 'SIN_NOMBRE')}' en posición {posicion}")
+                print(f"DEBUG POSITION: Producto '{producto_data.get('nombre_producto', 'SIN_NOMBRE')}' en posición {posicion_producto} (índice original: {original_index})")
+                posicion_producto += 1
             
-            # Ordenar por posición, pero manejar conflictos (títulos antes que productos en misma posición)
-            elementos_con_posicion.sort(key=lambda x: (x['posicion'], x['tipo'] == 'producto'))
+            # Ordenar por posición final
+            elementos_con_posicion.sort(key=lambda x: x['posicion'])
             
             # Assign a new, sequential 'orden' value based on the sorted list
             # This loop modifies the dictionaries in elementos_con_posicion in place
