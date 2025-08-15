@@ -302,68 +302,22 @@
     </div>
     {% include 'dock.html' %}
 
-    <!-- ==================== KOTI BOT - SISTEMA HÍBRIDO ==================== -->
-    <!-- Contenedor principal del bot Koti -->
-    {% include 'nethive_bot.html' %}
-    
-    <!-- Script principal de Nethive -->
-    <script src="{% static 'js/nethive_bot.js' %}" onerror="console.error('❌ Failed to load nethive_bot.js')"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
-    <!-- Script de diagnóstico simple -->
-    <script src="{% static 'js/debug_simple.js' %}" onerror="console.error('❌ Failed to load debug_simple.js')"></script>
-    
-    <!-- Sistema de debug avanzado -->
-    <script src="{% static 'js/debug_system.js' %}" onerror="console.error('❌ Failed to load debug_system.js')"></script>
-    
-    <!-- Verificación de carga de scripts -->
+    <!-- Responsive utilities (solo las que necesitamos) -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔧 DOM loaded, checking bot functions...');
-            console.log('showNethiveAssistant exists:', typeof window.showNethiveAssistant === 'function');
-            console.log('closeNethiveAssistant exists:', typeof window.closeNethiveAssistant === 'function');
-            
-            // Verificar elementos del bot
-            const modal = document.getElementById('nethive-assistant-modal');
-            const container = document.getElementById('nethive-bot-container');
-            console.log('Bot modal found:', !!modal);
-            console.log('Bot container found:', !!container);
-            
-            if (!modal || !container) {
-                console.error('❌ Bot elements missing from DOM');
-            }
-        });
-    </script>
-    
-    <!-- Configuración simplificada -->
-    <script>
-        // Variables de configuración global
-        window.KOTI_CONFIG = {
-            geminiApiKey: 'AIzaSyCliVaBtT0hju3OQR-FTUONRYIfhLAaXUA',
-            proactiveEnabled: true,
-            opportunityWatchEnabled: true,
-            debugMode: true
-        };
-        
-        // Responsive utilities
+        // Responsive utilities básicas
         window.ResponsiveUtils = {
             isMobile: () => window.innerWidth <= 768,
             isTablet: () => window.innerWidth > 768 && window.innerWidth <= 1024,
             isDesktop: () => window.innerWidth > 1024,
-            isCurvedMonitor: () => window.innerWidth > 2560 || (window.innerWidth > 1920 && window.screen.width / window.screen.height > 2),
-            isUltraWide: () => window.innerWidth > 2560,
             
             // Add responsive classes to body
             updateBodyClasses: () => {
                 const body = document.body;
-                body.classList.remove('is-mobile', 'is-tablet', 'is-desktop', 'is-curved', 'is-ultrawide');
+                body.classList.remove('is-mobile', 'is-tablet', 'is-desktop');
                 
                 if (window.ResponsiveUtils.isMobile()) body.classList.add('is-mobile');
                 else if (window.ResponsiveUtils.isTablet()) body.classList.add('is-tablet');
                 else if (window.ResponsiveUtils.isDesktop()) body.classList.add('is-desktop');
-                
-                if (window.ResponsiveUtils.isCurvedMonitor()) body.classList.add('is-curved');
-                if (window.ResponsiveUtils.isUltraWide()) body.classList.add('is-ultrawide');
             }
         };
         
@@ -377,33 +331,6 @@
                 window.ResponsiveUtils.updateBodyClasses();
             }, 150);
         });
-
-        console.log('🤖 Configuración de Koti cargada');
-        console.log('📱 Utilidades responsivas cargadas');
-        
-        // Test button para debuggar el bot
-        if (window.location.search.includes('debug=bot')) {
-            const testBtn = document.createElement('button');
-            testBtn.textContent = '🤖 TEST BOT';
-            testBtn.style.cssText = 'position:fixed;top:10px;right:10px;z-index:9999;padding:10px;background:#007AFF;color:white;border:none;border-radius:8px;font-weight:bold;';
-            testBtn.onclick = function() {
-                console.log('🔧 Test button clicked');
-                if (typeof window.showNethiveAssistant === 'function') {
-                    window.showNethiveAssistant();
-                } else {
-                    console.error('Function not available');
-                    // Manual fallback
-                    const modal = document.getElementById('nethive-assistant-modal');
-                    const container = document.getElementById('nethive-bot-container');
-                    if (modal && container) {
-                        container.classList.remove('hidden');
-                        modal.classList.remove('hidden');
-                        console.log('✅ Manual bot open attempted');
-                    }
-                }
-            };
-            document.body.appendChild(testBtn);
-        }
     </script>
     
     <!-- Spotlight Search Modal -->
