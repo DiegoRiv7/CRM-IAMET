@@ -704,11 +704,11 @@ def view_cotizacion_pdf(request, cotizacion_id):
 
 @login_required
 def todos (request):
-    # Determinar si el usuario es un supervisor
+    # Determinar si el usuario es un supervisor - Optimizar consultas con select_related
     if is_supervisor(request.user):
-        items = TodoItem.objects.all()
+        items = TodoItem.objects.select_related('usuario', 'cliente').all()
     else:
-        items = TodoItem.objects.filter(usuario=request.user)
+        items = TodoItem.objects.select_related('usuario', 'cliente').filter(usuario=request.user)
 
     filter_form = VentaFilterForm(request.GET)
 
@@ -740,14 +740,11 @@ def todos (request):
         else:
             items = items.order_by('-fecha_creacion')
     else:
+        # Ordenar por fecha_creación con índice optimizado
         items = items.order_by('-fecha_creacion')
 
-    print(f"DEBUG: Total items en vista 'todos' después de filtros: {items.count()}")
-    for item in items:
-        print(f"DEBUG:    - ID: {item.id}, Oportunidad: {item.oportunidad}, Producto: {item.producto}, Usuario ID: {item.usuario.id}")
-
-    # Implementar paginación - 30 elementos por página
-    paginator = Paginator(items, 30)
+    # Implementar paginación optimizada - 20 elementos por página
+    paginator = Paginator(items, 20)
     page_number = request.GET.get('page', 1)
     
     try:

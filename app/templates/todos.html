@@ -422,14 +422,14 @@
     {% if page_obj.has_other_pages %}
     <div class="mt-6 flex items-center justify-between">
         <div class="text-sm apple-text-secondary">
-            Mostrando {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ page_obj.paginator.count }} oportunidades
+            {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }}
         </div>
         
         <div class="flex items-center space-x-2">
             <!-- Botón Anterior -->
             {% if page_obj.has_previous %}
-            <a href="?{% if request.GET.area %}area={{ request.GET.area }}&{% endif %}{% if request.GET.producto %}producto={{ request.GET.producto }}&{% endif %}{% if request.GET.probabilidad_min %}probabilidad_min={{ request.GET.probabilidad_min }}&{% endif %}{% if request.GET.probabilidad_max %}probabilidad_max={{ request.GET.probabilidad_max }}&{% endif %}{% if request.GET.mes_cierre %}mes_cierre={{ request.GET.mes_cierre }}&{% endif %}{% if request.GET.orden_monto %}orden_monto={{ request.GET.orden_monto }}&{% endif %}page={{ page_obj.previous_page_number }}" 
-               class="px-3 py-2 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-500 transition-colors">
+            <a href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}" 
+               class="px-3 py-2 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-500">
                 ← Anterior
             </a>
             {% else %}
@@ -438,24 +438,15 @@
             </span>
             {% endif %}
             
-            <!-- Números de página -->
-            {% for page_number in page_obj.paginator.page_range %}
-                {% if page_number == page_obj.number %}
-                <span class="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md">
-                    {{ page_number }}
-                </span>
-                {% elif page_number|add:'-5' <= page_obj.number and page_number|add:'5' >= page_obj.number %}
-                <a href="?{% if request.GET.area %}area={{ request.GET.area }}&{% endif %}{% if request.GET.producto %}producto={{ request.GET.producto }}&{% endif %}{% if request.GET.probabilidad_min %}probabilidad_min={{ request.GET.probabilidad_min }}&{% endif %}{% if request.GET.probabilidad_max %}probabilidad_max={{ request.GET.probabilidad_max }}&{% endif %}{% if request.GET.mes_cierre %}mes_cierre={{ request.GET.mes_cierre }}&{% endif %}{% if request.GET.orden_monto %}orden_monto={{ request.GET.orden_monto }}&{% endif %}page={{ page_number }}" 
-                   class="px-3 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors">
-                    {{ page_number }}
-                </a>
-                {% endif %}
-            {% endfor %}
+            <!-- Página actual/total -->
+            <span class="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md">
+                {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+            </span>
             
             <!-- Botón Siguiente -->
             {% if page_obj.has_next %}
-            <a href="?{% if request.GET.area %}area={{ request.GET.area }}&{% endif %}{% if request.GET.producto %}producto={{ request.GET.producto }}&{% endif %}{% if request.GET.probabilidad_min %}probabilidad_min={{ request.GET.probabilidad_min }}&{% endif %}{% if request.GET.probabilidad_max %}probabilidad_max={{ request.GET.probabilidad_max }}&{% endif %}{% if request.GET.mes_cierre %}mes_cierre={{ request.GET.mes_cierre }}&{% endif %}{% if request.GET.orden_monto %}orden_monto={{ request.GET.orden_monto }}&{% endif %}page={{ page_obj.next_page_number }}" 
-               class="px-3 py-2 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-500 transition-colors">
+            <a href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}" 
+               class="px-3 py-2 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-500">
                 Siguiente →
             </a>
             {% else %}
@@ -471,17 +462,28 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchOportunidad');
+    let searchTimeout;
+    
     searchInput.addEventListener('input', function() {
-        const filter = searchInput.value.toLowerCase();
-        const rows = document.querySelectorAll('.oportunidad-item');
-        rows.forEach(row => {
-            const name = row.querySelector('td:first-child').textContent.toLowerCase();
-            if (name.includes(filter)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
+        // Debounce para evitar búsquedas excesivas
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            const filter = this.value.toLowerCase().trim();
+            const rows = document.querySelectorAll('.oportunidad-item');
+            
+            if (filter === '') {
+                // Mostrar todas las filas si no hay filtro
+                rows.forEach(row => row.style.display = '');
+                return;
             }
-        });
+            
+            // Búsqueda optimizada
+            rows.forEach(row => {
+                const nameCell = row.querySelector('td:first-child a');
+                const name = nameCell ? nameCell.textContent.toLowerCase() : '';
+                row.style.display = name.includes(filter) ? '' : 'none';
+            });
+        }, 150); // Esperar 150ms antes de buscar
     });
 });
 </script>
