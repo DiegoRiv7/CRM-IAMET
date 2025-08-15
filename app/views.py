@@ -4344,8 +4344,8 @@ def spotlight_search_api(request):
             'id': cotizacion.id,
             'title': cotizacion.nombre_cotizacion or f'Cotización #{cotizacion.id}',
             'subtitle': f'{cotizacion.cliente.nombre_empresa} • ${cotizacion.total:.2f} {cotizacion.moneda}',
-            'description': f'Creada por {cotizacion.created_by.get_full_name() or cotizacion.created_by.username}',
-            'date': cotizacion.fecha.strftime('%d/%m/%Y'),
+            'description': f'Creada por {cotizacion.created_by.get_full_name() or cotizacion.created_by.username if cotizacion.created_by else "Usuario desconocido"}',
+            'date': cotizacion.fecha_creacion.strftime('%d/%m/%Y'),
             'icon': 'document',
             'url': f'/app/cotizaciones/',
             'priority': 1 if is_exact_match else 2,  # Para ordenamiento
