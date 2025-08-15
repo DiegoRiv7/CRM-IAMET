@@ -400,12 +400,14 @@
             width: 100%;
             max-width: 640px;
             margin: 0 20px;
-            background: rgba(255, 255, 255, 0.95);
+            /* FORZAR MODO OSCURO SIEMPRE */
+            background: rgba(28, 28, 30, 0.95) !important;
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important;
             border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 8px 16px rgba(0, 0, 0, 0.2);
             overflow: hidden;
             transform: translateY(-20px);
             transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -415,50 +417,33 @@
             transform: translateY(0);
         }
         
-        /* Dark theme support */
-        @media (prefers-color-scheme: dark) {
-            .spotlight-container {
-                background: rgba(28, 28, 30, 0.95);
-                border-color: rgba(255, 255, 255, 0.1);
-                color: #ffffff;
-            }
-        }
+        /* MODO OSCURO FORZADO - Ya no necesario media query */
         
         .spotlight-search-box {
             display: flex;
             align-items: center;
             padding: 20px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        }
-        
-        @media (prefers-color-scheme: dark) {
-            .spotlight-search-box {
-                border-bottom-color: rgba(255, 255, 255, 0.1);
-            }
+            /* FORZAR MODO OSCURO SIEMPRE */
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
         }
         
         .spotlight-icon {
-            color: #8E8E93;
+            /* FORZAR MODO OSCURO SIEMPRE */
+            color: #98989D !important;
             margin-right: 12px;
             flex-shrink: 0;
         }
         
         .spotlight-shortcut {
-            background: rgba(0, 0, 0, 0.08);
-            color: #8E8E93;
+            /* FORZAR MODO OSCURO SIEMPRE */
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: #98989D !important;
             padding: 4px 8px;
             border-radius: 6px;
             font-size: 12px;
             font-weight: 500;
             margin-left: 12px;
             flex-shrink: 0;
-        }
-        
-        @media (prefers-color-scheme: dark) {
-            .spotlight-shortcut {
-                background: rgba(255, 255, 255, 0.1);
-                color: #98989D;
-            }
         }
         
         #spotlight-input {
@@ -468,11 +453,13 @@
             font-size: 18px;
             font-weight: 500;
             background: transparent;
-            color: inherit;
+            /* FORZAR MODO OSCURO SIEMPRE */
+            color: #ffffff !important;
         }
         
         #spotlight-input::placeholder {
-            color: #8E8E93;
+            /* FORZAR MODO OSCURO SIEMPRE */
+            color: #98989D !important;
         }
         
         .spotlight-results {
@@ -484,7 +471,8 @@
         .spotlight-empty {
             padding: 40px 20px;
             text-align: center;
-            color: #8E8E93;
+            /* FORZAR MODO OSCURO SIEMPRE */
+            color: #98989D !important;
         }
         
         .spotlight-empty-icon {
@@ -500,7 +488,8 @@
             display: flex;
             align-items: center;
             padding: 12px 20px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            /* FORZAR MODO OSCURO SIEMPRE */
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
             cursor: pointer;
             transition: background-color 0.15s ease;
         }
@@ -511,13 +500,7 @@
         
         .spotlight-item:hover,
         .spotlight-item.selected {
-            background: rgba(0, 122, 255, 0.1);
-        }
-        
-        @media (prefers-color-scheme: dark) {
-            .spotlight-item {
-                border-bottom-color: rgba(255, 255, 255, 0.05);
-            }
+            background: rgba(0, 122, 255, 0.2) !important;
         }
         
         .spotlight-item-icon {
@@ -547,7 +530,8 @@
             font-size: 15px;
             font-weight: 600;
             margin-bottom: 2px;
-            color: inherit;
+            /* FORZAR MODO OSCURO SIEMPRE */
+            color: #ffffff !important;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -555,7 +539,8 @@
         
         .spotlight-item-subtitle {
             font-size: 13px;
-            color: #8E8E93;
+            /* FORZAR MODO OSCURO SIEMPRE */
+            color: #98989D !important;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -564,7 +549,8 @@
         .spotlight-loading {
             padding: 20px;
             text-align: center;
-            color: #8E8E93;
+            /* FORZAR MODO OSCURO SIEMPRE */
+            color: #98989D !important;
         }
         
         .spotlight-spinner {
