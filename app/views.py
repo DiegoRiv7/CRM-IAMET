@@ -1448,34 +1448,73 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
                     })
                     print(f"DEBUG POSITION: Título '{titulo_data.get('texto')}' en posición {posicion}")
             
-            # NUEVA LÓGICA: Para productos, asignar posiciones que estén disponibles entre/después de títulos
-            # Primero obtener todas las posiciones ocupadas por títulos
-            posiciones_titulos = [int(titulo_data.get('position', 999)) for titulo_data in titulos_data.values() 
-                                if titulo_data.get('type') == 'title' and titulo_data.get('texto')]
-            posiciones_titulos.sort()
+            # SOLUCIÓN SIMPLE: Intercalar títulos y productos según aparecen en el DOM
+            # Los títulos ya tienen sus posiciones DOM reales, los productos deben ir donde corresponden
             
-            # Agregar productos en posiciones intercaladas
-            productos_ordenados = [(int(k), v) for k, v in productos_data.items()]
-            productos_ordenados.sort()  # Ordenar por índice original
+            # Obtener títulos con sus posiciones
+            titulos_con_posicion = []
+            for titulo_data in titulos_data.values():
+                if titulo_data.get('type') == 'title' and titulo_data.get('texto'):
+                    pos = int(titulo_data.get('position', 999))
+                    titulos_con_posicion.append((pos, titulo_data))
+            titulos_con_posicion.sort()  # Ordenar por posición
             
-            # Asignar posiciones disponibles a productos
-            posicion_producto = 0
-            for producto_index, (original_index, producto_data) in enumerate(productos_ordenados):
-                # Encontrar la próxima posición disponible
-                while posicion_producto in posiciones_titulos:
-                    posicion_producto += 1
-                
+            # Productos en orden
+            productos_lista = [(int(k), v) for k, v in productos_data.items()]
+            productos_lista.sort()
+            
+            print(f"DEBUG INTERCALAR: {len(titulos_con_posicion)} títulos, {len(productos_lista)} productos")
+            for pos, titulo in titulos_con_posicion:
+                print(f"DEBUG INTERCALAR: Título '{titulo.get('texto')}' en posición DOM {pos}")
+            
+            # Intercalar: después de cada título va el siguiente producto disponible
+            producto_index = 0
+            posicion_final = 0
+            
+            for i, (pos_titulo, titulo_data) in enumerate(titulos_con_posicion):
+                # Agregar el título
                 elementos_con_posicion.append({
-                    'tipo': 'producto', 
-                    'posicion': posicion_producto,
+                    'tipo': 'titulo',
+                    'posicion': posicion_final,
+                    'datos': titulo_data,
+                    'nombre': titulo_data.get('texto', 'SIN_TITULO')
+                })
+                print(f"DEBUG INTERCALAR: Agregado título '{titulo_data.get('texto')}' en posición final {posicion_final}")
+                posicion_final += 1
+                
+                # Calcular cuántos productos van después de este título
+                # Si hay otro título después, va 1 producto. Si es el último título, van todos los restantes.
+                if i < len(titulos_con_posicion) - 1:
+                    productos_para_esta_seccion = 1
+                else:
+                    productos_para_esta_seccion = len(productos_lista) - producto_index
+                
+                # Agregar los productos correspondientes a esta sección
+                for j in range(productos_para_esta_seccion):
+                    if producto_index < len(productos_lista):
+                        _, producto_data = productos_lista[producto_index]
+                        elementos_con_posicion.append({
+                            'tipo': 'producto',
+                            'posicion': posicion_final,
+                            'datos': producto_data,
+                            'nombre': producto_data.get('nombre_producto', 'SIN_NOMBRE')
+                        })
+                        print(f"DEBUG INTERCALAR: Agregado producto '{producto_data.get('nombre_producto')}' en posición final {posicion_final} (después del título '{titulo_data.get('texto')}')")
+                        posicion_final += 1
+                        producto_index += 1
+            
+            # Si quedan productos sin asignar (caso sin títulos), agregarlos al final
+            while producto_index < len(productos_lista):
+                _, producto_data = productos_lista[producto_index]
+                elementos_con_posicion.append({
+                    'tipo': 'producto',
+                    'posicion': posicion_final,
                     'datos': producto_data,
                     'nombre': producto_data.get('nombre_producto', 'SIN_NOMBRE')
                 })
-                print(f"DEBUG POSITION: Producto '{producto_data.get('nombre_producto', 'SIN_NOMBRE')}' en posición {posicion_producto} (índice original: {original_index})")
-                posicion_producto += 1
-            
-            # Ordenar por posición final
-            elementos_con_posicion.sort(key=lambda x: x['posicion'])
+                print(f"DEBUG INTERCALAR: Agregado producto sin sección '{producto_data.get('nombre_producto')}' en posición final {posicion_final}")
+                posicion_final += 1
+                producto_index += 1
             
             # Assign a new, sequential 'orden' value based on the sorted list
             # This loop modifies the dictionaries in elementos_con_posicion in place
