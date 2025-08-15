@@ -64,29 +64,14 @@
         border-color: rgba(229, 90, 135, 0.2) !important;
     }
     
-    /* Animaciones personalizadas */
-    @keyframes fade-in-up {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    /* Estilos simplificados para las tarjetas */
+    .volumetria-card {
+        border: 2px solid rgba(99, 102, 241, 0.2);
+        border-radius: 12px;
+        transition: border-color 0.2s ease;
     }
-    .animate-fade-in-up {
-        animation: fade-in-up 0.6s ease-out forwards;
-        opacity: 0;
-    }
-    
-    /* Efectos de hover mejorados */
-    .volumetria-card-hover {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .volumetria-card-hover:hover {
-        transform: translateY(-8px) scale(1.02);
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    .volumetria-card:hover {
+        border-color: rgba(99, 102, 241, 0.4);
     }
 </style>
 <div class="min-h-screen apple-bg">
@@ -126,108 +111,100 @@
                     
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <!-- Volumetría CCTV -->
-                        <div class="apple-card p-6 volumetria-card-hover animate-fade-in-up group relative overflow-hidden" style="animation-delay: 0.1s;">
-                            <div class="flex items-center mb-4 relative">
-                                <div class="bg-gradient-to-r from-red-500 to-red-600 p-3 rounded-xl shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
-                                    <svg class="w-6 h-6 text-white transition-all duration-300 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="apple-card p-6 volumetria-card">
+                            <div class="flex items-center mb-4">
+                                <div class="bg-gradient-to-r from-red-500 to-red-600 p-3 rounded-xl shadow-lg">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                                     </svg>
                                 </div>
-                                <h3 class="text-xl font-semibold bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent ml-4 group-hover:scale-105 transition-transform duration-300">
+                                <h3 class="text-xl font-semibold bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent ml-4">
                                     CCTV
                                 </h3>
-                                <div class="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-r from-red-500/20 to-red-600/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-ping"></div>
                             </div>
                             <p class="apple-text-secondary mb-6">
                                 Cálculo volumétrico para sistemas de <span class="apple-text-primary font-medium">videovigilancia</span>, <span class="apple-text-primary font-medium">cámaras IP</span>, <span class="apple-text-primary font-medium">DVR/NVR</span>, y infraestructura de <span class="apple-text-primary font-medium">seguridad</span>.
                             </p>
                             <div class="flex space-x-3">
-                                <button onclick="crearVolumetria('cctv')" class="apple-btn-primary flex-1 py-3 px-4 text-sm font-medium transition-all duration-300 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group/btn">
-                                    <span class="relative z-10">Crear Volumetría</span>
-                                    <div class="absolute inset-0 bg-gradient-to-r from-red-600 to-red-700 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
+                                <button onclick="crearVolumetria('cctv')" class="apple-btn-primary flex-1 py-3 px-4 text-sm font-medium">
+                                    Crear Volumetría
                                 </button>
-                                <button onclick="verVolumetrias('cctv')" class="apple-btn-secondary py-3 px-4 text-sm font-medium transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                                <button onclick="verVolumetrias('cctv')" class="apple-btn-secondary py-3 px-4 text-sm font-medium">
                                     Ver Volumetrías
                                 </button>
                             </div>
                         </div>
 
                         <!-- Volumetría Nodos de Red -->
-                        <div class="apple-card p-6 volumetria-card-hover animate-fade-in-up group relative overflow-hidden" style="animation-delay: 0.2s;">
-                            <div class="flex items-center mb-4 relative">
-                                <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
-                                    <svg class="w-6 h-6 text-white transition-all duration-300 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="apple-card p-6 volumetria-card">
+                            <div class="flex items-center mb-4">
+                                <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
                                     </svg>
                                 </div>
-                                <h3 class="text-xl font-semibold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent ml-4 group-hover:scale-105 transition-transform duration-300">
+                                <h3 class="text-xl font-semibold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent ml-4">
                                     Nodos de Red
                                 </h3>
-                                <div class="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-ping"></div>
                             </div>
                             <p class="apple-text-secondary mb-6">
                                 Análisis volumétrico para <span class="apple-text-primary font-medium">infraestructura de red</span>, <span class="apple-text-primary font-medium">switches</span>, <span class="apple-text-primary font-medium">routers</span>, <span class="apple-text-primary font-medium">cableado estructurado</span> y puntos de acceso.
                             </p>
                             <div class="flex space-x-3">
-                                <button onclick="crearVolumetria('nodos')" class="apple-btn-primary flex-1 py-3 px-4 text-sm font-medium transition-all duration-300 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group/btn">
-                                    <span class="relative z-10">Crear Volumetría</span>
-                                    <div class="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-700 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
+                                <button onclick="crearVolumetria('nodos')" class="apple-btn-primary flex-1 py-3 px-4 text-sm font-medium">
+                                    Crear Volumetría
                                 </button>
-                                <button onclick="verVolumetrias('nodos')" class="apple-btn-secondary py-3 px-4 text-sm font-medium transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                                <button onclick="verVolumetrias('nodos')" class="apple-btn-secondary py-3 px-4 text-sm font-medium">
                                     Ver Volumetrías
                                 </button>
                             </div>
                         </div>
 
                         <!-- Volumetría Control de Acceso -->
-                        <div class="apple-card p-6 volumetria-card-hover animate-fade-in-up group relative overflow-hidden" style="animation-delay: 0.3s;">
-                            <div class="flex items-center mb-4 relative">
-                                <div class="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
-                                    <svg class="w-6 h-6 text-white transition-all duration-300 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="apple-card p-6 volumetria-card">
+                            <div class="flex items-center mb-4">
+                                <div class="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl shadow-lg">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                                     </svg>
                                 </div>
-                                <h3 class="text-xl font-semibold bg-gradient-to-r from-green-400 to-green-600 bg-clip-text text-transparent ml-4 group-hover:scale-105 transition-transform duration-300">
+                                <h3 class="text-xl font-semibold bg-gradient-to-r from-green-400 to-green-600 bg-clip-text text-transparent ml-4">
                                     Control de Acceso
                                 </h3>
-                                <div class="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-r from-green-500/20 to-green-600/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-ping"></div>
                             </div>
                             <p class="apple-text-secondary mb-6">
                                 Volumetría para sistemas de <span class="apple-text-primary font-medium">control de acceso</span>, <span class="apple-text-primary font-medium">lectores biométricos</span>, <span class="apple-text-primary font-medium">cerraduras electrónicas</span> y paneles de control.
                             </p>
                             <div class="flex space-x-3">
-                                <button onclick="crearVolumetria('acceso')" class="apple-btn-primary flex-1 py-3 px-4 text-sm font-medium transition-all duration-300 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group/btn">
-                                    <span class="relative z-10">Crear Volumetría</span>
-                                    <div class="absolute inset-0 bg-gradient-to-r from-green-600 to-green-700 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
+                                <button onclick="crearVolumetria('acceso')" class="apple-btn-primary flex-1 py-3 px-4 text-sm font-medium">
+                                    Crear Volumetría
                                 </button>
-                                <button onclick="verVolumetrias('acceso')" class="apple-btn-secondary py-3 px-4 text-sm font-medium transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                                <button onclick="verVolumetrias('acceso')" class="apple-btn-secondary py-3 px-4 text-sm font-medium">
                                     Ver Volumetrías
                                 </button>
                             </div>
                         </div>
 
                         <!-- Volumetría General -->
-                        <div class="apple-card p-6 volumetria-card-hover animate-fade-in-up group relative overflow-hidden" style="animation-delay: 0.4s;">
-                            <div class="flex items-center mb-4 relative">
-                                <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-3 rounded-xl shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
-                                    <svg class="w-6 h-6 text-white transition-all duration-300 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="apple-card p-6 volumetria-card">
+                            <div class="flex items-center mb-4">
+                                <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-3 rounded-xl shadow-lg">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                                     </svg>
                                 </div>
-                                <h3 class="text-xl font-semibold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent ml-4 group-hover:scale-105 transition-transform duration-300">
+                                <h3 class="text-xl font-semibold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent ml-4">
                                     Volumetría General
                                 </h3>
-                                <div class="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-r from-purple-500/20 to-purple-600/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-ping"></div>
                             </div>
                             <p class="apple-text-secondary mb-6">
                                 Cálculo volumétrico <span class="apple-text-primary font-medium">personalizado</span> para <span class="apple-text-primary font-medium">proyectos mixtos</span> o sistemas no categorizados específicamente.
                             </p>
                             <div class="flex space-x-3">
-                                <button onclick="crearVolumetria('general')" class="apple-btn-primary flex-1 py-3 px-4 text-sm font-medium transition-all duration-300 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group/btn">
-                                    <span class="relative z-10">Crear Volumetría</span>
-                                    <div class="absolute inset-0 bg-gradient-to-r from-purple-600 to-purple-700 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
+                                <button onclick="crearVolumetria('general')" class="apple-btn-primary flex-1 py-3 px-4 text-sm font-medium">
+                                    Crear Volumetría
                                 </button>
-                                <button onclick="verVolumetrias('general')" class="apple-btn-secondary py-3 px-4 text-sm font-medium transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                                <button onclick="verVolumetrias('general')" class="apple-btn-secondary py-3 px-4 text-sm font-medium">
                                     Ver Volumetrías
                                 </button>
                             </div>

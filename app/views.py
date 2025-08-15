@@ -4358,23 +4358,23 @@ def spotlight_search_api(request):
     
     # Búsqueda de Oportunidades (TodoItem)
     oportunidades = TodoItem.objects.filter(
-        Q(nombre__icontains=query) |
+        Q(oportunidad__icontains=query) |
         Q(cliente__nombre_empresa__icontains=query) |
-        Q(descripcion__icontains=query)
-    ).select_related('cliente', 'created_by')
+        Q(comentarios__icontains=query)
+    ).select_related('cliente', 'usuario')
     
     # Filtrar por permisos de usuario
     if not is_supervisor(request.user):
-        oportunidades = oportunidades.filter(created_by=request.user)
+        oportunidades = oportunidades.filter(usuario=request.user)
     
     for oportunidad in oportunidades[:8]:  # Limitar a 8 resultados
         results.append({
             'type': 'oportunidad',
             'id': oportunidad.id,
-            'title': oportunidad.nombre,
-            'subtitle': f'{oportunidad.cliente.nombre_empresa if oportunidad.cliente else "Sin cliente"} • ${oportunidad.monto_estimado:.2f}',
-            'description': f'Probabilidad: {oportunidad.probabilidad}% • {oportunidad.get_etapa_display()}',
-            'date': oportunidad.fecha_estimada_cierre.strftime('%d/%m/%Y') if oportunidad.fecha_estimada_cierre else 'Sin fecha',
+            'title': oportunidad.oportunidad,
+            'subtitle': f'{oportunidad.cliente.nombre_empresa if oportunidad.cliente else "Sin cliente"} • ${oportunidad.monto:.2f}',
+            'description': f'Probabilidad: {oportunidad.probabilidad_cierre}% • {oportunidad.get_area_display()}',
+            'date': oportunidad.fecha_creacion.strftime('%d/%m/%Y'),
             'icon': 'star',
             'url': f'/app/cliente/{oportunidad.cliente.id if oportunidad.cliente else 0}/crear-cotizacion/?oportunidad_id={oportunidad.id}',
             'priority': 3,  # Oportunidades tienen menor prioridad
