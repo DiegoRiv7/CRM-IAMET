@@ -1,12 +1,12 @@
 # Generated for performance optimization
 
-from django.db import migrations, models
+from django.db import migrations
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('app', '0019_alter_todoitem_usuario'),
+        ('app', '0032_alter_todoitem_mes_cierre'),
     ]
 
     operations = [
