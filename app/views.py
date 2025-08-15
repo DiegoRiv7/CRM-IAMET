@@ -1436,18 +1436,6 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             # Crear lista de todos los elementos con sus posiciones
             elementos_con_posicion = []
             
-            # Agregar títulos con su posición real del DOM
-            for titulo_index, titulo_data in titulos_data.items():
-                if titulo_data.get('type') == 'title' and titulo_data.get('texto'):
-                    posicion = int(titulo_data.get('position', 999))
-                    elementos_con_posicion.append({
-                        'tipo': 'titulo',
-                        'posicion': posicion,
-                        'datos': titulo_data,
-                        'nombre': titulo_data.get('texto', 'SIN_TITULO')
-                    })
-                    print(f"DEBUG POSITION: Título '{titulo_data.get('texto')}' en posición {posicion}")
-            
             # SOLUCIÓN SIMPLE: Intercalar títulos y productos según aparecen en el DOM
             # Los títulos ya tienen sus posiciones DOM reales, los productos deben ir donde corresponden
             
