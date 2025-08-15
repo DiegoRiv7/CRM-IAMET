@@ -152,5 +152,10 @@ urlpatterns = [
     path('volumetria/pdf/download/<int:volumetria_id>/', views.download_volumetria_pdf, name='download_volumetria_pdf'),
     path('api/eliminar-volumetria/<int:volumetria_id>/', views.eliminar_volumetria, name='eliminar_volumetria'),
     
+    # ===============================================
+    # API SPOTLIGHT - BÚSQUEDA UNIVERSAL
+    # ===============================================
+    path('api/spotlight-search/', views.spotlight_search_api, name='spotlight_search_api'),
+    
     path('koti-bot-html/', TemplateView.as_view(template_name='nethive_bot.html'), name='koti_bot_html'),
 ]

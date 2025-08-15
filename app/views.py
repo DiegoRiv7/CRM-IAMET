@@ -4301,3 +4301,93 @@ def upload_status_api(request):
         })
     
     return JsonResponse({'uploads': uploads_data})
+
+
+@login_required
+def spotlight_search_api(request):
+    """
+    API Spotlight - Búsqueda universal de cotizaciones y oportunidades
+    """
+    query = request.GET.get('q', '').strip()
+    
+    if len(query) < 2:  # Mínimo 2 caracteres para buscar
+        return JsonResponse({'results': []})
+    
+    results = []
+    
+    # Búsqueda de Cotizaciones (incluyendo búsqueda por número con #)
+    # Detectar si buscan por número (#123 o solo 123)
+    numeric_query = query.replace('#', '').strip()
+    is_numeric_search = numeric_query.isdigit()
+    
+    cotizaciones_query = Q(nombre_cotizacion__icontains=query) | Q(cliente__nombre_empresa__icontains=query) | Q(descripcion__icontains=query)
+    
+    # Si es una búsqueda numérica, darle prioridad
+    if is_numeric_search:
+        cotizaciones_query |= Q(id__exact=int(numeric_query))
+    else:
+        # Búsqueda regular por ID como string
+        cotizaciones_query |= Q(id__icontains=query)
+    
+    cotizaciones = Cotizacion.objects.filter(cotizaciones_query).select_related('cliente', 'created_by')
+    
+    # Filtrar por permisos de usuario
+    if not is_supervisor(request.user):
+        cotizaciones = cotizaciones.filter(created_by=request.user)
+    
+    for cotizacion in cotizaciones[:10]:  # Limitar a 10 resultados
+        # Marcar si es una coincidencia exacta de número para priorizar
+        is_exact_match = is_numeric_search and str(cotizacion.id) == numeric_query
+        
+        results.append({
+            'type': 'cotizacion',
+            'id': cotizacion.id,
+            'title': cotizacion.nombre_cotizacion or f'Cotización #{cotizacion.id}',
+            'subtitle': f'{cotizacion.cliente.nombre_empresa} • ${cotizacion.total:.2f} {cotizacion.moneda}',
+            'description': f'Creada por {cotizacion.created_by.get_full_name() or cotizacion.created_by.username}',
+            'date': cotizacion.fecha.strftime('%d/%m/%Y'),
+            'icon': 'document',
+            'url': f'/app/cotizaciones/',
+            'priority': 1 if is_exact_match else 2,  # Para ordenamiento
+            'actions': [
+                {'name': 'Ver', 'action': 'view', 'color': 'green'},
+                {'name': 'Descargar', 'action': 'download', 'color': 'blue'}, 
+                {'name': 'Editar', 'action': 'edit', 'color': 'yellow'}
+            ]
+        })
+    
+    # Búsqueda de Oportunidades (TodoItem)
+    oportunidades = TodoItem.objects.filter(
+        Q(nombre__icontains=query) |
+        Q(cliente__nombre_empresa__icontains=query) |
+        Q(descripcion__icontains=query)
+    ).select_related('cliente', 'created_by')
+    
+    # Filtrar por permisos de usuario
+    if not is_supervisor(request.user):
+        oportunidades = oportunidades.filter(created_by=request.user)
+    
+    for oportunidad in oportunidades[:8]:  # Limitar a 8 resultados
+        results.append({
+            'type': 'oportunidad',
+            'id': oportunidad.id,
+            'title': oportunidad.nombre,
+            'subtitle': f'{oportunidad.cliente.nombre_empresa if oportunidad.cliente else "Sin cliente"} • ${oportunidad.monto_estimado:.2f}',
+            'description': f'Probabilidad: {oportunidad.probabilidad}% • {oportunidad.get_etapa_display()}',
+            'date': oportunidad.fecha_estimada_cierre.strftime('%d/%m/%Y') if oportunidad.fecha_estimada_cierre else 'Sin fecha',
+            'icon': 'star',
+            'url': f'/app/cliente/{oportunidad.cliente.id if oportunidad.cliente else 0}/crear-cotizacion/?oportunidad_id={oportunidad.id}',
+            'priority': 3,  # Oportunidades tienen menor prioridad
+            'actions': [
+                {'name': 'Crear Cotización', 'action': 'create_quote', 'color': 'blue'}
+            ]
+        })
+    
+    # Ordenar resultados por prioridad (1=exacto, 2=cotización, 3=oportunidad), luego por título
+    results.sort(key=lambda x: (x.get('priority', 3), x['title'].lower()))
+    
+    return JsonResponse({
+        'results': results[:15],  # Máximo 15 resultados totales
+        'query': query,
+        'total': len(results)
+    })
