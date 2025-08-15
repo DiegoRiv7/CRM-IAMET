@@ -401,7 +401,13 @@
                         </div>
                     </td>
                     <td data-label="Mes Cierre">{{ item.get_mes_cierre_display }}</td>
-                    <td data-label="Contacto">{{ item.contacto }}</td>
+                    <td data-label="Contacto">
+                        {% if item.contacto %}
+                            {{ item.contacto }}
+                        {% else %}
+                            <span style="color: #888; font-style: italic;">Sin contacto asignado</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>

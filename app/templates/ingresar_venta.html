@@ -153,7 +153,7 @@
 
             <div class="form-field">
                 <label for="id_contacto_nombre" class="apple-label">Contacto</label>
-                {{ form.contacto|add_class:"apple-input"|attr:"placeholder:Buscar o crear contacto..."|attr:"id:id_contacto_nombre" }}
+                {{ form.contacto_nombre|add_class:"apple-input"|attr:"placeholder:Buscar o crear contacto..."|attr:"id:id_contacto_nombre" }}
                 <input type="hidden" id="id_bitrix_contact_id" name="bitrix_contact_id" value="{{ form.bitrix_contact_id.value|default:'' }}">
                 <div id="contact-autocomplete-suggestions" class="autocomplete-suggestions hidden"></div>
             </div>

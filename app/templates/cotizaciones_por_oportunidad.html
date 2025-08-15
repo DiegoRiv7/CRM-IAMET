@@ -342,7 +342,7 @@
                         <td>{{ cotizacion.moneda }}</td>
                         <td>{{ cotizacion.fecha_creacion|date:"d/m/Y" }}</td>
                         <td>{{ cotizacion.created_by.first_name|default:cotizacion.created_by.username }}</td>
-                        <td style="text-align: center; font-weight: 600; color: var(--apple-blue);">{{ cotizacion.numero }}</td>
+                        <td style="text-align: center; font-weight: 600; color: var(--apple-blue);">{{ cotizacion.id }}</td>
                         <td style="text-align: right;">
                             <div class="flex justify-end space-x-2">
                                 <a href="{% url 'view_cotizacion_pdf' cotizacion.id %}" target="_blank" class="action-button view" title="Ver PDF">
