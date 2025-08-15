@@ -1462,25 +1462,25 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             # Ordenar por posición, pero manejar conflictos (títulos antes que productos en misma posición)
             elementos_con_posicion.sort(key=lambda x: (x['posicion'], x['tipo'] == 'producto'))
             
+            # Assign a new, sequential 'orden' value based on the sorted list
+            # This loop modifies the dictionaries in elementos_con_posicion in place
+            for i, elemento in enumerate(elementos_con_posicion):
+                elemento['posicion_final'] = i 
+
             print(f"DEBUG POSITION: Total elementos encontrados: {len(elementos_con_posicion)}")
-            print(f"DEBUG POSITION: Elementos ordenados:")
+            print(f"DEBUG POSITION: Elementos ordenados y con posicion_final:")
             for i, elem in enumerate(elementos_con_posicion):
-                print(f"  {i+1}. {elem['tipo'].upper()}: '{elem['nombre']}' (posición: {elem['posicion']})")
+                print(f"  {i+1}. {elem['tipo'].upper()}: '{elem['nombre']}' (posición: {elem['posicion']}), posicion_final: {elem['posicion_final']}")
             
-            # Crear lista final
-            for elemento in elementos_con_posicion:
-                elementos_combinados.append({
-                    'tipo': elemento['tipo'],
-                    'posicion': elemento['posicion'],
-                    'datos': elemento['datos']
-                })
+            # Crear lista final (now just copy the modified dictionaries)
+            elementos_combinados = elementos_con_posicion # No need to create new dictionaries, just use the modified ones
             
             print(f"DEBUG ORDER: Elementos en orden: {len(elementos_combinados)} elementos")
             for i, elemento in enumerate(elementos_combinados):
                 if elemento['tipo'] == 'titulo':
-                    print(f"DEBUG ORDER: {i+1}. TÍTULO: '{elemento['datos'].get('texto', 'SIN_TEXTO')}' (posición: {elemento['posicion']})")
+                    print(f"DEBUG ORDER: {i+1}. TÍTULO: '{elemento['datos'].get('texto', 'SIN_TEXTO')}' (posición: {elemento['posicion']}), posicion_final: {elemento['posicion_final']}")
                 else:
-                    print(f"DEBUG ORDER: {i+1}. PRODUCTO: '{elemento['datos'].get('nombre_producto', 'SIN_NOMBRE')}' (posición: {elemento['posicion']})")
+                    print(f"DEBUG ORDER: {i+1}. PRODUCTO: '{elemento['datos'].get('nombre_producto', 'SIN_NOMBRE')}' (posición: {elemento['posicion']}), posicion_final: {elemento['posicion_final']}")
             
             # Mantener productos_list para compatibilidad con el cálculo de totales
             productos_list = [productos_data[key] for key in sorted(productos_data.keys(), key=int)]
