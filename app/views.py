@@ -1893,46 +1893,28 @@ def generate_cotizacion_pdf(request, cotizacion_id):
     
     # Organizar productos en secciones basadas en títulos
     secciones = []
-    seccion_actual = {'titulo': None, 'productos': []}
-    
+    seccion_actual = None
+
     for detalle in detalles_cotizacion:
-        # Manejar productos existentes que no tienen el campo tipo definido
         tipo_detalle = getattr(detalle, 'tipo', 'producto') or 'producto'
-        
-        print(f"DEBUG SECTIONS: Procesando detalle ID={detalle.id}, tipo='{tipo_detalle}', nombre='{detalle.nombre_producto}'")
-        print(f"DEBUG SECTIONS: Estado actual - sección_actual['titulo']='{seccion_actual['titulo']}', productos={len(seccion_actual['productos'])}")
-        
+
         if tipo_detalle == 'titulo':
-            # Si hay productos en la sección actual, guardarla ANTES de crear nueva sección
-            if seccion_actual['productos']:
-                print(f"DEBUG SECTIONS: 🟢 Guardando sección con título='{seccion_actual['titulo']}' y {len(seccion_actual['productos'])} productos")
-                for i, prod in enumerate(seccion_actual['productos']):
-                    print(f"  - Producto {i+1}: {prod.nombre_producto}")
+            if seccion_actual:
                 secciones.append(seccion_actual)
-            # Si hay una sección actual con título pero sin productos, también la guardamos
-            elif seccion_actual['titulo']:
-                print(f"DEBUG SECTIONS: 🟡 Guardando sección con título='{seccion_actual['titulo']}' SIN productos")
-                secciones.append(seccion_actual)
-                
-            # Iniciar nueva sección
             seccion_actual = {'titulo': detalle.nombre_producto, 'productos': []}
-            print(f"DEBUG SECTIONS: 🔵 Nueva sección iniciada con título='{detalle.nombre_producto}'")
-        else:
-            # Agregar producto a la sección actual
+        else:  # Es un producto
+            if not seccion_actual:
+                # Si hay productos antes del primer título, se agrupan en una sección sin título.
+                seccion_actual = {'titulo': None, 'productos': []}
             seccion_actual['productos'].append(detalle)
-            print(f"DEBUG SECTIONS: ➕ Producto '{detalle.nombre_producto}' agregado a sección (título='{seccion_actual['titulo']}') - Total productos en sección: {len(seccion_actual['productos'])}")
-    
-    # Agregar la última sección (con o sin productos)
-    if seccion_actual['titulo'] or seccion_actual['productos']:
-        print(f"DEBUG SECTIONS: Guardando última sección: título='{seccion_actual['titulo']}', productos={len(seccion_actual['productos'])}")
+
+    # Agregar la última sección si existe
+    if seccion_actual:
         secciones.append(seccion_actual)
-    
-    # Si no hay títulos, crear una sección por defecto
-    if not secciones:
-        productos_sin_seccion = [d for d in detalles_cotizacion if getattr(d, 'tipo', 'producto') == 'producto']
-        if productos_sin_seccion:
-            print(f"DEBUG SECTIONS: Creando sección por defecto con {len(productos_sin_seccion)} productos")
-            secciones.append({'titulo': None, 'productos': productos_sin_seccion})
+
+    # Si después de todo no hay secciones pero sí detalles, se crea una sección por defecto.
+    if not secciones and detalles_cotizacion:
+        secciones.append({'titulo': None, 'productos': [d for d in detalles_cotizacion if getattr(d, 'tipo', 'producto') == 'producto']})
     
     print(f"DEBUG: ===== RESUMEN FINAL =====")
     print(f"DEBUG: Secciones organizadas: {len(secciones)} secciones encontradas")
