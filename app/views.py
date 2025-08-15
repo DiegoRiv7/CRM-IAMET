@@ -576,7 +576,7 @@ def view_cotizacion_pdf(request, cotizacion_id):
     if not is_supervisor(request.user) and cotizacion.created_by != request.user:
         return HttpResponse("Acceso denegado.", status=403)
 
-    detalles_cotizacion = DetalleCotizacion.objects.filter(cotizacion=cotizacion).order_by('id')
+    detalles_cotizacion = DetalleCotizacion.objects.filter(cotizacion=cotizacion).order_by('orden')
     iva_rate_percentage = (cotizacion.iva_rate * Decimal('100')).quantize(Decimal('1'))
     
     # Organizar productos en secciones basadas en títulos
@@ -1882,7 +1882,7 @@ def generate_cotizacion_pdf(request, cotizacion_id):
         print(f"DEBUG: Access denied for user {request.user.username} to quote {cotizacion.id}")
         return HttpResponse("Acceso denegado.", status=403)
 
-    detalles_cotizacion = DetalleCotizacion.objects.filter(cotizacion=cotizacion).order_by('id')
+    detalles_cotizacion = DetalleCotizacion.objects.filter(cotizacion=cotizacion).order_by('orden')
     iva_rate_percentage = (cotizacion.iva_rate * Decimal('100')).quantize(Decimal('1'))
     
     # DEBUG: Mostrar todos los detalles antes de procesar
