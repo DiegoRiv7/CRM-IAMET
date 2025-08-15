@@ -175,10 +175,10 @@ def bienvenida(request):
     # Fecha actual
     fecha_actual = timezone.localtime(timezone.now()).strftime('%A, %d de %B de %Y')
 
-    # Usuario del mes: quien más oportunidades ha creado en el mes ACTUAL (calendario)
-    # Se calcula desde el día 1 del mes actual hasta hoy
+    # Usuario del mes: quien más oportunidades ha creado desde el 1 de septiembre 2025
+    # Se calcula desde el 1 de septiembre hasta hoy
     today = date.today()
-    inicio_mes_actual = today.replace(day=1)
+    inicio_mes_actual = date(2025, 9, 1)  # Fijado al 1 de septiembre 2025
     oportunidades_mes = (
         TodoItem.objects.filter(fecha_creacion__date__gte=inicio_mes_actual, fecha_creacion__date__lte=today)
         .exclude(usuario__groups__name='Supervisores')
