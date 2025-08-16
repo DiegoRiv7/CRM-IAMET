@@ -253,6 +253,8 @@ function crearVolumetria(tipo) {
 function iniciarVolumetria(tipo, titulo) {
     if (tipo === 'nodos') {
         mostrarFormularioNodos();
+    } else if (tipo === 'general') {
+        mostrarFormularioGeneral();
     } else {
         // Para otros tipos, mostrar mensaje de desarrollo
         if (typeof Swal !== 'undefined') {
@@ -668,7 +670,7 @@ function mostrarFormularioNodos() {
 
 // Función para cerrar el formulario
 function cerrarFormulario() {
-    const formulario = document.getElementById('formulario-nodos');
+    const formulario = document.getElementById('formulario-nodos') || document.getElementById('formulario-general');
     if (formulario) {
         formulario.remove();
     }
@@ -678,6 +680,184 @@ function cerrarFormulario() {
     if (mainContent) {
         mainContent.style.display = 'block';
     }
+}
+
+// Función para mostrar el formulario de volumetría general
+function mostrarFormularioGeneral() {
+    // Ocultar contenido principal
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.style.display = 'none';
+    }
+    
+    const formularioHTML = `
+        <div id="formulario-general" class="min-h-screen apple-bg">
+            <div class="apple-bg min-h-screen">
+                <div class="apple-glass-card p-6 mx-4 animate-fade-in">
+                    <div class="flex items-center justify-between mb-8">
+                        <div class="flex items-center space-x-4">
+                            <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-3 rounded-xl shadow-lg">
+                                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 class="text-3xl font-bold apple-text-primary">
+                                    Volumetría General
+                                </h1>
+                                <p class="apple-text-secondary mt-1">
+                                    Análisis volumétrico personalizado para proyectos de infraestructura
+                                </p>
+                            </div>
+                        </div>
+                        <button onclick="cerrarFormulario()" class="apple-btn-secondary font-medium py-2 px-6 transition duration-200">
+                            ← Regresar
+                        </button>
+                    </div>
+
+                    <form id="form-general" class="space-y-8">
+                        <!-- Información del Proyecto -->
+                        <div class="border-b border-gray-200 dark:border-gray-700 pb-6">
+                            <h3 class="text-lg font-medium apple-text-primary mb-4">Información del Proyecto</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium apple-text-primary mb-2">Nombre del Proyecto</label>
+                                    <input type="text" id="nombre-proyecto-general" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Ej: Instalación de escalerilla y adecuación de cableado" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium apple-text-primary mb-2">Cliente</label>
+                                    <div class="flex items-center space-x-2">
+                                        <select id="cliente-general" class="flex-grow px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-purple-500" required>
+                                            <option value="">-- Seleccione un cliente --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium apple-text-primary mb-2">Contacto</label>
+                                    <input type="text" id="contacto-general" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Ej: Ing. Ricardo Sandoval">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium apple-text-primary mb-2">Elaborado por</label>
+                                    <input type="text" id="elaborado-por-general" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Ej: Ing. José Manuel Naguatt" value="{{ user.get_full_name|default:user.username }}">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium apple-text-primary mb-2">Tipo de cambio actual</label>
+                                    <input type="number" id="tipo-cambio-general" step="0.01" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="20.1" value="20.1">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium apple-text-primary mb-2">Oportunidad Bitrix24</label>
+                                    <div class="flex items-center space-x-2">
+                                        <select id="oportunidad-general" class="flex-grow px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-purple-500">
+                                            <option value="">-- Seleccione una oportunidad --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Equipamiento -->
+                        <div class="border-b border-gray-200 dark:border-gray-700 pb-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium apple-text-primary">Equipamiento</h3>
+                                <button type="button" onclick="agregarEquipamiento()" class="apple-btn-primary text-sm py-2 px-4">
+                                    + Agregar Equipamiento
+                                </button>
+                            </div>
+                            <div id="equipamiento-container" class="space-y-4">
+                                <!-- Los elementos de equipamiento se agregarán dinámicamente aquí -->
+                            </div>
+                        </div>
+
+                        <!-- Mano de Obra -->
+                        <div class="border-b border-gray-200 dark:border-gray-700 pb-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium apple-text-primary">Mano de Obra</h3>
+                                <button type="button" onclick="agregarManoObra()" class="apple-btn-primary text-sm py-2 px-4">
+                                    + Agregar Mano de Obra
+                                </button>
+                            </div>
+                            <div id="mano-obra-container" class="space-y-4">
+                                <!-- Los elementos de mano de obra se agregarán dinámicamente aquí -->
+                            </div>
+                        </div>
+
+                        <!-- Costos Operativos -->
+                        <div class="border-b border-gray-200 dark:border-gray-700 pb-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium apple-text-primary">Costos Operativos</h3>
+                                <button type="button" onclick="agregarCostoOperativo()" class="apple-btn-primary text-sm py-2 px-4">
+                                    + Agregar Costo
+                                </button>
+                            </div>
+                            <div id="costos-operativos-container" class="space-y-4">
+                                <!-- Los elementos de costos operativos se agregarán dinámicamente aquí -->
+                            </div>
+                        </div>
+
+                        <!-- Análisis de Costos -->
+                        <div class="bg-gray-800 p-6 rounded-lg">
+                            <h3 class="text-lg font-medium apple-text-primary mb-4">Análisis de Costos</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="bg-gray-700 p-4 rounded-lg">
+                                    <label class="block text-sm font-medium apple-text-primary mb-2">Precio de Lista Total</label>
+                                    <input type="text" id="precio-lista-total" class="w-full px-3 py-2 border border-gray-600 bg-gray-600 apple-text-primary rounded-lg" readonly>
+                                </div>
+                                <div class="bg-gray-700 p-4 rounded-lg">
+                                    <label class="block text-sm font-medium apple-text-primary mb-2">Sub-Total</label>
+                                    <input type="text" id="sub-total" class="w-full px-3 py-2 border border-gray-600 bg-gray-600 apple-text-primary rounded-lg" readonly>
+                                </div>
+                                <div class="bg-gray-700 p-4 rounded-lg">
+                                    <label class="block text-sm font-medium apple-text-primary mb-2">IVA (8%)</label>
+                                    <input type="text" id="iva-total" class="w-full px-3 py-2 border border-gray-600 bg-gray-600 apple-text-primary rounded-lg" readonly>
+                                </div>
+                                <div class="bg-gray-700 p-4 rounded-lg">
+                                    <label class="block text-sm font-medium apple-text-primary mb-2">Precio Bajanet</label>
+                                    <input type="text" id="precio-bajanet" class="w-full px-3 py-2 border border-gray-600 bg-gray-600 apple-text-primary rounded-lg" readonly>
+                                </div>
+                                <div class="bg-gray-700 p-4 rounded-lg">
+                                    <label class="block text-sm font-medium apple-text-primary mb-2">Ganancia Material</label>
+                                    <input type="text" id="ganancia-material" class="w-full px-3 py-2 border border-gray-600 bg-gray-600 apple-text-primary rounded-lg" readonly>
+                                </div>
+                                <div class="bg-purple-700 p-4 rounded-lg">
+                                    <label class="block text-sm font-medium text-white mb-2">Total Final</label>
+                                    <input type="text" id="total-final" class="w-full px-3 py-2 border border-purple-600 bg-purple-600 text-white rounded-lg font-bold" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-center space-x-4 pt-8 border-t border-gray-200 dark:border-gray-700 mt-8">
+                            <button type="button" onclick="cerrarFormulario()" class="apple-btn-secondary font-medium py-3 px-8 transition duration-200">
+                                Cancelar
+                            </button>
+                            <button type="button" onclick="calcularTotales()" class="bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-3 px-8 rounded-lg transition duration-200">
+                                Calcular Totales
+                            </button>
+                            <button type="submit" class="apple-btn-primary font-medium py-3 px-8 transition duration-200 shadow-lg">
+                                Crear Volumetría
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', formularioHTML);
+    
+    // Agregar event listener al formulario
+    document.getElementById('form-general').addEventListener('submit', function(e) {
+        e.preventDefault();
+        procesarFormularioGeneral();
+    });
+    
+    // Poblar selectores de cliente y oportunidad
+    populateClientSelectGeneral();
+    setupOpportunityChangeListenerGeneral();
+    
+    // Agregar algunos elementos iniciales
+    agregarEquipamiento();
+    agregarManoObra();
+    agregarCostoOperativo();
 }
 
 // Función para procesar el formulario de nodos
@@ -2432,6 +2612,374 @@ function crearCotizacionAutomatica(datosVolumetria) {
             });
         }
     });
+}
+
+// ==================== FUNCIONES PARA VOLUMETRÍA GENERAL ====================
+
+// Funciones para manejar el formulario de volumetría general
+function populateClientSelectGeneral() {
+    const clientSelect = document.getElementById('cliente-general');
+    if (!clientSelect) return;
+    
+    fetch('/app/api/clients-for-user/')
+        .then(response => response.json())
+        .then(data => {
+            clientSelect.innerHTML = '<option value="">-- Seleccione un cliente --</option>';
+            data.forEach(client => {
+                const option = document.createElement('option');
+                option.value = client.id;
+                option.textContent = client.nombre_empresa;
+                clientSelect.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error loading clients:', error));
+}
+
+function setupOpportunityChangeListenerGeneral() {
+    const clientSelect = document.getElementById('cliente-general');
+    const opportunitySelect = document.getElementById('oportunidad-general');
+    
+    if (!clientSelect || !opportunitySelect) return;
+    
+    clientSelect.addEventListener('change', function() {
+        const clienteId = this.value;
+        
+        opportunitySelect.innerHTML = '<option value="">-- Seleccione una oportunidad --</option>';
+        
+        if (!clienteId) return;
+        
+        fetch(`/app/api/opportunities-by-client/${clienteId}/`)
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(opportunity => {
+                    const option = document.createElement('option');
+                    option.value = opportunity.id;
+                    option.textContent = opportunity.oportunidad;
+                    opportunitySelect.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Error loading opportunities:', error));
+    });
+}
+
+// Variables globales para contadores
+let equipamientoCounter = 0;
+let manoObraCounter = 0;
+let costosOperativosCounter = 0;
+
+function agregarEquipamiento() {
+    equipamientoCounter++;
+    const container = document.getElementById('equipamiento-container');
+    
+    const equipamientoHTML = `
+        <div id="equipamiento-${equipamientoCounter}" class="bg-gray-700 p-4 rounded-lg relative">
+            <button type="button" onclick="eliminarElemento('equipamiento-${equipamientoCounter}')" class="absolute top-2 right-2 text-red-400 hover:text-red-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <div>
+                    <label class="block text-sm font-medium apple-text-primary mb-1">Marca</label>
+                    <input type="text" name="equipamiento_marca_${equipamientoCounter}" class="w-full px-2 py-1 text-sm border border-gray-600 bg-gray-800 apple-text-primary rounded" placeholder="CHAROFIL">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium apple-text-primary mb-1">No. Parte</label>
+                    <input type="text" name="equipamiento_parte_${equipamientoCounter}" class="w-full px-2 py-1 text-sm border border-gray-600 bg-gray-800 apple-text-primary rounded" placeholder="MG-50-431EZ">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium apple-text-primary mb-1">Cantidad</label>
+                    <input type="number" name="equipamiento_cantidad_${equipamientoCounter}" min="1" class="w-full px-2 py-1 text-sm border border-gray-600 bg-gray-800 apple-text-primary rounded" placeholder="12" onchange="calcularLineaEquipamiento(${equipamientoCounter})">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium apple-text-primary mb-1">Descripción</label>
+                    <input type="text" name="equipamiento_descripcion_${equipamientoCounter}" class="w-full px-2 py-1 text-sm border border-gray-600 bg-gray-800 apple-text-primary rounded" placeholder="Charola Tipo Malla 66/100 mm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium apple-text-primary mb-1">Precio Lista</label>
+                    <input type="number" name="equipamiento_precio_${equipamientoCounter}" step="0.01" class="w-full px-2 py-1 text-sm border border-gray-600 bg-gray-800 apple-text-primary rounded" placeholder="37.39" onchange="calcularLineaEquipamiento(${equipamientoCounter})">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium apple-text-primary mb-1">Descuento %</label>
+                    <input type="number" name="equipamiento_descuento_${equipamientoCounter}" min="0" max="100" class="w-full px-2 py-1 text-sm border border-gray-600 bg-gray-800 apple-text-primary rounded" placeholder="0" onchange="calcularLineaEquipamiento(${equipamientoCounter})">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium apple-text-primary mb-1">Precio Unitario</label>
+                    <input type="text" id="equipamiento_precio_unitario_${equipamientoCounter}" class="w-full px-2 py-1 text-sm border border-gray-600 bg-gray-600 apple-text-primary rounded" readonly>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium apple-text-primary mb-1">Total</label>
+                    <input type="text" id="equipamiento_total_${equipamientoCounter}" class="w-full px-2 py-1 text-sm border border-gray-600 bg-gray-600 apple-text-primary rounded font-bold" readonly>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium apple-text-primary mb-1">Ganancia %</label>
+                    <input type="number" name="equipamiento_ganancia_${equipamientoCounter}" min="0" max="100" class="w-full px-2 py-1 text-sm border border-gray-600 bg-gray-800 apple-text-primary rounded" placeholder="37" onchange="calcularLineaEquipamiento(${equipamientoCounter})">
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', equipamientoHTML);
+}
+
+function agregarManoObra() {
+    manoObraCounter++;
+    const container = document.getElementById('mano-obra-container');
+    
+    const manoObraHTML = `
+        <div id="mano-obra-${manoObraCounter}" class="bg-gray-700 p-4 rounded-lg relative">
+            <button type="button" onclick="eliminarElemento('mano-obra-${manoObraCounter}')" class="absolute top-2 right-2 text-red-400 hover:text-red-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium apple-text-primary mb-1">Cantidad</label>
+                    <input type="number" name="mano_obra_cantidad_${manoObraCounter}" min="1" class="w-full px-2 py-1 text-sm border border-gray-600 bg-gray-800 apple-text-primary rounded" placeholder="24" onchange="calcularLineaManoObra(${manoObraCounter})">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium apple-text-primary mb-1">Descripción</label>
+                    <input type="text" name="mano_obra_descripcion_${manoObraCounter}" class="w-full px-2 py-1 text-sm border border-gray-600 bg-gray-800 apple-text-primary rounded" placeholder="Instalación de tramo de escalerilla">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium apple-text-primary mb-1">Precio Unitario</label>
+                    <input type="number" name="mano_obra_precio_${manoObraCounter}" step="0.01" class="w-full px-2 py-1 text-sm border border-gray-600 bg-gray-800 apple-text-primary rounded" placeholder="35" onchange="calcularLineaManoObra(${manoObraCounter})">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium apple-text-primary mb-1">Total</label>
+                    <input type="text" id="mano_obra_total_${manoObraCounter}" class="w-full px-2 py-1 text-sm border border-gray-600 bg-gray-600 apple-text-primary rounded font-bold" readonly>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', manoObraHTML);
+}
+
+function agregarCostoOperativo() {
+    costosOperativosCounter++;
+    const container = document.getElementById('costos-operativos-container');
+    
+    const costoHTML = `
+        <div id="costo-operativo-${costosOperativosCounter}" class="bg-gray-700 p-4 rounded-lg relative">
+            <button type="button" onclick="eliminarElemento('costo-operativo-${costosOperativosCounter}')" class="absolute top-2 right-2 text-red-400 hover:text-red-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <div>
+                    <label class="block text-sm font-medium apple-text-primary mb-1">Cantidad</label>
+                    <input type="number" name="costo_cantidad_${costosOperativosCounter}" min="0" class="w-full px-2 py-1 text-sm border border-gray-600 bg-gray-800 apple-text-primary rounded" placeholder="3" onchange="calcularLineaCosto(${costosOperativosCounter})">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium apple-text-primary mb-1">Descripción</label>
+                    <input type="text" name="costo_descripcion_${costosOperativosCounter}" class="w-full px-2 py-1 text-sm border border-gray-600 bg-gray-800 apple-text-primary rounded" placeholder="Técnico">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium apple-text-primary mb-1">Costo Unit.</label>
+                    <input type="number" name="costo_unitario_${costosOperativosCounter}" step="0.01" class="w-full px-2 py-1 text-sm border border-gray-600 bg-gray-800 apple-text-primary rounded" placeholder="50" onchange="calcularLineaCosto(${costosOperativosCounter})">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium apple-text-primary mb-1">Costo Total</label>
+                    <input type="text" id="costo_total_${costosOperativosCounter}" class="w-full px-2 py-1 text-sm border border-gray-600 bg-gray-600 apple-text-primary rounded font-bold" readonly>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium apple-text-primary mb-1">Días</label>
+                    <input type="number" name="costo_dias_${costosOperativosCounter}" min="1" class="w-full px-2 py-1 text-sm border border-gray-600 bg-gray-800 apple-text-primary rounded" placeholder="4">
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', costoHTML);
+}
+
+function eliminarElemento(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.remove();
+        calcularTotales();
+    }
+}
+
+function calcularLineaEquipamiento(counter) {
+    const cantidad = parseFloat(document.querySelector(`input[name="equipamiento_cantidad_${counter}"]`).value) || 0;
+    const precio = parseFloat(document.querySelector(`input[name="equipamiento_precio_${counter}"]`).value) || 0;
+    const descuento = parseFloat(document.querySelector(`input[name="equipamiento_descuento_${counter}"]`).value) || 0;
+    
+    const precioConDescuento = precio * (1 - descuento / 100);
+    const total = cantidad * precioConDescuento;
+    
+    document.getElementById(`equipamiento_precio_unitario_${counter}`).value = precioConDescuento.toFixed(2);
+    document.getElementById(`equipamiento_total_${counter}`).value = total.toFixed(2);
+    
+    calcularTotales();
+}
+
+function calcularLineaManoObra(counter) {
+    const cantidad = parseFloat(document.querySelector(`input[name="mano_obra_cantidad_${counter}"]`).value) || 0;
+    const precio = parseFloat(document.querySelector(`input[name="mano_obra_precio_${counter}"]`).value) || 0;
+    
+    const total = cantidad * precio;
+    document.getElementById(`mano_obra_total_${counter}`).value = total.toFixed(2);
+    
+    calcularTotales();
+}
+
+function calcularLineaCosto(counter) {
+    const cantidad = parseFloat(document.querySelector(`input[name="costo_cantidad_${counter}"]`).value) || 0;
+    const precioUnitario = parseFloat(document.querySelector(`input[name="costo_unitario_${counter}"]`).value) || 0;
+    
+    const total = cantidad * precioUnitario;
+    document.getElementById(`costo_total_${counter}`).value = total.toFixed(2);
+    
+    calcularTotales();
+}
+
+function calcularTotales() {
+    let totalEquipamiento = 0;
+    let totalManoObra = 0;
+    let totalCostos = 0;
+    let gananciaTotal = 0;
+    
+    // Sumar equipamiento
+    for (let i = 1; i <= equipamientoCounter; i++) {
+        const element = document.getElementById(`equipamiento_total_${i}`);
+        if (element) {
+            totalEquipamiento += parseFloat(element.value) || 0;
+            
+            // Calcular ganancia del equipamiento
+            const cantidad = parseFloat(document.querySelector(`input[name="equipamiento_cantidad_${i}"]`)?.value) || 0;
+            const precio = parseFloat(document.querySelector(`input[name="equipamiento_precio_${i}"]`)?.value) || 0;
+            const gananciaPorc = parseFloat(document.querySelector(`input[name="equipamiento_ganancia_${i}"]`)?.value) || 0;
+            const descuento = parseFloat(document.querySelector(`input[name="equipamiento_descuento_${i}"]`)?.value) || 0;
+            
+            const precioConDescuento = precio * (1 - descuento / 100);
+            const costoReal = precioConDescuento * (1 - gananciaPorc / 100);
+            const gananciaMaterial = (precioConDescuento - costoReal) * cantidad;
+            
+            gananciaTotal += gananciaMaterial;
+        }
+    }
+    
+    // Sumar mano de obra
+    for (let i = 1; i <= manoObraCounter; i++) {
+        const element = document.getElementById(`mano_obra_total_${i}`);
+        if (element) {
+            totalManoObra += parseFloat(element.value) || 0;
+        }
+    }
+    
+    // Sumar costos operativos
+    for (let i = 1; i <= costosOperativosCounter; i++) {
+        const element = document.getElementById(`costo_total_${i}`);
+        if (element) {
+            totalCostos += parseFloat(element.value) || 0;
+        }
+    }
+    
+    const subtotal = totalEquipamiento + totalManoObra + totalCostos;
+    const iva = subtotal * 0.08; // 8% IVA
+    const total = subtotal + iva;
+    
+    // Actualizar campos
+    document.getElementById('precio-lista-total').value = totalEquipamiento.toFixed(2);
+    document.getElementById('sub-total').value = subtotal.toFixed(2);
+    document.getElementById('iva-total').value = iva.toFixed(2);
+    document.getElementById('precio-bajanet').value = (totalEquipamiento - gananciaTotal).toFixed(2);
+    document.getElementById('ganancia-material').value = gananciaTotal.toFixed(2);
+    document.getElementById('total-final').value = total.toFixed(2);
+}
+
+function procesarFormularioGeneral() {
+    // Recopilar datos del formulario
+    const datos = {
+        proyecto: document.getElementById('nombre-proyecto-general').value,
+        cliente_id: document.getElementById('cliente-general').value,
+        contacto: document.getElementById('contacto-general').value,
+        elaborado_por: document.getElementById('elaborado-por-general').value,
+        tipo_cambio: document.getElementById('tipo-cambio-general').value,
+        oportunidad_id: document.getElementById('oportunidad-general').value,
+        equipamiento: [],
+        mano_obra: [],
+        costos_operativos: [],
+        totales: {
+            precio_lista: document.getElementById('precio-lista-total').value,
+            subtotal: document.getElementById('sub-total').value,
+            iva: document.getElementById('iva-total').value,
+            precio_bajanet: document.getElementById('precio-bajanet').value,
+            ganancia_material: document.getElementById('ganancia-material').value,
+            total_final: document.getElementById('total-final').value
+        }
+    };
+    
+    // Recopilar equipamiento
+    for (let i = 1; i <= equipamientoCounter; i++) {
+        const marcaEl = document.querySelector(`input[name="equipamiento_marca_${i}"]`);
+        if (marcaEl && document.getElementById(`equipamiento-${i}`)) {
+            datos.equipamiento.push({
+                marca: marcaEl.value,
+                parte: document.querySelector(`input[name="equipamiento_parte_${i}"]`).value,
+                cantidad: document.querySelector(`input[name="equipamiento_cantidad_${i}"]`).value,
+                descripcion: document.querySelector(`input[name="equipamiento_descripcion_${i}"]`).value,
+                precio: document.querySelector(`input[name="equipamiento_precio_${i}"]`).value,
+                descuento: document.querySelector(`input[name="equipamiento_descuento_${i}"]`).value,
+                ganancia: document.querySelector(`input[name="equipamiento_ganancia_${i}"]`).value,
+                precio_unitario: document.getElementById(`equipamiento_precio_unitario_${i}`).value,
+                total: document.getElementById(`equipamiento_total_${i}`).value
+            });
+        }
+    }
+    
+    // Recopilar mano de obra
+    for (let i = 1; i <= manoObraCounter; i++) {
+        const cantidadEl = document.querySelector(`input[name="mano_obra_cantidad_${i}"]`);
+        if (cantidadEl && document.getElementById(`mano-obra-${i}`)) {
+            datos.mano_obra.push({
+                cantidad: cantidadEl.value,
+                descripcion: document.querySelector(`input[name="mano_obra_descripcion_${i}"]`).value,
+                precio: document.querySelector(`input[name="mano_obra_precio_${i}"]`).value,
+                total: document.getElementById(`mano_obra_total_${i}`).value
+            });
+        }
+    }
+    
+    // Recopilar costos operativos
+    for (let i = 1; i <= costosOperativosCounter; i++) {
+        const cantidadEl = document.querySelector(`input[name="costo_cantidad_${i}"]`);
+        if (cantidadEl && document.getElementById(`costo-operativo-${i}`)) {
+            datos.costos_operativos.push({
+                cantidad: cantidadEl.value,
+                descripcion: document.querySelector(`input[name="costo_descripcion_${i}"]`).value,
+                costo_unitario: document.querySelector(`input[name="costo_unitario_${i}"]`).value,
+                total: document.getElementById(`costo_total_${i}`).value,
+                dias: document.querySelector(`input[name="costo_dias_${i}"]`).value
+            });
+        }
+    }
+    
+    console.log('Datos de volumetría general:', datos);
+    
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: '✅ Volumetría Creada',
+            html: `
+                <div class="text-left">
+                    <p class="mb-2"><strong>Proyecto:</strong> ${datos.proyecto}</p>
+                    <p class="mb-2"><strong>Total Final:</strong> $${datos.totales.total_final}</p>
+                    <p class="text-sm text-gray-600">La volumetría general ha sido configurada exitosamente.</p>
+                </div>
+            `,
+            icon: 'success',
+            confirmButtonText: 'Perfecto',
+            confirmButtonColor: '#a855f7'
+        });
+    }
+    
+    // Aquí se enviarían los datos al servidor
+    // TODO: Implementar endpoint para guardar volumetría general
 }
 
 // Animaciones de entrada
