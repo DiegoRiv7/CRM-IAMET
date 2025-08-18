@@ -4412,3 +4412,388 @@ def spotlight_search_api(request):
         'query': query,
         'total': len(results)
     })
+
+@login_required
+def cotizaciones_automaticas_view(request):
+    """
+    Vista para cotizaciones automáticas - Solo para superusuarios
+    """
+    # Verificar que el usuario sea superusuario
+    if not request.user.is_superuser:
+        return redirect('home')  # Redirigir si no es superusuario
+    
+    if request.method == 'POST':
+        # Procesar el formulario de cotización automática
+        try:
+            titulo = request.POST.get('titulo', '')
+            cliente_id = request.POST.get('cliente_hidden', '')
+            usuario_final = request.POST.get('usuario_final', '')
+            oportunidad_id = request.POST.get('oportunidad', '')
+            comentarios = request.POST.get('comentarios', '')
+            moneda = request.POST.get('moneda', 'USD')
+            iva_rate = float(request.POST.get('iva_rate', '0.16'))
+            tipo_cotizacion = request.POST.get('tipo_cotizacion', '')
+            descuento_visible = request.POST.get('descuento_visible', 'false') == 'true'
+            
+            # Verificar campos requeridos
+            if not titulo or not cliente_id or not tipo_cotizacion:
+                messages.error(request, 'Por favor, completa todos los campos obligatorios.')
+                return redirect('cotizaciones_automaticas')
+            
+            # Obtener cliente
+            try:
+                cliente = Cliente.objects.get(id=cliente_id)
+            except Cliente.DoesNotExist:
+                messages.error(request, 'Cliente no encontrado.')
+                return redirect('cotizaciones_automaticas')
+            
+            # Obtener oportunidad si se especificó
+            oportunidad = None
+            if oportunidad_id:
+                try:
+                    oportunidad = TodoItem.objects.get(id=oportunidad_id)
+                except TodoItem.DoesNotExist:
+                    pass
+            
+            # Crear cotización
+            cotizacion = Cotizacion.objects.create(
+                titulo=titulo,
+                cliente=cliente,
+                usuario_final=usuario_final,
+                oportunidad=oportunidad,
+                comentarios=comentarios,
+                moneda=moneda,
+                iva_rate=iva_rate,
+                tipo_cotizacion=tipo_cotizacion,
+                descuento_visible=descuento_visible,
+                usuario=request.user
+            )
+            
+            # Procesar productos automáticos
+            productos_data = {}
+            for key, value in request.POST.items():
+                if key.startswith('productos[') and '][' in key:
+                    # Extraer índice y campo del producto
+                    index_start = key.find('[') + 1
+                    index_end = key.find(']')
+                    field_start = key.rfind('[') + 1
+                    field_end = key.rfind(']')
+                    
+                    if index_start < index_end and field_start < field_end:
+                        index = key[index_start:index_end]
+                        field = key[field_start:field_end]
+                        
+                        if index not in productos_data:
+                            productos_data[index] = {}
+                        productos_data[index][field] = value
+            
+            # Procesar títulos/secciones
+            titulos_data = {}
+            for key, value in request.POST.items():
+                if key.startswith('titulos[') and '][' in key:
+                    index_start = key.find('[') + 1
+                    index_end = key.find(']')
+                    field_start = key.rfind('[') + 1
+                    field_end = key.rfind(']')
+                    
+                    if index_start < index_end and field_start < field_end:
+                        index = key[index_start:index_end]
+                        field = key[field_start:field_end]
+                        
+                        if index not in titulos_data:
+                            titulos_data[index] = {}
+                        titulos_data[index][field] = value
+            
+            # Crear detalles de productos y títulos en el orden correcto
+            all_items = {}
+            
+            # Agregar productos
+            for index, producto in productos_data.items():
+                if all(field in producto for field in ['marca', 'no_parte', 'descripcion', 'cantidad', 'precio']):
+                    all_items[f'producto_{index}'] = {
+                        'type': 'producto',
+                        'order': int(index),
+                        'data': producto
+                    }
+            
+            # Agregar títulos
+            for index, titulo in titulos_data.items():
+                if 'texto' in titulo and 'position' in titulo:
+                    all_items[f'titulo_{index}'] = {
+                        'type': 'titulo',
+                        'order': int(titulo.get('position', 0)),
+                        'data': titulo
+                    }
+            
+            # Ordenar por posición y crear detalles
+            sorted_items = sorted(all_items.items(), key=lambda x: x[1]['order'])
+            
+            for item_key, item in sorted_items:
+                if item['type'] == 'producto':
+                    producto = item['data']
+                    cantidad = int(producto.get('cantidad', 1))
+                    precio = float(producto.get('precio', 0))
+                    descuento = float(producto.get('descuento', 0))
+                    
+                    DetalleCotizacion.objects.create(
+                        cotizacion=cotizacion,
+                        marca=producto.get('marca', ''),
+                        no_parte=producto.get('no_parte', ''),
+                        descripcion=producto.get('descripcion', ''),
+                        nombre_producto=producto.get('nombre_producto', ''),
+                        cantidad=cantidad,
+                        precio=precio,
+                        descuento=descuento,
+                        tipo='producto'
+                    )
+                elif item['type'] == 'titulo':
+                    titulo_data = item['data']
+                    DetalleCotizacion.objects.create(
+                        cotizacion=cotizacion,
+                        nombre_producto=titulo_data.get('texto', 'NUEVA SECCIÓN'),
+                        tipo='titulo',
+                        cantidad=0,
+                        precio=0,
+                        descuento=0
+                    )
+            
+            messages.success(request, f'Cotización automática "{titulo}" creada exitosamente.')
+            
+            # Redirigir al PDF de la cotización
+            return redirect('generate_cotizacion_pdf', cotizacion_id=cotizacion.id)
+            
+        except Exception as e:
+            messages.error(request, f'Error al crear la cotización automática: {str(e)}')
+            return redirect('cotizaciones_automaticas')
+    
+    # GET request - mostrar formulario
+    clientes = Cliente.objects.all().order_by('nombre_empresa')
+    clientes_data = [
+        {'id': cliente.id, 'name': cliente.nombre_empresa}
+        for cliente in clientes
+    ]
+    
+    context = {
+        'clientes_data_json': json.dumps(clientes_data),
+        'is_cotizaciones_automaticas': True,
+    }
+    
+    return render(request, 'cotizaciones_automaticas.html', context)
+
+@login_required
+def gestion_productos_view(request):
+    """
+    Vista para gestión de productos - Solo para superusuarios
+    """
+    # Verificar que el usuario sea superusuario
+    if not request.user.is_superuser:
+        return redirect('home')  # Redirigir si no es superusuario
+    
+    if request.method == 'POST':
+        # Procesar importación de productos desde Excel
+        try:
+            excel_data = request.POST.get('excel_data', '').strip()
+            actualizar_existentes = request.POST.get('actualizar_existentes') == 'on'
+            
+            if not excel_data:
+                messages.error(request, 'Por favor, pega los datos de Excel.')
+                return redirect('gestion_productos')
+            
+            # Procesar datos del Excel
+            lineas = excel_data.split('\n')
+            productos_procesados = []
+            productos_nuevos = 0
+            productos_actualizados = 0
+            errores = []
+            
+            from app.models import Marca, ProductoCatalogo, ImportacionProductos
+            
+            for i, linea in enumerate(lineas, 1):
+                if not linea.strip():
+                    continue
+                    
+                columnas = linea.split('\t')
+                if len(columnas) < 4:
+                    errores.append(f'Línea {i}: Faltan columnas (se necesitan 4: Marca, No_Parte, Descripcion, Precio)')
+                    continue
+                
+                try:
+                    marca_nombre = columnas[0].strip().upper()
+                    no_parte = columnas[1].strip()
+                    descripcion = columnas[2].strip()
+                    precio_str = columnas[3].strip()
+                    
+                    # Validar datos
+                    if not marca_nombre or not no_parte or not descripcion:
+                        errores.append(f'Línea {i}: Datos vacíos')
+                        continue
+                    
+                    # Limpiar y convertir precio
+                    precio = float(precio_str.replace(',', '').replace('$', ''))
+                    if precio < 0:
+                        errores.append(f'Línea {i}: Precio no puede ser negativo')
+                        continue
+                    
+                    # Crear o obtener marca
+                    marca, created = Marca.objects.get_or_create(
+                        nombre=marca_nombre,
+                        defaults={'activa': True}
+                    )
+                    
+                    # Verificar si el producto ya existe
+                    producto_existente = ProductoCatalogo.objects.filter(
+                        marca=marca,
+                        no_parte=no_parte
+                    ).first()
+                    
+                    if producto_existente:
+                        if actualizar_existentes:
+                            # Actualizar producto existente
+                            producto_existente.descripcion = descripcion
+                            producto_existente.precio = precio
+                            producto_existente.save()
+                            productos_actualizados += 1
+                        # Si no actualizar, simplemente ignorar
+                    else:
+                        # Crear nuevo producto
+                        ProductoCatalogo.objects.create(
+                            marca=marca,
+                            no_parte=no_parte,
+                            descripcion=descripcion,
+                            precio=precio
+                        )
+                        productos_nuevos += 1
+                    
+                    productos_procesados.append({
+                        'marca': marca_nombre,
+                        'no_parte': no_parte,
+                        'descripcion': descripcion,
+                        'precio': precio
+                    })
+                    
+                except ValueError as e:
+                    errores.append(f'Línea {i}: Error en precio "{precio_str}" - {str(e)}')
+                except Exception as e:
+                    errores.append(f'Línea {i}: Error inesperado - {str(e)}')
+            
+            # Registrar importación
+            if productos_procesados:
+                importacion = ImportacionProductos.objects.create(
+                    usuario=request.user,
+                    productos_importados=len(productos_procesados),
+                    productos_actualizados=productos_actualizados,
+                    productos_nuevos=productos_nuevos,
+                    observaciones=f'Errores: {len(errores)}' if errores else 'Importación exitosa'
+                )
+            
+            # Mostrar resultados
+            if productos_procesados:
+                mensaje_exito = f'✅ Importación completada: {productos_nuevos} productos nuevos, {productos_actualizados} actualizados'
+                if errores:
+                    mensaje_exito += f'. ⚠️ {len(errores)} errores encontrados.'
+                messages.success(request, mensaje_exito)
+            
+            if errores:
+                for error in errores[:5]:  # Mostrar solo los primeros 5 errores
+                    messages.warning(request, error)
+                if len(errores) > 5:
+                    messages.warning(request, f'... y {len(errores) - 5} errores más.')
+            
+            return redirect('gestion_productos')
+            
+        except Exception as e:
+            messages.error(request, f'Error al procesar la importación: {str(e)}')
+            return redirect('gestion_productos')
+    
+    # GET request - mostrar formulario
+    from app.models import Marca, ProductoCatalogo, ImportacionProductos
+    from django.utils import timezone
+    from datetime import timedelta
+    
+    # Estadísticas
+    total_productos = ProductoCatalogo.objects.filter(activo=True).count()
+    total_marcas = Marca.objects.filter(activa=True).count()
+    
+    # Días desde última importación
+    ultima_importacion = ImportacionProductos.objects.first()
+    if ultima_importacion:
+        dias_ultima_importacion = (timezone.now() - ultima_importacion.fecha_importacion).days
+    else:
+        dias_ultima_importacion = 'N/A'
+    
+    # Productos recientes (últimos 50)
+    productos = ProductoCatalogo.objects.filter(activo=True).select_related('marca').order_by('-fecha_actualizacion')[:50]
+    
+    # Marcas activas
+    marcas = Marca.objects.filter(activa=True).order_by('nombre')
+    
+    # Importaciones recientes
+    importaciones_recientes = ImportacionProductos.objects.select_related('usuario', 'marca').order_by('-fecha_importacion')[:10]
+    
+    context = {
+        'total_productos': total_productos,
+        'total_marcas': total_marcas,
+        'dias_ultima_importacion': dias_ultima_importacion,
+        'productos': productos,
+        'marcas': marcas,
+        'importaciones_recientes': importaciones_recientes,
+    }
+    
+    return render(request, 'gestion_productos.html', context)
+
+@login_required
+def get_productos_por_marca_api(request):
+    """
+    API para obtener productos por marca para cotizaciones automáticas
+    """
+    marca = request.GET.get('marca', '').upper()
+    query = request.GET.get('query', '').lower()
+    
+    if not marca:
+        return JsonResponse({'productos': []})
+    
+    try:
+        from app.models import ProductoCatalogo, Marca
+        
+        # Obtener la marca
+        marca_obj = Marca.objects.filter(nombre=marca, activa=True).first()
+        if not marca_obj:
+            return JsonResponse({'productos': []})
+        
+        # Obtener productos de la marca
+        productos = ProductoCatalogo.objects.filter(
+            marca=marca_obj,
+            activo=True
+        )
+        
+        # Filtrar por consulta si se proporciona
+        if query:
+            productos = productos.filter(
+                Q(no_parte__icontains=query) |
+                Q(descripcion__icontains=query)
+            )
+        
+        # Limitar resultados
+        productos = productos.order_by('no_parte')[:20]
+        
+        # Formatear respuesta
+        productos_data = []
+        for producto in productos:
+            productos_data.append({
+                'no_parte': producto.no_parte,
+                'descripcion': producto.descripcion,
+                'precio': float(producto.precio),
+                'marca': producto.marca.nombre
+            })
+        
+        return JsonResponse({
+            'productos': productos_data,
+            'marca': marca,
+            'query': query
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e),
+            'productos': []
+        })

@@ -84,6 +84,12 @@ urlpatterns = [
 
     # Ruta para la sección de cotizaciones (listado de clientes y cotizaciones)
     path('cotizaciones/', views.cotizaciones_view, name='cotizaciones'),
+    
+    # Ruta para cotizaciones automáticas (solo superusuarios)
+    path('cotizaciones-automaticas/', views.cotizaciones_automaticas_view, name='cotizaciones_automaticas'),
+    
+    # Ruta para gestión de productos (solo superusuarios)
+    path('gestion-productos/', views.gestion_productos_view, name='gestion_productos'),
 
     # Ruta para ver cotizaciones de un cliente específico
     path('cotizaciones/cliente/<int:cliente_id>/', views.cotizaciones_por_cliente_view, name='cotizaciones_por_cliente'),
@@ -129,6 +135,8 @@ urlpatterns = [
     path('api/check-new-local-opportunities/', views.check_new_local_opportunities, name='check_new_local_opportunities'),
     # API endpoint para detectar nuevas oportunidades directamente desde Bitrix24
     path('api/check-new-bitrix-opportunities/', views.check_new_bitrix_opportunities, name='check_new_bitrix_opportunities'),
+    # API para obtener productos por marca (cotizaciones automáticas)
+    path('api/productos-por-marca/', views.get_productos_por_marca_api, name='get_productos_por_marca_api'),
     # API endpoint para sincronización manual de Bitrix (solo supervisores)
     path('api/sync-bitrix-manual/', views.sync_bitrix_manual, name='sync_bitrix_manual'),
     # API para obtener datos de sesión (usado por volumetría)

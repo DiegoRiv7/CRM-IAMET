@@ -454,3 +454,122 @@ class OportunidadProyecto(models.Model):
         ordering = ['-fecha_creacion']
         # Asegurar que cada oportunidad tenga solo un proyecto asociado
         unique_together = ('oportunidad', 'bitrix_project_id')
+
+
+class Marca(models.Model):
+    """
+    Modelo para gestionar las marcas de productos
+    """
+    nombre = models.CharField(
+        max_length=50, 
+        unique=True,
+        verbose_name="Nombre de la Marca"
+    )
+    activa = models.BooleanField(
+        default=True,
+        verbose_name="Marca Activa"
+    )
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de Creación"
+    )
+
+    def __str__(self):
+        return self.nombre
+
+    class Meta:
+        verbose_name = "Marca"
+        verbose_name_plural = "Marcas"
+        ordering = ['nombre']
+
+
+class ProductoCatalogo(models.Model):
+    """
+    Modelo para gestionar el catálogo de productos importables desde Excel
+    """
+    marca = models.ForeignKey(
+        Marca,
+        on_delete=models.CASCADE,
+        verbose_name="Marca"
+    )
+    no_parte = models.CharField(
+        max_length=100,
+        verbose_name="Número de Parte"
+    )
+    descripcion = models.TextField(
+        verbose_name="Descripción del Producto"
+    )
+    precio = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Precio Unitario"
+    )
+    fecha_actualizacion = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Actualización"
+    )
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de Creación"
+    )
+    activo = models.BooleanField(
+        default=True,
+        verbose_name="Producto Activo"
+    )
+
+    def __str__(self):
+        return f"{self.marca.nombre} - {self.no_parte}"
+
+    class Meta:
+        verbose_name = "Producto del Catálogo"
+        verbose_name_plural = "Productos del Catálogo"
+        ordering = ['marca__nombre', 'no_parte']
+        unique_together = ['marca', 'no_parte']
+
+
+class ImportacionProductos(models.Model):
+    """
+    Modelo para registrar el historial de importaciones de productos
+    """
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name="Usuario que Importó"
+    )
+    fecha_importacion = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de Importación"
+    )
+    marca = models.ForeignKey(
+        Marca,
+        on_delete=models.CASCADE,
+        verbose_name="Marca Importada",
+        null=True,
+        blank=True
+    )
+    productos_importados = models.IntegerField(
+        default=0,
+        verbose_name="Productos Importados"
+    )
+    productos_actualizados = models.IntegerField(
+        default=0,
+        verbose_name="Productos Actualizados"
+    )
+    productos_nuevos = models.IntegerField(
+        default=0,
+        verbose_name="Productos Nuevos"
+    )
+    observaciones = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Observaciones"
+    )
+
+    def __str__(self):
+        marca_nombre = self.marca.nombre if self.marca else "Múltiples marcas"
+        return f"Importación {marca_nombre} - {self.fecha_importacion.strftime('%Y-%m-%d %H:%M')}"
+
+    class Meta:
+        verbose_name = "Importación de Productos"
+        verbose_name_plural = "Importaciones de Productos"
+        ordering = ['-fecha_importacion']
