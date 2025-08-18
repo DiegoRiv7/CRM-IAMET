@@ -4580,6 +4580,67 @@ def cotizaciones_automaticas_view(request):
     
     return render(request, 'cotizaciones_automaticas.html', context)
 
+def parse_producto_inteligente(linea, marcas_validas):
+    """
+    Parser inteligente que detecta productos por patrón marca-precio
+    """
+    import re
+    
+    # Dividir la línea en tokens por espacios
+    tokens = linea.split()
+    if len(tokens) < 3:  # Mínimo: marca, no_parte, precio
+        return None
+    
+    # Buscar marca válida al inicio
+    marca = None
+    marca_index = -1
+    for i, token in enumerate(tokens):
+        if token.upper() in marcas_validas:
+            marca = token.upper()
+            marca_index = i
+            break
+    
+    if not marca or marca_index == -1:
+        return None
+    
+    # Buscar precio (número decimal) desde el final
+    precio = None
+    precio_index = -1
+    for i in range(len(tokens) - 1, marca_index, -1):
+        token = tokens[i].replace(',', '').replace('$', '')
+        try:
+            precio_val = float(token)
+            if precio_val >= 0:
+                precio = precio_val
+                precio_index = i
+                break
+        except ValueError:
+            continue
+    
+    if precio is None or precio_index == -1:
+        return None
+    
+    # Extraer no_parte (siguiente token después de marca)
+    if marca_index + 1 >= precio_index:
+        return None
+    
+    no_parte = tokens[marca_index + 1]
+    
+    # Extraer descripción (todos los tokens entre no_parte y precio)
+    descripcion_tokens = tokens[marca_index + 2:precio_index]
+    descripcion = ' '.join(descripcion_tokens) if descripcion_tokens else no_parte
+    
+    # Si no hay descripción separada, usar no_parte como descripción base
+    if not descripcion.strip():
+        descripcion = f"Producto {no_parte}"
+    
+    return {
+        'marca': marca,
+        'no_parte': no_parte,
+        'descripcion': descripcion,
+        'precio': precio
+    }
+
 @login_required
 def gestion_productos_view(request):
     """
@@ -4607,21 +4668,32 @@ def gestion_productos_view(request):
             errores = []
             
             from app.models import Marca, ProductoCatalogo, ImportacionProductos
+            import re
+            
+            # Marcas válidas
+            marcas_validas = {'ZEBRA', 'PANDUIT', 'APC', 'AVIGILON', 'AXIS', 'GENETEC', 'CISCO'}
             
             for i, linea in enumerate(lineas, 1):
-                if not linea.strip():
+                linea = linea.strip()
+                if not linea:
                     continue
-                    
-                columnas = linea.split('\t')
-                if len(columnas) < 4:
-                    errores.append(f'Línea {i}: Faltan columnas (se necesitan 4: Marca, No_Parte, Descripcion, Precio)')
+                
+                # Detectar si es línea de encabezado y saltarla
+                if linea.lower().startswith('marca') and 'no' in linea.lower() and 'precio' in linea.lower():
                     continue
                 
                 try:
-                    marca_nombre = columnas[0].strip().upper()
-                    no_parte = columnas[1].strip()
-                    descripcion = columnas[2].strip()
-                    precio_str = columnas[3].strip()
+                    # Usar algoritmo inteligente de detección por patrones
+                    producto_data = parse_producto_inteligente(linea, marcas_validas)
+                    
+                    if not producto_data:
+                        errores.append(f'Línea {i}: No se pudo detectar el patrón marca-precio válido')
+                        continue
+                    
+                    marca_nombre = producto_data['marca']
+                    no_parte = producto_data['no_parte']
+                    descripcion = producto_data['descripcion']
+                    precio_str = str(producto_data['precio'])
                     
                     # Validar datos
                     if not marca_nombre or not no_parte or not descripcion:

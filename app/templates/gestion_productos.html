@@ -553,28 +553,87 @@
     </div>
 
     <script>
+        // Marcas válidas
+        const marcasValidas = ['ZEBRA', 'PANDUIT', 'APC', 'AVIGILON', 'AXIS', 'GENETEC', 'CISCO'];
+        
+        // Parser inteligente que detecta productos por patrón marca-precio
+        function parseProductoInteligente(linea) {
+            const tokens = linea.split(/\s+/); // Dividir por cualquier espacio
+            if (tokens.length < 3) return null;
+            
+            // Buscar marca válida
+            let marca = null;
+            let marcaIndex = -1;
+            for (let i = 0; i < tokens.length; i++) {
+                if (marcasValidas.includes(tokens[i].toUpperCase())) {
+                    marca = tokens[i].toUpperCase();
+                    marcaIndex = i;
+                    break;
+                }
+            }
+            
+            if (!marca || marcaIndex === -1) return null;
+            
+            // Buscar precio desde el final
+            let precio = null;
+            let precioIndex = -1;
+            for (let i = tokens.length - 1; i > marcaIndex; i--) {
+                const token = tokens[i].replace(/[,$]/g, '');
+                const precioVal = parseFloat(token);
+                if (!isNaN(precioVal) && precioVal >= 0) {
+                    precio = precioVal;
+                    precioIndex = i;
+                    break;
+                }
+            }
+            
+            if (precio === null || precioIndex === -1) return null;
+            
+            // Extraer no_parte
+            if (marcaIndex + 1 >= precioIndex) return null;
+            const noParte = tokens[marcaIndex + 1];
+            
+            // Extraer descripción
+            const descripcionTokens = tokens.slice(marcaIndex + 2, precioIndex);
+            let descripcion = descripcionTokens.join(' ');
+            if (!descripcion.trim()) {
+                descripcion = `Producto ${noParte}`;
+            }
+            
+            return {
+                marca: marca,
+                no_parte: noParte,
+                descripcion: descripcion,
+                precio: precio
+            };
+        }
+        
         // Procesamiento de datos de Excel
         function procesarDatosExcel(textoExcel) {
             const lineas = textoExcel.trim().split('\n');
             const productos = [];
             
             lineas.forEach((linea, index) => {
-                const columnas = linea.split('\t');
-                if (columnas.length >= 4) {
-                    const marca = columnas[0].trim().toUpperCase();
-                    const noParte = columnas[1].trim();
-                    const descripcion = columnas[2].trim();
-                    const precio = parseFloat(columnas[3].replace(/[^0-9.-]/g, ''));
-                    
-                    if (marca && noParte && descripcion && !isNaN(precio)) {
-                        productos.push({
-                            marca: marca,
-                            no_parte: noParte,
-                            descripcion: descripcion,
-                            precio: precio,
-                            linea: index + 1
-                        });
-                    }
+                linea = linea.trim();
+                if (!linea) return;
+                
+                // Saltar líneas de encabezado
+                if (linea.toLowerCase().includes('marca') && 
+                    linea.toLowerCase().includes('no') && 
+                    linea.toLowerCase().includes('precio')) {
+                    return;
+                }
+                
+                // Usar parser inteligente
+                const producto = parseProductoInteligente(linea);
+                if (producto) {
+                    productos.push({
+                        marca: producto.marca,
+                        no_parte: producto.no_parte,
+                        descripcion: producto.descripcion,
+                        precio: producto.precio,
+                        linea: index + 1
+                    });
                 }
             });
             
