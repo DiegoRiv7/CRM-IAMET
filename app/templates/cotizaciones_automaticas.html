@@ -503,6 +503,9 @@
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                             Agregar Producto
                         </button>
+                        <button type="button" id="test-zebra-btn" class="btn-secondary flex items-center justify-center" style="background: linear-gradient(135deg, #10B981 0%, #34D399 100%); color: white;">
+                            🧪 Test ZEBRA
+                        </button>
                         <button type="button" id="add-title-btn" class="btn-secondary flex items-center justify-center" style="background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-blue-light) 100%); color: white;">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
                             Agregar Título
@@ -906,6 +909,9 @@
         }
 
         function onNoParteInput(rowNumber) {
+            const inputValue = document.getElementById(`no_parte_${rowNumber}`).value;
+            console.log(`=== Input event on row ${rowNumber}: "${inputValue}" ===`);
+            
             // Limpiar timeout anterior si existe
             if (searchTimeouts[rowNumber]) {
                 clearTimeout(searchTimeouts[rowNumber]);
@@ -913,6 +919,7 @@
             
             // Configurar nuevo timeout (debounce de 300ms)
             searchTimeouts[rowNumber] = setTimeout(() => {
+                console.log(`Debounce timeout triggered for row ${rowNumber}`);
                 performSearch(rowNumber);
             }, 300);
         }
@@ -941,7 +948,10 @@
                 return;
             }
             
-            console.log(`Searching for "${inputValue}" in marca "${selectedMarca}"`); // Debug log
+            console.log(`=== Performing search for row ${rowNumber} ===`);
+            console.log(`Input value: "${inputValue}"`);
+            console.log(`Selected marca: "${selectedMarca}"`);
+            console.log(`Minimum length check: ${inputValue.length >= 2}`);
             
             // Mostrar indicador de carga
             suggestionsContainer.innerHTML = `
@@ -1153,6 +1163,9 @@
                     console.log(`API test successful: Found ${testProducts.length} ZEBRA products`);
                     if (testProducts.length > 0) {
                         console.log('Sample products:', testProducts.slice(0, 3));
+                        testProducts.forEach((prod, idx) => {
+                            console.log(`  ${idx + 1}. ${prod.noParte} - ${prod.descripcion} ($${prod.precio})`);
+                        });
                     }
                 } catch (error) {
                     console.error('API test failed:', error);
@@ -1291,6 +1304,27 @@
                 const marcaToUse = selectedMarca || globalMarcaFilter.value;
                 addRow(marcaToUse, '', '', 1, 0, 0);
             });
+            
+            document.getElementById('test-zebra-btn').addEventListener('click', () => {
+                console.log('=== Creating test ZEBRA row ===');
+                addRow('ZEBRA', '', '', 1, 0, 0);
+                
+                setTimeout(() => {
+                    const lastRowNumber = document.querySelectorAll('#productos-tbody tr.product-row').length;
+                    console.log(`Test row created: row-${lastRowNumber}`);
+                    
+                    // Auto-trigger search with 'ZT'
+                    setTimeout(() => {
+                        const testInput = document.getElementById(`no_parte_${lastRowNumber}`);
+                        if (testInput) {
+                            console.log('Simulating input "ZT" in test row');
+                            testInput.value = 'ZT';
+                            testInput.dispatchEvent(new Event('input'));
+                        }
+                    }, 500);
+                }, 100);
+            });
+            
             document.getElementById('add-title-btn').addEventListener('click', () => addTitleRow());
             document.getElementById('iva-rate').addEventListener('change', calculateTotals);
             document.getElementById('currency-select').addEventListener('change', calculateTotals);
