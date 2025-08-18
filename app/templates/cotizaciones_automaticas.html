@@ -507,6 +507,9 @@
                         <button type="button" id="test-zebra-btn" class="btn-secondary flex items-center justify-center" style="background: linear-gradient(135deg, #10B981 0%, #34D399 100%); color: white;">
                             🧪 Test ZEBRA
                         </button>
+                        <button type="button" id="test-dom-btn" class="btn-secondary flex items-center justify-center" style="background: linear-gradient(135deg, #F59E0B 0%, #FCD34D 100%); color: white;">
+                            🔧 Test DOM
+                        </button>
                         <button type="button" id="add-title-btn" class="btn-secondary flex items-center justify-center" style="background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-blue-light) 100%); color: white;">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
                             Agregar Título
@@ -919,9 +922,58 @@
             }
             
             // Configurar nuevo timeout (debounce de 300ms)
-            searchTimeouts[rowNumber] = setTimeout(() => {
+            searchTimeouts[rowNumber] = setTimeout(async () => {
                 console.log(`Debounce timeout triggered for row ${rowNumber}`);
-                performSearch(rowNumber, false); // false = búsqueda normal con filtro de texto
+                
+                const marcaSelect = document.getElementById(`marca_${rowNumber}`);
+                const suggestionsContainer = document.getElementById(`suggestions_${rowNumber}`);
+                let selectedMarca = marcaSelect.value;
+                
+                // Si no hay marca seleccionada en la fila, usar la marca del filtro global
+                if (!selectedMarca) {
+                    const globalMarcaFilter = document.getElementById('marca-filter');
+                    selectedMarca = globalMarcaFilter.value;
+                    if (selectedMarca) {
+                        marcaSelect.value = selectedMarca;
+                    }
+                }
+                
+                if (!selectedMarca || inputValue.trim().length < 2) {
+                    console.log('Input: Not enough criteria, hiding suggestions');
+                    suggestionsContainer.style.display = 'none';
+                    return;
+                }
+                
+                try {
+                    console.log('=== Input: Direct API call ===');
+                    const productos = await getProductosPorMarca(selectedMarca, inputValue.trim());
+                    console.log(`Input found ${productos.length} products:`, productos);
+                    
+                    if (productos.length > 0) {
+                        suggestionsContainer.innerHTML = productos.map((producto, index) => `
+                            <div class="autocomplete-suggestion" data-index="${index}" onclick="selectProduct(${rowNumber}, '${producto.noParte}', '${producto.descripcion.replace(/'/g, "\\'")}', ${producto.precio})">
+                                <strong>${producto.noParte}</strong><br>
+                                <small>${producto.descripcion}</small><br>
+                                <small style="color: var(--apple-blue);">$${producto.precio.toLocaleString()}</small>
+                            </div>
+                        `).join('');
+                        suggestionsContainer.style.display = 'block';
+                        console.log('✅ Input: Products displayed!');
+                    } else {
+                        suggestionsContainer.innerHTML = `
+                            <div class="autocomplete-suggestion text-center py-2" style="color: var(--apple-label-tertiary);">
+                                No se encontraron productos para "${inputValue.trim()}" en ${selectedMarca}
+                            </div>
+                        `;
+                        suggestionsContainer.style.display = 'block';
+                        
+                        setTimeout(() => {
+                            suggestionsContainer.style.display = 'none';
+                        }, 2000);
+                    }
+                } catch (error) {
+                    console.error('Error in input event:', error);
+                }
             }, 300);
         }
 
@@ -949,7 +1001,31 @@
             // Si hay marca seleccionada, mostrar todos los productos disponibles
             if (selectedMarca) {
                 console.log(`Showing all products for marca: ${selectedMarca}`);
-                performSearch(rowNumber, true); // true = mostrar todos los productos
+                
+                // Llamada directa como en el test que funciona
+                setTimeout(async () => {
+                    try {
+                        console.log('=== Focus: Direct API call ===');
+                        const productos = await getProductosPorMarca(selectedMarca, '');
+                        console.log(`Focus found ${productos.length} products:`, productos);
+                        
+                        if (productos.length > 0) {
+                            suggestionsContainer.innerHTML = productos.map((producto, index) => `
+                                <div class="autocomplete-suggestion" data-index="${index}" onclick="selectProduct(${rowNumber}, '${producto.noParte}', '${producto.descripcion.replace(/'/g, "\\'")}', ${producto.precio})">
+                                    <strong>${producto.noParte}</strong><br>
+                                    <small>${producto.descripcion}</small><br>
+                                    <small style="color: var(--apple-blue);">$${producto.precio.toLocaleString()}</small>
+                                </div>
+                            `).join('');
+                            suggestionsContainer.style.display = 'block';
+                            console.log('✅ Focus: Products displayed!');
+                        } else {
+                            console.log('No products found for focus event');
+                        }
+                    } catch (error) {
+                        console.error('Error in focus event:', error);
+                    }
+                }, 100);
             }
         }
 
@@ -964,10 +1040,19 @@
         }
         
         async function performSearch(rowNumber, showAll = false) {
-            const noParteInput = document.getElementById(`no_parte_${rowNumber}`);
-            const marcaSelect = document.getElementById(`marca_${rowNumber}`);
-            let selectedMarca = marcaSelect.value;
-            const inputValue = noParteInput.value.trim();
+            try {
+                console.log(`=== performSearch called: rowNumber=${rowNumber}, showAll=${showAll} ===`);
+                
+                const noParteInput = document.getElementById(`no_parte_${rowNumber}`);
+                const marcaSelect = document.getElementById(`marca_${rowNumber}`);
+                
+                if (!noParteInput || !marcaSelect) {
+                    console.error('Required elements not found:', {noParteInput, marcaSelect});
+                    return;
+                }
+                
+                let selectedMarca = marcaSelect.value;
+                const inputValue = noParteInput.value.trim();
             
             const suggestionsContainer = document.getElementById(`suggestions_${rowNumber}`);
             
@@ -1055,6 +1140,9 @@
                 setTimeout(() => {
                     suggestionsContainer.style.display = 'none';
                 }, 3000);
+            }
+            } catch (error) {
+                console.error('Error in performSearch function:', error);
             }
         }
 
@@ -1391,6 +1479,30 @@
                         console.error('Test failed:', error);
                     }
                 }, 500);
+            });
+            
+            document.getElementById('test-dom-btn').addEventListener('click', () => {
+                console.log('=== DOM Test ===');
+                addRow('ZEBRA', '', '', 1, 0, 0);
+                
+                setTimeout(() => {
+                    const lastRowNumber = document.querySelectorAll('#productos-tbody tr.product-row').length;
+                    const suggestionsContainer = document.getElementById(`suggestions_${lastRowNumber}`);
+                    
+                    if (suggestionsContainer) {
+                        console.log('✅ Suggestions container found, showing test message...');
+                        suggestionsContainer.innerHTML = `
+                            <div class="autocomplete-suggestion">
+                                <strong>TEST MESSAGE</strong><br>
+                                <small>If you can see this, the DOM and CSS are working!</small>
+                            </div>
+                        `;
+                        suggestionsContainer.style.display = 'block';
+                        console.log('✅ Test message displayed!');
+                    } else {
+                        console.error('❌ Suggestions container not found!');
+                    }
+                }, 200);
             });
             
             document.getElementById('add-title-btn').addEventListener('click', () => addTitleRow());
