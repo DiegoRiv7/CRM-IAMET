@@ -728,18 +728,24 @@
             
             // Verificar caché primero
             if (productosCache[cacheKey]) {
+                console.log(`Using cached results for ${cacheKey}`);
                 return productosCache[cacheKey];
             }
             
             try {
                 const url = `/app/api/productos-por-marca/?marca=${encodeURIComponent(marca)}&query=${encodeURIComponent(query)}`;
+                console.log(`Fetching from API: ${url}`);
+                
                 const response = await fetch(url);
+                console.log(`API response status: ${response.status}`);
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
                 }
                 
                 const data = await response.json();
+                console.log('Raw API response:', data);
                 
                 // Formatear productos para compatibilidad
                 const productos = data.productos.map(producto => ({
@@ -748,13 +754,15 @@
                     precio: producto.precio
                 }));
                 
+                console.log(`Formatted ${productos.length} products for ${marca}`);
+                
                 // Guardar en caché
                 productosCache[cacheKey] = productos;
                 
                 return productos;
             } catch (error) {
                 console.error('Error al obtener productos:', error);
-                return [];
+                throw error; // Re-throw para que se maneje en performSearch
             }
         }
 
@@ -912,15 +920,28 @@
         async function performSearch(rowNumber) {
             const noParteInput = document.getElementById(`no_parte_${rowNumber}`);
             const marcaSelect = document.getElementById(`marca_${rowNumber}`);
-            const selectedMarca = marcaSelect.value;
+            let selectedMarca = marcaSelect.value;
             const inputValue = noParteInput.value.trim();
             
             const suggestionsContainer = document.getElementById(`suggestions_${rowNumber}`);
+            
+            // Si no hay marca seleccionada en la fila, usar la marca del filtro global
+            if (!selectedMarca) {
+                const globalMarcaFilter = document.getElementById('marca-filter');
+                selectedMarca = globalMarcaFilter.value;
+                
+                // Si hay marca global seleccionada, pre-seleccionarla en esta fila
+                if (selectedMarca) {
+                    marcaSelect.value = selectedMarca;
+                }
+            }
             
             if (!selectedMarca || inputValue.length < 2) {
                 suggestionsContainer.style.display = 'none';
                 return;
             }
+            
+            console.log(`Searching for "${inputValue}" in marca "${selectedMarca}"`); // Debug log
             
             // Mostrar indicador de carga
             suggestionsContainer.innerHTML = `
@@ -935,10 +956,11 @@
             
             try {
                 const productos = await getProductosPorMarca(selectedMarca, inputValue);
+                console.log(`API returned ${productos.length} products:`, productos); // Debug log
                 
                 if (productos.length > 0) {
                     suggestionsContainer.innerHTML = productos.map((producto, index) => `
-                        <div class="autocomplete-suggestion" data-index="${index}" onclick="selectProduct(${rowNumber}, '${producto.noParte}', '${producto.descripcion}', ${producto.precio})">
+                        <div class="autocomplete-suggestion" data-index="${index}" onclick="selectProduct(${rowNumber}, '${producto.noParte}', '${producto.descripcion.replace(/'/g, "\\'")}', ${producto.precio})">
                             <strong>${producto.noParte}</strong><br>
                             <small>${producto.descripcion}</small><br>
                             <small style="color: var(--apple-blue);">$${producto.precio.toLocaleString()}</small>
@@ -962,7 +984,7 @@
                 console.error('Error al buscar productos:', error);
                 suggestionsContainer.innerHTML = `
                     <div class="autocomplete-suggestion text-center py-2" style="color: #fc8181;">
-                        Error al buscar productos. Intenta de nuevo.
+                        Error al buscar productos: ${error.message}
                     </div>
                 `;
                 suggestionsContainer.style.display = 'block';
@@ -1122,6 +1144,20 @@
         // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
             populateClientSelect();
+            
+            // Test de la API - probar automáticamente con ZEBRA
+            setTimeout(async () => {
+                console.log('=== Testing API connection ===');
+                try {
+                    const testProducts = await getProductosPorMarca('ZEBRA', '');
+                    console.log(`API test successful: Found ${testProducts.length} ZEBRA products`);
+                    if (testProducts.length > 0) {
+                        console.log('Sample products:', testProducts.slice(0, 3));
+                    }
+                } catch (error) {
+                    console.error('API test failed:', error);
+                }
+            }, 1000);
 
             // Funcionalidad del filtro de marca
             document.getElementById('marca-filter').addEventListener('change', (e) => {
@@ -1251,7 +1287,9 @@
 
             document.getElementById('add-row-btn').addEventListener('click', () => {
                 // Si hay una marca seleccionada globalmente, pre-seleccionarla
-                addRow(selectedMarca, '', '', 1, 0, 0);
+                const globalMarcaFilter = document.getElementById('marca-filter');
+                const marcaToUse = selectedMarca || globalMarcaFilter.value;
+                addRow(marcaToUse, '', '', 1, 0, 0);
             });
             document.getElementById('add-title-btn').addEventListener('click', () => addTitleRow());
             document.getElementById('iva-rate').addEventListener('change', calculateTotals);
