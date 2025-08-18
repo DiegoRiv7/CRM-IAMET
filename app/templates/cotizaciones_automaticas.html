@@ -379,12 +379,13 @@
             left: 0;
             right: 0;
             background: var(--apple-background-secondary);
-            border: 1px solid var(--apple-separator);
+            border: 2px solid var(--apple-blue);
             border-radius: 0.375rem;
             max-height: 200px;
             overflow-y: auto;
             z-index: 1000;
             display: none;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
         }
         
         .autocomplete-suggestion {
@@ -824,7 +825,7 @@
                 </td>
                 <td>
                     <div class="autocomplete-container">
-                        <input type="text" id="no_parte_${newRowNumber}" name="productos[${newRowNumber}][no_parte]" class="input-field" placeholder="No. Parte" value="${noParte}" oninput="onNoParteInput(${newRowNumber})" onkeydown="onNoParteKeydown(event, ${newRowNumber})">
+                        <input type="text" id="no_parte_${newRowNumber}" name="productos[${newRowNumber}][no_parte]" class="input-field" placeholder="No. Parte" value="${noParte}" oninput="onNoParteInput(${newRowNumber})" onkeydown="onNoParteKeydown(event, ${newRowNumber})" onfocus="onNoParteFocus(${newRowNumber})" onblur="onNoParteBlur(${newRowNumber})">
                         <div id="suggestions_${newRowNumber}" class="autocomplete-suggestions"></div>
                     </div>
                 </td>
@@ -923,8 +924,40 @@
                 performSearch(rowNumber);
             }, 300);
         }
+
+        function onNoParteFocus(rowNumber) {
+            console.log(`=== Focus event on row ${rowNumber} ===`);
+            const marcaSelect = document.getElementById(`marca_${rowNumber}`);
+            let selectedMarca = marcaSelect.value;
+            
+            // Si no hay marca seleccionada en la fila, usar la marca del filtro global
+            if (!selectedMarca) {
+                const globalMarcaFilter = document.getElementById('marca-filter');
+                selectedMarca = globalMarcaFilter.value;
+                
+                if (selectedMarca) {
+                    marcaSelect.value = selectedMarca;
+                }
+            }
+            
+            // Si hay marca seleccionada, mostrar todos los productos disponibles
+            if (selectedMarca) {
+                console.log(`Showing all products for marca: ${selectedMarca}`);
+                performSearch(rowNumber, true); // true = mostrar todos los productos
+            }
+        }
+
+        function onNoParteBlur(rowNumber) {
+            // Delay para permitir clicks en las sugerencias
+            setTimeout(() => {
+                const suggestionsContainer = document.getElementById(`suggestions_${rowNumber}`);
+                if (suggestionsContainer) {
+                    suggestionsContainer.style.display = 'none';
+                }
+            }, 200);
+        }
         
-        async function performSearch(rowNumber) {
+        async function performSearch(rowNumber, showAll = false) {
             const noParteInput = document.getElementById(`no_parte_${rowNumber}`);
             const marcaSelect = document.getElementById(`marca_${rowNumber}`);
             let selectedMarca = marcaSelect.value;
@@ -943,7 +976,8 @@
                 }
             }
             
-            if (!selectedMarca || inputValue.length < 2) {
+            // Si showAll es true, mostrar todos los productos sin filtro de texto
+            if (!selectedMarca || (!showAll && inputValue.length < 2)) {
                 suggestionsContainer.style.display = 'none';
                 return;
             }
@@ -965,7 +999,9 @@
             suggestionsContainer.style.display = 'block';
             
             try {
-                const productos = await getProductosPorMarca(selectedMarca, inputValue);
+                // Si showAll es true, buscar con query vacío para obtener todos los productos
+                const searchQuery = showAll ? '' : inputValue;
+                const productos = await getProductosPorMarca(selectedMarca, searchQuery);
                 console.log(`API returned ${productos.length} products:`, productos); // Debug log
                 
                 if (productos.length > 0) {
@@ -978,9 +1014,12 @@
                     `).join('');
                     suggestionsContainer.style.display = 'block';
                 } else {
+                    const message = showAll 
+                        ? `No hay productos disponibles para ${selectedMarca}`
+                        : `No se encontraron productos para "${inputValue}" en ${selectedMarca}`;
                     suggestionsContainer.innerHTML = `
                         <div class="autocomplete-suggestion text-center py-2" style="color: var(--apple-label-tertiary);">
-                            No se encontraron productos para "${inputValue}" en ${selectedMarca}
+                            ${message}
                         </div>
                     `;
                     suggestionsContainer.style.display = 'block';
