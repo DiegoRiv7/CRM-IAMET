@@ -2364,6 +2364,49 @@ def bitrix_webhook_receiver(request):
                             probabilidad_cierre=probabilidad_cierre,
                         )
                         print(f"BITRIX WEBHOOK: Successfully created new opportunity '{new_opportunity.oportunidad}' with ID {new_opportunity.id}", flush=True)
+                        
+                        # ========================================
+                        # LÓGICA DE COTIZACIÓN AUTOMÁTICA
+                        # ========================================
+                        
+                        # Verificar si debe generar cotización automática
+                        if es_cotizacion_automatica(deal_details):
+                            print(f"BITRIX WEBHOOK: Oportunidad califica para cotización automática - Marca: {producto}", flush=True)
+                            
+                            # Obtener usuario final del contacto
+                            contact_id = deal_details.get('CONTACT_ID')
+                            usuario_final = ''
+                            if contact_id:
+                                try:
+                                    from .bitrix_integration import get_bitrix_contact_details
+                                    contact_details = get_bitrix_contact_details(contact_id, request=request)
+                                    if contact_details:
+                                        usuario_final = f"{contact_details.get('NAME', '')} {contact_details.get('LAST_NAME', '')}".strip()
+                                        print(f"BITRIX WEBHOOK: Usuario final obtenido: {usuario_final}", flush=True)
+                                except Exception as e:
+                                    print(f"BITRIX WEBHOOK: Error obteniendo contacto: {e}", flush=True)
+                            
+                            # Crear cotización automática
+                            cotizacion_automatica = crear_cotizacion_automatica_bitrix(deal_details, cliente, usuario)
+                            
+                            if cotizacion_automatica:
+                                # Agregar usuario final si se obtuvo
+                                if usuario_final:
+                                    cotizacion_automatica.usuario_final = usuario_final
+                                    cotizacion_automatica.save()
+                                
+                                # Subir PDF a Bitrix24
+                                resultado_subida = subir_cotizacion_a_bitrix(cotizacion_automatica, deal_id, request)
+                                
+                                if resultado_subida:
+                                    print(f"BITRIX WEBHOOK: ✅ Cotización automática completada exitosamente para deal {deal_id}")
+                                else:
+                                    print(f"BITRIX WEBHOOK: ⚠️ Cotización creada pero falló la subida a Bitrix24 para deal {deal_id}")
+                            else:
+                                print(f"BITRIX WEBHOOK: ❌ No se pudo crear la cotización automática para deal {deal_id}")
+                        else:
+                            print(f"BITRIX WEBHOOK: Oportunidad NO califica para cotización automática - Producto: {producto} (ID: {producto_bitrix_id})", flush=True)
+                        
                     except Exception as create_error:
                         print(f"BITRIX WEBHOOK: Error creating opportunity: {create_error}", flush=True)
                         print(f"BITRIX WEBHOOK: Traceback: {traceback.format_exc()}", flush=True)
@@ -4869,3 +4912,311 @@ def get_productos_por_marca_api(request):
             'error': str(e),
             'productos': []
         })
+
+# ========================================
+# COTIZACIONES AUTOMÁTICAS DESDE BITRIX24
+# ========================================
+
+import re
+
+def es_cotizacion_automatica(deal_details):
+    """
+    Detecta si una oportunidad debe generar cotización automática
+    basado en si el campo producto es una de las 7 marcas principales
+    """
+    producto_bitrix_id = deal_details.get('UF_CRM_1752859685662')
+    
+    # IDs de las 7 marcas que tienen cotización automática
+    marcas_automaticas = [
+        "176",  # ZEBRA
+        "178",  # PANDUIT
+        "180",  # APC
+        "182",  # AVIGILON
+        "184",  # GENETEC
+        "186",  # AXIS
+        "194",  # CISCO
+    ]
+    
+    return str(producto_bitrix_id) in marcas_automaticas
+
+def extraer_productos_inteligente(texto_requisicion, marca_seleccionada):
+    """
+    Parser súper inteligente que extrae números de parte y cantidades
+    de cualquier formato de texto libre
+    """
+    if not texto_requisicion or not marca_seleccionada:
+        return []
+    
+    productos_encontrados = []
+    
+    # Limpiar texto y dividir en líneas
+    lineas = texto_requisicion.strip().replace('\r\n', '\n').split('\n')
+    
+    for linea in lineas:
+        linea = linea.strip()
+        if not linea:
+            continue
+            
+        # Buscar patrones flexibles: texto alfanumérico + número
+        # Patrones que detecta:
+        # - "ZT411-203DPI 2"
+        # - "ZT411 cantidad: 3"
+        # - "necesito 5 del ZT411-203DPI"
+        # - "450145 x3"
+        # - "ZT411 (2 piezas)"
+        
+        # Patrón principal: buscar código alfanumérico y número cercano
+        patron_principal = r'([A-Z0-9\-_]+).*?(\d+)'
+        matches = re.findall(patron_principal, linea, re.IGNORECASE)
+        
+        for posible_parte, cantidad_str in matches:
+            # Limpiar el posible número de parte
+            posible_parte = posible_parte.strip().upper()
+            
+            # Verificar que sea un código válido (al menos 3 caracteres)
+            if len(posible_parte) < 3:
+                continue
+                
+            # Verificar que existe en nuestro catálogo para esta marca
+            from app.models import ProductoCatalogo, Marca
+            try:
+                marca_obj = Marca.objects.get(nombre=marca_seleccionada, activa=True)
+                producto = ProductoCatalogo.objects.filter(
+                    marca=marca_obj,
+                    no_parte__iexact=posible_parte,
+                    activo=True
+                ).first()
+                
+                if producto:
+                    cantidad = int(cantidad_str)
+                    productos_encontrados.append({
+                        'no_parte': producto.no_parte,
+                        'descripcion': producto.descripcion,
+                        'precio': float(producto.precio),
+                        'cantidad': cantidad,
+                        'total': float(producto.precio) * cantidad
+                    })
+                    print(f"COTIZACIÓN AUTOMÁTICA: Producto encontrado: {producto.no_parte} x{cantidad}")
+                    
+            except (Marca.DoesNotExist, ValueError) as e:
+                print(f"COTIZACIÓN AUTOMÁTICA: Error procesando {posible_parte}: {e}")
+                continue
+    
+    return productos_encontrados
+
+def crear_cotizacion_automatica_bitrix(deal_details, cliente, usuario):
+    """
+    Crea una cotización automática basada en los datos de Bitrix24
+    """
+    try:
+        # Obtener la marca del campo producto
+        PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE = {
+            "176": "ZEBRA", "178": "PANDUIT", "180": "APC", "182": "AVIGILON",
+            "184": "GENETEC", "186": "AXIS", "194": "CISCO"
+        }
+        
+        producto_bitrix_id = deal_details.get('UF_CRM_1752859685662')
+        marca_seleccionada = PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE.get(str(producto_bitrix_id))
+        
+        if not marca_seleccionada:
+            print(f"COTIZACIÓN AUTOMÁTICA: Marca no válida para ID {producto_bitrix_id}")
+            return None
+            
+        # Obtener el texto de requisición del cliente desde COMMENTS
+        # Los ejecutivos pueden escribir números de parte aquí en cualquier formato
+        requisicion_cliente = deal_details.get('COMMENTS', '')
+        
+        print(f"COTIZACIÓN AUTOMÁTICA: Texto de requisición obtenido: '{requisicion_cliente[:100]}...'", flush=True)
+        
+        # Extraer productos inteligentemente
+        productos = extraer_productos_inteligente(requisicion_cliente, marca_seleccionada)
+        
+        if not productos:
+            print(f"COTIZACIÓN AUTOMÁTICA: No se encontraron productos válidos en la requisición")
+            return None
+            
+        # Crear la cotización
+        from app.models import Cotizacion, DetalleCotizacion
+        
+        titulo_cotizacion = f"Cotización Automática - {deal_details.get('TITLE', 'Sin título')}"
+        
+        cotizacion = Cotizacion.objects.create(
+            cliente=cliente,
+            created_by=usuario,  # Campo correcto en el modelo
+            titulo=titulo_cotizacion,  # Campo correcto en el modelo
+            nombre_cotizacion=titulo_cotizacion,
+            descripcion=f"Cotización generada automáticamente desde Bitrix24",
+            moneda='USD',
+            iva_rate=0.16,  # 16% por defecto
+            tipo_cotizacion='Iamet',  # IAMET por defecto
+            subtotal=0,  # Se calculará después
+            iva_amount=0,  # Se calculará después
+            total=0,  # Se calculará después
+            descuento_visible=False
+        )
+        
+        # Agregar productos a la cotización
+        subtotal = 0
+        for i, producto in enumerate(productos, 1):
+            DetalleCotizacion.objects.create(
+                cotizacion=cotizacion,
+                orden=i,
+                marca=marca_seleccionada,
+                nombre_producto=producto['no_parte'],
+                no_parte=producto['no_parte'],
+                descripcion=producto['descripcion'],
+                cantidad=producto['cantidad'],
+                precio_unitario=producto['precio'],
+                descuento_porcentaje=0,
+                total=producto['total']
+            )
+            subtotal += producto['total']
+        
+        # Calcular totales
+        iva_amount = Decimal(str(subtotal)) * Decimal('0.16')
+        total = Decimal(str(subtotal)) + iva_amount
+        
+        # Actualizar cotización con totales
+        cotizacion.subtotal = Decimal(str(subtotal))
+        cotizacion.iva_amount = iva_amount
+        cotizacion.total = total
+        cotizacion.save()
+        
+        print(f"COTIZACIÓN AUTOMÁTICA: Creada cotización {cotizacion.id} con {len(productos)} productos. Total: ${total:.2f}")
+        return cotizacion
+        
+    except Exception as e:
+        print(f"COTIZACIÓN AUTOMÁTICA: Error creando cotización: {e}")
+        return None
+
+def subir_cotizacion_a_bitrix(cotizacion, deal_id, request=None):
+    """
+    Genera el PDF de la cotización y lo sube como comentario a Bitrix24
+    """
+    try:
+        from django.test import RequestFactory
+        import base64
+        
+        # Crear una petición temporal para generar el PDF
+        factory = RequestFactory()
+        pdf_request = factory.get(f'/app/cotizacion/{cotizacion.id}/pdf/')
+        pdf_request.user = cotizacion.created_by
+        
+        # Generar el PDF
+        pdf_response = generate_cotizacion_pdf(pdf_request, cotizacion.id)
+        
+        if pdf_response.status_code == 200:
+            # Convertir PDF a base64
+            pdf_content = pdf_response.content
+            pdf_base64 = base64.b64encode(pdf_content).decode('utf-8')
+            
+            # Nombre del archivo
+            pdf_filename = f"Cotizacion_Automatica_{cotizacion.id}.pdf"
+            
+            # Comentario para Bitrix
+            comentario_texto = f"""
+🤖 Cotización Automática Generada
+
+Cotización: {cotizacion.nombre_cotizacion}
+Total: ${float(cotizacion.total):.2f} {cotizacion.moneda}
+Productos: {cotizacion.detalles.count()} artículos
+Generada por: {cotizacion.created_by.get_full_name() or cotizacion.created_by.username}
+Fecha: {cotizacion.fecha_creacion.strftime('%d/%m/%Y %H:%M')}
+
+⚡ Generada automáticamente desde el sistema Nethive
+            """.strip()
+            
+            # Subir a Bitrix24
+            from .bitrix_integration import add_comment_with_attachment_to_deal
+            resultado_bitrix = add_comment_with_attachment_to_deal(
+                deal_id=deal_id,
+                file_name=pdf_filename,
+                file_content_base64=pdf_base64,
+                comment_text=comentario_texto,
+                request=request
+            )
+            
+            if resultado_bitrix:
+                print(f"COTIZACIÓN AUTOMÁTICA: PDF subido exitosamente a Bitrix24 deal {deal_id}")
+                return True
+            else:
+                print(f"COTIZACIÓN AUTOMÁTICA: Error subiendo PDF a Bitrix24 deal {deal_id}")
+                return False
+                
+        else:
+            print(f"COTIZACIÓN AUTOMÁTICA: Error generando PDF (status {pdf_response.status_code})")
+            return False
+            
+    except Exception as e:
+        print(f"COTIZACIÓN AUTOMÁTICA: Error subiendo a Bitrix24: {e}")
+        return False
+
+# ========================================
+# FUNCIÓN DE TEST PARA COTIZACIONES AUTOMÁTICAS
+# ========================================
+
+@login_required
+def test_cotizacion_automatica(request):
+    """
+    Función de test para probar las cotizaciones automáticas sin Bitrix24
+    Solo accesible para superusuarios
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Acceso denegado'}, status=403)
+    
+    try:
+        # Simular datos de Bitrix24
+        deal_details_test = {
+            'ID': '999999',  # ID de prueba
+            'TITLE': 'Oportunidad de Prueba - Cotización Automática',
+            'OPPORTUNITY': '5000.00',
+            'COMPANY_ID': '123',
+            'CONTACT_ID': '456',
+            'UF_CRM_1752859685662': '176',  # ZEBRA
+            'COMMENTS': 'ZT411-203DPI 2\n450145 x3\nNecesito 1 unidad del 20-61019-04R',
+        }
+        
+        # Obtener o crear cliente de prueba
+        from app.models import Cliente, User
+        cliente_test, _ = Cliente.objects.get_or_create(
+            nombre_empresa='Cliente Test Automático',
+            defaults={'bitrix_company_id': '123'}
+        )
+        
+        # Usar el usuario actual
+        usuario_test = request.user
+        
+        print("=== INICIANDO TEST DE COTIZACIÓN AUTOMÁTICA ===")
+        
+        # Test 1: Verificar detección de cotización automática
+        es_automatica = es_cotizacion_automatica(deal_details_test)
+        print(f"✓ Test detección automática: {es_automatica}")
+        
+        # Test 2: Probar el parser inteligente
+        productos = extraer_productos_inteligente(deal_details_test['COMMENTS'], 'ZEBRA')
+        print(f"✓ Test parser inteligente: {len(productos)} productos encontrados")
+        for p in productos:
+            print(f"  - {p['no_parte']} x{p['cantidad']} = ${p['total']:.2f}")
+        
+        # Test 3: Crear cotización automática
+        if es_automatica and productos:
+            cotizacion_test = crear_cotizacion_automatica_bitrix(deal_details_test, cliente_test, usuario_test)
+            if cotizacion_test:
+                print(f"✓ Test creación cotización: ID {cotizacion_test.id}, Total: ${cotizacion_test.total:.2f}")
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Test de cotización automática completado exitosamente',
+                    'cotizacion_id': cotizacion_test.id,
+                    'total': float(cotizacion_test.total),
+                    'productos_count': len(productos),
+                    'productos': productos
+                })
+            else:
+                return JsonResponse({'error': 'Falló la creación de la cotización'}, status=400)
+        else:
+            return JsonResponse({'error': 'Test falló en la detección o parsing'}, status=400)
+            
+    except Exception as e:
+        print(f"ERROR EN TEST: {e}")
+        return JsonResponse({'error': str(e)}, status=500)

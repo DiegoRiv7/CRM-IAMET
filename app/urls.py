@@ -137,6 +137,8 @@ urlpatterns = [
     path('api/check-new-bitrix-opportunities/', views.check_new_bitrix_opportunities, name='check_new_bitrix_opportunities'),
     # API para obtener productos por marca (cotizaciones automáticas)
     path('api/productos-por-marca/', views.get_productos_por_marca_api, name='get_productos_por_marca_api'),
+    # Test de cotizaciones automáticas (solo superusuarios)
+    path('api/test-cotizacion-automatica/', views.test_cotizacion_automatica, name='test_cotizacion_automatica'),
     # API endpoint para sincronización manual de Bitrix (solo supervisores)
     path('api/sync-bitrix-manual/', views.sync_bitrix_manual, name='sync_bitrix_manual'),
     # API para obtener datos de sesión (usado por volumetría)
