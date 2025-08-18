@@ -4,13 +4,13 @@
   <meta charset="UTF-8" />
   <title>Cotización - {{ cotizacion.descripcion|default:"Sin Nombre" }}</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    /* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'); */
     * { box-sizing: border-box; }
     
     body {
       margin: 0;
       padding: 10px;
-      font-family: 'Inter', sans-serif;
+      font-family: sans-serif; /* Fuente estándar */
       color: #333;
       background: #fff;
       -webkit-print-color-adjust: exact;
@@ -24,44 +24,33 @@
       margin: 0 auto;
       background: #fff;
     }
+
+    /* --- Layout con Tablas --- */
+    .layout-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .layout-table td {
+        padding: 0;
+        vertical-align: top;
+    }
     
-    /* Encabezado con logo y datos de contacto */
+    /* Encabezado */
     .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
       padding: 15px 10px;
       margin-bottom: 20px;
       border-bottom: 3px solid #333;
       background: #f8f9fa;
     }
-    
-    .logo {
-      flex: 1;
-    }
-    
     .logo img {
       max-height: 60px;
       width: auto;
     }
-    
     .contact-info {
-      flex: 1;
       text-align: right;
       font-size: 12px;
       color: #666;
       line-height: 1.6;
-    }
-    
-    .contact-info .phone {
-      font-weight: 600;
-      color: #333;
-      margin-bottom: 2px;
-    }
-    
-    .contact-info .schedule {
-      font-size: 11px;
-      color: #888;
     }
     
     /* Título del documento */
@@ -73,309 +62,133 @@
       border-left: 4px solid #333;
       border-bottom: 1px solid #ddd;
     }
+    .document-title h1 { font-size: 22px; text-transform: uppercase; letter-spacing: 1px; margin: 0; }
     
-    .document-title h1 {
-      margin: 0;
-      font-size: 22px;
-      font-weight: 700;
-      color: #333;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-    
-    /* Información del cliente y cotización */
-    .quote-header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 20px;
-      padding: 15px;
-      background: #fff;
-    }
-    
-    .client-info {
-      flex: 2;
-    }
-    
-    .client-info h2 {
-      font-size: 18px;
-      font-weight: 600;
-      color: #333;
-      margin: 0 0 15px 0;
-      text-transform: uppercase;
-    }
-    
-    .client-name {
-      font-size: 20px;
-      font-weight: 700;
-      color: #000;
-      margin: 5px 0 15px 0;
-      line-height: 1.2;
-    }
-    
-    .client-address {
-      color: #666;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-    
+    /* Info Cliente y Cotización */
+    .client-name { font-size: 20px; font-weight: 700; color: #000; margin: 5px 0 15px 0; }
     .quote-info {
-      flex: 1;
       text-align: right;
       background: #f8f9fa;
       color: #333;
       border: 2px solid #333;
       padding: 15px;
-      margin: -15px -15px -15px 15px;
     }
+    .quote-info .folio { font-size: 24px; font-weight: 700; margin-bottom: 10px; }
     
-    .quote-info .folio {
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-    
-    .quote-info .date {
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 5px;
-    }
-    
-    .quote-info .vendor {
-      font-size: 14px;
-      font-weight: 500;
-    }
-    
-    /* Tabla de productos */
-    .products-section {
-      margin: 20px 0;
-    }
-    
-    /* Títulos de sección */
-    .section-title {
-      margin: 20px 0 15px 0;
-      padding: 12px 15px;
-      background: #f8f9fa;
-      border-left: 4px solid #333;
-      border-bottom: 1px solid #ddd;
-      text-align: center;
-    }
-    
-    .section-title h3 {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 600;
-      color: #333;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
+    /* --- Estilos de Tablas de Productos (Formato IAMET) --- */
     .products-table {
       width: 100%;
       border-collapse: collapse;
+      margin-top: 15px;
       font-size: 13px;
     }
-    
-    .products-table th {
-      background: #f8f9fa;
-      color: #333;
-      font-weight: 600;
-      padding: 12px 8px;
+    .products-table th, .products-table td {
+      padding: 8px;
+      border-bottom: 1px solid #eee; /* Color Bajanet */
       text-align: left;
-      border-top: 2px solid #333;
-      border-bottom: 2px solid #333;
+    }
+    .products-table th {
+      background: #f8f9fa; /* Color Bajanet */
+      font-weight: 600;
       font-size: 12px;
       text-transform: uppercase;
-      vertical-align: middle;
+      border-top: 2px solid #333; /* Estilo Bajanet */
     }
-    
-    .products-table td {
-      padding: 10px 8px;
-      border-bottom: 1px solid #eee;
-      vertical-align: middle;
-      text-align: left;
-      line-height: 1.4;
-    }
-    
-    .text-right {
-      text-align: right;
-    }
-    
-    .text-center {
-      text-align: center;
-    }
-    
-    .product-name {
-      font-weight: 600;
-      color: #333;
-      line-height: 1.4;
-      vertical-align: middle;
-    }
-    
     .product-name small {
       display: block;
       font-weight: 400;
       color: #666;
       font-size: 11px;
-      margin-top: 3px;
-      line-height: 1.3;
     }
-    
-    /* Alineación específica para celdas */
-    .products-table td.text-center {
-      text-align: center;
-      vertical-align: middle;
-    }
-    
-    .products-table td.text-right {
-      text-align: right;
-      vertical-align: middle;
-    }
-    
-    .delivery-time {
-      font-style: italic;
-      color: #666;
-      font-size: 11px;
-      margin-top: 5px;
-    }
-    
-    /* Totales */
-    .totals-section {
-      display: flex;
-      justify-content: flex-end;
-      margin: 20px 0;
-    }
-    
+
+    /* --- Estilos de Tabla de Totales (Formato IAMET) --- */
     .totals-table {
       width: 280px;
       font-size: 14px;
+      margin-left: auto; /* Alinea a la derecha */
     }
-    
     .totals-table td {
-      padding: 10px 15px;
+      padding: 8px 15px;
       border-bottom: 1px solid #eee;
     }
-    
-    .totals-table .label {
-      font-weight: 600;
-      text-align: left;
-      color: #333;
-    }
-    
-    .totals-table .value {
-      text-align: right;
-      font-weight: 600;
-    }
-    
+    .totals-table .label { font-weight: 600; }
+    .totals-table .value { text-align: right; font-weight: 600; }
     .totals-table .total-row {
-      background: #f8f9fa;
-      color: #333;
-      border-top: 2px solid #333;
-      border-bottom: 2px solid #333;
+      background: #f8f9fa; /* Color Bajanet */
+      border-top: 2px solid #333; /* Estilo Bajanet */
       font-weight: 700;
       font-size: 16px;
     }
     
-    .totals-table .total-row td {
-      border-bottom: none;
-      padding: 15px;
-    }
-    
-    /* Términos y condiciones */
-    .terms {
-      margin-top: 25px;
-      padding: 15px;
-      background: #f8f9fa;
-      font-size: 12px;
-      line-height: 1.6;
-      color: #666;
-    }
-    
-    /* Paginación */
-    @page {
-      margin: 12mm;
-      @bottom-right {
-        content: counter(page) "/" counter(pages);
-        font-size: 10px;
-        color: #666;
-      }
-    }
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
+    .terms { margin-top: 25px; padding: 15px; background: #f8f9fa; font-size: 12px; }
+    @page { margin: 12mm; }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- Encabezado con logo y contacto -->
-    <div class="header">
-      <div class="logo">
-        {% if logo_base64 %}
-          <img src="data:image/png;base64,{{ logo_base64 }}" alt="Logo BAJANET">
-        {% else %}
-          <img src="http://www.baja-net.com/images/logo.png" alt="Logo BAJANET">
-        {% endif %}
-      </div>
-      <div class="contact-info">
-        <div class="phone">664 380 8965</div>
-        <div>baja-net.com</div>
-      </div>
-    </div>
+    <table class="layout-table header">
+        <tr>
+            <td>
+                <div class="logo">
+                    {% if logo_base64 %}
+                      <img src="data:image/png;base64,{{ logo_base64 }}" alt="Logo BAJANET">
+                    {% else %}
+                      <img src="http://www.baja-net.com/images/logo.png" alt="Logo BAJANET">
+                    {% endif %}
+                </div>
+            </td>
+            <td style="text-align: right;">
+                <div class="contact-info">
+                    <div class="phone">664 380 8965</div>
+                    <div>baja-net.com</div>
+                </div>
+            </td>
+        </tr>
+    </table>
     
-    <!-- Título del documento -->
-    {% if cotizacion.titulo %}
     <div class="document-title">
-      <h1>{{ cotizacion.titulo }}</h1>
-    </div>
-    {% else %}
-    <div class="document-title">
-      <h1>Cotización Equipos</h1>
-    </div>
-    {% endif %}
-
-    <!-- Información del cliente y cotización -->
-    <div class="quote-header">
-      <div class="client-info">
-        <div class="client-name">{{ cotizacion.cliente.nombre_empresa }}</div>
-        {% if cotizacion.usuario_final %}
-        <div style="font-size: 16px; font-weight: 500; color: #333; margin: 5px 0 10px 0;">
-          {{ cotizacion.usuario_final }}
-        </div>
-        {% endif %}
-        <div class="client-address">
-          <!-- Aquí podrías agregar la dirección del cliente si está disponible -->
-          {% if cotizacion.cliente.direccion %}
-            {{ cotizacion.cliente.direccion }}
-          {% endif %}
-        </div>
-      </div>
-      <div class="quote-info">
-        <div class="folio"># {{ cotizacion.id }}</div>
-        <div class="date">{{ current_date|date:"d/m/Y" }}</div>
-        <div class="vendor">{{ cotizacion.created_by.get_full_name|default:cotizacion.created_by.username }}</div>
-      </div>
+      <h1>{{ cotizacion.titulo|default:"Cotización" }}</h1>
     </div>
 
-    <!-- Tablas de productos por sección -->
-    <div class="products-section">
-      {% if secciones %}
-        {% for seccion in secciones %}
-          <!-- Título de la sección (si existe) -->
+    <table class="layout-table">
+        <tr>
+            <td style="width: 65%; padding-right: 20px;">
+                <div class="client-name">{{ cotizacion.cliente.nombre_empresa }}</div>
+                {% if cotizacion.usuario_final %}
+                <div style="font-size: 16px; font-weight: 500; color: #333; margin: 5px 0 10px 0;">{{ cotizacion.usuario_final }}</div>
+                {% endif %}
+            </td>
+            <td style="width: 35%;">
+                <div class="quote-info">
+                    <div class="folio"># {{ cotizacion.id }}</div>
+                    <div class="date">{{ current_date|date:"d/m/Y" }}</div>
+                    <div class="vendor">{{ cotizacion.created_by.get_full_name|default:cotizacion.created_by.username }}</div>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <div style="margin-top: 20px;">
+      {% for seccion in secciones %}
           {% if seccion.titulo %}
           <div class="section-title">
             <h3>{{ seccion.titulo }}</h3>
           </div>
           {% endif %}
-          
-          <!-- Tabla de productos de esta sección -->
           <table class="products-table">
             <thead>
               <tr>
-                <th>No. Partida</th>
+                <th>No.</th>
                 <th>PRODUCTO</th>
                 <th>DESCRIPCIÓN</th>
-                <th>CANTIDAD</th>
-                <th>PRECIO UNITARIO</th>
+                <th class="text-center">CANT.</th>
+                <th class="text-right">P. UNITARIO</th>
                 {% if cotizacion.descuento_visible %}
-                <th>DESC. (%)</th>
+                <th class="text-center">DESC. (%)</th>
                 {% endif %}
-                <th>TOTAL</th>
+                <th class="text-right">TOTAL</th>
               </tr>
             </thead>
             <tbody>
@@ -394,50 +207,12 @@
               {% endfor %}
             </tbody>
           </table>
-          
-          <!-- Espacio entre tablas -->
-          {% if not forloop.last %}
-          <div style="margin-bottom: 25px;"></div>
-          {% endif %}
-        {% endfor %}
-      {% else %}
-        <!-- Fallback: Tabla tradicional si no hay secciones -->
-        <table class="products-table">
-          <thead>
-            <tr>
-              <th>No. Partida</th>
-              <th>PRODUCTO</th>
-              <th>DESCRIPCIÓN</th>
-              <th>CANTIDAD</th>
-              <th>PRECIO UNITARIO</th>
-              {% if cotizacion.descuento_visible %}
-              <th>DESC. (%)</th>
-              {% endif %}
-              <th>TOTAL</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for detalle in detalles_cotizacion %}
-            <tr>
-              <td class="text-center">{{ forloop.counter }}</td>
-              <td class="product-name">{{ detalle.nombre_producto }}{% if detalle.no_parte %}<br><small>{{ detalle.no_parte }}</small>{% endif %}</td>
-              <td>{{ detalle.descripcion|default:"-"|linebreaksbr }}</td>
-              <td class="text-center">{{ detalle.cantidad }}</td>
-              <td class="text-right">${{ detalle.precio_unitario|floatformat:2 }}</td>
-              {% if cotizacion.descuento_visible %}
-              <td class="text-center">{{ detalle.descuento_porcentaje|floatformat:2 }}%</td>
-              {% endif %}
-              <td class="text-right">${{ detalle.get_total_item|floatformat:2 }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      {% endif %}
+      {% empty %}
+        <p>Esta cotización no tiene productos.</p>
+      {% endfor %}
     </div>
 
-    <!-- Totales -->
-    <div class="totals-section">
-      <table class="totals-table">
+    <table class="totals-table">
         <tr>
           <td class="label">SUB TOTAL:</td>
           <td class="value">${{ cotizacion.subtotal|floatformat:2 }}</td>
@@ -450,42 +225,14 @@
           <td class="label">TOTAL:</td>
           <td class="value">${{ cotizacion.total|floatformat:2 }} {{ cotizacion.moneda }}</td>
         </tr>
-      </table>
-    </div>
+    </table>
 
-    <!-- Términos y condiciones -->
     <div class="terms">
       <strong>Términos y Condiciones:</strong><br>
-      Esta cotización tiene una validez de 15 días desde su emisión. Precios sujetos a cambios sin previo aviso. 
-      El pedido se procesará tras la confirmación de la orden de compra. Todos los términos deben ser aceptados previamente.
-      
-      {% if cotizacion.descripcion %}
-      <br><br>
-      <strong>Notas adicionales:</strong><br>
-      {{ cotizacion.descripcion }}
-      {% endif %}
-      
-      {% if cotizacion.comentarios %}
-      <br><br>
-      <strong>Comentarios:</strong><br>
-      {{ cotizacion.comentarios|linebreaks }}
-      {% endif %}
+      Esta cotización tiene una validez de 15 días. Precios sujetos a cambios sin previo aviso.
+      {% if cotizacion.descripcion %}<br><strong>Notas:</strong> {{ cotizacion.descripcion }}{% endif %}
+      {% if cotizacion.comentarios %}<br><strong>Comentarios:</strong> {{ cotizacion.comentarios|linebreaks }}{% endif %}
     </div>
   </div>
 </body>
 </html>
-<script>
-  // Elimina la paginación JS para PDF profesional, solo deja la regla CSS
-</script>
-<!--
-NOTA SOBRE PAGINACIÓN:
-El contador de páginas en HTML solo funciona automáticamente si usas herramientas como wkhtmltopdf, WeasyPrint o similares, usando variables CSS como:
-@page {
-  @bottom-center {
-    content: "Página " counter(page) " de " counter(pages);
-  }
-}
-En navegadores o impresión directa desde el navegador, el script JS solo puede mostrar 1/1 por defecto.
--->
-
-

@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <title>Cotización IAMET - {{ cotizacion.descripcion|default:"Sin Nombre" }}</title>
   <style>
+    @page {
+        margin: 5mm; /* Margen reducido */
+    }
     /* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap'); */
     * {
       box-sizing: border-box;
@@ -18,7 +21,7 @@
       print-color-adjust: exact;
     }
     .container {
-      width: 98%;
+      width: 100%; /* Ajustado para ocupar todo el ancho */
       margin: 0 auto;
     }
     .header-table {
