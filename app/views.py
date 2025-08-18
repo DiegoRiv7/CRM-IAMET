@@ -5119,7 +5119,9 @@ def subir_cotizacion_a_bitrix(cotizacion, deal_id, request=None):
             pdf_base64 = base64.b64encode(pdf_content).decode('utf-8')
             
             # Nombre del archivo
-            pdf_filename = f"Cotizacion_Automatica_{cotizacion.id}.pdf"
+            pdf_name_raw = cotizacion.nombre_cotizacion or f"Cotizacion_{cotizacion.id}"
+            sanitized_name = "".join(c for c in pdf_name_raw if c.isalnum() or c in ('_', '-')).strip().replace(' ', '_')
+            pdf_filename = f"{sanitized_name}.pdf"
             
             # Comentario para Bitrix
             comentario_texto = f"""
