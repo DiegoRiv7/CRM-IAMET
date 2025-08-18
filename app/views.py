@@ -5038,14 +5038,22 @@ def crear_cotizacion_automatica_bitrix(deal_details, cliente, usuario):
         # Crear la cotización
         from app.models import Cotizacion, DetalleCotizacion
         
-        titulo_cotizacion = f"Cotización Automática - {deal_details.get('TITLE', 'Sin título')}"
+        # Usar el título del deal directamente
+        titulo_cotizacion = deal_details.get('TITLE', 'Sin título')
+
+        # Encontrar la oportunidad local correspondiente
+        oportunidad_local = None
+        deal_id = deal_details.get('ID')
+        if deal_id:
+            oportunidad_local = TodoItem.objects.filter(bitrix_deal_id=deal_id).first()
         
         cotizacion = Cotizacion.objects.create(
             cliente=cliente,
-            created_by=usuario,  # Campo correcto en el modelo
-            titulo=titulo_cotizacion,  # Campo correcto en el modelo
+            created_by=usuario,
+            titulo=titulo_cotizacion,
             nombre_cotizacion=titulo_cotizacion,
-            descripcion=f"Cotización generada automáticamente desde Bitrix24",
+            oportunidad=oportunidad_local, # Asociar la oportunidad local
+            descripcion="", # Descripción vacía
             moneda='USD',
             iva_rate=0.16,  # 16% por defecto
             tipo_cotizacion='Iamet',  # IAMET por defecto
