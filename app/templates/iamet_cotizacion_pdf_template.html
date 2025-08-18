@@ -1,412 +1,115 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Cotización IAMET - {{ cotizacion.descripcion|default:"Sin Nombre" }}</title>
-  <style>
-    /* Importa la fuente Inter de Google Fonts */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-
-    /* Reseteo básico de box-sizing */
-    * {
-      box-sizing: border-box;
-    }
-
-    /* Estilos para el cuerpo del documento */
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Inter', sans-serif;
-      color: #111827; /* Texto oscuro para fondo claro */
-      background: #ffffff; /* Fondo blanco principal */
-      -webkit-print-color-adjust: exact; /* Asegura que los colores de fondo se impriman */
-      print-color-adjust: exact;
-    }
-
-    /* Contenedor principal del documento */
-    .container {
-      width: 99vw;
-      max-width: 99vw;
-      padding: 0 0.5vw;
-      margin: 0 auto;
-    }
-
-    /* Estilos para el encabezado (logo e información de la empresa) */
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      background: linear-gradient(90deg, #e0f2f7 0%, #b2ebf2 100%); /* Degradado claro para el fondo del encabezado */
-      color: #004d40; /* Texto oscuro para el encabezado */
-      padding: 30px 40px;
-      border-bottom: none;
-      box-shadow: 0 4px 16px rgba(44,83,100,0.08);
-    }
-
-    /* Estilos para el título del logo en el encabezado */
-    .header .logo h1 {
-      font-size: 24px;
-      font-weight: 700;
-      margin: 0;
-      max-width: 300px;
-      line-height: 1.2;
-      color: #004d40; /* Color específico para el título del logo IAMET */
-    }
-
-    /* Estilos para los detalles de la empresa en el encabezado */
-    .company-details {
-      font-size: 12px;
-      text-align: right;
-      color: #004d40; /* Texto oscuro para los detalles de la empresa */
-    }
-
-    /* Margen para los párrafos dentro de los detalles de la empresa */
-    .company-details p {
-      margin: 2px 0;
-    }
-
-    /* Estilos generales para las secciones de contenido */
-    .section {
-      padding: 20px 0.5vw;
-      background-color: #ffffff; /* Fondo blanco para las secciones */
-      margin-bottom: 15px;
-      border-radius: 8px; /* Bordes redondeados */
-      border: 1px solid #e5e7eb; /* Borde sutil para las secciones */
-      box-sizing: border-box;
-      width: 100%;
-      max-width: 99vw;
-    }
-
-    /* Estilos para los títulos de sección (h2) */
-    h2 {
-      font-size: 16px;
-      margin-bottom: 8px;
-      color: #00796b; /* Color verde azulado para los títulos de IAMET */
-    }
-
-    /* Contenedor para la información del cliente y cotización */
-    .info-grid {
-      display: flex;
-      justify-content: space-between;
-      gap: 40px;
-      width: 100%;
-      max-width: 100vw;
-    }
-
-    /* Estilos para los párrafos dentro de la cuadrícula de información */
-    .info-grid p {
-      font-size: 13px;
-      margin: 2px 0;
-      color: #374151; /* Texto gris oscuro */
-    }
-
-    /* Estilos para el nombre del cliente en grande */
-    .client-name-only-large {
-        font-size: 22px;
-        font-weight: 700;
-        color: #111827;
-        margin-top: 0;
-        margin-bottom: 0;
-    }
-
-    /* Estilos para las tablas */
-    table {
-      width: 100%;
-      max-width: 99vw;
-      border-collapse: collapse;
-      margin-top: 15px;
-      font-size: 13px;
-      box-sizing: border-box;
-    }
-
-    /* Estilos para los encabezados y celdas de la tabla */
-    th, td {
-      padding: 8px 8px;
-      border-bottom: 1px solid #e5e7eb;
-      color: #111827;
-    }
-
-    /* Estilos para los encabezados de la tabla */
-    th {
-      background: #e0f2f7; /* Fondo azul claro para encabezados de tabla IAMET */
-      font-weight: 600;
-      font-size: 12px;
-      text-align: left;
-      color: #004d40; /* Texto oscuro para encabezados de tabla IAMET */
-    }
-
-    /* Alineación de texto a la derecha para celdas específicas */
-    td.text-right {
-      text-align: right;
-    }
-
-    /* Estilos para la tabla de totales */
-    .totals {
-      max-width: 350px;
-      margin-left: auto;
-      margin-top: 15px;
-      font-size: 14px;
-      background-color: #f0fdf4; /* Fondo muy claro para totales IAMET */
-      border-radius: 8px;
-      padding: 10px 15px;
-      border: 1px solid #d1fae5; /* Borde sutil IAMET */
-    }
-
-    /* Padding para las celdas de totales */
-    .totals td {
-      padding: 6px 0;
-      border-bottom: none;
-    }
-
-    /* Estilos para las etiquetas de los totales */
-    .totals .label {
-      color: #4b5563;
-      text-align: left;
-    }
-
-    /* Estilos para los valores de los totales */
-    .totals .value {
-      text-align: right;
-      font-weight: 600;
-    }
-
-    /* Estilos para la fila del total final */
-    .totals .total {
-      font-size: 16px;
-      font-weight: 700;
-      border-top: 3px solid #00796b; /* Borde verde azulado para el total IAMET */
-      color: #00796b; /* Color verde azulado para el total IAMET */
-      padding-top: 8px;
-    }
-
-    /* Estilos para notas y términos */
-    .notes,
-    .terms {
-      font-size: 12px;
-      color: #4b5563;
-      line-height: 1.6;
-    }
-
-    /* Estilos para el pie de página */
-    .footer {
-      background: linear-gradient(90deg, #e0f2f7 0%, #b2ebf2 100%); /* Degradado claro para el fondo del pie de página */
-      color: #004d40; /* Texto oscuro para el pie de página */
-      padding: 20px 40px;
-      text-align: center;
-      font-size: 11px;
-      border-top: 1px solid #d1fae5;
-      margin-top: 20px;
-      border-radius: 0 0 16px 16px;
-      box-shadow: 0 -2px 8px rgba(44,83,100,0.04);
-    }
-
-    /* Pie de página para paginación con PDF avanzados */
-    @media print {
-      .footer-paginacion {
-        position: fixed;
-        bottom: 8px;
-        right: 24px;
-        width: auto;
-        text-align: right;
-        font-size: 11px;
-        color: #004d40;
-        background: none;
-        border: none;
-        margin: 0;
-        padding: 0;
-        letter-spacing: 1px;
-      }
-      body, html, .container, .section {
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 99vw !important;
-        max-width: 99vw !important;
-        box-sizing: border-box;
-      }
-    }
-    /* Para herramientas como wkhtmltopdf o WeasyPrint */
-    @page {
-      margin: 12mm;
-      @bottom-right {
-        content: counter(page) "/" counter(pages);
-        color: #004d40;
-        font-size: 11px;
-      }
-    }
-    tr { page-break-inside: avoid; }
-    .footer-paginacion { display: none !important; }
-
-    td.descripcion {
-      text-align: justify;
-      text-justify: inter-word;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <title>Cotización IAMET - {{ cotizacion.descripcion|default:"Sin Nombre" }}</title>
+    <style>
+        body { font-family: sans-serif; color: #333; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .text-right { text-align: right; }
+        .total-row { font-weight: bold; }
+        .header-table, .info-table { border: none; }
+        .header-table td, .info-table td { border: none; }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header" style="background: linear-gradient(90deg, #e0f2f7 0%, #b2ebf2 100%); color: #004d40; box-shadow: 0 4px 16px rgba(44,83,100,0.08); border-bottom: none;">
-      <div class="logo">
-        
-      </div>
-      <div class="company-details" style="color: #004d40;">
-        <strong style="font-size: 18px; letter-spacing: 1px;">IAMET S.A. de C.V.</strong><br>
-        <p>📞 +52 664 380 8935</p>
-        <p>🌐 https://iamet.mx</p>
-      </div>
-    </div>
+    <table class="header-table">
+        <tr>
+            <td>
+                <img src="https://discoverbusiness.net/wp-content/uploads/2024/06/20230525180241logo_iamet.jpg" alt="Logo IAMET" style="max-height: 70px;">
+            </td>
+            <td style="text-align: right;">
+                <strong>IAMET S.A. de C.V.</strong><br>
+                +52 664 380 8935<br>
+                https://iamet.mx
+            </td>
+        </tr>
+    </table>
 
-    {% if cotizacion.titulo %}
-    <div style="text-align:center; margin: 20px 0 10px 0;">
-      <h1 style="font-size: 2rem; color: #111; margin:0; letter-spacing:1px; font-weight:800;">{{ cotizacion.titulo }}</h1>
-    </div>
-    {% endif %}
+    <h1 style="text-align: center;">{{ cotizacion.titulo|default:"Cotización" }}</h1>
 
-    <div class="section info-grid" style="background: #f8fafc; border: none; box-shadow: 0 2px 8px rgba(44,83,100,0.04); border-radius: 16px;">
-      <div>
-        <h2 style="color: #2c5364; font-size: 20px; margin-bottom: 6px;">Cliente</h2>
-        <p class="client-name-only-large" style="font-size: 24px; color: #0f2027;">{{ cotizacion.cliente.nombre_empresa }}</p>
-        {% if cotizacion.usuario_final %}
-        <p style="font-size: 18px; font-weight: 500; color: #2c5364; margin: 8px 0; padding: 8px 0; border-top: 1px solid #e5e7eb;">
-          <strong></strong> {{ cotizacion.usuario_final }}
-        </p>
-        {% endif %}
-      </div>
-      <div style="text-align: right;">
-        <h2 style="color: #2c5364; font-size: 20px; margin-bottom: 6px;">Cotización</h2>
-        <p><strong>Folio:</strong> #{{ cotizacion.id }}</p>
-        <p><strong>Fecha:</strong> {{ current_date|date:"d/m/Y" }}</p>
-        <p><strong>Vendedor:</strong> {{ cotizacion.created_by.get_full_name|default:cotizacion.created_by.username }}</p>
-      </div>
-    </div>
-
-      <!-- Tablas de productos por sección -->
-      {% if secciones %}
-        {% for seccion in secciones %}
-          <!-- Título de la sección (si existe) -->
-          {% if seccion.titulo %}
-          <div style="margin: 20px 0 15px 0; padding: 12px 15px; background: #e0f2f7; border-left: 4px solid #00796b; border-bottom: 1px solid #b2ebf2; text-align: center;">
-            <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #00796b; text-transform: uppercase; letter-spacing: 0.5px;">{{ seccion.titulo }}</h3>
-          </div>
-          {% endif %}
-          
-          <!-- Tabla de productos de esta sección -->
-          <table style="background: #f8fafc; border-radius: 10px; overflow: hidden; margin-bottom: 20px;">
-            <thead>
-              <tr style="background: #e0f2f7; color: #0f2027;">
-                <th>No. Partida</th>
-                <th>PRODUCTO</th>
-                <th>DESCRIPCIÓN</th>
-                <th>CANTIDAD</th>
-                <th>PRECIO UNITARIO</th>
-                {% if cotizacion.descuento_visible %}
-                <th>DESC. (%)</th>
+    <table class="info-table">
+        <tr>
+            <td>
+                <strong>Cliente:</strong><br>
+                {{ cotizacion.cliente.nombre_empresa }}<br>
+                {% if cotizacion.usuario_final %}
+                    Attn: {{ cotizacion.usuario_final }}
                 {% endif %}
-                <th>TOTAL</th>
-              </tr>
+            </td>
+            <td style="text-align: right;">
+                <strong>Folio:</strong> #{{ cotizacion.id }}<br>
+                <strong>Fecha:</strong> {{ current_date|date:"d/m/Y" }}<br>
+                <strong>Vendedor:</strong> {{ cotizacion.created_by.get_full_name|default:cotizacion.created_by.username }}
+            </td>
+        </tr>
+    </table>
+
+    <br>
+
+    {% for seccion in secciones %}
+        {% if seccion.titulo %}
+            <h3>{{ seccion.titulo }}</h3>
+        {% endif %}
+        <table>
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>No. Parte</th>
+                    <th>Descripción</th>
+                    <th class="text-right">Cant.</th>
+                    <th class="text-right">P. Unitario</th>
+                    <th class="text-right">Total</th>
+                </tr>
             </thead>
             <tbody>
-              {% for detalle in seccion.productos %}
-              <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ detalle.no_parte }}</td>
-                <td class="descripcion">{{ detalle.descripcion|default:"-"|linebreaksbr }}</td>
-                <td class="text-right">{{ detalle.cantidad }}</td>
-                <td class="text-right">${{ detalle.precio_unitario|floatformat:2 }}</td>
-                {% if cotizacion.descuento_visible %}
-                <td class="text-right">{{ detalle.descuento_porcentaje|floatformat:2 }}%</td>
-                {% endif %}
-                <td class="text-right">${{ detalle.get_total_item|floatformat:2 }}</td>
-              </tr>
-              {% endfor %}
+                {% for detalle in seccion.productos %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ detalle.no_parte }}</td>
+                    <td>{{ detalle.descripcion|default:"-"|linebreaksbr }}</td>
+                    <td class="text-right">{{ detalle.cantidad }}</td>
+                    <td class="text-right">${{ detalle.precio_unitario|floatformat:2 }}</td>
+                    <td class="text-right">${{ detalle.get_total_item|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
             </tbody>
-          </table>
-        {% endfor %}
-      {% else %}
-        <!-- Fallback: tabla tradicional si no hay secciones -->
-        <table style="background: #f8fafc; border-radius: 10px; overflow: hidden;">
-          <thead>
-            <tr style="background: #e0f2f7; color: #0f2027;">
-              <th>No. Partida</th>
-              <th>PRODUCTO</th>
-              <th>DESCRIPCIÓN</th>
-              <th>CANTIDAD</th>
-              <th>PRECIO UNITARIO</th>
-              {% if cotizacion.descuento_visible %}
-              <th>DESC. (%)</th>
-              {% endif %}
-              <th>TOTAL</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for detalle in detalles_cotizacion %}
-            <tr>
-              <td>{{ forloop.counter }}</td>
-              <td>{{ detalle.no_parte }}</td>
-              <td class="descripcion">{{ detalle.descripcion|default:"-"|linebreaksbr }}</td>
-              <td class="text-right">{{ detalle.cantidad }}</td>
-              <td class="text-right">${{ detalle.precio_unitario|floatformat:2 }}</td>
-              {% if cotizacion.descuento_visible %}
-              <td class="text-right">{{ detalle.descuento_porcentaje|floatformat:2 }}%</td>
-              {% endif %}
-              <td class="text-right">${{ detalle.get_total_item|floatformat:2 }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
         </table>
-      {% endif %}
-      <table class="totals" style="background: #e0f2f7; border-radius: 10px; margin-top: 20px;">
-        <tr>
-          <td class="label">Subtotal:</td>
-          <td class="value">${{ cotizacion.subtotal|floatformat:2 }}</td>
-        </tr>
-        <tr>
-          <td class="label">IVA ({{ iva_rate_percentage|floatformat:0 }}%):</td>
-          <td class="value">${{ cotizacion.iva_amount|floatformat:2 }}</td>
-        </tr>
-        <tr class="total">
-          <td class="label">Total:</td>
-          <td class="value">${{ cotizacion.total|floatformat:2 }} {{ cotizacion.moneda }}</td>
-        </tr>
-      </table>
-    </div>
+    {% empty %}
+        <p>No hay detalles en esta cotización.</p>
+    {% endfor %}
 
-    {% if cotizacion.descripcion %}
-    <div class="section" style="background: #f8fafc; border: none; box-shadow: 0 2px 8px rgba(44,83,100,0.04); border-radius: 16px;">
-      <h2 style="color: #2c5364;">Notas</h2>
-      <p class="notes">{{ cotizacion.descripcion }}</p>
-      
-      {% if cotizacion.comentarios %}
-      <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
-        <h3 style="color: #2c5364; font-size: 16px; margin-bottom: 8px;">Comentarios:</h3>
-        <p class="notes" style="color: #374151;">{{ cotizacion.comentarios|linebreaks }}</p>
-      </div>
-      {% endif %}
-    </div>
-    {% elif cotizacion.comentarios %}
-    <div class="section" style="background: #f8fafc; border: none; box-shadow: 0 2px 8px rgba(44,83,100,0.04); border-radius: 16px;">
-      <h2 style="color: #2c5364;">Comentarios</h2>
-      <p class="notes" style="color: #374151;">{{ cotizacion.comentarios|linebreaks }}</p>
+    <br>
+
+    <table style="width: 40%; margin-left: 60%;">
+        <tr>
+            <td>Subtotal:</td>
+            <td class="text-right">${{ cotizacion.subtotal|floatformat:2 }}</td>
+        </tr>
+        <tr>
+            <td>IVA ({{ iva_rate_percentage|floatformat:0 }}%):</td>
+            <td class="text-right">${{ cotizacion.iva_amount|floatformat:2 }}</td>
+        </tr>
+        <tr class="total-row">
+            <td>Total:</td>
+            <td class="text-right">${{ cotizacion.total|floatformat:2 }} {{ cotizacion.moneda }}</td>
+        </tr>
+    </table>
+
+    {% if cotizacion.descripcion or cotizacion.comentarios %}
+    <br>
+    <div>
+        <h4>Notas y Comentarios</h4>
+        {% if cotizacion.descripcion %}
+            <p>{{ cotizacion.descripcion }}</p>
+        {% endif %}
+        {% if cotizacion.comentarios %}
+            <p>{{ cotizacion.comentarios|linebreaks }}</p>
+        {% endif %}
     </div>
     {% endif %}
 
-    <div class="section" style="background: #fff; border: none; box-shadow: 0 2px 8px rgba(44,83,100,0.04); border-radius: 16px;">
-      <h2 style="color: #2c5364;">Términos y Condiciones</h2>
-      <p class="terms">
-        Esta cotización tiene una validez de 15 días desde su emisión. Precios sujetos a cambios sin previo aviso. 
-        El pedido se procesará tras la confirmación de la orden de compra. Todos los términos deben ser aceptados previamente.
-      </p>
-    </div>
-
-  </div>
 </body>
 </html>
-<!--
-NOTA SOBRE PAGINACIÓN:
-El contador de páginas en HTML solo funciona automáticamente si usas herramientas como wkhtmltopdf, WeasyPrint o similares, usando variables CSS como:
-@page {
-  @bottom-center {
-    content: "Página " counter(page) " de " counter(pages);
-  }
-}
-En navegadores o impresión directa desde el navegador, el script JS solo puede mostrar 1/1 por defecto.
--->
