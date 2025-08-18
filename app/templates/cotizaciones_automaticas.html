@@ -504,12 +504,6 @@
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                             Agregar Producto
                         </button>
-                        <button type="button" id="test-zebra-btn" class="btn-secondary flex items-center justify-center" style="background: linear-gradient(135deg, #10B981 0%, #34D399 100%); color: white;">
-                            🧪 Test ZEBRA
-                        </button>
-                        <button type="button" id="test-dom-btn" class="btn-secondary flex items-center justify-center" style="background: linear-gradient(135deg, #F59E0B 0%, #FCD34D 100%); color: white;">
-                            🔧 Test DOM
-                        </button>
                         <button type="button" id="add-title-btn" class="btn-secondary flex items-center justify-center" style="background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-blue-light) 100%); color: white;">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
                             Agregar Título
@@ -945,20 +939,15 @@
                 }
                 
                 try {
-                    console.log('=== Input: Direct API call ===');
                     const productos = await getProductosPorMarca(selectedMarca, inputValue.trim());
-                    console.log(`Input found ${productos.length} products:`, productos);
                     
                     if (productos.length > 0) {
                         suggestionsContainer.innerHTML = productos.map((producto, index) => `
-                            <div class="autocomplete-suggestion" data-index="${index}" onclick="selectProduct(${rowNumber}, '${producto.noParte}', '${producto.descripcion.replace(/'/g, "\\'")}', ${producto.precio})">
-                                <strong>${producto.noParte}</strong><br>
-                                <small>${producto.descripcion}</small><br>
-                                <small style="color: var(--apple-blue);">$${producto.precio.toLocaleString()}</small>
+                            <div class="autocomplete-suggestion" data-index="${index}" onclick="selectProduct(${rowNumber}, '${producto.noParte}', '${producto.descripcion.replace(/'/g, "\\'")}', ${producto.precio})" style="padding: 0.5rem; font-size: 0.875rem;">
+                                ${producto.noParte}
                             </div>
                         `).join('');
                         suggestionsContainer.style.display = 'block';
-                        console.log('✅ Input: Products displayed!');
                     } else {
                         suggestionsContainer.innerHTML = `
                             <div class="autocomplete-suggestion text-center py-2" style="color: var(--apple-label-tertiary);">
@@ -978,13 +967,8 @@
         }
 
         function onNoParteFocus(rowNumber) {
-            console.log(`=== Focus event on row ${rowNumber} ===`);
             const marcaSelect = document.getElementById(`marca_${rowNumber}`);
             const suggestionsContainer = document.getElementById(`suggestions_${rowNumber}`);
-            
-            console.log('DOM elements check:');
-            console.log('- marcaSelect:', marcaSelect);
-            console.log('- suggestionsContainer:', suggestionsContainer);
             
             let selectedMarca = marcaSelect.value;
             
@@ -1000,25 +984,18 @@
             
             // Si hay marca seleccionada, mostrar todos los productos disponibles
             if (selectedMarca) {
-                console.log(`Showing all products for marca: ${selectedMarca}`);
-                
                 // Llamada directa como en el test que funciona
                 setTimeout(async () => {
                     try {
-                        console.log('=== Focus: Direct API call ===');
                         const productos = await getProductosPorMarca(selectedMarca, '');
-                        console.log(`Focus found ${productos.length} products:`, productos);
                         
                         if (productos.length > 0) {
                             suggestionsContainer.innerHTML = productos.map((producto, index) => `
-                                <div class="autocomplete-suggestion" data-index="${index}" onclick="selectProduct(${rowNumber}, '${producto.noParte}', '${producto.descripcion.replace(/'/g, "\\'")}', ${producto.precio})">
-                                    <strong>${producto.noParte}</strong><br>
-                                    <small>${producto.descripcion}</small><br>
-                                    <small style="color: var(--apple-blue);">$${producto.precio.toLocaleString()}</small>
+                                <div class="autocomplete-suggestion" data-index="${index}" onclick="selectProduct(${rowNumber}, '${producto.noParte}', '${producto.descripcion.replace(/'/g, "\\'")}', ${producto.precio})" style="padding: 0.5rem; font-size: 0.875rem;">
+                                    ${producto.noParte}
                                 </div>
                             `).join('');
                             suggestionsContainer.style.display = 'block';
-                            console.log('✅ Focus: Products displayed!');
                         } else {
                             console.log('No products found for focus event');
                         }
@@ -1296,22 +1273,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             populateClientSelect();
             
-            // Test de la API - probar automáticamente con ZEBRA
-            setTimeout(async () => {
-                console.log('=== Testing API connection ===');
-                try {
-                    const testProducts = await getProductosPorMarca('ZEBRA', '');
-                    console.log(`API test successful: Found ${testProducts.length} ZEBRA products`);
-                    if (testProducts.length > 0) {
-                        console.log('Sample products:', testProducts.slice(0, 3));
-                        testProducts.forEach((prod, idx) => {
-                            console.log(`  ${idx + 1}. ${prod.noParte} - ${prod.descripcion} ($${prod.precio})`);
-                        });
-                    }
-                } catch (error) {
-                    console.error('API test failed:', error);
-                }
-            }, 1000);
 
             // Funcionalidad del filtro de marca
             document.getElementById('marca-filter').addEventListener('change', (e) => {
@@ -1446,64 +1407,6 @@
                 addRow(marcaToUse, '', '', 1, 0, 0);
             });
             
-            document.getElementById('test-zebra-btn').addEventListener('click', async () => {
-                console.log('=== Creating test ZEBRA row ===');
-                addRow('ZEBRA', '', '', 1, 0, 0);
-                
-                setTimeout(async () => {
-                    const lastRowNumber = document.querySelectorAll('#productos-tbody tr.product-row').length;
-                    console.log(`Test row created: row-${lastRowNumber}`);
-                    
-                    // Test directo de la API y mostrar resultados
-                    try {
-                        console.log('=== Direct API test ===');
-                        const productos = await getProductosPorMarca('ZEBRA', '');
-                        console.log(`Found ${productos.length} products:`, productos);
-                        
-                        const suggestionsContainer = document.getElementById(`suggestions_${lastRowNumber}`);
-                        if (suggestionsContainer) {
-                            console.log('Showing products manually...');
-                            suggestionsContainer.innerHTML = productos.map((producto, index) => `
-                                <div class="autocomplete-suggestion" data-index="${index}" onclick="selectProduct(${lastRowNumber}, '${producto.noParte}', '${producto.descripcion.replace(/'/g, "\\'")}', ${producto.precio})">
-                                    <strong>${producto.noParte}</strong><br>
-                                    <small>${producto.descripcion}</small><br>
-                                    <small style="color: var(--apple-blue);">$${producto.precio.toLocaleString()}</small>
-                                </div>
-                            `).join('');
-                            suggestionsContainer.style.display = 'block';
-                            console.log('Products displayed manually!');
-                        } else {
-                            console.error('Suggestions container not found!');
-                        }
-                    } catch (error) {
-                        console.error('Test failed:', error);
-                    }
-                }, 500);
-            });
-            
-            document.getElementById('test-dom-btn').addEventListener('click', () => {
-                console.log('=== DOM Test ===');
-                addRow('ZEBRA', '', '', 1, 0, 0);
-                
-                setTimeout(() => {
-                    const lastRowNumber = document.querySelectorAll('#productos-tbody tr.product-row').length;
-                    const suggestionsContainer = document.getElementById(`suggestions_${lastRowNumber}`);
-                    
-                    if (suggestionsContainer) {
-                        console.log('✅ Suggestions container found, showing test message...');
-                        suggestionsContainer.innerHTML = `
-                            <div class="autocomplete-suggestion">
-                                <strong>TEST MESSAGE</strong><br>
-                                <small>If you can see this, the DOM and CSS are working!</small>
-                            </div>
-                        `;
-                        suggestionsContainer.style.display = 'block';
-                        console.log('✅ Test message displayed!');
-                    } else {
-                        console.error('❌ Suggestions container not found!');
-                    }
-                }, 200);
-            });
             
             document.getElementById('add-title-btn').addEventListener('click', () => addTitleRow());
             document.getElementById('iva-rate').addEventListener('change', calculateTotals);
