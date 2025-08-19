@@ -2294,16 +2294,23 @@ def bitrix_webhook_receiver(request):
                 "138": "80%", "140": "90%", "142": "100%",
             }
 
+            UTILIDAD_BITRIX_ID_TO_VALUE_STRING = {
+                "718": "10%", "720": "15%", "722": "20%", 
+                "724": "25%", "726": "30%", "728": "35%",
+            }
+
             # Obtener valores raw de Bitrix
             producto_bitrix_id = deal_details.get('UF_CRM_1752859685662')
             area_bitrix_id = deal_details.get('UF_CRM_1752859525038')
             mes_cierre_bitrix_id = deal_details.get('UF_CRM_1752859877756')
             probabilidad_bitrix_id = deal_details.get('UF_CRM_1752855787179')
+            utilidad_bitrix_id = deal_details.get('UF_CRM_1755615484859')
 
             print(f"BITRIX WEBHOOK: Raw product ID: {producto_bitrix_id}", flush=True)
             print(f"BITRIX WEBHOOK: Raw area ID: {area_bitrix_id}", flush=True)
             print(f"BITRIX WEBHOOK: Raw mes_cierre ID: {mes_cierre_bitrix_id}", flush=True)
             print(f"BITRIX WEBHOOK: Raw probabilidad ID: {probabilidad_bitrix_id}", flush=True)
+            print(f"BITRIX WEBHOOK: Raw utilidad ID: {utilidad_bitrix_id}", flush=True)
 
             # Aplicar conversiones de mapeo
             producto = PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE.get(str(producto_bitrix_id), 'SOFTWARE') # Default
@@ -2323,6 +2330,22 @@ def bitrix_webhook_receiver(request):
                 else:
                     print(f"BITRIX WEBHOOK: Unknown probability ID from Bitrix: {probabilidad_bitrix_id}. Setting to default (0).", flush=True)
                     probabilidad_cierre = 0
+
+            # Procesar porcentaje de utilidad
+            porcentaje_utilidad = 0 # Default value
+            if utilidad_bitrix_id is not None:
+                utilidad_str = UTILIDAD_BITRIX_ID_TO_VALUE_STRING.get(str(utilidad_bitrix_id))
+                if utilidad_str:
+                    try:
+                        parsed_utilidad = int(utilidad_str.replace('%', ''))
+                        porcentaje_utilidad = min(parsed_utilidad, 100) # Cap at 100
+                        print(f"BITRIX WEBHOOK: Porcentaje de utilidad configurado: {porcentaje_utilidad}%", flush=True)
+                    except ValueError:
+                        print(f"BITRIX WEBHOOK: Invalid utilidad string from Bitrix: {utilidad_str}. Setting to default (0).", flush=True)
+                        porcentaje_utilidad = 0
+                else:
+                    print(f"BITRIX WEBHOOK: Unknown utilidad ID from Bitrix: {utilidad_bitrix_id}. Setting to default (0).", flush=True)
+                    porcentaje_utilidad = 0
 
                 print(f"BITRIX WEBHOOK: Mapped product: {producto}", flush=True)
                 print(f"BITRIX WEBHOOK: Mapped area: {area}", flush=True)
@@ -2378,7 +2401,7 @@ def bitrix_webhook_receiver(request):
                                         print(f"BITRIX WEBHOOK: Error obteniendo contacto: {e}", flush=True)
                                 
                                 # Crear cotización automática
-                                cotizacion_automatica = crear_cotizacion_automatica_bitrix(deal_details, cliente, usuario)
+                                cotizacion_automatica = crear_cotizacion_automatica_bitrix(deal_details, cliente, usuario, porcentaje_utilidad)
                                 
                                 if cotizacion_automatica:
                                     # Agregar usuario final si se obtuvo
@@ -2442,7 +2465,7 @@ def bitrix_webhook_receiver(request):
                                     print(f"BITRIX WEBHOOK: Error obteniendo contacto: {e}", flush=True)
                             
                             # Crear cotización automática
-                            cotizacion_automatica = crear_cotizacion_automatica_bitrix(deal_details, cliente, usuario)
+                            cotizacion_automatica = crear_cotizacion_automatica_bitrix(deal_details, cliente, usuario, porcentaje_utilidad)
                             
                             if cotizacion_automatica:
                                 # Agregar usuario final si se obtuvo
@@ -5059,7 +5082,7 @@ def extraer_productos_inteligente(texto_requisicion, marca_seleccionada):
     
     return productos_encontrados
 
-def crear_cotizacion_automatica_bitrix(deal_details, cliente, usuario):
+def crear_cotizacion_automatica_bitrix(deal_details, cliente, usuario, porcentaje_utilidad=0):
     """
     Crea una cotización automática basada en los datos de Bitrix24
     """
@@ -5120,7 +5143,20 @@ def crear_cotizacion_automatica_bitrix(deal_details, cliente, usuario):
         
         # Agregar productos a la cotización
         subtotal = 0
+        print(f"COTIZACIÓN AUTOMÁTICA: Aplicando {porcentaje_utilidad}% de utilidad a los precios", flush=True)
+        
         for i, producto in enumerate(productos, 1):
+            # Aplicar porcentaje de utilidad al precio base
+            precio_base = producto['precio']
+            if porcentaje_utilidad > 0:
+                factor_utilidad = 1 + (porcentaje_utilidad / 100)
+                precio_con_utilidad = precio_base * factor_utilidad
+                total_con_utilidad = precio_con_utilidad * producto['cantidad']
+                print(f"COTIZACIÓN AUTOMÁTICA: Producto {producto['no_parte']} - Precio base: ${precio_base:.2f} → Con {porcentaje_utilidad}% utilidad: ${precio_con_utilidad:.2f}", flush=True)
+            else:
+                precio_con_utilidad = precio_base
+                total_con_utilidad = precio_base * producto['cantidad']
+            
             DetalleCotizacion.objects.create(
                 cotizacion=cotizacion,
                 orden=i,
@@ -5129,11 +5165,11 @@ def crear_cotizacion_automatica_bitrix(deal_details, cliente, usuario):
                 no_parte=producto['no_parte'],
                 descripcion=producto['descripcion'],
                 cantidad=producto['cantidad'],
-                precio_unitario=producto['precio'],
+                precio_unitario=precio_con_utilidad,
                 descuento_porcentaje=0,
-                total=producto['total']
+                total=total_con_utilidad
             )
-            subtotal += producto['total']
+            subtotal += total_con_utilidad
         
         # Calcular totales
         iva_amount = Decimal(str(subtotal)) * Decimal('0.16')
