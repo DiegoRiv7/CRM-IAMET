@@ -4784,9 +4784,14 @@ def gestion_productos_view(request):
             # Procesar datos del Excel
             lineas = excel_data.split('\n')
             productos_procesados = []
+            productos_para_crear = []  # Para bulk_create
+            productos_para_actualizar = []  # Para bulk_update
             productos_nuevos = 0
             productos_actualizados = 0
+            productos_duplicados = 0
             errores = []
+            
+            print(f"IMPORTACIÓN: Iniciando procesamiento de {len(lineas)} líneas", flush=True)
             
             from app.models import Marca, ProductoCatalogo, ImportacionProductos
             import re
@@ -4833,7 +4838,10 @@ def gestion_productos_view(request):
                         defaults={'activa': True}
                     )
                     
-                    # Verificar si el producto ya existe
+                    # Crear clave única para identificar duplicados
+                    clave_producto = f"{marca.id}_{no_parte}"
+                    
+                    # Verificar si el producto ya existe en BD
                     producto_existente = ProductoCatalogo.objects.filter(
                         marca=marca,
                         no_parte=no_parte
@@ -4841,21 +4849,27 @@ def gestion_productos_view(request):
                     
                     if producto_existente:
                         if actualizar_existentes:
-                            # Actualizar producto existente
+                            # Agregar a lista para bulk_update
                             producto_existente.descripcion = descripcion
                             producto_existente.precio = precio
-                            producto_existente.save()
+                            productos_para_actualizar.append(producto_existente)
                             productos_actualizados += 1
-                        # Si no actualizar, simplemente ignorar
+                            print(f"IMPORTACIÓN: Producto actualizado - {marca_nombre} {no_parte}", flush=True)
+                        else:
+                            # Producto existe pero no actualizar
+                            productos_duplicados += 1
+                            print(f"IMPORTACIÓN: Producto duplicado ignorado - {marca_nombre} {no_parte}", flush=True)
                     else:
-                        # Crear nuevo producto
-                        ProductoCatalogo.objects.create(
+                        # Agregar a lista para bulk_create
+                        nuevo_producto = ProductoCatalogo(
                             marca=marca,
                             no_parte=no_parte,
                             descripcion=descripcion,
                             precio=precio
                         )
+                        productos_para_crear.append(nuevo_producto)
                         productos_nuevos += 1
+                        print(f"IMPORTACIÓN: Producto nuevo preparado - {marca_nombre} {no_parte}", flush=True)
                     
                     productos_procesados.append({
                         'marca': marca_nombre,
@@ -4869,6 +4883,26 @@ def gestion_productos_view(request):
                 except Exception as e:
                     errores.append(f'Línea {i}: Error inesperado - {str(e)}')
             
+            # ========================================
+            # EJECUTAR OPERACIONES EN LOTE (BULK)
+            # ========================================
+            
+            # Crear productos nuevos en lote
+            if productos_para_crear:
+                print(f"IMPORTACIÓN: Creando {len(productos_para_crear)} productos nuevos en lote...", flush=True)
+                ProductoCatalogo.objects.bulk_create(productos_para_crear, batch_size=500)
+                print(f"IMPORTACIÓN: ✅ {len(productos_para_crear)} productos creados exitosamente", flush=True)
+            
+            # Actualizar productos existentes en lote
+            if productos_para_actualizar:
+                print(f"IMPORTACIÓN: Actualizando {len(productos_para_actualizar)} productos en lote...", flush=True)
+                ProductoCatalogo.objects.bulk_update(
+                    productos_para_actualizar, 
+                    ['descripcion', 'precio', 'fecha_actualizacion'], 
+                    batch_size=500
+                )
+                print(f"IMPORTACIÓN: ✅ {len(productos_para_actualizar)} productos actualizados exitosamente", flush=True)
+            
             # Registrar importación
             if productos_procesados:
                 importacion = ImportacionProductos.objects.create(
@@ -4879,12 +4913,22 @@ def gestion_productos_view(request):
                     observaciones=f'Errores: {len(errores)}' if errores else 'Importación exitosa'
                 )
             
-            # Mostrar resultados
+            # Mostrar resultados detallados
             if productos_procesados:
                 mensaje_exito = f'✅ Importación completada: {productos_nuevos} productos nuevos, {productos_actualizados} actualizados'
+                if productos_duplicados > 0:
+                    mensaje_exito += f', {productos_duplicados} duplicados ignorados'
                 if errores:
                     mensaje_exito += f'. ⚠️ {len(errores)} errores encontrados.'
                 messages.success(request, mensaje_exito)
+                
+                # Log detallado para debugging
+                print(f"IMPORTACIÓN COMPLETADA:", flush=True)
+                print(f"  - Líneas procesadas: {len(lineas)}", flush=True)
+                print(f"  - Productos nuevos: {productos_nuevos}", flush=True)
+                print(f"  - Productos actualizados: {productos_actualizados}", flush=True)
+                print(f"  - Productos duplicados: {productos_duplicados}", flush=True)
+                print(f"  - Errores: {len(errores)}", flush=True)
             
             if errores:
                 for error in errores[:5]:  # Mostrar solo los primeros 5 errores
