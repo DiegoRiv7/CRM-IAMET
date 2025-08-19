@@ -4791,7 +4791,17 @@ def gestion_productos_view(request):
             productos_duplicados = 0
             errores = []
             
-            print(f"IMPORTACIÓN: Iniciando procesamiento de {len(lineas)} líneas", flush=True)
+            # Determinar batch size basado en volumen de datos
+            total_lineas = len(lineas)
+            if total_lineas > 10000:
+                batch_size = 1000  # Para datasets muy grandes
+                print(f"IMPORTACIÓN: 🚀 Modo ULTRA-ESCALABLE activado para {total_lineas} líneas (batch: {batch_size})", flush=True)
+            elif total_lineas > 5000:
+                batch_size = 750   # Para datasets grandes
+                print(f"IMPORTACIÓN: 🏃 Modo RÁPIDO activado para {total_lineas} líneas (batch: {batch_size})", flush=True)
+            else:
+                batch_size = 500   # Para datasets normales
+                print(f"IMPORTACIÓN: ⚡ Modo ESTÁNDAR para {total_lineas} líneas (batch: {batch_size})", flush=True)
             
             from app.models import Marca, ProductoCatalogo, ImportacionProductos
             import re
@@ -4803,6 +4813,11 @@ def gestion_productos_view(request):
                 linea = linea.strip()
                 if not linea:
                     continue
+                
+                # Indicador de progreso para datasets grandes
+                if total_lineas > 5000 and i % 1000 == 0:
+                    progreso = (i / total_lineas) * 100
+                    print(f"IMPORTACIÓN: Progreso {progreso:.1f}% ({i}/{total_lineas} líneas procesadas)", flush=True)
                 
                 # Detectar si es línea de encabezado y saltarla
                 if linea.lower().startswith('marca') and 'no' in linea.lower() and 'precio' in linea.lower():
@@ -4854,11 +4869,15 @@ def gestion_productos_view(request):
                             producto_existente.precio = precio
                             productos_para_actualizar.append(producto_existente)
                             productos_actualizados += 1
-                            print(f"IMPORTACIÓN: Producto actualizado - {marca_nombre} {no_parte}", flush=True)
+                            # Solo mostrar logs detallados si dataset es pequeño
+                            if total_lineas <= 5000:
+                                print(f"IMPORTACIÓN: Producto actualizado - {marca_nombre} {no_parte}", flush=True)
                         else:
                             # Producto existe pero no actualizar
                             productos_duplicados += 1
-                            print(f"IMPORTACIÓN: Producto duplicado ignorado - {marca_nombre} {no_parte}", flush=True)
+                            # Solo mostrar logs detallados si dataset es pequeño
+                            if total_lineas <= 5000:
+                                print(f"IMPORTACIÓN: Producto duplicado ignorado - {marca_nombre} {no_parte}", flush=True)
                     else:
                         # Agregar a lista para bulk_create
                         nuevo_producto = ProductoCatalogo(
@@ -4869,7 +4888,9 @@ def gestion_productos_view(request):
                         )
                         productos_para_crear.append(nuevo_producto)
                         productos_nuevos += 1
-                        print(f"IMPORTACIÓN: Producto nuevo preparado - {marca_nombre} {no_parte}", flush=True)
+                        # Solo mostrar logs detallados si dataset es pequeño
+                        if total_lineas <= 5000:
+                            print(f"IMPORTACIÓN: Producto nuevo preparado - {marca_nombre} {no_parte}", flush=True)
                     
                     productos_procesados.append({
                         'marca': marca_nombre,
@@ -4889,17 +4910,17 @@ def gestion_productos_view(request):
             
             # Crear productos nuevos en lote
             if productos_para_crear:
-                print(f"IMPORTACIÓN: Creando {len(productos_para_crear)} productos nuevos en lote...", flush=True)
-                ProductoCatalogo.objects.bulk_create(productos_para_crear, batch_size=500)
+                print(f"IMPORTACIÓN: Creando {len(productos_para_crear)} productos nuevos en lote (batch: {batch_size})...", flush=True)
+                ProductoCatalogo.objects.bulk_create(productos_para_crear, batch_size=batch_size)
                 print(f"IMPORTACIÓN: ✅ {len(productos_para_crear)} productos creados exitosamente", flush=True)
             
             # Actualizar productos existentes en lote
             if productos_para_actualizar:
-                print(f"IMPORTACIÓN: Actualizando {len(productos_para_actualizar)} productos en lote...", flush=True)
+                print(f"IMPORTACIÓN: Actualizando {len(productos_para_actualizar)} productos en lote (batch: {batch_size})...", flush=True)
                 ProductoCatalogo.objects.bulk_update(
                     productos_para_actualizar, 
                     ['descripcion', 'precio', 'fecha_actualizacion'], 
-                    batch_size=500
+                    batch_size=batch_size
                 )
                 print(f"IMPORTACIÓN: ✅ {len(productos_para_actualizar)} productos actualizados exitosamente", flush=True)
             
