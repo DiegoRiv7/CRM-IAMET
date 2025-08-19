@@ -2331,6 +2331,10 @@ def bitrix_webhook_receiver(request):
                 print(f"BITRIX WEBHOOK: About to create opportunity with usuario={usuario}, cliente={cliente}", flush=True)
 
                 if is_update and existing_opportunity:
+                    # Verificar si cambió el producto (para detectar cuando se agrega Zebra)
+                    producto_anterior = existing_opportunity.producto
+                    print(f"BITRIX WEBHOOK: PRODUCTO DEBUG - Anterior: '{producto_anterior}' | Nuevo: '{producto}' | Son diferentes: {producto_anterior != producto}", flush=True)
+                    
                     # Actualizar oportunidad existente
                     existing_opportunity.oportunidad = deal_details.get('TITLE', existing_opportunity.oportunidad)
                     existing_opportunity.monto = deal_details.get('OPPORTUNITY', existing_opportunity.monto) or existing_opportunity.monto
@@ -2342,6 +2346,57 @@ def bitrix_webhook_receiver(request):
                     existing_opportunity.probabilidad_cierre = probabilidad_cierre
                     existing_opportunity.save()
                     print(f"BITRIX WEBHOOK: Successfully updated opportunity '{existing_opportunity.oportunidad}' with ID {existing_opportunity.id}", flush=True)
+                    
+                    # ========================================
+                    # VERIFICAR SI CAMBIÓ EL PRODUCTO A UNA MARCA AUTOMÁTICA
+                    # ========================================
+                    if producto_anterior != producto:
+                        print(f"BITRIX WEBHOOK: Producto cambió de '{producto_anterior}' a '{producto}' - Verificando cotización automática", flush=True)
+                        
+                        # Verificar si debe generar cotización automática
+                        if es_cotizacion_automatica(deal_details):
+                            print(f"BITRIX WEBHOOK: Oportunidad actualizada califica para cotización automática - Marca: {producto}", flush=True)
+                            
+                            # Verificar si ya tiene cotización para evitar duplicados
+                            from app.models import Cotizacion
+                            cotizacion_existente = Cotizacion.objects.filter(oportunidad=existing_opportunity).first()
+                            
+                            if cotizacion_existente:
+                                print(f"BITRIX WEBHOOK: Ya existe cotización ID {cotizacion_existente.id} para esta oportunidad - No se creará duplicado", flush=True)
+                            else:
+                                # Obtener usuario final del contacto
+                                contact_id = deal_details.get('CONTACT_ID')
+                                usuario_final = ''
+                                if contact_id:
+                                    try:
+                                        from .bitrix_integration import get_bitrix_contact_details
+                                        contact_details = get_bitrix_contact_details(contact_id, request=request)
+                                        if contact_details:
+                                            usuario_final = f"{contact_details.get('NAME', '')} {contact_details.get('LAST_NAME', '')}".strip()
+                                            print(f"BITRIX WEBHOOK: Usuario final obtenido: {usuario_final}", flush=True)
+                                    except Exception as e:
+                                        print(f"BITRIX WEBHOOK: Error obteniendo contacto: {e}", flush=True)
+                                
+                                # Crear cotización automática
+                                cotizacion_automatica = crear_cotizacion_automatica_bitrix(deal_details, cliente, usuario)
+                                
+                                if cotizacion_automatica:
+                                    # Agregar usuario final si se obtuvo
+                                    if usuario_final:
+                                        cotizacion_automatica.usuario_final = usuario_final
+                                        cotizacion_automatica.save()
+                                    
+                                    # Subir PDF a Bitrix24
+                                    resultado_subida = subir_cotizacion_a_bitrix(cotizacion_automatica, deal_id, request)
+                                    
+                                    if resultado_subida:
+                                        print(f"BITRIX WEBHOOK: ✅ Cotización automática completada exitosamente para deal actualizado {deal_id}")
+                                    else:
+                                        print(f"BITRIX WEBHOOK: ⚠️ Cotización creada pero falló la subida a Bitrix24 para deal actualizado {deal_id}")
+                                else:
+                                    print(f"BITRIX WEBHOOK: ❌ No se pudo crear la cotización automática para deal actualizado {deal_id}")
+                        else:
+                            print(f"BITRIX WEBHOOK: Oportunidad actualizada NO califica para cotización automática - Producto: {producto} (ID: {producto_bitrix_id})", flush=True)
                 else:
                     # Crear nueva oportunidad
                     print(f"BITRIX WEBHOOK: Creating new opportunity with data:", flush=True)
