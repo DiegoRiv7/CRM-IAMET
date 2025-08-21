@@ -362,8 +362,15 @@
         }
 
         /* Drag and Drop Styles */
+        .sortable-row,
+        .product-table tbody tr {
+            cursor: move !important;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        
         .sortable-row {
-            cursor: move;
+            cursor: move !important;
             position: relative;
             transition: all 0.2s ease;
         }
@@ -1209,17 +1216,18 @@
         function addDragHandlesToExistingRows() {
             console.log('Adding drag handles to existing rows...');
             document.querySelectorAll('#productos-tbody tr').forEach((row, index) => {
-                console.log(`Processing row ${index}:`, row);
+                console.log(`Processing row ${index}:`, row.className);
                 
-                // Add necessary classes
+                // Force add sortable-row class to ALL rows
                 if (!row.classList.contains('sortable-row')) {
-                    if (row.classList.contains('title-row')) {
-                        row.classList.add('sortable-row');
-                        console.log(`Added sortable-row to title row ${index}`);
-                    } else {
-                        row.classList.add('product-row', 'sortable-row');
-                        console.log(`Added product-row and sortable-row to product row ${index}`);
-                    }
+                    row.classList.add('sortable-row');
+                    console.log(`Added sortable-row to row ${index}`);
+                }
+                
+                // Also add product-row if it's not a title
+                if (!row.classList.contains('title-row') && !row.classList.contains('product-row')) {
+                    row.classList.add('product-row');
+                    console.log(`Added product-row to row ${index}`);
                 }
                 
                 // Find the first cell and add drag handle if it doesn't exist
@@ -1238,6 +1246,8 @@
                 } else {
                     console.log(`No first cell found in row ${index}`);
                 }
+                
+                console.log(`Final classes for row ${index}:`, row.className);
             });
         }
 
@@ -1245,18 +1255,28 @@
         function initializeSortable() {
             const tbody = document.getElementById('productos-tbody');
             if (tbody) {
+                // Destroy existing sortable if it exists
+                const existingSortable = Sortable.get(tbody);
+                if (existingSortable) {
+                    existingSortable.destroy();
+                }
+                
                 const sortable = Sortable.create(tbody, {
                     animation: 150,
                     ghostClass: 'sortable-ghost',
                     chosenClass: 'sortable-chosen',
                     dragClass: 'sortable-drag',
                     handle: '.drag-handle',
+                    onStart: function (evt) {
+                        console.log('Drag started on row:', evt.oldIndex, evt.item);
+                    },
                     onEnd: function (evt) {
                         console.log('Drag completed from index', evt.oldIndex, 'to', evt.newIndex);
                         updateRowNumbers(); // Update row numbers after reordering
                         calculateTotals(); // Recalculate totals if needed
                     }
                 });
+                console.log('Sortable initialized:', sortable);
             }
         }
 
@@ -1270,6 +1290,12 @@
                 addDragHandlesToExistingRows();
                 initializeSortable(); // Initialize drag and drop functionality after adding handles
             }, 100);
+            
+            // Also try again after a longer delay
+            setTimeout(() => {
+                addDragHandlesToExistingRows();
+                initializeSortable();
+            }, 1000);
 
             // Modal functionality
             const addClientModal = document.getElementById('add-client-modal');
@@ -1537,6 +1563,8 @@
                 
                 // Asegurar que todas las filas tengan drag handles
                 addDragHandlesToExistingRows();
+                // Re-initialize sortable after loading existing data
+                initializeSortable();
             }
             {% endif %}
 
