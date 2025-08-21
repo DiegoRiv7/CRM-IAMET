@@ -393,23 +393,26 @@
             height: 20px;
             cursor: grab;
             opacity: 0;
-            transition: opacity 0.2s ease;
+            transition: opacity 0.3s ease;
             background: var(--apple-blue);
             border-radius: 3px;
-            display: flex;
+            display: flex !important;
             align-items: center;
             justify-content: center;
             color: white;
             font-size: 10px;
-            z-index: 10;
+            z-index: 100;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         .drag-handle:active {
             cursor: grabbing;
         }
         
-        .sortable-row:hover .drag-handle {
-            opacity: 1;
+        .sortable-row:hover .drag-handle,
+        .product-row:hover .drag-handle,
+        .title-row:hover .drag-handle {
+            opacity: 1 !important;
         }
         
         .drag-handle::before {
@@ -417,6 +420,9 @@
             line-height: 1;
             letter-spacing: -2px;
         }
+        
+        /* DEBUG: Always show drag handles for testing - remove this line once confirmed working */
+        .drag-handle { opacity: 0.7 !important; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center py-8 px-4 sm:px-6 lg:px-8 dashboard-container">
