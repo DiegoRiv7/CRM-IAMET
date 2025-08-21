@@ -429,8 +429,8 @@
             letter-spacing: -2px;
         }
         
-        /* DEBUG: Temporarily show all drag handles for testing */
-        .drag-handle { opacity: 0.8 !important; }
+        /* DEBUG: Uncomment the next line to always show drag handles for testing */
+        /* .drag-handle { opacity: 1 !important; } */
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center py-8 px-4 sm:px-6 lg:px-8 dashboard-container">
@@ -1493,6 +1493,25 @@
                 // Actualizar numeración y recalcular totales después de cargar todos los productos
                 updateRowNumbers();
                 calculateTotals();
+                
+                // Asegurar que todas las filas tengan las clases correctas para drag and drop
+                document.querySelectorAll('#productos-tbody tr').forEach(row => {
+                    if (!row.classList.contains('sortable-row')) {
+                        if (row.classList.contains('title-row')) {
+                            row.classList.add('sortable-row');
+                        } else {
+                            row.classList.add('product-row', 'sortable-row');
+                        }
+                    }
+                    // Asegurar que la primera celda tiene el drag handle
+                    const firstCell = row.querySelector('td:first-child');
+                    if (firstCell && !firstCell.querySelector('.drag-handle')) {
+                        const dragHandle = document.createElement('div');
+                        dragHandle.className = 'drag-handle';
+                        dragHandle.title = 'Arrastrar para reordenar';
+                        firstCell.insertBefore(dragHandle, firstCell.firstChild);
+                    }
+                });
             }
             {% endif %}
 
@@ -1603,6 +1622,27 @@
             window.addEventListener('beforeunload', () => {
                 loadingModal.classList.add('hidden');
             });
+            
+            // Final check: Ensure all rows have drag handles (for any existing content)
+            setTimeout(() => {
+                document.querySelectorAll('#productos-tbody tr').forEach(row => {
+                    if (!row.classList.contains('sortable-row')) {
+                        if (row.classList.contains('title-row')) {
+                            row.classList.add('sortable-row');
+                        } else {
+                            row.classList.add('product-row', 'sortable-row');
+                        }
+                    }
+                    // Asegurar que la primera celda tiene el drag handle
+                    const firstCell = row.querySelector('td:first-child');
+                    if (firstCell && !firstCell.querySelector('.drag-handle')) {
+                        const dragHandle = document.createElement('div');
+                        dragHandle.className = 'drag-handle';
+                        dragHandle.title = 'Arrastrar para reordenar';
+                        firstCell.insertBefore(dragHandle, firstCell.firstChild);
+                    }
+                });
+            }, 500);
         });
     </script>
     <!-- Loading Modal -->
