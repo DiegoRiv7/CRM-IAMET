@@ -234,6 +234,11 @@
         .product-table td:first-child {
             padding-left: 2rem;
         }
+        
+        /* Ensure proper positioning for drag handles in product rows */
+        .product-table tbody tr td:first-child {
+            position: relative;
+        }
         .product-table th {
             font-weight: 600;
             color: var(--apple-label-secondary);
@@ -363,7 +368,8 @@
             transition: all 0.2s ease;
         }
         
-        .sortable-row:hover {
+        .sortable-row:hover,
+        .product-table tbody tr.sortable-row:hover {
             background-color: var(--apple-background-tertiary) !important;
             transform: translateY(-1px);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
@@ -409,6 +415,8 @@
             cursor: grabbing;
         }
         
+        .product-table tbody tr.sortable-row:hover .drag-handle,
+        .product-table tbody tr.product-row:hover .drag-handle,
         .sortable-row:hover .drag-handle,
         .product-row:hover .drag-handle,
         .title-row:hover .drag-handle {
@@ -421,8 +429,8 @@
             letter-spacing: -2px;
         }
         
-        /* DEBUG: Always show drag handles for testing - remove this line once confirmed working */
-        .drag-handle { opacity: 0.7 !important; }
+        /* DEBUG: Temporarily show all drag handles for testing */
+        .drag-handle { opacity: 0.8 !important; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center py-8 px-4 sm:px-6 lg:px-8 dashboard-container">
@@ -817,7 +825,7 @@
             newRow.id = rowId;
             newRow.className = 'product-row sortable-row'; // Add classes for identification and drag
             newRow.innerHTML = `
-                <td style="position: relative;">
+                <td>
                     <div class="drag-handle" title="Arrastrar para reordenar"></div>
                     1
                 </td>
