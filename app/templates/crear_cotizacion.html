@@ -859,11 +859,13 @@
             updateRowNumbers(); // Update row numbers after adding
             calculateTotals(); // Recalculate totals when adding a row
             
-            // Re-initialize sortable if needed (for dynamically added rows)
-            const currentSortable = Sortable.get(document.getElementById('productos-tbody'));
-            if (!currentSortable) {
+            // Ensure the new row has drag functionality
+            console.log('🔄 Row added, ensuring drag handles...');
+            setTimeout(() => {
+                addDragHandlesToExistingRows();
+                // Re-initialize sortable for new rows
                 initializeSortable();
-            }
+            }, 50);
         }
 
         // Function to add a title/section row to the main table
@@ -903,11 +905,13 @@
             
             updateRowNumbers(); // Update row numbers after adding title
             
-            // Re-initialize sortable if needed (for dynamically added rows)
-            const currentSortable = Sortable.get(document.getElementById('productos-tbody'));
-            if (!currentSortable) {
+            // Ensure the new title row has drag functionality
+            console.log('🔄 Title row added, ensuring drag handles...');
+            setTimeout(() => {
+                addDragHandlesToExistingRows();
+                // Re-initialize sortable for new rows
                 initializeSortable();
-            }
+            }, 50);
             
             // Auto-focus on the title input for immediate editing
             setTimeout(() => {
@@ -1613,8 +1617,14 @@
             document.getElementById('show-discount-btn').style.display = isDiscountVisible ? 'none' : 'inline-block';
             {% endif %}
 
-            document.getElementById('add-row-btn').addEventListener('click', () => addRow('', '', '', 1, 0, 0));
-            document.getElementById('add-title-btn').addEventListener('click', () => addTitleRow());
+            document.getElementById('add-row-btn').addEventListener('click', () => {
+                console.log('➕ Add row button clicked');
+                addRow('', '', '', 1, 0, 0);
+            });
+            document.getElementById('add-title-btn').addEventListener('click', () => {
+                console.log('➕ Add title button clicked');
+                addTitleRow();
+            });
             document.getElementById('iva-rate').addEventListener('change', calculateTotals);
             document.getElementById('currency-select').addEventListener('change', calculateTotals);
 
