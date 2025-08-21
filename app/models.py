@@ -392,6 +392,186 @@ class DetalleVolumetria(models.Model):
         verbose_name = "Detalle de Volumetría"
         verbose_name_plural = "Detalles de Volumetría"
 
+class CatalogoCableado(models.Model):
+    """
+    Catálogo de productos para cableado de nodos de red.
+    Almacena números de parte, descripciones y precios.
+    """
+    TIPO_PRODUCTO_CHOICES = [
+        ('CABLE', 'Cable'),
+        ('JACK', 'Jack'),
+        ('PATCHCORD', 'Patchcord'),
+        ('FACEPLATE', 'Faceplate'),
+    ]
+    
+    numero_parte = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="Número de Parte"
+    )
+    tipo_producto = models.CharField(
+        max_length=20,
+        choices=TIPO_PRODUCTO_CHOICES,
+        verbose_name="Tipo de Producto"
+    )
+    descripcion = models.TextField(
+        verbose_name="Descripción del Producto"
+    )
+    marca = models.CharField(
+        max_length=100,
+        default="PANDUIT",
+        verbose_name="Marca"
+    )
+    precio_unitario = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Precio Unitario"
+    )
+    activo = models.BooleanField(
+        default=True,
+        verbose_name="Producto Activo"
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.numero_parte} - {self.tipo_producto} ({self.marca})"
+    
+    class Meta:
+        verbose_name = "Catálogo de Cableado"
+        verbose_name_plural = "Catálogo de Cableado"
+        ordering = ['tipo_producto', 'numero_parte']
+
+
+class CableadoNodoRed(models.Model):
+    """
+    Modelo para almacenar la configuración de cableado de nodos de red en volumetrías.
+    Parte 1 del formulario de nodos de red (Cableado, Infraestructura, Mano de Obra).
+    """
+    # Relación con volumetría
+    volumetria = models.ForeignKey(
+        Volumetria, 
+        on_delete=models.CASCADE, 
+        related_name='cableado_nodos', 
+        verbose_name="Volumetría"
+    )
+    
+    # Configuración básica del nodo
+    cantidad_nodos = models.PositiveIntegerField(
+        default=1, 
+        verbose_name="Cantidad de Nodos"
+    )
+    metros_cable = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=Decimal('0.00'), 
+        verbose_name="Metros de Cable Total"
+    )
+    
+    # Números de parte de componentes
+    cable_numero_parte = models.CharField(
+        max_length=100, 
+        verbose_name="No. Parte Cable"
+    )
+    jack_numero_parte = models.CharField(
+        max_length=100, 
+        verbose_name="No. Parte Jack"
+    )
+    patchcord_numero_parte = models.CharField(
+        max_length=100, 
+        verbose_name="No. Parte Patchcord"
+    )
+    faceplate_numero_parte = models.CharField(
+        max_length=100, 
+        verbose_name="No. Parte Faceplate"
+    )
+    
+    # Información adicional (se llenará automáticamente desde catálogo)
+    cable_descripcion = models.CharField(
+        max_length=255, 
+        blank=True, 
+        verbose_name="Descripción Cable"
+    )
+    jack_descripcion = models.CharField(
+        max_length=255, 
+        blank=True, 
+        verbose_name="Descripción Jack"
+    )
+    patchcord_descripcion = models.CharField(
+        max_length=255, 
+        blank=True, 
+        verbose_name="Descripción Patchcord"
+    )
+    faceplate_descripcion = models.CharField(
+        max_length=255, 
+        blank=True, 
+        verbose_name="Descripción Faceplate"
+    )
+    
+    # Precios (se calcularán automáticamente)
+    cable_precio_unitario = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=Decimal('0.00'), 
+        verbose_name="Precio Unitario Cable"
+    )
+    jack_precio_unitario = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=Decimal('0.00'), 
+        verbose_name="Precio Unitario Jack"
+    )
+    patchcord_precio_unitario = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=Decimal('0.00'), 
+        verbose_name="Precio Unitario Patchcord"
+    )
+    faceplate_precio_unitario = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=Decimal('0.00'), 
+        verbose_name="Precio Unitario Faceplate"
+    )
+    
+    # Totales calculados
+    subtotal_cableado = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=Decimal('0.00'), 
+        verbose_name="Subtotal Cableado"
+    )
+    
+    # Metadatos
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    
+    def calculate_totals(self):
+        """Calcula los totales basado en la lógica: 1 nodo = 1 faceplate + 2 jacks + 2 patchcords + cable"""
+        # Por nodo: 1 faceplate, 2 jacks, 2 patchcords
+        total_faceplates = self.cantidad_nodos * 1
+        total_jacks = self.cantidad_nodos * 2
+        total_patchcords = self.cantidad_nodos * 2
+        # Cable: metros totales especificados
+        total_metros_cable = self.metros_cable
+        
+        # Calcular subtotales
+        subtotal_cable = total_metros_cable * self.cable_precio_unitario
+        subtotal_jacks = total_jacks * self.jack_precio_unitario
+        subtotal_patchcords = total_patchcords * self.patchcord_precio_unitario
+        subtotal_faceplates = total_faceplates * self.faceplate_precio_unitario
+        
+        self.subtotal_cableado = subtotal_cable + subtotal_jacks + subtotal_patchcords + subtotal_faceplates
+        return self.subtotal_cableado
+    
+    def __str__(self):
+        return f"Cableado {self.cantidad_nodos} nodos - Volumetría {self.volumetria.id}"
+    
+    class Meta:
+        verbose_name = "Configuración de Cableado"
+        verbose_name_plural = "Configuraciones de Cableado"
+
+
 class OportunidadProyecto(models.Model):
     """
     Modelo para vincular oportunidades con proyectos de Bitrix24.

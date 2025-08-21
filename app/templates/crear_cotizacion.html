@@ -9,6 +9,8 @@
     <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SortableJS para drag and drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script type="text/javascript">
     // Apply theme immediately to prevent flash
     (function() {
@@ -226,6 +228,12 @@
             text-align: left;
             vertical-align: top; /* Alineación superior para celdas con textarea */
         }
+        
+        /* Add extra padding to first column to accommodate drag handle */
+        .product-table th:first-child,
+        .product-table td:first-child {
+            padding-left: 2rem;
+        }
         .product-table th {
             font-weight: 600;
             color: var(--apple-label-secondary);
@@ -347,6 +355,68 @@
             margin-top: 0.5rem;
             display: none; /* Hidden by default */
         }
+
+        /* Drag and Drop Styles */
+        .sortable-row {
+            cursor: move;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        
+        .sortable-row:hover {
+            background-color: var(--apple-background-tertiary) !important;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .sortable-ghost {
+            opacity: 0.4;
+            background: var(--apple-blue) !important;
+        }
+        
+        .sortable-chosen {
+            transform: rotate(2deg);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .sortable-drag {
+            opacity: 0.8;
+            transform: rotate(-2deg);
+        }
+        
+        .drag-handle {
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 20px;
+            cursor: grab;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            background: var(--apple-blue);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            z-index: 10;
+        }
+        
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+        
+        .sortable-row:hover .drag-handle {
+            opacity: 1;
+        }
+        
+        .drag-handle::before {
+            content: "⋮⋮";
+            line-height: 1;
+            letter-spacing: -2px;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center py-8 px-4 sm:px-6 lg:px-8 dashboard-container">
@@ -442,6 +512,15 @@
 
             <div class="card p-6 shadow-md-dark">
                 <h2 class="text-xl font-semibold mb-4" style="color: var(--apple-label);">Detalles de Productos</h2>
+                
+                <div class="mb-4 p-3 bg-blue-900/20 border border-blue-700/30 rounded-lg">
+                    <p class="text-sm text-blue-300 flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                        </svg>
+                        💡 Pasa el cursor sobre una fila y usa el ícono de arrastrar (⋮⋮) para reordenar productos y títulos. Los números de partida se actualizarán automáticamente.
+                    </p>
+                </div>
 
                 <div class="flex justify-between items-center mb-4">
                     <div class="flex flex-wrap gap-3">
@@ -730,9 +809,12 @@
 
             const newRow = document.createElement('tr');
             newRow.id = rowId;
-            newRow.className = 'product-row'; // Add class for identification
+            newRow.className = 'product-row sortable-row'; // Add classes for identification and drag
             newRow.innerHTML = `
-                <td>1</td>
+                <td style="position: relative;">
+                    <div class="drag-handle" title="Arrastrar para reordenar"></div>
+                    1
+                </td>
                 <td style="display: none;"><input type="text" id="marca_${newRowNumber}" name="productos[${newRowNumber}][marca]" class="input-field" placeholder="Marca" value="${marca}"></td>
                 <td><input type="text" id="no_parte_${newRowNumber}" name="productos[${newRowNumber}][no_parte]" class="input-field" placeholder="No. Parte" value="${noParte}"></td>
                 <td>
@@ -755,6 +837,12 @@
 
             updateRowNumbers(); // Update row numbers after adding
             calculateTotals(); // Recalculate totals when adding a row
+            
+            // Re-initialize sortable if needed (for dynamically added rows)
+            const currentSortable = Sortable.get(document.getElementById('productos-tbody'));
+            if (!currentSortable) {
+                initializeSortable();
+            }
         }
 
         // Function to add a title/section row to the main table
@@ -768,9 +856,10 @@
             
             const newRow = document.createElement('tr');
             newRow.id = rowId;
-            newRow.className = 'title-row';
+            newRow.className = 'title-row sortable-row';
             newRow.innerHTML = `
                 <td colspan="9" style="position: relative;">
+                    <div class="drag-handle" title="Arrastrar para reordenar"></div>
                     <input type="text" 
                            id="titulo_${titleCounter}" 
                            name="titulos[${titleCounter}][texto]" 
@@ -792,6 +881,12 @@
             tbody.appendChild(newRow);
             
             updateRowNumbers(); // Update row numbers after adding title
+            
+            // Re-initialize sortable if needed (for dynamically added rows)
+            const currentSortable = Sortable.get(document.getElementById('productos-tbody'));
+            if (!currentSortable) {
+                initializeSortable();
+            }
             
             // Auto-focus on the title input for immediate editing
             setTimeout(() => {
@@ -1096,10 +1191,30 @@
         }
 
 
+        // Initialize Sortable for drag and drop functionality
+        function initializeSortable() {
+            const tbody = document.getElementById('productos-tbody');
+            if (tbody) {
+                const sortable = Sortable.create(tbody, {
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    chosenClass: 'sortable-chosen',
+                    dragClass: 'sortable-drag',
+                    handle: '.drag-handle',
+                    onEnd: function (evt) {
+                        console.log('Drag completed from index', evt.oldIndex, 'to', evt.newIndex);
+                        updateRowNumbers(); // Update row numbers after reordering
+                        calculateTotals(); // Recalculate totals if needed
+                    }
+                });
+            }
+        }
+
         // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
             populateClientSelect(); // Populate client dropdown on page load
             fetchOportunidadesForClient(); // Load recent opportunities on page load
+            initializeSortable(); // Initialize drag and drop functionality
 
             // Modal functionality
             const addClientModal = document.getElementById('add-client-modal');
@@ -1334,9 +1449,10 @@
                         
                         const newRow = document.createElement('tr');
                         newRow.id = rowId;
-                        newRow.className = 'title-row';
+                        newRow.className = 'title-row sortable-row';
                         newRow.innerHTML = `
                             <td colspan="9" style="position: relative;">
+                                <div class="drag-handle" title="Arrastrar para reordenar"></div>
                                 <input type="text" 
                                        id="titulo_${titleCounter}" 
                                        name="titulos[${titleCounter}][texto]" 

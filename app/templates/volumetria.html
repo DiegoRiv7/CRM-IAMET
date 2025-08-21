@@ -538,40 +538,75 @@ function mostrarFormularioNodos() {
                         </div>
                     </div>
                     
-                    <!-- Configuración Técnica -->
-                    <div>
-                        <h3 class="text-lg font-medium apple-text-primary mb-4">Configuración Técnica</h3>
+                    <!-- Parte 1: Cableado -->
+                    <div class="border border-blue-500 rounded-lg p-6 bg-blue-50 dark:bg-blue-900/20">
+                        <h3 class="text-lg font-medium apple-text-primary mb-4 flex items-center">
+                            <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">1</span>
+                            Parte 1: Cableado
+                        </h3>
+                        <p class="text-sm apple-text-secondary mb-6">Configure los componentes básicos del cableado. Cada nodo requiere: 1 faceplate + 2 jacks + 2 patchcords + cable</p>
+                        
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium apple-text-primary mb-2">Categoría</label>
-                            <select id="categoria" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500">
-                                <option value="CAT6A">CAT6A</option>
-                                <option value="CAT6">CAT6</option>
-                            </select>
+                            <!-- Información básica -->
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Cantidad de Nodos *</label>
+                                <input type="number" id="cantidad-nodos" min="1" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: 50" required>
+                                <p class="text-xs mt-1 apple-text-secondary">💡 Total de puntos de red a instalar</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Metros de Cable Total *</label>
+                                <input type="number" id="metros-cable" min="1" step="0.1" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: 1500.5" required>
+                                <p class="text-xs mt-1 apple-text-secondary">💡 Total de metros de cable necesarios</p>
+                            </div>
+                            
+                            <!-- Números de parte -->
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">No. Parte Cable *</label>
+                                <input type="text" id="cable-numero-parte" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: PUL6004BL-BOX" required>
+                                <p class="text-xs mt-1 apple-text-secondary">💡 Número de parte del cable</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">No. Parte Jack *</label>
+                                <input type="text" id="jack-numero-parte" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: CJ6X88TBL" required>
+                                <p class="text-xs mt-1 apple-text-secondary">💡 Número de parte del jack (2 por nodo)</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">No. Parte Patchcord *</label>
+                                <input type="text" id="patchcord-numero-parte" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: UTP6SP3BL" required>
+                                <p class="text-xs mt-1 apple-text-secondary">💡 Número de parte del patchcord (2 por nodo)</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">No. Parte Faceplate *</label>
+                                <input type="text" id="faceplate-numero-parte" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: NK2FWH" required>
+                                <p class="text-xs mt-1 apple-text-secondary">💡 Número de parte del faceplate (1 por nodo)</p>
+                            </div>
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-medium apple-text-primary mb-2">Color del Cable</label>
-                            <select id="color" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500">
-                                <option value="azul">Azul</option>
-                                <option value="gris">Gris</option>
-                                <option value="amarillo">Amarillo</option>
-                                <option value="verde">Verde</option>
-                                <option value="rojo">Rojo</option>
-                                <option value="negro">Negro</option>
-                                <option value="blanco">Blanco</option>
-                                <option value="naranja">Naranja</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium apple-text-primary mb-2">Distancia (metros)</label>
-                            <input type="number" id="distancia" min="1" step="0.1" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: 100.5">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium apple-text-primary mb-2">Cantidad de Nodos</label>
-                            <input type="number" id="cantidad-nodos" min="1" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: 50">
+                        <!-- Resumen automático -->
+                        <div class="mt-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                            <h4 class="text-sm font-medium apple-text-primary mb-2">📊 Cálculo Automático por Nodo:</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                                <div class="text-center">
+                                    <div class="font-medium apple-text-primary">Faceplate</div>
+                                    <div class="text-blue-500" id="total-faceplates">1 x nodos</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="font-medium apple-text-primary">Jacks</div>
+                                    <div class="text-blue-500" id="total-jacks">2 x nodos</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="font-medium apple-text-primary">Patchcords</div>
+                                    <div class="text-blue-500" id="total-patchcords">2 x nodos</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="font-medium apple-text-primary">Cable</div>
+                                    <div class="text-blue-500" id="total-cable">Metros especificados</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -666,6 +701,40 @@ function mostrarFormularioNodos() {
     // Poblar selectores de cliente y oportunidad
     populateClientSelectVolumetria();
     setupOpportunityChangeListener();
+    
+    // Configurar eventos para actualización dinámica del resumen
+    setupResumenCableado();
+}
+
+// Función para configurar eventos del resumen de cableado
+function setupResumenCableado() {
+    const cantidadNodosInput = document.getElementById('cantidad-nodos');
+    if (cantidadNodosInput) {
+        cantidadNodosInput.addEventListener('input', actualizarResumenCableado);
+        // Actualizar una vez al cargar
+        actualizarResumenCableado();
+    }
+}
+
+// Función para actualizar el resumen de cableado dinámicamente
+function actualizarResumenCableado() {
+    const cantidadNodos = parseInt(document.getElementById('cantidad-nodos').value) || 0;
+    
+    if (cantidadNodos > 0) {
+        const totalFaceplates = cantidadNodos * 1;
+        const totalJacks = cantidadNodos * 2; 
+        const totalPatchcords = cantidadNodos * 2;
+        
+        document.getElementById('total-faceplates').textContent = `${totalFaceplates} (1 x ${cantidadNodos})`;
+        document.getElementById('total-jacks').textContent = `${totalJacks} (2 x ${cantidadNodos})`;
+        document.getElementById('total-patchcords').textContent = `${totalPatchcords} (2 x ${cantidadNodos})`;
+        document.getElementById('total-cable').textContent = 'Metros especificados arriba';
+    } else {
+        document.getElementById('total-faceplates').textContent = '1 x nodos';
+        document.getElementById('total-jacks').textContent = '2 x nodos';
+        document.getElementById('total-patchcords').textContent = '2 x nodos';
+        document.getElementById('total-cable').textContent = 'Metros especificados';
+    }
 }
 
 // Función para cerrar el formulario

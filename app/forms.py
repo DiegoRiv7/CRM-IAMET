@@ -1,6 +1,6 @@
 from django import forms
 from django.db.models import Q
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, Contacto # Importa Contacto
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, Contacto, CatalogoCableado, CableadoNodoRed # Importa Contacto
 from django.contrib.auth.models import User
 from .models import UserProfile # Import UserProfile
 
