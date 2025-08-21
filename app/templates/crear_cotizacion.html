@@ -1214,41 +1214,64 @@
 
         // Function to add drag handles to all existing rows
         function addDragHandlesToExistingRows() {
-            console.log('Adding drag handles to existing rows...');
-            document.querySelectorAll('#productos-tbody tr').forEach((row, index) => {
-                console.log(`Processing row ${index}:`, row.className);
+            console.log('=== Adding drag handles to existing rows ===');
+            const allRows = document.querySelectorAll('#productos-tbody tr');
+            console.log(`Found ${allRows.length} total rows`);
+            
+            allRows.forEach((row, index) => {
+                console.log(`\n--- Row ${index} ---`);
+                console.log('Row element:', row);
+                console.log('Row ID:', row.id);
+                console.log('Initial classes:', row.className);
                 
                 // Force add sortable-row class to ALL rows
                 if (!row.classList.contains('sortable-row')) {
                     row.classList.add('sortable-row');
-                    console.log(`Added sortable-row to row ${index}`);
+                    console.log(`✓ Added sortable-row to row ${index}`);
+                } else {
+                    console.log(`- Row ${index} already has sortable-row`);
                 }
                 
                 // Also add product-row if it's not a title
                 if (!row.classList.contains('title-row') && !row.classList.contains('product-row')) {
                     row.classList.add('product-row');
-                    console.log(`Added product-row to row ${index}`);
+                    console.log(`✓ Added product-row to row ${index}`);
+                } else if (row.classList.contains('title-row')) {
+                    console.log(`- Row ${index} is a title row`);
+                } else {
+                    console.log(`- Row ${index} already has product-row`);
                 }
                 
                 // Find the first cell and add drag handle if it doesn't exist
                 const firstCell = row.querySelector('td:first-child');
+                console.log('First cell found:', firstCell);
+                
                 if (firstCell) {
                     let dragHandle = firstCell.querySelector('.drag-handle');
+                    console.log('Existing drag handle:', dragHandle);
+                    
                     if (!dragHandle) {
                         dragHandle = document.createElement('div');
                         dragHandle.className = 'drag-handle';
                         dragHandle.title = 'Arrastrar para reordenar';
                         firstCell.insertBefore(dragHandle, firstCell.firstChild);
-                        console.log(`Added drag handle to row ${index}`);
+                        console.log(`✓ Added drag handle to row ${index}`);
                     } else {
-                        console.log(`Drag handle already exists in row ${index}`);
+                        console.log(`- Drag handle already exists in row ${index}`);
                     }
+                    
+                    // Verify the drag handle is there
+                    const verifyHandle = firstCell.querySelector('.drag-handle');
+                    console.log('Drag handle verification:', verifyHandle);
                 } else {
-                    console.log(`No first cell found in row ${index}`);
+                    console.log(`❌ No first cell found in row ${index}`);
                 }
                 
                 console.log(`Final classes for row ${index}:`, row.className);
+                console.log('Row draggable attribute:', row.draggable);
             });
+            
+            console.log('=== End drag handles processing ===\n');
         }
 
         // Initialize Sortable for drag and drop functionality
@@ -1266,12 +1289,17 @@
                     ghostClass: 'sortable-ghost',
                     chosenClass: 'sortable-chosen',
                     dragClass: 'sortable-drag',
+                    // TEMP: Commenting out handle to test if rows are draggable at all
                     handle: '.drag-handle',
+                    // Uncomment next line to test dragging from anywhere in the row:
+                    // handle: null,
                     onStart: function (evt) {
-                        console.log('Drag started on row:', evt.oldIndex, evt.item);
+                        console.log('🚀 Drag started on row:', evt.oldIndex, evt.item);
+                        console.log('Item classes:', evt.item.className);
+                        console.log('Item ID:', evt.item.id);
                     },
                     onEnd: function (evt) {
-                        console.log('Drag completed from index', evt.oldIndex, 'to', evt.newIndex);
+                        console.log('✅ Drag completed from index', evt.oldIndex, 'to', evt.newIndex);
                         updateRowNumbers(); // Update row numbers after reordering
                         calculateTotals(); // Recalculate totals if needed
                     }
