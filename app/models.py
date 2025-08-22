@@ -572,6 +572,294 @@ class CableadoNodoRed(models.Model):
         verbose_name_plural = "Configuraciones de Cableado"
 
 
+class InfraestructuraTuberia(models.Model):
+    """
+    Modelo para almacenar la configuración de infraestructura de tubería en volumetrías.
+    Parte 2 del formulario de nodos de red (Infraestructura).
+    """
+    # Tipos de tubería disponibles
+    TIPO_TUBERIA_CHOICES = [
+        ('steel', 'Steel (Conduit Metálico)'),
+        ('flexible', 'Flexible (Conduit Flexible)'),
+    ]
+    
+    # Diámetros comunes en pulgadas
+    DIAMETRO_CHOICES = [
+        ('1/2', '1/2" (12.7 mm)'),
+        ('3/4', '3/4" (19.05 mm)'),
+        ('1', '1" (25.4 mm)'),
+        ('1-1/4', '1-1/4" (31.75 mm)'),
+        ('1-1/2', '1-1/2" (38.1 mm)'),
+        ('2', '2" (50.8 mm)'),
+        ('2-1/2', '2-1/2" (63.5 mm)'),
+        ('3', '3" (76.2 mm)'),
+        ('4', '4" (101.6 mm)'),
+    ]
+    
+    # Tipos de equipo de elevación
+    TIPO_EQUIPO_CHOICES = [
+        ('grua-telescopica', 'Grúa Telescópica'),
+        ('plataforma-elevadora', 'Plataforma Elevadora'),
+        ('andamio', 'Andamio'),
+        ('escalera-extension', 'Escalera de Extensión'),
+        ('montacargas', 'Montacargas'),
+    ]
+    
+    # Relación con volumetría
+    volumetria = models.ForeignKey(
+        Volumetria, 
+        on_delete=models.CASCADE, 
+        related_name='infraestructura_tuberia', 
+        verbose_name="Volumetría"
+    )
+    
+    # Configuración de tubería
+    tipo_tuberia = models.CharField(
+        max_length=20,
+        choices=TIPO_TUBERIA_CHOICES,
+        verbose_name="Tipo de Tubería"
+    )
+    diametro = models.CharField(
+        max_length=10,
+        choices=DIAMETRO_CHOICES,
+        verbose_name="Diámetro de Tubería"
+    )
+    metros_tuberia = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        verbose_name="Metros de Tubería"
+    )
+    
+    # Información adicional del producto (se llenará automáticamente desde catálogo)
+    numero_parte = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Número de Parte"
+    )
+    descripcion_producto = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Descripción del Producto"
+    )
+    precio_unitario = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Precio Unitario por Metro"
+    )
+    precio_proveedor = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Precio Proveedor por Metro"
+    )
+    
+    # Campos de equipo de elevación
+    usa_equipo_elevacion = models.BooleanField(
+        default=False,
+        verbose_name="Usa Equipo de Elevación"
+    )
+    tipo_equipo_elevacion = models.CharField(
+        max_length=30,
+        choices=TIPO_EQUIPO_CHOICES,
+        blank=True,
+        null=True,
+        verbose_name="Tipo de Equipo de Elevación"
+    )
+    dias_equipo_elevacion = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Días de Uso del Equipo"
+    )
+    precio_equipo_elevacion = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Precio por Día del Equipo"
+    )
+    
+    # Totales calculados
+    subtotal_infraestructura = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Subtotal Infraestructura"
+    )
+    subtotal_proveedor_infraestructura = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Subtotal Proveedor Infraestructura"
+    )
+    subtotal_equipo_elevacion = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Subtotal Equipo de Elevación"
+    )
+    
+    # Metadatos
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    
+    def calculate_totals(self):
+        """Calcula los totales basado en metros de tubería y precios"""
+        # Calcular subtotal de tubería
+        self.subtotal_infraestructura = self.metros_tuberia * self.precio_unitario
+        self.subtotal_proveedor_infraestructura = self.metros_tuberia * self.precio_proveedor
+        
+        # Calcular subtotal de equipo de elevación
+        if self.usa_equipo_elevacion and self.dias_equipo_elevacion > 0:
+            self.subtotal_equipo_elevacion = self.dias_equipo_elevacion * self.precio_equipo_elevacion
+        else:
+            self.subtotal_equipo_elevacion = Decimal('0.00')
+        
+        # Total de infraestructura (tubería + equipo de elevación)
+        total_infraestructura = self.subtotal_infraestructura + self.subtotal_equipo_elevacion
+        return total_infraestructura
+    
+    def get_descripcion_completa(self):
+        """Retorna descripción completa del tipo y diámetro"""
+        tipo_display = dict(self.TIPO_TUBERIA_CHOICES).get(self.tipo_tuberia, self.tipo_tuberia)
+        diametro_display = dict(self.DIAMETRO_CHOICES).get(self.diametro, self.diametro)
+        return f"{tipo_display} - {diametro_display}"
+    
+    def __str__(self):
+        return f"Tubería {self.get_descripcion_completa()} - {self.metros_tuberia}m - Volumetría {self.volumetria.id}"
+    
+    class Meta:
+        verbose_name = "Configuración de Infraestructura"
+        verbose_name_plural = "Configuraciones de Infraestructura"
+
+
+class ManoObraVolumetria(models.Model):
+    """
+    Modelo para almacenar la configuración de mano de obra en volumetrías.
+    Parte 3 del formulario de nodos de red (Mano de Obra).
+    Solo se guardan los campos que tienen valores > 0.
+    """
+    # Relación con volumetría
+    volumetria = models.ForeignKey(
+        Volumetria, 
+        on_delete=models.CASCADE, 
+        related_name='mano_obra', 
+        verbose_name="Volumetría"
+    )
+    
+    # Campos de mano de obra (solo valores > 0 se guardan)
+    supervisor = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Cantidad de Supervisores"
+    )
+    tecnico = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Cantidad de Técnicos"
+    )
+    casetas = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Cantidad de Casetas"
+    )
+    comidas = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Cantidad de Comidas"
+    )
+    combustible = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Cantidad de Combustible (litros/días)"
+    )
+    
+    # Precios unitarios (se actualizarán más adelante con los precios reales)
+    precio_supervisor = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Precio Unitario Supervisor"
+    )
+    precio_tecnico = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Precio Unitario Técnico"
+    )
+    precio_casetas = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Precio Unitario Casetas"
+    )
+    precio_comidas = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Precio Unitario Comidas"
+    )
+    precio_combustible = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Precio Unitario Combustible"
+    )
+    
+    # Totales calculados
+    subtotal_mano_obra = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Subtotal Mano de Obra"
+    )
+    
+    # Metadatos
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    
+    def calculate_totals(self):
+        """Calcula los totales basado en cantidades y precios unitarios"""
+        total_supervisor = self.supervisor * self.precio_supervisor
+        total_tecnico = self.tecnico * self.precio_tecnico
+        total_casetas = self.casetas * self.precio_casetas
+        total_comidas = self.comidas * self.precio_comidas
+        total_combustible = self.combustible * self.precio_combustible
+        
+        self.subtotal_mano_obra = (
+            total_supervisor + total_tecnico + total_casetas + 
+            total_comidas + total_combustible
+        )
+        return self.subtotal_mano_obra
+    
+    def has_any_items(self):
+        """Verifica si tiene algún item con cantidad > 0"""
+        return any([
+            self.supervisor > 0,
+            self.tecnico > 0,
+            self.casetas > 0,
+            self.comidas > 0,
+            self.combustible > 0
+        ])
+    
+    def get_items_summary(self):
+        """Retorna un resumen de los items con cantidad > 0"""
+        items = []
+        if self.supervisor > 0:
+            items.append(f"{self.supervisor} Supervisor(es)")
+        if self.tecnico > 0:
+            items.append(f"{self.tecnico} Técnico(s)")
+        if self.casetas > 0:
+            items.append(f"{self.casetas} Caseta(s)")
+        if self.comidas > 0:
+            items.append(f"{self.comidas} Comida(s)")
+        if self.combustible > 0:
+            items.append(f"{self.combustible} Combustible")
+        return ", ".join(items) if items else "Sin elementos"
+    
+    def __str__(self):
+        return f"Mano de Obra: {self.get_items_summary()} - Volumetría {self.volumetria.id}"
+    
+    class Meta:
+        verbose_name = "Configuración de Mano de Obra"
+        verbose_name_plural = "Configuraciones de Mano de Obra"
+
+
 class OportunidadProyecto(models.Model):
     """
     Modelo para vincular oportunidades con proyectos de Bitrix24.

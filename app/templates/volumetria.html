@@ -676,6 +676,202 @@ function mostrarFormularioNodos() {
                         </div>
                     </div>
                     
+                    <!-- Parte 2: Infraestructura de Tubería -->
+                    <div class="border border-green-500 rounded-lg p-6 bg-green-50 dark:bg-green-900/20">
+                        <h3 class="text-lg font-medium apple-text-primary mb-4 flex items-center">
+                            <span class="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">2</span>
+                            Parte 2: Infraestructura de Tubería
+                        </h3>
+                        <p class="text-sm apple-text-secondary mb-6">Configure el conduit necesario para proteger el cableado. Especifique tipo, diámetro y metros totales.</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <!-- Tipo de tubería -->
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Tipo de Tubería *</label>
+                                <select id="tipo-tuberia" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-green-500" required onchange="actualizarInfoTuberia()">
+                                    <option value="">-- Seleccione tipo --</option>
+                                    <option value="steel">Steel (Conduit Metálico)</option>
+                                    <option value="flexible">Flexible (Conduit Flexible)</option>
+                                </select>
+                                <p class="text-xs mt-1 apple-text-secondary">💡 Steel para instalaciones fijas, Flexible para conexiones</p>
+                            </div>
+                            
+                            <!-- Diámetro -->
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Diámetro *</label>
+                                <select id="diametro-tuberia" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-green-500" required onchange="actualizarInfoTuberia()">
+                                    <option value="">-- Seleccione diámetro --</option>
+                                    <option value="1/2">1/2" (12.7 mm)</option>
+                                    <option value="3/4">3/4" (19.05 mm)</option>
+                                    <option value="1">1" (25.4 mm)</option>
+                                    <option value="1-1/4">1-1/4" (31.75 mm)</option>
+                                    <option value="1-1/2">1-1/2" (38.1 mm)</option>
+                                    <option value="2">2" (50.8 mm)</option>
+                                    <option value="2-1/2">2-1/2" (63.5 mm)</option>
+                                    <option value="3">3" (76.2 mm)</option>
+                                    <option value="4">4" (101.6 mm)</option>
+                                </select>
+                                <p class="text-xs mt-1 apple-text-secondary">💡 Mayor diámetro para más cables</p>
+                            </div>
+                            
+                            <!-- Metros de tubería -->
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Metros de Tubería *</label>
+                                <input type="number" id="metros-tuberia" min="0" step="0.1" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-green-500" placeholder="Ej: 250.5" required onchange="actualizarInfoTuberia()">
+                                <p class="text-xs mt-1 apple-text-secondary">💡 Total de metros de conduit necesarios</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Equipo de Elevación -->
+                        <div class="mt-6 p-4 border border-orange-300 rounded-lg bg-orange-50 dark:bg-orange-900/20">
+                            <div class="flex items-center space-x-3 mb-4">
+                                <input type="checkbox" id="usa-equipo-elevacion" class="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 dark:focus:ring-orange-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" onchange="toggleEquipoElevacion()">
+                                <label for="usa-equipo-elevacion" class="text-sm font-medium apple-text-primary">
+                                    🏧 ¿Se usará equipo de elevación?
+                                </label>
+                            </div>
+                            
+                            <div id="config-equipo-elevacion" class="grid grid-cols-1 md:grid-cols-2 gap-4" style="display: none;">
+                                <!-- Tipo de equipo -->
+                                <div>
+                                    <label class="block text-sm font-medium apple-text-primary mb-2">Tipo de Equipo</label>
+                                    <select id="tipo-equipo-elevacion" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-orange-500" onchange="actualizarInfoTuberia()">
+                                        <option value="">-- Seleccione tipo --</option>
+                                        <option value="grua-telescopica">Grúa Telescópica</option>
+                                        <option value="plataforma-elevadora">Plataforma Elevadora</option>
+                                        <option value="andamio">Andamio</option>
+                                        <option value="escalera-extension">Escalera de Extensión</option>
+                                        <option value="montacargas">Montacargas</option>
+                                    </select>
+                                    <p class="text-xs mt-1 apple-text-secondary">🏧 Tipo de equipo para trabajos en altura</p>
+                                </div>
+                                
+                                <!-- Días de uso -->
+                                <div>
+                                    <label class="block text-sm font-medium apple-text-primary mb-2">Días de Uso</label>
+                                    <input type="number" id="dias-equipo-elevacion" min="0" step="0.5" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-orange-500" placeholder="Ej: 2.5" onchange="actualizarInfoTuberia()">
+                                    <p class="text-xs mt-1 apple-text-secondary">📅 Días necesarios del equipo</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Información automática del producto -->
+                        <div class="mt-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg" id="info-tuberia" style="display: none;">
+                            <h4 class="text-sm font-medium apple-text-primary mb-3">📦 Información del Producto:</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="font-medium apple-text-primary">Número de Parte:</span>
+                                    <span class="text-green-500 ml-2" id="numero-parte-tuberia">-</span>
+                                </div>
+                                <div>
+                                    <span class="font-medium apple-text-primary">Descripción:</span>
+                                    <span class="text-green-500 ml-2" id="descripcion-tuberia">-</span>
+                                </div>
+                                <div>
+                                    <span class="font-medium apple-text-primary">Precio por Metro:</span>
+                                    <span class="text-green-500 ml-2" id="precio-metro-tuberia">$0.00 USD</span>
+                                </div>
+                                <div>
+                                    <span class="font-medium apple-text-primary">Subtotal:</span>
+                                    <span class="text-green-500 ml-2 font-bold" id="subtotal-tuberia">$0.00 USD</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Resumen de configuración -->
+                        <div class="mt-6 p-4 bg-green-100 dark:bg-green-800/30 rounded-lg">
+                            <h4 class="text-sm font-medium apple-text-primary mb-2">🔧 Configuración de Infraestructura:</h4>
+                            <div class="text-xs apple-text-secondary">
+                                <div id="resumen-tuberia">Complete la configuración para ver el resumen</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Parte 3: Mano de Obra -->
+                    <div class="border border-purple-500 rounded-lg p-6 bg-purple-50 dark:bg-purple-900/20">
+                        <h3 class="text-lg font-medium apple-text-primary mb-4 flex items-center">
+                            <span class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">3</span>
+                            Parte 3: Mano de Obra
+                        </h3>
+                        <p class="text-sm apple-text-secondary mb-6">Especifique los recursos humanos y logísticos necesarios. Deje en 0 o vacío los campos que no apliquen.</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- Supervisor -->
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Supervisores</label>
+                                <input type="number" id="cantidad-supervisor" min="0" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="0" onchange="actualizarManoObra()">
+                                <p class="text-xs mt-1 apple-text-secondary">👥 Personal de supervisión del proyecto</p>
+                            </div>
+                            
+                            <!-- Técnico -->
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Técnicos</label>
+                                <input type="number" id="cantidad-tecnico" min="0" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="0" onchange="actualizarManoObra()">
+                                <p class="text-xs mt-1 apple-text-secondary">🔧 Personal técnico especializado</p>
+                            </div>
+                            
+                            <!-- Casetas -->
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Casetas</label>
+                                <input type="number" id="cantidad-casetas" min="0" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="0" onchange="actualizarManoObra()">
+                                <p class="text-xs mt-1 apple-text-secondary">🏠 Casetas temporales en obra</p>
+                            </div>
+                            
+                            <!-- Comidas -->
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Comidas</label>
+                                <input type="number" id="cantidad-comidas" min="0" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="0" onchange="actualizarManoObra()">
+                                <p class="text-xs mt-1 apple-text-secondary">🍴 Alimentación para personal</p>
+                            </div>
+                            
+                            <!-- Combustible -->
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Combustible</label>
+                                <input type="number" id="cantidad-combustible" min="0" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="0" onchange="actualizarManoObra()">
+                                <p class="text-xs mt-1 apple-text-secondary">⛽ Litros/días de combustible</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Información automática de costos -->
+                        <div class="mt-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg" id="info-mano-obra" style="display: none;">
+                            <h4 class="text-sm font-medium apple-text-primary mb-3">💰 Resumen de Costos:</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div id="costo-supervisor" style="display: none;">
+                                    <span class="font-medium apple-text-primary">Supervisores:</span>
+                                    <span class="text-purple-500 ml-2" id="total-supervisor">$0.00 USD</span>
+                                </div>
+                                <div id="costo-tecnico" style="display: none;">
+                                    <span class="font-medium apple-text-primary">Técnicos:</span>
+                                    <span class="text-purple-500 ml-2" id="total-tecnico">$0.00 USD</span>
+                                </div>
+                                <div id="costo-casetas" style="display: none;">
+                                    <span class="font-medium apple-text-primary">Casetas:</span>
+                                    <span class="text-purple-500 ml-2" id="total-casetas">$0.00 USD</span>
+                                </div>
+                                <div id="costo-comidas" style="display: none;">
+                                    <span class="font-medium apple-text-primary">Comidas:</span>
+                                    <span class="text-purple-500 ml-2" id="total-comidas">$0.00 USD</span>
+                                </div>
+                                <div id="costo-combustible" style="display: none;">
+                                    <span class="font-medium apple-text-primary">Combustible:</span>
+                                    <span class="text-purple-500 ml-2" id="total-combustible">$0.00 USD</span>
+                                </div>
+                                <div class="md:col-span-2 border-t border-gray-300 pt-2 mt-2">
+                                    <span class="font-medium apple-text-primary text-base">Subtotal Mano de Obra:</span>
+                                    <span class="text-purple-500 ml-2 font-bold text-base" id="subtotal-mano-obra">$0.00 USD</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Resumen de configuración -->
+                        <div class="mt-6 p-4 bg-purple-100 dark:bg-purple-800/30 rounded-lg">
+                            <h4 class="text-sm font-medium apple-text-primary mb-2">📅 Configuración de Mano de Obra:</h4>
+                            <div class="text-xs apple-text-secondary">
+                                <div id="resumen-mano-obra">Complete los campos necesarios para ver el resumen</div>
+                            </div>
+                        </div>
+                    </div>
+                    
                         <div class="flex justify-center space-x-4 pt-8 border-t border-gray-200 dark:border-gray-700 mt-8">
                             <button type="button" onclick="cerrarFormulario()" class="apple-btn-secondary font-medium py-3 px-8 transition duration-200">
                                 Cancelar
@@ -1014,6 +1210,388 @@ function cerrarAnimacionCarga() {
     if (loading) {
         loading.remove();
     }
+}
+
+// FUNCIONES DE INFRAESTRUCTURA DE TUBERÍA
+// Función para mostrar/ocultar configuración de equipo de elevación
+function toggleEquipoElevacion() {
+    const checkbox = document.getElementById('usa-equipo-elevacion');
+    const configDiv = document.getElementById('config-equipo-elevacion');
+    
+    if (checkbox && configDiv) {
+        if (checkbox.checked) {
+            configDiv.style.display = 'grid';
+        } else {
+            configDiv.style.display = 'none';
+            // Limpiar campos cuando se desactiva
+            document.getElementById('tipo-equipo-elevacion').value = '';
+            document.getElementById('dias-equipo-elevacion').value = '';
+        }
+        // Actualizar información después del cambio
+        actualizarInfoTuberia();
+    }
+}
+
+// Función para actualizar información de tubería basada en selecciones
+function actualizarInfoTuberia() {
+    const tipoTuberia = document.getElementById('tipo-tuberia')?.value;
+    const diametro = document.getElementById('diametro-tuberia')?.value;
+    const metros = parseFloat(document.getElementById('metros-tuberia')?.value) || 0;
+    
+    // Datos de equipo de elevación
+    const usaEquipoElevacion = document.getElementById('usa-equipo-elevacion')?.checked || false;
+    const tipoEquipo = document.getElementById('tipo-equipo-elevacion')?.value || '';
+    const diasEquipo = parseFloat(document.getElementById('dias-equipo-elevacion')?.value) || 0;
+    
+    console.log('Actualizando info tubería:', { tipoTuberia, diametro, metros, usaEquipoElevacion, tipoEquipo, diasEquipo });
+    
+    const infoDiv = document.getElementById('info-tuberia');
+    const resumenDiv = document.getElementById('resumen-tuberia');
+    
+    if (!tipoTuberia || !diametro || !infoDiv || !resumenDiv) {
+        if (infoDiv) infoDiv.style.display = 'none';
+        if (resumenDiv) resumenDiv.innerHTML = 'Complete la configuración para ver el resumen';
+        return;
+    }
+    
+    // Mostrar información del producto
+    infoDiv.style.display = 'block';
+    
+    // Datos de productos de tubería
+    const productosData = {
+        'steel': {
+            '1/2': { parte: 'STL-1/2-10', descripcion: 'Conduit Metálico 1/2" x 3m', precio: 45.50, proveedor: 32.00 },
+            '3/4': { parte: 'STL-3/4-10', descripcion: 'Conduit Metálico 3/4" x 3m', precio: 52.75, proveedor: 37.50 },
+            '1': { parte: 'STL-1-10', descripcion: 'Conduit Metálico 1" x 3m', precio: 65.80, proveedor: 46.25 },
+            '1-1/4': { parte: 'STL-1.25-10', descripcion: 'Conduit Metálico 1-1/4" x 3m', precio: 78.90, proveedor: 55.50 },
+            '1-1/2': { parte: 'STL-1.5-10', descripcion: 'Conduit Metálico 1-1/2" x 3m', precio: 89.25, proveedor: 62.75 },
+            '2': { parte: 'STL-2-10', descripcion: 'Conduit Metálico 2" x 3m', precio: 125.40, proveedor: 88.10 },
+            '2-1/2': { parte: 'STL-2.5-10', descripcion: 'Conduit Metálico 2-1/2" x 3m', precio: 165.75, proveedor: 116.50 },
+            '3': { parte: 'STL-3-10', descripcion: 'Conduit Metálico 3" x 3m', precio: 220.80, proveedor: 155.20 },
+            '4': { parte: 'STL-4-10', descripcion: 'Conduit Metálico 4" x 3m', precio: 298.50, proveedor: 209.75 }
+        },
+        'flexible': {
+            '1/2': { parte: 'FLX-1/2-25', descripcion: 'Conduit Flexible 1/2" x 25m', precio: 28.75, proveedor: 20.25 },
+            '3/4': { parte: 'FLX-3/4-25', descripcion: 'Conduit Flexible 3/4" x 25m', precio: 35.60, proveedor: 25.00 },
+            '1': { parte: 'FLX-1-25', descripcion: 'Conduit Flexible 1" x 25m', precio: 48.90, proveedor: 34.35 },
+            '1-1/4': { parte: 'FLX-1.25-25', descripcion: 'Conduit Flexible 1-1/4" x 25m', precio: 62.15, proveedor: 43.70 },
+            '1-1/2': { parte: 'FLX-1.5-25', descripcion: 'Conduit Flexible 1-1/2" x 25m', precio: 75.80, proveedor: 53.25 },
+            '2': { parte: 'FLX-2-25', descripcion: 'Conduit Flexible 2" x 25m', precio: 98.70, proveedor: 69.35 },
+            '2-1/2': { parte: 'FLX-2.5-25', descripcion: 'Conduit Flexible 2-1/2" x 25m', precio: 128.45, proveedor: 90.25 },
+            '3': { parte: 'FLX-3-25', descripcion: 'Conduit Flexible 3" x 25m', precio: 165.90, proveedor: 116.65 },
+            '4': { parte: 'FLX-4-25', descripcion: 'Conduit Flexible 4" x 25m', precio: 225.80, proveedor: 158.75 }
+        }
+    };
+    
+    // Precios de equipos de elevación (temporales - se actualizarán con los reales)
+    const preciosEquipo = {
+        'grua-telescopica': 2500.00,
+        'plataforma-elevadora': 850.00,
+        'andamio': 120.00,
+        'escalera-extension': 75.00,
+        'montacargas': 1200.00
+    };
+    
+    const producto = productosData[tipoTuberia]?.[diametro];
+    let subtotalTotal = 0;
+    
+    if (producto) {
+        document.getElementById('numero-parte-tuberia').textContent = producto.parte;
+        document.getElementById('descripcion-tuberia').textContent = producto.descripcion;
+        document.getElementById('precio-metro-tuberia').textContent = `$${producto.precio.toFixed(2)} USD`;
+        
+        const subtotalTuberia = metros * producto.precio;
+        document.getElementById('subtotal-tuberia').textContent = `$${subtotalTuberia.toFixed(2)} USD`;
+        subtotalTotal += subtotalTuberia;
+        
+        // Calcular costo de equipo de elevación si está habilitado
+        let equipoInfo = '';
+        if (usaEquipoElevacion && tipoEquipo && diasEquipo > 0) {
+            const precioEquipoPorDia = preciosEquipo[tipoEquipo] || 0;
+            const subtotalEquipo = diasEquipo * precioEquipoPorDia;
+            subtotalTotal += subtotalEquipo;
+            
+            const tipoEquipoDisplay = {
+                'grua-telescopica': 'Grúa Telescópica',
+                'plataforma-elevadora': 'Plataforma Elevadora',
+                'andamio': 'Andamio',
+                'escalera-extension': 'Escalera de Extensión',
+                'montacargas': 'Montacargas'
+            }[tipoEquipo] || tipoEquipo;
+            
+            equipoInfo = ` + ${tipoEquipoDisplay} (${diasEquipo} días): $${subtotalEquipo.toFixed(2)}`;
+        }
+        
+        // Actualizar resumen
+        const tipoDisplay = tipoTuberia === 'steel' ? 'Steel (Metálico)' : 'Flexible';
+        const diametroDisplay = diametro + '"';
+        
+        resumenDiv.innerHTML = `
+            <div class="flex flex-wrap gap-4">
+                <span><strong>Tipo:</strong> ${tipoDisplay}</span>
+                <span><strong>Diámetro:</strong> ${diametroDisplay}</span>
+                <span><strong>Metros:</strong> ${metros}m</span>
+                ${equipoInfo ? `<span><strong>Equipo:</strong> ${equipoInfo.substring(3)}</span>` : ''}
+                <span><strong>Total:</strong> $${subtotalTotal.toFixed(2)} USD</span>
+            </div>
+        `;
+    } else {
+        document.getElementById('numero-parte-tuberia').textContent = 'No disponible';
+        document.getElementById('descripcion-tuberia').textContent = 'Producto no encontrado';
+        document.getElementById('precio-metro-tuberia').textContent = '$0.00 USD';
+        document.getElementById('subtotal-tuberia').textContent = '$0.00 USD';
+        
+        resumenDiv.innerHTML = 'Configuración no válida';
+    }
+}
+
+// Función para obtener datos de infraestructura del formulario
+function obtenerDatosInfraestructura() {
+    const tipoTuberia = document.getElementById('tipo-tuberia')?.value;
+    const diametro = document.getElementById('diametro-tuberia')?.value;
+    const metros = parseFloat(document.getElementById('metros-tuberia')?.value) || 0;
+    
+    // Datos de equipo de elevación
+    const usaEquipoElevacion = document.getElementById('usa-equipo-elevacion')?.checked || false;
+    const tipoEquipo = document.getElementById('tipo-equipo-elevacion')?.value || '';
+    const diasEquipo = parseFloat(document.getElementById('dias-equipo-elevacion')?.value) || 0;
+    
+    if (!tipoTuberia || !diametro || metros <= 0) {
+        return null; // No hay datos válidos de infraestructura
+    }
+    
+    // Datos de productos (mismo catálogo que actualizarInfoTuberia)
+    const productosData = {
+        'steel': {
+            '1/2': { parte: 'STL-1/2-10', descripcion: 'Conduit Metálico 1/2" x 3m', precio: 45.50, proveedor: 32.00 },
+            '3/4': { parte: 'STL-3/4-10', descripcion: 'Conduit Metálico 3/4" x 3m', precio: 52.75, proveedor: 37.50 },
+            '1': { parte: 'STL-1-10', descripcion: 'Conduit Metálico 1" x 3m', precio: 65.80, proveedor: 46.25 },
+            '1-1/4': { parte: 'STL-1.25-10', descripcion: 'Conduit Metálico 1-1/4" x 3m', precio: 78.90, proveedor: 55.50 },
+            '1-1/2': { parte: 'STL-1.5-10', descripcion: 'Conduit Metálico 1-1/2" x 3m', precio: 89.25, proveedor: 62.75 },
+            '2': { parte: 'STL-2-10', descripcion: 'Conduit Metálico 2" x 3m', precio: 125.40, proveedor: 88.10 },
+            '2-1/2': { parte: 'STL-2.5-10', descripcion: 'Conduit Metálico 2-1/2" x 3m', precio: 165.75, proveedor: 116.50 },
+            '3': { parte: 'STL-3-10', descripcion: 'Conduit Metálico 3" x 3m', precio: 220.80, proveedor: 155.20 },
+            '4': { parte: 'STL-4-10', descripcion: 'Conduit Metálico 4" x 3m', precio: 298.50, proveedor: 209.75 }
+        },
+        'flexible': {
+            '1/2': { parte: 'FLX-1/2-25', descripcion: 'Conduit Flexible 1/2" x 25m', precio: 28.75, proveedor: 20.25 },
+            '3/4': { parte: 'FLX-3/4-25', descripcion: 'Conduit Flexible 3/4" x 25m', precio: 35.60, proveedor: 25.00 },
+            '1': { parte: 'FLX-1-25', descripcion: 'Conduit Flexible 1" x 25m', precio: 48.90, proveedor: 34.35 },
+            '1-1/4': { parte: 'FLX-1.25-25', descripcion: 'Conduit Flexible 1-1/4" x 25m', precio: 62.15, proveedor: 43.70 },
+            '1-1/2': { parte: 'FLX-1.5-25', descripcion: 'Conduit Flexible 1-1/2" x 25m', precio: 75.80, proveedor: 53.25 },
+            '2': { parte: 'FLX-2-25', descripcion: 'Conduit Flexible 2" x 25m', precio: 98.70, proveedor: 69.35 },
+            '2-1/2': { parte: 'FLX-2.5-25', descripcion: 'Conduit Flexible 2-1/2" x 25m', precio: 128.45, proveedor: 90.25 },
+            '3': { parte: 'FLX-3-25', descripcion: 'Conduit Flexible 3" x 25m', precio: 165.90, proveedor: 116.65 },
+            '4': { parte: 'FLX-4-25', descripcion: 'Conduit Flexible 4" x 25m', precio: 225.80, proveedor: 158.75 }
+        }
+    };
+    
+    // Precios de equipos
+    const preciosEquipo = {
+        'grua-telescopica': 2500.00,
+        'plataforma-elevadora': 850.00,
+        'andamio': 120.00,
+        'escalera-extension': 75.00,
+        'montacargas': 1200.00
+    };
+    
+    const producto = productosData[tipoTuberia]?.[diametro];
+    
+    if (!producto) {
+        return null;
+    }
+    
+    // Calcular totales
+    const subtotalTuberia = metros * producto.precio;
+    const subtotalProveedorTuberia = metros * producto.proveedor;
+    
+    let subtotalEquipo = 0;
+    let precioEquipoPorDia = 0;
+    
+    if (usaEquipoElevacion && tipoEquipo && diasEquipo > 0) {
+        precioEquipoPorDia = preciosEquipo[tipoEquipo] || 0;
+        subtotalEquipo = diasEquipo * precioEquipoPorDia;
+    }
+    
+    return {
+        tipo_tuberia: tipoTuberia,
+        diametro: diametro,
+        metros_tuberia: metros,
+        numero_parte: producto.parte,
+        descripcion_producto: producto.descripcion,
+        precio_unitario: producto.precio,
+        precio_proveedor: producto.proveedor,
+        subtotal_infraestructura: subtotalTuberia,
+        subtotal_proveedor_infraestructura: subtotalProveedorTuberia,
+        // Campos de equipo de elevación
+        usa_equipo_elevacion: usaEquipoElevacion,
+        tipo_equipo_elevacion: tipoEquipo,
+        dias_equipo_elevacion: diasEquipo,
+        precio_equipo_elevacion: precioEquipoPorDia,
+        subtotal_equipo_elevacion: subtotalEquipo
+    };
+}
+
+// FUNCIONES DE MANO DE OBRA
+// Función para actualizar información de mano de obra
+function actualizarManoObra() {
+    const supervisor = parseInt(document.getElementById('cantidad-supervisor')?.value) || 0;
+    const tecnico = parseInt(document.getElementById('cantidad-tecnico')?.value) || 0;
+    const casetas = parseInt(document.getElementById('cantidad-casetas')?.value) || 0;
+    const comidas = parseInt(document.getElementById('cantidad-comidas')?.value) || 0;
+    const combustible = parseInt(document.getElementById('cantidad-combustible')?.value) || 0;
+    
+    console.log('Actualizando mano de obra:', { supervisor, tecnico, casetas, comidas, combustible });
+    
+    const infoDiv = document.getElementById('info-mano-obra');
+    const resumenDiv = document.getElementById('resumen-mano-obra');
+    
+    // Precios temporales (se actualizarán cuando proporciones los reales)
+    const precios = {
+        supervisor: 1200.00,  // Por día
+        tecnico: 800.00,      // Por día
+        casetas: 150.00,      // Por día
+        comidas: 85.00,       // Por comida
+        combustible: 22.50    // Por litro
+    };
+    
+    // Verificar si hay algún valor > 0
+    const hayItems = supervisor > 0 || tecnico > 0 || casetas > 0 || comidas > 0 || combustible > 0;
+    
+    if (!hayItems || !infoDiv || !resumenDiv) {
+        if (infoDiv) infoDiv.style.display = 'none';
+        if (resumenDiv) resumenDiv.innerHTML = 'Complete los campos necesarios para ver el resumen';
+        return;
+    }
+    
+    // Mostrar información de costos
+    infoDiv.style.display = 'block';
+    
+    // Calcular y mostrar totales individuales
+    let subtotalManoObra = 0;
+    const items = [];
+    
+    // Supervisor
+    const divSupervisor = document.getElementById('costo-supervisor');
+    if (supervisor > 0) {
+        const totalSupervisor = supervisor * precios.supervisor;
+        document.getElementById('total-supervisor').textContent = `$${totalSupervisor.toFixed(2)} USD`;
+        divSupervisor.style.display = 'block';
+        subtotalManoObra += totalSupervisor;
+        items.push(`${supervisor} Supervisor(es)`);
+    } else {
+        divSupervisor.style.display = 'none';
+    }
+    
+    // Técnico
+    const divTecnico = document.getElementById('costo-tecnico');
+    if (tecnico > 0) {
+        const totalTecnico = tecnico * precios.tecnico;
+        document.getElementById('total-tecnico').textContent = `$${totalTecnico.toFixed(2)} USD`;
+        divTecnico.style.display = 'block';
+        subtotalManoObra += totalTecnico;
+        items.push(`${tecnico} Técnico(s)`);
+    } else {
+        divTecnico.style.display = 'none';
+    }
+    
+    // Casetas
+    const divCasetas = document.getElementById('costo-casetas');
+    if (casetas > 0) {
+        const totalCasetas = casetas * precios.casetas;
+        document.getElementById('total-casetas').textContent = `$${totalCasetas.toFixed(2)} USD`;
+        divCasetas.style.display = 'block';
+        subtotalManoObra += totalCasetas;
+        items.push(`${casetas} Caseta(s)`);
+    } else {
+        divCasetas.style.display = 'none';
+    }
+    
+    // Comidas
+    const divComidas = document.getElementById('costo-comidas');
+    if (comidas > 0) {
+        const totalComidas = comidas * precios.comidas;
+        document.getElementById('total-comidas').textContent = `$${totalComidas.toFixed(2)} USD`;
+        divComidas.style.display = 'block';
+        subtotalManoObra += totalComidas;
+        items.push(`${comidas} Comida(s)`);
+    } else {
+        divComidas.style.display = 'none';
+    }
+    
+    // Combustible
+    const divCombustible = document.getElementById('costo-combustible');
+    if (combustible > 0) {
+        const totalCombustible = combustible * precios.combustible;
+        document.getElementById('total-combustible').textContent = `$${totalCombustible.toFixed(2)} USD`;
+        divCombustible.style.display = 'block';
+        subtotalManoObra += totalCombustible;
+        items.push(`${combustible} Combustible`);
+    } else {
+        divCombustible.style.display = 'none';
+    }
+    
+    // Actualizar subtotal
+    document.getElementById('subtotal-mano-obra').textContent = `$${subtotalManoObra.toFixed(2)} USD`;
+    
+    // Actualizar resumen
+    if (items.length > 0) {
+        resumenDiv.innerHTML = `
+            <div class="flex flex-wrap gap-4">
+                <span><strong>Items:</strong> ${items.join(', ')}</span>
+                <span><strong>Subtotal:</strong> $${subtotalManoObra.toFixed(2)} USD</span>
+            </div>
+        `;
+    } else {
+        resumenDiv.innerHTML = 'Sin elementos configurados';
+    }
+}
+
+// Función para obtener datos de mano de obra del formulario
+function obtenerDatosManoObra() {
+    const supervisor = parseInt(document.getElementById('cantidad-supervisor')?.value) || 0;
+    const tecnico = parseInt(document.getElementById('cantidad-tecnico')?.value) || 0;
+    const casetas = parseInt(document.getElementById('cantidad-casetas')?.value) || 0;
+    const comidas = parseInt(document.getElementById('cantidad-comidas')?.value) || 0;
+    const combustible = parseInt(document.getElementById('cantidad-combustible')?.value) || 0;
+    
+    // Solo retornar datos si hay al menos un item con valor > 0
+    const hayItems = supervisor > 0 || tecnico > 0 || casetas > 0 || comidas > 0 || combustible > 0;
+    
+    if (!hayItems) {
+        return null; // No hay datos válidos de mano de obra
+    }
+    
+    // Precios temporales (mismos que actualizarManoObra)
+    const precios = {
+        supervisor: 1200.00,
+        tecnico: 800.00,
+        casetas: 150.00,
+        comidas: 85.00,
+        combustible: 22.50
+    };
+    
+    const subtotalManoObra = (
+        (supervisor * precios.supervisor) +
+        (tecnico * precios.tecnico) +
+        (casetas * precios.casetas) +
+        (comidas * precios.comidas) +
+        (combustible * precios.combustible)
+    );
+    
+    return {
+        supervisor: supervisor,
+        tecnico: tecnico,
+        casetas: casetas,
+        comidas: comidas,
+        combustible: combustible,
+        precio_supervisor: precios.supervisor,
+        precio_tecnico: precios.tecnico,
+        precio_casetas: precios.casetas,
+        precio_comidas: precios.comidas,
+        precio_combustible: precios.combustible,
+        subtotal_mano_obra: subtotalManoObra
+    };
 }
 
 // Función para generar la volumetría
