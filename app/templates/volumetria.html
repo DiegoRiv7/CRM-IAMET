@@ -610,71 +610,6 @@ function mostrarFormularioNodos() {
                         </div>
                     </div>
                     
-                    <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
-                        <h3 class="text-lg font-medium apple-text-primary mb-4">Colores de Jack</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium apple-text-primary mb-2">Color del Jack Usuario</label>
-                                <select id="color-jack-usuario" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500">
-                                    <option value="azul">Azul</option>
-                                    <option value="gris">Gris</option>
-                                    <option value="amarillo">Amarillo</option>
-                                    <option value="verde">Verde</option>
-                                    <option value="rojo">Rojo</option>
-                                    <option value="negro">Negro</option>
-                                    <option value="blanco">Blanco</option>
-                                    <option value="naranja">Naranja</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium apple-text-primary mb-2">Color del Jack Patchpanel</label>
-                                <select id="color-jack-patchpanel" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500">
-                                    <option value="azul">Azul</option>
-                                    <option value="gris">Gris</option>
-                                    <option value="amarillo">Amarillo</option>
-                                    <option value="verde">Verde</option>
-                                    <option value="rojo">Rojo</option>
-                                    <option value="negro">Negro</option>
-                                    <option value="blanco">Blanco</option>
-                                    <option value="naranja">Naranja</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
-                        <h3 class="text-lg font-medium apple-text-primary mb-4">Colores de Patchcord</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium apple-text-primary mb-2">Color del Patchcord Usuario</label>
-                                <select id="color-patchcord-usuario" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500">
-                                    <option value="azul">Azul</option>
-                                    <option value="gris">Gris</option>
-                                    <option value="amarillo">Amarillo</option>
-                                    <option value="verde">Verde</option>
-                                    <option value="rojo">Rojo</option>
-                                    <option value="negro">Negro</option>
-                                    <option value="blanco">Blanco</option>
-                                    <option value="naranja">Naranja</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium apple-text-primary mb-2">Color del Patchcord Patchpanel</label>
-                                <select id="color-patchcord-patchpanel" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500">
-                                    <option value="azul">Azul</option>
-                                    <option value="gris">Gris</option>
-                                    <option value="amarillo">Amarillo</option>
-                                    <option value="verde">Verde</option>
-                                    <option value="rojo">Rojo</option>
-                                    <option value="negro">Negro</option>
-                                    <option value="blanco">Blanco</option>
-                                    <option value="naranja">Naranja</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
                     
                     <!-- Parte 2: Infraestructura de Tubería -->
                     <div class="border border-green-500 rounded-lg p-6 bg-green-50 dark:bg-green-900/20">
@@ -1138,10 +1073,8 @@ function procesarFormularioNodos() {
     const color = document.getElementById('color').value;
     const distancia = parseFloat(document.getElementById('distancia').value);
     const cantidadNodos = parseInt(document.getElementById('cantidad-nodos').value);
-    const colorJackUsuario = document.getElementById('color-jack-usuario').value;
-    const colorJackPatchpanel = document.getElementById('color-jack-patchpanel').value;
-    const colorPatchcordUsuario = document.getElementById('color-patchcord-usuario').value;
-    const colorPatchcordPatchpanel = document.getElementById('color-patchcord-patchpanel').value;
+    
+    // Los colores se obtendrán automáticamente de los números de parte
     
     // Validaciones proyecto
     if (!nombreVolumetria.trim()) {
@@ -1180,11 +1113,7 @@ function procesarFormularioNodos() {
             categoria,
             color,
             distancia,
-            cantidadNodos,
-            colorJackUsuario,
-            colorJackPatchpanel,
-            colorPatchcordUsuario,
-            colorPatchcordPatchpanel
+            cantidadNodos
         });
     }, 2000);
 }
@@ -2053,9 +1982,9 @@ function generarFilasTabla(datos) {
 
         // Jack Usuario
         productos.push({
-            noParte: 'CJ688TG - ' + datos.colorJackUsuario.toUpperCase(),
+            noParte: 'CJ688TG - ' + 'AZUL',
             cantidad: datos.cantidadJacksUsuario,
-            descripcion: `Conector Jack RJ45 Estilo TG, Mini-Com, Categoría 6, de 8 posiciones y 8 cables, color: ${datos.colorJackUsuario}`,
+            descripcion: `Conector Jack RJ45 Estilo TG, Mini-Com, Categoría 6, de 8 posiciones y 8 cables, Azul`,
             precioLista: precioListaJack,
             descuentoCliente: 0,
             descuentoProveedor: descuentoProveedorJack
@@ -2063,9 +1992,9 @@ function generarFilasTabla(datos) {
 
         // Jack Patchpanel
         productos.push({
-            noParte: 'CJ688TG - ' + datos.colorJackPatchpanel.toUpperCase(),
+            noParte: 'CJ688TG - ' + 'AZUL',
             cantidad: datos.cantidadJacksPatchpanel,
-            descripcion: `Conector Jack RJ45 Estilo TG, Mini-Com, Categoría 6, de 8 posiciones y 8 cables, color: ${datos.colorJackPatchpanel}`,
+            descripcion: `Conector Jack RJ45 Estilo TG, Mini-Com, Categoría 6, de 8 posiciones y 8 cables, Azul`,
             precioLista: precioListaJack,
             descuentoCliente: 0,
             descuentoProveedor: descuentoProveedorJack
@@ -2074,17 +2003,17 @@ function generarFilasTabla(datos) {
         // Lógica genérica para Jacks en otras categorías
         productos.push(
             {
-                noParte: 'JCK-' + datos.categoria + '-USR-' + datos.colorJackUsuario.toUpperCase(),
+                noParte: 'JCK-' + datos.categoria + '-USR-' + 'AZUL',
                 cantidad: datos.cantidadJacksUsuario,
-                descripcion: `Jack RJ45 ${datos.categoria} ${datos.colorJackUsuario} Usuario`,
+                descripcion: `Jack RJ45 ${datos.categoria} Azul Usuario`,
                 precioLista: 12.75,
                 descuentoCliente: 25,
                 descuentoProveedor: 20
             },
             {
-                noParte: 'JCK-' + datos.categoria + '-PP-' + datos.colorJackPatchpanel.toUpperCase(),
+                noParte: 'JCK-' + datos.categoria + '-PP-' + 'AZUL',
                 cantidad: datos.cantidadJacksPatchpanel,
-                descripcion: `Jack RJ45 ${datos.categoria} ${datos.colorJackPatchpanel} Patchpanel`,
+                descripcion: `Jack RJ45 ${datos.categoria} Azul Patchpanel`,
                 precioLista: 12.75,
                 descuentoCliente: 25,
                 descuentoProveedor: 20
@@ -2100,9 +2029,9 @@ function generarFilasTabla(datos) {
 
         // Patchcord Usuario
         productos.push({
-            noParte: 'UTPSP7 - ' + datos.colorPatchcordUsuario.toUpperCase(),
+            noParte: 'UTPSP7 - ' + 'AZUL',
             cantidad: datos.cantidadPatchcordsUsuario,
-            descripcion: `Cable de Parcheo TX6, UTP Cat6, 24 AWG, CM, Color ${datos.colorPatchcordUsuario}, 7ft`,
+            descripcion: `Cable de Parcheo TX6, UTP Cat6, 24 AWG, CM, Color Azul, 7ft`,
             precioLista: precioListaPatchcord,
             descuentoCliente: 0,
             descuentoProveedor: descuentoProveedorPatchcord
@@ -2110,9 +2039,9 @@ function generarFilasTabla(datos) {
 
         // Patchcord Patchpanel
         productos.push({
-            noParte: 'UTPSP7 - ' + datos.colorPatchcordPatchpanel.toUpperCase(),
+            noParte: 'UTPSP7 - ' + 'AZUL',
             cantidad: datos.cantidadPatchcordsPatchpanel,
-            descripcion: `Cable de Parcheo TX6, UTP Cat6, 24 AWG, CM, Color ${datos.colorPatchcordPatchpanel}, 7ft`,
+            descripcion: `Cable de Parcheo TX6, UTP Cat6, 24 AWG, CM, Color Azul, 7ft`,
             precioLista: precioListaPatchcord,
             descuentoCliente: 0,
             descuentoProveedor: descuentoProveedorPatchcord
@@ -2121,17 +2050,17 @@ function generarFilasTabla(datos) {
         // Lógica genérica para Patchcords en otras categorías (CAT6A)
         productos.push(
             {
-                noParte: 'PC-' + datos.categoria + '-USR-' + datos.colorPatchcordUsuario.toUpperCase(),
+                noParte: 'PC-' + datos.categoria + '-USR-' + 'AZUL',
                 cantidad: datos.cantidadPatchcordsUsuario,
-                descripcion: `Patchcord ${datos.categoria} ${datos.colorPatchcordUsuario} Usuario 3 pies`,
+                descripcion: `Patchcord ${datos.categoria} Azul Usuario 3 pies`,
                 precioLista: 18.90,
                 descuentoCliente: 18,
                 descuentoProveedor: 20
             },
             {
-                noParte: 'PC-' + datos.categoria + '-PP-' + datos.colorPatchcordPatchpanel.toUpperCase(),
+                noParte: 'PC-' + datos.categoria + '-PP-' + 'AZUL',
                 cantidad: datos.cantidadPatchcordsPatchpanel,
-                descripcion: `Patchcord ${datos.categoria} ${datos.colorPatchcordPatchpanel} Patchpanel 3 pies`,
+                descripcion: `Patchcord ${datos.categoria} Azul Patchpanel 3 pies`,
                 precioLista: 18.90,
                 descuentoCliente: 18,
                 descuentoProveedor: 20
