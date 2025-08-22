@@ -339,25 +339,24 @@
             <h2 class="text-xl font-semibold mb-4" style="color: var(--apple-label);">📦 Importación Masiva</h2>
             
             <div class="mb-4 p-4 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-lg border border-blue-400/30">
-                <h3 class="text-sm font-semibold text-white mb-2">📋 Formato Requerido</h3>
+                <h3 class="text-sm font-semibold text-white mb-2">🧠 Detección Inteligente de Productos</h3>
                 <div class="bg-gray-800 p-3 rounded-lg font-mono text-sm">
                     <div class="text-gray-300 mb-2">
-                        <span class="text-blue-400">numero_parte</span> | 
-                        <span class="text-green-400">descripcion</span> | 
-                        <span class="text-yellow-400">categoria</span> | 
-                        <span class="text-purple-400">color</span> | 
-                        <span class="text-red-400">precio_unitario</span> | 
-                        <span class="text-orange-400">precio_proveedor</span> | 
-                        <span class="text-pink-400">marca</span>
+                        <span class="text-blue-400">número_parte</span> 
+                        <span class="text-green-400">marca</span> 
+                        <span class="text-yellow-400">descripción completa</span> 
+                        <span class="text-red-400">precio_lista</span> 
+                        <span class="text-orange-400">precio_proveedor</span>
                     </div>
                     <div class="text-xs space-y-1">
-                        <div>PUR6AV04IG-G | Bobina de Cable UTP Cat6A | Cat6A | GRIS | 150.00 | 120.00 | PANDUIT</div>
-                        <div>CJ6X88TBL | Jack Cat6 Azul | Cat6 | AZUL | 25.50 | 18.75 | PANDUIT</div>
-                        <div>UTP6SP3BL | Patchcord Cat6 3ft Azul | Cat6 | AZUL | 12.00 | 8.50 | PANDUIT</div>
+                        <div>TC-CARRIER Bobina de cable de 305 metros, Cat5e exterior blindado... 384 226.56</div>
+                        <div>ATC40-1-TUB AMANCO-WAVIN Tubo Conduit Cédula 40 de 1" (27 mm). 11.95 4.68</div>
+                        <div>PUR6AV04IG-G PANDUIT Cable UTP Cat6A 23AWG CMR Gris 305m 150.00 120.00</div>
                     </div>
                 </div>
                 <p class="text-xs mt-2" style="color: var(--apple-label-tertiary);">
-                    💡 Separa cada campo con el símbolo "|". Los campos obligatorios son número_parte y descripción.
+                    🤖 <strong>Sistema Inteligente:</strong> Detecta automáticamente número de parte, marca, descripción y precios. 
+                    Simplemente copia y pega desde Excel, el sistema identificará los productos por sí solo.
                 </p>
             </div>
 
@@ -368,9 +367,10 @@
                 <div>
                     <label class="block text-sm font-medium mb-2" style="color: var(--apple-label-secondary);">Datos de Productos</label>
                     <textarea 
+                        id="productos_texto_masivo"
                         name="productos_texto" 
                         class="textarea-field" 
-                        placeholder="PUR6AV04IG-G | Bobina de Cable UTP de 4 Pares, Vari-MaTriX, Cat6A, 23 AWG, CMR (Riser), Color Gris, 305m | Cat6A | GRIS | 150.00 | 120.00 | PANDUIT&#10;CJ6X88TBL | Jack Cat6 Azul | Cat6 | AZUL | 25.50 | 18.75 | PANDUIT"
+                        placeholder="TC-CARRIER Bobina de cable de 305 metros, Cat5e exterior blindado carrier class color negro, cable de drenado para descargas electrostáticas, divisor anti-crosstalk y blindaje secundario 384 226.56&#10;ATC40-1-TUB AMANCO-WAVIN Tubo Conduit Cédula 40 de 1&quot; (27 mm). 11.95 4.68&#10;ATC40-112-TUB AMANCO-WAVIN Tubo Conduit Cédula 40 de 1 1/2&quot; (41 mm). 16.29 6.81"
                         required></textarea>
                 </div>
                 
@@ -379,9 +379,20 @@
                         <input type="checkbox" name="actualizar_existentes" class="mr-2" checked>
                         <span style="color: var(--apple-label-secondary);">Actualizar productos existentes</span>
                     </label>
-                    <button type="submit" class="btn-primary">📦 Importar Productos</button>
+                    <div class="flex space-x-3">
+                        <button type="button" id="vista-previa-btn" class="btn-secondary">
+                            👁️ Vista Previa
+                        </button>
+                        <button type="submit" class="btn-primary">📦 Importar Productos</button>
+                    </div>
                 </div>
             </form>
+        </div>
+
+        <!-- Vista previa de productos a importar -->
+        <div id="vista-previa-container" class="card hidden">
+            <h3 class="text-lg font-semibold mb-4" style="color: var(--apple-label);">👁️ Vista Previa de Importación</h3>
+            <div id="vista-previa-content"></div>
         </div>
 
         <!-- Catálogo actual -->
@@ -645,11 +656,172 @@
             return cookieValue;
         }
 
+        // Vista previa de importación masiva
+        function mostrarVistaPrevia() {
+            const productosTexto = document.getElementById('productos_texto_masivo').value;
+            
+            if (!productosTexto.trim()) {
+                alert('Por favor, ingrese los datos de productos primero.');
+                return;
+            }
+            
+            // Mostrar indicador de carga
+            const container = document.getElementById('vista-previa-container');
+            const content = document.getElementById('vista-previa-content');
+            
+            content.innerHTML = `
+                <div class="flex items-center justify-center p-8">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span>Analizando productos...</span>
+                    </div>
+                </div>
+            `;
+            container.classList.remove('hidden');
+            
+            // Llamar a la API de vista previa
+            fetch('/app/api/vista-previa-volumetria/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    productos_texto: productosTexto
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    mostrarResultadosVistaPrevia(data);
+                } else {
+                    content.innerHTML = `
+                        <div class="p-4 bg-red-600/20 border border-red-500/30 rounded-lg">
+                            <p class="text-red-400">Error: ${data.error}</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                content.innerHTML = `
+                    <div class="p-4 bg-red-600/20 border border-red-500/30 rounded-lg">
+                        <p class="text-red-400">Error al procesar la vista previa</p>
+                    </div>
+                `;
+            });
+        }
+
+        function mostrarResultadosVistaPrevia(data) {
+            const content = document.getElementById('vista-previa-content');
+            
+            let html = `
+                <div class="mb-4 p-3 bg-green-600/20 rounded-lg border border-green-400/30">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-400">${data.total_productos}</div>
+                            <div class="text-green-300">Productos Detectados</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-blue-400">${data.total_nuevos}</div>
+                            <div class="text-blue-300">Nuevos</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-yellow-400">${data.total_existentes}</div>
+                            <div class="text-yellow-300">Existentes</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-red-400">${data.total_errores}</div>
+                            <div class="text-red-300">Errores</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Mostrar productos por marca
+            if (Object.keys(data.productos_por_marca).length > 0) {
+                html += '<h4 class="font-semibold mb-3">Productos Detectados por Marca:</h4>';
+                
+                Object.keys(data.productos_por_marca).forEach(marca => {
+                    const productos = data.productos_por_marca[marca];
+                    html += `
+                        <div class="mb-4">
+                            <h5 class="font-semibold mb-2">
+                                <span class="categoria-badge">${marca}</span>
+                                <span class="text-sm text-gray-400 ml-2">${productos.length} productos</span>
+                            </h5>
+                            <div class="space-y-2 max-h-40 overflow-y-auto">
+                    `;
+                    
+                    productos.slice(0, 10).forEach(producto => {
+                        const statusColor = producto.status === 'nuevo' ? 'green' : 'yellow';
+                        const statusText = producto.status === 'nuevo' ? 'Nuevo' : 'Actualizar';
+                        
+                        html += `
+                            <div class="flex items-center justify-between p-2 bg-gray-800 rounded text-sm">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="font-mono text-blue-400">${producto.numero_parte}</span>
+                                        <span class="px-2 py-1 text-xs rounded bg-${statusColor}-600/20 text-${statusColor}-400">${statusText}</span>
+                                    </div>
+                                    <div class="text-gray-300 truncate">${producto.descripcion}</div>
+                                    <div class="text-xs text-gray-500">
+                                        ${producto.categoria} ${producto.color ? '- ' + producto.color : ''}
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-semibold text-green-400">$${producto.precio_lista.toFixed(2)}</div>
+                                    <div class="text-xs text-gray-400">Prov: $${producto.precio_proveedor.toFixed(2)}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    if (productos.length > 10) {
+                        html += `<div class="text-sm text-gray-400 text-center">... y ${productos.length - 10} productos más</div>`;
+                    }
+                    
+                    html += '</div></div>';
+                });
+            }
+
+            // Mostrar errores si los hay
+            if (data.errores && data.errores.length > 0) {
+                html += `
+                    <div class="mt-4">
+                        <h4 class="font-semibold mb-3 text-red-400">Errores Encontrados:</h4>
+                        <div class="space-y-2 max-h-32 overflow-y-auto">
+                `;
+                
+                data.errores.slice(0, 5).forEach(error => {
+                    html += `
+                        <div class="p-2 bg-red-600/20 border border-red-500/30 rounded text-sm">
+                            <div class="font-semibold">Línea ${error.linea}:</div>
+                            <div class="text-gray-300">${error.texto}</div>
+                            <div class="text-red-400 text-xs">${error.error}</div>
+                        </div>
+                    `;
+                });
+                
+                if (data.errores.length > 5) {
+                    html += `<div class="text-sm text-gray-400 text-center">... y ${data.errores.length - 5} errores más</div>`;
+                }
+                
+                html += '</div></div>';
+            }
+
+            content.innerHTML = html;
+            document.getElementById('vista-previa-container').scrollIntoView({ behavior: 'smooth' });
+        }
+
         // Event listeners
         document.addEventListener('DOMContentLoaded', () => {
             // Filtros
             document.getElementById('filtro-categoria').addEventListener('change', filtrarProductos);
             document.getElementById('buscar-producto').addEventListener('input', filtrarProductos);
+            
+            // Vista previa
+            document.getElementById('vista-previa-btn').addEventListener('click', mostrarVistaPrevia);
         });
     </script>
 </body>

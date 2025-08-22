@@ -4762,6 +4762,140 @@ def parse_producto_inteligente(linea, marcas_validas):
         'precio': precio
     }
 
+def parse_producto_volumetria_inteligente(linea):
+    """
+    Parser inteligente específico para productos de volumetría
+    Detecta patrón: numero_parte marca descripcion precio_lista precio_proveedor
+    Ejemplo: TC-CARRIER Bobina de cable de 305 metros... 384 226.56
+    """
+    import re
+    
+    # Limpiar la línea
+    linea = linea.strip()
+    if not linea:
+        return None
+    
+    # Dividir en tokens por espacios
+    tokens = linea.split()
+    if len(tokens) < 3:  # Mínimo: numero_parte, marca, precio
+        return None
+    
+    # Buscar el primer token que parezca un número de parte (con guiones, letras y números)
+    numero_parte = None
+    numero_parte_index = -1
+    
+    # Patrón para número de parte: letras, números, guiones
+    patron_numero_parte = re.compile(r'^[A-Z0-9\-\/\.]+$', re.IGNORECASE)
+    
+    for i, token in enumerate(tokens):
+        if patron_numero_parte.match(token) and len(token) >= 3:
+            numero_parte = token.upper()
+            numero_parte_index = i
+            break
+    
+    if not numero_parte or numero_parte_index == -1:
+        return None
+    
+    # Buscar precios desde el final (debe haber al menos 2: precio_lista y precio_proveedor)
+    precios = []
+    precio_indices = []
+    
+    # Buscar los últimos 2 números como precios
+    for i in range(len(tokens) - 1, numero_parte_index, -1):
+        token = tokens[i].replace(',', '').replace('$', '')
+        try:
+            precio_val = float(token)
+            if precio_val >= 0:
+                precios.append(precio_val)
+                precio_indices.append(i)
+                if len(precios) >= 2:  # Solo necesitamos 2 precios
+                    break
+        except ValueError:
+            continue
+    
+    if len(precios) < 2:
+        return None
+    
+    # Los precios están en orden inverso (el último es precio_lista, el penúltimo es precio_proveedor)
+    precio_proveedor = precios[0]  # Último precio encontrado
+    precio_lista = precios[1]      # Penúltimo precio encontrado
+    
+    # El índice donde termina la descripción es el penúltimo precio
+    fin_descripcion_index = precio_indices[1]
+    
+    # Extraer marca (siguiente token después de numero_parte)
+    if numero_parte_index + 1 >= fin_descripcion_index:
+        return None
+    
+    marca = tokens[numero_parte_index + 1] if numero_parte_index + 1 < len(tokens) else 'UNKNOWN'
+    
+    # Extraer descripción (todos los tokens entre marca y primer precio)
+    inicio_descripcion = numero_parte_index + 2
+    descripcion_tokens = tokens[inicio_descripcion:fin_descripcion_index]
+    descripcion = ' '.join(descripcion_tokens) if descripcion_tokens else f"Producto {numero_parte}"
+    
+    # Limpiar caracteres extraños de la descripción
+    descripcion = re.sub(r'[√°√©√¢√∞√≠]', '', descripcion)  # Limpiar caracteres de encoding
+    descripcion = re.sub(r'\s+', ' ', descripcion)  # Normalizar espacios
+    descripcion = descripcion.strip()
+    
+    # Si la descripción está muy corta, usar una más descriptiva
+    if len(descripcion) < 10:
+        descripcion = f"Producto {numero_parte} - {marca}"
+    
+    # Detectar categoría automáticamente desde número de parte o descripción
+    categoria = ''
+    descripcion_lower = descripcion.lower()
+    numero_parte_lower = numero_parte.lower()
+    
+    if 'cat6a' in descripcion_lower or 'cat6a' in numero_parte_lower:
+        categoria = 'Cat6A'
+    elif 'cat6' in descripcion_lower or 'cat6' in numero_parte_lower:
+        categoria = 'Cat6'
+    elif 'cat5e' in descripcion_lower or 'cat5e' in numero_parte_lower:
+        categoria = 'Cat5e'
+    elif 'jack' in descripcion_lower:
+        categoria = 'Jack'
+    elif 'patch' in descripcion_lower:
+        categoria = 'Patchcord'
+    elif 'faceplate' in descripcion_lower or 'face' in descripcion_lower:
+        categoria = 'Faceplate'
+    elif 'tubo' in descripcion_lower or 'conduit' in descripcion_lower:
+        categoria = 'Conduit'
+    elif 'conector' in descripcion_lower:
+        categoria = 'Conector'
+    elif 'cable' in descripcion_lower:
+        categoria = 'Cable'
+    else:
+        categoria = 'Otro'
+    
+    # Detectar color automáticamente
+    color = ''
+    if 'negro' in descripcion_lower or 'black' in descripcion_lower:
+        color = 'NEGRO'
+    elif 'azul' in descripcion_lower or 'blue' in descripcion_lower:
+        color = 'AZUL'
+    elif 'blanco' in descripcion_lower or 'white' in descripcion_lower:
+        color = 'BLANCO'
+    elif 'gris' in descripcion_lower or 'gray' in descripcion_lower:
+        color = 'GRIS'
+    elif 'amarillo' in descripcion_lower or 'yellow' in descripcion_lower:
+        color = 'AMARILLO'
+    elif 'rojo' in descripcion_lower or 'red' in descripcion_lower:
+        color = 'ROJO'
+    elif 'verde' in descripcion_lower or 'green' in descripcion_lower:
+        color = 'VERDE'
+    
+    return {
+        'numero_parte': numero_parte,
+        'marca': marca.upper(),
+        'descripcion': descripcion,
+        'precio_lista': precio_lista,
+        'precio_proveedor': precio_proveedor,
+        'categoria': categoria,
+        'color': color
+    }
+
 @login_required
 def gestion_productos_view(request):
     """
@@ -5536,7 +5670,7 @@ def gestion_catalogo_volumetria(request):
                 return redirect('gestion_catalogo_volumetria')
                 
             elif action == 'importar_masivo':
-                # Importación masiva desde texto
+                # Importación masiva desde texto usando parser inteligente
                 productos_texto = request.POST.get('productos_texto', '').strip()
                 actualizar_existentes = request.POST.get('actualizar_existentes') == 'on'
                 
@@ -5555,20 +5689,20 @@ def gestion_catalogo_volumetria(request):
                         continue
                     
                     try:
-                        # Formato esperado: numero_parte|descripcion|categoria|color|precio_unitario|precio_proveedor|marca
-                        partes = [p.strip() for p in linea.split('|')]
+                        # Usar parser inteligente para detectar productos automáticamente
+                        producto_data = parse_producto_volumetria_inteligente(linea)
                         
-                        if len(partes) < 3:
-                            errores.append(f'Línea {i}: Formato incorrecto (mínimo: número_parte|descripción|categoría)')
+                        if not producto_data:
+                            errores.append(f'Línea {i}: No se pudo detectar el patrón número_parte-marca-descripción-precios')
                             continue
                         
-                        numero_parte = partes[0]
-                        descripcion = partes[1]
-                        categoria = partes[2] if len(partes) > 2 else ''
-                        color = partes[3].upper() if len(partes) > 3 else ''
-                        precio_unitario = Decimal(partes[4]) if len(partes) > 4 and partes[4] else Decimal('0.00')
-                        precio_proveedor = Decimal(partes[5]) if len(partes) > 5 and partes[5] else Decimal('0.00')
-                        marca = partes[6].upper() if len(partes) > 6 else 'PANDUIT'
+                        numero_parte = producto_data['numero_parte']
+                        descripcion = producto_data['descripcion']
+                        categoria = producto_data['categoria']
+                        color = producto_data['color']
+                        precio_unitario = Decimal(str(producto_data['precio_lista']))
+                        precio_proveedor = Decimal(str(producto_data['precio_proveedor']))
+                        marca = producto_data['marca']
                         
                         if not numero_parte or not descripcion:
                             errores.append(f'Línea {i}: Número de parte y descripción son obligatorios')
@@ -5698,5 +5832,88 @@ def editar_producto_catalogo(request, producto_id):
         
     except CatalogoCableado.DoesNotExist:
         return JsonResponse({'error': 'Producto no encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def vista_previa_volumetria_api(request):
+    """
+    API para vista previa de importación masiva de productos de volumetría
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        productos_texto = data.get('productos_texto', '').strip()
+        
+        if not productos_texto:
+            return JsonResponse({'error': 'No hay datos para procesar'}, status=400)
+        
+        productos_detectados = []
+        errores = []
+        
+        lineas = productos_texto.split('\n')
+        for i, linea in enumerate(lineas, 1):
+            linea = linea.strip()
+            if not linea:
+                continue
+            
+            try:
+                producto_data = parse_producto_volumetria_inteligente(linea)
+                
+                if producto_data:
+                    # Verificar si ya existe en la base de datos
+                    existe = CatalogoCableado.objects.filter(numero_parte=producto_data['numero_parte']).exists()
+                    
+                    productos_detectados.append({
+                        'linea': i,
+                        'numero_parte': producto_data['numero_parte'],
+                        'marca': producto_data['marca'],
+                        'descripcion': producto_data['descripcion'],
+                        'categoria': producto_data['categoria'],
+                        'color': producto_data['color'],
+                        'precio_lista': float(producto_data['precio_lista']),
+                        'precio_proveedor': float(producto_data['precio_proveedor']),
+                        'existe': existe,
+                        'status': 'actualizar' if existe else 'nuevo'
+                    })
+                else:
+                    errores.append({
+                        'linea': i,
+                        'texto': linea[:100] + '...' if len(linea) > 100 else linea,
+                        'error': 'No se pudo detectar el patrón número_parte-marca-descripción-precios'
+                    })
+            except Exception as e:
+                errores.append({
+                    'linea': i,
+                    'texto': linea[:100] + '...' if len(linea) > 100 else linea,
+                    'error': str(e)
+                })
+        
+        # Agrupar por marca para mejor visualización
+        productos_por_marca = {}
+        for producto in productos_detectados:
+            marca = producto['marca']
+            if marca not in productos_por_marca:
+                productos_por_marca[marca] = []
+            productos_por_marca[marca].append(producto)
+        
+        return JsonResponse({
+            'success': True,
+            'productos_detectados': productos_detectados,
+            'productos_por_marca': productos_por_marca,
+            'errores': errores,
+            'total_productos': len(productos_detectados),
+            'total_nuevos': len([p for p in productos_detectados if not p['existe']]),
+            'total_existentes': len([p for p in productos_detectados if p['existe']]),
+            'total_errores': len(errores)
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
