@@ -3558,6 +3558,111 @@ function procesarFormularioGeneral() {
     // TODO: Implementar endpoint para guardar volumetría general
 }
 
+// ===================================
+// FUNCIONES PARA CATÁLOGO DE PRODUCTOS
+// ===================================
+
+/**
+ * Busca un producto en el catálogo por número de parte
+ */
+async function buscarProductoEnCatalogo(numeroParte) {
+    if (!numeroParte || numeroParte.trim() === '') {
+        return null;
+    }
+    
+    try {
+        const response = await fetch('/app/api/buscar-producto-catalogo/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                numero_parte: numeroParte.trim()
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.producto) {
+            return data.producto;
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Error buscando producto:', error);
+        return null;
+    }
+}
+
+/**
+ * Configura la búsqueda automática para un campo de número de parte
+ */
+function configurarBusquedaAutomatica(campoId, descripcionId = null, precioId = null) {
+    const campo = document.getElementById(campoId);
+    if (!campo) return;
+    
+    // Agregar evento de búsqueda cuando se termine de escribir
+    let timeout;
+    campo.addEventListener('input', function() {
+        clearTimeout(timeout);
+        timeout = setTimeout(async () => {
+            const numeroParte = this.value.trim();
+            
+            if (numeroParte.length >= 3) { // Buscar cuando tenga al menos 3 caracteres
+                const producto = await buscarProductoEnCatalogo(numeroParte);
+                
+                if (producto) {
+                    // Actualizar campos relacionados si existen
+                    if (descripcionId) {
+                        const campoDescripcion = document.getElementById(descripcionId);
+                        if (campoDescripcion) {
+                            campoDescripcion.value = producto.descripcion;
+                        }
+                    }
+                    
+                    if (precioId) {
+                        const campoPrecio = document.getElementById(precioId);
+                        if (campoPrecio) {
+                            campoPrecio.value = producto.precio_unitario || '0.00';
+                        }
+                    }
+                    
+                    // Mostrar indicador visual de que se encontró el producto
+                    campo.style.borderColor = '#10B981'; // Verde
+                    campo.title = `Producto encontrado: ${producto.descripcion}`;
+                } else {
+                    // Producto no encontrado
+                    campo.style.borderColor = '#EF4444'; // Rojo
+                    campo.title = 'Producto no encontrado en el catálogo';
+                }
+            } else {
+                // Resetear estilo
+                campo.style.borderColor = '';
+                campo.title = '';
+            }
+        }, 500); // Esperar 500ms después de que el usuario termine de escribir
+    });
+}
+
+/**
+ * Función auxiliar para obtener el token CSRF
+ */
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 // Animaciones de entrada
 document.addEventListener('DOMContentLoaded', function() {
     const cards = document.querySelectorAll('.glass-card');
@@ -3573,6 +3678,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 100);
         }, index * 200);
     });
+    
+    // Configurar búsqueda automática para los campos de número de parte
+    configurarBusquedaAutomatica('cable-numero-parte');
+    configurarBusquedaAutomatica('jack-numero-parte');
+    configurarBusquedaAutomatica('patchcord-numero-parte');
+    configurarBusquedaAutomatica('faceplate-numero-parte');
 });
 </script>
 {% endblock %}

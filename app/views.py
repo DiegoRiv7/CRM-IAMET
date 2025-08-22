@@ -8,7 +8,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.models import User
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado
 from . import views_exportar
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm
 from django.db.models import Sum, Count, F, Q
@@ -5385,4 +5385,318 @@ def test_cotizacion_automatica(request):
             
     except Exception as e:
         print(f"ERROR EN TEST: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def buscar_producto_catalogo(request):
+    """
+    API endpoint para buscar productos en el catálogo por número de parte
+    """
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    numero_parte = request.GET.get('numero_parte', '').strip()
+    tipo_producto = request.GET.get('tipo', '').strip()
+    
+    if not numero_parte:
+        return JsonResponse({'error': 'Número de parte es requerido'}, status=400)
+    
+    try:
+        # Buscar producto por número de parte
+        query = CatalogoCableado.objects.filter(
+            numero_parte__icontains=numero_parte,
+            activo=True
+        )
+        
+        # Filtrar por tipo si se especifica
+        if tipo_producto:
+            query = query.filter(tipo_producto=tipo_producto.upper())
+        
+        producto = query.first()
+        
+        if producto:
+            return JsonResponse({
+                'success': True,
+                'producto': {
+                    'numero_parte': producto.numero_parte,
+                    'descripcion': producto.descripcion,
+                    'tipo_producto': producto.tipo_producto,
+                    'marca': producto.marca,
+                    'precio_unitario': float(producto.precio_unitario),
+                    'precio_proveedor': float(producto.precio_proveedor),
+                    'categoria': producto.categoria,
+                    'color': producto.color,
+                    'activo': producto.activo
+                }
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'message': 'Producto no encontrado en el catálogo'
+            })
+            
+    except Exception as e:
+        print(f"ERROR buscando producto: {e}")
+        return JsonResponse({'error': 'Error interno del servidor'}, status=500)
+
+@login_required  
+def agregar_producto_catalogo(request):
+    """
+    API endpoint para agregar productos al catálogo
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        
+        # Validar campos requeridos
+        required_fields = ['numero_parte', 'descripcion', 'tipo_producto', 'precio_unitario']
+        for field in required_fields:
+            if not data.get(field):
+                return JsonResponse({'error': f'Campo {field} es requerido'}, status=400)
+        
+        # Verificar si el producto ya existe
+        if CatalogoCableado.objects.filter(numero_parte=data['numero_parte']).exists():
+            return JsonResponse({'error': 'Ya existe un producto con este número de parte'}, status=400)
+        
+        # Crear nuevo producto
+        producto = CatalogoCableado.objects.create(
+            numero_parte=data['numero_parte'],
+            descripcion=data['descripcion'],
+            tipo_producto=data['tipo_producto'].upper(),
+            marca=data.get('marca', 'PANDUIT'),
+            precio_unitario=Decimal(str(data['precio_unitario'])),
+            precio_proveedor=Decimal(str(data.get('precio_proveedor', 0))),
+            categoria=data.get('categoria', ''),
+            color=data.get('color', ''),
+            activo=data.get('activo', True)
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Producto agregado exitosamente',
+            'producto_id': producto.id,
+            'numero_parte': producto.numero_parte
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+    except Exception as e:
+        print(f"ERROR agregando producto: {e}")
+        return JsonResponse({'error': 'Error interno del servidor'}, status=500)
+
+@login_required
+def gestion_catalogo_volumetria(request):
+    """
+    Vista para gestión del catálogo de productos de volumetría - Solo para superusuarios
+    """
+    # Verificar que el usuario sea superusuario
+    if not request.user.is_superuser:
+        messages.error(request, 'No tiene permisos para acceder a esta sección.')
+        return redirect('home')
+    
+    if request.method == 'POST':
+        try:
+            action = request.POST.get('action')
+            
+            if action == 'agregar_producto':
+                # Agregar un nuevo producto al catálogo
+                numero_parte = request.POST.get('numero_parte', '').strip()
+                descripcion = request.POST.get('descripcion', '').strip()
+                categoria = request.POST.get('categoria', '').strip()
+                color = request.POST.get('color', '').strip()
+                precio_unitario = request.POST.get('precio_unitario', '0')
+                precio_proveedor = request.POST.get('precio_proveedor', '0')
+                marca = request.POST.get('marca', 'PANDUIT').strip()
+                
+                # Validaciones
+                if not numero_parte or not descripcion:
+                    messages.error(request, 'Número de parte y descripción son obligatorios.')
+                    return redirect('gestion_catalogo_volumetria')
+                
+                # Verificar si ya existe
+                if CatalogoCableado.objects.filter(numero_parte=numero_parte).exists():
+                    messages.error(request, f'Ya existe un producto con el número de parte: {numero_parte}')
+                    return redirect('gestion_catalogo_volumetria')
+                
+                # Crear producto
+                CatalogoCableado.objects.create(
+                    numero_parte=numero_parte,
+                    descripcion=descripcion,
+                    categoria=categoria,
+                    color=color.upper(),
+                    precio_unitario=Decimal(precio_unitario),
+                    precio_proveedor=Decimal(precio_proveedor),
+                    marca=marca.upper(),
+                    activo=True
+                )
+                
+                messages.success(request, f'Producto {numero_parte} agregado exitosamente.')
+                return redirect('gestion_catalogo_volumetria')
+                
+            elif action == 'importar_masivo':
+                # Importación masiva desde texto
+                productos_texto = request.POST.get('productos_texto', '').strip()
+                actualizar_existentes = request.POST.get('actualizar_existentes') == 'on'
+                
+                if not productos_texto:
+                    messages.error(request, 'Por favor, ingrese los datos de productos.')
+                    return redirect('gestion_catalogo_volumetria')
+                
+                productos_procesados = 0
+                productos_actualizados = 0
+                errores = []
+                
+                lineas = productos_texto.split('\n')
+                for i, linea in enumerate(lineas, 1):
+                    linea = linea.strip()
+                    if not linea:
+                        continue
+                    
+                    try:
+                        # Formato esperado: numero_parte|descripcion|categoria|color|precio_unitario|precio_proveedor|marca
+                        partes = [p.strip() for p in linea.split('|')]
+                        
+                        if len(partes) < 3:
+                            errores.append(f'Línea {i}: Formato incorrecto (mínimo: número_parte|descripción|categoría)')
+                            continue
+                        
+                        numero_parte = partes[0]
+                        descripcion = partes[1]
+                        categoria = partes[2] if len(partes) > 2 else ''
+                        color = partes[3].upper() if len(partes) > 3 else ''
+                        precio_unitario = Decimal(partes[4]) if len(partes) > 4 and partes[4] else Decimal('0.00')
+                        precio_proveedor = Decimal(partes[5]) if len(partes) > 5 and partes[5] else Decimal('0.00')
+                        marca = partes[6].upper() if len(partes) > 6 else 'PANDUIT'
+                        
+                        if not numero_parte or not descripcion:
+                            errores.append(f'Línea {i}: Número de parte y descripción son obligatorios')
+                            continue
+                        
+                        # Verificar si existe
+                        producto_existente = CatalogoCableado.objects.filter(numero_parte=numero_parte).first()
+                        
+                        if producto_existente:
+                            if actualizar_existentes:
+                                producto_existente.descripcion = descripcion
+                                producto_existente.categoria = categoria
+                                producto_existente.color = color
+                                producto_existente.precio_unitario = precio_unitario
+                                producto_existente.precio_proveedor = precio_proveedor
+                                producto_existente.marca = marca
+                                producto_existente.save()
+                                productos_actualizados += 1
+                            else:
+                                errores.append(f'Línea {i}: Producto {numero_parte} ya existe (no se actualiza)')
+                        else:
+                            CatalogoCableado.objects.create(
+                                numero_parte=numero_parte,
+                                descripcion=descripcion,
+                                categoria=categoria,
+                                color=color,
+                                precio_unitario=precio_unitario,
+                                precio_proveedor=precio_proveedor,
+                                marca=marca,
+                                activo=True
+                            )
+                            productos_procesados += 1
+                            
+                    except Exception as e:
+                        errores.append(f'Línea {i}: Error procesando - {str(e)}')
+                
+                # Mostrar resultados
+                if productos_procesados > 0:
+                    messages.success(request, f'Se agregaron {productos_procesados} productos nuevos.')
+                if productos_actualizados > 0:
+                    messages.success(request, f'Se actualizaron {productos_actualizados} productos existentes.')
+                if errores:
+                    for error in errores[:10]:  # Mostrar solo los primeros 10 errores
+                        messages.warning(request, error)
+                    if len(errores) > 10:
+                        messages.warning(request, f'Y {len(errores) - 10} errores más...')
+                
+                return redirect('gestion_catalogo_volumetria')
+                
+        except Exception as e:
+            messages.error(request, f'Error procesando solicitud: {str(e)}')
+            return redirect('gestion_catalogo_volumetria')
+    
+    # GET request - Mostrar la página
+    productos = CatalogoCableado.objects.all().order_by('categoria', 'numero_parte')
+    
+    # Estadísticas
+    total_productos = productos.count()
+    total_categorias = productos.values('categoria').distinct().count()
+    productos_sin_precio = productos.filter(precio_unitario=0).count()
+    
+    # Categorías disponibles para filtro
+    categorias = productos.values_list('categoria', flat=True).distinct().order_by('categoria')
+    
+    context = {
+        'productos': productos,
+        'total_productos': total_productos,
+        'total_categorias': total_categorias,
+        'productos_sin_precio': productos_sin_precio,
+        'categorias': categorias,
+    }
+    
+    return render(request, 'gestion_catalogo_volumetria.html', context)
+
+@login_required
+def eliminar_producto_catalogo(request, producto_id):
+    """
+    Eliminar un producto del catálogo de volumetría
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    try:
+        producto = CatalogoCableado.objects.get(id=producto_id)
+        numero_parte = producto.numero_parte
+        producto.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Producto {numero_parte} eliminado exitosamente'
+        })
+    except CatalogoCableado.DoesNotExist:
+        return JsonResponse({'error': 'Producto no encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def editar_producto_catalogo(request, producto_id):
+    """
+    Editar un producto del catálogo de volumetría
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        producto = CatalogoCableado.objects.get(id=producto_id)
+        data = json.loads(request.body)
+        
+        # Actualizar campos
+        producto.numero_parte = data.get('numero_parte', producto.numero_parte)
+        producto.descripcion = data.get('descripcion', producto.descripcion)
+        producto.categoria = data.get('categoria', producto.categoria)
+        producto.color = data.get('color', producto.color).upper()
+        producto.precio_unitario = Decimal(str(data.get('precio_unitario', producto.precio_unitario)))
+        producto.precio_proveedor = Decimal(str(data.get('precio_proveedor', producto.precio_proveedor)))
+        producto.marca = data.get('marca', producto.marca).upper()
+        
+        producto.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Producto {producto.numero_parte} actualizado exitosamente'
+        })
+        
+    except CatalogoCableado.DoesNotExist:
+        return JsonResponse({'error': 'Producto no encontrado'}, status=404)
+    except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

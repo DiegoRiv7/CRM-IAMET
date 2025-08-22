@@ -146,6 +146,15 @@ urlpatterns = [
     # API para obtener oportunidades por cliente (usado por volumetría)
     path('api/get-opportunities-by-client/<int:cliente_id>/', views.get_opportunities_by_client_api, name='get_opportunities_by_client_api'),
     
+    # APIs para catálogo de productos de volumetría
+    path('api/buscar-producto-catalogo/', views.buscar_producto_catalogo, name='buscar_producto_catalogo'),
+    path('api/agregar-producto-catalogo/', views.agregar_producto_catalogo, name='agregar_producto_catalogo'),
+    path('api/editar-producto-catalogo/<int:producto_id>/', views.editar_producto_catalogo, name='editar_producto_catalogo'),
+    path('api/eliminar-producto-catalogo/<int:producto_id>/', views.eliminar_producto_catalogo, name='eliminar_producto_catalogo'),
+    
+    # Gestión de catálogo de volumetría (solo superusuarios)
+    path('gestion-catalogo-volumetria/', views.gestion_catalogo_volumetria, name='gestion_catalogo_volumetria'),
+    
     # ===============================================
     # NUEVAS RUTAS PARA SUBIDA MANUAL DE ARCHIVOS
     # ===============================================

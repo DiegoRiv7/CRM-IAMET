@@ -427,6 +427,24 @@ class CatalogoCableado(models.Model):
         decimal_places=2,
         verbose_name="Precio Unitario"
     )
+    precio_proveedor = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Precio Proveedor"
+    )
+    categoria = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        verbose_name="Categoría Cable (CAT6, CAT6A, etc.)"
+    )
+    color = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name="Color"
+    )
     activo = models.BooleanField(
         default=True,
         verbose_name="Producto Activo"
