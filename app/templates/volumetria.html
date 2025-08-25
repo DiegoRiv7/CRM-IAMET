@@ -3975,13 +3975,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }, index * 200);
     });
     
-    // Configurar autocompletado para los campos de número de parte
-    console.log('🔧 Iniciando configuración de autocompletado...');
-    configurarAutocompletado('cable-numero-parte');
-    configurarAutocompletado('jack-numero-parte');
-    configurarAutocompletado('patchcord-numero-parte');
-    configurarAutocompletado('faceplate-numero-parte');
-    console.log('✅ Configuración de autocompletado completada');
+    // Configurar autocompletado para los campos de número de parte (después de que todo esté cargado)
+    setTimeout(() => {
+        console.log('🔧 Iniciando configuración de autocompletado...');
+        if (typeof configurarAutocompletado === 'function') {
+            configurarAutocompletado('cable-numero-parte');
+            configurarAutocompletado('jack-numero-parte');
+            configurarAutocompletado('patchcord-numero-parte');
+            configurarAutocompletado('faceplate-numero-parte');
+            console.log('✅ Configuración de autocompletado completada');
+        } else {
+            console.error('❌ Función configurarAutocompletado no está definida');
+        }
+    }, 500);
 });
 </script>
 {% endblock %}
