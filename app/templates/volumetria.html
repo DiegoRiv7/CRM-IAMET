@@ -3724,8 +3724,13 @@ async function buscarProductoEnCatalogo(numeroParte) {
  * Configura el autocompletado con sugerencias para un campo de número de parte
  */
 function configurarAutocompletado(campoId, descripcionId = null, precioId = null) {
+    console.log('⚙️ Configurando autocompletado para:', campoId);
     const campo = document.getElementById(campoId);
-    if (!campo) return;
+    if (!campo) {
+        console.error('❌ Campo no encontrado:', campoId);
+        return;
+    }
+    console.log('✅ Campo encontrado:', campo);
     
     // Crear elementos del autocompletado
     const contenedor = document.createElement('div');
@@ -3751,22 +3756,39 @@ function configurarAutocompletado(campoId, descripcionId = null, precioId = null
         if (query.length < 2) return [];
         
         try {
-            const response = await fetch(`/app/api/sugerencias-productos/?q=${encodeURIComponent(query)}&limit=8`);
+            console.log('🔍 Buscando sugerencias para:', query);
+            const url = `/app/api/sugerencias-productos/?q=${encodeURIComponent(query)}&limit=8`;
+            console.log('📡 URL de solicitud:', url);
+            
+            const response = await fetch(url);
+            console.log('🌐 Respuesta HTTP status:', response.status);
+            
             const data = await response.json();
-            return data.success ? data.sugerencias : [];
+            console.log('📦 Respuesta completa del servidor:', JSON.stringify(data, null, 2));
+            
+            if (data.success && data.sugerencias) {
+                console.log(`✅ ${data.sugerencias.length} sugerencias encontradas`);
+                return data.sugerencias;
+            } else {
+                console.log('❌ No hay sugerencias o error:', data);
+                return [];
+            }
         } catch (error) {
-            console.error('Error obteniendo sugerencias:', error);
+            console.error('💥 Error obteniendo sugerencias:', error);
             return [];
         }
     }
     
     // Función para mostrar sugerencias
     function mostrarSugerencias(sugerencias) {
+        console.log('📋 mostrarSugerencias llamada con:', sugerencias?.length || 0, 'elementos');
         if (sugerencias.length === 0) {
+            console.log('❌ No hay sugerencias, ocultando dropdown');
             dropdown.style.display = 'none';
             return;
         }
         
+        console.log('✅ Mostrando', sugerencias.length, 'sugerencias en dropdown');
         dropdown.innerHTML = '';
         dropdown.style.display = 'block';
         selectedIndex = -1;
@@ -3834,29 +3856,24 @@ function configurarAutocompletado(campoId, descripcionId = null, precioId = null
     // Evento de input para buscar sugerencias
     campo.addEventListener('input', function() {
         const query = this.value.trim();
+        console.log('⌨️ Usuario escribió en', campoId + ':', query);
         
         clearTimeout(timeout);
         
         if (query.length < 2) {
+            console.log('🔤 Texto muy corto, ocultando dropdown');
             dropdown.style.display = 'none';
             campo.style.borderColor = '';
             campo.title = '';
             return;
         }
         
+        console.log('⏱️ Esperando 300ms antes de buscar para:', query);
         timeout = setTimeout(async () => {
+            console.log('🚀 EJECUTANDO búsqueda para:', query);
             const sugerencias = await obtenerSugerencias(query);
+            console.log('🎯 RESULTADO sugerencias:', sugerencias?.length || 0, 'elementos');
             mostrarSugerencias(sugerencias);
-            
-            // También verificar coincidencia exacta
-            const producto = await buscarProductoEnCatalogo(query);
-            if (producto) {
-                campo.style.borderColor = '#10B981';
-                campo.title = `Producto encontrado: ${producto.descripcion}`;
-            } else {
-                campo.style.borderColor = sugerencias.length > 0 ? '#F59E0B' : '#EF4444';
-                campo.title = sugerencias.length > 0 ? 'Selecciona una sugerencia' : 'Producto no encontrado';
-            }
         }, 300);
     });
     
@@ -3959,10 +3976,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Configurar autocompletado para los campos de número de parte
+    console.log('🔧 Iniciando configuración de autocompletado...');
     configurarAutocompletado('cable-numero-parte');
     configurarAutocompletado('jack-numero-parte');
     configurarAutocompletado('patchcord-numero-parte');
     configurarAutocompletado('faceplate-numero-parte');
+    console.log('✅ Configuración de autocompletado completada');
 });
 </script>
 {% endblock %}
