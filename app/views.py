@@ -11,7 +11,7 @@ from django.contrib.auth.models import User
 from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado
 from . import views_exportar
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm
-from django.db.models import Sum, Count, F, Q
+from django.db.models import Sum, Count, F, Q, Case, When, Value
 from django.db.models.functions import Upper, Coalesce
 from django.db.models import Value
 from datetime import date
@@ -6042,3 +6042,57 @@ def vista_previa_volumetria_api(request):
         return JsonResponse({'error': 'JSON inválido'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def sugerencias_productos_api(request):
+    """
+    API para obtener sugerencias de productos mientras se escribe
+    """
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    query = request.GET.get('q', '').strip()
+    limit = min(int(request.GET.get('limit', 10)), 20)  # Máximo 20 sugerencias
+    
+    if len(query) < 2:
+        return JsonResponse({'sugerencias': []})
+    
+    try:
+        # Buscar productos que contengan el texto en número de parte o descripción
+        productos = CatalogoCableado.objects.filter(
+            activo=True
+        ).filter(
+            Q(numero_parte__icontains=query) | 
+            Q(descripcion__icontains=query)
+        ).order_by(
+            # Priorizar coincidencias exactas en número de parte
+            Case(
+                When(numero_parte__istartswith=query, then=Value(1)),
+                When(numero_parte__icontains=query, then=Value(2)),
+                When(descripcion__icontains=query, then=Value(3)),
+                default=Value(4)
+            ),
+            'numero_parte'
+        )[:limit]
+        
+        sugerencias = []
+        for producto in productos:
+            sugerencias.append({
+                'numero_parte': producto.numero_parte,
+                'descripcion': producto.descripcion[:80] + '...' if len(producto.descripcion) > 80 else producto.descripcion,
+                'marca': producto.marca,
+                'categoria': producto.categoria,
+                'precio_lista': float(producto.precio_unitario),
+                'precio_proveedor': float(producto.precio_proveedor),
+                'color': producto.color
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'sugerencias': sugerencias,
+            'total': len(sugerencias)
+        })
+        
+    except Exception as e:
+        print(f"ERROR obteniendo sugerencias: {e}")
+        return JsonResponse({'error': 'Error interno del servidor'}, status=500)
