@@ -4966,7 +4966,7 @@ def parse_producto_volumetria_inteligente(linea):
     if len(descripcion) < 10:
         descripcion = f"Producto {numero_parte} - {marca}"
     
-    # Detectar categoría automáticamente desde número de parte o descripción
+    # Detectar categoría automáticamente desde número de parte o descripción (solo para referencia, no restrictiva)
     categoria = ''
     descripcion_lower = descripcion.lower()
     numero_parte_lower = numero_parte.lower()
@@ -4989,8 +4989,10 @@ def parse_producto_volumetria_inteligente(linea):
         categoria = 'Conector'
     elif 'cable' in descripcion_lower:
         categoria = 'Cable'
-    else:
-        categoria = 'Otro'
+    elif 'charola' in descripcion_lower or 'malla' in descripcion_lower:
+        categoria = 'Charola'
+    # Si no se detecta ninguna categoría específica, dejar vacío para que el usuario decida
+    # No forzar una categoría "Otro"
     
     # Detectar color automáticamente
     color = ''

@@ -3624,7 +3624,8 @@ function configurarBusquedaAutomatica(campoId, descripcionId = null, precioId = 
                     if (precioId) {
                         const campoPrecio = document.getElementById(precioId);
                         if (campoPrecio) {
-                            campoPrecio.value = producto.precio_unitario || '0.00';
+                            // Usar precio_proveedor como costo interno para la volumetría
+                            campoPrecio.value = producto.precio_proveedor || producto.precio_unitario || '0.00';
                         }
                     }
                     
