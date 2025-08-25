@@ -3975,19 +3975,57 @@ document.addEventListener('DOMContentLoaded', function() {
         }, index * 200);
     });
     
-    // Configurar autocompletado para los campos de número de parte (después de que todo esté cargado)
-    setTimeout(() => {
+    // Función para configurar autocompletado cuando sea necesario
+    window.inicializarAutocompletado = function() {
         console.log('🔧 Iniciando configuración de autocompletado...');
         if (typeof configurarAutocompletado === 'function') {
-            configurarAutocompletado('cable-numero-parte');
-            configurarAutocompletado('jack-numero-parte');
-            configurarAutocompletado('patchcord-numero-parte');
-            configurarAutocompletado('faceplate-numero-parte');
-            console.log('✅ Configuración de autocompletado completada');
+            // Esperar un poco para asegurar que los campos estén visibles
+            setTimeout(() => {
+                console.log('🔍 Buscando campos de número de parte...');
+                const campos = ['cable-numero-parte', 'jack-numero-parte', 'patchcord-numero-parte', 'faceplate-numero-parte'];
+                campos.forEach(campoId => {
+                    const campo = document.getElementById(campoId);
+                    if (campo && campo.offsetParent !== null) { // Campo existe y es visible
+                        console.log('✅ Campo visible encontrado:', campoId);
+                        configurarAutocompletado(campoId);
+                    } else {
+                        console.log('⏭️ Campo no visible o no encontrado:', campoId);
+                    }
+                });
+                console.log('✅ Configuración de autocompletado completada');
+            }, 100);
         } else {
             console.error('❌ Función configurarAutocompletado no está definida');
         }
-    }, 500);
+    };
+    
+    // Intentar configurar autocompletado cada vez que se muestre contenido
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList' || mutation.type === 'attributes') {
+                // Re-configurar autocompletado si hay cambios en el DOM
+                setTimeout(() => {
+                    window.inicializarAutocompletado();
+                }, 200);
+            }
+        });
+    });
+    
+    // Observar cambios en el contenido principal
+    const targetNode = document.body;
+    if (targetNode) {
+        observer.observe(targetNode, { 
+            childList: true, 
+            subtree: true, 
+            attributes: true,
+            attributeFilter: ['style', 'class']
+        });
+    }
+    
+    // Inicializar autocompletado al cargar
+    setTimeout(() => {
+        window.inicializarAutocompletado();
+    }, 1000);
 });
 </script>
 {% endblock %}
