@@ -4762,6 +4762,131 @@ def parse_producto_inteligente(linea, marcas_validas):
         'precio': precio
     }
 
+def limpiar_y_corregir_texto(texto):
+    """
+    Limpia caracteres de encoding corrupto y corrige palabras comunes
+    """
+    import re
+    
+    # Diccionario de correcciones comunes de caracteres de encoding
+    correcciones_encoding = {
+        'Bimet√°lica': 'Bimetálica',
+        'bimet√°lica': 'bimetálica',
+        'met√°lica': 'metálica',
+        'Met√°lica': 'Metálica',
+        'el√©ctrica': 'eléctrica',
+        'El√©ctrica': 'Eléctrica',
+        'electr√≥nica': 'electrónica',
+        'Electr√≥nica': 'Electrónica',
+        'mec√°nica': 'mecánica',
+        'Mec√°nica': 'Mecánica',
+        'hidr√°ulica': 'hidráulica',
+        'Hidr√°ulica': 'Hidráulica',
+        'neum√°tica': 'neumática',
+        'Neum√°tica': 'Neumática',
+        'autom√°tica': 'automática',
+        'Autom√°tica': 'Automática',
+        'est√°ndar': 'estándar',
+        'Est√°ndar': 'Estándar',
+        'b√°sica': 'básica',
+        'B√°sica': 'Básica',
+        'avanzada': 'avanzada',
+        'Avanzada': 'Avanzada',
+        'pr√°ctica': 'práctica',
+        'Pr√°ctica': 'Práctica',
+        'gu√≠a': 'guía',
+        'Gu√≠a': 'Guía',
+        'energ√≠a': 'energía',
+        'Energ√≠a': 'Energía',
+        'bater√≠a': 'batería',
+        'Bater√≠a': 'Batería',
+        'H√∫medas': 'Húmedas',
+        'h√∫medas': 'húmedas',
+        'h√∫meda': 'húmeda',
+        'H√∫meda': 'Húmeda',
+        'C√©dula': 'Cédula',
+        'c√©dula': 'cédula',
+        'c√©lula': 'célula',
+        'C√©lula': 'Célula',
+        'f√°cil': 'fácil',
+        'F√°cil': 'Fácil',
+        'r√°pida': 'rápida',
+        'R√°pida': 'Rápida',
+        'r√°pido': 'rápido',
+        'R√°pido': 'Rápido',
+        'c√°mara': 'cámara',
+        'C√°mara': 'Cámara',
+        '√°rea': 'área',
+        '√Área': 'Área',
+        'energ√≠a': 'energía',
+        'Energ√≠a': 'Energía',
+        'tecnolog√≠a': 'tecnología',
+        'Tecnolog√≠a': 'Tecnología',
+        'categor√≠a': 'categoría',
+        'Categor√≠a': 'Categoría',
+        'garant√≠a': 'garantía',
+        'Garant√≠a': 'Garantía',
+        'compa√±√≠a': 'compañía',
+        'Compa√±√≠a': 'Compañía',
+        'dise√±o': 'diseño',
+        'Dise√±o': 'Diseño',
+        'peque√±o': 'pequeño',
+        'Peque√±o': 'Pequeño',
+        'peque√±a': 'pequeña',
+        'Peque√±a': 'Pequeña',
+        'a√±o': 'año',
+        'A√±o': 'Año',
+        'ni√±o': 'niño',
+        'Ni√±o': 'Niño',
+        'ni√±a': 'niña',
+        'Ni√±a': 'Niña',
+        'espa√±ol': 'español',
+        'Espa√±ol': 'Español',
+        'espa√±ola': 'española',
+        'Espa√±ola': 'Española'
+    }
+    
+    # Patrones de corrección automática
+    patrones_correccion = [
+        # √° -> á
+        (r'(.*)√°(.*)', r'\1á\2'),
+        # √© -> é  
+        (r'(.*)√©(.*)', r'\1é\2'),
+        # √≠ -> í
+        (r'(.*)√≠(.*)', r'\1í\2'),
+        # √≥ -> ó
+        (r'(.*)√≥(.*)', r'\1ó\2'),
+        # √∫ -> ú (común en "húmedo")
+        (r'(.*)√∫(.*)', r'\1ú\2'),
+        # √± -> ñ
+        (r'(.*)√±(.*)', r'\1ñ\2'),
+        # Otros caracteres problemáticos
+        (r'(.*)‚Ä¢(.*)', r'\1"\2'),
+        (r'(.*)‚Äù(.*)', r'\1"\2'),
+        (r'(.*)‚Äî(.*)', r'\1-\2'),
+        (r'(.*)√¢(.*)', r'\1â\2'),
+        (r'(.*)√™(.*)', r'\1ê\2'),
+        (r'(.*)√Æ(.*)', r'\1Æ\2'),
+        # Limpiar caracteres raros restantes
+        (r'√[^a-zA-Z0-9]', ''),
+        # Múltiples espacios
+        (r'\s+', ' ')
+    ]
+    
+    # Aplicar correcciones específicas del diccionario primero
+    texto_corregido = texto
+    for incorrecto, correcto in correcciones_encoding.items():
+        texto_corregido = texto_corregido.replace(incorrecto, correcto)
+    
+    # Aplicar patrones de corrección automática
+    for patron, reemplazo in patrones_correccion:
+        texto_corregido = re.sub(patron, reemplazo, texto_corregido)
+    
+    # Normalizar espacios y limpiar
+    texto_corregido = re.sub(r'\s+', ' ', texto_corregido).strip()
+    
+    return texto_corregido
+
 def parse_producto_volumetria_inteligente(linea):
     """
     Parser inteligente específico para productos de volumetría
@@ -4770,8 +4895,8 @@ def parse_producto_volumetria_inteligente(linea):
     """
     import re
     
-    # Limpiar la línea
-    linea = linea.strip()
+    # Limpiar la línea y corregir caracteres de encoding
+    linea = limpiar_y_corregir_texto(linea.strip())
     if not linea:
         return None
     
@@ -4834,10 +4959,8 @@ def parse_producto_volumetria_inteligente(linea):
     descripcion_tokens = tokens[inicio_descripcion:fin_descripcion_index]
     descripcion = ' '.join(descripcion_tokens) if descripcion_tokens else f"Producto {numero_parte}"
     
-    # Limpiar caracteres extraños de la descripción
-    descripcion = re.sub(r'[√°√©√¢√∞√≠]', '', descripcion)  # Limpiar caracteres de encoding
-    descripcion = re.sub(r'\s+', ' ', descripcion)  # Normalizar espacios
-    descripcion = descripcion.strip()
+    # Limpiar y corregir caracteres de encoding en la descripción
+    descripcion = limpiar_y_corregir_texto(descripcion)
     
     # Si la descripción está muy corta, usar una más descriptiva
     if len(descripcion) < 10:
