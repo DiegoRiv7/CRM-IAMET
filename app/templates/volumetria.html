@@ -684,10 +684,10 @@ function mostrarFormularioNodos() {
                     </div>
                     
                     <!-- Parte 1: Cableado -->
-                    <div class="border border-blue-500 rounded-lg p-6 bg-blue-50 dark:bg-blue-900/20">
-                        <h3 class="text-lg font-medium apple-text-primary mb-4 flex items-center">
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-8 bg-white dark:bg-gray-800">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
                             <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">1</span>
-                            Parte 1: Cableado
+                            Cableado
                         </h3>
                         <p class="text-sm text-gray-400 mb-8">Configure los componentes del cableado estructurado</p>
                         
@@ -763,12 +763,12 @@ function mostrarFormularioNodos() {
                     
                     
                     <!-- Parte 2: Infraestructura de Tubería -->
-                    <div class="border border-green-500 rounded-lg p-6 bg-green-50 dark:bg-green-900/20">
-                        <h3 class="text-lg font-medium apple-text-primary mb-4 flex items-center">
-                            <span class="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">2</span>
-                            Parte 2: Infraestructura de Tubería
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-8 bg-white dark:bg-gray-800">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+                            <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">2</span>
+                            Infraestructura
                         </h3>
-                        <p class="text-sm apple-text-secondary mb-6">Configure el conduit necesario para proteger el cableado. Especifique tipo, diámetro y metros totales.</p>
+                        <p class="text-sm text-gray-400 mb-8">Configure la protección del cableado</p>
                         
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <!-- Tipo de tubería -->
@@ -802,18 +802,17 @@ function mostrarFormularioNodos() {
                             
                             <!-- Metros de tubería -->
                             <div>
-                                <label class="block text-sm font-medium apple-text-primary mb-2">Metros de Tubería *</label>
-                                <input type="number" id="metros-tuberia" min="0" step="0.1" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-green-500" placeholder="Ej: 250.5" required onchange="actualizarInfoTuberia()">
-                                <p class="text-xs mt-1 apple-text-secondary">💡 Total de metros de conduit necesarios</p>
+                                <label class="block text-sm font-medium text-gray-300 mb-3">Metros de Tubería</label>
+                                <input type="number" id="metros-tuberia" min="0" step="0.1" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="250" required onchange="actualizarInfoTuberia()">
                             </div>
                         </div>
                         
                         <!-- Equipo de Elevación -->
-                        <div class="mt-6 p-4 border border-orange-300 rounded-lg bg-orange-50 dark:bg-orange-900/20">
+                        <div class="mt-8 p-6 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800/50">
                             <div class="flex items-center space-x-3 mb-4">
-                                <input type="checkbox" id="usa-equipo-elevacion" class="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 dark:focus:ring-orange-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" onchange="toggleEquipoElevacion()">
-                                <label for="usa-equipo-elevacion" class="text-sm font-medium apple-text-primary">
-                                    🏧 ¿Se usará equipo de elevación?
+                                <input type="checkbox" id="usa-equipo-elevacion" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" onchange="toggleEquipoElevacion()">
+                                <label for="usa-equipo-elevacion" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    ¿Equipo de elevación?
                                 </label>
                             </div>
                             
@@ -874,12 +873,12 @@ function mostrarFormularioNodos() {
                     </div>
                     
                     <!-- Parte 3: Mano de Obra -->
-                    <div class="border border-purple-500 rounded-lg p-6 bg-purple-50 dark:bg-purple-900/20">
-                        <h3 class="text-lg font-medium apple-text-primary mb-4 flex items-center">
-                            <span class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">3</span>
-                            Parte 3: Mano de Obra
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-8 bg-white dark:bg-gray-800">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+                            <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">3</span>
+                            Mano de Obra
                         </h3>
-                        <p class="text-sm apple-text-secondary mb-6">Especifique los recursos humanos y logísticos necesarios. Deje en 0 o vacío los campos que no apliquen.</p>
+                        <p class="text-sm text-gray-400 mb-8">Recursos humanos y logística</p>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <!-- Supervisor -->
