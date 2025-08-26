@@ -3999,33 +3999,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    // Intentar configurar autocompletado cada vez que se muestre contenido
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.type === 'childList' || mutation.type === 'attributes') {
-                // Re-configurar autocompletado si hay cambios en el DOM
-                setTimeout(() => {
-                    window.inicializarAutocompletado();
-                }, 200);
-            }
-        });
-    });
-    
-    // Observar cambios en el contenido principal
-    const targetNode = document.body;
-    if (targetNode) {
-        observer.observe(targetNode, { 
-            childList: true, 
-            subtree: true, 
-            attributes: true,
-            attributeFilter: ['style', 'class']
-        });
-    }
-    
-    // Inicializar autocompletado al cargar
-    setTimeout(() => {
+    // Configurar autocompletado manualmente cuando sea necesario
+    window.configurarAutocompletadoManual = function() {
+        console.log('🔧 Configuración manual de autocompletado iniciada');
         window.inicializarAutocompletado();
-    }, 1000);
+    };
+    
+    // NO inicializar automáticamente para evitar requests no deseadas
+    console.log('💡 Autocompletado disponible - usar manualmente cuando sea necesario');
 });
 </script>
 {% endblock %}
