@@ -6048,16 +6048,28 @@ def sugerencias_productos_api(request):
     """
     API para obtener sugerencias de productos mientras se escribe
     """
+    print(f"DEBUG: API sugerencias llamada con método: {request.method}")
+    
     if request.method != 'GET':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
     
     query = request.GET.get('q', '').strip()
     limit = min(int(request.GET.get('limit', 10)), 20)  # Máximo 20 sugerencias
     
+    print(f"DEBUG: Query recibida: '{query}', Limit: {limit}")
+    
     if len(query) < 2:
-        return JsonResponse({'sugerencias': []})
+        return JsonResponse({'success': True, 'sugerencias': [], 'total': 0})
     
     try:
+        print(f"DEBUG: Buscando en CatalogoCableado...")
+        
+        # Verificar si hay productos en el catálogo
+        total_productos = CatalogoCableado.objects.count()
+        productos_activos = CatalogoCableado.objects.filter(activo=True).count()
+        
+        print(f"DEBUG: Total productos en catálogo: {total_productos}, Activos: {productos_activos}")
+        
         # Buscar productos que contengan el texto en número de parte o descripción
         productos = CatalogoCableado.objects.filter(
             activo=True
@@ -6075,24 +6087,37 @@ def sugerencias_productos_api(request):
             'numero_parte'
         )[:limit]
         
+        print(f"DEBUG: Productos encontrados: {productos.count()}")
+        
         sugerencias = []
         for producto in productos:
-            sugerencias.append({
+            print(f"DEBUG: Procesando producto: {producto.numero_parte}")
+            sugerencia = {
                 'numero_parte': producto.numero_parte,
                 'descripcion': producto.descripcion[:80] + '...' if len(producto.descripcion) > 80 else producto.descripcion,
-                'marca': producto.marca,
-                'categoria': producto.categoria,
-                'precio_lista': float(producto.precio_unitario),
-                'precio_proveedor': float(producto.precio_proveedor),
-                'color': producto.color
-            })
+                'marca': producto.marca if producto.marca else 'N/A',
+                'categoria': producto.categoria if producto.categoria else 'N/A',
+                'precio_lista': float(producto.precio_unitario) if producto.precio_unitario else 0.0,
+                'precio_proveedor': float(producto.precio_proveedor) if producto.precio_proveedor else 0.0,
+                'color': producto.color if producto.color else 'N/A'
+            }
+            sugerencias.append(sugerencia)
         
-        return JsonResponse({
+        response_data = {
             'success': True,
             'sugerencias': sugerencias,
             'total': len(sugerencias)
-        })
+        }
+        
+        print(f"DEBUG: Respuesta exitosa con {len(sugerencias)} sugerencias")
+        return JsonResponse(response_data)
         
     except Exception as e:
         print(f"ERROR obteniendo sugerencias: {e}")
-        return JsonResponse({'error': 'Error interno del servidor'}, status=500)
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'success': False,
+            'error': 'Error interno del servidor',
+            'sugerencias': []
+        }, status=500)
