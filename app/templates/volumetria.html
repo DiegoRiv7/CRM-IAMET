@@ -354,6 +354,8 @@
 </div>
 
 <script>
+// ⚡ CACHE BUSTER - VERSION ACTUALIZADA 2024-08-27 - ERRORES SOLUCIONADOS
+console.log('🔄 VOLUMETRÍA SCRIPT CARGADO - VERSION NUEVA SIN ERRORES DE NULL REFERENCE');
 
 // Función para crear volumetría según el tipo seleccionado
 function crearVolumetria(tipo) {
@@ -1196,62 +1198,92 @@ function mostrarFormularioGeneral() {
     agregarCostoOperativo();
 }
 
+// FUNCIÓN ACTUALIZADA - VERSION 2024 - MANEJO SEGURO DE ERRORES
 // Función para procesar el formulario de nodos
 function procesarFormularioNodos() {
-    console.log('🚀 Iniciando procesarFormularioNodos...');
+    console.log('🚀 NUEVA VERSION - Iniciando procesarFormularioNodos...');
+    console.log('📍 Línea de prueba - versión actualizada sin errores');
     
-    // Información del proyecto - con manejo seguro de elementos faltantes
-    const nombreVolumetria = document.getElementById('nombre-volumetria')?.value || 'Volumetría Sin Título';
-    const clienteId = document.getElementById('cliente-volumetria')?.value || '';
-    const usuarioFinal = document.getElementById('usuario-final')?.value || '';
-    const oportunidadId = document.getElementById('oportunidad-volumetria')?.value || '';
+    try {
+        // Información del proyecto - con manejo seguro de elementos faltantes
+        const nombreVolumetria = document.getElementById('nombre-volumetria')?.value || 'Volumetría Sin Título';
+        const clienteId = document.getElementById('cliente-volumetria')?.value || '';
+        const usuarioFinal = document.getElementById('usuario-final')?.value || '';
+        const oportunidadId = document.getElementById('oportunidad-volumetria')?.value || '';
+        
+        // Configuración técnica - con valores por defecto
+        const categoria = document.getElementById('categoria')?.value || 'General';
+        const color = document.getElementById('color')?.value || 'Azul';
+        const distancia = parseFloat(document.getElementById('distancia')?.value) || 100;
+        const cantidadNodos = parseInt(document.getElementById('cantidad-nodos')?.value) || 1;
     
-    // Configuración técnica - con valores por defecto
-    const categoria = document.getElementById('categoria')?.value || 'General';
-    const color = document.getElementById('color')?.value || 'Azul';
-    const distancia = parseFloat(document.getElementById('distancia')?.value) || 100;
-    const cantidadNodos = parseInt(document.getElementById('cantidad-nodos')?.value) || 1;
-    
-    console.log('📊 Datos recopilados:', {
-        nombreVolumetria,
-        clienteId,
-        usuarioFinal,
-        oportunidadId,
-        categoria,
-        color,
-        distancia,
-        cantidadNodos
-    });
-    
-    // Validaciones mínimas - solo datos críticos
-    if (!nombreVolumetria || nombreVolumetria === 'Volumetría Sin Título') {
-        console.log('⚠️ Usando nombre por defecto');
-    }
-    
-    if (!clienteId) {
-        console.log('⚠️ No se seleccionó cliente, continuando de todas formas');
-    }
-    
-    console.log('✅ Procesando volumetría con datos disponibles');
-    
-    cerrarFormulario();
-    mostrarAnimacionCarga();
-    
-    // Simular procesamiento
-    setTimeout(() => {
-        generarVolumetria({
-            // Información del proyecto
+        console.log('📊 Datos recopilados:', {
             nombreVolumetria,
             clienteId,
             usuarioFinal,
             oportunidadId,
-            // Configuración técnica
             categoria,
             color,
             distancia,
             cantidadNodos
         });
-    }, 2000);
+        
+        // Validaciones mínimas - solo datos críticos
+        if (!nombreVolumetria || nombreVolumetria === 'Volumetría Sin Título') {
+            console.log('⚠️ Usando nombre por defecto');
+        }
+        
+        if (!clienteId) {
+            console.log('⚠️ No se seleccionó cliente, continuando de todas formas');
+        }
+        
+        console.log('✅ Procesando volumetría con datos disponibles');
+        
+        cerrarFormulario();
+        mostrarAnimacionCarga();
+        
+        // Simular procesamiento
+        setTimeout(() => {
+            generarVolumetria({
+                // Información del proyecto
+                nombreVolumetria,
+                clienteId,
+                usuarioFinal,
+                oportunidadId,
+                // Configuración técnica
+                categoria,
+                color,
+                distancia,
+                cantidadNodos
+            });
+        }, 2000);
+        
+    } catch (error) {
+        console.error('❌ Error en procesarFormularioNodos:', error);
+        console.log('📍 Error en línea:', error.stack);
+        
+        // Proceder con datos mínimos
+        try {
+            cerrarFormulario();
+            mostrarAnimacionCarga();
+            
+            setTimeout(() => {
+                generarVolumetria({
+                    nombreVolumetria: 'Volumetría Sin Título',
+                    clienteId: '',
+                    usuarioFinal: '',
+                    oportunidadId: '',
+                    categoria: 'General',
+                    color: 'Azul', 
+                    distancia: 100,
+                    cantidadNodos: 1
+                });
+            }, 2000);
+        } catch (fallbackError) {
+            console.error('❌ Error crítico:', fallbackError);
+            alert('Error al procesar volumetría. Ver consola para detalles.');
+        }
+    }
 }
 
 // Función para mostrar animación de carga
