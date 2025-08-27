@@ -354,8 +354,9 @@
 </div>
 
 <script>
-// ⚡ CACHE BUSTER - VERSION ACTUALIZADA 2024-08-27 - ERRORES SOLUCIONADOS
-console.log('🔄 VOLUMETRÍA SCRIPT CARGADO - VERSION NUEVA SIN ERRORES DE NULL REFERENCE');
+// ⚡ CACHE BUSTER - VERSION CATÁLOGO 2024-08-27 - PRODUCTOS DEL CATÁLOGO
+console.log('🔄 VOLUMETRÍA SCRIPT CARGADO - VERSION CON CATÁLOGO COMPLETO');
+console.log('📦 FUNCIONALIDAD: Auto-relleno desde catálogo activa');
 
 // Función para crear volumetría según el tipo seleccionado
 function crearVolumetria(tipo) {
@@ -1691,31 +1692,140 @@ function obtenerDatosManoObra() {
     };
 }
 
+// Función para obtener datos completos de productos del catálogo
+async function obtenerDatosProductosCatalogo(numerosParte) {
+    console.log('📋 Obteniendo datos completos del catálogo para:', numerosParte);
+    
+    const productosCompletos = {};
+    
+    // Procesar cada producto
+    for (const [tipo, numeroParte] of Object.entries(numerosParte)) {
+        if (!numeroParte) {
+            console.log(`⚠️ No hay número de parte para ${tipo}, usando datos por defecto`);
+            productosCompletos[tipo] = {
+                numero_parte: '',
+                descripcion: `${tipo.charAt(0).toUpperCase() + tipo.slice(1)} sin especificar`,
+                precio_lista: 0,
+                precio_proveedor: 0,
+                marca: 'N/A',
+                categoria: tipo
+            };
+            continue;
+        }
+        
+        try {
+            console.log(`🔍 Buscando información de ${tipo}: ${numeroParte}`);
+            
+            // Buscar producto específico en la API
+            const response = await fetch(`/app/api/sugerencias-productos/?q=${encodeURIComponent(numeroParte)}&limit=1`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log(`📦 Respuesta API para ${tipo}:`, data);
+            
+            if (data.success && data.sugerencias && data.sugerencias.length > 0) {
+                // Buscar coincidencia exacta
+                const producto = data.sugerencias.find(p => 
+                    p.numero_parte.toLowerCase() === numeroParte.toLowerCase()
+                ) || data.sugerencias[0]; // Si no hay coincidencia exacta, usar el primero
+                
+                productosCompletos[tipo] = {
+                    numero_parte: producto.numero_parte,
+                    descripcion: producto.descripcion,
+                    precio_lista: producto.precio_lista,
+                    precio_proveedor: producto.precio_proveedor,
+                    marca: producto.marca,
+                    categoria: producto.categoria,
+                    color: producto.color
+                };
+                
+                console.log(`✅ Datos obtenidos para ${tipo}:`, productosCompletos[tipo]);
+            } else {
+                console.log(`⚠️ No se encontró ${tipo} en catálogo: ${numeroParte}`);
+                productosCompletos[tipo] = {
+                    numero_parte: numeroParte,
+                    descripcion: `${tipo.charAt(0).toUpperCase() + tipo.slice(1)} - ${numeroParte}`,
+                    precio_lista: 0,
+                    precio_proveedor: 0,
+                    marca: 'N/A',
+                    categoria: tipo
+                };
+            }
+        } catch (error) {
+            console.error(`❌ Error obteniendo ${tipo} del catálogo:`, error);
+            productosCompletos[tipo] = {
+                numero_parte: numeroParte,
+                descripcion: `${tipo.charAt(0).toUpperCase() + tipo.slice(1)} - ${numeroParte}`,
+                precio_lista: 0,
+                precio_proveedor: 0,
+                marca: 'N/A',
+                categoria: tipo
+            };
+        }
+    }
+    
+    console.log('🎯 Productos completos obtenidos:', productosCompletos);
+    return productosCompletos;
+}
+
 // Función para generar la volumetría
 function generarVolumetria(datos) {
+    console.log('🏗️ Generando volumetría con datos:', datos);
+    
     // Guardar datos globalmente para el PDF
     window.currentVolumetriaData = datos;
     
     cerrarAnimacionCarga();
 
-    // Calcular cantidades automáticas
-    const totalMetrosCable = datos.distancia * datos.cantidadNodos;
-    const cantidadCable = Math.ceil(totalMetrosCable / 305);
-    const cantidadFaceplates = datos.cantidadNodos;
-    const cantidadJacksUsuario = datos.cantidadNodos; // 1 por nodo
-    const cantidadJacksPatchpanel = datos.cantidadNodos; // 1 por nodo
-    const cantidadPatchcordsUsuario = datos.cantidadNodos; // 1 por nodo (color usuario)
-    const cantidadPatchcordsPatchpanel = datos.cantidadNodos; // 1 por nodo (color patchpanel)
-
-    // Crear tabla de volumetría
-    mostrarTablaVolumetria({
-        ...datos,
-        cantidadCable,
-        cantidadFaceplates,
-        cantidadJacksUsuario,
-        cantidadJacksPatchpanel,
-        cantidadPatchcordsUsuario,
-        cantidadPatchcordsPatchpanel
+    // Obtener números de parte seleccionados en el formulario
+    const numerosParte = {
+        cable: document.getElementById('cable-numero-parte')?.value || '',
+        jack: document.getElementById('jack-numero-parte')?.value || '',
+        patchcord: document.getElementById('patchcord-numero-parte')?.value || '', 
+        faceplate: document.getElementById('faceplate-numero-parte')?.value || ''
+    };
+    
+    console.log('🔍 Números de parte seleccionados:', numerosParte);
+    
+    // Obtener información completa de productos del catálogo
+    obtenerDatosProductosCatalogo(numerosParte).then(productosCompletos => {
+        console.log('📦 Productos completos del catálogo:', productosCompletos);
+        
+        // Calcular cantidades automáticas
+        const totalMetrosCable = datos.distancia * datos.cantidadNodos;
+        const cantidadCable = Math.ceil(totalMetrosCable / 305);
+        const cantidadFaceplates = datos.cantidadNodos;
+        const cantidadJacksUsuario = datos.cantidadNodos; // 1 por nodo
+        const cantidadJacksPatchpanel = datos.cantidadNodos; // 1 por nodo
+        const cantidadPatchcordsUsuario = datos.cantidadNodos; // 1 por nodo (color usuario)
+        const cantidadPatchcordsPatchpanel = datos.cantidadNodos; // 1 por nodo (color patchpanel)
+        
+        // Crear tabla de volumetría con productos completos
+        mostrarTablaVolumetria({
+            ...datos,
+            cantidadCable,
+            cantidadFaceplates,
+            cantidadJacksUsuario,
+            cantidadJacksPatchpanel,
+            cantidadPatchcordsUsuario,
+            cantidadPatchcordsPatchpanel,
+            productosCompletos: productosCompletos
+        });
+    }).catch(error => {
+        console.error('❌ Error obteniendo productos del catálogo:', error);
+        // Proceder con datos básicos si hay error
+        mostrarTablaVolumetria({
+            ...datos,
+            cantidadCable: Math.ceil((datos.distancia * datos.cantidadNodos) / 305),
+            cantidadFaceplates: datos.cantidadNodos,
+            cantidadJacksUsuario: datos.cantidadNodos,
+            cantidadJacksPatchpanel: datos.cantidadNodos,
+            cantidadPatchcordsUsuario: datos.cantidadNodos,
+            cantidadPatchcordsPatchpanel: datos.cantidadNodos
+        });
     });
 }
 
@@ -2098,144 +2208,122 @@ function resolverNombresClienteYOportunidad(datos) {
     }
 }
 
-// Función para generar las filas de la tabla
+// Función para generar las filas de la tabla usando datos del catálogo
 function generarFilasTabla(datos) {
+    console.log('🏷️ Generando filas con productos del catálogo:', datos.productosCompletos);
     const productos = [];
 
-    // Lógica para Cable
-    if (datos.categoria === 'CAT6') {
-        const precioListaCable = 540;
-        const costoUnitarioCable = 274;
-        const descuentoProveedorCable = (1 - (costoUnitarioCable / precioListaCable)) * 100;
-
-        productos.push({
-            noParte: 'PUC6004 - ' + datos.color.toUpperCase(),
-            cantidad: datos.cantidadCable,
-            descripcion: `Bobina de Cable UTP 305 m. de Cobre, TX6000™ PanNet, Reelex, ${datos.color}, Categoría 6 Mejorado (23 AWG), LSZH (Bajo Humo, Cero Halógenos), de 4 pares`,
-            precioLista: precioListaCable,
-            descuentoCliente: 0,
-            descuentoProveedor: descuentoProveedorCable
-        });
-    } else {
-        // Lógica existente para otras categorías (ej. CAT6A)
-        productos.push({
-            noParte: 'CBL-' + datos.categoria + '-' + datos.color.toUpperCase(),
-            cantidad: datos.cantidadCable,
-            descripcion: `Cable ${datos.categoria} ${datos.color} - Caja 305m`,
-            precioLista: 285.50, // Precio genérico para otras categorías
-            descuentoCliente: 15,
-            descuentoProveedor: 20
-        });
+    if (!datos.productosCompletos) {
+        console.log('⚠️ No hay productos del catálogo, usando datos por defecto');
+        return generarFilasTablaDefecto(datos);
     }
 
-    // Lógica para Faceplate (aplica a CAT6 y CAT6A)
-    const precioListaFaceplate = 6;
-    const costoUnitarioFaceplate = 2.54;
-    const descuentoProveedorFaceplate = (1 - (costoUnitarioFaceplate / precioListaFaceplate)) * 100;
-
-    productos.push({
-        noParte: 'CFPE1WHY',
-        cantidad: datos.cantidadFaceplates,
-        descripcion: 'Placa de Pared Vertical Ejecutiva, Salida Para 1 Puerto Mini-Com, Con Espacios Para Etiquetas, Color Blanco',
-        precioLista: precioListaFaceplate,
-        descuentoCliente: 0,
-        descuentoProveedor: descuentoProveedorFaceplate
-    });
-
-    // Lógica para Jacks
-    if (datos.categoria === 'CAT6') {
-        const precioListaJack = 22;
-        const costoUnitarioJack = 10.50;
-        const descuentoProveedorJack = (1 - (costoUnitarioJack / precioListaJack)) * 100;
-
-        // Jack Usuario
+    // Cable
+    const cable = datos.productosCompletos.cable;
+    if (cable && cable.numero_parte) {
+        const descuentoProveedorCable = cable.precio_lista > 0 ? 
+            (1 - (cable.precio_proveedor / cable.precio_lista)) * 100 : 0;
+            
         productos.push({
-            noParte: 'CJ688TG - ' + 'AZUL',
+            noParte: cable.numero_parte,
+            cantidad: datos.cantidadCable,
+            descripcion: cable.descripcion,
+            precioLista: cable.precio_lista,
+            descuentoCliente: 0,
+            descuentoProveedor: descuentoProveedorCable,
+            marca: cable.marca,
+            categoria: cable.categoria
+        });
+        console.log('✅ Cable agregado del catálogo:', cable.numero_parte);
+    }
+
+    // Faceplate
+    const faceplate = datos.productosCompletos.faceplate;
+    if (faceplate && faceplate.numero_parte) {
+        const descuentoProveedorFaceplate = faceplate.precio_lista > 0 ? 
+            (1 - (faceplate.precio_proveedor / faceplate.precio_lista)) * 100 : 0;
+            
+        productos.push({
+            noParte: faceplate.numero_parte,
+            cantidad: datos.cantidadFaceplates,
+            descripcion: faceplate.descripcion,
+            precioLista: faceplate.precio_lista,
+            descuentoCliente: 0,
+            descuentoProveedor: descuentoProveedorFaceplate,
+            marca: faceplate.marca,
+            categoria: faceplate.categoria
+        });
+        console.log('✅ Faceplate agregado del catálogo:', faceplate.numero_parte);
+    }
+
+    // Jack Usuario
+    const jack = datos.productosCompletos.jack;
+    if (jack && jack.numero_parte) {
+        const descuentoProveedorJack = jack.precio_lista > 0 ? 
+            (1 - (jack.precio_proveedor / jack.precio_lista)) * 100 : 0;
+            
+        productos.push({
+            noParte: jack.numero_parte,
             cantidad: datos.cantidadJacksUsuario,
-            descripcion: `Conector Jack RJ45 Estilo TG, Mini-Com, Categoría 6, de 8 posiciones y 8 cables, Azul`,
-            precioLista: precioListaJack,
+            descripcion: jack.descripcion + ' (Usuario)',
+            precioLista: jack.precio_lista,
             descuentoCliente: 0,
-            descuentoProveedor: descuentoProveedorJack
+            descuentoProveedor: descuentoProveedorJack,
+            marca: jack.marca,
+            categoria: jack.categoria
         });
-
-        // Jack Patchpanel
+        
+        // Jack Patchpanel (mismo producto, diferente aplicación)
         productos.push({
-            noParte: 'CJ688TG - ' + 'AZUL',
+            noParte: jack.numero_parte,
             cantidad: datos.cantidadJacksPatchpanel,
-            descripcion: `Conector Jack RJ45 Estilo TG, Mini-Com, Categoría 6, de 8 posiciones y 8 cables, Azul`,
-            precioLista: precioListaJack,
+            descripcion: jack.descripcion + ' (Patchpanel)',
+            precioLista: jack.precio_lista,
             descuentoCliente: 0,
-            descuentoProveedor: descuentoProveedorJack
+            descuentoProveedor: descuentoProveedorJack,
+            marca: jack.marca,
+            categoria: jack.categoria
         });
-    } else {
-        // Lógica genérica para Jacks en otras categorías
-        productos.push(
-            {
-                noParte: 'JCK-' + datos.categoria + '-USR-' + 'AZUL',
-                cantidad: datos.cantidadJacksUsuario,
-                descripcion: `Jack RJ45 ${datos.categoria} Azul Usuario`,
-                precioLista: 12.75,
-                descuentoCliente: 25,
-                descuentoProveedor: 20
-            },
-            {
-                noParte: 'JCK-' + datos.categoria + '-PP-' + 'AZUL',
-                cantidad: datos.cantidadJacksPatchpanel,
-                descripcion: `Jack RJ45 ${datos.categoria} Azul Patchpanel`,
-                precioLista: 12.75,
-                descuentoCliente: 25,
-                descuentoProveedor: 20
-            }
-        );
+        console.log('✅ Jacks agregados del catálogo:', jack.numero_parte);
     }
 
-    // Lógica para Patchcords
-    if (datos.categoria === 'CAT6') {
-        const precioListaPatchcord = 27;
-        const costoUnitarioPatchcord = 11.72;
-        const descuentoProveedorPatchcord = (1 - (costoUnitarioPatchcord / precioListaPatchcord)) * 100;
-
-        // Patchcord Usuario
+    // Patchcord Usuario
+    const patchcord = datos.productosCompletos.patchcord;
+    if (patchcord && patchcord.numero_parte) {
+        const descuentoProveedorPatchcord = patchcord.precio_lista > 0 ? 
+            (1 - (patchcord.precio_proveedor / patchcord.precio_lista)) * 100 : 0;
+            
         productos.push({
-            noParte: 'UTPSP7 - ' + 'AZUL',
+            noParte: patchcord.numero_parte,
             cantidad: datos.cantidadPatchcordsUsuario,
-            descripcion: `Cable de Parcheo TX6, UTP Cat6, 24 AWG, CM, Color Azul, 7ft`,
-            precioLista: precioListaPatchcord,
+            descripcion: patchcord.descripcion + ' (Usuario)',
+            precioLista: patchcord.precio_lista,
             descuentoCliente: 0,
-            descuentoProveedor: descuentoProveedorPatchcord
+            descuentoProveedor: descuentoProveedorPatchcord,
+            marca: patchcord.marca,
+            categoria: patchcord.categoria
         });
-
-        // Patchcord Patchpanel
+        
+        // Patchcord Patchpanel (mismo producto, diferente aplicación)
         productos.push({
-            noParte: 'UTPSP7 - ' + 'AZUL',
+            noParte: patchcord.numero_parte,
             cantidad: datos.cantidadPatchcordsPatchpanel,
-            descripcion: `Cable de Parcheo TX6, UTP Cat6, 24 AWG, CM, Color Azul, 7ft`,
-            precioLista: precioListaPatchcord,
+            descripcion: patchcord.descripcion + ' (Patchpanel)',
+            precioLista: patchcord.precio_lista,
             descuentoCliente: 0,
-            descuentoProveedor: descuentoProveedorPatchcord
+            descuentoProveedor: descuentoProveedorPatchcord,
+            marca: patchcord.marca,
+            categoria: patchcord.categoria
         });
-    } else {
-        // Lógica genérica para Patchcords en otras categorías (CAT6A)
-        productos.push(
-            {
-                noParte: 'PC-' + datos.categoria + '-USR-' + 'AZUL',
-                cantidad: datos.cantidadPatchcordsUsuario,
-                descripcion: `Patchcord ${datos.categoria} Azul Usuario 3 pies`,
-                precioLista: 18.90,
-                descuentoCliente: 18,
-                descuentoProveedor: 20
-            },
-            {
-                noParte: 'PC-' + datos.categoria + '-PP-' + 'AZUL',
-                cantidad: datos.cantidadPatchcordsPatchpanel,
-                descripcion: `Patchcord ${datos.categoria} Azul Patchpanel 3 pies`,
-                precioLista: 18.90,
-                descuentoCliente: 18,
-                descuentoProveedor: 20
-            }
-        );
+        console.log('✅ Patchcords agregados del catálogo:', patchcord.numero_parte);
     }
     
+    console.log('🎯 Total productos generados desde catálogo:', productos.length);
+    return generarHTMLFilas(productos);
+}
+
+// Función para generar las filas HTML desde productos
+function generarHTMLFilas(productos) {
     let filas = '';
     let totalCliente = 0;
     let totalCosto = 0;
@@ -2288,6 +2376,82 @@ function generarFilasTabla(datos) {
     `;
     
     return filas;
+}
+
+// Función de fallback con datos por defecto
+function generarFilasTablaDefecto(datos) {
+    console.log('🔄 Generando tabla con datos por defecto hardcodeados');
+    
+    const productos = [];
+
+    // Productos por defecto (mantener la lógica original como fallback)
+    productos.push({
+        noParte: 'CABLE-DEFAULT',
+        cantidad: datos.cantidadCable || 1,
+        descripcion: `Cable ${datos.categoria || 'CAT6'} ${datos.color || 'Azul'} - Caja 305m`,
+        precioLista: 540,
+        descuentoCliente: 0,
+        descuentoProveedor: 49.26,
+        marca: 'Panduit',
+        categoria: 'Cable'
+    });
+
+    productos.push({
+        noParte: 'FACEPLATE-DEFAULT',
+        cantidad: datos.cantidadFaceplates || 1,
+        descripcion: 'Placa de Pared Vertical Ejecutiva, Salida Para 1 Puerto Mini-Com, Con Espacios Para Etiquetas, Color Blanco',
+        precioLista: 6,
+        descuentoCliente: 0,
+        descuentoProveedor: 57.67,
+        marca: 'Panduit',
+        categoria: 'Faceplate'
+    });
+
+    productos.push({
+        noParte: 'JACK-DEFAULT-USR',
+        cantidad: datos.cantidadJacksUsuario || 1,
+        descripcion: 'Conector Jack RJ45 Estilo TG, Mini-Com, Categoría 6, de 8 posiciones y 8 cables, Azul (Usuario)',
+        precioLista: 22,
+        descuentoCliente: 0,
+        descuentoProveedor: 52.27,
+        marca: 'Panduit',
+        categoria: 'Jack'
+    });
+
+    productos.push({
+        noParte: 'JACK-DEFAULT-PP',
+        cantidad: datos.cantidadJacksPatchpanel || 1,
+        descripcion: 'Conector Jack RJ45 Estilo TG, Mini-Com, Categoría 6, de 8 posiciones y 8 cables, Azul (Patchpanel)',
+        precioLista: 22,
+        descuentoCliente: 0,
+        descuentoProveedor: 52.27,
+        marca: 'Panduit',
+        categoria: 'Jack'
+    });
+
+    productos.push({
+        noParte: 'PATCHCORD-DEFAULT-USR',
+        cantidad: datos.cantidadPatchcordsUsuario || 1,
+        descripcion: 'Cable de Parcheo TX6, UTP Cat6, 24 AWG, CM, Color Azul, 7ft (Usuario)',
+        precioLista: 27,
+        descuentoCliente: 0,
+        descuentoProveedor: 56.59,
+        marca: 'Panduit',
+        categoria: 'Patchcord'
+    });
+
+    productos.push({
+        noParte: 'PATCHCORD-DEFAULT-PP',
+        cantidad: datos.cantidadPatchcordsPatchpanel || 1,
+        descripcion: 'Cable de Parcheo TX6, UTP Cat6, 24 AWG, CM, Color Azul, 7ft (Patchpanel)',
+        precioLista: 27,
+        descuentoCliente: 0,
+        descuentoProveedor: 56.59,
+        marca: 'Panduit',
+        categoria: 'Patchcord'
+    });
+
+    return generarHTMLFilas(productos);
 }
 
 // Función para generar el resumen de la volumetría
