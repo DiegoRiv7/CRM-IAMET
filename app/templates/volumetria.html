@@ -261,46 +261,58 @@
     }
 
     .excel-table-wrapper {
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        background: white;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        background: #1a1a1a;
+        border: 1px solid #2d2d2d;
+        border-radius: 12px;
+        overflow: hidden;
     }
 
     .excel-table {
         border-collapse: separate;
         border-spacing: 0;
         font-size: 13px;
-        line-height: 1.3;
+        line-height: 1.4;
+        background: #1a1a1a;
+        font-family: 'SF Mono', 'Monaco', 'Consolas', 'Roboto Mono', monospace;
     }
 
     .excel-th-group {
-        background: #217346;
-        color: white;
-        padding: 12px 8px;
+        background: linear-gradient(135deg, #0d9488, #0f766e);
+        color: #ffffff;
+        padding: 16px 8px;
         text-align: center;
-        font-weight: 600;
-        font-size: 14px;
-        border: 1px solid #1e6440;
+        font-weight: 700;
+        font-size: 12px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
 
     .excel-client-header {
-        background: #2e86ab;
-        border-color: #25749c;
+        background: linear-gradient(135deg, #1e40af, #1d4ed8);
+        color: #ffffff;
     }
 
     .excel-cost-header {
-        background: #f18f01;
-        border-color: #e67e00;
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        color: #ffffff;
     }
 
     .excel-th {
-        background: #f8f9fa;
-        color: #495057;
-        padding: 10px 8px;
+        background: linear-gradient(135deg, #2d2d2d, #1f1f1f);
+        color: #e5e7eb;
+        padding: 12px 8px;
         text-align: center;
         font-weight: 600;
-        font-size: 12px;
-        border: 1px solid #dee2e6;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        border: none;
+        border-right: 1px solid #404040;
+        border-bottom: 1px solid #404040;
         white-space: nowrap;
+        text-transform: uppercase;
     }
 
     .excel-description {
@@ -309,90 +321,117 @@
     }
 
     .excel-cell {
-        padding: 8px;
-        border: 1px solid #e9ecef;
-        background: white;
+        padding: 12px 10px;
+        border: 1px solid #2d2d2d;
+        background: #1f1f1f;
+        color: #e5e7eb;
         position: relative;
-        transition: all 0.15s ease;
-        vertical-align: top;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: text;
+        outline: none;
+        font-weight: 500;
+        min-height: 44px;
+        vertical-align: middle;
     }
 
     .excel-cell:hover {
-        background: #f8f9ff;
-        border-color: #0078d4;
-        box-shadow: inset 0 0 0 1px #0078d4;
+        background: #262626;
+        border-color: #0ea5e9;
+        box-shadow: inset 0 0 0 1px #0ea5e9, 0 0 0 1px rgba(14, 165, 233, 0.3);
+        transform: scale(1.01);
+        z-index: 3;
     }
 
     .excel-cell:focus {
         outline: none;
-        background: white;
-        border-color: #0078d4;
-        box-shadow: inset 0 0 0 2px #0078d4;
-        z-index: 2;
+        background: #2d2d2d;
+        color: #ffffff;
+        border-color: #0ea5e9;
+        box-shadow: inset 0 0 0 2px #0ea5e9, 0 0 0 3px rgba(14, 165, 233, 0.2);
+        transform: scale(1.01);
+        z-index: 4;
     }
 
     .excel-cell-text {
         text-align: left;
-        font-family: 'Courier New', monospace;
-        font-size: 12px;
+        font-family: 'SF Mono', 'Monaco', 'Consolas', 'Roboto Mono', monospace;
+        font-size: 13px;
+        font-weight: 400;
     }
 
     .excel-cell-number {
         text-align: center;
-        min-width: 60px;
+        min-width: 70px;
+        font-family: 'SF Mono', 'Monaco', 'Consolas', 'Roboto Mono', monospace;
+        font-weight: 600;
     }
 
     .excel-cell-currency {
         text-align: right;
-        min-width: 80px;
-        font-family: 'Courier New', monospace;
+        min-width: 90px;
+        font-family: 'SF Mono', 'Monaco', 'Consolas', 'Roboto Mono', monospace;
+        font-weight: 600;
+        color: #34d399;
     }
 
     .excel-cell-percent {
         text-align: center;
-        min-width: 60px;
+        min-width: 70px;
+        font-family: 'SF Mono', 'Monaco', 'Consolas', 'Roboto Mono', monospace;
+        font-weight: 600;
+        color: #fbbf24;
     }
 
     .excel-cell-description {
-        min-width: 250px;
-        max-width: 300px;
+        min-width: 280px;
+        max-width: 350px;
         word-wrap: break-word;
+        text-align: left;
+        font-weight: 400;
     }
 
     .excel-calculated {
-        background: #f8f9fa !important;
-        color: #495057;
+        background: #0f172a !important;
+        color: #94a3b8 !important;
         cursor: not-allowed;
+        font-weight: 600;
+        font-style: italic;
+        border: 1px solid #1e293b !important;
         user-select: none;
     }
 
     .excel-calculated:hover {
-        background: #f1f3f4 !important;
+        background: #1e293b !important;
+        transform: none !important;
+        border-color: #334155 !important;
+        box-shadow: none !important;
     }
 
     .excel-total-client {
-        color: #0066cc;
-        font-weight: 600;
+        color: #10b981 !important;
+        font-weight: 700;
     }
 
     .excel-total-cost {
-        color: #cc0000;
-        font-weight: 600;
+        color: #ef4444 !important;
+        font-weight: 700;
     }
 
     .excel-profit {
-        color: #009900;
-        font-weight: 600;
+        color: #3b82f6 !important;
+        font-weight: 700;
     }
 
     .excel-totals-row {
-        background: #e9ecef;
+        background: #111827;
     }
 
     .excel-totals-row .excel-cell {
-        background: #e9ecef;
+        background: #111827 !important;
+        color: #f9fafb !important;
         font-weight: 700;
-        border-top: 2px solid #495057;
+        border-top: 3px solid #0ea5e9;
+        border-bottom: 2px solid #0ea5e9;
     }
 
     .excel-totals-label {
@@ -402,41 +441,82 @@
     }
 
     .excel-delete-btn {
-        background: #dc3545;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
         color: white;
         border: none;
-        border-radius: 3px;
-        padding: 4px 6px;
+        border-radius: 6px;
+        padding: 6px 10px;
         cursor: pointer;
         font-size: 12px;
-        transition: background-color 0.2s;
+        font-weight: 600;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
     }
 
     .excel-delete-btn:hover {
-        background: #c82333;
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
     }
 
     .excel-row:nth-child(even) {
-        background: #f8f9fa;
+        background: #171717;
     }
 
     .excel-row:nth-child(even) .excel-cell {
-        background: #f8f9fa;
+        background: #171717;
+        border-color: #262626;
     }
 
     .excel-row:hover {
-        background: #e3f2fd;
+        background: #1e1e1e;
     }
 
     .excel-row:hover .excel-cell {
-        background: #e3f2fd;
+        background: #262626 !important;
+        border-color: #404040;
+    }
+
+    .excel-row:hover .excel-calculated {
+        background: #1e293b !important;
+    }
+
+    /* Excel Toolbar Styles */
+    .excel-toolbar {
+        background: linear-gradient(135deg, #374151, #1f2937);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .excel-btn-primary {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 4px rgba(14, 165, 233, 0.3);
+    }
+
+    .excel-btn-primary:hover {
+        background: linear-gradient(135deg, #0284c7, #0369a1);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(14, 165, 233, 0.4);
     }
 
     /* Responsive */
     @media (max-width: 1200px) {
         .excel-cell-description {
-            min-width: 200px;
-            max-width: 250px;
+            min-width: 220px;
+            max-width: 270px;
+        }
+        .excel-cell {
+            padding: 10px 8px;
         }
     }
 
@@ -446,12 +526,22 @@
         }
         
         .excel-cell {
-            padding: 6px;
+            padding: 8px 6px;
+            min-height: 36px;
         }
         
         .excel-cell-description {
-            min-width: 150px;
-            max-width: 200px;
+            min-width: 180px;
+            max-width: 220px;
+        }
+
+        .excel-toolbar {
+            padding: 12px;
+        }
+
+        .excel-btn-primary {
+            padding: 6px 12px;
+            font-size: 12px;
         }
     }
 </style>
@@ -1001,19 +1091,30 @@ function mostrarFormularioNodos() {
                     </div>
                     
                     
-                    <!-- Parte 2: Infraestructura de Tubería -->
+                    <!-- Parte 2: Infraestructura de Tubería (OPCIONAL) -->
                     <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-8 bg-white dark:bg-gray-800">
                         <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
                             <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">2</span>
                             Infraestructura
+                            <span class="ml-2 px-2 py-1 text-xs bg-gray-500 text-white rounded-full">OPCIONAL</span>
                         </h3>
-                        <p class="text-sm text-gray-400 mb-8">Configure la protección del cableado</p>
+                        <p class="text-sm text-gray-400 mb-4">Configure la protección del cableado (puede dejarse vacío si no se requiere)</p>
+                        <div class="mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded-r-lg">
+                            <div class="flex items-center">
+                                <svg class="w-4 h-4 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span class="text-sm text-blue-700 dark:text-blue-300">
+                                    <strong>Opcional:</strong> Si no necesita infraestructura, puede dejar estos campos vacíos y continuar directamente con la etapa 3.
+                                </span>
+                            </div>
+                        </div>
                         
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <!-- Tipo de tubería -->
                             <div>
-                                <label class="block text-sm font-medium apple-text-primary mb-2">Tipo de Tubería *</label>
-                                <select id="tipo-tuberia" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-green-500" required onchange="actualizarInfoTuberia()">
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Tipo de Tubería</label>
+                                <select id="tipo-tuberia" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-green-500" onchange="actualizarInfoTuberia()">
                                     <option value="">-- Seleccione tipo --</option>
                                     <option value="steel">Steel (Conduit Metálico)</option>
                                     <option value="flexible">Flexible (Conduit Flexible)</option>
@@ -1023,8 +1124,8 @@ function mostrarFormularioNodos() {
                             
                             <!-- Diámetro -->
                             <div>
-                                <label class="block text-sm font-medium apple-text-primary mb-2">Diámetro *</label>
-                                <select id="diametro-tuberia" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-green-500" required onchange="actualizarInfoTuberia()">
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Diámetro</label>
+                                <select id="diametro-tuberia" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-green-500" onchange="actualizarInfoTuberia()">
                                     <option value="">-- Seleccione diámetro --</option>
                                     <option value="1/2">1/2" (12.7 mm)</option>
                                     <option value="3/4">3/4" (19.05 mm)</option>
@@ -1042,7 +1143,7 @@ function mostrarFormularioNodos() {
                             <!-- Metros de tubería -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-3">Metros de Tubería</label>
-                                <input type="number" id="metros-tuberia" min="0" step="0.1" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="250" required onchange="actualizarInfoTuberia()">
+                                <input type="number" id="metros-tuberia" min="0" step="0.1" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="0" onchange="actualizarInfoTuberia()">
                             </div>
                         </div>
                         
@@ -1476,12 +1577,16 @@ function procesarFormularioNodos() {
         
         console.log('✅ Procesando volumetría con datos disponibles');
         
+        // Obtener datos de infraestructura (opcional)
+        const datosInfraestructura = obtenerDatosInfraestructura();
+        console.log('🏗️ Datos de infraestructura:', datosInfraestructura ? 'Incluidos' : 'No incluidos (opcional)');
+        
         cerrarFormulario();
         mostrarAnimacionCarga();
         
         // Simular procesamiento
         setTimeout(() => {
-            generarVolumetria({
+            const datosVolumetria = {
                 // Información del proyecto
                 nombreVolumetria,
                 clienteId,
@@ -1492,7 +1597,14 @@ function procesarFormularioNodos() {
                 color,
                 distancia,
                 cantidadNodos
-            });
+            };
+            
+            // Agregar datos de infraestructura solo si están disponibles
+            if (datosInfraestructura) {
+                datosVolumetria.infraestructura = datosInfraestructura;
+            }
+            
+            generarVolumetria(datosVolumetria);
         }, 2000);
         
     } catch (error) {
@@ -1690,8 +1802,14 @@ function obtenerDatosInfraestructura() {
     const tipoEquipo = document.getElementById('tipo-equipo-elevacion')?.value || '';
     const diasEquipo = parseFloat(document.getElementById('dias-equipo-elevacion')?.value) || 0;
     
+    console.log('🔍 Verificando datos de infraestructura:', {
+        tipoTuberia, diametro, metros, usaEquipoElevacion, tipoEquipo, diasEquipo
+    });
+    
+    // Si no hay datos básicos de tubería, la infraestructura es opcional
     if (!tipoTuberia || !diametro || metros <= 0) {
-        return null; // No hay datos válidos de infraestructura
+        console.log('ℹ️ Infraestructura no configurada - continuando sin ella');
+        return null; // No hay datos válidos de infraestructura (es opcional)
     }
     
     // Datos de productos (mismo catálogo que actualizarInfoTuberia)
@@ -2080,9 +2198,66 @@ function generarVolumetria(datos) {
     });
 }
 
+// Función para guardar el estado de la volumetría en localStorage
+function guardarEstadoVolumetria(datos) {
+    try {
+        const estado = {
+            datos: datos,
+            timestamp: Date.now(),
+            version: '2.0'
+        };
+        localStorage.setItem('volumetria_estado', JSON.stringify(estado));
+        console.log('💾 Estado de volumetría guardado');
+    } catch (error) {
+        console.error('❌ Error guardando estado:', error);
+    }
+}
+
+// Función para cargar el estado de la volumetría desde localStorage  
+function cargarEstadoVolumetria() {
+    try {
+        const estadoStr = localStorage.getItem('volumetria_estado');
+        if (estadoStr) {
+            const estado = JSON.parse(estadoStr);
+            // Verificar que el estado no sea muy antiguo (24 horas)
+            if (Date.now() - estado.timestamp < 24 * 60 * 60 * 1000) {
+                console.log('📂 Estado de volumetría cargado desde localStorage');
+                return estado.datos;
+            } else {
+                console.log('⏰ Estado de volumetría expirado, eliminando');
+                localStorage.removeItem('volumetria_estado');
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error cargando estado:', error);
+        localStorage.removeItem('volumetria_estado');
+    }
+    return null;
+}
+
+// Función para limpiar el estado guardado
+function limpiarEstadoVolumetria() {
+    localStorage.removeItem('volumetria_estado');
+    console.log('🧹 Estado de volumetría limpiado');
+}
+
+// Función para iniciar una nueva volumetría
+function nuevaVolumetria() {
+    console.log('🆕 Iniciando nueva volumetría');
+    
+    // Limpiar el estado guardado
+    limpiarEstadoVolumetria();
+    
+    // Recargar la página para mostrar la selección de tipos
+    window.location.reload();
+}
+
 // Función para mostrar la tabla de volumetría
 function mostrarTablaVolumetria(datos) {
     volumetriaConfig.cantidadNodos = datos.cantidadNodos || 1;
+    
+    // Guardar el estado actual
+    guardarEstadoVolumetria(datos);
 
     const tablaHTML = `
         <div id="tabla-volumetria" class="min-h-screen apple-bg">
@@ -2107,6 +2282,9 @@ function mostrarTablaVolumetria(datos) {
                         <div class="flex space-x-3">
                             <button onclick="exportarPDF()" class="apple-btn-primary font-medium py-2 px-6 transition duration-200 shadow-lg">
                                 Guardar PDF
+                            </button>
+                            <button onclick="nuevaVolumetria()" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200 shadow-lg">
+                                Nueva Volumetría
                             </button>
                             <button onclick="cerrarTablaVolumetria()" class="apple-btn-secondary font-medium py-2 px-6 transition duration-200">
                                 ← Regresar
@@ -2330,30 +2508,29 @@ function mostrarTablaVolumetria(datos) {
                             <!-- Tabla Excel-like mejorada -->
                             <div class="excel-container mb-6">
                                 <!-- Toolbar -->
-                                <div class="excel-toolbar flex justify-between items-center mb-4 p-3 bg-gray-50 rounded-lg">
-                                    <div class="flex space-x-2">
+                                <div class="excel-toolbar flex justify-between items-center">
+                                    <div class="flex space-x-3">
                                         <button onclick="agregarFilaExcel()" class="excel-btn-primary">
                                             ➕ Agregar Fila
                                         </button>
-                                        <button onclick="copiarTablaCompleta()" class="excel-btn-secondary">
+                                        <button onclick="copiarTablaCompleta()" class="excel-btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);">
                                             📋 Copiar Todo
                                         </button>
-                                        <button onclick="exportarCSV()" class="excel-btn-secondary">
+                                        <button onclick="exportarCSV()" class="excel-btn-primary" style="background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);">
                                             📊 Exportar CSV
                                         </button>
                                     </div>
-                                    <div class="text-xs text-gray-600 flex items-center space-x-4">
-                                        <span><kbd>Tab</kbd> → siguiente</span>
-                                        <span><kbd>Enter</kbd> ↓ abajo</span>
-                                        <span><kbd>Ctrl+C</kbd> copiar</span>
-                                        <span><kbd>Ctrl+V</kbd> pegar</span>
+                                    <div class="text-xs text-gray-300 font-mono flex items-center space-x-4">
+                                        <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">Tab</kbd> → siguiente</span>
+                                        <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">Enter</kbd> ↓ abajo</span>
+                                        <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">🗑️</kbd> sin confirmación</span>
                                     </div>
                                 </div>
 
                                 <!-- Tabla Excel -->
-                                <div class="excel-table-wrapper" style="border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden;">
+                                <div class="excel-table-wrapper">
                                     <table id="excel-table" class="excel-table w-full">
-                                        <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 10;">
+                                        <thead style="position: sticky; top: 0; z-index: 10;">
                                             <tr class="excel-header">
                                                 <th colspan="7" class="excel-th-group excel-client-header">INFORMACIÓN DEL CLIENTE</th>
                                                 <th colspan="4" class="excel-th-group excel-cost-header">COSTOS Y MÁRGENES</th>
@@ -2588,7 +2765,40 @@ function generarFilasTabla(datos) {
         console.log('✅ Patchcords agregados del catálogo:', patchcord.numero_parte);
     }
     
-    console.log('🎯 Total productos generados desde catálogo:', productos.length);
+    // Agregar productos de infraestructura si están disponibles
+    if (datos.infraestructura) {
+        console.log('🏗️ Agregando productos de infraestructura a la tabla normal');
+        const infra = datos.infraestructura;
+        
+        // Producto de tubería
+        productos.push({
+            noParte: infra.numero_parte,
+            cantidad: infra.metros_tuberia,
+            descripcion: infra.descripcion_producto,
+            precioLista: infra.precio_unitario,
+            descuentoCliente: 0,
+            descuentoProveedor: infra.precio_proveedor > 0 ? 
+                (1 - (infra.precio_proveedor / infra.precio_unitario)) * 100 : 0,
+            marca: 'INFRAESTRUCTURA',
+            categoria: 'TUBERÍA'
+        });
+        
+        // Equipo de elevación si está incluido
+        if (infra.usa_equipo_elevacion && infra.dias_equipo_elevacion > 0) {
+            productos.push({
+                noParte: 'EQUIPO-' + infra.tipo_equipo_elevacion.toUpperCase(),
+                cantidad: infra.dias_equipo_elevacion,
+                descripcion: `${infra.tipo_equipo_elevacion.charAt(0).toUpperCase() + infra.tipo_equipo_elevacion.slice(1).replace('-', ' ')} - Renta por día`,
+                precioLista: infra.precio_equipo_elevacion,
+                descuentoCliente: 0,
+                descuentoProveedor: 0,
+                marca: 'INFRAESTRUCTURA',
+                categoria: 'EQUIPO'
+            });
+        }
+    }
+    
+    console.log('🎯 Total productos generados (incluyendo infraestructura):', productos.length);
     return generarHTMLFilas(productos);
 }
 
@@ -2698,7 +2908,40 @@ function generarFilasExcel(datos) {
         });
     }
     
-    console.log('🎯 Total productos generados desde catálogo para Excel:', productos.length);
+    // Agregar productos de infraestructura si están disponibles
+    if (datos.infraestructura) {
+        console.log('🏗️ Agregando productos de infraestructura a la tabla Excel');
+        const infra = datos.infraestructura;
+        
+        // Producto de tubería
+        productos.push({
+            noParte: infra.numero_parte,
+            cantidad: infra.metros_tuberia,
+            descripcion: infra.descripcion_producto,
+            precioLista: infra.precio_unitario,
+            descuentoCliente: 0,
+            descuentoProveedor: infra.precio_proveedor > 0 ? 
+                (1 - (infra.precio_proveedor / infra.precio_unitario)) * 100 : 0,
+            marca: 'INFRAESTRUCTURA',
+            categoria: 'TUBERÍA'
+        });
+        
+        // Equipo de elevación si está incluido
+        if (infra.usa_equipo_elevacion && infra.dias_equipo_elevacion > 0) {
+            productos.push({
+                noParte: 'EQUIPO-' + infra.tipo_equipo_elevacion.toUpperCase(),
+                cantidad: infra.dias_equipo_elevacion,
+                descripcion: `${infra.tipo_equipo_elevacion.charAt(0).toUpperCase() + infra.tipo_equipo_elevacion.slice(1).replace('-', ' ')} - Renta por día`,
+                precioLista: infra.precio_equipo_elevacion,
+                descuentoCliente: 0,
+                descuentoProveedor: 0,
+                marca: 'INFRAESTRUCTURA',
+                categoria: 'EQUIPO'
+            });
+        }
+    }
+    
+    console.log('🎯 Total productos generados (incluyendo infraestructura):', productos.length);
     return generarHTMLFilasExcel(productos);
 }
 
@@ -4685,19 +4928,31 @@ function getCookie(name) {
 
 // Animaciones de entrada
 document.addEventListener('DOMContentLoaded', function() {
-    const cards = document.querySelectorAll('.glass-card');
-    cards.forEach((card, index) => {
-        setTimeout(() => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(20px)';
-            card.style.transition = 'all 0.6s ease';
-            
+    console.log('🚀 Inicializando volumetría con recuperación de estado');
+    
+    // Verificar si hay un estado guardado
+    const estadoGuardado = cargarEstadoVolumetria();
+    
+    if (estadoGuardado) {
+        console.log('🔄 Restaurando volumetría desde estado guardado');
+        // Mostrar directamente la tabla con los datos guardados
+        mostrarTablaVolumetria(estadoGuardado);
+    } else {
+        // Mostrar animaciones normales para las tarjetas de selección
+        const cards = document.querySelectorAll('.glass-card');
+        cards.forEach((card, index) => {
             setTimeout(() => {
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            }, 100);
-        }, index * 200);
-    });
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'all 0.6s ease';
+                
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 100);
+            }, index * 200);
+        });
+    }
     
     // Función para configurar autocompletado cuando sea necesario
     window.inicializarAutocompletado = function() {
@@ -5029,14 +5284,19 @@ function agregarFilaExcel() {
 
 // Función para eliminar una fila Excel
 function eliminarFilaExcel(rowIndex) {
-    if (confirm('¿Estás seguro de eliminar esta fila?')) {
-        const row = document.querySelector(`[data-row="${rowIndex}"]`);
-        if (row) {
+    const row = document.querySelector(`[data-row="${rowIndex}"]`);
+    if (row) {
+        // Animación suave antes de eliminar
+        row.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        row.style.opacity = '0';
+        row.style.transform = 'translateX(-100%)';
+        
+        setTimeout(() => {
             row.remove();
             actualizarIndicesFilasExcel();
             recalcularTotalesExcel();
-            console.log(`🗑️ Fila Excel ${rowIndex} eliminada`);
-        }
+            console.log(`🗑️ Fila Excel ${rowIndex} eliminada con animación`);
+        }, 300);
     }
 }
 
