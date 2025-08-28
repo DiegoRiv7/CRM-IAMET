@@ -1597,6 +1597,16 @@ function procesarFormularioNodos() {
         const color = document.getElementById('color')?.value || 'Azul';
         const distancia = parseFloat(document.getElementById('distancia')?.value) || 100;
         const cantidadNodos = parseInt(document.getElementById('cantidad-nodos')?.value) || 1;
+        
+        // 🔧 CAPTURAR NÚMEROS DE PARTE ANTES DE CERRAR EL FORMULARIO
+        const numerosParte = {
+            cable: document.getElementById('cable-numero-parte')?.value?.trim() || '',
+            jack: document.getElementById('jack-numero-parte')?.value?.trim() || '',
+            patchcord: document.getElementById('patchcord-numero-parte')?.value?.trim() || '',
+            faceplate: document.getElementById('faceplate-numero-parte')?.value?.trim() || ''
+        };
+        
+        console.log('🔧 Números de parte capturados ANTES de cerrar formulario:', numerosParte);
     
         console.log('📊 Datos recopilados:', {
             nombreVolumetria,
@@ -1639,7 +1649,9 @@ function procesarFormularioNodos() {
                 categoria,
                 color,
                 distancia,
-                cantidadNodos
+                cantidadNodos,
+                // 🔧 NÚMEROS DE PARTE CAPTURADOS
+                numerosParte: numerosParte
             };
             
             // Agregar datos de infraestructura solo si están disponibles
@@ -1668,7 +1680,9 @@ function procesarFormularioNodos() {
                     categoria: 'General',
                     color: 'Azul', 
                     distancia: 100,
-                    cantidadNodos: 1
+                    cantidadNodos: 1,
+                    // 🔧 NÚMEROS DE PARTE CAPTURADOS (también en fallback)
+                    numerosParte: numerosParte || {}
                 });
             }, 2000);
         } catch (fallbackError) {
@@ -2177,52 +2191,20 @@ function generarVolumetria(datos) {
     
     cerrarAnimacionCarga();
 
-    // Obtener números de parte seleccionados en el formulario
-    console.log('🔍 Buscando elementos del formulario...');
-    console.log('🔍 Estado actual del DOM:', {
-        formulario_existe: !!document.getElementById('formulario-nodos'),
-        form_nodos_existe: !!document.getElementById('form-nodos'),
-        total_elementos: document.querySelectorAll('[id*="numero-parte"]').length
-    });
+    // 🔧 USAR NÚMEROS DE PARTE QUE VIENEN EN LOS DATOS (capturados antes de cerrar formulario)
+    console.log('🔍 Usando números de parte capturados desde datos:', datos.numerosParte);
     
-    // Verificar que los elementos existan
-    const cableEl = document.getElementById('cable-numero-parte');
-    const jackEl = document.getElementById('jack-numero-parte');
-    const patchcordEl = document.getElementById('patchcord-numero-parte');
-    const faceplateEl = document.getElementById('faceplate-numero-parte');
-    
-    console.log('📋 Elementos encontrados:', {
-        cable: cableEl ? `Sí (${cableEl.value})` : 'No encontrado',
-        jack: jackEl ? `Sí (${jackEl.value})` : 'No encontrado',
-        patchcord: patchcordEl ? `Sí (${patchcordEl.value})` : 'No encontrado',
-        faceplate: faceplateEl ? `Sí (${faceplateEl.value})` : 'No encontrado'
-    });
-    
-    // También imprimir el HTML del formulario para debug
-    const formElement = document.getElementById('form-nodos');
-    if (formElement) {
-        console.log('📋 Formulario encontrado, elementos con numero-parte:', 
-            Array.from(formElement.querySelectorAll('[id*="numero-parte"]')).map(el => ({
-                id: el.id,
-                value: el.value,
-                type: el.type
-            }))
-        );
-    } else {
-        console.log('❌ Formulario form-nodos no encontrado');
-    }
-    
-    const numerosParte = {
-        cable: cableEl?.value?.trim() || '',
-        jack: jackEl?.value?.trim() || '',
-        patchcord: patchcordEl?.value?.trim() || '', 
-        faceplate: faceplateEl?.value?.trim() || ''
+    const numerosParte = datos.numerosParte || {
+        cable: '',
+        jack: '',
+        patchcord: '',
+        faceplate: ''
     };
     
     // Verificar si al menos uno tiene valor
     const tieneValores = Object.values(numerosParte).some(val => val);
     console.log('🔍 ¿Tiene algún número de parte?', tieneValores);
-    console.log('🔍 Números de parte extraídos:', numerosParte);
+    console.log('🔍 Números de parte a procesar:', numerosParte);
     
     // Obtener información completa de productos del catálogo
     obtenerDatosProductosCatalogo(numerosParte).then(productosCompletos => {
