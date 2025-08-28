@@ -728,7 +728,9 @@ function iniciarVolumetria(tipo, titulo) {
     if (tipo === 'nodos') {
         mostrarFormularioNodos();
     } else if (tipo === 'general') {
-        mostrarFormularioGeneral();
+        // Ir directamente a la tabla Excel-like sin formulario
+        console.log('🚀 Creando volumetría general directamente en tabla Excel-like');
+        mostrarVolumetriaGeneralDirecta();
     } else {
         // Para otros tipos, mostrar mensaje de desarrollo
         if (typeof Swal !== 'undefined') {
@@ -2250,6 +2252,560 @@ function nuevaVolumetria() {
     
     // Recargar la página para mostrar la selección de tipos
     window.location.reload();
+}
+
+// Función para mostrar volumetría general directamente en tabla Excel-like
+function mostrarVolumetriaGeneralDirecta() {
+    console.log('📊 Mostrando volumetría general directa');
+    
+    // Datos básicos para volumetría general
+    const datosGenerales = {
+        nombreVolumetria: 'Volumetría General - Sin Título',
+        clienteId: '',
+        usuarioFinal: '',
+        oportunidadId: '',
+        categoria: 'General',
+        color: 'Personalizado',
+        distancia: 0,
+        cantidadNodos: 0,
+        tipo: 'general'
+    };
+    
+    // Guardar el estado actual
+    guardarEstadoVolumetria(datosGenerales);
+    
+    // Crear tabla Excel-like directamente
+    mostrarTablaVolumetriaGeneral(datosGenerales);
+}
+
+// Función específica para mostrar tabla de volumetría general
+function mostrarTablaVolumetriaGeneral(datos) {
+    console.log('🎯 Generando tabla Excel-like para volumetría general');
+    
+    const tablaHTML = `
+        <div id="tabla-volumetria-general" class="min-h-screen apple-bg">
+            <div class="apple-bg min-h-screen overflow-y-auto">
+                <div class="apple-glass-card p-6 mx-4 animate-fade-in">
+                    <!-- Header Principal -->
+                    <div class="flex items-center justify-between mb-8">
+                        <div class="flex items-center space-x-4">
+                            <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-3 rounded-xl shadow-lg">
+                                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00-2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 class="text-3xl font-bold apple-text-primary">
+                                    Volumetría General
+                                </h1>
+                                <p class="apple-text-secondary mt-1">
+                                    Análisis volumétrico personalizado y flexible
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex space-x-3">
+                            <button onclick="exportarPDF()" class="apple-btn-primary font-medium py-2 px-6 transition duration-200 shadow-lg">
+                                Guardar PDF
+                            </button>
+                            <button onclick="nuevaVolumetria()" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200 shadow-lg">
+                                Nueva Volumetría
+                            </button>
+                            <button onclick="cerrarTablaVolumetria()" class="apple-btn-secondary font-medium py-2 px-6 transition duration-200">
+                                ← Regresar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Información del Proyecto -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-l-4 border-purple-500">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-purple-700 dark:text-purple-300">Cliente</label>
+                            <input type="text" id="cliente-general" placeholder="Nombre del cliente" class="w-full px-3 py-2 border border-purple-200 dark:border-purple-700 rounded-lg bg-white dark:bg-purple-900/30 text-gray-900 dark:text-white" onchange="actualizarDatosProyecto()">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-purple-700 dark:text-purple-300">Usuario Final</label>
+                            <input type="text" id="usuario-final-general" placeholder="Usuario final del proyecto" class="w-full px-3 py-2 border border-purple-200 dark:border-purple-700 rounded-lg bg-white dark:bg-purple-900/30 text-gray-900 dark:text-white" onchange="actualizarDatosProyecto()">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-purple-700 dark:text-purple-300">Proyecto</label>
+                            <input type="text" id="nombre-proyecto-general" placeholder="Nombre del proyecto" class="w-full px-3 py-2 border border-purple-200 dark:border-purple-700 rounded-lg bg-white dark:bg-purple-900/30 text-gray-900 dark:text-white" onchange="actualizarDatosProyecto()">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-purple-700 dark:text-purple-300">Fecha</label>
+                            <input type="date" id="fecha-proyecto-general" class="w-full px-3 py-2 border border-purple-200 dark:border-purple-700 rounded-lg bg-white dark:bg-purple-900/30 text-gray-900 dark:text-white" onchange="actualizarDatosProyecto()">
+                        </div>
+                    </div>
+                    
+                    <!-- Tabla Excel-like Principal -->
+                    <div class="excel-container mb-6">
+                        <!-- Toolbar -->
+                        <div class="excel-toolbar flex justify-between items-center">
+                            <div class="flex space-x-3">
+                                <button onclick="agregarFilaExcelGeneral()" class="excel-btn-primary">
+                                    ➕ Agregar Producto
+                                </button>
+                                <button onclick="copiarTablaCompleta()" class="excel-btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);">
+                                    📋 Copiar Todo
+                                </button>
+                                <button onclick="exportarCSVGeneral()" class="excel-btn-primary" style="background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);">
+                                    📊 Exportar CSV
+                                </button>
+                                <button onclick="importarDesdeExcel()" class="excel-btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);">
+                                    📥 Importar Excel
+                                </button>
+                            </div>
+                            <div class="text-xs text-gray-300 font-mono flex items-center space-x-4">
+                                <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">Tab</kbd> → siguiente</span>
+                                <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">Enter</kbd> ↓ abajo</span>
+                                <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">🗑️</kbd> sin confirmación</span>
+                            </div>
+                        </div>
+
+                        <!-- Tabla Excel -->
+                        <div class="excel-table-wrapper">
+                            <table id="excel-table-general" class="excel-table w-full">
+                                <thead style="position: sticky; top: 0; z-index: 10;">
+                                    <tr class="excel-header">
+                                        <th colspan="6" class="excel-th-group excel-client-header">INFORMACIÓN DEL PRODUCTO</th>
+                                        <th colspan="5" class="excel-th-group excel-cost-header">COSTOS Y MÁRGENES</th>
+                                        <th class="excel-th-group">ACCIONES</th>
+                                    </tr>
+                                    <tr class="excel-subheader">
+                                        <th class="excel-th">No. Parte</th>
+                                        <th class="excel-th">Cantidad</th>
+                                        <th class="excel-th">Descripción</th>
+                                        <th class="excel-th">Marca</th>
+                                        <th class="excel-th">Precio Lista</th>
+                                        <th class="excel-th">Desc. Cliente %</th>
+                                        <th class="excel-th">Precio Unit.</th>
+                                        <th class="excel-th">Total Cliente</th>
+                                        <th class="excel-th">Desc. Prov. %</th>
+                                        <th class="excel-th">Costo Unit.</th>
+                                        <th class="excel-th">Total Costo</th>
+                                        <th class="excel-th">🗑️</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="excel-tbody-general" class="excel-tbody">
+                                    ${generarFilasVaciasGeneral()}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Resumen de Totales -->
+                    <div id="resumen-totales-general" class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                        <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-700">
+                            <h4 class="font-semibold text-green-700 dark:text-green-300 mb-2">Total Cliente</h4>
+                            <p class="text-2xl font-bold text-green-600 dark:text-green-400" id="total-cliente-general">$0.00</p>
+                        </div>
+                        <div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-700">
+                            <h4 class="font-semibold text-red-700 dark:text-red-300 mb-2">Total Costo</h4>
+                            <p class="text-2xl font-bold text-red-600 dark:text-red-400" id="total-costo-general">$0.00</p>
+                        </div>
+                        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+                            <h4 class="font-semibold text-blue-700 dark:text-blue-300 mb-2">Ganancia</h4>
+                            <p class="text-2xl font-bold text-blue-600 dark:text-blue-400" id="ganancia-general">$0.00</p>
+                            <p class="text-sm text-blue-500 dark:text-blue-400" id="margen-general">0% margen</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Reemplazar el contenido
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.innerHTML = tablaHTML;
+        
+        // Configurar fecha actual
+        const fechaInput = document.getElementById('fecha-proyecto-general');
+        if (fechaInput) {
+            fechaInput.value = new Date().toISOString().split('T')[0];
+        }
+        
+        console.log('✅ Tabla de volumetría general creada exitosamente');
+    }
+}
+
+// Función para generar filas vacías iniciales en volumetría general
+function generarFilasVaciasGeneral() {
+    console.log('📋 Generando filas vacías para volumetría general');
+    
+    let filas = '';
+    // Generar 5 filas vacías iniciales
+    for (let i = 0; i < 5; i++) {
+        filas += `
+            <tr class="excel-row" data-row="${i}">
+                <td class="excel-cell excel-cell-text" contenteditable="true" data-field="noParte" data-row="${i}" placeholder="Número de parte">${''}</td>
+                <td class="excel-cell excel-cell-number" contenteditable="true" data-field="cantidad" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})" placeholder="1">1</td>
+                <td class="excel-cell excel-cell-description" contenteditable="true" data-field="descripcion" data-row="${i}" placeholder="Descripción del producto">${''}</td>
+                <td class="excel-cell excel-cell-text" contenteditable="true" data-field="marca" data-row="${i}" placeholder="Marca">${''}</td>
+                <td class="excel-cell excel-cell-currency" contenteditable="true" data-field="precioLista" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})" placeholder="$0.00">$0.00</td>
+                <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoCliente" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})" placeholder="0%">0%</td>
+                <td class="excel-cell excel-cell-currency excel-calculated">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-client">$0.00</td>
+                <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoProveedor" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})" placeholder="0%">0%</td>
+                <td class="excel-cell excel-cell-currency excel-calculated">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost">$0.00</td>
+                <td class="excel-cell excel-cell-action">
+                    <button onclick="eliminarFilaExcelGeneral(${i})" class="excel-delete-btn" title="Eliminar fila">🗑️</button>
+                </td>
+            </tr>
+        `;
+    }
+    
+    return filas;
+}
+
+// Función para recalcular una fila específica en volumetría general
+function recalcularFilaExcelGeneral(rowIndex) {
+    console.log(`🧮 Recalculando fila general ${rowIndex}`);
+    
+    try {
+        const row = document.querySelector(`#excel-table-general [data-row="${rowIndex}"]`);
+        if (!row) return;
+        
+        const cantidad = parseFloat(row.querySelector('[data-field="cantidad"]').textContent) || 0;
+        const precioLista = parseFloat(row.querySelector('[data-field="precioLista"]').textContent.replace(/[$,]/g, '')) || 0;
+        const descuentoCliente = parseFloat(row.querySelector('[data-field="descuentoCliente"]').textContent.replace('%', '')) || 0;
+        const descuentoProveedor = parseFloat(row.querySelector('[data-field="descuentoProveedor"]').textContent.replace('%', '')) || 0;
+        
+        // Cálculos
+        const precioUnitario = precioLista * (1 - descuentoCliente / 100);
+        const totalCliente = precioUnitario * cantidad;
+        const costoUnitario = precioLista * (1 - descuentoProveedor / 100);
+        const totalCosto = costoUnitario * cantidad;
+        
+        // Actualizar celdas calculadas
+        const cells = row.querySelectorAll('.excel-calculated');
+        if (cells[0]) cells[0].textContent = formatearMoneda(precioUnitario); // Precio unitario
+        if (cells[1]) cells[1].textContent = formatearMoneda(totalCliente); // Total cliente
+        if (cells[2]) cells[2].textContent = formatearMoneda(costoUnitario); // Costo unitario
+        if (cells[3]) cells[3].textContent = formatearMoneda(totalCosto); // Total costo
+        
+        // Recalcular totales generales
+        recalcularTotalesGeneral();
+        
+    } catch (error) {
+        console.error('❌ Error recalculando fila general:', error);
+    }
+}
+
+// Función para recalcular totales generales
+function recalcularTotalesGeneral() {
+    console.log('📊 Recalculando totales generales');
+    
+    try {
+        const table = document.getElementById('excel-table-general');
+        if (!table) return;
+        
+        let totalCliente = 0;
+        let totalCosto = 0;
+        
+        const rows = table.querySelectorAll('.excel-row');
+        rows.forEach(row => {
+            const totalClienteCell = row.querySelector('.excel-total-client');
+            const totalCostoCell = row.querySelector('.excel-total-cost');
+            
+            if (totalClienteCell) {
+                const valor = parseFloat(totalClienteCell.textContent.replace(/[$,]/g, '')) || 0;
+                totalCliente += valor;
+            }
+            
+            if (totalCostoCell) {
+                const valor = parseFloat(totalCostoCell.textContent.replace(/[$,]/g, '')) || 0;
+                totalCosto += valor;
+            }
+        });
+        
+        const ganancia = totalCliente - totalCosto;
+        const margen = totalCliente > 0 ? (ganancia / totalCliente) * 100 : 0;
+        
+        // Actualizar elementos del resumen
+        const totalClienteEl = document.getElementById('total-cliente-general');
+        const totalCostoEl = document.getElementById('total-costo-general');
+        const gananciaEl = document.getElementById('ganancia-general');
+        const margenEl = document.getElementById('margen-general');
+        
+        if (totalClienteEl) totalClienteEl.textContent = formatearMoneda(totalCliente);
+        if (totalCostoEl) totalCostoEl.textContent = formatearMoneda(totalCosto);
+        if (gananciaEl) gananciaEl.textContent = formatearMoneda(ganancia);
+        if (margenEl) margenEl.textContent = `${margen.toFixed(1)}% margen`;
+        
+        console.log('✅ Totales actualizados:', { totalCliente, totalCosto, ganancia, margen });
+        
+    } catch (error) {
+        console.error('❌ Error recalculando totales generales:', error);
+    }
+}
+
+// Función para agregar nueva fila en volumetría general
+function agregarFilaExcelGeneral() {
+    console.log('➕ Agregando nueva fila en volumetría general');
+    
+    const tbody = document.getElementById('excel-tbody-general');
+    if (!tbody) return;
+    
+    const rowCount = tbody.querySelectorAll('.excel-row').length;
+    const newIndex = rowCount;
+    
+    const newRow = document.createElement('tr');
+    newRow.className = 'excel-row';
+    newRow.setAttribute('data-row', newIndex);
+    
+    newRow.innerHTML = `
+        <td class="excel-cell excel-cell-text" contenteditable="true" data-field="noParte" data-row="${newIndex}" placeholder="Número de parte"></td>
+        <td class="excel-cell excel-cell-number" contenteditable="true" data-field="cantidad" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})" placeholder="1">1</td>
+        <td class="excel-cell excel-cell-description" contenteditable="true" data-field="descripcion" data-row="${newIndex}" placeholder="Descripción del producto"></td>
+        <td class="excel-cell excel-cell-text" contenteditable="true" data-field="marca" data-row="${newIndex}" placeholder="Marca"></td>
+        <td class="excel-cell excel-cell-currency" contenteditable="true" data-field="precioLista" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})" placeholder="$0.00">$0.00</td>
+        <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoCliente" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})" placeholder="0%">0%</td>
+        <td class="excel-cell excel-cell-currency excel-calculated">$0.00</td>
+        <td class="excel-cell excel-cell-currency excel-calculated excel-total-client">$0.00</td>
+        <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoProveedor" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})" placeholder="0%">0%</td>
+        <td class="excel-cell excel-cell-currency excel-calculated">$0.00</td>
+        <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost">$0.00</td>
+        <td class="excel-cell excel-cell-action">
+            <button onclick="eliminarFilaExcelGeneral(${newIndex})" class="excel-delete-btn" title="Eliminar fila">🗑️</button>
+        </td>
+    `;
+    
+    tbody.appendChild(newRow);
+    
+    // Focus en la primera celda de la nueva fila
+    const firstCell = newRow.querySelector('[contenteditable="true"]');
+    if (firstCell) {
+        firstCell.focus();
+    }
+    
+    console.log('✅ Nueva fila agregada en volumetría general');
+}
+
+// Función para eliminar fila en volumetría general
+function eliminarFilaExcelGeneral(rowIndex) {
+    const row = document.querySelector(`#excel-table-general [data-row="${rowIndex}"]`);
+    if (row) {
+        // Animación suave antes de eliminar
+        row.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        row.style.opacity = '0';
+        row.style.transform = 'translateX(-100%)';
+        
+        setTimeout(() => {
+            row.remove();
+            actualizarIndicesFilasGeneral();
+            recalcularTotalesGeneral();
+            console.log(`🗑️ Fila general ${rowIndex} eliminada con animación`);
+        }, 300);
+    }
+}
+
+// Función para actualizar índices después de eliminar filas
+function actualizarIndicesFilasGeneral() {
+    const rows = document.querySelectorAll('#excel-table-general .excel-row');
+    rows.forEach((row, index) => {
+        row.setAttribute('data-row', index);
+        
+        // Actualizar data-row en todas las celdas
+        const cells = row.querySelectorAll('[data-row]');
+        cells.forEach(cell => cell.setAttribute('data-row', index));
+        
+        // Actualizar onclick en botón eliminar
+        const deleteBtn = row.querySelector('.excel-delete-btn');
+        if (deleteBtn) {
+            deleteBtn.setAttribute('onclick', `eliminarFilaExcelGeneral(${index})`);
+        }
+    });
+}
+
+// Función para actualizar datos del proyecto
+function actualizarDatosProyecto() {
+    console.log('📝 Actualizando datos del proyecto general');
+    
+    const cliente = document.getElementById('cliente-general')?.value || '';
+    const usuarioFinal = document.getElementById('usuario-final-general')?.value || '';
+    const proyecto = document.getElementById('nombre-proyecto-general')?.value || '';
+    const fecha = document.getElementById('fecha-proyecto-general')?.value || '';
+    
+    // Actualizar datos globales para PDF
+    if (window.currentVolumetriaData) {
+        window.currentVolumetriaData.cliente = cliente;
+        window.currentVolumetriaData.usuarioFinal = usuarioFinal;
+        window.currentVolumetriaData.nombreProyecto = proyecto;
+        window.currentVolumetriaData.fecha = fecha;
+    }
+    
+    console.log('✅ Datos del proyecto actualizados');
+}
+
+// Función para exportar CSV específica para volumetría general
+function exportarCSVGeneral() {
+    console.log('📊 Exportando CSV de volumetría general');
+    
+    const table = document.getElementById('excel-table-general');
+    if (!table) return;
+    
+    let csvContent = 'data:text/csv;charset=utf-8,';
+    
+    // Headers
+    const headers = [
+        'No. Parte', 'Cantidad', 'Descripción', 'Marca', 
+        'Precio Lista', 'Desc. Cliente %', 'Precio Unit.', 'Total Cliente',
+        'Desc. Prov. %', 'Costo Unit.', 'Total Costo'
+    ];
+    csvContent += headers.join(',') + '\n';
+    
+    // Data rows
+    const rows = table.querySelectorAll('.excel-row');
+    rows.forEach(row => {
+        const rowData = [];
+        const cells = row.querySelectorAll('.excel-cell:not(.excel-cell-action)');
+        
+        cells.forEach(cell => {
+            let value = cell.textContent.trim();
+            // Escapar comillas y agregar comillas si contiene comas
+            if (value.includes(',') || value.includes('"')) {
+                value = '"' + value.replace(/"/g, '""') + '"';
+            }
+            rowData.push(value);
+        });
+        
+        // Solo agregar filas que tengan al menos un campo lleno
+        if (rowData.some(data => data && data !== '$0.00' && data !== '0%')) {
+            csvContent += rowData.join(',') + '\n';
+        }
+    });
+    
+    // Crear y descargar archivo
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `volumetria_general_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    console.log('✅ CSV exportado exitosamente');
+}
+
+// Función para importar datos desde Excel/CSV
+function importarDesdeExcel() {
+    console.log('📥 Iniciando importación desde Excel/CSV');
+    
+    // Crear input de archivo temporal
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv,.xlsx,.xls';
+    
+    input.onchange = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        if (file.name.endsWith('.csv')) {
+            // Leer archivo CSV
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csvData = e.target.result;
+                procesarCSVImport(csvData);
+            };
+            reader.readAsText(file);
+        } else {
+            // Para archivos Excel, mostrar mensaje
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Función en Desarrollo',
+                    text: 'La importación desde Excel estará disponible pronto. Por ahora, puedes usar archivos CSV.',
+                    icon: 'info',
+                    confirmButtonText: 'Entendido'
+                });
+            } else {
+                alert('Por ahora solo se admiten archivos CSV. La importación desde Excel estará disponible pronto.');
+            }
+        }
+    };
+    
+    input.click();
+}
+
+// Función para procesar datos CSV importados
+function procesarCSVImport(csvData) {
+    console.log('🔄 Procesando datos CSV importados');
+    
+    try {
+        const lines = csvData.split('\n');
+        const headers = lines[0].split(',');
+        
+        // Limpiar tabla actual
+        const tbody = document.getElementById('excel-tbody-general');
+        if (!tbody) return;
+        
+        tbody.innerHTML = '';
+        
+        // Procesar cada línea de datos
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            
+            const values = line.split(',');
+            if (values.length < 4) continue; // Mínimo campos requeridos
+            
+            // Crear nueva fila
+            const newRow = document.createElement('tr');
+            newRow.className = 'excel-row';
+            newRow.setAttribute('data-row', i - 1);
+            
+            const rowIndex = i - 1;
+            
+            newRow.innerHTML = `
+                <td class="excel-cell excel-cell-text" contenteditable="true" data-field="noParte" data-row="${rowIndex}">${values[0] || ''}</td>
+                <td class="excel-cell excel-cell-number" contenteditable="true" data-field="cantidad" data-row="${rowIndex}" onblur="recalcularFilaExcelGeneral(${rowIndex})">${values[1] || '1'}</td>
+                <td class="excel-cell excel-cell-description" contenteditable="true" data-field="descripcion" data-row="${rowIndex}">${values[2] || ''}</td>
+                <td class="excel-cell excel-cell-text" contenteditable="true" data-field="marca" data-row="${rowIndex}">${values[3] || ''}</td>
+                <td class="excel-cell excel-cell-currency" contenteditable="true" data-field="precioLista" data-row="${rowIndex}" onblur="recalcularFilaExcelGeneral(${rowIndex})">${values[4] || '$0.00'}</td>
+                <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoCliente" data-row="${rowIndex}" onblur="recalcularFilaExcelGeneral(${rowIndex})">${values[5] || '0%'}</td>
+                <td class="excel-cell excel-cell-currency excel-calculated">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-client">$0.00</td>
+                <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoProveedor" data-row="${rowIndex}" onblur="recalcularFilaExcelGeneral(${rowIndex})">${values[8] || '0%'}</td>
+                <td class="excel-cell excel-cell-currency excel-calculated">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost">$0.00</td>
+                <td class="excel-cell excel-cell-action">
+                    <button onclick="eliminarFilaExcelGeneral(${rowIndex})" class="excel-delete-btn" title="Eliminar fila">🗑️</button>
+                </td>
+            `;
+            
+            tbody.appendChild(newRow);
+        }
+        
+        // Recalcular todas las filas
+        setTimeout(() => {
+            const rows = tbody.querySelectorAll('.excel-row');
+            rows.forEach((row, index) => {
+                recalcularFilaExcelGeneral(index);
+            });
+        }, 100);
+        
+        console.log(`✅ CSV importado: ${lines.length - 1} filas procesadas`);
+        
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Importación Exitosa',
+                text: `Se importaron ${lines.length - 1} filas correctamente.`,
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+        
+    } catch (error) {
+        console.error('❌ Error procesando CSV:', error);
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Error de Importación',
+                text: 'Hubo un problema procesando el archivo CSV. Verifica el formato.',
+                icon: 'error'
+            });
+        }
+    }
 }
 
 // Función para mostrar la tabla de volumetría
