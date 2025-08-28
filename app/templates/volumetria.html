@@ -2179,6 +2179,11 @@ function generarVolumetria(datos) {
 
     // Obtener números de parte seleccionados en el formulario
     console.log('🔍 Buscando elementos del formulario...');
+    console.log('🔍 Estado actual del DOM:', {
+        formulario_existe: !!document.getElementById('formulario-nodos'),
+        form_nodos_existe: !!document.getElementById('form-nodos'),
+        total_elementos: document.querySelectorAll('[id*="numero-parte"]').length
+    });
     
     // Verificar que los elementos existan
     const cableEl = document.getElementById('cable-numero-parte');
@@ -2193,13 +2198,30 @@ function generarVolumetria(datos) {
         faceplate: faceplateEl ? `Sí (${faceplateEl.value})` : 'No encontrado'
     });
     
+    // También imprimir el HTML del formulario para debug
+    const formElement = document.getElementById('form-nodos');
+    if (formElement) {
+        console.log('📋 Formulario encontrado, elementos con numero-parte:', 
+            Array.from(formElement.querySelectorAll('[id*="numero-parte"]')).map(el => ({
+                id: el.id,
+                value: el.value,
+                type: el.type
+            }))
+        );
+    } else {
+        console.log('❌ Formulario form-nodos no encontrado');
+    }
+    
     const numerosParte = {
-        cable: cableEl?.value || '',
-        jack: jackEl?.value || '',
-        patchcord: patchcordEl?.value || '', 
-        faceplate: faceplateEl?.value || ''
+        cable: cableEl?.value?.trim() || '',
+        jack: jackEl?.value?.trim() || '',
+        patchcord: patchcordEl?.value?.trim() || '', 
+        faceplate: faceplateEl?.value?.trim() || ''
     };
     
+    // Verificar si al menos uno tiene valor
+    const tieneValores = Object.values(numerosParte).some(val => val);
+    console.log('🔍 ¿Tiene algún número de parte?', tieneValores);
     console.log('🔍 Números de parte extraídos:', numerosParte);
     
     // Obtener información completa de productos del catálogo
@@ -3429,7 +3451,10 @@ function generarFilasTabla(datos) {
 
 // Función específica para generar filas estilo Excel
 function generarFilasExcel(datos) {
-    console.log('📊 Generando filas Excel con datos:', datos.productosCompletos);
+    console.log('📊 DEBUGGING: Generando filas Excel - datos completos:', datos);
+    console.log('📊 DEBUGGING: ¿Existen productosCompletos?', !!datos.productosCompletos);
+    console.log('📊 DEBUGGING: productosCompletos detalles:', datos.productosCompletos);
+    
     const productos = [];
 
     if (!datos.productosCompletos) {
@@ -3628,7 +3653,8 @@ function generarHTMLFilasExcel(productos) {
 
 // Función de fallback para filas Excel con datos por defecto
 function generarFilasExcelDefecto(datos) {
-    console.log('🔄 Generando tabla Excel con datos por defecto hardcodeados');
+    console.log('🔄 DEBUGGING: Generando tabla Excel con datos por defecto hardcodeados');
+    console.log('🔄 DEBUGGING: Datos recibidos en defecto:', datos);
     
     const productos = [];
 
