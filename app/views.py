@@ -6121,3 +6121,64 @@ def sugerencias_productos_api(request):
             'error': 'Error interno del servidor',
             'sugerencias': []
         }, status=500)
+
+@login_required
+def buscar_producto_catalogo_api(request):
+    """
+    API para buscar un producto específico en el catálogo de cableado
+    por número de parte y devolver todos sus datos
+    """
+    numero_parte = request.GET.get('numero_parte', '').strip()
+    
+    if not numero_parte:
+        return JsonResponse({
+            'success': False,
+            'error': 'Número de parte requerido'
+        }, status=400)
+    
+    try:
+        # Buscar producto por número de parte (case insensitive)
+        producto = CatalogoCableado.objects.filter(
+            numero_parte__iexact=numero_parte,
+            activo=True
+        ).first()
+        
+        if producto:
+            data = {
+                'success': True,
+                'found': True,
+                'producto': {
+                    'numero_parte': producto.numero_parte,
+                    'descripcion': producto.descripcion,
+                    'precio_unitario': float(producto.precio_unitario),
+                    'precio_proveedor': float(producto.precio_proveedor),
+                    'marca': producto.marca,
+                    'categoria': producto.categoria,
+                    'color': producto.color if hasattr(producto, 'color') else '',
+                    'tipo_producto': producto.tipo_producto,
+                    # Calcular margen automáticamente
+                    'margen_porcentaje': float(
+                        ((producto.precio_unitario - producto.precio_proveedor) / producto.precio_unitario * 100) 
+                        if producto.precio_unitario > 0 else 0
+                    )
+                }
+            }
+            print(f"✅ Producto encontrado: {producto.numero_parte} - ${producto.precio_unitario}")
+        else:
+            data = {
+                'success': True,
+                'found': False,
+                'message': f'Producto {numero_parte} no encontrado en catálogo'
+            }
+            print(f"❌ Producto no encontrado: {numero_parte}")
+        
+        return JsonResponse(data)
+        
+    except Exception as e:
+        print(f"ERROR buscando producto {numero_parte}: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'success': False,
+            'error': 'Error interno del servidor'
+        }, status=500)

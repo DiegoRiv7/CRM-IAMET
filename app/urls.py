@@ -148,6 +148,8 @@ urlpatterns = [
     
     # APIs para catálogo de productos de volumetría
     path('api/buscar-producto-catalogo/', views.buscar_producto_catalogo, name='buscar_producto_catalogo'),
+    # API para auto-completar productos en tabla de volumetría
+    path('api/buscar-producto-por-numero-parte/', views.buscar_producto_catalogo_api, name='buscar_producto_catalogo_api'),
     path('api/agregar-producto-catalogo/', views.agregar_producto_catalogo, name='agregar_producto_catalogo'),
     path('api/editar-producto-catalogo/<int:producto_id>/', views.editar_producto_catalogo, name='editar_producto_catalogo'),
     path('api/eliminar-producto-catalogo/<int:producto_id>/', views.eliminar_producto_catalogo, name='eliminar_producto_catalogo'),

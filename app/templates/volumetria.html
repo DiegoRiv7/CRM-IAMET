@@ -2478,6 +2478,11 @@ function mostrarTablaVolumetriaGeneral(datos) {
         // Auto-poblar datos desde la sesión
         cargarDatosOportunidadGeneral();
         
+        // Agregar listeners para auto-completado de productos
+        setTimeout(() => {
+            agregarListenersAutoCompletado();
+        }, 500);
+        
         console.log('✅ Tabla de volumetría general creada exitosamente');
     }
 }
@@ -2632,6 +2637,11 @@ function agregarFilaExcelGeneral() {
     if (firstCell) {
         firstCell.focus();
     }
+    
+    // Agregar listeners para auto-completado en la nueva fila
+    setTimeout(() => {
+        agregarListenersAutoCompletado();
+    }, 100);
     
     console.log('✅ Nueva fila agregada en volumetría general');
 }
@@ -3206,6 +3216,11 @@ function mostrarTablaVolumetria(datos) {
         monedaActual = 'USD';
     }
     recalcularTotales(); // Recalcular una vez al inicio
+    
+    // Agregar listeners para auto-completado de productos
+    setTimeout(() => {
+        agregarListenersAutoCompletado();
+    }, 500);
 }
 
 // Función para resolver los nombres de cliente y oportunidad
@@ -5801,8 +5816,22 @@ function recalcularFilaExcel(rowIndex) {
     
     const row = document.querySelector(`[data-row="${rowIndex}"]`);
     if (!row) return;
+
+    // Verificar si se cambió el número de parte para auto-completar
+    const numeroParteCell = row.querySelector('[data-field="noParte"]');
+    if (numeroParteCell && numeroParteCell.textContent.trim()) {
+        const numeroParte = numeroParteCell.textContent.trim();
+        
+        // Solo buscar si no se ha marcado como ya procesado
+        if (!numeroParteCell.hasAttribute('data-processed')) {
+            console.log(`🔍 Buscando producto: ${numeroParte}`);
+            buscarYCompletarProducto(rowIndex, numeroParte);
+            numeroParteCell.setAttribute('data-processed', 'true');
+            return; // Salir aquí, la función buscarYCompletarProducto se encargará del recálculo
+        }
+    }
     
-    // Obtener valores de la fila
+    // Obtener valores de la fila para cálculos normales
     const cantidad = parseFloat(row.querySelector('[data-field="cantidad"]').textContent) || 0;
     const precioLista = parseCurrency(row.querySelector('[data-field="precioLista"]').textContent) || 0;
     const descuentoCliente = parseFloat(row.querySelector('[data-field="descuentoCliente"]').textContent.replace('%', '')) || 0;
@@ -5825,6 +5854,115 @@ function recalcularFilaExcel(rowIndex) {
     
     // Recalcular totales
     recalcularTotalesExcel();
+}
+
+// Función para buscar producto en catálogo y completar datos automáticamente
+function buscarYCompletarProducto(rowIndex, numeroParte) {
+    console.log(`🔍 Buscando producto en catálogo: ${numeroParte}`);
+    
+    const row = document.querySelector(`[data-row="${rowIndex}"]`);
+    if (!row) return;
+    
+    // Mostrar indicador de carga en la fila
+    const descripcionCell = row.querySelector('[data-field="descripcion"]');
+    if (descripcionCell) {
+        descripcionCell.textContent = '🔍 Buscando...';
+        descripcionCell.style.fontStyle = 'italic';
+        descripcionCell.style.opacity = '0.7';
+    }
+    
+    // Hacer llamada AJAX al endpoint
+    fetch(`/app/api/buscar-producto-por-numero-parte/?numero_parte=${encodeURIComponent(numeroParte)}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.found) {
+            const producto = data.producto;
+            console.log('✅ Producto encontrado:', producto);
+            
+            // Completar campos automáticamente
+            const descripcionCell = row.querySelector('[data-field="descripcion"]');
+            const precioListaCell = row.querySelector('[data-field="precioLista"]');
+            const descuentoProveedorCell = row.querySelector('[data-field="descuentoProveedor"]');
+            
+            if (descripcionCell) {
+                descripcionCell.textContent = producto.descripcion;
+                descripcionCell.style.fontStyle = 'normal';
+                descripcionCell.style.opacity = '1';
+            }
+            
+            if (precioListaCell) {
+                precioListaCell.textContent = formatearMoneda(producto.precio_unitario);
+            }
+            
+            // Calcular descuento del proveedor basado en precios
+            if (descuentoProveedorCell && producto.precio_unitario > 0) {
+                const descuentoProveedor = ((producto.precio_unitario - producto.precio_proveedor) / producto.precio_unitario * 100);
+                descuentoProveedorCell.textContent = descuentoProveedor.toFixed(2) + '%';
+            }
+            
+            console.log(`✅ Datos completados automáticamente para ${numeroParte}`);
+            
+            // Recalcular la fila después de completar los datos
+            setTimeout(() => {
+                recalcularFilaExcel(rowIndex);
+            }, 100);
+            
+        } else {
+            console.log(`❌ Producto no encontrado: ${numeroParte}`);
+            
+            // Resetear indicador de carga
+            if (descripcionCell) {
+                descripcionCell.textContent = 'Producto no encontrado en catálogo';
+                descripcionCell.style.fontStyle = 'italic';
+                descripcionCell.style.opacity = '0.6';
+                descripcionCell.style.color = '#ff6b6b';
+            }
+        }
+    })
+    .catch(error => {
+        console.error('❌ Error buscando producto:', error);
+        
+        // Mostrar error en la descripción
+        if (descripcionCell) {
+            descripcionCell.textContent = 'Error buscando producto';
+            descripcionCell.style.fontStyle = 'italic';
+            descripcionCell.style.opacity = '0.6';
+            descripcionCell.style.color = '#ff6b6b';
+        }
+    });
+}
+
+// Función para agregar listeners de auto-completado a celdas de número de parte
+function agregarListenersAutoCompletado() {
+    console.log('🔧 Agregando listeners para auto-completado');
+    
+    // Buscar todas las celdas de número de parte
+    const numeroParteCells = document.querySelectorAll('[data-field="noParte"]');
+    
+    numeroParteCells.forEach(cell => {
+        // Remover listeners existentes si los hay
+        cell.removeEventListener('input', resetearProcessedFlag);
+        cell.removeEventListener('focus', resetearProcessedFlag);
+        
+        // Agregar listeners para detectar cambios
+        cell.addEventListener('input', resetearProcessedFlag);
+        cell.addEventListener('focus', resetearProcessedFlag);
+    });
+}
+
+// Función para resetear el flag de procesado cuando el usuario edita el número de parte
+function resetearProcessedFlag(event) {
+    const cell = event.target;
+    if (cell.hasAttribute('data-processed')) {
+        cell.removeAttribute('data-processed');
+        console.log('🔄 Flag de procesado reseteado para permitir nueva búsqueda');
+    }
 }
 
 // Función para recalcular totales de la tabla Excel
@@ -5888,6 +6026,11 @@ function agregarFilaExcel() {
     
     // Actualizar índices de todas las filas
     actualizarIndicesFilasExcel();
+    
+    // Agregar listeners para auto-completado en la nueva fila
+    setTimeout(() => {
+        agregarListenersAutoCompletado();
+    }, 100);
     
     console.log('➕ Nueva fila Excel agregada');
 }
