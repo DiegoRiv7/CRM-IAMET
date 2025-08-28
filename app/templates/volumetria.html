@@ -218,6 +218,242 @@
             transform: translateY(0) scale(1);
         }
     }
+
+    /* ============================= */
+    /* ESTILOS TABLA EXCEL           */
+    /* ============================= */
+    .excel-container {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .excel-btn-primary {
+        background: #217346;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        font-size: 14px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        transition: background-color 0.2s;
+    }
+
+    .excel-btn-primary:hover {
+        background: #1e6440;
+    }
+
+    .excel-btn-secondary {
+        background: #f3f3f3;
+        color: #333;
+        padding: 8px 16px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 14px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        transition: background-color 0.2s;
+    }
+
+    .excel-btn-secondary:hover {
+        background: #e9e9e9;
+    }
+
+    .excel-table-wrapper {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        background: white;
+    }
+
+    .excel-table {
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 13px;
+        line-height: 1.3;
+    }
+
+    .excel-th-group {
+        background: #217346;
+        color: white;
+        padding: 12px 8px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 14px;
+        border: 1px solid #1e6440;
+    }
+
+    .excel-client-header {
+        background: #2e86ab;
+        border-color: #25749c;
+    }
+
+    .excel-cost-header {
+        background: #f18f01;
+        border-color: #e67e00;
+    }
+
+    .excel-th {
+        background: #f8f9fa;
+        color: #495057;
+        padding: 10px 8px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 12px;
+        border: 1px solid #dee2e6;
+        white-space: nowrap;
+    }
+
+    .excel-description {
+        min-width: 250px;
+        max-width: 300px;
+    }
+
+    .excel-cell {
+        padding: 8px;
+        border: 1px solid #e9ecef;
+        background: white;
+        position: relative;
+        transition: all 0.15s ease;
+        vertical-align: top;
+    }
+
+    .excel-cell:hover {
+        background: #f8f9ff;
+        border-color: #0078d4;
+        box-shadow: inset 0 0 0 1px #0078d4;
+    }
+
+    .excel-cell:focus {
+        outline: none;
+        background: white;
+        border-color: #0078d4;
+        box-shadow: inset 0 0 0 2px #0078d4;
+        z-index: 2;
+    }
+
+    .excel-cell-text {
+        text-align: left;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+    }
+
+    .excel-cell-number {
+        text-align: center;
+        min-width: 60px;
+    }
+
+    .excel-cell-currency {
+        text-align: right;
+        min-width: 80px;
+        font-family: 'Courier New', monospace;
+    }
+
+    .excel-cell-percent {
+        text-align: center;
+        min-width: 60px;
+    }
+
+    .excel-cell-description {
+        min-width: 250px;
+        max-width: 300px;
+        word-wrap: break-word;
+    }
+
+    .excel-calculated {
+        background: #f8f9fa !important;
+        color: #495057;
+        cursor: not-allowed;
+        user-select: none;
+    }
+
+    .excel-calculated:hover {
+        background: #f1f3f4 !important;
+    }
+
+    .excel-total-client {
+        color: #0066cc;
+        font-weight: 600;
+    }
+
+    .excel-total-cost {
+        color: #cc0000;
+        font-weight: 600;
+    }
+
+    .excel-profit {
+        color: #009900;
+        font-weight: 600;
+    }
+
+    .excel-totals-row {
+        background: #e9ecef;
+    }
+
+    .excel-totals-row .excel-cell {
+        background: #e9ecef;
+        font-weight: 700;
+        border-top: 2px solid #495057;
+    }
+
+    .excel-totals-label {
+        text-align: right;
+        font-weight: bold;
+        color: #495057;
+    }
+
+    .excel-delete-btn {
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        padding: 4px 6px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: background-color 0.2s;
+    }
+
+    .excel-delete-btn:hover {
+        background: #c82333;
+    }
+
+    .excel-row:nth-child(even) {
+        background: #f8f9fa;
+    }
+
+    .excel-row:nth-child(even) .excel-cell {
+        background: #f8f9fa;
+    }
+
+    .excel-row:hover {
+        background: #e3f2fd;
+    }
+
+    .excel-row:hover .excel-cell {
+        background: #e3f2fd;
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+        .excel-cell-description {
+            min-width: 200px;
+            max-width: 250px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .excel-table-wrapper {
+            font-size: 11px;
+        }
+        
+        .excel-cell {
+            padding: 6px;
+        }
+        
+        .excel-cell-description {
+            min-width: 150px;
+            max-width: 200px;
+        }
+    }
 </style>
 <div class="min-h-screen apple-bg">
     <div class="main-content">
@@ -1781,14 +2017,29 @@ function generarVolumetria(datos) {
     cerrarAnimacionCarga();
 
     // Obtener números de parte seleccionados en el formulario
+    console.log('🔍 Buscando elementos del formulario...');
+    
+    // Verificar que los elementos existan
+    const cableEl = document.getElementById('cable-numero-parte');
+    const jackEl = document.getElementById('jack-numero-parte');
+    const patchcordEl = document.getElementById('patchcord-numero-parte');
+    const faceplateEl = document.getElementById('faceplate-numero-parte');
+    
+    console.log('📋 Elementos encontrados:', {
+        cable: cableEl ? `Sí (${cableEl.value})` : 'No encontrado',
+        jack: jackEl ? `Sí (${jackEl.value})` : 'No encontrado',
+        patchcord: patchcordEl ? `Sí (${patchcordEl.value})` : 'No encontrado',
+        faceplate: faceplateEl ? `Sí (${faceplateEl.value})` : 'No encontrado'
+    });
+    
     const numerosParte = {
-        cable: document.getElementById('cable-numero-parte')?.value || '',
-        jack: document.getElementById('jack-numero-parte')?.value || '',
-        patchcord: document.getElementById('patchcord-numero-parte')?.value || '', 
-        faceplate: document.getElementById('faceplate-numero-parte')?.value || ''
+        cable: cableEl?.value || '',
+        jack: jackEl?.value || '',
+        patchcord: patchcordEl?.value || '', 
+        faceplate: faceplateEl?.value || ''
     };
     
-    console.log('🔍 Números de parte seleccionados:', numerosParte);
+    console.log('🔍 Números de parte extraídos:', numerosParte);
     
     // Obtener información completa de productos del catálogo
     obtenerDatosProductosCatalogo(numerosParte).then(productosCompletos => {
@@ -2076,40 +2327,59 @@ function mostrarTablaVolumetria(datos) {
                                     margin-bottom: 24px;
                                 }
                             </style>
-                            <table class="minimal-table w-full text-sm">
-                                <thead>
-                                    <tr class="bg-gray-50 dark:bg-gray-700">
-                                        <th colspan="7" class="text-center font-semibold apple-text-accent">
-                                            CLIENTE
-                                        </th>
-                                        <th colspan="4" class="text-center font-semibold apple-text-accent">
-                                            COSTOS
-                                        </th>
-                                        <th class="text-center">
-                                            <button onclick="agregarFila()" class="apple-btn-primary text-xs px-3 py-1">
-                                                + Fila
-                                            </button>
-                                        </th>
-                                    </tr>
-                                    <tr class="bg-gray-100 dark:bg-gray-600">
-                                        <th>Parte</th>
-                                        <th>Cant.</th>
-                                        <th>Descripción</th>
-                                        <th>Lista</th>
-                                        <th>Desc%</th>
-                                        <th>Unit.</th>
-                                        <th>Total</th>
-                                        <th>Desc%</th>
-                                        <th>Costo</th>
-                                        <th>Total</th>
-                                        <th>Ganancia</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabla-items">
-                                    ${generarFilasTabla(datos)}
-                                </tbody>
-                            </table>
+                            <!-- Tabla Excel-like mejorada -->
+                            <div class="excel-container mb-6">
+                                <!-- Toolbar -->
+                                <div class="excel-toolbar flex justify-between items-center mb-4 p-3 bg-gray-50 rounded-lg">
+                                    <div class="flex space-x-2">
+                                        <button onclick="agregarFilaExcel()" class="excel-btn-primary">
+                                            ➕ Agregar Fila
+                                        </button>
+                                        <button onclick="copiarTablaCompleta()" class="excel-btn-secondary">
+                                            📋 Copiar Todo
+                                        </button>
+                                        <button onclick="exportarCSV()" class="excel-btn-secondary">
+                                            📊 Exportar CSV
+                                        </button>
+                                    </div>
+                                    <div class="text-xs text-gray-600 flex items-center space-x-4">
+                                        <span><kbd>Tab</kbd> → siguiente</span>
+                                        <span><kbd>Enter</kbd> ↓ abajo</span>
+                                        <span><kbd>Ctrl+C</kbd> copiar</span>
+                                        <span><kbd>Ctrl+V</kbd> pegar</span>
+                                    </div>
+                                </div>
+
+                                <!-- Tabla Excel -->
+                                <div class="excel-table-wrapper" style="border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden;">
+                                    <table id="excel-table" class="excel-table w-full">
+                                        <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 10;">
+                                            <tr class="excel-header">
+                                                <th colspan="7" class="excel-th-group excel-client-header">INFORMACIÓN DEL CLIENTE</th>
+                                                <th colspan="4" class="excel-th-group excel-cost-header">COSTOS Y MÁRGENES</th>
+                                                <th class="excel-th-group">ACCIONES</th>
+                                            </tr>
+                                            <tr class="excel-subheader">
+                                                <th class="excel-th">Número de Parte</th>
+                                                <th class="excel-th">Cant.</th>
+                                                <th class="excel-th excel-description">Descripción del Producto</th>
+                                                <th class="excel-th">Precio Lista</th>
+                                                <th class="excel-th">Desc.%</th>
+                                                <th class="excel-th">P. Unitario</th>
+                                                <th class="excel-th excel-total">Total Cliente</th>
+                                                <th class="excel-th">Desc.%</th>
+                                                <th class="excel-th">Costo Unit.</th>
+                                                <th class="excel-th excel-total">Total Costo</th>
+                                                <th class="excel-th excel-profit">Ganancia</th>
+                                                <th class="excel-th">🗑️</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="excel-tbody" class="excel-tbody">
+                                            ${generarFilasExcel(datos)}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -2320,6 +2590,206 @@ function generarFilasTabla(datos) {
     
     console.log('🎯 Total productos generados desde catálogo:', productos.length);
     return generarHTMLFilas(productos);
+}
+
+// Función específica para generar filas estilo Excel
+function generarFilasExcel(datos) {
+    console.log('📊 Generando filas Excel con datos:', datos.productosCompletos);
+    const productos = [];
+
+    if (!datos.productosCompletos) {
+        console.log('⚠️ No hay productos del catálogo, usando datos por defecto');
+        return generarFilasExcelDefecto(datos);
+    }
+
+    // Cable
+    const cable = datos.productosCompletos.cable;
+    if (cable && cable.numero_parte) {
+        const descuentoProveedorCable = cable.precio_lista > 0 ? 
+            (1 - (cable.precio_proveedor / cable.precio_lista)) * 100 : 0;
+            
+        productos.push({
+            noParte: cable.numero_parte,
+            cantidad: datos.cantidadCable,
+            descripcion: cable.descripcion,
+            precioLista: cable.precio_lista,
+            descuentoCliente: 0,
+            descuentoProveedor: descuentoProveedorCable,
+            marca: cable.marca,
+            categoria: cable.categoria
+        });
+    }
+
+    // Faceplate
+    const faceplate = datos.productosCompletos.faceplate;
+    if (faceplate && faceplate.numero_parte) {
+        const descuentoProveedorFaceplate = faceplate.precio_lista > 0 ? 
+            (1 - (faceplate.precio_proveedor / faceplate.precio_lista)) * 100 : 0;
+            
+        productos.push({
+            noParte: faceplate.numero_parte,
+            cantidad: datos.cantidadFaceplates,
+            descripcion: faceplate.descripcion,
+            precioLista: faceplate.precio_lista,
+            descuentoCliente: 0,
+            descuentoProveedor: descuentoProveedorFaceplate,
+            marca: faceplate.marca,
+            categoria: faceplate.categoria
+        });
+    }
+
+    // Jack Usuario
+    const jack = datos.productosCompletos.jack;
+    if (jack && jack.numero_parte) {
+        const descuentoProveedorJack = jack.precio_lista > 0 ? 
+            (1 - (jack.precio_proveedor / jack.precio_lista)) * 100 : 0;
+            
+        productos.push({
+            noParte: jack.numero_parte,
+            cantidad: datos.cantidadJacksUsuario,
+            descripcion: jack.descripcion + ' (Usuario)',
+            precioLista: jack.precio_lista,
+            descuentoCliente: 0,
+            descuentoProveedor: descuentoProveedorJack,
+            marca: jack.marca,
+            categoria: jack.categoria
+        });
+        
+        // Jack Patchpanel (mismo producto, diferente aplicación)
+        productos.push({
+            noParte: jack.numero_parte,
+            cantidad: datos.cantidadJacksPatchpanel,
+            descripcion: jack.descripcion + ' (Patchpanel)',
+            precioLista: jack.precio_lista,
+            descuentoCliente: 0,
+            descuentoProveedor: descuentoProveedorJack,
+            marca: jack.marca,
+            categoria: jack.categoria
+        });
+    }
+
+    // Patchcord Usuario
+    const patchcord = datos.productosCompletos.patchcord;
+    if (patchcord && patchcord.numero_parte) {
+        const descuentoProveedorPatchcord = patchcord.precio_lista > 0 ? 
+            (1 - (patchcord.precio_proveedor / patchcord.precio_lista)) * 100 : 0;
+            
+        productos.push({
+            noParte: patchcord.numero_parte,
+            cantidad: datos.cantidadPatchcordsUsuario,
+            descripcion: patchcord.descripcion + ' (Usuario)',
+            precioLista: patchcord.precio_lista,
+            descuentoCliente: 0,
+            descuentoProveedor: descuentoProveedorPatchcord,
+            marca: patchcord.marca,
+            categoria: patchcord.categoria
+        });
+        
+        // Patchcord Patchpanel (mismo producto, diferente aplicación)
+        productos.push({
+            noParte: patchcord.numero_parte,
+            cantidad: datos.cantidadPatchcordsPatchpanel,
+            descripcion: patchcord.descripcion + ' (Patchpanel)',
+            precioLista: patchcord.precio_lista,
+            descuentoCliente: 0,
+            descuentoProveedor: descuentoProveedorPatchcord,
+            marca: patchcord.marca,
+            categoria: patchcord.categoria
+        });
+    }
+    
+    console.log('🎯 Total productos generados desde catálogo para Excel:', productos.length);
+    return generarHTMLFilasExcel(productos);
+}
+
+// Función para generar filas HTML estilo Excel
+function generarHTMLFilasExcel(productos) {
+    let filas = '';
+    let totalCliente = 0;
+    let totalCosto = 0;
+    
+    productos.forEach((producto, index) => {
+        const precioUnitario = producto.precioLista * (1 - producto.descuentoCliente / 100);
+        const totalProductoCliente = precioUnitario * producto.cantidad;
+        const costoUnitario = producto.precioLista * (1 - producto.descuentoProveedor / 100);
+        const totalProductoCosto = costoUnitario * producto.cantidad;
+        const ganancia = totalProductoCliente - totalProductoCosto;
+        
+        totalCliente += totalProductoCliente;
+        totalCosto += totalProductoCosto;
+        
+        filas += `
+            <tr class="excel-row" data-row="${index}">
+                <td class="excel-cell excel-cell-text" contenteditable="true" data-field="noParte" data-row="${index}">${producto.noParte}</td>
+                <td class="excel-cell excel-cell-number" contenteditable="true" data-field="cantidad" data-row="${index}" onblur="recalcularFilaExcel(${index})">${producto.cantidad}</td>
+                <td class="excel-cell excel-cell-text excel-cell-description" contenteditable="true" data-field="descripcion" data-row="${index}">${producto.descripcion}</td>
+                <td class="excel-cell excel-cell-currency" contenteditable="true" data-field="precioLista" data-row="${index}" onblur="recalcularFilaExcel(${index})">${formatearMoneda(producto.precioLista)}</td>
+                <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoCliente" data-row="${index}" onblur="recalcularFilaExcel(${index})">${producto.descuentoCliente.toFixed(2)}%</td>
+                <td class="excel-cell excel-cell-currency excel-calculated">${formatearMoneda(precioUnitario)}</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-client">${formatearMoneda(totalProductoCliente)}</td>
+                <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoProveedor" data-row="${index}" onblur="recalcularFilaExcel(${index})">${producto.descuentoProveedor.toFixed(2)}%</td>
+                <td class="excel-cell excel-cell-currency excel-calculated">${formatearMoneda(costoUnitario)}</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost">${formatearMoneda(totalProductoCosto)}</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-profit">${formatearMoneda(ganancia)}</td>
+                <td class="excel-cell excel-cell-action">
+                    <button onclick="eliminarFilaExcel(${index})" class="excel-delete-btn" title="Eliminar fila">
+                        🗑️
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    // Fila de totales
+    const gananciaTotalFila = totalCliente - totalCosto;
+    filas += `
+        <tr class="excel-totals-row">
+            <td colspan="5" class="excel-cell excel-totals-label">TOTALES:</td>
+            <td class="excel-cell excel-cell-currency excel-calculated"></td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-total-client">${formatearMoneda(totalCliente)}</td>
+            <td class="excel-cell excel-cell-currency excel-calculated"></td>
+            <td class="excel-cell excel-cell-currency excel-calculated"></td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost">${formatearMoneda(totalCosto)}</td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-profit">${formatearMoneda(gananciaTotalFila)}</td>
+            <td class="excel-cell"></td>
+        </tr>
+    `;
+    
+    return filas;
+}
+
+// Función de fallback para filas Excel con datos por defecto
+function generarFilasExcelDefecto(datos) {
+    console.log('🔄 Generando tabla Excel con datos por defecto hardcodeados');
+    
+    const productos = [];
+
+    // Productos por defecto (mantener la lógica original como fallback)
+    productos.push({
+        noParte: 'CABLE-DEFAULT',
+        cantidad: datos.cantidadCable || 1,
+        descripcion: `Cable ${datos.categoria || 'CAT6'} ${datos.color || 'Azul'} - Caja 305m`,
+        precioLista: 540,
+        descuentoCliente: 0,
+        descuentoProveedor: 49.26,
+        marca: 'Panduit',
+        categoria: 'Cable'
+    });
+
+    productos.push({
+        noParte: 'FACEPLATE-DEFAULT',
+        cantidad: datos.cantidadFaceplates || 1,
+        descripcion: 'Placa de Pared Vertical Ejecutiva, Salida Para 1 Puerto Mini-Com, Con Espacios Para Etiquetas, Color Blanco',
+        precioLista: 6,
+        descuentoCliente: 0,
+        descuentoProveedor: 57.67,
+        marca: 'Panduit',
+        categoria: 'Faceplate'
+    });
+
+    // Agregar más productos por defecto según sea necesario...
+
+    return generarHTMLFilasExcel(productos);
 }
 
 // Función para generar las filas HTML desde productos
@@ -4454,6 +4924,202 @@ function selectVolumetriaProduct(fieldId, noParte, descripcion, precio) {
     const input = document.getElementById(fieldId);
     input.style.borderColor = '#10B981';
     input.title = `Producto: ${descripcion} - $${precio.toFixed(2)} USD`;
+}
+
+// ============================= //
+// FUNCIONES TABLA EXCEL          //
+// ============================= //
+
+// Función para recalcular una fila cuando se edita
+function recalcularFilaExcel(rowIndex) {
+    console.log(`🧮 Recalculando fila Excel ${rowIndex}`);
+    
+    const row = document.querySelector(`[data-row="${rowIndex}"]`);
+    if (!row) return;
+    
+    // Obtener valores de la fila
+    const cantidad = parseFloat(row.querySelector('[data-field="cantidad"]').textContent) || 0;
+    const precioLista = parseCurrency(row.querySelector('[data-field="precioLista"]').textContent) || 0;
+    const descuentoCliente = parseFloat(row.querySelector('[data-field="descuentoCliente"]').textContent.replace('%', '')) || 0;
+    const descuentoProveedor = parseFloat(row.querySelector('[data-field="descuentoProveedor"]').textContent.replace('%', '')) || 0;
+    
+    // Calcular valores
+    const precioUnitario = precioLista * (1 - descuentoCliente / 100);
+    const totalCliente = precioUnitario * cantidad;
+    const costoUnitario = precioLista * (1 - descuentoProveedor / 100);
+    const totalCosto = costoUnitario * cantidad;
+    const ganancia = totalCliente - totalCosto;
+    
+    // Actualizar celdas calculadas
+    const cells = row.children;
+    cells[5].textContent = formatearMoneda(precioUnitario); // P. Unitario
+    cells[6].textContent = formatearMoneda(totalCliente);   // Total Cliente
+    cells[8].textContent = formatearMoneda(costoUnitario);  // Costo Unitario
+    cells[9].textContent = formatearMoneda(totalCosto);     // Total Costo
+    cells[10].textContent = formatearMoneda(ganancia);      // Ganancia
+    
+    // Recalcular totales
+    recalcularTotalesExcel();
+}
+
+// Función para recalcular totales de la tabla Excel
+function recalcularTotalesExcel() {
+    const table = document.getElementById('excel-table');
+    if (!table) return;
+    
+    let totalCliente = 0;
+    let totalCosto = 0;
+    
+    // Sumar todos los totales de las filas
+    const rows = table.querySelectorAll('.excel-row');
+    rows.forEach(row => {
+        const totalClienteCell = row.children[6];
+        const totalCostoCell = row.children[9];
+        
+        totalCliente += parseCurrency(totalClienteCell.textContent) || 0;
+        totalCosto += parseCurrency(totalCostoCell.textContent) || 0;
+    });
+    
+    const gananciaTotal = totalCliente - totalCosto;
+    
+    // Actualizar fila de totales
+    const totalsRow = table.querySelector('.excel-totals-row');
+    if (totalsRow) {
+        totalsRow.children[6].textContent = formatearMoneda(totalCliente);   // Total Cliente
+        totalsRow.children[9].textContent = formatearMoneda(totalCosto);     // Total Costo
+        totalsRow.children[10].textContent = formatearMoneda(gananciaTotal); // Ganancia
+    }
+}
+
+// Función para agregar una nueva fila Excel
+function agregarFilaExcel() {
+    const tbody = document.getElementById('excel-tbody');
+    if (!tbody) return;
+    
+    const newIndex = tbody.children.length - 1; // -1 por la fila de totales
+    
+    const newRow = `
+        <tr class="excel-row" data-row="${newIndex}">
+            <td class="excel-cell excel-cell-text" contenteditable="true" data-field="noParte" data-row="${newIndex}"></td>
+            <td class="excel-cell excel-cell-number" contenteditable="true" data-field="cantidad" data-row="${newIndex}" onblur="recalcularFilaExcel(${newIndex})">1</td>
+            <td class="excel-cell excel-cell-text excel-cell-description" contenteditable="true" data-field="descripcion" data-row="${newIndex}">Nuevo producto</td>
+            <td class="excel-cell excel-cell-currency" contenteditable="true" data-field="precioLista" data-row="${newIndex}" onblur="recalcularFilaExcel(${newIndex})">$0.00</td>
+            <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoCliente" data-row="${newIndex}" onblur="recalcularFilaExcel(${newIndex})">0.00%</td>
+            <td class="excel-cell excel-cell-currency excel-calculated">$0.00</td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-total-client">$0.00</td>
+            <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoProveedor" data-row="${newIndex}" onblur="recalcularFilaExcel(${newIndex})">0.00%</td>
+            <td class="excel-cell excel-cell-currency excel-calculated">$0.00</td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost">$0.00</td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-profit">$0.00</td>
+            <td class="excel-cell excel-cell-action">
+                <button onclick="eliminarFilaExcel(${newIndex})" class="excel-delete-btn" title="Eliminar fila">🗑️</button>
+            </td>
+        </tr>
+    `;
+    
+    // Insertar antes de la fila de totales
+    const totalsRow = tbody.querySelector('.excel-totals-row');
+    totalsRow.insertAdjacentHTML('beforebegin', newRow);
+    
+    // Actualizar índices de todas las filas
+    actualizarIndicesFilasExcel();
+    
+    console.log('➕ Nueva fila Excel agregada');
+}
+
+// Función para eliminar una fila Excel
+function eliminarFilaExcel(rowIndex) {
+    if (confirm('¿Estás seguro de eliminar esta fila?')) {
+        const row = document.querySelector(`[data-row="${rowIndex}"]`);
+        if (row) {
+            row.remove();
+            actualizarIndicesFilasExcel();
+            recalcularTotalesExcel();
+            console.log(`🗑️ Fila Excel ${rowIndex} eliminada`);
+        }
+    }
+}
+
+// Función para actualizar los índices de las filas después de agregar/eliminar
+function actualizarIndicesFilasExcel() {
+    const rows = document.querySelectorAll('.excel-row');
+    rows.forEach((row, index) => {
+        row.setAttribute('data-row', index);
+        row.querySelectorAll('[data-row]').forEach(cell => {
+            cell.setAttribute('data-row', index);
+        });
+        
+        // Actualizar onclick del botón eliminar
+        const deleteBtn = row.querySelector('.excel-delete-btn');
+        if (deleteBtn) {
+            deleteBtn.setAttribute('onclick', `eliminarFilaExcel(${index})`);
+        }
+    });
+}
+
+// Función para copiar toda la tabla al clipboard
+function copiarTablaCompleta() {
+    const table = document.getElementById('excel-table');
+    if (!table) return;
+    
+    let csvContent = '';
+    
+    // Headers
+    const headers = table.querySelectorAll('.excel-subheader th');
+    csvContent += Array.from(headers).map(th => th.textContent.trim()).join('\t') + '\n';
+    
+    // Data rows
+    const rows = table.querySelectorAll('.excel-row, .excel-totals-row');
+    rows.forEach(row => {
+        const cells = Array.from(row.children).slice(0, -1); // Excluir la columna de acciones
+        const rowData = cells.map(cell => cell.textContent.trim()).join('\t');
+        csvContent += rowData + '\n';
+    });
+    
+    // Copiar al clipboard
+    navigator.clipboard.writeText(csvContent).then(() => {
+        alert('✅ Tabla copiada al portapapeles. Puedes pegarla en Excel.');
+    }).catch(err => {
+        console.error('Error copiando tabla:', err);
+        alert('❌ Error al copiar tabla. Intenta seleccionar manualmente.');
+    });
+}
+
+// Función para exportar como CSV
+function exportarCSV() {
+    const table = document.getElementById('excel-table');
+    if (!table) return;
+    
+    let csvContent = 'data:text/csv;charset=utf-8,';
+    
+    // Headers
+    const headers = table.querySelectorAll('.excel-subheader th');
+    csvContent += Array.from(headers).map(th => `"${th.textContent.trim()}"`).join(',') + '\n';
+    
+    // Data rows
+    const rows = table.querySelectorAll('.excel-row, .excel-totals-row');
+    rows.forEach(row => {
+        const cells = Array.from(row.children).slice(0, -1); // Excluir la columna de acciones
+        const rowData = cells.map(cell => `"${cell.textContent.trim()}"`).join(',');
+        csvContent += rowData + '\n';
+    });
+    
+    // Descargar archivo
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `volumetria_${new Date().getTime()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    console.log('📊 CSV exportado');
+}
+
+// Función auxiliar para parsear moneda
+function parseCurrency(currencyString) {
+    if (!currencyString) return 0;
+    return parseFloat(currencyString.replace(/[$,]/g, '')) || 0;
 }
 </script>
 {% endblock %}
