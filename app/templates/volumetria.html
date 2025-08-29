@@ -2390,7 +2390,7 @@ function mostrarTablaVolumetriaGeneral(datos) {
                             <div class="text-xs text-gray-300 font-mono flex items-center space-x-4">
                                 <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">Tab</kbd> → siguiente</span>
                                 <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">Enter</kbd> ↓ abajo</span>
-                                <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">🗑️</kbd> sin confirmación</span>
+                                <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">❌</kbd> sin confirmación</span>
                             </div>
                         </div>
 
@@ -2415,7 +2415,7 @@ function mostrarTablaVolumetriaGeneral(datos) {
                                         <th class="excel-th">Costo Unit.</th>
                                         <th class="excel-th">Total Costo</th>
                                         <th class="excel-th">Ganancia</th>
-                                        <th class="excel-th">🗑️</th>
+                                        <th class="excel-th">❌</th>
                                     </tr>
                                 </thead>
                                 <tbody id="excel-tbody" class="excel-tbody">
@@ -2505,14 +2505,14 @@ function generarFilasVaciasGeneral() {
                 <td class="excel-cell excel-cell-description" contenteditable="true" data-field="descripcion" data-row="${i}" placeholder="Descripción del producto"></td>
                 <td class="excel-cell excel-cell-currency" contenteditable="true" data-field="precioLista" data-row="${i}" onblur="recalcularFilaExcel(${i})" placeholder="$0.00">$0.00</td>
                 <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoCliente" data-row="${i}" onblur="recalcularFilaExcel(${i})" placeholder="0%">0.00%</td>
-                <td class="excel-cell excel-cell-currency excel-calculated">$0.00</td>
-                <td class="excel-cell excel-cell-currency excel-calculated excel-total-client">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="true">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-client" contenteditable="true">$0.00</td>
                 <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoProveedor" data-row="${i}" onblur="recalcularFilaExcel(${i})" placeholder="0%">0.00%</td>
-                <td class="excel-cell excel-cell-currency excel-calculated">$0.00</td>
-                <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost">$0.00</td>
-                <td class="excel-cell excel-cell-currency excel-calculated excel-profit">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="true">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" contenteditable="true">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-profit" contenteditable="true">$0.00</td>
                 <td class="excel-cell excel-cell-action">
-                    <button onclick="eliminarFilaExcel(${i})" class="excel-delete-btn" title="Eliminar fila">🗑️</button>
+                    <button onclick="eliminarFilaExcel(${i})" class="excel-delete-btn" title="Eliminar fila">❌</button>
                 </td>
             </tr>
         `;
@@ -2624,13 +2624,13 @@ function agregarFilaExcelGeneral() {
         <td class="excel-cell excel-cell-text" contenteditable="true" data-field="marca" data-row="${newIndex}" placeholder="Marca"></td>
         <td class="excel-cell excel-cell-currency" contenteditable="true" data-field="precioLista" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})" placeholder="$0.00">$0.00</td>
         <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoCliente" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})" placeholder="0%">0%</td>
-        <td class="excel-cell excel-cell-currency excel-calculated">$0.00</td>
-        <td class="excel-cell excel-cell-currency excel-calculated excel-total-client">$0.00</td>
+        <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="true">$0.00</td>
+        <td class="excel-cell excel-cell-currency excel-calculated excel-total-client" contenteditable="true">$0.00</td>
         <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoProveedor" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})" placeholder="0%">0%</td>
-        <td class="excel-cell excel-cell-currency excel-calculated">$0.00</td>
-        <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost">$0.00</td>
+        <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="true">$0.00</td>
+        <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" contenteditable="true">$0.00</td>
         <td class="excel-cell excel-cell-action">
-            <button onclick="eliminarFilaExcelGeneral(${newIndex})" class="excel-delete-btn" title="Eliminar fila">🗑️</button>
+            <button onclick="eliminarFilaExcelGeneral(${newIndex})" class="excel-delete-btn" title="Eliminar fila">❌</button>
         </td>
     `;
     
@@ -2663,7 +2663,7 @@ function eliminarFilaExcelGeneral(rowIndex) {
             row.remove();
             actualizarIndicesFilasGeneral();
             recalcularTotalesGeneral();
-            console.log(`🗑️ Fila general ${rowIndex} eliminada con animación`);
+            console.log(`❌ Fila general ${rowIndex} eliminada con animación`);
         }, 300);
     }
 }
@@ -2831,13 +2831,13 @@ function procesarCSVImport(csvData) {
                 <td class="excel-cell excel-cell-text" contenteditable="true" data-field="marca" data-row="${rowIndex}">${values[3] || ''}</td>
                 <td class="excel-cell excel-cell-currency" contenteditable="true" data-field="precioLista" data-row="${rowIndex}" onblur="recalcularFilaExcelGeneral(${rowIndex})">${values[4] || '$0.00'}</td>
                 <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoCliente" data-row="${rowIndex}" onblur="recalcularFilaExcelGeneral(${rowIndex})">${values[5] || '0%'}</td>
-                <td class="excel-cell excel-cell-currency excel-calculated">$0.00</td>
-                <td class="excel-cell excel-cell-currency excel-calculated excel-total-client">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="true">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-client" contenteditable="true">$0.00</td>
                 <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoProveedor" data-row="${rowIndex}" onblur="recalcularFilaExcelGeneral(${rowIndex})">${values[8] || '0%'}</td>
-                <td class="excel-cell excel-cell-currency excel-calculated">$0.00</td>
-                <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="true">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" contenteditable="true">$0.00</td>
                 <td class="excel-cell excel-cell-action">
-                    <button onclick="eliminarFilaExcelGeneral(${rowIndex})" class="excel-delete-btn" title="Eliminar fila">🗑️</button>
+                    <button onclick="eliminarFilaExcelGeneral(${rowIndex})" class="excel-delete-btn" title="Eliminar fila">❌</button>
                 </td>
             `;
             
@@ -3147,7 +3147,7 @@ function mostrarTablaVolumetria(datos) {
                                     <div class="text-xs text-gray-300 font-mono flex items-center space-x-4">
                                         <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">Tab</kbd> → siguiente</span>
                                         <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">Enter</kbd> ↓ abajo</span>
-                                        <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">🗑️</kbd> sin confirmación</span>
+                                        <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">❌</kbd> sin confirmación</span>
                                     </div>
                                 </div>
 
@@ -3172,7 +3172,7 @@ function mostrarTablaVolumetria(datos) {
                                                 <th class="excel-th">Costo Unit.</th>
                                                 <th class="excel-th excel-total">Total Costo</th>
                                                 <th class="excel-th excel-profit">Ganancia</th>
-                                                <th class="excel-th">🗑️</th>
+                                                <th class="excel-th">❌</th>
                                             </tr>
                                         </thead>
                                         <tbody id="excel-tbody" class="excel-tbody">
@@ -3600,15 +3600,15 @@ function generarHTMLFilasExcel(productos) {
                 <td class="excel-cell excel-cell-text excel-cell-description" contenteditable="true" data-field="descripcion" data-row="${index}">${producto.descripcion}</td>
                 <td class="excel-cell excel-cell-currency" contenteditable="true" data-field="precioLista" data-row="${index}" onblur="recalcularFilaExcel(${index})">${formatearMoneda(producto.precioLista)}</td>
                 <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoCliente" data-row="${index}" onblur="recalcularFilaExcel(${index})">${producto.descuentoCliente.toFixed(2)}%</td>
-                <td class="excel-cell excel-cell-currency excel-calculated">${formatearMoneda(precioUnitario)}</td>
-                <td class="excel-cell excel-cell-currency excel-calculated excel-total-client">${formatearMoneda(totalProductoCliente)}</td>
+                <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="true">${formatearMoneda(precioUnitario)}</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-client" contenteditable="true">${formatearMoneda(totalProductoCliente)}</td>
                 <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoProveedor" data-row="${index}" onblur="recalcularFilaExcel(${index})">${producto.descuentoProveedor.toFixed(2)}%</td>
-                <td class="excel-cell excel-cell-currency excel-calculated">${formatearMoneda(costoUnitario)}</td>
-                <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost">${formatearMoneda(totalProductoCosto)}</td>
-                <td class="excel-cell excel-cell-currency excel-calculated excel-profit">${formatearMoneda(ganancia)}</td>
+                <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="true">${formatearMoneda(costoUnitario)}</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" contenteditable="true">${formatearMoneda(totalProductoCosto)}</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-profit" contenteditable="true">${formatearMoneda(ganancia)}</td>
                 <td class="excel-cell excel-cell-action">
                     <button onclick="eliminarFilaExcel(${index})" class="excel-delete-btn" title="Eliminar fila">
-                        🗑️
+                        ❌
                     </button>
                 </td>
             </tr>
@@ -3620,12 +3620,12 @@ function generarHTMLFilasExcel(productos) {
     filas += `
         <tr class="excel-totals-row">
             <td colspan="5" class="excel-cell excel-totals-label">TOTALES:</td>
-            <td class="excel-cell excel-cell-currency excel-calculated"></td>
-            <td class="excel-cell excel-cell-currency excel-calculated excel-total-client">${formatearMoneda(totalCliente)}</td>
-            <td class="excel-cell excel-cell-currency excel-calculated"></td>
-            <td class="excel-cell excel-cell-currency excel-calculated"></td>
-            <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost">${formatearMoneda(totalCosto)}</td>
-            <td class="excel-cell excel-cell-currency excel-calculated excel-profit">${formatearMoneda(gananciaTotalFila)}</td>
+            <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="true"></td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-total-client" contenteditable="true">${formatearMoneda(totalCliente)}</td>
+            <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="true"></td>
+            <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="true"></td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" contenteditable="true">${formatearMoneda(totalCosto)}</td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-profit" contenteditable="true">${formatearMoneda(gananciaTotalFila)}</td>
             <td class="excel-cell"></td>
         </tr>
     `;
@@ -5962,6 +5962,136 @@ function agregarListenersAutoCompletado() {
         cell.addEventListener('input', resetearProcessedFlag);
         cell.addEventListener('focus', resetearProcessedFlag);
     });
+    
+    // Agregar listeners de pegado Excel-like a todas las celdas editables
+    agregarListenersPegadoExcel();
+}
+
+// Función para agregar listeners de pegado tipo Excel
+function agregarListenersPegadoExcel() {
+    console.log('📋 Agregando listeners de pegado tipo Excel');
+    
+    // Buscar todas las celdas editables
+    const celdasEditables = document.querySelectorAll('[contenteditable="true"]');
+    
+    celdasEditables.forEach(celda => {
+        // Remover listeners existentes
+        celda.removeEventListener('paste', manejarPegadoExcel);
+        celda.removeEventListener('input', manejarCambiosCelda);
+        
+        // Agregar listeners
+        celda.addEventListener('paste', manejarPegadoExcel);
+        celda.addEventListener('input', manejarCambiosCelda);
+    });
+}
+
+// Función para manejar pegado tipo Excel
+function manejarPegadoExcel(event) {
+    event.preventDefault();
+    console.log('📋 Detectado pegado tipo Excel');
+    
+    const clipboardData = event.clipboardData || window.clipboardData;
+    const data = clipboardData.getData('text/plain');
+    
+    if (!data) return;
+    
+    // Dividir datos por filas y columnas (formato Excel)
+    const filas = data.split('\n').map(fila => fila.split('\t'));
+    console.log('📊 Datos de pegado parseados:', filas);
+    
+    const celdaInicial = event.target;
+    const filaInicial = parseInt(celdaInicial.getAttribute('data-row'));
+    const columnaInicial = obtenerIndiceColumna(celdaInicial);
+    
+    console.log('📍 Posición inicial:', { fila: filaInicial, columna: columnaInicial });
+    
+    // Pegar datos en la tabla
+    filas.forEach((filaDatos, indiceFilaRelativo) => {
+        const filaDestino = filaInicial + indiceFilaRelativo;
+        
+        // Crear nueva fila si no existe
+        if (indiceFilaRelativo > 0) {
+            asegurarFilaExiste(filaDestino);
+        }
+        
+        filaDatos.forEach((valorCelda, indiceColumnaRelativo) => {
+            const columnaDestino = columnaInicial + indiceColumnaRelativo;
+            const celdaDestino = obtenerCeldaPorPosicion(filaDestino, columnaDestino);
+            
+            if (celdaDestino && celdaDestino.hasAttribute('contenteditable')) {
+                celdaDestino.textContent = valorCelda.trim();
+                console.log(`📝 Pegado en [${filaDestino}, ${columnaDestino}]: ${valorCelda}`);
+                
+                // Recalcular fila después del pegado
+                setTimeout(() => {
+                    recalcularFilaExcel(filaDestino);
+                }, 50);
+            }
+        });
+    });
+    
+    console.log('✅ Pegado tipo Excel completado');
+}
+
+// Función para obtener índice de columna de una celda
+function obtenerIndiceColumna(celda) {
+    const fila = celda.parentNode;
+    const celdas = Array.from(fila.children);
+    return celdas.indexOf(celda);
+}
+
+// Función para obtener celda por posición
+function obtenerCeldaPorPosicion(fila, columna) {
+    const filaElement = document.querySelector(`[data-row="${fila}"]`);
+    if (!filaElement) return null;
+    
+    const celdas = filaElement.children;
+    return celdas[columna] || null;
+}
+
+// Función para asegurar que existe una fila
+function asegurarFilaExiste(indiceFilaRequerido) {
+    const filaExistente = document.querySelector(`[data-row="${indiceFilaRequerido}"]`);
+    if (filaExistente) return;
+    
+    // Crear nuevas filas hasta llegar al índice requerido
+    const tbody = document.getElementById('excel-tbody') || document.getElementById('excel-tbody-general');
+    if (!tbody) return;
+    
+    const filasActuales = tbody.querySelectorAll('.excel-row').length;
+    
+    for (let i = filasActuales; i <= indiceFilaRequerido; i++) {
+        // Usar la función de agregar fila apropiada
+        if (document.getElementById('excel-tbody')) {
+            agregarFilaExcel();
+        } else {
+            agregarFilaExcelGeneral();
+        }
+        console.log(`➕ Fila ${i} creada automáticamente para pegado`);
+    }
+}
+
+// Función para manejar cambios en celdas y recalcular automáticamente
+function manejarCambiosCelda(event) {
+    const celda = event.target;
+    const fila = parseInt(celda.getAttribute('data-row'));
+    const campo = celda.getAttribute('data-field');
+    
+    // Solo recalcular para campos que afectan cálculos
+    const camposCalculables = ['cantidad', 'precioLista', 'descuentoCliente', 'descuentoProveedor'];
+    
+    if (camposCalculables.includes(campo)) {
+        console.log(`🧮 Recalculando por cambio en ${campo} fila ${fila}`);
+        
+        // Delayed recalc para permitir que el cambio se complete
+        setTimeout(() => {
+            if (document.getElementById('excel-tbody-general')) {
+                recalcularFilaExcelGeneral(fila);
+            } else {
+                recalcularFilaExcel(fila);
+            }
+        }, 100);
+    }
 }
 
 // Función para resetear el flag de procesado cuando el usuario edita el número de parte
@@ -6016,14 +6146,14 @@ function agregarFilaExcel() {
             <td class="excel-cell excel-cell-text excel-cell-description" contenteditable="true" data-field="descripcion" data-row="${newIndex}">Nuevo producto</td>
             <td class="excel-cell excel-cell-currency" contenteditable="true" data-field="precioLista" data-row="${newIndex}" onblur="recalcularFilaExcel(${newIndex})">$0.00</td>
             <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoCliente" data-row="${newIndex}" onblur="recalcularFilaExcel(${newIndex})">0.00%</td>
-            <td class="excel-cell excel-cell-currency excel-calculated">$0.00</td>
-            <td class="excel-cell excel-cell-currency excel-calculated excel-total-client">$0.00</td>
+            <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="true">$0.00</td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-total-client" contenteditable="true">$0.00</td>
             <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoProveedor" data-row="${newIndex}" onblur="recalcularFilaExcel(${newIndex})">0.00%</td>
-            <td class="excel-cell excel-cell-currency excel-calculated">$0.00</td>
-            <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost">$0.00</td>
-            <td class="excel-cell excel-cell-currency excel-calculated excel-profit">$0.00</td>
+            <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="true">$0.00</td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" contenteditable="true">$0.00</td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-profit" contenteditable="true">$0.00</td>
             <td class="excel-cell excel-cell-action">
-                <button onclick="eliminarFilaExcel(${newIndex})" class="excel-delete-btn" title="Eliminar fila">🗑️</button>
+                <button onclick="eliminarFilaExcel(${newIndex})" class="excel-delete-btn" title="Eliminar fila">❌</button>
             </td>
         </tr>
     `;
@@ -6056,7 +6186,7 @@ function eliminarFilaExcel(rowIndex) {
             row.remove();
             actualizarIndicesFilasExcel();
             recalcularTotalesExcel();
-            console.log(`🗑️ Fila Excel ${rowIndex} eliminada con animación`);
+            console.log(`❌ Fila Excel ${rowIndex} eliminada con animación`);
         }, 300);
     }
 }
