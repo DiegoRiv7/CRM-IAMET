@@ -393,11 +393,11 @@
     .excel-calculated {
         background: #0f172a !important;
         color: #94a3b8 !important;
-        cursor: not-allowed;
+        cursor: text; /* Cursor de texto normal */
         font-weight: 600;
         font-style: italic;
         border: 1px solid #1e293b !important;
-        user-select: none;
+        user-select: text; /* Permitir selección de texto */
     }
 
     .excel-calculated:hover {
@@ -441,22 +441,29 @@
     }
 
     .excel-delete-btn {
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-        color: white;
+        background: none;
         border: none;
-        border-radius: 6px;
-        padding: 6px 10px;
+        color: #ff453a; /* Apple Red */
+        font-size: 16px;
         cursor: pointer;
-        font-size: 12px;
-        font-weight: 600;
+        padding: 8px;
+        border-radius: 8px;
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.7;
     }
 
     .excel-delete-btn:hover {
-        background: linear-gradient(135deg, #dc2626, #b91c1c);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+        background: rgba(255, 69, 58, 0.1); /* Apple Red with 10% opacity */
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
+    .excel-delete-btn:active {
+        transform: scale(0.95);
+        background: rgba(255, 69, 58, 0.2);
     }
 
     .excel-row:nth-child(even) {
@@ -3620,12 +3627,12 @@ function generarHTMLFilasExcel(productos) {
     filas += `
         <tr class="excel-totals-row">
             <td colspan="5" class="excel-cell excel-totals-label">TOTALES:</td>
-            <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="true"></td>
-            <td class="excel-cell excel-cell-currency excel-calculated excel-total-client" contenteditable="true">${formatearMoneda(totalCliente)}</td>
-            <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="true"></td>
-            <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="true"></td>
-            <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" contenteditable="true">${formatearMoneda(totalCosto)}</td>
-            <td class="excel-cell excel-cell-currency excel-calculated excel-profit" contenteditable="true">${formatearMoneda(gananciaTotalFila)}</td>
+            <td class="excel-cell excel-cell-currency excel-calculated"></td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-total-client">${formatearMoneda(totalCliente)}</td>
+            <td class="excel-cell excel-cell-currency excel-calculated"></td>
+            <td class="excel-cell excel-cell-currency excel-calculated"></td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost">${formatearMoneda(totalCosto)}</td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-profit">${formatearMoneda(gananciaTotalFila)}</td>
             <td class="excel-cell"></td>
         </tr>
     `;
@@ -5971,10 +5978,14 @@ function agregarListenersAutoCompletado() {
 function agregarListenersPegadoExcel() {
     console.log('📋 Agregando listeners de pegado tipo Excel');
     
-    // Buscar todas las celdas editables
-    const celdasEditables = document.querySelectorAll('[contenteditable="true"]');
+    // Buscar todas las celdas editables, EXCEPTO las de totales
+    const celdasEditables = document.querySelectorAll('[contenteditable="true"]:not(.excel-totals-row [contenteditable])');
     
     celdasEditables.forEach(celda => {
+        // Verificar que no esté en fila de totales
+        const enFilaTotales = celda.closest('.excel-totals-row');
+        if (enFilaTotales) return;
+        
         // Remover listeners existentes
         celda.removeEventListener('paste', manejarPegadoExcel);
         celda.removeEventListener('input', manejarCambiosCelda);
