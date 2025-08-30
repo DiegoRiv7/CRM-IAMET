@@ -59,7 +59,6 @@
       margin: 20px 0 15px 0;
       padding: 10px;
       background: #f8f9fa;
-      border-left: 4px solid #333;
       border-bottom: 1px solid #ddd;
     }
     .document-title h1 { font-size: 22px; text-transform: uppercase; letter-spacing: 1px; margin: 0; }
@@ -85,8 +84,13 @@
     .products-table th, .products-table td {
       padding: 8px;
       border-bottom: 1px solid #eee; /* Color Bajanet */
-      text-align: left;
+      text-align: center; /* Centrar por defecto */
       vertical-align: middle; /* Alinear contenido verticalmente */
+    }
+    
+    /* Excepciones para columnas específicas */
+    .products-table th:nth-child(3), .products-table td:nth-child(3) {
+      text-align: left; /* DESCRIPCIÓN a la izquierda */
     }
     .products-table th {
       background: #f8f9fa; /* Color Bajanet */
@@ -200,12 +204,12 @@
             <thead>
               <tr>
                 <th>No.</th>
-                <th class="text-center">PRODUCTO</th>
+                <th>PRODUCTO</th>
                 <th>DESCRIPCIÓN</th>
-                <th class="text-center">CANT.</th>
+                <th>CANT.</th>
                 <th class="text-right">P. UNITARIO</th>
                 {% if cotizacion.descuento_visible %}
-                <th class="text-center">DESC. (%)</th>
+                <th>DESC. (%)</th>
                 {% endif %}
                 <th class="text-right">TOTAL</th>
               </tr>
@@ -213,13 +217,13 @@
             <tbody>
               {% for detalle in seccion.productos %}
               <tr>
-                <td class="text-center">{{ forloop.counter }}</td>
-                <td class="product-name text-center">{{ detalle.nombre_producto }}{% if detalle.no_parte %}<br><small>{{ detalle.no_parte }}</small>{% endif %}</td>
+                <td>{{ forloop.counter }}</td>
+                <td class="product-name">{{ detalle.nombre_producto }}{% if detalle.no_parte %}<br><small>{{ detalle.no_parte }}</small>{% endif %}</td>
                 <td>{{ detalle.descripcion|default:"-"|linebreaksbr }}</td>
-                <td class="text-center">{{ detalle.cantidad }}</td>
+                <td>{{ detalle.cantidad }}</td>
                 <td class="text-right">${{ detalle.precio_unitario|floatformat:2 }}</td>
                 {% if cotizacion.descuento_visible %}
-                <td class="text-center">{{ detalle.descuento_porcentaje|floatformat:2 }}%</td>
+                <td>{{ detalle.descuento_porcentaje|floatformat:2 }}%</td>
                 {% endif %}
                 <td class="text-right">${{ detalle.get_total_item|floatformat:2 }}</td>
               </tr>
