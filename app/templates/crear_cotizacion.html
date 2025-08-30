@@ -969,8 +969,15 @@
             let currentSection = 1;
             let productCountInSection = 0;
             
-            allRows.forEach((row) => {
+            allRows.forEach((row, actualIndex) => {
                 if (row.classList.contains('title-row')) {
+                    // Actualizar posición del título
+                    const positionInput = row.querySelector('input[name*="[position]"]');
+                    if (positionInput) {
+                        positionInput.value = actualIndex;
+                        console.log(`Updated title position to ${actualIndex} for title row`);
+                    }
+                    
                     // Es un título - reiniciar contador de productos
                     if (productCountInSection > 0) {
                         currentSection++;
@@ -1672,6 +1679,10 @@
             const loadingModal = document.getElementById('loading-modal');
 
             cotizacionForm.addEventListener('submit', (event) => {
+                // Asegurar que las posiciones de títulos estén actualizadas antes de enviar
+                updateRowNumbers();
+                console.log('🔄 Title positions updated before form submission');
+                
                 loadingModal.classList.remove('hidden'); // Show loading modal
                 
                 // Auto-hide modal after 8 seconds as fallback
