@@ -123,6 +123,24 @@
     
     .text-right { text-align: right; }
     .text-center { text-align: center; }
+    
+    /* Títulos de sección */
+    .section-title {
+      text-align: center;
+      margin: 20px 0 10px 0;
+      padding: 8px;
+      background: #f8f9fa;
+      border-left: 4px solid #333;
+    }
+    .section-title h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
     .terms { margin-top: 25px; padding: 15px; background: #f8f9fa; font-size: 12px; }
     @page { margin: 12mm; }
   </style>
@@ -182,7 +200,7 @@
             <thead>
               <tr>
                 <th>No.</th>
-                <th>PRODUCTO</th>
+                <th class="text-center">PRODUCTO</th>
                 <th>DESCRIPCIÓN</th>
                 <th class="text-center">CANT.</th>
                 <th class="text-right">P. UNITARIO</th>
@@ -196,7 +214,7 @@
               {% for detalle in seccion.productos %}
               <tr>
                 <td class="text-center">{{ forloop.counter }}</td>
-                <td class="product-name">{{ detalle.nombre_producto }}{% if detalle.no_parte %}<br><small>{{ detalle.no_parte }}</small>{% endif %}</td>
+                <td class="product-name text-center">{{ detalle.nombre_producto }}{% if detalle.no_parte %}<br><small>{{ detalle.no_parte }}</small>{% endif %}</td>
                 <td>{{ detalle.descripcion|default:"-"|linebreaksbr }}</td>
                 <td class="text-center">{{ detalle.cantidad }}</td>
                 <td class="text-right">${{ detalle.precio_unitario|floatformat:2 }}</td>
