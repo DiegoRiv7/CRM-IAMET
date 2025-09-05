@@ -3751,6 +3751,13 @@ function generarFilasTabla(datos) {
 // Función específica para generar filas estilo Excel
 function generarFilasExcel(datos) {
     console.log('📊 DEBUGGING: Generando filas Excel - datos completos:', datos);
+    
+    // Si no hay datos, generar tabla vacía con filas en blanco
+    if (!datos || typeof datos !== 'object') {
+        console.log('⚠️ No hay datos disponibles, generando filas vacías para volumetría general');
+        return generarFilasVaciasGeneral();
+    }
+    
     console.log('📊 DEBUGGING: ¿Existen productosCompletos?', !!datos.productosCompletos);
     console.log('📊 DEBUGGING: productosCompletos detalles:', datos.productosCompletos);
     
