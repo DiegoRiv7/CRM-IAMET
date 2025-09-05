@@ -2647,7 +2647,7 @@ function mostrarTablaVolumetriaGeneral(datos) {
                                 </tr>
                             </thead>
                             <tbody id="excel-tbody" class="excel-tbody">
-                                ${generarFilasExcel()}
+                                ${generarFilasExcel(datos)}
                             </tbody>
                         </table>
                     </div>
@@ -2786,26 +2786,22 @@ function mostrarTablaVolumetriaGeneral(datos) {
         </div>
     `;
     
-    // Reemplazar el contenido
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-        mainContent.innerHTML = tablaHTML;
-        
-        // Auto-poblar datos desde la sesión
-        cargarDatosOportunidadGeneral();
-        
-        // Agregar listeners para auto-completado de productos
-        setTimeout(() => {
-            agregarListenersAutoCompletado();
-        }, 500);
+    // Reemplazar contenido principal
+    document.body.innerHTML = tablaHTML;
+    
+    // Configurar eventos para autocompletado
+    setTimeout(() => {
+        configurarAutocompletado();
+        configurarEventosExcel();
+        recalcularTotales(); // Recalcular usando la función nodos
         
         // Inicializar panel lateral solo para volumetría general
         setTimeout(() => {
             inicializarPanelLateral();
         }, 1000);
         
-        console.log('✅ Tabla de volumetría general creada exitosamente con funcionalidad completa de nodos');
-    }
+        console.log('✅ Tabla de volumetría general creada exitosamente con funcionalidad completa de nodos - SIN datos automáticos');
+    }, 500);
 }
 
 // Función para generar filas vacías iniciales en volumetría general (igual formato que nodos)
