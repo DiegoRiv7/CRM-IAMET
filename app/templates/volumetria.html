@@ -2553,9 +2553,9 @@ function mostrarVolumetriaGeneralDirecta() {
     mostrarTablaVolumetriaGeneral(datosGenerales);
 }
 
-// Función específica para mostrar tabla de volumetría general
+// Función específica para mostrar tabla de volumetría general (con funcionalidad completa de nodos)
 function mostrarTablaVolumetriaGeneral(datos) {
-    console.log('🎯 Generando tabla Excel-like para volumetría general');
+    console.log('🎯 Generando tabla Excel-like para volumetría general con funcionalidad completa');
     
     const tablaHTML = `
         <div id="tabla-volumetria-general" class="min-h-screen apple-bg">
@@ -2602,57 +2602,54 @@ function mostrarTablaVolumetriaGeneral(datos) {
                         </div>
                     </div>
                     
-                    <!-- Tabla Excel-like mejorada (igual que nodos) -->
-                    <div class="excel-container mb-6">
-                        <!-- Toolbar -->
-                        <div class="excel-toolbar flex justify-between items-center">
-                            <div class="flex space-x-3">
-                                <button onclick="agregarFilaExcel()" class="excel-btn-primary">
-                                    ➕ Agregar Fila
-                                </button>
-                                <button onclick="copiarTablaCompleta()" class="excel-btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);">
-                                    📋 Copiar Todo
-                                </button>
-                                <button onclick="exportarCSV()" class="excel-btn-primary" style="background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);">
-                                    📊 Exportar CSV
-                                </button>
-                            </div>
-                            <div class="text-xs text-gray-300 font-mono flex items-center space-x-4">
-                                <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">Tab</kbd> → siguiente</span>
-                                <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">Enter</kbd> ↓ abajo</span>
-                                <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">❌</kbd> sin confirmación</span>
-                            </div>
+                    <!-- Toolbar de Excel -->
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex space-x-3">
+                            <button onclick="agregarFilaExcel()" class="excel-btn-primary">
+                                ➕ Agregar Fila
+                            </button>
+                            <button onclick="copiarTablaCompleta()" class="excel-btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);">
+                                📋 Copiar Todo
+                            </button>
+                            <button onclick="exportarCSV()" class="excel-btn-primary" style="background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);">
+                                📊 Exportar CSV
+                            </button>
                         </div>
+                        <div class="text-xs text-gray-300 font-mono flex items-center space-x-4">
+                            <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">Tab</kbd> → siguiente</span>
+                            <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">Enter</kbd> ↓ abajo</span>
+                            <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">❌</kbd> sin confirmación</span>
+                        </div>
+                    </div>
 
-                        <!-- Tabla Excel (usando mismo formato que nodos) -->
-                        <div class="excel-table-wrapper">
-                            <table id="excel-table" class="excel-table w-full">
-                                <thead style="position: sticky; top: 0; z-index: 10;">
-                                    <tr class="excel-header">
-                                        <th colspan="7" class="excel-th-group excel-client-header">INFORMACIÓN DEL CLIENTE</th>
-                                        <th colspan="4" class="excel-th-group excel-cost-header">COSTOS Y MÁRGENES</th>
-                                        <th class="excel-th-group">ACCIONES</th>
-                                    </tr>
-                                    <tr class="excel-subheader">
-                                        <th class="excel-th">No. Parte</th>
-                                        <th class="excel-th">Cant.</th>
-                                        <th class="excel-th">Descripción</th>
-                                        <th class="excel-th">Precio Lista</th>
-                                        <th class="excel-th">Desc. Cliente %</th>
-                                        <th class="excel-th">Precio Unit.</th>
-                                        <th class="excel-th">Total Cliente</th>
-                                        <th class="excel-th">Desc. Prov. %</th>
-                                        <th class="excel-th">Costo Unit.</th>
-                                        <th class="excel-th">Total Costo</th>
-                                        <th class="excel-th">Ganancia</th>
-                                        <th class="excel-th">❌</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="excel-tbody" class="excel-tbody">
-                                    ${generarFilasVaciasGeneral()}
-                                </tbody>
-                            </table>
-                        </div>
+                    <!-- Tabla Excel (usando EXACTAMENTE la misma estructura que nodos) -->
+                    <div class="excel-table-wrapper">
+                        <table id="excel-table" class="excel-table w-full">
+                            <thead style="position: sticky; top: 0; z-index: 10;">
+                                <tr class="excel-header">
+                                    <th colspan="7" class="excel-th-group excel-client-header">INFORMACIÓN DEL CLIENTE</th>
+                                    <th colspan="4" class="excel-th-group excel-cost-header">COSTOS Y MÁRGENES</th>
+                                    <th class="excel-th-group">ACCIONES</th>
+                                </tr>
+                                <tr class="excel-subheader">
+                                    <th class="excel-th">Número de Parte</th>
+                                    <th class="excel-th">Cant.</th>
+                                    <th class="excel-th excel-description">Descripción del Producto</th>
+                                    <th class="excel-th">Precio Lista</th>
+                                    <th class="excel-th">Desc.%</th>
+                                    <th class="excel-th">P. Unitario</th>
+                                    <th class="excel-th excel-total">Total Cliente</th>
+                                    <th class="excel-th">Desc.%</th>
+                                    <th class="excel-th">Costo Unit.</th>
+                                    <th class="excel-th excel-total">Total Costo</th>
+                                    <th class="excel-th excel-profit">Ganancia</th>
+                                    <th class="excel-th">❌</th>
+                                </tr>
+                            </thead>
+                            <tbody id="excel-tbody" class="excel-tbody">
+                                ${generarFilasExcel()}
+                            </tbody>
+                        </table>
                     </div>
                     
                     <!-- Panel Lateral Interactivo -->
@@ -2764,48 +2761,24 @@ function mostrarTablaVolumetriaGeneral(datos) {
                         </div>
                     </div>
                     
-                    <!-- Resumen de Totales (igual que nodos) -->
-                    <div id="resumen-volumetria" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Totales (usando los MISMOS IDs que nodos) -->
+                    <div id="totales-volumetria" class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                         <div class="apple-card p-6">
-                            <h3 class="text-lg font-semibold apple-text-primary mb-4">💰 Resumen Financiero</h3>
-                            <div class="space-y-3">
-                                <div class="flex justify-between items-center">
-                                    <span class="apple-text-secondary">Total Venta Cliente:</span>
-                                    <span class="font-bold text-green-400" id="total-cliente-general">$0.00 USD</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="apple-text-secondary">Total Costo Proveedor:</span>
-                                    <span class="font-bold text-red-400" id="total-costo-general">$0.00 USD</span>
-                                </div>
-                                <div class="border-t border-gray-600 pt-3">
-                                    <div class="flex justify-between items-center">
-                                        <span class="apple-text-primary font-semibold">Ganancia Proyectada:</span>
-                                        <span class="font-bold text-blue-400 text-lg" id="ganancia-general">$0.00 USD</span>
-                                    </div>
-                                    <div class="flex justify-between items-center mt-1">
-                                        <span class="apple-text-secondary text-sm">Margen de Ganancia:</span>
-                                        <span class="font-medium text-blue-300 text-sm" id="margen-general">0%</span>
-                                    </div>
-                                </div>
-                            </div>
+                            <h4 class="text-lg font-semibold apple-text-primary mb-3">💰 Venta al Cliente</h4>
+                            <p class="text-2xl font-bold text-green-400" id="total-cliente">$0.00</p>
+                            <p class="text-sm apple-text-secondary">Total con descuentos</p>
                         </div>
                         
                         <div class="apple-card p-6">
-                            <h3 class="text-lg font-semibold apple-text-primary mb-4">📊 Métricas del Proyecto</h3>
-                            <div class="space-y-3">
-                                <div class="flex justify-between items-center">
-                                    <span class="apple-text-secondary">Productos:</span>
-                                    <span class="font-medium apple-text-primary" id="total-productos-general">0 items</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="apple-text-secondary">Estado:</span>
-                                    <span class="px-2 py-1 bg-purple-600 text-white text-xs rounded-full">General</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="apple-text-secondary">Última Actualización:</span>
-                                    <span class="font-medium apple-text-primary text-sm">${new Date().toLocaleTimeString('es-ES')}</span>
-                                </div>
-                            </div>
+                            <h4 class="text-lg font-semibold apple-text-primary mb-3">💸 Costo Total</h4>
+                            <p class="text-2xl font-bold text-red-400" id="total-costo">$0.00</p>
+                            <p class="text-sm apple-text-secondary">Inversión del proveedor</p>
+                        </div>
+                        
+                        <div class="apple-card p-6">
+                            <h4 class="text-lg font-semibold apple-text-primary mb-3">📈 Ganancia</h4>
+                            <p class="text-2xl font-bold text-blue-400" id="ganancia-total">$0.00</p>
+                            <p class="text-sm apple-text-secondary">Margen: <span id="margen-porcentaje">0%</span></p>
                         </div>
                     </div>
                 </div>
@@ -2826,7 +2799,12 @@ function mostrarTablaVolumetriaGeneral(datos) {
             agregarListenersAutoCompletado();
         }, 500);
         
-        console.log('✅ Tabla de volumetría general creada exitosamente');
+        // Inicializar panel lateral solo para volumetría general
+        setTimeout(() => {
+            inicializarPanelLateral();
+        }, 1000);
+        
+        console.log('✅ Tabla de volumetría general creada exitosamente con funcionalidad completa de nodos');
     }
 }
 
@@ -6753,6 +6731,35 @@ function ocultarTodasLasSugerencias() {
 // ============================================================
 // FUNCIONES DEL PANEL LATERAL INTERACTIVO
 // ============================================================
+
+// Función para inicializar el panel lateral (solo volumetría general)
+function inicializarPanelLateral() {
+    console.log('🎨 Inicializando panel lateral para volumetría general');
+    
+    // Verificar que estamos en volumetría general
+    const isVolumetriaGeneral = document.getElementById('tabla-volumetria-general');
+    if (!isVolumetriaGeneral) {
+        console.log('❌ No estamos en volumetría general, panel no inicializado');
+        return;
+    }
+    
+    // Verificar que los elementos del panel existen
+    const trigger = document.querySelector('.volumetria-panel-trigger');
+    const sidebar = document.getElementById('volumetria-sidebar');
+    
+    if (!trigger || !sidebar) {
+        console.error('❌ Elementos del panel no encontrados');
+        return;
+    }
+    
+    // El panel ya está en el DOM, solo necesitamos confirmar que está listo
+    console.log('✅ Panel lateral inicializado correctamente');
+    
+    // Agregar efecto visual de disponibilidad
+    setTimeout(() => {
+        trigger.style.animation = 'bounce 2s infinite';
+    }, 500);
+}
 
 // Función para abrir el panel lateral
 function abrirPanelVolumetria() {
