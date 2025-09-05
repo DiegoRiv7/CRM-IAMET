@@ -261,56 +261,58 @@
     }
 
     .excel-table-wrapper {
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        background: #1a1a1a;
-        border: 1px solid #2d2d2d;
-        border-radius: 12px;
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05);
         overflow: hidden;
+        border: none;
+        margin: 20px 0;
     }
 
     .excel-table {
         border-collapse: separate;
         border-spacing: 0;
-        font-size: 13px;
-        line-height: 1.4;
-        background: #1a1a1a;
-        font-family: 'SF Mono', 'Monaco', 'Consolas', 'Roboto Mono', monospace;
+        font-size: 14px;
+        line-height: 1.6;
+        background: #ffffff;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', 'Helvetica', Arial, sans-serif;
+        width: 100%;
     }
 
     .excel-th-group {
-        background: linear-gradient(135deg, #0d9488, #0f766e);
-        color: #ffffff;
-        padding: 16px 8px;
+        background: #f8fafc;
+        color: #334155;
+        padding: 20px 12px;
         text-align: center;
-        font-weight: 700;
-        font-size: 12px;
-        letter-spacing: 1px;
+        font-weight: 600;
+        font-size: 13px;
+        letter-spacing: 0.5px;
         text-transform: uppercase;
-        border: none;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        border-bottom: 2px solid #e2e8f0;
+        border-right: 1px solid #e2e8f0;
+        position: relative;
     }
 
     .excel-client-header {
-        background: linear-gradient(135deg, #1e40af, #1d4ed8);
+        background: #3b82f6;
         color: #ffffff;
     }
 
     .excel-cost-header {
-        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        background: #10b981;
         color: #ffffff;
     }
 
     .excel-th {
-        background: linear-gradient(135deg, #2d2d2d, #1f1f1f);
-        color: #e5e7eb;
-        padding: 12px 8px;
+        background: #ffffff;
+        color: #475569;
+        padding: 16px 12px;
         text-align: center;
-        font-weight: 600;
-        font-size: 11px;
-        letter-spacing: 0.5px;
-        border: none;
-        border-right: 1px solid #404040;
-        border-bottom: 1px solid #404040;
+        font-weight: 500;
+        font-size: 12px;
+        letter-spacing: 0.25px;
+        border-bottom: 1px solid #e2e8f0;
+        border-right: 1px solid #e2e8f0;
         white-space: nowrap;
         text-transform: uppercase;
     }
@@ -320,22 +322,24 @@
     }
 
     .excel-cell {
-        padding: 12px 10px;
-        border: 1px solid #2d2d2d;
-        background: #1f1f1f;
-        color: #e5e7eb;
+        padding: 16px 14px;
+        border-right: 1px solid #e2e8f0;
+        border-bottom: 1px solid #f1f5f9;
+        background: #ffffff;
+        color: #334155;
         position: relative;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.15s ease;
         cursor: text;
         outline: none;
-        font-weight: 500;
-        min-height: 44px;
+        font-weight: 400;
+        min-height: 52px;
         vertical-align: middle;
+        font-size: 14px;
     }
 
     .excel-cell:hover {
-        background: #262626;
-        border-color: #0ea5e9;
+        background: #f8fafc;
+        border-color: #94a3b8;
         box-shadow: inset 0 0 0 1px #0ea5e9, 0 0 0 1px rgba(14, 165, 233, 0.3);
         transform: scale(1.01);
         z-index: 3;
@@ -616,12 +620,12 @@
     }
 
     .excel-calculated {
-        background: #0f172a !important;
-        color: #94a3b8 !important;
+        background: #f0f9ff !important;
+        color: #0369a1 !important;
         cursor: text; /* Cursor de texto normal */
         font-weight: 600;
-        font-style: italic;
-        border: 1px solid #1e293b !important;
+        font-style: normal;
+        border: 1px solid #bfdbfe !important;
         user-select: text; /* Permitir selección de texto */
     }
 
@@ -692,25 +696,25 @@
     }
 
     .excel-row:nth-child(even) {
-        background: #171717;
+        background: #f8fafc;
     }
 
     .excel-row:nth-child(even) .excel-cell {
-        background: #171717;
-        border-color: #262626;
+        background: #f8fafc;
+        border-color: #e2e8f0;
     }
 
     .excel-row:hover {
-        background: #1e1e1e;
+        background: #f1f5f9;
     }
 
     .excel-row:hover .excel-cell {
-        background: #262626 !important;
-        border-color: #404040;
+        background: #f1f5f9 !important;
+        border-color: #cbd5e1;
     }
 
     .excel-row:hover .excel-calculated {
-        background: #1e293b !important;
+        background: #e0f2fe !important;
     }
 
     /* Excel Toolbar Styles */
@@ -3316,15 +3320,15 @@ function mostrarTablaVolumetria(datos) {
                                     transform: scale(1.05);
                                 }
                                 
-                                /* Apple-style Classes - Modo Oscuro Profesional */
+                                /* Apple-style Classes - Modo Claro Profesional */
                                 .apple-glass-card {
-                                    background: rgba(28, 28, 30, 0.85);
+                                    background: rgba(255, 255, 255, 0.95);
                                     backdrop-filter: blur(20px);
                                     -webkit-backdrop-filter: blur(20px);
-                                    border: 1px solid rgba(99, 99, 102, 0.3);
-                                    border-radius: 12px;
-                                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 
-                                               inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                                    border: 1px solid rgba(226, 232, 240, 0.8);
+                                    border-radius: 16px;
+                                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 
+                                               inset 0 1px 0 rgba(255, 255, 255, 0.9);
                                 }
                                 
                                 .apple-card {
@@ -3349,19 +3353,19 @@ function mostrarTablaVolumetria(datos) {
                                 
                                 .apple-bg {
                                     background: linear-gradient(135deg, 
-                                        #1c1c1e 0%, 
-                                        #2c2c2e 50%, 
-                                        #1c1c1e 100%);
+                                        #f8fafc 0%, 
+                                        #f1f5f9 50%, 
+                                        #e2e8f0 100%);
                                     min-height: 100vh;
                                 }
                                 
-                                /* Tipografía Apple Dark */
+                                /* Tipografía Apple Light */
                                 .apple-text-primary {
-                                    color: #f2f2f7;
+                                    color: #1e293b;
                                 }
                                 
                                 .apple-text-secondary {
-                                    color: #8e8e93;
+                                    color: #64748b;
                                 }
                                 
                                 .apple-text-accent {
