@@ -388,6 +388,232 @@
         font-weight: 400;
         white-space: normal;
     }
+    
+    /* Container para autocompletado en celdas */
+    .excel-cell[data-field="noParte"] {
+        position: relative;
+    }
+    
+    /* ============================= */
+    /* PANEL LATERAL INTERACTIVO     */
+    /* ============================= */
+    
+    .volumetria-panel-trigger {
+        position: fixed;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 40px;
+        height: 200px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px 0 0 20px;
+        cursor: pointer;
+        z-index: 999;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.7;
+    }
+    
+    .volumetria-panel-trigger:hover {
+        width: 50px;
+        opacity: 1;
+        transform: translateY(-50%) translateX(-5px);
+        box-shadow: -8px 0 30px rgba(0, 0, 0, 0.4);
+    }
+    
+    .volumetria-panel-trigger::before {
+        content: "📦";
+        font-size: 20px;
+        animation: bounce 2s infinite;
+    }
+    
+    .volumetria-sidebar {
+        position: fixed;
+        right: -350px;
+        top: 0;
+        width: 350px;
+        height: 100vh;
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-left: 1px solid rgba(255, 255, 255, 0.1);
+        z-index: 1000;
+        transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
+        overflow-y: auto;
+        padding: 20px;
+    }
+    
+    .volumetria-sidebar.active {
+        right: 0;
+    }
+    
+    .sidebar-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .sidebar-header h3 {
+        color: #ffffff;
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin: 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    .sidebar-header p {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.9rem;
+        margin-top: 5px;
+    }
+    
+    .category-section {
+        margin-bottom: 30px;
+    }
+    
+    .category-title {
+        color: #ffffff;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .category-items {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .item-card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 15px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .item-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        transition: left 0.5s;
+    }
+    
+    .item-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(102, 126, 234, 0.5);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+        background: rgba(255, 255, 255, 0.08);
+    }
+    
+    .item-card:hover::before {
+        left: 100%;
+    }
+    
+    .item-icon {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        display: block;
+        text-align: center;
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+        transition: transform 0.3s ease;
+    }
+    
+    .item-card:hover .item-icon {
+        transform: scale(1.1) rotateY(15deg);
+        animation: iconPulse 1s ease-in-out;
+    }
+    
+    .item-name {
+        color: #ffffff;
+        font-weight: 600;
+        font-size: 0.95rem;
+        text-align: center;
+        margin-bottom: 5px;
+    }
+    
+    .item-description {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.8rem;
+        text-align: center;
+        line-height: 1.3;
+    }
+    
+    .close-sidebar {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: #ffffff;
+        font-size: 1.5rem;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .close-sidebar:hover {
+        background: rgba(255, 69, 58, 0.8);
+        transform: rotate(90deg);
+    }
+    
+    /* Animaciones */
+    @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-10px); }
+        60% { transform: translateY(-5px); }
+    }
+    
+    @keyframes iconPulse {
+        0% { transform: scale(1.1) rotateY(15deg); }
+        50% { transform: scale(1.2) rotateY(0deg); }
+        100% { transform: scale(1.1) rotateY(15deg); }
+    }
+    
+    /* Overlay cuando el sidebar está activo */
+    .volumetria-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 998;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+    }
+    
+    .volumetria-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
 
     .excel-calculated {
         background: #0f172a !important;
@@ -2426,6 +2652,115 @@ function mostrarTablaVolumetriaGeneral(datos) {
                                     ${generarFilasVaciasGeneral()}
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Panel Lateral Interactivo -->
+                    <div class="volumetria-panel-trigger" onclick="abrirPanelVolumetria()"></div>
+                    <div class="volumetria-overlay" onclick="cerrarPanelVolumetria()"></div>
+                    
+                    <div class="volumetria-sidebar" id="volumetria-sidebar">
+                        <button class="close-sidebar" onclick="cerrarPanelVolumetria()">×</button>
+                        
+                        <div class="sidebar-header">
+                            <h3>🛠️ Kit de Volumetría</h3>
+                            <p>Arrastra o haz click para agregar elementos</p>
+                        </div>
+                        
+                        <!-- Cableado -->
+                        <div class="category-section">
+                            <div class="category-title">
+                                <span>🔌</span> Cableado
+                            </div>
+                            <div class="category-items">
+                                <div class="item-card" onclick="agregarElementoVolumetria('cable-utp')">
+                                    <span class="item-icon">🟦</span>
+                                    <div class="item-name">Cable UTP</div>
+                                    <div class="item-description">Cable de red categoría 6</div>
+                                </div>
+                                
+                                <div class="item-card" onclick="agregarElementoVolumetria('jack-rj45')">
+                                    <span class="item-icon">🔌</span>
+                                    <div class="item-name">Jack RJ45</div>
+                                    <div class="item-description">Conector de red estándar</div>
+                                </div>
+                                
+                                <div class="item-card" onclick="agregarElementoVolumetria('patchcord')">
+                                    <span class="item-icon">🌈</span>
+                                    <div class="item-name">Patchcord</div>
+                                    <div class="item-description">Cable de parcheo</div>
+                                </div>
+                                
+                                <div class="item-card" onclick="agregarElementoVolumetria('faceplate')">
+                                    <span class="item-icon">⬜</span>
+                                    <div class="item-name">Faceplate</div>
+                                    <div class="item-description">Placa de pared</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Infraestructura -->
+                        <div class="category-section">
+                            <div class="category-title">
+                                <span>🏗️</span> Infraestructura
+                            </div>
+                            <div class="category-items">
+                                <div class="item-card" onclick="agregarElementoVolumetria('tuberia-steel')">
+                                    <span class="item-icon">🔩</span>
+                                    <div class="item-name">Tubería Steel</div>
+                                    <div class="item-description">Conducto metálico</div>
+                                </div>
+                                
+                                <div class="item-card" onclick="agregarElementoVolumetria('tuberia-pvc')">
+                                    <span class="item-icon">⚪</span>
+                                    <div class="item-name">Tubería PVC</div>
+                                    <div class="item-description">Conducto de plástico</div>
+                                </div>
+                                
+                                <div class="item-card" onclick="agregarElementoVolumetria('gabinete')">
+                                    <span class="item-icon">📦</span>
+                                    <div class="item-name">Gabinete</div>
+                                    <div class="item-description">Rack de equipos</div>
+                                </div>
+                                
+                                <div class="item-card" onclick="agregarElementoVolumetria('panel-patcheo')">
+                                    <span class="item-icon">⬛</span>
+                                    <div class="item-name">Panel de Patcheo</div>
+                                    <div class="item-description">Organizador de conexiones</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Mano de Obra -->
+                        <div class="category-section">
+                            <div class="category-title">
+                                <span>👷</span> Mano de Obra
+                            </div>
+                            <div class="category-items">
+                                <div class="item-card" onclick="agregarElementoVolumetria('instalacion-nodo')">
+                                    <span class="item-icon">⚡</span>
+                                    <div class="item-name">Instalación Nodo</div>
+                                    <div class="item-description">Configuración punto de red</div>
+                                </div>
+                                
+                                <div class="item-card" onclick="agregarElementoVolumetria('tendido-cable')">
+                                    <span class="item-icon">🔧</span>
+                                    <div class="item-name">Tendido de Cable</div>
+                                    <div class="item-description">Instalación de cableado</div>
+                                </div>
+                                
+                                <div class="item-card" onclick="agregarElementoVolumetria('certificacion')">
+                                    <span class="item-icon">✅</span>
+                                    <div class="item-name">Certificación</div>
+                                    <div class="item-description">Pruebas y documentación</div>
+                                </div>
+                                
+                                <div class="item-card" onclick="agregarElementoVolumetria('etiquetado')">
+                                    <span class="item-icon">🏷️</span>
+                                    <div class="item-name">Etiquetado</div>
+                                    <div class="item-description">Identificación de componentes</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -5961,10 +6296,21 @@ function agregarListenersAutoCompletado() {
         // Remover listeners existentes si los hay
         cell.removeEventListener('input', resetearProcessedFlag);
         cell.removeEventListener('focus', resetearProcessedFlag);
+        cell.removeEventListener('input', manejarAutoCompletadoCelda);
+        cell.removeEventListener('keydown', manejarNavegacionSugerencias);
+        cell.removeEventListener('blur', ocultarSugerenciasCelda);
         
         // Agregar listeners para detectar cambios
         cell.addEventListener('input', resetearProcessedFlag);
         cell.addEventListener('focus', resetearProcessedFlag);
+        
+        // NUEVO: Agregar listeners para autocompletado en tiempo real
+        cell.addEventListener('input', manejarAutoCompletadoCelda);
+        cell.addEventListener('keydown', manejarNavegacionSugerencias);
+        cell.addEventListener('blur', ocultarSugerenciasCelda);
+        
+        // Asegurar que la celda tenga position relative para el dropdown
+        cell.style.position = 'relative';
     });
     
     // Agregar listeners de pegado Excel-like a todas las celdas editables
@@ -6197,6 +6543,487 @@ function eliminarFilaExcel(rowIndex) {
             console.log(`❌ Fila Excel ${rowIndex} eliminada con animación`);
         }, 300);
     }
+}
+
+// ============================================================
+// FUNCIONES DE AUTOCOMPLETADO EN TIEMPO REAL PARA CELDAS
+// ============================================================
+
+let timeoutBusqueda = null;
+let sugerenciasActivas = new Map(); // Para manejar múltiples dropdowns
+
+// Función para manejar autocompletado en celdas de número de parte
+function manejarAutoCompletadoCelda(event) {
+    const celda = event.target;
+    const texto = celda.textContent.trim();
+    const rowIndex = celda.getAttribute('data-row');
+    
+    console.log(`🔍 Autocompletado en celda fila ${rowIndex}: "${texto}"`);
+    
+    // Limpiar timeout anterior
+    if (timeoutBusqueda) {
+        clearTimeout(timeoutBusqueda);
+    }
+    
+    // Si el texto es muy corto, ocultar sugerencias
+    if (texto.length < 2) {
+        ocultarSugerenciasCelda({ target: celda });
+        return;
+    }
+    
+    // Debounce de 300ms
+    timeoutBusqueda = setTimeout(async () => {
+        await buscarSugerenciasCelda(celda, texto, rowIndex);
+    }, 300);
+}
+
+// Función para buscar sugerencias y mostrar dropdown
+async function buscarSugerenciasCelda(celda, texto, rowIndex) {
+    try {
+        console.log(`📡 Buscando sugerencias para: "${texto}"`);
+        
+        const response = await fetch(`/app/api/sugerencias-productos/?q=${encodeURIComponent(texto)}&limit=5`);
+        const data = await response.json();
+        
+        if (data.success && data.sugerencias && data.sugerencias.length > 0) {
+            mostrarSugerenciasCelda(celda, data.sugerencias, rowIndex);
+        } else {
+            ocultarSugerenciasCelda({ target: celda });
+        }
+    } catch (error) {
+        console.error('❌ Error buscando sugerencias:', error);
+        ocultarSugerenciasCelda({ target: celda });
+    }
+}
+
+// Función para mostrar dropdown de sugerencias
+function mostrarSugerenciasCelda(celda, sugerencias, rowIndex) {
+    // Ocultar otros dropdowns activos
+    ocultarTodasLasSugerencias();
+    
+    // Crear o actualizar dropdown
+    let dropdown = document.getElementById(`suggestions_${rowIndex}`);
+    if (!dropdown) {
+        dropdown = document.createElement('div');
+        dropdown.id = `suggestions_${rowIndex}`;
+        dropdown.className = 'autocomplete-suggestions';
+        celda.parentNode.appendChild(dropdown);
+    }
+    
+    // Posicionar dropdown
+    const rect = celda.getBoundingClientRect();
+    const parentRect = celda.parentNode.getBoundingClientRect();
+    
+    dropdown.style.position = 'absolute';
+    dropdown.style.top = `${rect.bottom - parentRect.top + 4}px`;
+    dropdown.style.left = `${rect.left - parentRect.left}px`;
+    dropdown.style.width = `${Math.max(250, rect.width)}px`;
+    dropdown.style.zIndex = '1000';
+    
+    // Generar HTML de sugerencias
+    dropdown.innerHTML = sugerencias.map((producto, index) => `
+        <div class="autocomplete-item" data-index="${index}" onclick="seleccionarSugerenciaCelda(${rowIndex}, ${index}, '${producto.numero_parte}', '${producto.descripcion.replace(/'/g, "\\'")}', ${producto.precio_lista}, '${producto.marca}')">
+            <div class="autocomplete-item-content">
+                <div class="autocomplete-parte">${producto.numero_parte}</div>
+                <div class="autocomplete-desc">${producto.descripcion}</div>
+                <div class="autocomplete-meta">
+                    <span class="autocomplete-marca">${producto.marca}</span>
+                    <span class="autocomplete-categoria">${producto.categoria}</span>
+                    <span class="autocomplete-precio">$${producto.precio_lista.toFixed(2)}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    dropdown.style.display = 'block';
+    sugerenciasActivas.set(rowIndex, { dropdown, sugerencias, selectedIndex: -1 });
+    
+    console.log(`✅ Mostrando ${sugerencias.length} sugerencias para fila ${rowIndex}`);
+}
+
+// Función para seleccionar una sugerencia
+function seleccionarSugerenciaCelda(rowIndex, suggestionIndex, numeroParte, descripcion, precio, marca) {
+    console.log(`✅ Producto seleccionado: ${numeroParte}`);
+    
+    // Actualizar celdas de la fila
+    const row = document.querySelector(`[data-row="${rowIndex}"]`);
+    if (row) {
+        // Número de parte
+        const celdaNoParte = row.querySelector('[data-field="noParte"]');
+        if (celdaNoParte) {
+            celdaNoParte.textContent = numeroParte;
+        }
+        
+        // Descripción
+        const celdaDescripcion = row.querySelector('[data-field="descripcion"]');
+        if (celdaDescripcion) {
+            celdaDescripcion.textContent = descripcion;
+        }
+        
+        // Precio
+        const celdaPrecio = row.querySelector('[data-field="precioLista"]');
+        if (celdaPrecio) {
+            celdaPrecio.textContent = `$${precio.toFixed(2)}`;
+        }
+        
+        // Marca (si existe la columna)
+        const celdaMarca = row.querySelector('[data-field="marca"]');
+        if (celdaMarca) {
+            celdaMarca.textContent = marca;
+        }
+        
+        // Recalcular fila
+        if (typeof recalcularFilaExcel === 'function') {
+            recalcularFilaExcel(rowIndex);
+        } else if (typeof recalcularFilaExcelGeneral === 'function') {
+            recalcularFilaExcelGeneral(rowIndex);
+        }
+    }
+    
+    // Ocultar sugerencias
+    ocultarSugerenciasCelda({ target: document.querySelector(`[data-row="${rowIndex}"] [data-field="noParte"]`) });
+}
+
+// Función para manejar navegación con teclado
+function manejarNavegacionSugerencias(event) {
+    const celda = event.target;
+    const rowIndex = celda.getAttribute('data-row');
+    const sugerenciaData = sugerenciasActivas.get(parseInt(rowIndex));
+    
+    if (!sugerenciaData || !sugerenciaData.dropdown || sugerenciaData.dropdown.style.display === 'none') {
+        return;
+    }
+    
+    const { dropdown, sugerencias } = sugerenciaData;
+    let { selectedIndex } = sugerenciaData;
+    const items = dropdown.querySelectorAll('.autocomplete-item');
+    
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        if (selectedIndex >= 0) items[selectedIndex].classList.remove('selected');
+        selectedIndex = (selectedIndex + 1) % items.length;
+        items[selectedIndex].classList.add('selected');
+        sugerenciaData.selectedIndex = selectedIndex;
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        if (selectedIndex >= 0) items[selectedIndex].classList.remove('selected');
+        selectedIndex = selectedIndex <= 0 ? items.length - 1 : selectedIndex - 1;
+        items[selectedIndex].classList.add('selected');
+        sugerenciaData.selectedIndex = selectedIndex;
+    } else if (event.key === 'Enter' && selectedIndex >= 0) {
+        event.preventDefault();
+        const producto = sugerencias[selectedIndex];
+        seleccionarSugerenciaCelda(
+            parseInt(rowIndex), 
+            selectedIndex, 
+            producto.numero_parte, 
+            producto.descripcion, 
+            producto.precio_lista, 
+            producto.marca
+        );
+    } else if (event.key === 'Escape') {
+        ocultarSugerenciasCelda(event);
+    }
+}
+
+// Función para ocultar sugerencias de una celda específica
+function ocultarSugerenciasCelda(event) {
+    const celda = event.target;
+    const rowIndex = celda.getAttribute('data-row');
+    
+    setTimeout(() => {
+        const dropdown = document.getElementById(`suggestions_${rowIndex}`);
+        if (dropdown) {
+            dropdown.style.display = 'none';
+        }
+        sugerenciasActivas.delete(parseInt(rowIndex));
+    }, 200); // Delay para permitir clicks en sugerencias
+}
+
+// Función para ocultar todas las sugerencias activas
+function ocultarTodasLasSugerencias() {
+    sugerenciasActivas.forEach((data, rowIndex) => {
+        if (data.dropdown) {
+            data.dropdown.style.display = 'none';
+        }
+    });
+    sugerenciasActivas.clear();
+}
+
+// ============================================================
+// FUNCIONES DEL PANEL LATERAL INTERACTIVO
+// ============================================================
+
+// Función para abrir el panel lateral
+function abrirPanelVolumetria() {
+    console.log('🎨 Abriendo panel lateral de volumetría');
+    
+    const sidebar = document.getElementById('volumetria-sidebar');
+    const overlay = document.querySelector('.volumetria-overlay');
+    const trigger = document.querySelector('.volumetria-panel-trigger');
+    
+    sidebar.classList.add('active');
+    overlay.classList.add('active');
+    trigger.style.opacity = '0';
+    
+    // Animación de entrada para las tarjetas
+    setTimeout(() => {
+        const cards = document.querySelectorAll('.item-card');
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.style.transform = 'translateX(0)';
+                card.style.opacity = '1';
+            }, index * 50);
+        });
+    }, 200);
+}
+
+// Función para cerrar el panel lateral
+function cerrarPanelVolumetria() {
+    console.log('🎨 Cerrando panel lateral de volumetría');
+    
+    const sidebar = document.getElementById('volumetria-sidebar');
+    const overlay = document.querySelector('.volumetria-overlay');
+    const trigger = document.querySelector('.volumetria-panel-trigger');
+    
+    sidebar.classList.remove('active');
+    overlay.classList.remove('active');
+    
+    setTimeout(() => {
+        trigger.style.opacity = '0.7';
+    }, 300);
+}
+
+// Base de datos de productos predefinidos
+const productosVolumetria = {
+    'cable-utp': {
+        noParte: 'PUL6004BL-BOX',
+        descripcion: 'Bobina de Cable UTP 305m Cat6 Azul',
+        marca: 'PANDUIT',
+        categoria: 'CABLE',
+        precioLista: 540.00,
+        cantidad: 1
+    },
+    'jack-rj45': {
+        noParte: 'CJ688TGBU',
+        descripcion: 'Jack RJ45 Cat6 UTP Azul',
+        marca: 'PANDUIT',
+        categoria: 'JACK',
+        precioLista: 15.59,
+        cantidad: 1
+    },
+    'patchcord': {
+        noParte: 'UTP28SP3BU',
+        descripcion: 'Patchcord UTP Cat6 3 Pies Azul',
+        marca: 'PANDUIT',
+        categoria: 'PATCHCORD',
+        precioLista: 14.38,
+        cantidad: 1
+    },
+    'faceplate': {
+        noParte: 'NK1FBL',
+        descripcion: 'Faceplate 1 Puerto Blanco',
+        marca: 'PANDUIT',
+        categoria: 'FACEPLATE',
+        precioLista: 6.00,
+        cantidad: 1
+    },
+    'tuberia-steel': {
+        noParte: 'STEEL-3/4',
+        descripcion: 'Tubería Steel 3/4" por Metro',
+        marca: 'BAJANET',
+        categoria: 'INFRAESTRUCTURA',
+        precioLista: 9.00,
+        cantidad: 1
+    },
+    'tuberia-pvc': {
+        noParte: 'PVC-3/4',
+        descripcion: 'Tubería PVC 3/4" por Metro',
+        marca: 'BAJANET',
+        categoria: 'INFRAESTRUCTURA',
+        precioLista: 6.50,
+        cantidad: 1
+    },
+    'gabinete': {
+        noParte: 'GAB-12U',
+        descripcion: 'Gabinete de Pared 12U',
+        marca: 'BAJANET',
+        categoria: 'INFRAESTRUCTURA',
+        precioLista: 850.00,
+        cantidad: 1
+    },
+    'panel-patcheo': {
+        noParte: 'PP-24P',
+        descripcion: 'Panel de Patcheo 24 Puertos Cat6',
+        marca: 'PANDUIT',
+        categoria: 'INFRAESTRUCTURA',
+        precioLista: 125.00,
+        cantidad: 1
+    },
+    'instalacion-nodo': {
+        noParte: 'SRV-NODO',
+        descripcion: 'Instalación de Nodo de Red',
+        marca: 'BAJANET',
+        categoria: 'SERVICIOS',
+        precioLista: 80.00,
+        cantidad: 1
+    },
+    'tendido-cable': {
+        noParte: 'SRV-TENDIDO',
+        descripcion: 'Tendido de Cable por Metro',
+        marca: 'BAJANET',
+        categoria: 'SERVICIOS',
+        precioLista: 7.00,
+        cantidad: 1
+    },
+    'certificacion': {
+        noParte: 'SRV-CERT',
+        descripcion: 'Certificación de Enlaces',
+        marca: 'BAJANET',
+        categoria: 'SERVICIOS',
+        precioLista: 25.00,
+        cantidad: 1
+    },
+    'etiquetado': {
+        noParte: 'SRV-ETIQ',
+        descripcion: 'Etiquetado y Documentación',
+        marca: 'BAJANET',
+        categoria: 'SERVICIOS',
+        precioLista: 15.00,
+        cantidad: 1
+    }
+};
+
+// Función principal para agregar elementos desde el panel
+function agregarElementoVolumetria(tipoElemento) {
+    console.log(`➕ Agregando elemento: ${tipoElemento}`);
+    
+    const producto = productosVolumetria[tipoElemento];
+    if (!producto) {
+        console.error(`❌ Producto no encontrado: ${tipoElemento}`);
+        return;
+    }
+    
+    // Animación de confirmación
+    const itemCard = document.querySelector(`[onclick="agregarElementoVolumetria('${tipoElemento}')"]`);
+    if (itemCard) {
+        itemCard.style.transform = 'scale(0.95)';
+        itemCard.style.background = 'rgba(76, 175, 80, 0.3)';
+        
+        setTimeout(() => {
+            itemCard.style.transform = 'scale(1)';
+            itemCard.style.background = 'rgba(255, 255, 255, 0.05)';
+        }, 200);
+    }
+    
+    // Buscar la primera fila vacía
+    const filaVacia = encontrarPrimeraFilaVacia();
+    if (filaVacia !== null) {
+        llenarFilaConProducto(filaVacia, producto);
+        
+        // Mostrar notificación de éxito
+        mostrarNotificacionVolumetria(`✅ ${producto.descripcion} agregado`, 'success');
+        
+        // Auto-cerrar panel después de agregar (opcional)
+        setTimeout(() => {
+            cerrarPanelVolumetria();
+        }, 1000);
+    } else {
+        // Si no hay filas vacías, agregar una nueva
+        agregarFilaExcelGeneral();
+        setTimeout(() => {
+            const nuevaFila = document.querySelectorAll('.excel-row').length - 1;
+            llenarFilaConProducto(nuevaFila, producto);
+            mostrarNotificacionVolumetria(`✅ ${producto.descripcion} agregado en nueva fila`, 'success');
+            
+            setTimeout(() => {
+                cerrarPanelVolumetria();
+            }, 1000);
+        }, 100);
+    }
+}
+
+// Función para encontrar la primera fila vacía
+function encontrarPrimeraFilaVacia() {
+    const filas = document.querySelectorAll('.excel-row');
+    
+    for (let i = 0; i < filas.length; i++) {
+        const noParte = filas[i].querySelector('[data-field="noParte"]');
+        if (noParte && noParte.textContent.trim() === '') {
+            return i;
+        }
+    }
+    
+    return null; // No hay filas vacías
+}
+
+// Función para llenar una fila con un producto
+function llenarFilaConProducto(rowIndex, producto) {
+    const row = document.querySelector(`[data-row="${rowIndex}"]`);
+    if (!row) {
+        console.error(`❌ No se encontró fila ${rowIndex}`);
+        return;
+    }
+    
+    // Llenar campos
+    const campos = {
+        'noParte': producto.noParte,
+        'cantidad': producto.cantidad,
+        'descripcion': producto.descripcion,
+        'precioLista': `$${producto.precioLista.toFixed(2)}`,
+        'marca': producto.marca
+    };
+    
+    Object.entries(campos).forEach(([field, value]) => {
+        const celda = row.querySelector(`[data-field="${field}"]`);
+        if (celda) {
+            celda.textContent = value;
+            
+            // Animación de llenado
+            celda.style.background = 'rgba(76, 175, 80, 0.3)';
+            celda.style.transition = 'all 0.3s ease';
+            
+            setTimeout(() => {
+                celda.style.background = '';
+            }, 500);
+        }
+    });
+    
+    // Recalcular la fila
+    setTimeout(() => {
+        if (typeof recalcularFilaExcelGeneral === 'function') {
+            recalcularFilaExcelGeneral(rowIndex);
+        }
+    }, 100);
+}
+
+// Función para mostrar notificaciones
+function mostrarNotificacionVolumetria(mensaje, tipo = 'info') {
+    const colores = {
+        success: 'bg-green-500',
+        error: 'bg-red-500',
+        info: 'bg-blue-500',
+        warning: 'bg-yellow-500'
+    };
+    
+    const notificacion = document.createElement('div');
+    notificacion.className = `fixed top-4 right-4 ${colores[tipo]} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300`;
+    notificacion.textContent = mensaje;
+    
+    document.body.appendChild(notificacion);
+    
+    // Animación de entrada
+    setTimeout(() => {
+        notificacion.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Auto-remover después de 3 segundos
+    setTimeout(() => {
+        notificacion.style.transform = 'translateX(full)';
+        setTimeout(() => {
+            document.body.removeChild(notificacion);
+        }, 300);
+    }, 3000);
 }
 
 // Función para actualizar los índices de las filas después de agregar/eliminar

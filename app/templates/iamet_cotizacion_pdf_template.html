@@ -85,13 +85,19 @@
       padding: 8px;
       border-bottom: 1px solid #e5e7eb;
       color: #111827;
+      text-align: center; /* Centrar por defecto */
     }
     .items-table th {
       background: #e0f2f7;
       font-weight: 600;
       font-size: 12px;
-      text-align: left;
+      text-align: center; /* Centrar encabezados */
       color: #004d40;
+    }
+    
+    /* Excepción para columna DESCRIPCIÓN */
+    .items-table th:nth-child(3), .items-table td:nth-child(3) {
+      text-align: left;
     }
     td.text-right {
       text-align: right;
@@ -183,8 +189,8 @@
       {% if secciones %}
         {% for seccion in secciones %}
           {% if seccion.titulo %}
-          <div style="margin: 20px 0 15px 0; padding: 12px 15px; background: #e0f2f7; border-left: 4px solid #00796b;">
-            <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #00796b;">{{ seccion.titulo }}</h3>
+          <div style="margin: 20px 0 15px 0; padding: 12px 15px; background: #e0f2f7; border-left: 4px solid #00796b; text-align: center;">
+            <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #00796b; text-transform: uppercase; letter-spacing: 0.5px;">{{ seccion.titulo }}</h3>
           </div>
           {% endif %}
           
@@ -194,10 +200,10 @@
                 <th>No. Partida</th>
                 <th>PRODUCTO</th>
                 <th>DESCRIPCIÓN</th>
-                <th class="text-right">CANTIDAD</th>
+                <th>CANTIDAD</th>
                 <th class="text-right">PRECIO UNITARIO</th>
                 {% if cotizacion.descuento_visible %}
-                <th class="text-right">DESC. (%)</th>
+                <th>DESC. (%)</th>
                 {% endif %}
                 <th class="text-right">TOTAL</th>
               </tr>
@@ -208,10 +214,10 @@
                 <td>{{ forloop.counter }}</td>
                 <td>{{ detalle.no_parte }}</td>
                 <td class="descripcion">{{ detalle.descripcion|default:"-"|linebreaksbr }}</td>
-                <td class="text-right">{{ detalle.cantidad }}</td>
+                <td>{{ detalle.cantidad }}</td>
                 <td class="text-right">${{ detalle.precio_unitario|floatformat:2 }}</td>
                 {% if cotizacion.descuento_visible %}
-                <td class="text-right">{{ detalle.descuento_porcentaje|floatformat:2 }}%</td>
+                <td>{{ detalle.descuento_porcentaje|floatformat:2 }}%</td>
                 {% endif %}
                 <td class="text-right">${{ detalle.get_total_item|floatformat:2 }}</td>
               </tr>
