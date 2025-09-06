@@ -2561,235 +2561,234 @@ function mostrarVolumetriaGeneralDirecta() {
 function mostrarTablaVolumetriaGeneral(datos) {
     console.log('🆕 Creando nueva tabla volumetría general limpia');
     
-    // Crear HTML completamente nuevo y limpio - TEMA OSCURO
+    // Crear HTML usando el mismo formato que la volumetría de nodos
     const nuevaTabla = `
-        <div class="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900">
-            <div class="max-w-[95%] mx-auto px-2 py-6">
-                <!-- Header moderno oscuro -->
-                <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-6 mb-8">
-                    <div class="flex justify-between items-center">
+        <div id="tabla-volumetria" class="min-h-screen apple-bg">
+            <div class="apple-bg min-h-screen overflow-y-auto">
+                <div class="apple-glass-card p-6 mx-4 animate-fade-in">
+                    <div class="flex items-center justify-between mb-8">
                         <div class="flex items-center space-x-4">
-                            <div class="bg-gradient-to-r from-blue-500 to-purple-600 p-3 rounded-xl">
+                            <div class="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl shadow-lg">
                                 <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </div>
                             <div>
-                                <h1 class="text-3xl font-bold text-white">Volumetría General</h1>
-                                <p class="text-gray-300">Sistema moderno de análisis volumétrico</p>
+                                <h1 class="text-3xl font-bold apple-text-primary">
+                                    Volumetría General
+                                </h1>
+                                <p class="apple-text-secondary mt-1">
+                                    Análisis completo de costos y rentabilidad del proyecto
+                                </p>
                             </div>
                         </div>
                         <div class="flex space-x-3">
-                            <button onclick="agregarNuevaFila()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-lg">
+                            <button onclick="agregarFilaExcel()" class="apple-btn-primary font-medium py-2 px-6 transition duration-200 shadow-lg">
                                 ➕ Agregar Fila
                             </button>
-                            <button onclick="exportarCSV()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-lg">
+                            <button onclick="exportarPDF()" class="apple-btn-primary font-medium py-2 px-6 transition duration-200 shadow-lg">
+                                Guardar PDF
+                            </button>
+                            <button onclick="exportarCSV()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200 shadow-lg">
                                 📊 Exportar CSV
+                            </button>
+                            <button onclick="nuevaVolumetria()" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200 shadow-lg">
+                                Nueva Volumetría
+                            </button>
+                            <button onclick="cerrarTablaVolumetria()" class="apple-btn-secondary font-medium py-2 px-6 transition duration-200">
+                                ← Regresar
                             </button>
                         </div>
                     </div>
-                </div>
-
-                <!-- Tabla moderna oscura -->
-                <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table id="tabla-volumetria-nueva" class="w-full">
-                            <thead class="bg-gradient-to-r from-gray-700 to-gray-600">
-                                <tr>
-                                    <th class="px-8 py-5 text-left text-base font-semibold text-gray-200 border-r border-gray-600 w-48">
-                                        No. Parte
-                                    </th>
-                                    <th class="px-6 py-5 text-center text-base font-semibold text-gray-200 border-r border-gray-600 w-24">
-                                        Cant.
-                                    </th>
-                                    <th class="px-8 py-5 text-left text-base font-semibold text-gray-200 border-r border-gray-600 w-72">
-                                        Descripción
-                                    </th>
-                                    <th class="px-6 py-5 text-right text-base font-semibold text-gray-200 border-r border-gray-600 w-32">
-                                        Precio Lista
-                                    </th>
-                                    <th class="px-6 py-5 text-center text-base font-semibold text-gray-200 border-r border-gray-600 w-20">
-                                        Desc. %
-                                    </th>
-                                    <th class="px-6 py-5 text-right text-base font-semibold text-gray-200 border-r border-gray-600 w-32">
-                                        Precio Unit.
-                                    </th>
-                                    <th class="px-6 py-5 text-right text-base font-semibold text-gray-200 border-r border-gray-600 w-32">
-                                        Total Cliente
-                                    </th>
-                                    <th class="px-6 py-5 text-center text-base font-semibold text-gray-200 border-r border-gray-600 w-24">
-                                        Desc. Prov. %
-                                    </th>
-                                    <th class="px-6 py-5 text-right text-base font-semibold text-gray-200 border-r border-gray-600 w-32">
-                                        Costo Unit.
-                                    </th>
-                                    <th class="px-6 py-5 text-right text-base font-semibold text-gray-200 border-r border-gray-600 w-32">
-                                        Total Costo
-                                    </th>
-                                    <th class="px-6 py-5 text-right text-base font-semibold text-gray-200 border-r border-gray-600 w-28">
-                                        Ganancia
-                                    </th>
-                                    <th class="px-6 py-5 text-center text-base font-semibold text-gray-200 w-24">
-                                        Acciones
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbody-volumetria-nueva">
-                                ${generarFilasVaciasNuevas()}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Totales oscuros -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-                    <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-6">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-300">Total Cliente</h3>
-                                <p id="total-cliente-nuevo" class="text-3xl font-bold text-blue-400">$0.00</p>
-                            </div>
-                            <div class="bg-blue-900 p-3 rounded-full">
-                                <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                                </svg>
+                    
+                    <!-- Resumen de datos -->
+                    <div class="project-summary">
+                        <h3 class="font-semibold apple-text-primary mb-3">Resumen del Proyecto</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
+                            <div class="apple-text-secondary"><span class="apple-text-primary font-medium">Categoría:</span> General</div>
+                            <div class="apple-text-secondary"><span class="apple-text-primary font-medium">Cliente:</span> <span id="cliente-display">-</span></div>
+                            <div class="apple-text-secondary"><span class="apple-text-primary font-medium">Oportunidad:</span> <span id="oportunidad-display">-</span></div>
+                            <div class="apple-text-secondary"><span class="apple-text-primary font-medium">Moneda:</span> 
+                                <select id="moneda-select" class="bg-transparent border-none apple-text-primary font-medium" onchange="cambiarMoneda()">
+                                    <option value="USD">USD</option>
+                                    <option value="MXN">MXN</option>
+                                </select>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-6">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-300">Total Costo</h3>
-                                <p id="total-costo-nuevo" class="text-3xl font-bold text-red-400">$0.00</p>
+                    <!-- Tabla Principal de Precios -->
+                    <div class="mb-8">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-semibold apple-text-primary">Tabla de Precios y Costos</h3>
+                            <div class="flex items-center space-x-4">
+                                <div class="text-xs apple-text-secondary bg-white/50 px-3 py-2 rounded-lg backdrop-blur-sm">
+                                    <div class="grid grid-cols-3 gap-4 text-center">
+                                        <span class="px-2 py-1 bg-gray-100 rounded"><kbd class="text-gray-700">Tab</kbd> siguiente</span>
+                                        <span class="px-2 py-1 bg-gray-100 rounded"><kbd class="text-gray-700">Enter</kbd> nueva fila</span>
+                                        <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">❌</kbd> sin confirmación</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="bg-red-900 p-3 rounded-full">
-                                <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
-                                </svg>
+                        </div>
+
+                        <!-- Tabla Excel -->
+                        <div class="excel-table-wrapper">
+                            <table id="excel-table" class="excel-table w-full">
+                                <thead style="position: sticky; top: 0; z-index: 10;">
+                                    <tr class="excel-header">
+                                        <th colspan="7" class="excel-th-group excel-client-header">INFORMACIÓN DEL CLIENTE</th>
+                                        <th colspan="4" class="excel-th-group excel-cost-header">COSTOS Y MÁRGENES</th>
+                                        <th class="excel-th-group">ACCIONES</th>
+                                    </tr>
+                                    <tr class="excel-subheader">
+                                        <th class="excel-th">Número de Parte</th>
+                                        <th class="excel-th">Cant.</th>
+                                        <th class="excel-th excel-description">Descripción del Producto</th>
+                                        <th class="excel-th">Precio Lista</th>
+                                        <th class="excel-th">Desc.%</th>
+                                        <th class="excel-th">P. Unitario</th>
+                                        <th class="excel-th excel-total">Total Cliente</th>
+                                        <th class="excel-th">Desc.%</th>
+                                        <th class="excel-th">Costo Unit.</th>
+                                        <th class="excel-th excel-total">Total Costo</th>
+                                        <th class="excel-th excel-profit">Ganancia</th>
+                                        <th class="excel-th">❌</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="excel-tbody" class="excel-tbody">
+                                    ${generarFilasVaciasGeneralExcel()}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Mano de Obra -->
+                    <div class="apple-spacing">
+                        <h3 class="text-lg font-semibold apple-text-primary mb-4">Mano de Obra</h3>
+                        <div class="project-summary">
+                            <p class="apple-text-secondary">Los costos de instalación y configuración se calcularán en la siguiente versión.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Resumen Final -->
+                    <div id="resumen-volumetria" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="apple-card p-6">
+                            <h4 class="apple-text-primary font-semibold mb-4 text-lg">💰 Resumen Financiero</h4>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="apple-text-secondary">Total Cliente:</span>
+                                    <span id="total-cliente" class="apple-text-primary font-bold text-lg">$0.00</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="apple-text-secondary">Total Costo:</span>
+                                    <span id="total-costo" class="apple-text-primary font-bold text-lg">$0.00</span>
+                                </div>
+                                <hr class="border-gray-300/50">
+                                <div class="flex justify-between items-center">
+                                    <span class="apple-text-secondary">Ganancia:</span>
+                                    <span id="ganancia-total" class="font-bold text-xl text-green-600">$0.00</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="apple-text-secondary">Margen:</span>
+                                    <span id="margen-porcentaje" class="font-bold text-green-600">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="apple-card p-6">
+                            <h4 class="apple-text-primary font-semibold mb-4 text-lg">📊 Estadísticas</h4>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="apple-text-secondary">Total Productos:</span>
+                                    <span id="total-productos" class="apple-text-primary font-medium">0</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="apple-text-secondary">Total Unidades:</span>
+                                    <span id="total-unidades" class="apple-text-primary font-medium">0</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="apple-text-secondary">Precio Promedio:</span>
+                                    <span id="precio-promedio" class="apple-text-primary font-medium">$0.00</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-6">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-300">Ganancia</h3>
-                                <p id="ganancia-nueva" class="text-3xl font-bold text-green-400">$0.00</p>
-                            </div>
-                            <div class="bg-green-900 p-3 rounded-full">
-                                <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
     `;
     
-    // Reemplazar contenido
-    document.body.innerHTML = nuevaTabla;
+    // Ocultar contenido principal
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.style.display = 'none';
+    }
     
-    // Configurar eventos
+    document.body.insertAdjacentHTML('beforeend', nuevaTabla);
+    
+    // Resolver nombres de cliente y oportunidad
+    resolverNombresClienteYOportunidad(datos);
+    
+    // Configurar USD como moneda por defecto
+    const monedaSelect = document.getElementById('moneda-select');
+    if (monedaSelect) {
+        monedaSelect.value = 'USD';
+        monedaActual = 'USD';
+    }
+    recalcularTotalesExcel(); // Recalcular una vez al inicio
+    
+    // Agregar listeners para auto-completado de productos
     setTimeout(() => {
-        configurarEventosNuevos();
+        agregarListenersAutoCompletado();
         console.log('✅ Nueva tabla volumetría general creada correctamente');
-    }, 100);
+    }, 500);
 }
 
-// Función para generar filas vacías nuevas
-function generarFilasVaciasNuevas() {
-    console.log('📋 Generando filas vacías nuevas');
+// Función para generar filas vacías con formato Excel (igual que nodos)
+function generarFilasVaciasGeneralExcel() {
+    console.log('📊 Generando filas vacías con formato Excel para volumetría general');
     
     let filas = '';
     
-    // Generar 5 filas vacías iniciales - TEMA OSCURO
+    // Generar 5 filas vacías iniciales con formato Excel
     for (let i = 0; i < 5; i++) {
         filas += `
-            <tr class="border-b border-gray-700 hover:bg-gray-700 transition-colors" data-row="${i}">
-                <td class="px-8 py-5 border-r border-gray-600 relative w-48">
-                    <input type="text" 
-                           class="w-full bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 rounded px-3 py-2 border border-gray-600 text-base" 
-                           placeholder="Escribir No. Parte..." 
-                           data-field="noParte" 
-                           data-row="${i}" 
-                           oninput="buscarProductoAutocompleteMejorado(this)"
-                           onblur="ocultarSugerencias()"
-                           onfocus="mostrarUltimasSugerencias(this)"
-                           autocomplete="off">
-                    <!-- Dropdown de sugerencias para esta celda -->
-                    <div id="suggestions-${i}" class="absolute top-full left-0 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50 hidden max-h-60 overflow-y-auto">
-                    </div>
-                </td>
-                <td class="px-6 py-5 border-r border-gray-600 text-center w-24">
-                    <input type="number" 
-                           class="w-full bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 rounded px-3 py-2 text-center border border-gray-600 text-base" 
-                           placeholder="1" 
-                           value="1"
-                           data-field="cantidad" 
-                           data-row="${i}" 
-                           onchange="calcularFila(${i})">
-                </td>
-                <td class="px-8 py-5 border-r border-gray-600 w-72">
-                    <input type="text" 
-                           class="w-full bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 rounded px-3 py-2 border border-gray-600 text-base" 
-                           placeholder="Descripción del producto" 
-                           data-field="descripcion" 
-                           data-row="${i}" readonly>
-                </td>
-                <td class="px-6 py-5 border-r border-gray-600 text-right w-32">
-                    <input type="text" 
-                           class="w-full bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 rounded px-3 py-2 text-right border border-gray-600 text-base" 
-                           placeholder="$0.00" 
-                           data-field="precioLista" 
-                           data-row="${i}" 
-                           onchange="calcularFila(${i})">
-                </td>
-                <td class="px-6 py-5 border-r border-gray-600 text-center w-20">
-                    <input type="number" 
-                           class="w-full bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 rounded px-3 py-2 text-center border border-gray-600 text-base" 
-                           placeholder="0" 
-                           value="0"
-                           step="0.01"
-                           data-field="descuentoCliente" 
-                           data-row="${i}" 
-                           onchange="calcularFila(${i})">
-                </td>
-                <td class="px-6 py-5 border-r border-gray-600 text-right bg-blue-900/30 w-32">
-                    <span class="text-blue-400 font-medium text-base" data-field="precioUnitario" data-row="${i}">$0.00</span>
-                </td>
-                <td class="px-6 py-5 border-r border-gray-600 text-right bg-blue-900/30 w-32">
-                    <span class="text-blue-400 font-bold text-base" data-field="totalCliente" data-row="${i}">$0.00</span>
-                </td>
-                <td class="px-6 py-5 border-r border-gray-600 text-center w-24">
-                    <input type="number" 
-                           class="w-full bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-400 rounded px-3 py-2 text-center border border-gray-600 text-base" 
-                           placeholder="0" 
-                           value="0"
-                           step="0.01"
-                           data-field="descuentoProveedor" 
-                           data-row="${i}" 
-                           onchange="calcularFila(${i})">
-                </td>
-                <td class="px-6 py-5 border-r border-gray-600 text-right bg-green-900/30 w-32">
-                    <span class="text-green-400 font-medium text-base" data-field="costoUnitario" data-row="${i}">$0.00</span>
-                </td>
-                <td class="px-6 py-5 border-r border-gray-600 text-right bg-green-900/30 w-32">
-                    <span class="text-green-400 font-bold text-base" data-field="totalCosto" data-row="${i}">$0.00</span>
-                </td>
-                <td class="px-6 py-5 border-r border-gray-600 text-right bg-purple-900/30 w-28">
-                    <span class="text-purple-400 font-bold text-base" data-field="ganancia" data-row="${i}">$0.00</span>
-                </td>
-                <td class="px-6 py-5 text-center w-24">
-                    <button onclick="eliminarFila(${i})" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm transition-colors shadow-lg">
-                        🗑️
+            <tr class="excel-row" data-row="${i}">
+                <td class="excel-cell excel-cell-text editable" contenteditable="true" data-field="noParte" data-row="${i}" oninput="buscarProductoAutocompleteMejorado(this)" placeholder="Número de parte..."></td>
+                <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="cantidad" data-row="${i}" onblur="recalcularFilaExcel(${i})">1</td>
+                <td class="excel-cell excel-cell-text excel-cell-description editable" contenteditable="true" data-field="descripcion" data-row="${i}" placeholder="Descripción del producto"></td>
+                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioLista" data-row="${i}" onblur="recalcularFilaExcel(${i})" placeholder="$0.00"></td>
+                <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoCliente" data-row="${i}" onblur="recalcularFilaExcel(${i})">0.00%</td>
+                <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="false">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-client" contenteditable="false">$0.00</td>
+                <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoProveedor" data-row="${i}" onblur="recalcularFilaExcel(${i})">0.00%</td>
+                <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="false">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" contenteditable="false">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-profit" contenteditable="false">$0.00</td>
+                <td class="excel-cell excel-cell-action">
+                    <button onclick="eliminarFilaExcel(${i})" class="excel-delete-btn" title="Eliminar fila">
+                        ❌
                     </button>
                 </td>
             </tr>
         `;
     }
+    
+    // Fila de totales
+    filas += `
+        <tr class="excel-totals-row">
+            <td colspan="5" class="excel-cell excel-totals-label">TOTALES:</td>
+            <td class="excel-cell excel-cell-currency excel-calculated"></td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-total-client">$0.00</td>
+            <td class="excel-cell excel-cell-currency excel-calculated"></td>
+            <td class="excel-cell excel-cell-currency excel-calculated"></td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost">$0.00</td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-profit">$0.00</td>
+            <td class="excel-cell"></td>
+        </tr>
+    `;
     
     return filas;
 }
@@ -3101,101 +3100,7 @@ function mostrarMensajeError(rowIndex) {
     }, 3000);
 }
 
-// Función para agregar nueva fila
-function agregarNuevaFila() {
-    console.log('➕ Agregando nueva fila');
-    
-    const tbody = document.getElementById('tbody-volumetria-nueva');
-    if (!tbody) return;
-    
-    const filasActuales = tbody.querySelectorAll('tr').length;
-    const nuevaFila = filasActuales;
-    
-    const filaHTML = `
-        <tr class="border-b border-gray-700 hover:bg-gray-700 transition-colors" data-row="${nuevaFila}">
-            <td class="px-8 py-5 border-r border-gray-600 relative w-48">
-                <input type="text" 
-                       class="w-full bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 rounded px-3 py-2 border border-gray-600 text-base" 
-                       placeholder="Escribir No. Parte..." 
-                       data-field="noParte" 
-                       data-row="${nuevaFila}" 
-                       oninput="buscarProductoAutocompleteMejorado(this)"
-                       onblur="ocultarSugerencias()"
-                       onfocus="mostrarUltimasSugerencias(this)"
-                       autocomplete="off">
-                <!-- Dropdown de sugerencias para esta celda -->
-                <div id="suggestions-${nuevaFila}" class="absolute top-full left-0 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50 hidden max-h-60 overflow-y-auto">
-                </div>
-            </td>
-            <td class="px-6 py-5 border-r border-gray-600 text-center w-24">
-                <input type="number" 
-                       class="w-full bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 rounded px-3 py-2 text-center border border-gray-600 text-base" 
-                       placeholder="1" 
-                       value="1"
-                       data-field="cantidad" 
-                       data-row="${nuevaFila}" 
-                       onchange="calcularFila(${nuevaFila})">
-            </td>
-            <td class="px-8 py-5 border-r border-gray-600 w-72">
-                <input type="text" 
-                       class="w-full bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 rounded px-3 py-2 border border-gray-600 text-base" 
-                       placeholder="Descripción del producto" 
-                       data-field="descripcion" 
-                       data-row="${nuevaFila}" readonly>
-            </td>
-            <td class="px-6 py-5 border-r border-gray-600 text-right w-32">
-                <input type="text" 
-                       class="w-full bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 rounded px-3 py-2 text-right border border-gray-600 text-base" 
-                       placeholder="$0.00" 
-                       data-field="precioLista" 
-                       data-row="${nuevaFila}" 
-                       onchange="calcularFila(${nuevaFila})">
-            </td>
-            <td class="px-6 py-5 border-r border-gray-600 text-center w-20">
-                <input type="number" 
-                       class="w-full bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 rounded px-3 py-2 text-center border border-gray-600 text-base" 
-                       placeholder="0" 
-                       value="0"
-                       step="0.01"
-                       data-field="descuentoCliente" 
-                       data-row="${nuevaFila}" 
-                       onchange="calcularFila(${nuevaFila})">
-            </td>
-            <td class="px-6 py-5 border-r border-gray-600 text-right bg-blue-900/30 w-32">
-                <span class="text-blue-400 font-medium text-base" data-field="precioUnitario" data-row="${nuevaFila}">$0.00</span>
-            </td>
-            <td class="px-6 py-5 border-r border-gray-600 text-right bg-blue-900/30 w-32">
-                <span class="text-blue-400 font-bold text-base" data-field="totalCliente" data-row="${nuevaFila}">$0.00</span>
-            </td>
-            <td class="px-6 py-5 border-r border-gray-600 text-center w-24">
-                <input type="number" 
-                       class="w-full bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-400 rounded px-3 py-2 text-center border border-gray-600 text-base" 
-                       placeholder="0" 
-                       value="0"
-                       step="0.01"
-                       data-field="descuentoProveedor" 
-                       data-row="${nuevaFila}" 
-                       onchange="calcularFila(${nuevaFila})">
-            </td>
-            <td class="px-6 py-5 border-r border-gray-600 text-right bg-green-900/30 w-32">
-                <span class="text-green-400 font-medium text-base" data-field="costoUnitario" data-row="${nuevaFila}">$0.00</span>
-            </td>
-            <td class="px-6 py-5 border-r border-gray-600 text-right bg-green-900/30 w-32">
-                <span class="text-green-400 font-bold text-base" data-field="totalCosto" data-row="${nuevaFila}">$0.00</span>
-            </td>
-            <td class="px-6 py-5 border-r border-gray-600 text-right bg-purple-900/30 w-28">
-                <span class="text-purple-400 font-bold text-base" data-field="ganancia" data-row="${nuevaFila}">$0.00</span>
-            </td>
-            <td class="px-6 py-5 text-center w-24">
-                <button onclick="eliminarFila(${nuevaFila})" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm transition-colors shadow-lg">
-                    🗑️
-                </button>
-            </td>
-        </tr>
-    `;
-    
-    tbody.insertAdjacentHTML('beforeend', filaHTML);
-}
+// Esta función ya no se usa - usamos agregarFilaExcel() del formato Excel
 
 // Función para eliminar fila
 function eliminarFila(rowIndex) {
