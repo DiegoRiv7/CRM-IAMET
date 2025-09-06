@@ -2561,11 +2561,11 @@ function mostrarVolumetriaGeneralDirecta() {
 function mostrarTablaVolumetriaGeneral(datos) {
     console.log('🆕 Creando nueva tabla volumetría general limpia');
     
-    // Crear HTML usando el mismo formato que la volumetría de nodos
+    // Crear HTML con tema oscuro/negro
     const nuevaTabla = `
-        <div id="tabla-volumetria" class="min-h-screen apple-bg">
-            <div class="apple-bg min-h-screen overflow-y-auto">
-                <div class="apple-glass-card p-6 mx-4 animate-fade-in">
+        <div id="tabla-volumetria" class="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+            <div class="min-h-screen overflow-y-auto">
+                <div class="bg-gray-800/90 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl p-6 mx-4 animate-fade-in">
                     <div class="flex items-center justify-between mb-8">
                         <div class="flex items-center space-x-4">
                             <div class="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl shadow-lg">
@@ -2574,42 +2574,42 @@ function mostrarTablaVolumetriaGeneral(datos) {
                                 </svg>
                             </div>
                             <div>
-                                <h1 class="text-3xl font-bold apple-text-primary">
+                                <h1 class="text-3xl font-bold text-white">
                                     Volumetría General
                                 </h1>
-                                <p class="apple-text-secondary mt-1">
+                                <p class="text-gray-300 mt-1">
                                     Análisis completo de costos y rentabilidad del proyecto
                                 </p>
                             </div>
                         </div>
                         <div class="flex space-x-3">
-                            <button onclick="agregarFilaExcel()" class="apple-btn-primary font-medium py-2 px-6 transition duration-200 shadow-lg">
+                            <button onclick="agregarFilaExcel()" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200 shadow-lg">
                                 ➕ Agregar Fila
                             </button>
-                            <button onclick="exportarPDF()" class="apple-btn-primary font-medium py-2 px-6 transition duration-200 shadow-lg">
-                                Guardar PDF
+                            <button onclick="exportarPDF()" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200 shadow-lg">
+                                📄 Guardar PDF
                             </button>
                             <button onclick="exportarCSV()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200 shadow-lg">
                                 📊 Exportar CSV
                             </button>
                             <button onclick="nuevaVolumetria()" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200 shadow-lg">
-                                Nueva Volumetría
+                                🆕 Nueva Volumetría
                             </button>
-                            <button onclick="cerrarTablaVolumetria()" class="apple-btn-secondary font-medium py-2 px-6 transition duration-200">
+                            <button onclick="cerrarTablaVolumetria()" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200">
                                 ← Regresar
                             </button>
                         </div>
                     </div>
                     
                     <!-- Resumen de datos -->
-                    <div class="project-summary">
-                        <h3 class="font-semibold apple-text-primary mb-3">Resumen del Proyecto</h3>
+                    <div class="bg-gray-900/50 rounded-lg p-4 mb-6">
+                        <h3 class="font-semibold text-white mb-3">Resumen del Proyecto</h3>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
-                            <div class="apple-text-secondary"><span class="apple-text-primary font-medium">Categoría:</span> General</div>
-                            <div class="apple-text-secondary"><span class="apple-text-primary font-medium">Cliente:</span> <span id="cliente-display">-</span></div>
-                            <div class="apple-text-secondary"><span class="apple-text-primary font-medium">Oportunidad:</span> <span id="oportunidad-display">-</span></div>
-                            <div class="apple-text-secondary"><span class="apple-text-primary font-medium">Moneda:</span> 
-                                <select id="moneda-select" class="bg-transparent border-none apple-text-primary font-medium" onchange="cambiarMoneda()">
+                            <div class="text-gray-300"><span class="text-white font-medium">Categoría:</span> General</div>
+                            <div class="text-gray-300"><span class="text-white font-medium">Cliente:</span> <span id="cliente-display">-</span></div>
+                            <div class="text-gray-300"><span class="text-white font-medium">Oportunidad:</span> <span id="oportunidad-display">-</span></div>
+                            <div class="text-gray-300"><span class="text-white font-medium">Moneda:</span> 
+                                <select id="moneda-select" class="bg-gray-800 border border-gray-600 text-white font-medium rounded px-2 py-1" onchange="cambiarMoneda()">
                                     <option value="USD">USD</option>
                                     <option value="MXN">MXN</option>
                                 </select>
@@ -2620,20 +2620,76 @@ function mostrarTablaVolumetriaGeneral(datos) {
                     <!-- Tabla Principal de Precios -->
                     <div class="mb-8">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-xl font-semibold apple-text-primary">Tabla de Precios y Costos</h3>
+                            <h3 class="text-xl font-semibold text-white">Tabla de Precios y Costos</h3>
                             <div class="flex items-center space-x-4">
-                                <div class="text-xs apple-text-secondary bg-white/50 px-3 py-2 rounded-lg backdrop-blur-sm">
+                                <div class="text-xs text-gray-300 bg-gray-800/70 px-3 py-2 rounded-lg backdrop-blur-sm border border-gray-600">
                                     <div class="grid grid-cols-3 gap-4 text-center">
-                                        <span class="px-2 py-1 bg-gray-100 rounded"><kbd class="text-gray-700">Tab</kbd> siguiente</span>
-                                        <span class="px-2 py-1 bg-gray-100 rounded"><kbd class="text-gray-700">Enter</kbd> nueva fila</span>
-                                        <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">❌</kbd> sin confirmación</span>
+                                        <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-gray-200">Tab</kbd> siguiente</span>
+                                        <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-gray-200">Enter</kbd> nueva fila</span>
+                                        <span class="px-2 py-1 bg-red-600 rounded"><kbd class="text-white">❌</kbd> sin confirmación</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Tabla Excel -->
-                        <div class="excel-table-wrapper">
+                        <!-- Tabla Excel con tema oscuro -->
+                        <style>
+                            /* Override Excel styles for dark theme */
+                            .excel-table-wrapper {
+                                background: #1f2937 !important;
+                                border: 1px solid #374151 !important;
+                            }
+                            .excel-table {
+                                background: #1f2937 !important;
+                                color: #f3f4f6 !important;
+                            }
+                            .excel-header .excel-th-group {
+                                background: #111827 !important;
+                                color: #f3f4f6 !important;
+                                border-color: #374151 !important;
+                            }
+                            .excel-subheader .excel-th {
+                                background: #374151 !important;
+                                color: #f3f4f6 !important;
+                                border-color: #4b5563 !important;
+                            }
+                            .excel-cell {
+                                background: #1f2937 !important;
+                                color: #f3f4f6 !important;
+                                border-color: #374151 !important;
+                            }
+                            .excel-cell.editable:hover {
+                                background: #374151 !important;
+                                border-color: #60a5fa !important;
+                            }
+                            .excel-cell.editable:focus {
+                                background: #374151 !important;
+                                outline: 2px solid #60a5fa !important;
+                                color: #ffffff !important;
+                            }
+                            .excel-calculated {
+                                background: #111827 !important;
+                                color: #10b981 !important;
+                                font-weight: 600;
+                            }
+                            .excel-totals-row {
+                                background: #111827 !important;
+                                color: #f3f4f6 !important;
+                                font-weight: bold;
+                            }
+                            .excel-delete-btn {
+                                background: #ef4444 !important;
+                                color: white !important;
+                                border: none;
+                                border-radius: 4px;
+                                padding: 4px 8px;
+                                cursor: pointer;
+                            }
+                            .excel-delete-btn:hover {
+                                background: #dc2626 !important;
+                            }
+                        </style>
+                        <div class="excel-table-wrapper bg-gray-900/80 border border-gray-700">
                             <table id="excel-table" class="excel-table w-full">
                                 <thead style="position: sticky; top: 0; z-index: 10;">
                                     <tr class="excel-header">
@@ -2664,52 +2720,52 @@ function mostrarTablaVolumetriaGeneral(datos) {
                     </div>
                     
                     <!-- Mano de Obra -->
-                    <div class="apple-spacing">
-                        <h3 class="text-lg font-semibold apple-text-primary mb-4">Mano de Obra</h3>
-                        <div class="project-summary">
-                            <p class="apple-text-secondary">Los costos de instalación y configuración se calcularán en la siguiente versión.</p>
+                    <div class="mt-8 mb-6">
+                        <h3 class="text-lg font-semibold text-white mb-4">Mano de Obra</h3>
+                        <div class="bg-gray-900/50 rounded-lg p-4">
+                            <p class="text-gray-300">Los costos de instalación y configuración se calcularán en la siguiente versión.</p>
                         </div>
                     </div>
                     
                     <!-- Resumen Final -->
                     <div id="resumen-volumetria" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="apple-card p-6">
-                            <h4 class="apple-text-primary font-semibold mb-4 text-lg">💰 Resumen Financiero</h4>
+                        <div class="bg-gray-800/90 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl p-6">
+                            <h4 class="text-white font-semibold mb-4 text-lg">💰 Resumen Financiero</h4>
                             <div class="space-y-3">
                                 <div class="flex justify-between items-center">
-                                    <span class="apple-text-secondary">Total Cliente:</span>
-                                    <span id="total-cliente" class="apple-text-primary font-bold text-lg">$0.00</span>
+                                    <span class="text-gray-300">Total Cliente:</span>
+                                    <span id="total-cliente" class="text-white font-bold text-lg">$0.00</span>
                                 </div>
                                 <div class="flex justify-between items-center">
-                                    <span class="apple-text-secondary">Total Costo:</span>
-                                    <span id="total-costo" class="apple-text-primary font-bold text-lg">$0.00</span>
+                                    <span class="text-gray-300">Total Costo:</span>
+                                    <span id="total-costo" class="text-white font-bold text-lg">$0.00</span>
                                 </div>
-                                <hr class="border-gray-300/50">
+                                <hr class="border-gray-600">
                                 <div class="flex justify-between items-center">
-                                    <span class="apple-text-secondary">Ganancia:</span>
-                                    <span id="ganancia-total" class="font-bold text-xl text-green-600">$0.00</span>
+                                    <span class="text-gray-300">Ganancia:</span>
+                                    <span id="ganancia-total" class="font-bold text-xl text-green-400">$0.00</span>
                                 </div>
                                 <div class="flex justify-between items-center">
-                                    <span class="apple-text-secondary">Margen:</span>
-                                    <span id="margen-porcentaje" class="font-bold text-green-600">0%</span>
+                                    <span class="text-gray-300">Margen:</span>
+                                    <span id="margen-porcentaje" class="font-bold text-green-400">0%</span>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="apple-card p-6">
-                            <h4 class="apple-text-primary font-semibold mb-4 text-lg">📊 Estadísticas</h4>
+                        <div class="bg-gray-800/90 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl p-6">
+                            <h4 class="text-white font-semibold mb-4 text-lg">📊 Estadísticas</h4>
                             <div class="space-y-3">
                                 <div class="flex justify-between items-center">
-                                    <span class="apple-text-secondary">Total Productos:</span>
-                                    <span id="total-productos" class="apple-text-primary font-medium">0</span>
+                                    <span class="text-gray-300">Total Productos:</span>
+                                    <span id="total-productos" class="text-white font-medium">0</span>
                                 </div>
                                 <div class="flex justify-between items-center">
-                                    <span class="apple-text-secondary">Total Unidades:</span>
-                                    <span id="total-unidades" class="apple-text-primary font-medium">0</span>
+                                    <span class="text-gray-300">Total Unidades:</span>
+                                    <span id="total-unidades" class="text-white font-medium">0</span>
                                 </div>
                                 <div class="flex justify-between items-center">
-                                    <span class="apple-text-secondary">Precio Promedio:</span>
-                                    <span id="precio-promedio" class="apple-text-primary font-medium">$0.00</span>
+                                    <span class="text-gray-300">Precio Promedio:</span>
+                                    <span id="precio-promedio" class="text-white font-medium">$0.00</span>
                                 </div>
                             </div>
                         </div>
@@ -2742,6 +2798,18 @@ function mostrarTablaVolumetriaGeneral(datos) {
     // Agregar listeners para auto-completado de productos
     setTimeout(() => {
         agregarListenersAutoCompletado();
+        
+        // Agregar listener para ocultar sugerencias al hacer click fuera
+        document.addEventListener('click', function(e) {
+            // Si el click no es en una celda de número de parte o en una sugerencia
+            if (!e.target.closest('[data-field="noParte"]') && !e.target.closest('[id^="suggestions-"]')) {
+                // Ocultar todas las sugerencias
+                document.querySelectorAll('[id^="suggestions-"]').forEach(dropdown => {
+                    dropdown.classList.add('hidden');
+                });
+            }
+        });
+        
         console.log('✅ Nueva tabla volumetría general creada correctamente');
     }, 500);
 }
@@ -2756,7 +2824,10 @@ function generarFilasVaciasGeneralExcel() {
     for (let i = 0; i < 5; i++) {
         filas += `
             <tr class="excel-row" data-row="${i}">
-                <td class="excel-cell excel-cell-text editable" contenteditable="true" data-field="noParte" data-row="${i}" oninput="buscarProductoAutocompleteMejorado(this)" placeholder="Número de parte..."></td>
+                <td class="excel-cell excel-cell-text editable relative" contenteditable="true" data-field="noParte" data-row="${i}" oninput="buscarProductoExcel(this)" placeholder="Número de parte...">
+                    <!-- Dropdown para sugerencias -->
+                    <div id="suggestions-${i}" class="absolute top-full left-0 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50 hidden max-h-60 overflow-y-auto"></div>
+                </td>
                 <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="cantidad" data-row="${i}" onblur="recalcularFilaExcel(${i})">1</td>
                 <td class="excel-cell excel-cell-text excel-cell-description editable" contenteditable="true" data-field="descripcion" data-row="${i}" placeholder="Descripción del producto"></td>
                 <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioLista" data-row="${i}" onblur="recalcularFilaExcel(${i})" placeholder="$0.00"></td>
@@ -2881,7 +2952,31 @@ let timeoutBusqueda = null;
 let productosSugerencias = [];
 let sugerenciasActivas = null;
 
-// Función mejorada para buscar producto con autocompletado
+// Función específica para buscar productos en celdas Excel contenteditable
+function buscarProductoExcel(celda) {
+    console.log('🔍 Buscando producto en celda Excel:', celda.textContent);
+    
+    // Limpiar timeout anterior
+    if (timeoutBusqueda) {
+        clearTimeout(timeoutBusqueda);
+    }
+    
+    const texto = celda.textContent.trim();
+    const rowIndex = celda.dataset.row;
+    
+    // Si no hay texto, ocultar sugerencias
+    if (!texto) {
+        ocultarSugerenciasExcel(rowIndex);
+        return;
+    }
+    
+    // Buscar con debounce de 300ms
+    timeoutBusqueda = setTimeout(async () => {
+        await buscarEnCatalogoExcel(texto, rowIndex, celda);
+    }, 300);
+}
+
+// Función mejorada para buscar producto con autocompletado (inputs normales)
 function buscarProductoAutocompleteMejorado(input) {
     console.log('🔍 Buscando producto mejorado:', input.value);
     
@@ -2903,6 +2998,44 @@ function buscarProductoAutocompleteMejorado(input) {
     timeoutBusqueda = setTimeout(async () => {
         await buscarEnCatalogo(texto, rowIndex, input);
     }, 300);
+}
+
+// Función para buscar en catálogo específica para Excel
+async function buscarEnCatalogoExcel(texto, rowIndex, celdaElement) {
+    console.log('📊 Buscando en catálogo Excel:', texto);
+    
+    try {
+        // Llamar al API de sugerencias de productos
+        const response = await fetch('/app/api/sugerencias-productos/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+            },
+            body: JSON.stringify({
+                query: texto,
+                limit: 10
+            })
+        });
+        
+        if (!response.ok) {
+            console.error('Error en la búsqueda Excel:', response.status);
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('📋 Productos encontrados Excel:', data);
+        
+        if (data.productos && data.productos.length > 0) {
+            mostrarSugerenciasExcel(data.productos, rowIndex, celdaElement);
+        } else {
+            mostrarMensajeNoEncontradoExcel(rowIndex);
+        }
+        
+    } catch (error) {
+        console.error('❌ Error buscando productos Excel:', error);
+        mostrarMensajeErrorExcel(rowIndex);
+    }
 }
 
 // Función para buscar en catálogo de productos
@@ -2940,6 +3073,104 @@ async function buscarEnCatalogo(texto, rowIndex, inputElement) {
     } catch (error) {
         console.error('❌ Error buscando productos:', error);
         mostrarMensajeError(rowIndex);
+    }
+}
+
+// Función para mostrar sugerencias en Excel
+function mostrarSugerenciasExcel(productos, rowIndex, celdaElement) {
+    console.log('💡 Mostrando sugerencias Excel para fila:', rowIndex);
+    
+    const dropdown = document.getElementById(`suggestions-${rowIndex}`);
+    if (!dropdown) {
+        console.error('No se encontró dropdown para fila:', rowIndex);
+        return;
+    }
+    
+    // Limpiar contenido anterior
+    dropdown.innerHTML = '';
+    
+    // Crear elementos de sugerencia
+    productos.forEach((producto, index) => {
+        const sugerencia = document.createElement('div');
+        sugerencia.className = 'p-3 hover:bg-gray-700 cursor-pointer border-b border-gray-600 last:border-b-0 transition-colors';
+        
+        sugerencia.innerHTML = `
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <div class="text-white font-medium">${producto.numero_parte}</div>
+                    <div class="text-gray-300 text-sm mt-1 truncate">${producto.descripcion}</div>
+                    <div class="text-gray-400 text-xs mt-1">
+                        ${producto.marca} • ${producto.categoria}
+                    </div>
+                </div>
+                <div class="text-right ml-2">
+                    <div class="text-green-400 font-medium">$${parseFloat(producto.precio_lista || 0).toFixed(2)}</div>
+                    <div class="text-gray-400 text-xs">Lista</div>
+                </div>
+            </div>
+        `;
+        
+        // Agregar evento click
+        sugerencia.addEventListener('click', () => {
+            seleccionarProductoExcel(producto, rowIndex, celdaElement);
+            ocultarSugerenciasExcel(rowIndex);
+        });
+        
+        dropdown.appendChild(sugerencia);
+    });
+    
+    // Mostrar dropdown
+    dropdown.classList.remove('hidden');
+}
+
+// Función para seleccionar un producto en Excel
+function seleccionarProductoExcel(producto, rowIndex, celdaElement) {
+    console.log('✅ Producto seleccionado Excel:', producto);
+    
+    // Llenar la celda de número de parte
+    celdaElement.textContent = producto.numero_parte;
+    
+    // Buscar y llenar otras celdas de la fila
+    const fila = document.querySelector(`[data-row="${rowIndex}"]`);
+    if (fila) {
+        const celdaDescripcion = fila.querySelector('[data-field="descripcion"]');
+        const celdaPrecioLista = fila.querySelector('[data-field="precioLista"]');
+        
+        if (celdaDescripcion) {
+            celdaDescripcion.textContent = producto.descripcion || '';
+        }
+        
+        if (celdaPrecioLista) {
+            celdaPrecioLista.textContent = `$${parseFloat(producto.precio_lista || 0).toFixed(2)}`;
+        }
+    }
+    
+    // Recalcular la fila
+    recalcularFilaExcel(rowIndex);
+}
+
+// Función para ocultar sugerencias Excel
+function ocultarSugerenciasExcel(rowIndex) {
+    const dropdown = document.getElementById(`suggestions-${rowIndex}`);
+    if (dropdown) {
+        dropdown.classList.add('hidden');
+    }
+}
+
+// Funciones de mensajes para Excel
+function mostrarMensajeNoEncontradoExcel(rowIndex) {
+    const dropdown = document.getElementById(`suggestions-${rowIndex}`);
+    if (dropdown) {
+        dropdown.innerHTML = '<div class="p-3 text-gray-400 text-center">No se encontraron productos</div>';
+        dropdown.classList.remove('hidden');
+    }
+}
+
+function mostrarMensajeErrorExcel(rowIndex) {
+    const dropdown = document.getElementById(`suggestions-${rowIndex}`);
+    if (dropdown) {
+        dropdown.innerHTML = '<div class="p-3 text-red-400 text-center">Error en la búsqueda</div>';
+        dropdown.classList.remove('hidden');
     }
 }
 
