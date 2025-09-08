@@ -2662,6 +2662,29 @@ function mostrarTablaVolumetriaGeneral(datos) {
                                 background: #1f2937 !important;
                                 border-color: #374151 !important;
                             }
+                            /* Anular hover en filas completas - mantener tema oscuro */
+                            .excel-row:hover .excel-cell {
+                                background: #1f2937 !important;
+                                color: #f3f4f6 !important;
+                                border-color: #374151 !important;
+                            }
+                            .excel-row:hover .excel-cell.editable {
+                                background: #1f2937 !important;
+                                border-color: #374151 !important;
+                            }
+                            /* Anular hover específico para celdas dentro de filas */
+                            .excel-row:hover td {
+                                background: #1f2937 !important;
+                                color: #f3f4f6 !important;
+                            }
+                            /* Anular cualquier hover blanco del browser por defecto */
+                            .excel-table tr:hover {
+                                background: transparent !important;
+                            }
+                            .excel-table tr:hover td {
+                                background: #1f2937 !important;
+                                color: #f3f4f6 !important;
+                            }
                             .excel-cell.editable:focus {
                                 background: #374151 !important;
                                 outline: 2px solid #60a5fa !important;
@@ -2738,9 +2761,9 @@ function mostrarTablaVolumetriaGeneral(datos) {
                                     <span>➕</span>
                                     <span>Agregar Producto</span>
                                 </button>
-                                <button onclick="exportarCSVInfraestructura()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2">
+                                <button onclick="exportarCSV()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2" title="Exporta ambas tablas unificadas">
                                     <span>📊</span>
-                                    <span>Exportar</span>
+                                    <span>Exportar CSV Unificado</span>
                                 </button>
                                 <button onclick="eliminarSeccionInfraestructura()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2" title="Eliminar toda la sección de infraestructura">
                                     <span>🗑️</span>
@@ -2780,11 +2803,111 @@ function mostrarTablaVolumetriaGeneral(datos) {
                         </div>
                     </div>
                     
-                    <!-- Mano de Obra -->
-                    <div class="mt-8 mb-6">
-                        <h3 class="text-lg font-semibold text-white mb-4">Mano de Obra</h3>
-                        <div class="bg-gray-900/50 rounded-lg p-4">
-                            <p class="text-gray-300">Los costos de instalación y configuración se calcularán en la siguiente versión.</p>
+                    <!-- Tabla de Gastos de Instalación -->
+                    <div id="seccion-gastos-instalacion" class="mt-8 mb-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center space-x-4">
+                                <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-3 rounded-xl shadow-lg">
+                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h2 class="text-2xl font-bold text-white">Gastos de Instalación</h2>
+                                    <p class="text-gray-300 text-sm">Gastos operativos y de instalación del proyecto</p>
+                                </div>
+                            </div>
+                            <div class="flex space-x-3">
+                                <button onclick="agregarFilaGastosInstalacion()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2">
+                                    <span>➕</span>
+                                    <span>Agregar Gasto</span>
+                                </button>
+                                <button onclick="exportarCSV()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2" title="Exporta todas las tablas unificadas">
+                                    <span>📊</span>
+                                    <span>Exportar CSV Unificado</span>
+                                </button>
+                                <button onclick="eliminarSeccionGastosInstalacion()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2" title="Eliminar toda la sección de gastos">
+                                    <span>🗑️</span>
+                                    <span>Eliminar Sección</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Tabla de Gastos de Instalación -->
+                        <div class="excel-table-wrapper bg-gray-900/80 border border-gray-700">
+                            <table id="excel-table-gastos" class="excel-table w-full">
+                                <thead style="position: sticky; top: 0; z-index: 10;">
+                                    <tr class="excel-header">
+                                        <th colspan="8" class="excel-th-group" style="background: linear-gradient(135deg, #7c3aed, #a855f7); color: white;">GASTOS DE INSTALACIÓN</th>
+                                    </tr>
+                                    <tr class="excel-subheader">
+                                        <th class="excel-th">Marca</th>
+                                        <th class="excel-th">No. Parte</th>
+                                        <th class="excel-th">Cantidad</th>
+                                        <th class="excel-th excel-description">Descripción</th>
+                                        <th class="excel-th">Precio Lista</th>
+                                        <th class="excel-th">Desc %</th>
+                                        <th class="excel-th">Unitario</th>
+                                        <th class="excel-th">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="excel-tbody-gastos" class="excel-tbody">
+                                    ${generarFilasVaciasGastosInstalacion()}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Tabla de Mano de Obra -->
+                    <div id="seccion-mano-obra" class="mt-8 mb-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center space-x-4">
+                                <div class="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl shadow-lg">
+                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h2 class="text-2xl font-bold text-white">Mano de Obra</h2>
+                                    <p class="text-gray-300 text-sm">Costos de personal y días de trabajo del proyecto</p>
+                                </div>
+                            </div>
+                            <div class="flex space-x-3">
+                                <button onclick="agregarFilaManoObra()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2">
+                                    <span>➕</span>
+                                    <span>Agregar Personal</span>
+                                </button>
+                                <button onclick="exportarCSV()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2" title="Exporta todas las tablas unificadas">
+                                    <span>📊</span>
+                                    <span>Exportar CSV Unificado</span>
+                                </button>
+                                <button onclick="eliminarSeccionManoObra()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2" title="Eliminar toda la sección de mano de obra">
+                                    <span>🗑️</span>
+                                    <span>Eliminar Sección</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Tabla de Mano de Obra -->
+                        <div class="excel-table-wrapper bg-gray-900/80 border border-gray-700">
+                            <table id="excel-table-mano-obra" class="excel-table w-full">
+                                <thead style="position: sticky; top: 0; z-index: 10;">
+                                    <tr class="excel-header">
+                                        <th colspan="6" class="excel-th-group" style="background: linear-gradient(135deg, #10b981, #34d399); color: white;">MANO DE OBRA</th>
+                                    </tr>
+                                    <tr class="excel-subheader">
+                                        <th class="excel-th">Cantidad</th>
+                                        <th class="excel-th excel-description">Descripción</th>
+                                        <th class="excel-th">Costo unit</th>
+                                        <th class="excel-th">Concentrado</th>
+                                        <th class="excel-th">Costo Total</th>
+                                        <th class="excel-th">Días</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="excel-tbody-mano-obra" class="excel-tbody">
+                                    ${generarFilasVaciasManoObra()}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                     
@@ -2969,6 +3092,82 @@ function generarFilasVaciasInfraestructura() {
             <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost">$0.00</td>
             <td class="excel-cell excel-cell-currency excel-calculated excel-profit">$0.00</td>
             <td class="excel-cell"></td>
+        </tr>
+    `;
+    
+    return filas;
+}
+
+// Función para generar filas vacías de gastos de instalación
+function generarFilasVaciasGastosInstalacion() {
+    console.log('💰 Generando filas vacías para tabla de gastos de instalación');
+    
+    let filas = '';
+    
+    // Generar 3 filas vacías iniciales
+    for (let i = 0; i < 3; i++) {
+        filas += `
+            <tr class="excel-row" data-row="${i}">
+                <td class="excel-cell excel-cell-text editable" contenteditable="true" data-field="marca" data-row="${i}" placeholder="Marca">-</td>
+                <td class="excel-cell excel-cell-text editable" contenteditable="true" data-field="noParte" data-row="${i}" placeholder="Número de parte">-</td>
+                <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="cantidad" data-row="${i}" onblur="recalcularFilaGastosInstalacion(${i})">0</td>
+                <td class="excel-cell excel-cell-text excel-cell-description editable" contenteditable="true" data-field="descripcion" data-row="${i}" placeholder="Descripción del gasto">-</td>
+                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioLista" data-row="${i}" onblur="recalcularFilaGastosInstalacion(${i})">$0.00</td>
+                <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuento" data-row="${i}" onblur="recalcularFilaGastosInstalacion(${i})">0%</td>
+                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="unitario" data-row="${i}" onblur="recalcularFilaGastosInstalacion(${i})">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-total" data-field="total" data-row="${i}">$0.00</td>
+            </tr>
+        `;
+    }
+    
+    // Fila de totales para gastos
+    filas += `
+        <tr class="excel-totals-row">
+            <td colspan="7" class="excel-cell excel-totals-label">TOTAL GASTOS INSTALACIÓN:</td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-total">$0.00</td>
+        </tr>
+    `;
+    
+    return filas;
+}
+
+// Función para generar filas vacías de mano de obra
+function generarFilasVaciasManoObra() {
+    console.log('👷 Generando filas vacías para tabla de mano de obra');
+    
+    let filas = '';
+    
+    // Generar filas predefinidas típicas de mano de obra
+    const tiposManoObra = [
+        { cantidad: 0, descripcion: 'Supervisor', costoUnit: 70.00, dias: 0 },
+        { cantidad: 0, descripcion: 'Técnico', costoUnit: 50.00, dias: 0 },
+        { cantidad: 0, descripcion: 'combustible', costoUnit: 30.00, dias: 0 },
+        { cantidad: 0, descripcion: 'casetas', costoUnit: 7.50, dias: 0 },
+        { cantidad: 0, descripcion: 'comidas', costoUnit: 60.00, dias: 0 }
+    ];
+    
+    tiposManoObra.forEach((tipo, i) => {
+        const concentrado = tipo.cantidad * tipo.costoUnit;
+        const costoTotal = concentrado * tipo.dias;
+        
+        filas += `
+            <tr class="excel-row" data-row="${i}">
+                <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="cantidad" data-row="${i}" onblur="recalcularFilaManoObra(${i})">${tipo.cantidad}</td>
+                <td class="excel-cell excel-cell-text excel-cell-description editable" contenteditable="true" data-field="descripcion" data-row="${i}">${tipo.descripcion}</td>
+                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="costoUnit" data-row="${i}" onblur="recalcularFilaManoObra(${i})">$${tipo.costoUnit.toFixed(2)}</td>
+                <td class="excel-cell excel-cell-currency" data-field="concentrado" data-row="${i}">$${concentrado.toFixed(2)}</td>
+                <td class="excel-cell excel-cell-currency" data-field="costoTotal" data-row="${i}">$${costoTotal.toFixed(2)}</td>
+                <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="dias" data-row="${i}" onblur="recalcularFilaManoObra(${i})">${tipo.dias}</td>
+            </tr>
+        `;
+    });
+    
+    // Fila de totales para mano de obra
+    filas += `
+        <tr class="excel-totals-row">
+            <td colspan="4" class="excel-cell excel-totals-label">COSTO MANO DE OBRA:</td>
+            <td class="excel-cell excel-cell-currency excel-calculated excel-total">$0.00</td>
+            <td class="excel-cell excel-cell-number"></td>
         </tr>
     `;
     
@@ -3275,6 +3474,11 @@ function recalcularTotalesInfraestructura() {
         totalsRow.children[9].textContent = formatearMoneda(totalCosto);
         totalsRow.children[10].textContent = formatearMoneda(gananciaTotal);
     }
+    
+    // Actualizar resumen consolidado
+    setTimeout(() => {
+        actualizarResumenConsolidado();
+    }, 100);
 }
 
 // Función para agregar nueva fila de infraestructura
@@ -5903,35 +6107,63 @@ function exportarPDF() {
 
 // Función para obtener los items de la tabla para el PDF
 function obtenerItemsTabla() {
-    const tabla = document.getElementById('tabla-items');
-    if (!tabla) return [];
+    console.log('📋 Obteniendo items de tablas Excel unificadas');
     
     const items = [];
-    const filas = tabla.children;
     
-    // Procesar todas las filas excepto la última (totales)
-    for (let i = 0; i < filas.length - 1; i++) {
-        const fila = filas[i];
-        const celdas = fila.children;
+    // Función auxiliar para procesar una tabla específica
+    function procesarTablaExcel(tableId, categoria = '') {
+        const tabla = document.getElementById(tableId);
+        if (!tabla) return [];
         
-        if (celdas.length >= 11) {
-            const item = {
-                numero_parte: celdas[0].textContent.trim(),
-                cantidad: parseInt(celdas[1].textContent) || 0,
-                descripcion: celdas[2].textContent.trim(),
-                precio_cliente: parseFloat(celdas[3].textContent.replace(/[^\d.-]/g, '')) || 0,
-                descuento_cliente: parseFloat(celdas[4].textContent.replace(/[^\d.-]/g, '')) || 0,
-                subtotal_cliente: parseFloat(celdas[5].textContent.replace(/[^\d.-]/g, '')) || 0,
-                precio_final_cliente: parseFloat(celdas[6].textContent.replace(/[^\d.-]/g, '')) || 0,
-                descuento_proveedor: parseFloat(celdas[7].textContent.replace(/[^\d.-]/g, '')) || 0,
-                costo_proveedor: parseFloat(celdas[8].textContent.replace(/[^\d.-]/g, '')) || 0,
-                total_proveedor: parseFloat(celdas[9].textContent.replace(/[^\d.-]/g, '')) || 0,
-                ganancia: parseFloat(celdas[10].textContent.replace(/[^\d.-]/g, '')) || 0
-            };
-            items.push(item);
-        }
+        const itemsTabla = [];
+        const filas = tabla.querySelectorAll('.excel-row:not(.excel-totals-row)');
+        
+        filas.forEach(fila => {
+            const celdas = fila.children;
+            
+            // Verificar que tenga suficientes celdas y que no esté vacía
+            if (celdas.length >= 11) {
+                const numeroParte = celdas[0].textContent.trim();
+                
+                // Solo incluir filas con datos reales
+                if (numeroParte && numeroParte !== 'Nuevo producto' && numeroParte !== '') {
+                    const item = {
+                        numero_parte: numeroParte,
+                        cantidad: parseInt(celdas[1].textContent) || 0,
+                        descripcion: celdas[2].textContent.trim() || 'Sin descripción',
+                        precio_lista: parseFloat(celdas[3].textContent.replace(/[^\d.-]/g, '')) || 0,
+                        descuento_cliente: parseFloat(celdas[4].textContent.replace(/[^\d.-]/g, '')) || 0,
+                        precio_unitario: parseFloat(celdas[5].textContent.replace(/[^\d.-]/g, '')) || 0,
+                        total_cliente: parseFloat(celdas[6].textContent.replace(/[^\d.-]/g, '')) || 0,
+                        descuento_proveedor: parseFloat(celdas[7].textContent.replace(/[^\d.-]/g, '')) || 0,
+                        costo_unitario: parseFloat(celdas[8].textContent.replace(/[^\d.-]/g, '')) || 0,
+                        total_costo: parseFloat(celdas[9].textContent.replace(/[^\d.-]/g, '')) || 0,
+                        ganancia: parseFloat(celdas[10].textContent.replace(/[^\d.-]/g, '')) || 0,
+                        categoria: categoria // Para identificar si es principal o infraestructura
+                    };
+                    itemsTabla.push(item);
+                }
+            }
+        });
+        
+        return itemsTabla;
     }
     
+    // Procesar tabla principal
+    const itemsPrincipal = procesarTablaExcel('excel-table', 'Principal');
+    items.push(...itemsPrincipal);
+    console.log(`📦 Items tabla principal: ${itemsPrincipal.length}`);
+    
+    // Procesar tabla de infraestructura (si existe y está visible)
+    const seccionInfraestructura = document.getElementById('seccion-infraestructura');
+    if (seccionInfraestructura && seccionInfraestructura.style.display !== 'none') {
+        const itemsInfraestructura = procesarTablaExcel('excel-table-infraestructura', 'Infraestructura');
+        items.push(...itemsInfraestructura);
+        console.log(`🏗️ Items infraestructura: ${itemsInfraestructura.length}`);
+    }
+    
+    console.log(`✅ Total items para PDF: ${items.length}`);
     return items;
 }
 
@@ -7717,6 +7949,11 @@ function recalcularTotalesExcel() {
         totalsRow.children[9].textContent = formatearMoneda(totalCosto);     // Total Costo
         totalsRow.children[10].textContent = formatearMoneda(gananciaTotal); // Ganancia
     }
+    
+    // Actualizar resumen consolidado
+    setTimeout(() => {
+        actualizarResumenConsolidado();
+    }, 100);
 }
 
 // Función para agregar una nueva fila Excel
@@ -8336,22 +8573,80 @@ function copiarTablaCompleta() {
 
 // Función para exportar como CSV
 function exportarCSV() {
-    const table = document.getElementById('excel-table');
-    if (!table) return;
+    console.log('📊 Exportando CSV unificado (principal + infraestructura)');
     
     let csvContent = 'data:text/csv;charset=utf-8,';
     
-    // Headers
-    const headers = table.querySelectorAll('.excel-subheader th');
-    csvContent += Array.from(headers).map(th => `"${th.textContent.trim()}"`).join(',') + '\n';
+    // Headers una sola vez
+    csvContent += 'Numero de Parte,Cantidad,Descripcion,Precio Lista,Descuento Cliente,Precio Unitario,Total Cliente,Descuento Proveedor,Costo Unitario,Total Costo,Ganancia\n';
     
-    // Data rows
-    const rows = table.querySelectorAll('.excel-row, .excel-totals-row');
-    rows.forEach(row => {
-        const cells = Array.from(row.children).slice(0, -1); // Excluir la columna de acciones
-        const rowData = cells.map(cell => `"${cell.textContent.trim()}"`).join(',');
-        csvContent += rowData + '\n';
-    });
+    // Sección 1: Tabla Principal
+    const tablePrincipal = document.getElementById('excel-table');
+    if (tablePrincipal) {
+        csvContent += '\n"=== PRODUCTOS PRINCIPALES ==="\n';
+        const rowsPrincipal = tablePrincipal.querySelectorAll('.excel-row:not(.excel-totals-row)');
+        rowsPrincipal.forEach(row => {
+            const cells = row.querySelectorAll('.excel-cell:not(.excel-cell-action)');
+            if (cells.length > 0) {
+                const rowData = Array.from(cells).map(cell => `"${cell.textContent.trim()}"`).join(',');
+                csvContent += rowData + '\n';
+            }
+        });
+        
+        // Totales de tabla principal
+        const totalRowPrincipal = tablePrincipal.querySelector('.excel-totals-row');
+        if (totalRowPrincipal) {
+            const totalCells = Array.from(totalRowPrincipal.children).slice(0, -1);
+            const totalData = totalCells.map(cell => `"${cell.textContent.trim()}"`).join(',');
+            csvContent += totalData + '\n';
+        }
+    }
+    
+    // Sección 2: Tabla de Infraestructura (si existe y está visible)
+    const tablaInfraestructura = document.getElementById('excel-table-infraestructura');
+    const seccionInfraestructura = document.getElementById('seccion-infraestructura');
+    
+    if (tablaInfraestructura && seccionInfraestructura && seccionInfraestructura.style.display !== 'none') {
+        csvContent += '\n"=== INFRAESTRUCTURA ==="\n';
+        const rowsInfraestructura = tablaInfraestructura.querySelectorAll('.excel-row:not(.excel-totals-row)');
+        let hayDatosInfra = false;
+        
+        rowsInfraestructura.forEach(row => {
+            const cells = row.querySelectorAll('.excel-cell:not(.excel-cell-action)');
+            if (cells.length > 0) {
+                const primeraCelda = cells[0].textContent.trim();
+                // Solo incluir filas que tengan datos (número de parte no vacío)
+                if (primeraCelda && primeraCelda !== 'Nuevo producto' && primeraCelda !== '') {
+                    const rowData = Array.from(cells).map(cell => `"${cell.textContent.trim()}"`).join(',');
+                    csvContent += rowData + '\n';
+                    hayDatosInfra = true;
+                }
+            }
+        });
+        
+        // Si hay datos de infraestructura, incluir totales
+        if (hayDatosInfra) {
+            const totalRowInfra = tablaInfraestructura.querySelector('.excel-totals-row');
+            if (totalRowInfra) {
+                const totalCells = Array.from(totalRowInfra.children).slice(0, -1);
+                const totalData = totalCells.map(cell => `"${cell.textContent.trim()}"`).join(',');
+                csvContent += totalData + '\n';
+            }
+        }
+    }
+    
+    // Totales Finales Consolidados
+    csvContent += '\n"=== TOTALES CONSOLIDADOS ==="\n';
+    const totalesPrincipal = obtenerTotalesTabla('excel-table');
+    const totalesInfra = obtenerTotalesTabla('excel-table-infraestructura');
+    
+    const totalConsolidado = {
+        cliente: totalesPrincipal.cliente + totalesInfra.cliente,
+        costo: totalesPrincipal.costo + totalesInfra.costo,
+        ganancia: (totalesPrincipal.cliente + totalesInfra.cliente) - (totalesPrincipal.costo + totalesInfra.costo)
+    };
+    
+    csvContent += `"TOTAL GENERAL","","","","","","${formatearMoneda(totalConsolidado.cliente)}","","","${formatearMoneda(totalConsolidado.costo)}","${formatearMoneda(totalConsolidado.ganancia)}"\n`;
     
     // Descargar archivo
     const encodedUri = encodeURI(csvContent);
@@ -8365,10 +8660,295 @@ function exportarCSV() {
     console.log('📊 CSV exportado');
 }
 
+// Función auxiliar para obtener totales de una tabla específica
+function obtenerTotalesTabla(tableId) {
+    const table = document.getElementById(tableId);
+    if (!table) return { cliente: 0, costo: 0 };
+    
+    let totalCliente = 0;
+    let totalCosto = 0;
+    
+    const rows = table.querySelectorAll('.excel-row:not(.excel-totals-row)');
+    rows.forEach(row => {
+        const totalClienteCell = row.children[6]; // Columna de Total Cliente
+        const totalCostoCell = row.children[9];   // Columna de Total Costo
+        
+        if (totalClienteCell && totalCostoCell) {
+            totalCliente += parseCurrency(totalClienteCell.textContent) || 0;
+            totalCosto += parseCurrency(totalCostoCell.textContent) || 0;
+        }
+    });
+    
+    return { cliente: totalCliente, costo: totalCosto };
+}
+
+// Función para actualizar resumen consolidado (principal + infraestructura)
+function actualizarResumenConsolidado() {
+    console.log('📊 Actualizando resumen consolidado de ambas tablas');
+    
+    // Obtener totales de ambas tablas
+    const totalesPrincipal = obtenerTotalesTabla('excel-table');
+    const totalesInfra = obtenerTotalesTabla('excel-table-infraestructura');
+    
+    // Calcular totales consolidados
+    const totalClienteConsolidado = totalesPrincipal.cliente + totalesInfra.cliente;
+    const totalCostoConsolidado = totalesPrincipal.costo + totalesInfra.costo;
+    const gananciaTotalConsolidada = totalClienteConsolidado - totalCostoConsolidado;
+    
+    // Actualizar elementos del resumen si existen
+    const elementoTotalCliente = document.getElementById('total-cliente');
+    const elementoTotalCosto = document.getElementById('total-costo');  
+    const elementoGananciaTotal = document.getElementById('ganancia-total');
+    
+    if (elementoTotalCliente) {
+        elementoTotalCliente.textContent = formatearMoneda(totalClienteConsolidado);
+    }
+    
+    if (elementoTotalCosto) {
+        elementoTotalCosto.textContent = formatearMoneda(totalCostoConsolidado);
+    }
+    
+    if (elementoGananciaTotal) {
+        elementoGananciaTotal.textContent = formatearMoneda(gananciaTotalConsolidada);
+    }
+    
+    console.log('💰 Totales consolidados actualizados:', {
+        cliente: formatearMoneda(totalClienteConsolidado),
+        costo: formatearMoneda(totalCostoConsolidado),
+        ganancia: formatearMoneda(gananciaTotalConsolidada)
+    });
+}
+
 // Función auxiliar para parsear moneda
 function parseCurrency(currencyString) {
     if (!currencyString) return 0;
     return parseFloat(currencyString.replace(/[$,]/g, '')) || 0;
+}
+
+// ============================================================
+// FUNCIONES ESPECÍFICAS PARA TABLA DE GASTOS DE INSTALACIÓN
+// ============================================================
+
+// Función para recalcular fila de gastos de instalación
+function recalcularFilaGastosInstalacion(rowIndex) {
+    console.log(`💰 Recalculando fila gastos instalación ${rowIndex}`);
+    
+    try {
+        const row = document.querySelector(`#excel-table-gastos [data-row="${rowIndex}"]`);
+        if (!row) return;
+        
+        const cantidad = parseFloat(row.querySelector('[data-field="cantidad"]').textContent) || 0;
+        const precioLista = parseFloat(row.querySelector('[data-field="precioLista"]').textContent.replace(/[$,]/g, '')) || 0;
+        const descuento = parseFloat(row.querySelector('[data-field="descuento"]').textContent.replace('%', '')) || 0;
+        
+        // Calcular precio unitario con descuento
+        const unitario = precioLista * (1 - descuento / 100);
+        row.querySelector('[data-field="unitario"]').textContent = formatearMoneda(unitario);
+        
+        // Calcular total
+        const total = cantidad * unitario;
+        row.querySelector('[data-field="total"]').textContent = formatearMoneda(total);
+        
+        // Recalcular totales de la tabla
+        recalcularTotalesGastosInstalacion();
+        
+    } catch (error) {
+        console.error('❌ Error recalculando fila gastos:', error);
+    }
+}
+
+// Función para recalcular totales de gastos de instalación
+function recalcularTotalesGastosInstalacion() {
+    const table = document.getElementById('excel-table-gastos');
+    if (!table) return;
+    
+    let totalGastos = 0;
+    
+    const rows = table.querySelectorAll('.excel-row:not(.excel-totals-row)');
+    rows.forEach(row => {
+        const totalCell = row.querySelector('[data-field="total"]');
+        if (totalCell) {
+            totalGastos += parseCurrency(totalCell.textContent) || 0;
+        }
+    });
+    
+    // Actualizar fila de totales
+    const totalsRow = table.querySelector('.excel-totals-row');
+    if (totalsRow) {
+        const totalCell = totalsRow.querySelector('.excel-total');
+        if (totalCell) {
+            totalCell.textContent = formatearMoneda(totalGastos);
+        }
+    }
+    
+    // Actualizar resumen consolidado
+    setTimeout(() => {
+        actualizarResumenConsolidado();
+    }, 100);
+}
+
+// Función para agregar nueva fila de gastos
+function agregarFilaGastosInstalacion() {
+    const tbody = document.getElementById('excel-tbody-gastos');
+    if (!tbody) return;
+    
+    const newIndex = tbody.children.length - 1; // -1 por la fila de totales
+    
+    const newRow = `
+        <tr class="excel-row" data-row="${newIndex}">
+            <td class="excel-cell excel-cell-text editable" contenteditable="true" data-field="marca" data-row="${newIndex}" placeholder="Marca">-</td>
+            <td class="excel-cell excel-cell-text editable" contenteditable="true" data-field="noParte" data-row="${newIndex}" placeholder="Número de parte">-</td>
+            <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="cantidad" data-row="${newIndex}" onblur="recalcularFilaGastosInstalacion(${newIndex})">0</td>
+            <td class="excel-cell excel-cell-text excel-cell-description editable" contenteditable="true" data-field="descripcion" data-row="${newIndex}" placeholder="Descripción del gasto">Nuevo gasto</td>
+            <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioLista" data-row="${newIndex}" onblur="recalcularFilaGastosInstalacion(${newIndex})">$0.00</td>
+            <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuento" data-row="${newIndex}" onblur="recalcularFilaGastosInstalacion(${newIndex})">0%</td>
+            <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="unitario" data-row="${newIndex}" onblur="recalcularFilaGastosInstalacion(${newIndex})">$0.00</td>
+            <td class="excel-cell excel-cell-currency excel-total" data-field="total" data-row="${newIndex}">$0.00</td>
+        </tr>
+    `;
+    
+    // Insertar antes de la fila de totales
+    const totalsRow = tbody.querySelector('.excel-totals-row');
+    totalsRow.insertAdjacentHTML('beforebegin', newRow);
+    
+    console.log('➕ Nueva fila de gastos agregada');
+}
+
+// Función para eliminar sección de gastos de instalación
+function eliminarSeccionGastosInstalacion() {
+    console.log('🗑️ Solicitando eliminar sección de gastos de instalación');
+    
+    const confirmar = confirm(
+        '¿Estás seguro de que deseas eliminar toda la sección de gastos de instalación?\n\n' +
+        'Se perderán todos los gastos ingresados.\n\n' +
+        'Podrás restaurar la sección vacía más tarde si es necesario.'
+    );
+    
+    if (confirmar) {
+        const seccion = document.getElementById('seccion-gastos-instalacion');
+        if (seccion) {
+            seccion.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+            seccion.style.opacity = '0';
+            seccion.style.transform = 'translateY(-20px) scale(0.95)';
+            
+            setTimeout(() => {
+                seccion.style.display = 'none';
+                console.log('✅ Sección de gastos ocultada');
+            }, 500);
+        }
+    }
+}
+
+// ============================================================
+// FUNCIONES ESPECÍFICAS PARA TABLA DE MANO DE OBRA
+// ============================================================
+
+// Función para recalcular fila de mano de obra
+function recalcularFilaManoObra(rowIndex) {
+    console.log(`👷 Recalculando fila mano de obra ${rowIndex}`);
+    
+    try {
+        const row = document.querySelector(`#excel-table-mano-obra [data-row="${rowIndex}"]`);
+        if (!row) return;
+        
+        const cantidad = parseFloat(row.querySelector('[data-field="cantidad"]').textContent) || 0;
+        const costoUnit = parseFloat(row.querySelector('[data-field="costoUnit"]').textContent.replace(/[$,]/g, '')) || 0;
+        const dias = parseFloat(row.querySelector('[data-field="dias"]').textContent) || 0;
+        
+        // Calcular concentrado (cantidad × costo unitario)
+        const concentrado = cantidad * costoUnit;
+        row.querySelector('[data-field="concentrado"]').textContent = formatearMoneda(concentrado);
+        
+        // Calcular costo total (concentrado × días)
+        const costoTotal = concentrado * dias;
+        row.querySelector('[data-field="costoTotal"]').textContent = formatearMoneda(costoTotal);
+        
+        // Recalcular totales de la tabla
+        recalcularTotalesManoObra();
+        
+    } catch (error) {
+        console.error('❌ Error recalculando fila mano de obra:', error);
+    }
+}
+
+// Función para recalcular totales de mano de obra
+function recalcularTotalesManoObra() {
+    const table = document.getElementById('excel-table-mano-obra');
+    if (!table) return;
+    
+    let totalManoObra = 0;
+    
+    const rows = table.querySelectorAll('.excel-row:not(.excel-totals-row)');
+    rows.forEach(row => {
+        const costoTotalCell = row.querySelector('[data-field="costoTotal"]');
+        if (costoTotalCell) {
+            totalManoObra += parseCurrency(costoTotalCell.textContent) || 0;
+        }
+    });
+    
+    // Actualizar fila de totales
+    const totalsRow = table.querySelector('.excel-totals-row');
+    if (totalsRow) {
+        const totalCell = totalsRow.querySelector('.excel-total');
+        if (totalCell) {
+            totalCell.textContent = formatearMoneda(totalManoObra);
+        }
+    }
+    
+    // Actualizar resumen consolidado
+    setTimeout(() => {
+        actualizarResumenConsolidado();
+    }, 100);
+}
+
+// Función para agregar nueva fila de mano de obra
+function agregarFilaManoObra() {
+    const tbody = document.getElementById('excel-tbody-mano-obra');
+    if (!tbody) return;
+    
+    const newIndex = tbody.children.length - 1; // -1 por la fila de totales
+    
+    const newRow = `
+        <tr class="excel-row" data-row="${newIndex}">
+            <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="cantidad" data-row="${newIndex}" onblur="recalcularFilaManoObra(${newIndex})">0</td>
+            <td class="excel-cell excel-cell-text excel-cell-description editable" contenteditable="true" data-field="descripcion" data-row="${newIndex}">Nuevo personal</td>
+            <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="costoUnit" data-row="${newIndex}" onblur="recalcularFilaManoObra(${newIndex})">$0.00</td>
+            <td class="excel-cell excel-cell-currency" data-field="concentrado" data-row="${newIndex}">$0.00</td>
+            <td class="excel-cell excel-cell-currency" data-field="costoTotal" data-row="${newIndex}">$0.00</td>
+            <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="dias" data-row="${newIndex}" onblur="recalcularFilaManoObra(${newIndex})">0</td>
+        </tr>
+    `;
+    
+    // Insertar antes de la fila de totales
+    const totalsRow = tbody.querySelector('.excel-totals-row');
+    totalsRow.insertAdjacentHTML('beforebegin', newRow);
+    
+    console.log('➕ Nueva fila de mano de obra agregada');
+}
+
+// Función para eliminar sección de mano de obra
+function eliminarSeccionManoObra() {
+    console.log('🗑️ Solicitando eliminar sección de mano de obra');
+    
+    const confirmar = confirm(
+        '¿Estás seguro de que deseas eliminar toda la sección de mano de obra?\n\n' +
+        'Se perderán todos los datos de personal ingresados.\n\n' +
+        'Podrás restaurar la sección vacía más tarde si es necesario.'
+    );
+    
+    if (confirmar) {
+        const seccion = document.getElementById('seccion-mano-obra');
+        if (seccion) {
+            seccion.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+            seccion.style.opacity = '0';
+            seccion.style.transform = 'translateY(-20px) scale(0.95)';
+            
+            setTimeout(() => {
+                seccion.style.display = 'none';
+                console.log('✅ Sección de mano de obra ocultada');
+            }, 500);
+        }
+    }
 }
 </script>
 {% endblock %}
