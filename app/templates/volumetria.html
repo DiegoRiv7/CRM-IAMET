@@ -9112,6 +9112,71 @@ function createComponentBarHTML() {
     
     // Insertar el HTML al final del body
     document.body.insertAdjacentHTML('beforeend', componentBarHTML);
+    
+    // Debug: Verificar que se creó correctamente
+    const createdBar = document.getElementById('floating-component-bar');
+    if (createdBar) {
+        console.log('✅ Barra de componentes creada exitosamente');
+        console.log('📍 Posición de la barra:', {
+            position: getComputedStyle(createdBar).position,
+            right: getComputedStyle(createdBar).right,
+            top: getComputedStyle(createdBar).top,
+            zIndex: getComputedStyle(createdBar).zIndex,
+            visibility: getComputedStyle(createdBar).visibility,
+            display: getComputedStyle(createdBar).display
+        });
+        
+        // Forzar estilos para testing
+        createdBar.style.cssText = `
+            position: fixed !important;
+            top: 50% !important;
+            right: 0 !important;
+            transform: translateY(-50%) !important;
+            z-index: 9999 !important;
+            visibility: visible !important;
+            display: block !important;
+            pointer-events: auto !important;
+        `;
+        console.log('🔧 Estilos forzados aplicados para testing');
+        
+        // Agregar también un botón de fallback simple visible
+        const fallbackButton = document.createElement('div');
+        fallbackButton.id = 'component-fallback-btn';
+        fallbackButton.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 100px;
+                right: 10px;
+                width: 60px;
+                height: 60px;
+                background: #4f46e5;
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                z-index: 10001;
+                font-size: 24px;
+                box-shadow: 0 4px 20px rgba(79, 70, 229, 0.5);
+                border: 2px solid white;
+            ">
+                🔧
+            </div>
+        `;
+        document.body.appendChild(fallbackButton);
+        
+        fallbackButton.addEventListener('click', () => {
+            const panel = document.getElementById('component-bar-panel');
+            if (panel) {
+                panel.classList.toggle('visible');
+                console.log('🔘 Panel toggled via fallback button');
+            }
+        });
+        
+    } else {
+        console.error('❌ Error: No se pudo crear la barra de componentes');
+    }
 }
 
 // Configurar eventos de la barra de componentes
@@ -9397,12 +9462,15 @@ document.addEventListener('DOMContentLoaded', () => {
    ======================================== */
 
 .component-bar-container {
-    position: fixed;
-    top: 50%;
-    right: 0;
-    transform: translateY(-50%);
-    z-index: 1000;
+    position: fixed !important;
+    top: 50% !important;
+    right: 0 !important;
+    transform: translateY(-50%) !important;
+    z-index: 9999 !important;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    pointer-events: auto !important;
+    visibility: visible !important;
+    display: block !important;
 }
 
 .component-bar-trigger {
@@ -9412,18 +9480,19 @@ document.addEventListener('DOMContentLoaded', () => {
     transform: translateY(-50%);
     width: 48px;
     height: 48px;
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-    border: 1px solid #475569;
+    background: #4f46e5 !important;
+    border: 2px solid #6366f1 !important;
     border-right: none;
     border-radius: 24px 0 0 24px;
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 
-        -4px 0 15px rgba(0, 0, 0, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        -4px 0 15px rgba(79, 70, 229, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    z-index: 10000 !important;
 }
 
 .component-bar-trigger:hover {
