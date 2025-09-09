@@ -1087,16 +1087,24 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
 
         function processExcelPaste() {
             const pasteTextarea = document.getElementById('excel-paste-textarea');
-            const pastedData = pasteTextarea.value.trim();
+            let pastedData = pasteTextarea.value.trim();
 
             if (!pastedData) {
                 console.warn("DEBUG JS: No data pasted.");
                 return;
             }
 
+            // Reemplaza los saltos de línea dentro de los campos citados para evitar que se rompan las filas.
+            pastedData = pastedData.replace(/"([^"
+]*)?"/g, (match, group1) => {
+                return '"' + group1.replace(/\n|\r/g, ' ') + '"';
+            });
+
             const rows = pastedData.split('\n');
 
             rows.forEach((rowString, index) => {
+                if (rowString.trim() === '') return; // Omitir filas vacías
+
                 console.log(`DEBUG JS: Processing row ${index}: ${rowString}`);
                 
                 // Usar función inteligente para separar columnas
