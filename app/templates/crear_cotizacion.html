@@ -556,8 +556,16 @@
                 </div>
 
                 <div id="paste-area-container" class="paste-area-container">
-                    <p class="mb-4" style="color: var(--apple-label-tertiary);">Copia tus datos de Excel (columnas: Marca, No. Parte, Cantidad, Descripcion, Precio Lista, Desc, Unitario, Total) y pégalos aquí:</p>
-                    <textarea id="excel-paste-textarea" class="textarea-field w-full h-40" placeholder="Pega tus datos de Excel aquí..."></textarea>
+                    <p class="mb-4" style="color: var(--apple-label-tertiary);">
+                        <strong>Pega tus datos de Excel aquí:</strong><br>
+                        <small>✅ Detecta automáticamente diferentes formatos de columnas<br>
+                        ✅ Acepta precios con: $7,185.00, 7185.00, $7.185,00<br>
+                        ✅ Maneja separadores de tabs, espacios múltiples o formato libre<br>
+                        📋 Mínimo requerido: Marca, Modelo, Cantidad, Descripción, Precio</small>
+                    </p>
+                    <textarea id="excel-paste-textarea" class="textarea-field w-full h-40" placeholder="Pega tus datos de Excel aquí... 
+Ejemplo:
+DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,185.00"></textarea>
                     <button type="button" id="process-paste-btn" class="btn-primary mt-4">Procesar Pegado</button>
                     <button type="button" id="cancel-paste-btn" class="btn-secondary mt-4 ml-2">Cancelar</button>
                 </div>
@@ -1005,6 +1013,78 @@
 
         
 
+        // Función robusta para parsear campos monetarios
+        function parseMoneyField(value) {
+            if (!value || typeof value !== 'string') return 0;
+            
+            // Limpiar el campo: quitar símbolos de moneda, espacios, y caracteres no numéricos excepto punto, coma y menos
+            let cleanValue = value.toString().trim()
+                .replace(/[$¢€£¥₹₽]/g, '') // Quitar símbolos de moneda
+                .replace(/[^\d.,\-]/g, '') // Quitar todo excepto dígitos, punto, coma y menos
+                .replace(/\s+/g, ''); // Quitar espacios
+            
+            if (!cleanValue) return 0;
+            
+            // Manejar formato mexicano: $7,185.00 o 7,185.00
+            // Si tiene comas como separadores de miles y punto como decimal
+            if (cleanValue.includes(',') && cleanValue.includes('.')) {
+                // Formato: 1,234.56 - quitar comas
+                cleanValue = cleanValue.replace(/,/g, '');
+            }
+            // Si solo tiene comas (podría ser separador decimal europeo o separador de miles)
+            else if (cleanValue.includes(',') && !cleanValue.includes('.')) {
+                // Si hay más de una coma, es separador de miles
+                const commaCount = (cleanValue.match(/,/g) || []).length;
+                if (commaCount > 1) {
+                    cleanValue = cleanValue.replace(/,/g, '');
+                } else {
+                    // Una sola coma - verificar si es separador decimal
+                    const lastCommaIndex = cleanValue.lastIndexOf(',');
+                    const afterComma = cleanValue.substring(lastCommaIndex + 1);
+                    
+                    // Si después de la coma hay 2 dígitos, probablemente es decimal
+                    if (afterComma.length === 2) {
+                        cleanValue = cleanValue.replace(',', '.');
+                    } else {
+                        // Es separador de miles
+                        cleanValue = cleanValue.replace(/,/g, '');
+                    }
+                }
+            }
+            
+            const parsed = parseFloat(cleanValue);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+
+        // Función para detectar y separar datos en diferentes formatos
+        function smartColumnSplit(rowString) {
+            // Primero intentar con tabs (formato Excel estándar)
+            let columns = rowString.split('\t');
+            
+            // Si no hay tabs suficientes, intentar con espacios múltiples
+            if (columns.length < 6) {
+                columns = rowString.split(/\s{2,}/); // 2 o más espacios
+            }
+            
+            // Si aún no hay suficientes columnas, intentar split más inteligente
+            if (columns.length < 6) {
+                // Para datos como el ejemplo: MARCA "MODELO" CANTIDAD DESCRIPCION $PRECIO %DESC UNITARIO TOTAL
+                const parts = [];
+                const regex = /"[^"]*"|[$]\d+[,\d]*\.?\d*|\d+[,\d]*\.?\d*\%?|\S+/g;
+                let match;
+                
+                while ((match = regex.exec(rowString)) !== null) {
+                    parts.push(match[0]);
+                }
+                
+                if (parts.length >= 6) {
+                    columns = parts;
+                }
+            }
+            
+            return columns;
+        }
+
         function processExcelPaste() {
             const pasteTextarea = document.getElementById('excel-paste-textarea');
             const pastedData = pasteTextarea.value.trim();
@@ -1018,17 +1098,58 @@
 
             rows.forEach((rowString, index) => {
                 console.log(`DEBUG JS: Processing row ${index}: ${rowString}`);
-                const columns = rowString.split('\t');
+                
+                // Usar función inteligente para separar columnas
+                const columns = smartColumnSplit(rowString);
                 console.log(`DEBUG JS: Columns for row ${index}:`, columns);
 
-                // Expected order: Marca, No. Parte, Cantidad, Descripcion, Precio Lista, Desc, Unitario, Total
-                const marca = columns[0] || '';
-                const noParte = columns[1] || '';
-                const quantity = parseFloat((columns[2] || '1').replace(/,/g, '')) || 1;
-                const description = columns[3] || '';
-                // Precio Lista (columns[4]) is ignored
-                const discount = parseFloat((columns[5] || '0').replace(/,/g, '')) || 0;
-                const price = parseFloat((columns[6] || '0').replace(/,/g, '')) || 0;
+                if (columns.length < 4) {
+                    console.warn(`DEBUG JS: Row ${index} has insufficient columns, skipping`);
+                    return;
+                }
+
+                // Detectar formato automáticamente y extraer datos
+                let marca, noParte, quantity, description, price, discount;
+                
+                // Formato detectado: MARCA "MODELO" CANTIDAD DESCRIPCION $PRECIO %DESC UNITARIO TOTAL
+                if (columns.length >= 8) {
+                    marca = columns[0].replace(/"/g, '').trim();
+                    noParte = columns[1].replace(/"/g, '').trim();
+                    quantity = parseMoneyField(columns[2]);
+                    description = columns[3].trim();
+                    // Saltar precio lista (columns[4]) y usar unitario
+                    discount = parseMoneyField(columns[5]); // Descuento
+                    price = parseMoneyField(columns[6]); // Precio unitario
+                } 
+                // Formato estándar: Marca, No. Parte, Cantidad, Descripcion, Precio Lista, Desc, Unitario, Total
+                else if (columns.length >= 6) {
+                    marca = columns[0].trim();
+                    noParte = columns[1].trim();
+                    quantity = parseMoneyField(columns[2]);
+                    description = columns[3].trim();
+                    discount = parseMoneyField(columns[4]); // Descuento
+                    price = parseMoneyField(columns[5]); // Precio
+                }
+                // Formato mínimo: Marca, No. Parte, Cantidad, Descripcion, Precio, Descuento
+                else {
+                    marca = columns[0].trim();
+                    noParte = columns[1].trim();
+                    quantity = parseMoneyField(columns[2]);
+                    description = columns[3].trim();
+                    price = columns.length > 4 ? parseMoneyField(columns[4]) : 0;
+                    discount = columns.length > 5 ? parseMoneyField(columns[5]) : 0;
+                }
+
+                // Validar que tenemos datos mínimos
+                if (!description && !noParte) {
+                    console.warn(`DEBUG JS: Row ${index} lacks description and part number, skipping`);
+                    return;
+                }
+
+                // Asegurar valores por defecto
+                quantity = quantity || 1;
+                price = price || 0;
+                discount = discount || 0;
 
                 console.log(`DEBUG JS: Parsed data for row ${index}: Marca=${marca}, No. Parte=${noParte}, Quantity=${quantity}, Description=${description}, Price=${price}, Discount=${discount}`);
 
