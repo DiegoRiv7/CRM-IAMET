@@ -3792,7 +3792,7 @@ function formatearMoneda(valor) {
 // Variables globales para autocompletado
 let timeoutBusqueda = null;
 let productosSugerencias = [];
-let sugerenciasActivas = new Map();
+let sugerenciasActivas = null;
 
 // Función específica para buscar productos en celdas Excel contenteditable
 function buscarProductoExcel(celda) {
@@ -4127,7 +4127,7 @@ function mostrarSugerencias(productos, rowIndex, inputElement) {
     
     // Mostrar dropdown
     dropdown.classList.remove('hidden');
-    sugerenciasActivas.set(rowIndex, { dropdown, sugerencias: productosSugerencias, selectedIndex: -1 });
+    sugerenciasActivas = rowIndex;
 }
 
 // Función para seleccionar un producto de las sugerencias
@@ -4166,8 +4166,7 @@ function ocultarSugerencias(rowIndex = null) {
         if (dropdown) {
             setTimeout(() => {
                 dropdown.classList.add('hidden');
-                const rowIndex = parseInt(dropdown.id.replace('suggestions-', ''));
-                sugerenciasActivas.delete(rowIndex);
+                sugerenciasActivas = null;
             }, 150); // Delay para permitir clicks
         }
     } else {
@@ -4175,7 +4174,7 @@ function ocultarSugerencias(rowIndex = null) {
         document.querySelectorAll('[id^="suggestions-"]').forEach(dropdown => {
             dropdown.classList.add('hidden');
         });
-        sugerenciasActivas.clear();
+        sugerenciasActivas = null;
     }
 }
 
@@ -7774,20 +7773,10 @@ function agregarListenersAutoCompletado() {
         // Remover listeners existentes si los hay
         cell.removeEventListener('input', resetearProcessedFlag);
         cell.removeEventListener('focus', resetearProcessedFlag);
-        cell.removeEventListener('input', manejarAutoCompletadoCelda);
-        cell.removeEventListener('keydown', manejarNavegacionSugerencias);
-        cell.removeEventListener('blur', ocultarSugerenciasCelda);
         
         // Agregar listeners para detectar cambios
         cell.addEventListener('input', resetearProcessedFlag);
         cell.addEventListener('focus', resetearProcessedFlag);
-        
-        // NUEVO: Agregar listeners para autocompletado en tiempo real
-        cell.addEventListener('input', manejarAutoCompletadoCelda);
-        cell.addEventListener('keydown', function(e) {
-            manejarNavegacionSugerencias(e, this);
-        });
-        cell.addEventListener('blur', ocultarSugerenciasCelda);
         
         // Asegurar que la celda tenga position relative para el dropdown
         cell.style.position = 'relative';
@@ -8093,203 +8082,9 @@ function eliminarFilaExcel(rowIndex) {
 
 // Variables ya declaradas arriba - reutilizando las globales
 
-// Función para manejar autocompletado en celdas de número de parte
-function manejarAutoCompletadoCelda(event) {
-    const celda = event.target;
-    const texto = celda.textContent.trim();
-    const rowIndex = celda.getAttribute('data-row');
-    
-    console.log(`🔍 Autocompletado en celda fila ${rowIndex}: "${texto}"`);
-    
-    // Limpiar timeout anterior
-    if (timeoutBusqueda) {
-        clearTimeout(timeoutBusqueda);
-    }
-    
-    // Si el texto es muy corto, ocultar sugerencias
-    if (texto.length < 2) {
-        ocultarSugerenciasCelda({ target: celda });
-        return;
-    }
-    
-    // Debounce de 300ms
-    timeoutBusqueda = setTimeout(async () => {
-        await buscarSugerenciasCelda(celda, texto, rowIndex);
-    }, 300);
-}
+// FUNCIÓN ELIMINADA - Causaba conflicto con buscarProductoExcel()
 
-// Función para buscar sugerencias y mostrar dropdown
-async function buscarSugerenciasCelda(celda, texto, rowIndex) {
-    try {
-        console.log(`📡 Buscando sugerencias para: "${texto}"`);
-        
-        const response = await fetch(`/app/api/sugerencias-productos/?q=${encodeURIComponent(texto)}&limit=5`);
-        const data = await response.json();
-        
-        if (data.success && data.sugerencias && data.sugerencias.length > 0) {
-            mostrarSugerenciasCelda(celda, data.sugerencias, rowIndex);
-        } else {
-            ocultarSugerenciasCelda({ target: celda });
-        }
-    } catch (error) {
-        console.error('❌ Error buscando sugerencias:', error);
-        ocultarSugerenciasCelda({ target: celda });
-    }
-}
-
-// Función para mostrar dropdown de sugerencias
-function mostrarSugerenciasCelda(celda, sugerencias, rowIndex) {
-    // Ocultar otros dropdowns activos
-    ocultarTodasLasSugerencias();
-    
-    // Crear o actualizar dropdown
-    let dropdown = document.getElementById(`suggestions-${rowIndex}`);
-    if (!dropdown) {
-        dropdown = document.createElement('div');
-        dropdown.id = `suggestions-${rowIndex}`;
-        dropdown.className = 'autocomplete-suggestions';
-        celda.parentNode.appendChild(dropdown);
-    }
-    
-    // Posicionar dropdown
-    const rect = celda.getBoundingClientRect();
-    const parentRect = celda.parentNode.getBoundingClientRect();
-    
-    dropdown.style.position = 'absolute';
-    dropdown.style.top = `${rect.bottom - parentRect.top + 4}px`;
-    dropdown.style.left = `${rect.left - parentRect.left}px`;
-    dropdown.style.width = `${Math.max(250, rect.width)}px`;
-    dropdown.style.zIndex = '1000';
-    
-    // Generar HTML de sugerencias
-    dropdown.innerHTML = sugerencias.map((producto, index) => `
-        <div class="autocomplete-item" data-index="${index}" onclick="seleccionarSugerenciaCelda(${rowIndex}, ${index}, '${producto.numero_parte}', '${producto.descripcion.replace(/'/g, "\\'")}', ${producto.precio_lista}, '${producto.marca}')">
-            <div class="autocomplete-item-content">
-                <div class="autocomplete-parte">${producto.numero_parte}</div>
-                <div class="autocomplete-desc">${producto.descripcion}</div>
-                <div class="autocomplete-meta">
-                    <span class="autocomplete-marca">${producto.marca}</span>
-                    <span class="autocomplete-categoria">${producto.categoria}</span>
-                    <span class="autocomplete-precio">$${producto.precio_lista.toFixed(2)}</span>
-                </div>
-            </div>
-        </div>
-    `).join('');
-    
-    dropdown.style.display = 'block';
-    sugerenciasActivas.set(rowIndex, { dropdown, sugerencias, selectedIndex: -1 });
-    
-    console.log(`✅ Mostrando ${sugerencias.length} sugerencias para fila ${rowIndex}`);
-}
-
-// Función para seleccionar una sugerencia
-function seleccionarSugerenciaCelda(rowIndex, suggestionIndex, numeroParte, descripcion, precio, marca) {
-    console.log(`✅ Producto seleccionado: ${numeroParte}`);
-    
-    // Actualizar celdas de la fila
-    const row = document.querySelector(`[data-row="${rowIndex}"]`);
-    if (row) {
-        // Número de parte
-        const celdaNoParte = row.querySelector('[data-field="noParte"]');
-        if (celdaNoParte) {
-            celdaNoParte.textContent = numeroParte;
-        }
-        
-        // Descripción
-        const celdaDescripcion = row.querySelector('[data-field="descripcion"]');
-        if (celdaDescripcion) {
-            celdaDescripcion.textContent = descripcion;
-        }
-        
-        // Precio
-        const celdaPrecio = row.querySelector('[data-field="precioLista"]');
-        if (celdaPrecio) {
-            celdaPrecio.textContent = `$${precio.toFixed(2)}`;
-        }
-        
-        // Marca (si existe la columna)
-        const celdaMarca = row.querySelector('[data-field="marca"]');
-        if (celdaMarca) {
-            celdaMarca.textContent = marca;
-        }
-        
-        // Recalcular fila
-        if (typeof recalcularFilaExcel === 'function') {
-            recalcularFilaExcel(rowIndex);
-        } else if (typeof recalcularFilaExcelGeneral === 'function') {
-            recalcularFilaExcelGeneral(rowIndex);
-        }
-    }
-    
-    // Ocultar sugerencias
-    ocultarSugerenciasCelda({ target: document.querySelector(`[data-row="${rowIndex}"] [data-field="noParte"]`) });
-}
-
-// Función para manejar navegación con teclado
-function manejarNavegacionSugerencias(event) {
-    const celda = event.target;
-    const rowIndex = celda.getAttribute('data-row');
-    const sugerenciaData = sugerenciasActivas.get(parseInt(rowIndex));
-    
-    if (!sugerenciaData || !sugerenciaData.dropdown || sugerenciaData.dropdown.style.display === 'none') {
-        return;
-    }
-    
-    const { dropdown, sugerencias } = sugerenciaData;
-    let { selectedIndex } = sugerenciaData;
-    const items = dropdown.querySelectorAll('.autocomplete-item');
-    
-    if (event.key === 'ArrowDown') {
-        event.preventDefault();
-        if (selectedIndex >= 0) items[selectedIndex].classList.remove('selected');
-        selectedIndex = (selectedIndex + 1) % items.length;
-        items[selectedIndex].classList.add('selected');
-        sugerenciaData.selectedIndex = selectedIndex;
-    } else if (event.key === 'ArrowUp') {
-        event.preventDefault();
-        if (selectedIndex >= 0) items[selectedIndex].classList.remove('selected');
-        selectedIndex = selectedIndex <= 0 ? items.length - 1 : selectedIndex - 1;
-        items[selectedIndex].classList.add('selected');
-        sugerenciaData.selectedIndex = selectedIndex;
-    } else if (event.key === 'Enter' && selectedIndex >= 0) {
-        event.preventDefault();
-        const producto = sugerencias[selectedIndex];
-        seleccionarSugerenciaCelda(
-            parseInt(rowIndex), 
-            selectedIndex, 
-            producto.numero_parte, 
-            producto.descripcion, 
-            producto.precio_lista, 
-            producto.marca
-        );
-    } else if (event.key === 'Escape') {
-        ocultarSugerenciasCelda(event);
-    }
-}
-
-// Función para ocultar sugerencias de una celda específica
-function ocultarSugerenciasCelda(event) {
-    const celda = event.target;
-    const rowIndex = celda.getAttribute('data-row');
-    
-    setTimeout(() => {
-        const dropdown = document.getElementById(`suggestions_${rowIndex}`);
-        if (dropdown) {
-            dropdown.style.display = 'none';
-        }
-        sugerenciasActivas.delete(parseInt(rowIndex));
-    }, 200); // Delay para permitir clicks en sugerencias
-}
-
-// Función para ocultar todas las sugerencias activas
-function ocultarTodasLasSugerencias() {
-    sugerenciasActivas.forEach((data, rowIndex) => {
-        if (data.dropdown) {
-            data.dropdown.style.display = 'none';
-        }
-    });
-    sugerenciasActivas.clear();
-}
+// FUNCIONES ELIMINADAS - Usamos el sistema existente buscarProductoExcel()
 
 // ============================================================
 // FUNCIONES DEL PANEL LATERAL INTERACTIVO
