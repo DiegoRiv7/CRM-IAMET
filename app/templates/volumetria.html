@@ -1109,6 +1109,9 @@ function cargarDatosOportunidadGeneral() {
             const oportunidadData = data.volumetria_oportunidad_data;
             console.log('DEBUG: Populando información de cliente y oportunidad en header general:', oportunidadData);
             
+            // Guardar datos globalmente para uso posterior
+            window.sessionOportunidadData = oportunidadData;
+            
             // Poblar información del cliente en el header
             const clienteHeaderElement = document.querySelector('#general-volumetria-table .cliente-header');
             if (clienteHeaderElement && oportunidadData.cliente_nombre) {
@@ -1122,8 +1125,19 @@ function cargarDatosOportunidadGeneral() {
             }
             
             console.log('DEBUG: Información de header actualizada exitosamente');
+            
+            // Si ya existe currentVolumetriaData, actualizar con los datos correctos
+            if (window.currentVolumetriaData) {
+                console.log('DEBUG: Actualizando currentVolumetriaData con datos de sesión');
+                window.currentVolumetriaData.clienteId = oportunidadData.cliente_id;
+                window.currentVolumetriaData.oportunidadId = oportunidadData.oportunidad_id;
+                
+                // Llamar a la función de resolución de nombres con los datos actualizados
+                resolverNombresClienteYOportunidad(window.currentVolumetriaData);
+            }
         } else {
             console.log('DEBUG: No hay datos de oportunidad en sesión para tabla general');
+            window.sessionOportunidadData = null;
         }
     })
     .catch(error => {
@@ -2537,18 +2551,30 @@ function nuevaVolumetria() {
 function mostrarVolumetriaGeneralDirecta() {
     console.log('📊 Mostrando volumetría general directa');
     
+    // Obtener datos de oportunidad desde la sesión si están disponibles
+    const oportunidadData = window.sessionOportunidadData || {};
+    
     // Datos básicos para volumetría general
     const datosGenerales = {
-        nombreVolumetria: 'Volumetría General - Sin Título',
-        clienteId: '',
+        nombreVolumetria: oportunidadData.oportunidad_nombre ? `Volumetría - ${oportunidadData.oportunidad_nombre}` : 'Volumetría General - Sin Título',
+        clienteId: oportunidadData.cliente_id || '',
         usuarioFinal: '',
-        oportunidadId: '',
+        oportunidadId: oportunidadData.oportunidad_id || '',
         categoria: 'General',
         color: 'Personalizado',
         distancia: 0,
         cantidadNodos: 0,
         tipo: 'general'
     };
+    
+    console.log('📋 Datos de oportunidad aplicados a volumetría general:', {
+        clienteId: datosGenerales.clienteId,
+        oportunidadId: datosGenerales.oportunidadId,
+        nombre: datosGenerales.nombreVolumetria
+    });
+    
+    // Guardar datos globalmente para funciones de resolución de nombres
+    window.currentVolumetriaData = datosGenerales;
     
     // Guardar el estado actual
     guardarEstadoVolumetria(datosGenerales);
