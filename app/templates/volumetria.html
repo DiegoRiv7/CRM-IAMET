@@ -2712,7 +2712,7 @@ function mostrarTablaVolumetriaGeneral(datos) {
                             }
                         </style>
                         <div class="excel-table-wrapper bg-gray-900/80 border border-gray-700">
-                            <table id="excel-table" class="excel-table w-full">
+                            <table id="excel-table-general" class="excel-table w-full">
                                 <thead style="position: sticky; top: 0; z-index: 10;">
                                     <tr class="excel-header">
                                         <th colspan="7" class="excel-th-group excel-client-header">INFORMACIÓN DEL CLIENTE</th>
@@ -2734,7 +2734,7 @@ function mostrarTablaVolumetriaGeneral(datos) {
                                         <th class="excel-th">❌</th>
                                     </tr>
                                 </thead>
-                                <tbody id="excel-tbody" class="excel-tbody">
+                                <tbody id="excel-tbody-general" class="excel-tbody">
                                     ${generarFilasVaciasGeneralExcel()}
                                 </tbody>
                             </table>
@@ -4928,7 +4928,7 @@ function mostrarTablaVolumetria(datos) {
 
                                 <!-- Tabla Excel -->
                                 <div class="excel-table-wrapper">
-                                    <table id="excel-table" class="excel-table w-full">
+                                    <table id="excel-table-nodos" class="excel-table w-full">
                                         <thead style="position: sticky; top: 0; z-index: 10;">
                                             <tr class="excel-header">
                                                 <th colspan="7" class="excel-th-group excel-client-header">INFORMACIÓN DEL CLIENTE</th>
@@ -4950,7 +4950,7 @@ function mostrarTablaVolumetria(datos) {
                                                 <th class="excel-th">❌</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="excel-tbody" class="excel-tbody">
+                                        <tbody id="excel-tbody-nodos" class="excel-tbody">
                                             ${generarFilasExcel(datos)}
                                         </tbody>
                                     </table>
@@ -7872,17 +7872,17 @@ function asegurarFilaExiste(indiceFilaRequerido) {
     if (filaExistente) return;
     
     // Crear nuevas filas hasta llegar al índice requerido
-    const tbody = document.getElementById('excel-tbody') || document.getElementById('excel-tbody-general');
+    const tbody = document.getElementById('excel-tbody-general') || document.getElementById('excel-tbody-nodos');
     if (!tbody) return;
     
     const filasActuales = tbody.querySelectorAll('.excel-row').length;
     
     for (let i = filasActuales; i <= indiceFilaRequerido; i++) {
         // Usar la función de agregar fila apropiada
-        if (document.getElementById('excel-tbody')) {
-            agregarFilaExcel();
-        } else {
+        if (document.getElementById('excel-tbody-general')) {
             agregarFilaExcelGeneral();
+        } else {
+            agregarFilaExcel();
         }
         console.log(`➕ Fila ${i} creada automáticamente para pegado`);
     }
@@ -7977,7 +7977,7 @@ function mostrarMensajeNoEncontradoExcel(celdaElement, rowIndex) {
 
 // Función para recalcular totales de la tabla Excel
 function recalcularTotalesExcel() {
-    const table = document.getElementById('excel-table');
+    const table = document.getElementById('excel-table-nodos');
     if (!table) return;
     
     let totalCliente = 0;
@@ -8011,7 +8011,7 @@ function recalcularTotalesExcel() {
 
 // Función para agregar una nueva fila Excel
 function agregarFilaExcel() {
-    const tbody = document.getElementById('excel-tbody');
+    const tbody = document.getElementById('excel-tbody-nodos');
     if (!tbody) return;
     
     const newIndex = tbody.children.length - 1; // -1 por la fila de totales
