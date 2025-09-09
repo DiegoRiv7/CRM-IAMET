@@ -2981,8 +2981,41 @@ function mostrarTablaVolumetriaGeneral(datos) {
             }
         });
         
+        // Agregar listeners para cálculo en tiempo real
+        agregarListenersCalculoTiempoReal();
+        
         console.log('✅ Nueva tabla volumetría general creada correctamente');
     }, 500);
+}
+
+// Función para agregar listeners que calculen en tiempo real
+function agregarListenersCalculoTiempoReal() {
+    console.log('🔧 Agregando listeners para cálculo en tiempo real');
+    
+    // Buscar todas las celdas editables que afectan cálculos
+    const celdasCalculables = document.querySelectorAll('.editable[data-field="cantidad"], .editable[data-field="precioLista"], .editable[data-field="descuentoCliente"], .editable[data-field="descuentoProveedor"]');
+    
+    celdasCalculables.forEach(celda => {
+        // Agregar listener de input para cálculo en tiempo real
+        celda.addEventListener('input', function() {
+            const rowIndex = this.getAttribute('data-row');
+            const tableId = this.closest('table').id;
+            
+            // Determinar qué función de recálculo usar según la tabla
+            if (tableId === 'excel-table-general') {
+                setTimeout(() => recalcularFilaExcelGeneral(rowIndex), 100);
+            } else if (tableId === 'excel-table-infraestructura') {
+                setTimeout(() => recalcularFilaInfraestructura(rowIndex), 100);
+            }
+        });
+        
+        // Agregar listener para Enter (como alternativa a onblur)
+        celda.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                this.blur(); // Trigger onblur
+            }
+        });
+    });
 }
 
 // Función para generar filas vacías con formato Excel (igual que nodos)
@@ -3003,12 +3036,12 @@ function generarFilasVaciasGeneralExcel() {
                 <td class="excel-cell excel-cell-text excel-cell-description editable" contenteditable="true" data-field="descripcion" data-row="${i}" placeholder="Descripción del producto"></td>
                 <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioLista" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})" placeholder="$0.00"></td>
                 <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoCliente" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">0.00%</td>
-                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioUnitario" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">$0.00</td>
-                <td class="excel-cell excel-cell-currency editable excel-total-client" contenteditable="true" data-field="totalCliente" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated" data-field="precioUnitario" data-row="${i}">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-client" data-field="totalCliente" data-row="${i}">$0.00</td>
                 <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoProveedor" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">0.00%</td>
-                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="costoUnitario" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">$0.00</td>
-                <td class="excel-cell excel-cell-currency editable excel-total-cost" contenteditable="true" data-field="totalCosto" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">$0.00</td>
-                <td class="excel-cell excel-cell-currency editable excel-profit" contenteditable="true" data-field="ganancia" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated" data-field="costoUnitario" data-row="${i}">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" data-field="totalCosto" data-row="${i}">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-profit" data-field="ganancia" data-row="${i}">$0.00</td>
                 <td class="excel-cell excel-cell-action">
                     <button onclick="eliminarFilaExcelGeneral(${i})" class="excel-delete-btn" title="Eliminar fila">
                         ❌
@@ -3053,12 +3086,12 @@ function generarFilasVaciasInfraestructura() {
                 <td class="excel-cell excel-cell-text excel-cell-description editable" contenteditable="true" data-field="descripcion" data-row="${i}" placeholder="Descripción del producto"></td>
                 <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioLista" data-row="${i}" onblur="recalcularFilaInfraestructura(${i})" placeholder="$0.00"></td>
                 <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoCliente" data-row="${i}" onblur="recalcularFilaInfraestructura(${i})">0.00%</td>
-                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioUnitario" data-row="${i}" onblur="recalcularFilaInfraestructura(${i})">$0.00</td>
-                <td class="excel-cell excel-cell-currency editable excel-total-client" contenteditable="true" data-field="totalCliente" data-row="${i}" onblur="recalcularFilaInfraestructura(${i})">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated" data-field="precioUnitario" data-row="${i}">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-client" data-field="totalCliente" data-row="${i}">$0.00</td>
                 <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoProveedor" data-row="${i}" onblur="recalcularFilaInfraestructura(${i})">0.00%</td>
-                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="costoUnitario" data-row="${i}" onblur="recalcularFilaInfraestructura(${i})">$0.00</td>
-                <td class="excel-cell excel-cell-currency editable excel-total-cost" contenteditable="true" data-field="totalCosto" data-row="${i}" onblur="recalcularFilaInfraestructura(${i})">$0.00</td>
-                <td class="excel-cell excel-cell-currency editable excel-profit" contenteditable="true" data-field="ganancia" data-row="${i}" onblur="recalcularFilaInfraestructura(${i})">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated" data-field="costoUnitario" data-row="${i}">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" data-field="totalCosto" data-row="${i}">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-profit" data-field="ganancia" data-row="${i}">$0.00</td>
                 <td class="excel-cell excel-cell-action">
                     <button onclick="eliminarFilaInfraestructura(${i})" class="excel-delete-btn" title="Eliminar fila">
                         ❌
@@ -3412,10 +3445,18 @@ function recalcularFilaInfraestructura(rowIndex) {
         const descuentoCliente = parseFloat(row.querySelector('[data-field="descuentoCliente"]').textContent.replace('%', '')) || 0;
         const descuentoProveedor = parseFloat(row.querySelector('[data-field="descuentoProveedor"]').textContent.replace('%', '')) || 0;
         
-        // Cálculos
-        const precioUnitario = precioLista * (1 - descuentoCliente / 100);
+        // CÁLCULOS SEGÚN ESPECIFICACIÓN (igual que tabla general):
+        
+        // 1. P. Unitario = Precio Lista - Descuento Cliente (si no hay descuento, usar precio lista)
+        const precioUnitario = descuentoCliente > 0 ? precioLista * (1 - descuentoCliente / 100) : precioLista;
+        
+        // 2. Total Cliente = P. Unitario × Cantidad 
         const totalCliente = precioUnitario * cantidad;
-        const costoUnitario = precioLista * (1 - descuentoProveedor / 100);
+        
+        // 3. Costo Unitario = Precio Lista - Descuento Proveedor (si hay descuento en costos)
+        const costoUnitario = descuentoProveedor > 0 ? precioLista * (1 - descuentoProveedor / 100) : precioLista;
+        
+        // 4. Total Costo = Costo Unitario × Cantidad
         const totalCosto = costoUnitario * cantidad;
         const ganancia = totalCliente - totalCosto;
         
@@ -3751,7 +3792,7 @@ function formatearMoneda(valor) {
 // Variables globales para autocompletado
 let timeoutBusqueda = null;
 let productosSugerencias = [];
-let sugerenciasActivas = null;
+let sugerenciasActivas = new Map();
 
 // Función específica para buscar productos en celdas Excel contenteditable
 function buscarProductoExcel(celda) {
@@ -4086,7 +4127,7 @@ function mostrarSugerencias(productos, rowIndex, inputElement) {
     
     // Mostrar dropdown
     dropdown.classList.remove('hidden');
-    sugerenciasActivas = rowIndex;
+    sugerenciasActivas.set(rowIndex, { dropdown, sugerencias: productosSugerencias, selectedIndex: -1 });
 }
 
 // Función para seleccionar un producto de las sugerencias
@@ -4125,7 +4166,8 @@ function ocultarSugerencias(rowIndex = null) {
         if (dropdown) {
             setTimeout(() => {
                 dropdown.classList.add('hidden');
-                sugerenciasActivas = null;
+                const rowIndex = parseInt(dropdown.id.replace('suggestions-', ''));
+                sugerenciasActivas.delete(rowIndex);
             }, 150); // Delay para permitir clicks
         }
     } else {
@@ -4133,7 +4175,7 @@ function ocultarSugerencias(rowIndex = null) {
         document.querySelectorAll('[id^="suggestions-"]').forEach(dropdown => {
             dropdown.classList.add('hidden');
         });
-        sugerenciasActivas = null;
+        sugerenciasActivas.clear();
     }
 }
 
@@ -4248,14 +4290,24 @@ function recalcularFilaExcelGeneral(rowIndex) {
         const descuentoCliente = parseFloat(row.querySelector('[data-field="descuentoCliente"]').textContent.replace('%', '')) || 0;
         const descuentoProveedor = parseFloat(row.querySelector('[data-field="descuentoProveedor"]').textContent.replace('%', '')) || 0;
         
-        // Cálculos
-        const precioUnitario = precioLista * (1 - descuentoCliente / 100);
+        // CÁLCULOS SEGÚN ESPECIFICACIÓN:
+        
+        // 1. P. Unitario = Precio Lista - Descuento Cliente (si no hay descuento, usar precio lista)
+        const precioUnitario = descuentoCliente > 0 ? precioLista * (1 - descuentoCliente / 100) : precioLista;
+        
+        // 2. Total Cliente = P. Unitario × Cantidad 
         const totalCliente = precioUnitario * cantidad;
-        const costoUnitario = precioLista * (1 - descuentoProveedor / 100);
+        
+        // 3. Costo Unitario = Precio Lista - Descuento Proveedor (si hay descuento en costos)
+        const costoUnitario = descuentoProveedor > 0 ? precioLista * (1 - descuentoProveedor / 100) : precioLista;
+        
+        // 4. Total Costo = Costo Unitario × Cantidad
         const totalCosto = costoUnitario * cantidad;
+        
+        // 5. Ganancia = Total Cliente - Total Costo
         const ganancia = totalCliente - totalCosto;
         
-        // Actualizar celdas calculadas (buscar por data-field específico)
+        // Actualizar todas las celdas calculadas automáticamente
         row.querySelector('[data-field="precioUnitario"]').textContent = formatearMoneda(precioUnitario);
         row.querySelector('[data-field="totalCliente"]').textContent = formatearMoneda(totalCliente);
         row.querySelector('[data-field="costoUnitario"]').textContent = formatearMoneda(costoUnitario);
@@ -4338,17 +4390,17 @@ function agregarFilaExcelGeneral() {
     newRow.setAttribute('data-row', newIndex);
     
     newRow.innerHTML = `
-        <td class="excel-cell excel-cell-text" contenteditable="true" data-field="noParte" data-row="${newIndex}" placeholder="Número de parte"></td>
-        <td class="excel-cell excel-cell-number" contenteditable="true" data-field="cantidad" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})" placeholder="1">1</td>
-        <td class="excel-cell excel-cell-description" contenteditable="true" data-field="descripcion" data-row="${newIndex}" placeholder="Descripción del producto"></td>
-        <td class="excel-cell excel-cell-text" contenteditable="true" data-field="marca" data-row="${newIndex}" placeholder="Marca"></td>
-        <td class="excel-cell excel-cell-currency" contenteditable="true" data-field="precioLista" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})" placeholder="$0.00">$0.00</td>
-        <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoCliente" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})" placeholder="0%">0%</td>
-        <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="true">$0.00</td>
-        <td class="excel-cell excel-cell-currency excel-calculated excel-total-client" contenteditable="true">$0.00</td>
-        <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoProveedor" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})" placeholder="0%">0%</td>
-        <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="true">$0.00</td>
-        <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" contenteditable="true">$0.00</td>
+        <td class="excel-cell excel-cell-text editable" contenteditable="true" data-field="noParte" data-row="${newIndex}" placeholder="Número de parte"></td>
+        <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="cantidad" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})" placeholder="1">1</td>
+        <td class="excel-cell excel-cell-description editable" contenteditable="true" data-field="descripcion" data-row="${newIndex}" placeholder="Descripción del producto"></td>
+        <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioLista" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})" placeholder="$0.00">$0.00</td>
+        <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoCliente" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})" placeholder="0%">0%</td>
+        <td class="excel-cell excel-cell-currency excel-calculated" data-field="precioUnitario" data-row="${newIndex}">$0.00</td>
+        <td class="excel-cell excel-cell-currency excel-calculated excel-total-client" data-field="totalCliente" data-row="${newIndex}">$0.00</td>
+        <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoProveedor" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})" placeholder="0%">0%</td>
+        <td class="excel-cell excel-cell-currency excel-calculated" data-field="costoUnitario" data-row="${newIndex}">$0.00</td>
+        <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" data-field="totalCosto" data-row="${newIndex}">$0.00</td>
+        <td class="excel-cell excel-cell-currency excel-calculated excel-profit" data-field="ganancia" data-row="${newIndex}">$0.00</td>
         <td class="excel-cell excel-cell-action">
             <button onclick="eliminarFilaExcelGeneral(${newIndex})" class="excel-delete-btn" title="Eliminar fila">❌</button>
         </td>
@@ -4362,9 +4414,10 @@ function agregarFilaExcelGeneral() {
         firstCell.focus();
     }
     
-    // Agregar listeners para auto-completado en la nueva fila
+    // Agregar listeners para auto-completado y cálculo en tiempo real en la nueva fila
     setTimeout(() => {
         agregarListenersAutoCompletado();
+        agregarListenersCalculoTiempoReal();
     }, 100);
     
     console.log('✅ Nueva fila agregada en volumetría general');
@@ -7731,7 +7784,9 @@ function agregarListenersAutoCompletado() {
         
         // NUEVO: Agregar listeners para autocompletado en tiempo real
         cell.addEventListener('input', manejarAutoCompletadoCelda);
-        cell.addEventListener('keydown', manejarNavegacionSugerencias);
+        cell.addEventListener('keydown', function(e) {
+            manejarNavegacionSugerencias(e, this);
+        });
         cell.addEventListener('blur', ocultarSugerenciasCelda);
         
         // Asegurar que la celda tenga position relative para el dropdown
@@ -8088,10 +8143,10 @@ function mostrarSugerenciasCelda(celda, sugerencias, rowIndex) {
     ocultarTodasLasSugerencias();
     
     // Crear o actualizar dropdown
-    let dropdown = document.getElementById(`suggestions_${rowIndex}`);
+    let dropdown = document.getElementById(`suggestions-${rowIndex}`);
     if (!dropdown) {
         dropdown = document.createElement('div');
-        dropdown.id = `suggestions_${rowIndex}`;
+        dropdown.id = `suggestions-${rowIndex}`;
         dropdown.className = 'autocomplete-suggestions';
         celda.parentNode.appendChild(dropdown);
     }
