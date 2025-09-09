@@ -100,7 +100,25 @@ class Command(BaseCommand):
                         contacto_obj = Contacto.objects.get(bitrix_contact_id=bitrix_contact_id)
                         self.stdout.write(f'  Found existing local contact: {contacto_obj.nombre} {contacto_obj.apellido}')
                     except Contacto.DoesNotExist:
-                        self.stdout.write(self.style.WARNING(f'  Contact with Bitrix Contact ID {bitrix_contact_id} not found locally. Skipping contact creation.'))
+                        self.stdout.write(f'  Contact with Bitrix Contact ID {bitrix_contact_id} not found locally. Attempting to fetch from Bitrix24...')
+                        # Obtener detalles del contacto desde Bitrix24
+                        contact_details = get_bitrix_contact_details(bitrix_contact_id)
+                        if contact_details:
+                            try:
+                                contacto_obj = Contacto.objects.create(
+                                    nombre=contact_details.get('NAME', 'Sin nombre'),
+                                    apellido=contact_details.get('LAST_NAME', ''),
+                                    telefono=contact_details.get('PHONE', [{}])[0].get('VALUE', '') if contact_details.get('PHONE') else '',
+                                    email=contact_details.get('EMAIL', [{}])[0].get('VALUE', '') if contact_details.get('EMAIL') else '',
+                                    bitrix_contact_id=bitrix_contact_id,
+                                    company_id=contact_details.get('COMPANY_ID'),
+                                    cliente=cliente_obj  # Asociar con el cliente si existe
+                                )
+                                self.stdout.write(self.style.SUCCESS(f'  Successfully created contact: {contacto_obj.nombre} {contacto_obj.apellido}'))
+                            except Exception as e:
+                                self.stdout.write(self.style.ERROR(f'  Error creating contact from Bitrix24: {e}'))
+                        else:
+                            self.stdout.write(self.style.WARNING(f'  Could not fetch contact details from Bitrix24 for ID {bitrix_contact_id}'))
                 else:
                     self.stdout.write('  Bitrix deal has no associated contact ID.')
 
