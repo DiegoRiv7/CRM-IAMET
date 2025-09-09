@@ -2620,7 +2620,7 @@ function mostrarTablaVolumetriaGeneral(datos) {
                             <h3 class="text-xl font-semibold text-white">Tabla de Precios y Costos</h3>
                             <div class="flex items-center space-x-4">
                                 <div class="flex items-center">
-                                    <button onclick="agregarFilaExcel()" class="excel-btn-primary">
+                                    <button onclick="agregarFilaExcelGeneral()" class="excel-btn-primary">
                                         ➕ Agregar Fila
                                     </button>
                                 </div>
@@ -4044,7 +4044,7 @@ function seleccionarProductoExcel(producto, rowIndex, celdaElement) {
     
     // Recalcular la fila después del llenado automático
     setTimeout(() => {
-        recalcularFilaExcel(rowIndex);
+        recalcularFilaExcelGeneral(rowIndex);
         console.log(`🔄 Fila ${rowIndex} recalculada después del autorelleno`);
     }, 150);
 }
@@ -4912,7 +4912,7 @@ function mostrarTablaVolumetria(datos) {
                                 <!-- Toolbar -->
                                 <div class="excel-toolbar flex justify-between items-center">
                                     <div class="flex space-x-3">
-                                        <button onclick="agregarFilaExcel()" class="excel-btn-primary">
+                                        <button onclick="agregarFilaExcelGeneral()" class="excel-btn-primary">
                                             ➕ Agregar Fila
                                         </button>
                                         <button onclick="copiarTablaCompleta()" class="excel-btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);">
@@ -4920,7 +4920,7 @@ function mostrarTablaVolumetria(datos) {
                                         </button>
                                     </div>
                                     <div class="flex items-center">
-                                        <button onclick="agregarFilaExcel()" class="excel-btn-primary">
+                                        <button onclick="agregarFilaExcelGeneral()" class="excel-btn-primary">
                                             ➕ Agregar Fila
                                         </button>
                                     </div>
