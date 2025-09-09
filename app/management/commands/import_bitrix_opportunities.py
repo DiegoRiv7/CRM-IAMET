@@ -105,18 +105,27 @@ class Command(BaseCommand):
                         contact_details = get_bitrix_contact_details(bitrix_contact_id)
                         if contact_details:
                             try:
-                                contacto_obj = Contacto.objects.create(
-                                    nombre=contact_details.get('NAME', 'Sin nombre'),
-                                    apellido=contact_details.get('LAST_NAME', ''),
-                                    telefono=contact_details.get('PHONE', [{}])[0].get('VALUE', '') if contact_details.get('PHONE') else '',
-                                    email=contact_details.get('EMAIL', [{}])[0].get('VALUE', '') if contact_details.get('EMAIL') else '',
-                                    bitrix_contact_id=bitrix_contact_id,
-                                    company_id=contact_details.get('COMPANY_ID'),
-                                    cliente=cliente_obj  # Asociar con el cliente si existe
-                                )
-                                self.stdout.write(self.style.SUCCESS(f'  Successfully created contact: {contacto_obj.nombre} {contacto_obj.apellido}'))
+                                # Verificar si ya existe por bitrix_contact_id (por si acaso)
+                                existing_contact = Contacto.objects.filter(bitrix_contact_id=bitrix_contact_id).first()
+                                if existing_contact:
+                                    contacto_obj = existing_contact
+                                    self.stdout.write(f'  Found contact with same Bitrix ID: {contacto_obj.nombre} {contacto_obj.apellido}')
+                                else:
+                                    contacto_obj = Contacto.objects.create(
+                                        nombre=contact_details.get('NAME', 'Sin nombre'),
+                                        apellido=contact_details.get('LAST_NAME', ''),
+                                        telefono=contact_details.get('PHONE', [{}])[0].get('VALUE', '') if contact_details.get('PHONE') else '',
+                                        email=contact_details.get('EMAIL', [{}])[0].get('VALUE', '') if contact_details.get('EMAIL') else '',
+                                        bitrix_contact_id=bitrix_contact_id,
+                                        company_id=contact_details.get('COMPANY_ID'),
+                                        cliente=cliente_obj  # Asociar con el cliente si existe
+                                    )
+                                    self.stdout.write(self.style.SUCCESS(f'  Successfully created contact: {contacto_obj.nombre} {contacto_obj.apellido}'))
                             except Exception as e:
-                                self.stdout.write(self.style.ERROR(f'  Error creating contact from Bitrix24: {e}'))
+                                self.stdout.write(self.style.ERROR(f'  DETAILED Error creating contact from Bitrix24: {e}'))
+                                self.stdout.write(self.style.ERROR(f'  Contact details: NAME={contact_details.get("NAME")}, LAST_NAME={contact_details.get("LAST_NAME")}, BITRIX_ID={bitrix_contact_id}'))
+                                import traceback
+                                self.stdout.write(self.style.ERROR(f'  Traceback: {traceback.format_exc()}'))
                         else:
                             self.stdout.write(self.style.WARNING(f'  Could not fetch contact details from Bitrix24 for ID {bitrix_contact_id}'))
                 else:
