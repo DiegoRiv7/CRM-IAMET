@@ -110,7 +110,7 @@
         .light-theme .form-control,
         .light-theme .form-select {
             background: linear-gradient(135deg, 
-                rgba(255, 255, 255, 0.9) 0%, 
+                rgba(255, 255, 255, 0.9) 0%,
                 rgba(255, 248, 250, 0.85) 100%);
             border: 1px solid rgba(255, 107, 157, 0.2);
             color: var(--apple-label);
@@ -671,7 +671,7 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
     <!-- Add Client Modal -->
     <div id="add-client-modal" class="fixed inset-0 bg-opacity-75 flex items-center justify-center z-50 hidden" style="background-color: rgba(0, 0, 0, 0.8);">
         <div class="rounded-lg shadow-xl p-8 w-full max-w-md" style="background-color: var(--apple-background-secondary); border: 1px solid rgba(255, 255, 255, 0.1);">
-            <h2 class="text-2xl font-bold mb-6" style="color: var(--apple-label);">Agregar Nuevo Cliente</h2>
+            <h2 class="text-2xl font-bold mb-6" style="color: var(--apple-label);"> Agregar Nuevo Cliente</h2>
             <form id="add-client-form">
                 <div class="space-y-4">
                     <div>
@@ -893,7 +893,7 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                     <input type="hidden" name="titulos[${titleCounter}][position]" value="${tbody.rows.length}">
                     <button type="button" 
                             onclick="removeRow('${rowId}')" 
-                            class="text-red-400 hover:text-red-600 text-xl font-bold leading-none" 
+                            class="text-red-400 hover:text-red-600 text-xl font-bold leading-none"
                             style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(255,0,0,0.1); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
                         &times;
                     </button>
@@ -1070,7 +1070,7 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
             if (columns.length < 6) {
                 // Para datos como el ejemplo: MARCA "MODELO" CANTIDAD DESCRIPCION $PRECIO %DESC UNITARIO TOTAL
                 const parts = [];
-                const regex = /"[^"]*"|[$]\d+[,\d]*\.?\d*|\d+[,\d]*\.?\d*\%?|\S+/g;
+                const regex = /"[^"]*"|[$]\d+[\d,]*\.?\d*|\d+[\d,]*\.?\d*\%?|\S+/g;
                 let match;
                 
                 while ((match = regex.exec(rowString)) !== null) {
@@ -1087,24 +1087,16 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
 
         function processExcelPaste() {
             const pasteTextarea = document.getElementById('excel-paste-textarea');
-            let pastedData = pasteTextarea.value.trim();
+            const pastedData = pasteTextarea.value.trim();
 
             if (!pastedData) {
                 console.warn("DEBUG JS: No data pasted.");
                 return;
             }
 
-            // Reemplaza los saltos de línea dentro de los campos citados para evitar que se rompan las filas.
-            pastedData = pastedData.replace(/"([^"
-]*)?"/g, (match, group1) => {
-                return '"' + group1.replace(/\n|\r/g, ' ') + '"';
-            });
-
             const rows = pastedData.split('\n');
 
             rows.forEach((rowString, index) => {
-                if (rowString.trim() === '') return; // Omitir filas vacías
-
                 console.log(`DEBUG JS: Processing row ${index}: ${rowString}`);
                 
                 // Usar función inteligente para separar columnas
@@ -1169,7 +1161,6 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
         }
 
         
-
 
         // Function to populate client select dropdown
         function populateClientSelect() {
@@ -1684,7 +1675,7 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                                 <input type="hidden" name="titulos[${titleCounter}][position]" value="${tbody.rows.length}">
                                 <button type="button" 
                                         onclick="removeRow('${rowId}')" 
-                                        class="text-red-400 hover:text-red-600 text-xl font-bold leading-none" 
+                                        class="text-red-400 hover:text-red-600 text-xl font-bold leading-none"
                                         style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(255,0,0,0.1); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
                                     &times;
                                 </button>
