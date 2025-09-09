@@ -2587,15 +2587,155 @@ function mostrarVolumetriaGeneralDirecta() {
 function mostrarTablaVolumetriaGeneral(datos) {
     console.log('🆕 Creando nueva tabla volumetría general limpia');
     
-    // Crear HTML con tema oscuro/negro
+    // Crear HTML con nuevo layout profesional
     const nuevaTabla = `
-        <div id="tabla-volumetria" class="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
-            <div class="min-h-screen overflow-y-auto">
-                <div class="bg-gray-800/90 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl p-6 mx-4 animate-fade-in">
-                    <div class="flex items-center justify-between mb-8">
-                        <div class="flex items-center space-x-4">
-                            <div class="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl shadow-lg">
-                                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div id="tabla-volumetria" class="volumetria-workspace">
+            <!-- Barra lateral de componentes siempre visible -->
+            <div id="components-sidebar" class="components-sidebar">
+                <div class="sidebar-header">
+                    <h3>Componentes</h3>
+                    <p>Arrastra para agregar</p>
+                </div>
+                
+                <div class="components-grid">
+                    <!-- Nodo de Red -->
+                    <div class="component-card" data-component="network-node" data-type="red" draggable="true">
+                        <div class="component-icon-large network-node-icon">
+                            <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="networkGradientSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#60A5FA;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#3B82F6;stop-opacity:1" />
+                                    </linearGradient>
+                                    <filter id="networkShadowSidebar">
+                                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1E40AF" flood-opacity="0.3"/>
+                                    </filter>
+                                </defs>
+                                <rect x="4" y="10" width="24" height="12" rx="2" fill="url(#networkGradientSidebar)" filter="url(#networkShadowSidebar)"/>
+                                <rect x="6" y="13" width="2" height="1.5" rx="0.3" fill="#E5E7EB"/>
+                                <rect x="9" y="13" width="2" height="1.5" rx="0.3" fill="#E5E7EB"/>
+                                <rect x="12" y="13" width="2" height="1.5" rx="0.3" fill="#E5E7EB"/>
+                                <rect x="15" y="13" width="2" height="1.5" rx="0.3" fill="#E5E7EB"/>
+                                <circle cx="24" cy="14" r="1" fill="#10B981"/>
+                                <circle cx="24" cy="17" r="1" fill="#F59E0B"/>
+                                <path d="M16 8L16 10M16 22L16 24M8 6L16 8M24 6L16 8" stroke="#60A5FA" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="component-info">
+                            <span class="component-title">Nodo de Red</span>
+                            <span class="component-subtitle">Switch/Router</span>
+                        </div>
+                    </div>
+
+                    <!-- Tubería -->
+                    <div class="component-card" data-component="pipe" data-type="infraestructura" draggable="true">
+                        <div class="component-icon-large pipe-icon">
+                            <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="pipeGradientSidebar" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" style="stop-color:#6B7280;stop-opacity:1" />
+                                        <stop offset="50%" style="stop-color:#9CA3AF;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#4B5563;stop-opacity:1" />
+                                    </linearGradient>
+                                    <filter id="pipeShadowSidebar">
+                                        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#374151" flood-opacity="0.4"/>
+                                    </filter>
+                                </defs>
+                                <rect x="2" y="13" width="28" height="6" rx="3" fill="url(#pipeGradientSidebar)" filter="url(#pipeShadowSidebar)"/>
+                                <ellipse cx="8" cy="16" rx="2" ry="3" fill="#D1D5DB"/>
+                                <ellipse cx="16" cy="16" rx="2" ry="3" fill="#D1D5DB"/>
+                                <ellipse cx="24" cy="16" rx="2" ry="3" fill="#D1D5DB"/>
+                                <rect x="2" y="14" width="28" height="2" rx="1" fill="#F3F4F6" opacity="0.3"/>
+                            </svg>
+                        </div>
+                        <div class="component-info">
+                            <span class="component-title">Tubería</span>
+                            <span class="component-subtitle">Conducto/Canaleta</span>
+                        </div>
+                    </div>
+
+                    <!-- Cámara -->
+                    <div class="component-card" data-component="camera" data-type="seguridad" draggable="true">
+                        <div class="component-icon-large camera-icon">
+                            <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="cameraGradientSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#1F2937;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#374151;stop-opacity:1" />
+                                    </linearGradient>
+                                    <filter id="cameraShadowSidebar">
+                                        <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#111827" flood-opacity="0.5"/>
+                                    </filter>
+                                </defs>
+                                <ellipse cx="16" cy="16" rx="12" ry="8" fill="url(#cameraGradientSidebar)" filter="url(#cameraShadowSidebar)"/>
+                                <circle cx="16" cy="16" r="6" fill="#4B5563"/>
+                                <circle cx="16" cy="16" r="4" fill="#111827"/>
+                                <circle cx="16" cy="16" r="2" fill="#6366F1"/>
+                                <ellipse cx="14" cy="14" rx="1" ry="1" fill="#93C5FD" opacity="0.6"/>
+                                <rect x="14" y="8" width="4" height="3" rx="1" fill="#9CA3AF"/>
+                                <circle cx="6" cy="12" r="1.5" fill="#EF4444"/>
+                            </svg>
+                        </div>
+                        <div class="component-info">
+                            <span class="component-title">Cámara</span>
+                            <span class="component-subtitle">Videovigilancia</span>
+                        </div>
+                    </div>
+
+                    <!-- Control de Acceso -->
+                    <div class="component-card" data-component="access-control" data-type="seguridad" draggable="true">
+                        <div class="component-icon-large access-icon">
+                            <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="accessGradientSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#059669;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#047857;stop-opacity:1" />
+                                    </linearGradient>
+                                    <filter id="accessShadowSidebar">
+                                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#064E3B" flood-opacity="0.4"/>
+                                    </filter>
+                                </defs>
+                                <rect x="6" y="8" width="20" height="16" rx="3" fill="url(#accessGradientSidebar)" filter="url(#accessShadowSidebar)"/>
+                                <rect x="9" y="11" width="14" height="6" rx="1" fill="#1F2937"/>
+                                <circle cx="23" cy="14" r="1" fill="#10B981"/>
+                                <circle cx="23" cy="17" r="1" fill="#F59E0B"/>
+                                <rect x="11" y="19" width="2" height="2" rx="0.3" fill="#E5E7EB"/>
+                                <rect x="15" y="19" width="2" height="2" rx="0.3" fill="#E5E7EB"/>
+                                <rect x="19" y="19" width="2" height="2" rx="0.3" fill="#E5E7EB"/>
+                                <rect x="9" y="13" width="6" height="1" rx="0.5" fill="#374151"/>
+                            </svg>
+                        </div>
+                        <div class="component-info">
+                            <span class="component-title">Control de Acceso</span>
+                            <span class="component-subtitle">Lector/Biométrico</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Área principal de trabajo -->
+            <div id="main-workspace" class="main-workspace">
+                <!-- Header con botón de volver -->
+                <div class="workspace-header">
+                    <button onclick="window.location.reload()" class="back-button">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                        </svg>
+                        <span>Volver</span>
+                    </button>
+                    <div class="workspace-title">
+                        <h1>Volumetría General</h1>
+                        <p id="workspace-project-info">Configurando proyecto...</p>
+                    </div>
+                </div>
+
+                <!-- Área de tablas -->
+                <div class="tables-container">
+                    <div class="bg-gray-800/90 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl p-6">
+                        <div class="flex items-center justify-between mb-8">
+                            <div class="flex items-center space-x-4">
+                                <div class="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl shadow-lg">
+                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </div>
@@ -2964,7 +3104,62 @@ function mostrarTablaVolumetriaGeneral(datos) {
                             </div>
                         </div>
                     </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pie de página con resumen y acciones -->
+            <div class="workspace-footer">
+                <div class="footer-content">
+                    <!-- Resumen del proyecto en el pie -->
+                    <div class="project-summary">
+                        <h3>Resumen del Proyecto</h3>
+                        <div class="summary-grid">
+                            <div class="summary-item">
+                                <span class="summary-label">Cliente:</span>
+                                <span class="summary-value" id="footer-cliente-display">-</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Oportunidad:</span>
+                                <span class="summary-value" id="footer-oportunidad-display">-</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Total General:</span>
+                                <span class="summary-value total-highlight" id="footer-total-display">$0.00</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Moneda:</span>
+                                <select id="footer-moneda-select" class="summary-select" onchange="cambiarMoneda()">
+                                    <option value="USD">USD</option>
+                                    <option value="MXN">MXN</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                     
+                    <!-- Botones de acción -->
+                    <div class="action-buttons">
+                        <button onclick="exportarPDF()" class="action-btn primary">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <span>Guardar PDF</span>
+                        </button>
+                        
+                        <button onclick="exportarCSV()" class="action-btn secondary">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <span>Exportar CSV</span>
+                        </button>
+                        
+                        <button onclick="nuevaVolumetria()" class="action-btn accent">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            <span>Nueva Volumetría</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -6584,6 +6779,9 @@ function recalcularTotales() {
     
     // Actualizar el resumen completo
     actualizarResumen(totalCliente, totalCosto);
+    
+    // Actualizar total en el pie de página del nuevo workspace
+    updateFooterTotal(totalCliente);
 }
 
 // Función para actualizar el resumen con nuevos totales
@@ -9532,11 +9730,107 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
+// Inicializar funcionalidad del nuevo workspace
+function initWorkspaceComponents() {
+    console.log('🚀 Inicializando workspace de volumetría profesional');
+    
+    // Configurar drag and drop para las nuevas tarjetas de componentes
+    const componentCards = document.querySelectorAll('.component-card');
+    componentCards.forEach(card => {
+        card.addEventListener('dragstart', (e) => {
+            const componentType = card.dataset.component;
+            const tableType = card.dataset.type;
+            
+            e.dataTransfer.setData('application/json', JSON.stringify({
+                component: componentType,
+                type: tableType,
+                name: card.querySelector('.component-title').textContent
+            }));
+            
+            card.classList.add('dragging');
+            console.log(`🎯 Iniciando drag de componente desde sidebar: ${componentType}`);
+        });
+        
+        card.addEventListener('dragend', () => {
+            card.classList.remove('dragging');
+        });
+    });
+    
+    // Configurar zonas de drop en tablas
+    setupTableDropZones();
+    
+    // Actualizar información del proyecto en el workspace
+    updateWorkspaceInfo();
+    
+    // Sincronizar selectores de moneda
+    syncCurrencySelectors();
+}
+
+// Actualizar información del proyecto en el workspace
+function updateWorkspaceInfo() {
+    const oportunidadData = window.sessionOportunidadData;
+    if (!oportunidadData) return;
+    
+    // Actualizar título del proyecto
+    const projectInfo = document.getElementById('workspace-project-info');
+    if (projectInfo && oportunidadData.cliente_nombre && oportunidadData.oportunidad_nombre) {
+        projectInfo.textContent = `${oportunidadData.cliente_nombre} - ${oportunidadData.oportunidad_nombre}`;
+    }
+    
+    // Actualizar resumen del pie de página
+    const footerCliente = document.getElementById('footer-cliente-display');
+    const footerOportunidad = document.getElementById('footer-oportunidad-display');
+    
+    if (footerCliente && oportunidadData.cliente_nombre) {
+        footerCliente.textContent = oportunidadData.cliente_nombre;
+    }
+    
+    if (footerOportunidad && oportunidadData.oportunidad_nombre) {
+        footerOportunidad.textContent = oportunidadData.oportunidad_nombre;
+    }
+}
+
+// Sincronizar selectores de moneda
+function syncCurrencySelectors() {
+    const mainSelector = document.getElementById('moneda-select');
+    const footerSelector = document.getElementById('footer-moneda-select');
+    
+    if (mainSelector && footerSelector) {
+        // Sincronizar valores iniciales
+        footerSelector.value = mainSelector.value;
+        
+        // Sincronizar cambios
+        mainSelector.addEventListener('change', () => {
+            footerSelector.value = mainSelector.value;
+        });
+        
+        footerSelector.addEventListener('change', () => {
+            mainSelector.value = footerSelector.value;
+            // Trigger el evento de cambio en el selector principal
+            mainSelector.dispatchEvent(new Event('change'));
+        });
+    }
+}
+
+// Actualizar total en el pie de página
+function updateFooterTotal(total) {
+    const footerTotal = document.getElementById('footer-total-display');
+    if (footerTotal && total !== undefined) {
+        footerTotal.textContent = formatearMoneda(total);
+    }
+}
+
 // Llamar función de inicialización cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         initComponentBar();
         setupTableDropZones();
+        
+        // Verificar si estamos en el nuevo workspace
+        const workspace = document.getElementById('tabla-volumetria');
+        if (workspace && workspace.classList.contains('volumetria-workspace')) {
+            initWorkspaceComponents();
+        }
     }, 1000); // Delay para asegurar que todo esté cargado
 });
 
@@ -9946,6 +10240,394 @@ document.addEventListener('DOMContentLoaded', () => {
         transform: translateY(-50%) scale(1);
         opacity: 0.8;
     }
+}
+
+/* ========================================
+   NUEVO LAYOUT WORKSPACE PROFESIONAL
+   ======================================== */
+
+.volumetria-workspace {
+    display: flex;
+    height: 100vh;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow: hidden;
+}
+
+/* Barra lateral de componentes */
+.components-sidebar {
+    width: 280px;
+    background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
+    border-right: 1px solid #475569;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar-header {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid #475569;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+}
+
+.sidebar-header h3 {
+    color: #f1f5f9;
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.sidebar-header p {
+    color: #94a3b8;
+    font-size: 13px;
+    margin: 0;
+    opacity: 0.9;
+}
+
+.components-grid {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+}
+
+.component-card {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.5) 100%);
+    border: 1px solid #475569;
+    border-radius: 16px;
+    cursor: grab;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.component-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.component-card:hover {
+    transform: translateY(-3px);
+    border-color: #6366f1;
+    box-shadow: 
+        0 10px 30px rgba(79, 70, 229, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.component-card:hover::before {
+    opacity: 1;
+}
+
+.component-card:active {
+    transform: translateY(-1px);
+    cursor: grabbing;
+}
+
+.component-card.dragging {
+    opacity: 0.8;
+    transform: scale(0.98);
+}
+
+.component-icon-large {
+    flex-shrink: 0;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+    background: rgba(15, 23, 42, 0.9);
+    border-radius: 12px;
+    border: 1px solid #374151;
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s ease;
+}
+
+.component-card:hover .component-icon-large {
+    transform: scale(1.05);
+    background: rgba(15, 23, 42, 1);
+    border-color: #6366f1;
+}
+
+.component-info {
+    flex: 1;
+    position: relative;
+    z-index: 1;
+}
+
+.component-title {
+    display: block;
+    color: #f1f5f9;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.component-subtitle {
+    display: block;
+    color: #94a3b8;
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+/* Área principal de trabajo */
+.main-workspace {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.workspace-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-bottom: 1px solid #475569;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.back-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.back-button:hover {
+    background: linear-gradient(135deg, #475569 0%, #334155 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.workspace-title h1 {
+    color: #f1f5f9;
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.workspace-title p {
+    color: #94a3b8;
+    font-size: 14px;
+    margin: 4px 0 0 0;
+    opacity: 0.9;
+}
+
+.tables-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px 0;
+}
+
+/* Pie de página con resumen y acciones */
+.workspace-footer {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border-top: 1px solid #475569;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    padding: 20px 24px;
+}
+
+.footer-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.project-summary {
+    flex: 1;
+}
+
+.project-summary h3 {
+    color: #f1f5f9;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.summary-label {
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.summary-value {
+    color: #f1f5f9;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.summary-value.total-highlight {
+    color: #10b981;
+    font-size: 16px;
+    font-weight: 700;
+    text-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+}
+
+.summary-select {
+    background: #374151;
+    color: #f1f5f9;
+    border: 1px solid #4b5563;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.action-btn.primary {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: white;
+}
+
+.action-btn.primary:hover {
+    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+}
+
+.action-btn.secondary {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: white;
+}
+
+.action-btn.secondary:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+}
+
+.action-btn.accent {
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    color: white;
+}
+
+.action-btn.accent:hover {
+    background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .components-sidebar {
+        width: 240px;
+    }
+    
+    .footer-content {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+    }
+    
+    .action-buttons {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .volumetria-workspace {
+        flex-direction: column;
+    }
+    
+    .components-sidebar {
+        width: 100%;
+        height: 120px;
+        flex-direction: row;
+    }
+    
+    .components-grid {
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+    
+    .component-card {
+        min-width: 200px;
+    }
+}
+
+/* Scrollbar personalizada */
+.components-grid::-webkit-scrollbar,
+.tables-container::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.components-grid::-webkit-scrollbar-track,
+.tables-container::-webkit-scrollbar-track {
+    background: rgba(51, 65, 85, 0.3);
+    border-radius: 3px;
+}
+
+.components-grid::-webkit-scrollbar-thumb,
+.tables-container::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.5);
+    border-radius: 3px;
+}
+
+.components-grid::-webkit-scrollbar-thumb:hover,
+.tables-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.7);
 }
 </style>
 {% endblock %}
