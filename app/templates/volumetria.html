@@ -2557,7 +2557,7 @@ function mostrarVolumetriaGeneralDirecta() {
     mostrarTablaVolumetriaGeneral(datosGenerales);
 }
 
-// Función específica para mostrar tabla de volumetría general (con funcionalidad completa de nodos)
+// Función específica para mostrar tabla de volumetría general (4 tablas: General, Infraestructura, Gastos, Mano de obra)
 function mostrarTablaVolumetriaGeneral(datos) {
     console.log('🆕 Creando nueva tabla volumetría general limpia');
     
@@ -2656,6 +2656,10 @@ function mostrarTablaVolumetriaGeneral(datos) {
                             .excel-cell.editable:hover {
                                 background: #1f2937 !important;
                                 border-color: #374151 !important;
+                                cursor: text !important;
+                            }
+                            .excel-cell.editable {
+                                cursor: text !important;
                             }
                             /* Anular hover en filas completas - mantener tema oscuro */
                             .excel-row:hover .excel-cell {
@@ -2960,7 +2964,7 @@ function mostrarTablaVolumetriaGeneral(datos) {
         monedaSelect.value = 'USD';
         monedaActual = 'USD';
     }
-    recalcularTotalesExcel(); // Recalcular una vez al inicio
+    recalcularTotalesGeneral(); // Recalcular una vez al inicio para tabla general
     
     // Agregar listeners para auto-completado de productos
     setTimeout(() => {
@@ -4594,6 +4598,18 @@ function procesarCSVImport(csvData) {
 
 // Función para mostrar la tabla de volumetría
 function mostrarTablaVolumetria(datos) {
+    // VALIDACIÓN: No mostrar si ya existe una tabla de volumetría o si es categoría General
+    if (document.getElementById('tabla-volumetria')) {
+        console.log('⚠️ Ya existe una tabla de volumetría, saltando mostrarTablaVolumetria');
+        return;
+    }
+    
+    // VALIDACIÓN ADICIONAL: No mostrar para categoría General
+    if (datos.categoria === 'General') {
+        console.log('⚠️ Categoría General detectada, usando mostrarTablaVolumetriaGeneral en su lugar');
+        return;
+    }
+    
     volumetriaConfig.cantidadNodos = datos.cantidadNodos || 1;
     
     // Guardar el estado actual
