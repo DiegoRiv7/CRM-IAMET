@@ -150,6 +150,18 @@
                 </button>
                 <p class="text-xs text-red-400 mt-1">No se puede crear cotización sin cliente asignado</p>
                 {% endif %}
+                
+                {% if oportunidad.cliente %}
+                <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="interactive-btn w-full px-6 py-3 text-lg text-center bg-green-600 hover:bg-green-700">
+                    Crear volumetría
+                </a>
+                {% else %}
+                <button class="interactive-btn w-full px-6 py-3 text-lg text-center bg-gray-500 cursor-not-allowed" disabled>
+                    Crear volumetría
+                </button>
+                <p class="text-xs text-red-400 mt-1">No se puede crear volumetría sin cliente asignado</p>
+                {% endif %}
+                
                 <button class="interactive-btn w-full px-6 py-3 text-lg bg-purple-600 hover:bg-purple-700">
                     Crear proyecto
                 </button>

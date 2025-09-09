@@ -2829,16 +2829,13 @@ function mostrarTablaVolumetriaGeneral(datos) {
                             <table id="excel-table-gastos" class="excel-table w-full">
                                 <thead style="position: sticky; top: 0; z-index: 10;">
                                     <tr class="excel-header">
-                                        <th colspan="8" class="excel-th-group" style="background: linear-gradient(135deg, #7c3aed, #a855f7); color: white;">GASTOS DE INSTALACIÓN</th>
+                                        <th colspan="5" class="excel-th-group" style="background: linear-gradient(135deg, #7c3aed, #a855f7); color: white;">GASTOS DE INSTALACIÓN</th>
                                     </tr>
                                     <tr class="excel-subheader">
-                                        <th class="excel-th">Marca</th>
-                                        <th class="excel-th">No. Parte</th>
                                         <th class="excel-th">Cantidad</th>
                                         <th class="excel-th excel-description">Descripción</th>
-                                        <th class="excel-th">Precio Lista</th>
                                         <th class="excel-th">Desc %</th>
-                                        <th class="excel-th">Unitario</th>
+                                        <th class="excel-th">Precio Unitario</th>
                                         <th class="excel-th">Total</th>
                                     </tr>
                                 </thead>
@@ -3128,13 +3125,10 @@ function generarFilasVaciasGastosInstalacion() {
     for (let i = 0; i < 3; i++) {
         filas += `
             <tr class="excel-row" data-row="${i}">
-                <td class="excel-cell excel-cell-text editable" contenteditable="true" data-field="marca" data-row="${i}" placeholder="Marca">-</td>
-                <td class="excel-cell excel-cell-text editable" contenteditable="true" data-field="noParte" data-row="${i}" placeholder="Número de parte">-</td>
-                <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="cantidad" data-row="${i}" onblur="recalcularFilaGastosInstalacion(${i})">0</td>
+                <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="cantidad" data-row="${i}" onblur="recalcularFilaGastosInstalacion(${i})" oninput="recalcularFilaGastosInstalacion(${i})">0</td>
                 <td class="excel-cell excel-cell-text excel-cell-description editable" contenteditable="true" data-field="descripcion" data-row="${i}" placeholder="Descripción del gasto">-</td>
-                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioLista" data-row="${i}" onblur="recalcularFilaGastosInstalacion(${i})">$0.00</td>
-                <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuento" data-row="${i}" onblur="recalcularFilaGastosInstalacion(${i})">0%</td>
-                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="unitario" data-row="${i}" onblur="recalcularFilaGastosInstalacion(${i})">$0.00</td>
+                <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuento" data-row="${i}" onblur="recalcularFilaGastosInstalacion(${i})" oninput="recalcularFilaGastosInstalacion(${i})">0%</td>
+                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioUnitario" data-row="${i}" onblur="recalcularFilaGastosInstalacion(${i})" oninput="recalcularFilaGastosInstalacion(${i})">$0.00</td>
                 <td class="excel-cell excel-cell-currency excel-total" data-field="total" data-row="${i}">$0.00</td>
             </tr>
         `;
@@ -3143,7 +3137,7 @@ function generarFilasVaciasGastosInstalacion() {
     // Fila de totales para gastos
     filas += `
         <tr class="excel-totals-row">
-            <td colspan="7" class="excel-cell excel-totals-label">TOTAL GASTOS INSTALACIÓN:</td>
+            <td colspan="4" class="excel-cell excel-totals-label">TOTAL GASTOS INSTALACIÓN:</td>
             <td class="excel-cell excel-cell-currency excel-calculated excel-total">$0.00</td>
         </tr>
     `;
@@ -7373,6 +7367,9 @@ function getCookie(name) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Inicializando volumetría con recuperación de estado');
     
+    // Cargar datos de oportunidad si están disponibles en la sesión
+    cargarDatosOportunidadGeneral();
+    
     // Verificar si hay un estado guardado
     const estadoGuardado = cargarEstadoVolumetria();
     
@@ -8653,15 +8650,24 @@ function recalcularFilaGastosInstalacion(rowIndex) {
         if (!row) return;
         
         const cantidad = parseFloat(row.querySelector('[data-field="cantidad"]').textContent) || 0;
-        const precioLista = parseFloat(row.querySelector('[data-field="precioLista"]').textContent.replace(/[$,]/g, '')) || 0;
+        const precioUnitario = parseFloat(row.querySelector('[data-field="precioUnitario"]').textContent.replace(/[$,]/g, '')) || 0;
         const descuento = parseFloat(row.querySelector('[data-field="descuento"]').textContent.replace('%', '')) || 0;
         
-        // Cálculos
-        const unitario = precioLista * (1 - descuento / 100);
-        const total = cantidad * unitario;
+        // Nueva lógica simplificada:
+        // Si hay descuento, aplicarlo al precio unitario
+        let precioFinal = precioUnitario;
+        if (descuento > 0) {
+            precioFinal = precioUnitario * (1 - descuento / 100);
+            // Actualizar el campo precio unitario con el descuento aplicado
+            row.querySelector('[data-field="precioUnitario"]').textContent = formatearMoneda(precioFinal);
+            // Limpiar el descuento ya que se aplicó
+            row.querySelector('[data-field="descuento"]').textContent = '0%';
+        }
         
-        // Actualizar celdas calculadas
-        row.querySelector('[data-field="unitario"]').textContent = formatearMoneda(unitario);
+        // Calcular total: Precio Unitario × Cantidad
+        const total = cantidad * precioFinal;
+        
+        // Actualizar celda del total
         row.querySelector('[data-field="total"]').textContent = formatearMoneda(total);
         
         // Recalcular totales de la tabla
@@ -8727,13 +8733,10 @@ function agregarFilaGastosInstalacion() {
     
     const newRow = `
         <tr class="excel-row" data-row="${newIndex}">
-            <td class="excel-cell excel-cell-text editable" contenteditable="true" data-field="marca" data-row="${newIndex}" placeholder="Marca">-</td>
-            <td class="excel-cell excel-cell-text editable" contenteditable="true" data-field="noParte" data-row="${newIndex}" placeholder="Número de parte">-</td>
-            <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="cantidad" data-row="${newIndex}" onblur="recalcularFilaGastosInstalacion(${newIndex})">0</td>
+            <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="cantidad" data-row="${newIndex}" onblur="recalcularFilaGastosInstalacion(${newIndex})" oninput="recalcularFilaGastosInstalacion(${newIndex})">0</td>
             <td class="excel-cell excel-cell-text excel-cell-description editable" contenteditable="true" data-field="descripcion" data-row="${newIndex}" placeholder="Descripción del gasto">Nuevo gasto</td>
-            <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioLista" data-row="${newIndex}" onblur="recalcularFilaGastosInstalacion(${newIndex})">$0.00</td>
-            <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuento" data-row="${newIndex}" onblur="recalcularFilaGastosInstalacion(${newIndex})">0%</td>
-            <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="unitario" data-row="${newIndex}" onblur="recalcularFilaGastosInstalacion(${newIndex})">$0.00</td>
+            <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuento" data-row="${newIndex}" onblur="recalcularFilaGastosInstalacion(${newIndex})" oninput="recalcularFilaGastosInstalacion(${newIndex})">0%</td>
+            <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioUnitario" data-row="${newIndex}" onblur="recalcularFilaGastosInstalacion(${newIndex})" oninput="recalcularFilaGastosInstalacion(${newIndex})">$0.00</td>
             <td class="excel-cell excel-cell-currency excel-total" data-field="total" data-row="${newIndex}">$0.00</td>
         </tr>
     `;
