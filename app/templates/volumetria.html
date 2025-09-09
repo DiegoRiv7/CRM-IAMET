@@ -2583,9 +2583,6 @@ function mostrarTablaVolumetriaGeneral(datos) {
                             </div>
                         </div>
                         <div class="flex space-x-3">
-                            <button onclick="agregarFilaExcel()" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200 shadow-lg">
-                                ➕ Agregar Fila
-                            </button>
                             <button onclick="exportarPDF()" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200 shadow-lg">
                                 📄 Guardar PDF
                             </button>
@@ -2759,11 +2756,7 @@ function mostrarTablaVolumetriaGeneral(datos) {
                             <div class="flex space-x-3">
                                 <button onclick="agregarFilaInfraestructura()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2">
                                     <span>➕</span>
-                                    <span>Agregar Producto</span>
-                                </button>
-                                <button onclick="exportarCSV()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2" title="Exporta ambas tablas unificadas">
-                                    <span>📊</span>
-                                    <span>Exportar CSV Unificado</span>
+                                    <span>Agregar Fila</span>
                                 </button>
                                 <button onclick="eliminarSeccionInfraestructura()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2" title="Eliminar toda la sección de infraestructura">
                                     <span>🗑️</span>
@@ -2820,11 +2813,7 @@ function mostrarTablaVolumetriaGeneral(datos) {
                             <div class="flex space-x-3">
                                 <button onclick="agregarFilaGastosInstalacion()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2">
                                     <span>➕</span>
-                                    <span>Agregar Gasto</span>
-                                </button>
-                                <button onclick="exportarCSV()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2" title="Exporta todas las tablas unificadas">
-                                    <span>📊</span>
-                                    <span>Exportar CSV Unificado</span>
+                                    <span>Agregar Fila</span>
                                 </button>
                                 <button onclick="eliminarSeccionGastosInstalacion()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2" title="Eliminar toda la sección de gastos">
                                     <span>🗑️</span>
@@ -2875,11 +2864,7 @@ function mostrarTablaVolumetriaGeneral(datos) {
                             <div class="flex space-x-3">
                                 <button onclick="agregarFilaManoObra()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2">
                                     <span>➕</span>
-                                    <span>Agregar Personal</span>
-                                </button>
-                                <button onclick="exportarCSV()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2" title="Exporta todas las tablas unificadas">
-                                    <span>📊</span>
-                                    <span>Exportar CSV Unificado</span>
+                                    <span>Agregar Fila</span>
                                 </button>
                                 <button onclick="eliminarSeccionManoObra()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2" title="Eliminar toda la sección de mano de obra">
                                     <span>🗑️</span>
@@ -4853,9 +4838,6 @@ function mostrarTablaVolumetria(datos) {
                                         </button>
                                         <button onclick="copiarTablaCompleta()" class="excel-btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);">
                                             📋 Copiar Todo
-                                        </button>
-                                        <button onclick="exportarCSV()" class="excel-btn-primary" style="background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);">
-                                            📊 Exportar CSV
                                         </button>
                                     </div>
                                     <div class="text-xs text-gray-300 font-mono flex items-center space-x-4">
