@@ -114,8 +114,6 @@ class Command(BaseCommand):
                                     contacto_obj = Contacto.objects.create(
                                         nombre=contact_details.get('NAME', 'Sin nombre'),
                                         apellido=contact_details.get('LAST_NAME', ''),
-                                        telefono=contact_details.get('PHONE', [{}])[0].get('VALUE', '') if contact_details.get('PHONE') else '',
-                                        email=contact_details.get('EMAIL', [{}])[0].get('VALUE', '') if contact_details.get('EMAIL') else '',
                                         bitrix_contact_id=bitrix_contact_id,
                                         company_id=contact_details.get('COMPANY_ID'),
                                         cliente=cliente_obj  # Asociar con el cliente si existe
