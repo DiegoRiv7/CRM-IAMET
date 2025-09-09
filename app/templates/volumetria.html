@@ -8950,14 +8950,7 @@ function createComponentBarHTML() {
     const componentBarHTML = `
         <!-- Barra lateral flotante de componentes -->
         <div id="floating-component-bar" class="component-bar-container">
-            <!-- Trigger button (siempre visible) -->
-            <div id="component-bar-trigger" class="component-bar-trigger">
-                <div class="trigger-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                </div>
-            </div>
+            <!-- Trigger now invisible - activation via hover zone -->
             
             <!-- Panel de componentes (se muestra al hover) -->
             <div id="component-bar-panel" class="component-bar-panel">
@@ -9126,85 +9119,179 @@ function createComponentBarHTML() {
             display: getComputedStyle(createdBar).display
         });
         
-        // Forzar estilos para testing
-        createdBar.style.cssText = `
-            position: fixed !important;
-            top: 50% !important;
-            right: 0 !important;
-            transform: translateY(-50%) !important;
-            z-index: 9999 !important;
-            visibility: visible !important;
-            display: block !important;
-            pointer-events: auto !important;
-        `;
-        console.log('🔧 Estilos forzados aplicados para testing');
-        
-        // Agregar también un botón de fallback simple visible
-        const fallbackButton = document.createElement('div');
-        fallbackButton.id = 'component-fallback-btn';
-        fallbackButton.innerHTML = `
-            <div style="
-                position: fixed;
-                top: 100px;
-                right: 10px;
-                width: 60px;
-                height: 60px;
-                background: #4f46e5;
-                color: white;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                z-index: 10001;
-                font-size: 24px;
-                box-shadow: 0 4px 20px rgba(79, 70, 229, 0.5);
-                border: 2px solid white;
-            ">
-                🔧
-            </div>
-        `;
-        document.body.appendChild(fallbackButton);
-        
-        fallbackButton.addEventListener('click', () => {
-            const panel = document.getElementById('component-bar-panel');
-            if (panel) {
-                panel.classList.toggle('visible');
-                console.log('🔘 Panel toggled via fallback button');
-            }
-        });
+        // Crear zona invisible de hover y sistema de onboarding
+        createInvisibleHoverZone();
+        createOnboardingIndicator();
         
     } else {
         console.error('❌ Error: No se pudo crear la barra de componentes');
     }
 }
 
-// Configurar eventos de la barra de componentes
-function setupComponentBarEvents() {
-    const trigger = document.getElementById('component-bar-trigger');
-    const panel = document.getElementById('component-bar-panel');
-    const container = document.getElementById('floating-component-bar');
+// Crear zona invisible de hover en el borde derecho
+function createInvisibleHoverZone() {
+    console.log('🎯 Creando zona invisible de hover');
     
-    if (!trigger || !panel || !container) return;
+    const hoverZone = document.createElement('div');
+    hoverZone.id = 'component-hover-zone';
+    hoverZone.style.cssText = `
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 15px;
+        height: 100vh;
+        z-index: 9998;
+        background: transparent;
+        pointer-events: auto;
+        cursor: pointer;
+    `;
+    
+    document.body.appendChild(hoverZone);
     
     let hoverTimeout;
+    const panel = document.getElementById('component-bar-panel');
     
-    // Mostrar panel al pasar cursor sobre el trigger
-    container.addEventListener('mouseenter', () => {
+    // Eventos para la zona invisible
+    hoverZone.addEventListener('mouseenter', () => {
         clearTimeout(hoverTimeout);
-        panel.classList.add('visible');
-        componentBarVisible = true;
-        console.log('👁️ Barra de componentes mostrada');
+        if (panel) {
+            panel.classList.add('visible');
+            console.log('👁️ Panel mostrado via hover zone');
+            
+            // Marcar que el usuario ya descubrió la funcionalidad
+            localStorage.setItem('component-bar-discovered', 'true');
+            
+            // Ocultar indicador de onboarding si existe
+            const indicator = document.getElementById('onboarding-indicator');
+            if (indicator) {
+                indicator.style.opacity = '0';
+                setTimeout(() => indicator.remove(), 300);
+            }
+        }
     });
     
-    // Ocultar panel al salir del contenedor
-    container.addEventListener('mouseleave', () => {
-        hoverTimeout = setTimeout(() => {
-            panel.classList.remove('visible');
-            componentBarVisible = false;
-            console.log('👁️ Barra de componentes ocultada');
-        }, 200); // Pequeño delay para mejor UX
-    });
+    // También agregar evento al container principal para mantener visible
+    const container = document.getElementById('floating-component-bar');
+    if (container) {
+        container.addEventListener('mouseenter', () => {
+            clearTimeout(hoverTimeout);
+        });
+        
+        container.addEventListener('mouseleave', () => {
+            hoverTimeout = setTimeout(() => {
+                if (panel) {
+                    panel.classList.remove('visible');
+                    console.log('👁️ Panel ocultado');
+                }
+            }, 300);
+        });
+    }
+}
+
+// Crear indicador de onboarding para enseñar la funcionalidad
+function createOnboardingIndicator() {
+    // Verificar si el usuario ya descubrió la funcionalidad
+    if (localStorage.getItem('component-bar-discovered') === 'true') {
+        console.log('🎓 Usuario ya conoce la funcionalidad, omitiendo onboarding');
+        return;
+    }
+    
+    console.log('🎓 Creando indicador de onboarding');
+    
+    const indicator = document.createElement('div');
+    indicator.id = 'onboarding-indicator';
+    indicator.innerHTML = `
+        <div style="
+            position: fixed;
+            top: 50%;
+            right: 5px;
+            transform: translateY(-50%);
+            z-index: 10001;
+            pointer-events: none;
+            animation: onboardingPulse 3s infinite;
+        ">
+            <!-- Flecha apuntando al borde -->
+            <div style="
+                position: relative;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            ">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M13 7l5 5-5 5M6 7l5 5-5 5" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            
+            <!-- Tooltip explicativo -->
+            <div style="
+                position: absolute;
+                top: -45px;
+                right: 45px;
+                background: rgba(15, 23, 42, 0.95);
+                color: white;
+                padding: 8px 12px;
+                border-radius: 8px;
+                font-size: 12px;
+                white-space: nowrap;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                border: 1px solid rgba(79, 70, 229, 0.3);
+                backdrop-filter: blur(10px);
+            ">
+                Pasa el cursor aquí para ver componentes 🎯
+                <div style="
+                    position: absolute;
+                    bottom: -4px;
+                    right: 15px;
+                    width: 8px;
+                    height: 8px;
+                    background: rgba(15, 23, 42, 0.95);
+                    transform: rotate(45deg);
+                    border-right: 1px solid rgba(79, 70, 229, 0.3);
+                    border-bottom: 1px solid rgba(79, 70, 229, 0.3);
+                "></div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(indicator);
+    
+    // Auto-ocultar después de 10 segundos
+    setTimeout(() => {
+        if (indicator && indicator.parentNode) {
+            indicator.style.transition = 'opacity 1s ease';
+            indicator.style.opacity = '0';
+            setTimeout(() => {
+                if (indicator.parentNode) {
+                    indicator.remove();
+                }
+            }, 1000);
+        }
+    }, 10000);
+    
+    // También ocultar si el usuario hace hover sobre la zona
+    const hoverZone = document.getElementById('component-hover-zone');
+    if (hoverZone) {
+        hoverZone.addEventListener('mouseenter', () => {
+            if (indicator && indicator.parentNode) {
+                indicator.style.transition = 'opacity 0.5s ease';
+                indicator.style.opacity = '0';
+                setTimeout(() => {
+                    if (indicator.parentNode) {
+                        indicator.remove();
+                    }
+                }, 500);
+            }
+        }, { once: true });
+    }
+}
+
+// Configurar eventos de la barra de componentes
+function setupComponentBarEvents() {
+    const panel = document.getElementById('component-bar-panel');
+    
+    if (!panel) return;
     
     // Configurar drag and drop para cada componente
     const componentItems = document.querySelectorAll('.component-item');
@@ -9840,6 +9927,25 @@ document.addEventListener('DOMContentLoaded', () => {
 .drop-notification.show {
     transform: translateX(0);
     opacity: 1;
+}
+
+/* ========================================
+   ONBOARDING INDICATOR ANIMATION
+   ======================================== */
+
+@keyframes onboardingPulse {
+    0% { 
+        transform: translateY(-50%) scale(1);
+        opacity: 0.8;
+    }
+    50% { 
+        transform: translateY(-50%) scale(1.1);
+        opacity: 1;
+    }
+    100% { 
+        transform: translateY(-50%) scale(1);
+        opacity: 0.8;
+    }
 }
 </style>
 {% endblock %}
