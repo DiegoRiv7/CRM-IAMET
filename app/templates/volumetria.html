@@ -2619,12 +2619,10 @@ function mostrarTablaVolumetriaGeneral(datos) {
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="text-xl font-semibold text-white">Tabla de Precios y Costos</h3>
                             <div class="flex items-center space-x-4">
-                                <div class="text-xs text-gray-300 bg-gray-800/70 px-3 py-2 rounded-lg backdrop-blur-sm border border-gray-600">
-                                    <div class="grid grid-cols-3 gap-4 text-center">
-                                        <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-gray-200">Tab</kbd> siguiente</span>
-                                        <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-gray-200">Enter</kbd> nueva fila</span>
-                                        <span class="px-2 py-1 bg-red-600 rounded"><kbd class="text-white">❌</kbd> sin confirmación</span>
-                                    </div>
+                                <div class="flex items-center">
+                                    <button onclick="agregarFilaExcel()" class="excel-btn-primary">
+                                        ➕ Agregar Fila
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -2997,18 +2995,18 @@ function generarFilasVaciasGeneralExcel() {
                     <!-- Dropdown para sugerencias -->
                     <div id="suggestions-${i}" class="absolute top-full left-0 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50 hidden max-h-60 overflow-y-auto"></div>
                 </td>
-                <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="cantidad" data-row="${i}" onblur="recalcularFilaExcel(${i})">1</td>
+                <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="cantidad" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">1</td>
                 <td class="excel-cell excel-cell-text excel-cell-description editable" contenteditable="true" data-field="descripcion" data-row="${i}" placeholder="Descripción del producto"></td>
-                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioLista" data-row="${i}" onblur="recalcularFilaExcel(${i})" placeholder="$0.00"></td>
-                <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoCliente" data-row="${i}" onblur="recalcularFilaExcel(${i})">0.00%</td>
-                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioUnitario" data-row="${i}" onblur="recalcularFilaExcel(${i})">$0.00</td>
-                <td class="excel-cell excel-cell-currency editable excel-total-client" contenteditable="true" data-field="totalCliente" data-row="${i}" onblur="recalcularFilaExcel(${i})">$0.00</td>
-                <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoProveedor" data-row="${i}" onblur="recalcularFilaExcel(${i})">0.00%</td>
-                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="costoUnitario" data-row="${i}" onblur="recalcularFilaExcel(${i})">$0.00</td>
-                <td class="excel-cell excel-cell-currency editable excel-total-cost" contenteditable="true" data-field="totalCosto" data-row="${i}" onblur="recalcularFilaExcel(${i})">$0.00</td>
-                <td class="excel-cell excel-cell-currency editable excel-profit" contenteditable="true" data-field="ganancia" data-row="${i}" onblur="recalcularFilaExcel(${i})">$0.00</td>
+                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioLista" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})" placeholder="$0.00"></td>
+                <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoCliente" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">0.00%</td>
+                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioUnitario" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">$0.00</td>
+                <td class="excel-cell excel-cell-currency editable excel-total-client" contenteditable="true" data-field="totalCliente" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">$0.00</td>
+                <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoProveedor" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">0.00%</td>
+                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="costoUnitario" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">$0.00</td>
+                <td class="excel-cell excel-cell-currency editable excel-total-cost" contenteditable="true" data-field="totalCosto" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">$0.00</td>
+                <td class="excel-cell excel-cell-currency editable excel-profit" contenteditable="true" data-field="ganancia" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">$0.00</td>
                 <td class="excel-cell excel-cell-action">
-                    <button onclick="eliminarFilaExcel(${i})" class="excel-delete-btn" title="Eliminar fila">
+                    <button onclick="eliminarFilaExcelGeneral(${i})" class="excel-delete-btn" title="Eliminar fila">
                         ❌
                     </button>
                 </td>
@@ -3408,19 +3406,19 @@ function recalcularFilaInfraestructura(rowIndex) {
         const cantidad = parseFloat(row.querySelector('[data-field="cantidad"]').textContent) || 0;
         const precioLista = parseFloat(row.querySelector('[data-field="precioLista"]').textContent.replace(/[$,]/g, '')) || 0;
         const descuentoCliente = parseFloat(row.querySelector('[data-field="descuentoCliente"]').textContent.replace('%', '')) || 0;
-        const costoUnitario = parseFloat(row.querySelector('[data-field="costoUnitario"]').textContent.replace(/[$,]/g, '')) || 0;
+        const descuentoProveedor = parseFloat(row.querySelector('[data-field="descuentoProveedor"]').textContent.replace('%', '')) || 0;
         
-        // Calcular precio unitario con descuento
+        // Cálculos
         const precioUnitario = precioLista * (1 - descuentoCliente / 100);
-        row.querySelector('[data-field="precioUnitario"]').textContent = formatearMoneda(precioUnitario);
-        
-        // Calcular totales
-        const totalCliente = cantidad * precioUnitario;
-        const totalCosto = cantidad * costoUnitario;
+        const totalCliente = precioUnitario * cantidad;
+        const costoUnitario = precioLista * (1 - descuentoProveedor / 100);
+        const totalCosto = costoUnitario * cantidad;
         const ganancia = totalCliente - totalCosto;
         
-        // Actualizar celdas
+        // Actualizar celdas calculadas
+        row.querySelector('[data-field="precioUnitario"]').textContent = formatearMoneda(precioUnitario);
         row.querySelector('[data-field="totalCliente"]').textContent = formatearMoneda(totalCliente);
+        row.querySelector('[data-field="costoUnitario"]').textContent = formatearMoneda(costoUnitario);
         row.querySelector('[data-field="totalCosto"]').textContent = formatearMoneda(totalCosto);
         row.querySelector('[data-field="ganancia"]').textContent = formatearMoneda(ganancia);
         
@@ -3443,22 +3441,35 @@ function recalcularTotalesInfraestructura() {
     // Sumar todos los totales de las filas
     const rows = table.querySelectorAll('.excel-row');
     rows.forEach(row => {
-        const totalClienteCell = row.children[6];
-        const totalCostoCell = row.children[9];
+        const totalClienteCell = row.querySelector('.excel-total-client');
+        const totalCostoCell = row.querySelector('.excel-total-cost');
         
-        totalCliente += parseCurrency(totalClienteCell.textContent) || 0;
-        totalCosto += parseCurrency(totalCostoCell.textContent) || 0;
+        if (totalClienteCell) {
+            const valor = parseFloat(totalClienteCell.textContent.replace(/[$,]/g, '')) || 0;
+            totalCliente += valor;
+        }
+        
+        if (totalCostoCell) {
+            const valor = parseFloat(totalCostoCell.textContent.replace(/[$,]/g, '')) || 0;
+            totalCosto += valor;
+        }
     });
     
-    const gananciaTotal = totalCliente - totalCosto;
+    const ganancia = totalCliente - totalCosto;
+    const margen = totalCliente > 0 ? (ganancia / totalCliente) * 100 : 0;
     
-    // Actualizar fila de totales
-    const totalsRow = table.querySelector('.excel-totals-row');
-    if (totalsRow) {
-        totalsRow.children[6].textContent = formatearMoneda(totalCliente);
-        totalsRow.children[9].textContent = formatearMoneda(totalCosto);
-        totalsRow.children[10].textContent = formatearMoneda(gananciaTotal);
-    }
+    // Actualizar elementos del resumen de infraestructura
+    const totalClienteEl = document.getElementById('total-cliente-infraestructura');
+    const totalCostoEl = document.getElementById('total-costo-infraestructura');
+    const gananciaEl = document.getElementById('ganancia-infraestructura');
+    const margenEl = document.getElementById('margen-infraestructura');
+    
+    if (totalClienteEl) totalClienteEl.textContent = formatearMoneda(totalCliente);
+    if (totalCostoEl) totalCostoEl.textContent = formatearMoneda(totalCosto);
+    if (gananciaEl) gananciaEl.textContent = formatearMoneda(ganancia);
+    if (margenEl) margenEl.textContent = `${margen.toFixed(1)}% margen`;
+    
+    console.log('✅ Totales infraestructura actualizados:', { totalCliente, totalCosto, ganancia, margen });
     
     // Actualizar resumen consolidado
     setTimeout(() => {
@@ -4238,13 +4249,14 @@ function recalcularFilaExcelGeneral(rowIndex) {
         const totalCliente = precioUnitario * cantidad;
         const costoUnitario = precioLista * (1 - descuentoProveedor / 100);
         const totalCosto = costoUnitario * cantidad;
+        const ganancia = totalCliente - totalCosto;
         
-        // Actualizar celdas calculadas
-        const cells = row.querySelectorAll('.excel-calculated');
-        if (cells[0]) cells[0].textContent = formatearMoneda(precioUnitario); // Precio unitario
-        if (cells[1]) cells[1].textContent = formatearMoneda(totalCliente); // Total cliente
-        if (cells[2]) cells[2].textContent = formatearMoneda(costoUnitario); // Costo unitario
-        if (cells[3]) cells[3].textContent = formatearMoneda(totalCosto); // Total costo
+        // Actualizar celdas calculadas (buscar por data-field específico)
+        row.querySelector('[data-field="precioUnitario"]').textContent = formatearMoneda(precioUnitario);
+        row.querySelector('[data-field="totalCliente"]').textContent = formatearMoneda(totalCliente);
+        row.querySelector('[data-field="costoUnitario"]').textContent = formatearMoneda(costoUnitario);
+        row.querySelector('[data-field="totalCosto"]').textContent = formatearMoneda(totalCosto);
+        row.querySelector('[data-field="ganancia"]').textContent = formatearMoneda(ganancia);
         
         // Recalcular totales generales
         recalcularTotalesGeneral();
@@ -4296,6 +4308,11 @@ function recalcularTotalesGeneral() {
         if (margenEl) margenEl.textContent = `${margen.toFixed(1)}% margen`;
         
         console.log('✅ Totales actualizados:', { totalCliente, totalCosto, ganancia, margen });
+        
+        // Actualizar resumen consolidado
+        setTimeout(() => {
+            actualizarResumenConsolidado();
+        }, 100);
         
     } catch (error) {
         console.error('❌ Error recalculando totales generales:', error);
@@ -4840,10 +4857,10 @@ function mostrarTablaVolumetria(datos) {
                                             📋 Copiar Todo
                                         </button>
                                     </div>
-                                    <div class="text-xs text-gray-300 font-mono flex items-center space-x-4">
-                                        <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">Tab</kbd> → siguiente</span>
-                                        <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">Enter</kbd> ↓ abajo</span>
-                                        <span class="px-2 py-1 bg-gray-700 rounded"><kbd class="text-white">❌</kbd> sin confirmación</span>
+                                    <div class="flex items-center">
+                                        <button onclick="agregarFilaExcel()" class="excel-btn-primary">
+                                            ➕ Agregar Fila
+                                        </button>
                                     </div>
                                 </div>
 
@@ -8664,41 +8681,97 @@ function obtenerTotalesTabla(tableId) {
     return { cliente: totalCliente, costo: totalCosto };
 }
 
-// Función para actualizar resumen consolidado (principal + infraestructura)
-function actualizarResumenConsolidado() {
-    console.log('📊 Actualizando resumen consolidado de ambas tablas');
+// Función auxiliar para obtener totales de tabla de gastos
+function obtenerTotalesGastos() {
+    const table = document.getElementById('excel-table-gastos');
+    if (!table) return 0;
     
-    // Obtener totales de ambas tablas
-    const totalesPrincipal = obtenerTotalesTabla('excel-table');
-    const totalesInfra = obtenerTotalesTabla('excel-table-infraestructura');
-    
-    // Calcular totales consolidados
-    const totalClienteConsolidado = totalesPrincipal.cliente + totalesInfra.cliente;
-    const totalCostoConsolidado = totalesPrincipal.costo + totalesInfra.costo;
-    const gananciaTotalConsolidada = totalClienteConsolidado - totalCostoConsolidado;
-    
-    // Actualizar elementos del resumen si existen
-    const elementoTotalCliente = document.getElementById('total-cliente');
-    const elementoTotalCosto = document.getElementById('total-costo');  
-    const elementoGananciaTotal = document.getElementById('ganancia-total');
-    
-    if (elementoTotalCliente) {
-        elementoTotalCliente.textContent = formatearMoneda(totalClienteConsolidado);
-    }
-    
-    if (elementoTotalCosto) {
-        elementoTotalCosto.textContent = formatearMoneda(totalCostoConsolidado);
-    }
-    
-    if (elementoGananciaTotal) {
-        elementoGananciaTotal.textContent = formatearMoneda(gananciaTotalConsolidada);
-    }
-    
-    console.log('💰 Totales consolidados actualizados:', {
-        cliente: formatearMoneda(totalClienteConsolidado),
-        costo: formatearMoneda(totalCostoConsolidado),
-        ganancia: formatearMoneda(gananciaTotalConsolidada)
+    let totalGastos = 0;
+    const rows = table.querySelectorAll('.excel-row:not(.excel-totals-row)');
+    rows.forEach(row => {
+        const totalCell = row.querySelector('[data-field="total"]');
+        if (totalCell) {
+            totalGastos += parseFloat(totalCell.textContent.replace(/[$,]/g, '')) || 0;
+        }
     });
+    
+    return totalGastos;
+}
+
+// Función auxiliar para obtener totales de tabla de mano de obra
+function obtenerTotalesManoObra() {
+    const table = document.getElementById('excel-table-mano-obra');
+    if (!table) return 0;
+    
+    let totalManoObra = 0;
+    const rows = table.querySelectorAll('.excel-row:not(.excel-totals-row)');
+    rows.forEach(row => {
+        const costoTotalCell = row.querySelector('[data-field="costoTotal"]');
+        if (costoTotalCell) {
+            totalManoObra += parseFloat(costoTotalCell.textContent.replace(/[$,]/g, '')) || 0;
+        }
+    });
+    
+    return totalManoObra;
+}
+
+// Función para actualizar resumen consolidado (todas las 4 tablas)
+function actualizarResumenConsolidado() {
+    console.log('📊 Actualizando resumen consolidado de las 4 tablas');
+    
+    try {
+        // Obtener totales de las tablas principales (general e infraestructura)
+        const totalesGeneral = obtenerTotalesTabla('excel-table-general');
+        const totalesInfra = obtenerTotalesTabla('excel-table-infraestructura');
+        
+        // Obtener totales de las tablas de costos (gastos e instalación, mano de obra)
+        const totalGastos = obtenerTotalesGastos();
+        const totalManoObra = obtenerTotalesManoObra();
+        
+        // Calcular totales consolidados
+        const totalClienteConsolidado = totalesGeneral.cliente + totalesInfra.cliente;
+        const totalCostoConsolidado = totalesGeneral.costo + totalesInfra.costo + totalGastos + totalManoObra;
+        const gananciaTotalConsolidada = totalClienteConsolidado - totalCostoConsolidado;
+        const margenConsolidado = totalClienteConsolidado > 0 ? (gananciaTotalConsolidada / totalClienteConsolidado) * 100 : 0;
+        
+        // Actualizar elementos del resumen consolidado si existen
+        const elementoTotalCliente = document.getElementById('total-cliente-consolidado');
+        const elementoTotalCosto = document.getElementById('total-costo-consolidado');  
+        const elementoGananciaTotal = document.getElementById('ganancia-total-consolidada');
+        const elementoMargenTotal = document.getElementById('margen-total-consolidado');
+        
+        if (elementoTotalCliente) {
+            elementoTotalCliente.textContent = formatearMoneda(totalClienteConsolidado);
+        }
+        
+        if (elementoTotalCosto) {
+            elementoTotalCosto.textContent = formatearMoneda(totalCostoConsolidado);
+        }
+        
+        if (elementoGananciaTotal) {
+            elementoGananciaTotal.textContent = formatearMoneda(gananciaTotalConsolidada);
+        }
+        
+        if (elementoMargenTotal) {
+            elementoMargenTotal.textContent = `${margenConsolidado.toFixed(1)}% margen`;
+        }
+        
+        console.log('💰 Totales consolidados (4 tablas) actualizados:', {
+            cliente: formatearMoneda(totalClienteConsolidado),
+            costoTotal: formatearMoneda(totalCostoConsolidado),
+            ganancia: formatearMoneda(gananciaTotalConsolidada),
+            margen: `${margenConsolidado.toFixed(1)}%`,
+            desglose: {
+                general: formatearMoneda(totalesGeneral.cliente),
+                infraestructura: formatearMoneda(totalesInfra.cliente),
+                gastos: formatearMoneda(totalGastos),
+                manoObra: formatearMoneda(totalManoObra)
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Error actualizando resumen consolidado:', error);
+    }
 }
 
 // Función auxiliar para parsear moneda
@@ -8723,50 +8796,66 @@ function recalcularFilaGastosInstalacion(rowIndex) {
         const precioLista = parseFloat(row.querySelector('[data-field="precioLista"]').textContent.replace(/[$,]/g, '')) || 0;
         const descuento = parseFloat(row.querySelector('[data-field="descuento"]').textContent.replace('%', '')) || 0;
         
-        // Calcular precio unitario con descuento
+        // Cálculos
         const unitario = precioLista * (1 - descuento / 100);
-        row.querySelector('[data-field="unitario"]').textContent = formatearMoneda(unitario);
-        
-        // Calcular total
         const total = cantidad * unitario;
+        
+        // Actualizar celdas calculadas
+        row.querySelector('[data-field="unitario"]').textContent = formatearMoneda(unitario);
         row.querySelector('[data-field="total"]').textContent = formatearMoneda(total);
         
         // Recalcular totales de la tabla
         recalcularTotalesGastosInstalacion();
         
     } catch (error) {
-        console.error('❌ Error recalculando fila gastos:', error);
+        console.error('❌ Error recalculando fila gastos instalación:', error);
     }
 }
 
 // Función para recalcular totales de gastos de instalación
 function recalcularTotalesGastosInstalacion() {
-    const table = document.getElementById('excel-table-gastos');
-    if (!table) return;
+    console.log('💰 Recalculando totales de gastos de instalación');
     
-    let totalGastos = 0;
-    
-    const rows = table.querySelectorAll('.excel-row:not(.excel-totals-row)');
-    rows.forEach(row => {
-        const totalCell = row.querySelector('[data-field="total"]');
-        if (totalCell) {
-            totalGastos += parseCurrency(totalCell.textContent) || 0;
+    try {
+        const table = document.getElementById('excel-table-gastos');
+        if (!table) return;
+        
+        let totalGastos = 0;
+        
+        const rows = table.querySelectorAll('.excel-row:not(.excel-totals-row)');
+        rows.forEach(row => {
+            const totalCell = row.querySelector('[data-field="total"]');
+            if (totalCell) {
+                const valor = parseFloat(totalCell.textContent.replace(/[$,]/g, '')) || 0;
+                totalGastos += valor;
+            }
+        });
+        
+        // Actualizar fila de totales
+        const totalsRow = table.querySelector('.excel-totals-row');
+        if (totalsRow) {
+            const totalCell = totalsRow.querySelector('.excel-total');
+            if (totalCell) {
+                totalCell.textContent = formatearMoneda(totalGastos);
+            }
         }
-    });
-    
-    // Actualizar fila de totales
-    const totalsRow = table.querySelector('.excel-totals-row');
-    if (totalsRow) {
-        const totalCell = totalsRow.querySelector('.excel-total');
-        if (totalCell) {
-            totalCell.textContent = formatearMoneda(totalGastos);
+        
+        // Actualizar elementos del resumen de gastos si existen
+        const totalGastosEl = document.getElementById('total-gastos-instalacion');
+        if (totalGastosEl) {
+            totalGastosEl.textContent = formatearMoneda(totalGastos);
         }
+        
+        console.log('✅ Totales gastos instalación actualizados:', { totalGastos });
+        
+        // Actualizar resumen consolidado
+        setTimeout(() => {
+            actualizarResumenConsolidado();
+        }, 100);
+        
+    } catch (error) {
+        console.error('❌ Error recalculando totales gastos instalación:', error);
     }
-    
-    // Actualizar resumen consolidado
-    setTimeout(() => {
-        actualizarResumenConsolidado();
-    }, 100);
 }
 
 // Función para agregar nueva fila de gastos
@@ -8837,12 +8926,12 @@ function recalcularFilaManoObra(rowIndex) {
         const costoUnit = parseFloat(row.querySelector('[data-field="costoUnit"]').textContent.replace(/[$,]/g, '')) || 0;
         const dias = parseFloat(row.querySelector('[data-field="dias"]').textContent) || 0;
         
-        // Calcular concentrado (cantidad × costo unitario)
-        const concentrado = cantidad * costoUnit;
+        // Calcular concentrado = costo unitario × cantidad
+        const concentrado = costoUnit * cantidad;
         row.querySelector('[data-field="concentrado"]').textContent = formatearMoneda(concentrado);
         
-        // Calcular costo total (concentrado × días)
-        const costoTotal = concentrado * dias;
+        // Calcular costo total = costo unitario × cantidad × días
+        const costoTotal = costoUnit * cantidad * dias;
         row.querySelector('[data-field="costoTotal"]').textContent = formatearMoneda(costoTotal);
         
         // Recalcular totales de la tabla
@@ -8855,32 +8944,48 @@ function recalcularFilaManoObra(rowIndex) {
 
 // Función para recalcular totales de mano de obra
 function recalcularTotalesManoObra() {
-    const table = document.getElementById('excel-table-mano-obra');
-    if (!table) return;
+    console.log('👷 Recalculando totales de mano de obra');
     
-    let totalManoObra = 0;
-    
-    const rows = table.querySelectorAll('.excel-row:not(.excel-totals-row)');
-    rows.forEach(row => {
-        const costoTotalCell = row.querySelector('[data-field="costoTotal"]');
-        if (costoTotalCell) {
-            totalManoObra += parseCurrency(costoTotalCell.textContent) || 0;
+    try {
+        const table = document.getElementById('excel-table-mano-obra');
+        if (!table) return;
+        
+        let totalManoObra = 0;
+        
+        const rows = table.querySelectorAll('.excel-row:not(.excel-totals-row)');
+        rows.forEach(row => {
+            const costoTotalCell = row.querySelector('[data-field="costoTotal"]');
+            if (costoTotalCell) {
+                const valor = parseFloat(costoTotalCell.textContent.replace(/[$,]/g, '')) || 0;
+                totalManoObra += valor;
+            }
+        });
+        
+        // Actualizar fila de totales
+        const totalsRow = table.querySelector('.excel-totals-row');
+        if (totalsRow) {
+            const totalCell = totalsRow.querySelector('.excel-total');
+            if (totalCell) {
+                totalCell.textContent = formatearMoneda(totalManoObra);
+            }
         }
-    });
-    
-    // Actualizar fila de totales
-    const totalsRow = table.querySelector('.excel-totals-row');
-    if (totalsRow) {
-        const totalCell = totalsRow.querySelector('.excel-total');
-        if (totalCell) {
-            totalCell.textContent = formatearMoneda(totalManoObra);
+        
+        // Actualizar elementos del resumen de mano de obra si existen
+        const totalManoObraEl = document.getElementById('total-mano-obra');
+        if (totalManoObraEl) {
+            totalManoObraEl.textContent = formatearMoneda(totalManoObra);
         }
+        
+        console.log('✅ Totales mano de obra actualizados:', { totalManoObra });
+        
+        // Actualizar resumen consolidado
+        setTimeout(() => {
+            actualizarResumenConsolidado();
+        }, 100);
+        
+    } catch (error) {
+        console.error('❌ Error recalculando totales mano de obra:', error);
     }
-    
-    // Actualizar resumen consolidado
-    setTimeout(() => {
-        actualizarResumenConsolidado();
-    }, 100);
 }
 
 // Función para agregar nueva fila de mano de obra
