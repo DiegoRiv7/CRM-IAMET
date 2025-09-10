@@ -3805,31 +3805,22 @@ function exportarCSVInfraestructura() {
 
 // Función para eliminar toda la sección de infraestructura
 function eliminarSeccionInfraestructura() {
-    console.log('🗑️ Solicitando eliminar sección de infraestructura');
+    console.log('🗑️ Eliminando sección de infraestructura');
     
-    // Confirmar con el usuario
-    const confirmar = confirm(
-        '¿Estás seguro de que deseas eliminar toda la sección de infraestructura?\n\n' +
-        'Se perderán todos los productos y datos ingresados en esta tabla.\n\n' +
-        'Podrás restaurar la sección vacía más tarde si es necesario.'
-    );
-    
-    if (confirmar) {
-        const seccion = document.getElementById('seccion-infraestructura');
-        if (seccion) {
-            // Animación de salida suave
-            seccion.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
-            seccion.style.opacity = '0';
-            seccion.style.transform = 'translateY(-20px) scale(0.95)';
+    const seccion = document.getElementById('seccion-infraestructura');
+    if (seccion) {
+        // Animación de salida suave
+        seccion.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+        seccion.style.opacity = '0';
+        seccion.style.transform = 'translateY(-20px) scale(0.95)';
+        
+        setTimeout(() => {
+            seccion.style.display = 'none';
+            console.log('✅ Sección de infraestructura ocultada');
             
-            setTimeout(() => {
-                seccion.style.display = 'none';
-                console.log('✅ Sección de infraestructura ocultada');
-                
-                // Mostrar botón para restaurar
-                mostrarBotonRestaurarInfraestructura();
-            }, 500);
-        }
+            // Mostrar botón para restaurar
+            mostrarBotonRestaurarInfraestructura();
+        }, 500);
     }
 }
 
@@ -4791,7 +4782,13 @@ function agregarFilaExcelGeneral() {
         </td>
     `;
     
-    tbody.appendChild(newRow);
+    // Insertar antes de la fila de totales si existe
+    const totalsRow = tbody.querySelector('.excel-totals-row');
+    if (totalsRow) {
+        tbody.insertBefore(newRow, totalsRow);
+    } else {
+        tbody.appendChild(newRow);
+    }
     
     // Focus en la primera celda de la nueva fila
     const firstCell = newRow.querySelector('[contenteditable="true"]');
@@ -9154,29 +9151,21 @@ function agregarFilaGastosInstalacion() {
 
 // Función para eliminar sección de gastos de instalación
 function eliminarSeccionGastosInstalacion() {
-    console.log('🗑️ Solicitando eliminar sección de gastos de instalación');
+    console.log('🗑️ Eliminando sección de gastos de instalación');
     
-    const confirmar = confirm(
-        '¿Estás seguro de que deseas eliminar toda la sección de gastos de instalación?\n\n' +
-        'Se perderán todos los gastos ingresados.\n\n' +
-        'Podrás restaurar la sección vacía más tarde si es necesario.'
-    );
-    
-    if (confirmar) {
-        const seccion = document.getElementById('seccion-gastos-instalacion');
-        if (seccion) {
-            seccion.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
-            seccion.style.opacity = '0';
-            seccion.style.transform = 'translateY(-20px) scale(0.95)';
+    const seccion = document.getElementById('seccion-gastos-instalacion');
+    if (seccion) {
+        seccion.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+        seccion.style.opacity = '0';
+        seccion.style.transform = 'translateY(-20px) scale(0.95)';
+        
+        setTimeout(() => {
+            seccion.style.display = 'none';
+            console.log('✅ Sección de gastos ocultada');
             
-            setTimeout(() => {
-                seccion.style.display = 'none';
-                console.log('✅ Sección de gastos ocultada');
-                
-                // Mostrar botón para restaurar
-                mostrarBotonRestaurarGastos();
-            }, 500);
-        }
+            // Mostrar botón para restaurar
+            mostrarBotonRestaurarGastos();
+        }, 500);
     }
 }
 
@@ -9288,29 +9277,21 @@ function agregarFilaManoObra() {
 
 // Función para eliminar sección de mano de obra
 function eliminarSeccionManoObra() {
-    console.log('🗑️ Solicitando eliminar sección de mano de obra');
+    console.log('🗑️ Eliminando sección de mano de obra');
     
-    const confirmar = confirm(
-        '¿Estás seguro de que deseas eliminar toda la sección de mano de obra?\n\n' +
-        'Se perderán todos los datos de personal ingresados.\n\n' +
-        'Podrás restaurar la sección vacía más tarde si es necesario.'
-    );
-    
-    if (confirmar) {
-        const seccion = document.getElementById('seccion-mano-obra');
-        if (seccion) {
-            seccion.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
-            seccion.style.opacity = '0';
-            seccion.style.transform = 'translateY(-20px) scale(0.95)';
+    const seccion = document.getElementById('seccion-mano-obra');
+    if (seccion) {
+        seccion.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+        seccion.style.opacity = '0';
+        seccion.style.transform = 'translateY(-20px) scale(0.95)';
+        
+        setTimeout(() => {
+            seccion.style.display = 'none';
+            console.log('✅ Sección de mano de obra ocultada');
             
-            setTimeout(() => {
-                seccion.style.display = 'none';
-                console.log('✅ Sección de mano de obra ocultada');
-                
-                // Mostrar botón para restaurar
-                mostrarBotonRestaurarManoObra();
-            }, 500);
-        }
+            // Mostrar botón para restaurar
+            mostrarBotonRestaurarManoObra();
+        }, 500);
     }
 }
 
@@ -11063,6 +11044,240 @@ document.addEventListener('DOMContentLoaded', () => {
 .tables-container::-webkit-scrollbar-thumb:hover {
     background: rgba(100, 116, 139, 0.7);
 }
+
+/* ========================================
+   RESPONSIVE DESIGN PARA TABLAS INTELIGENTE
+   ======================================== */
+
+/* Tablets y móviles pequeños (768px - 1024px) */
+@media screen and (max-width: 1024px) and (min-width: 768px) {
+    .excel-table-wrapper {
+        min-width: 800px;
+    }
+    
+    .excel-table {
+        font-size: 13px;
+    }
+    
+    .excel-cell {
+        padding: 8px 6px;
+        min-width: 80px;
+    }
+    
+    .excel-cell-description {
+        min-width: 120px;
+        max-width: 150px;
+    }
+    
+    .excel-th, .excel-cell {
+        white-space: nowrap;
+    }
+}
+
+/* Móviles (576px - 767px) */
+@media screen and (max-width: 767px) and (min-width: 576px) {
+    .excel-table-wrapper {
+        min-width: 700px;
+        font-size: 12px;
+    }
+    
+    .excel-table {
+        font-size: 12px;
+    }
+    
+    .excel-cell {
+        padding: 6px 4px;
+        min-width: 70px;
+    }
+    
+    .excel-cell-description {
+        min-width: 100px;
+        max-width: 120px;
+    }
+    
+    .excel-th {
+        padding: 6px 4px;
+        font-size: 11px;
+    }
+}
+
+/* Móviles muy pequeños (hasta 575px) */
+@media screen and (max-width: 575px) {
+    .excel-table-wrapper {
+        min-width: 600px;
+        font-size: 11px;
+    }
+    
+    .excel-table {
+        font-size: 11px;
+    }
+    
+    .excel-cell {
+        padding: 5px 3px;
+        min-width: 60px;
+    }
+    
+    .excel-cell-description {
+        min-width: 90px;
+        max-width: 100px;
+    }
+    
+    .excel-th {
+        padding: 5px 3px;
+        font-size: 10px;
+    }
+    
+    .excel-delete-btn {
+        font-size: 12px;
+        padding: 2px;
+    }
+}
+
+/* Pantallas grandes y monitores (1280px+) */
+@media screen and (min-width: 1280px) {
+    .excel-table-wrapper {
+        min-width: 1200px;
+    }
+    
+    .excel-table {
+        font-size: 14px;
+    }
+    
+    .excel-cell {
+        padding: 12px 10px;
+        min-width: 100px;
+    }
+    
+    .excel-cell-description {
+        min-width: 200px;
+        max-width: 280px;
+    }
+}
+
+/* Monitores muy grandes y TVs (1600px+) */
+@media screen and (min-width: 1600px) {
+    .excel-table-wrapper {
+        min-width: 1400px;
+    }
+    
+    .excel-table {
+        font-size: 15px;
+    }
+    
+    .excel-cell {
+        padding: 14px 12px;
+        min-width: 120px;
+    }
+    
+    .excel-cell-description {
+        min-width: 250px;
+        max-width: 320px;
+    }
+    
+    .excel-th {
+        padding: 14px 12px;
+        font-size: 14px;
+    }
+}
+
+/* Pantallas ultra anchas y TVs grandes (1920px+) */
+@media screen and (min-width: 1920px) {
+    .excel-table-wrapper {
+        min-width: 1600px;
+    }
+    
+    .excel-table {
+        font-size: 16px;
+    }
+    
+    .excel-cell {
+        padding: 16px 14px;
+        min-width: 140px;
+    }
+    
+    .excel-cell-description {
+        min-width: 300px;
+        max-width: 400px;
+    }
+    
+    .excel-th {
+        padding: 16px 14px;
+        font-size: 15px;
+        font-weight: 600;
+    }
+    
+    .excel-delete-btn {
+        font-size: 16px;
+        padding: 6px 8px;
+    }
+}
+
+/* Detección inteligente de tipo de dispositivo */
+@media screen and (min-width: 2560px) {
+    /* 4K y pantallas muy grandes */
+    .excel-table-wrapper {
+        min-width: 1800px;
+    }
+    
+    .excel-table {
+        font-size: 18px;
+    }
+    
+    .excel-cell {
+        padding: 18px 16px;
+        min-width: 160px;
+    }
+    
+    .excel-cell-description {
+        min-width: 350px;
+        max-width: 450px;
+    }
+    
+    .excel-th {
+        padding: 18px 16px;
+        font-size: 16px;
+        font-weight: 700;
+    }
+}
+
+/* Ajustes específicos para orientación landscape en tablets */
+@media screen and (max-width: 1024px) and (orientation: landscape) {
+    .excel-table-wrapper {
+        min-width: 900px;
+    }
+    
+    .excel-cell {
+        padding: 10px 8px;
+    }
+}
+
+/* Mejoras de UX para dispositivos táctiles */
+@media (hover: none) and (pointer: coarse) {
+    .excel-delete-btn {
+        min-width: 44px;
+        min-height: 44px;
+        font-size: 18px;
+    }
+    
+    .excel-cell.editable:focus {
+        outline: 2px solid #007AFF;
+        outline-offset: 2px;
+    }
+}
+
+/* Auto-ajuste basado en densidad de píxeles para pantallas de alta resolución */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .excel-table {
+        font-weight: 400;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+    
+    .excel-th {
+        font-weight: 600;
+    }
+}
+
 </style>
 
 <script>
@@ -11100,6 +11315,161 @@ document.addEventListener('DOMContentLoaded', function() {
         subtree: true
     });
 });
+
+// ========================================
+// DETECCIÓN INTELIGENTE DE DISPOSITIVOS Y REDIMENSIONAMIENTO
+// ========================================
+(function() {
+    'use strict';
+    
+    // Detectar tipo de dispositivo y características de pantalla
+    function detectDeviceType() {
+        const screen = window.screen;
+        const viewport = {
+            width: window.innerWidth,
+            height: window.innerHeight
+        };
+        
+        const devicePixelRatio = window.devicePixelRatio || 1;
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        
+        // Calcular PPI aproximado (pixels per inch)
+        const diagonalPixels = Math.sqrt(screen.width * screen.width + screen.height * screen.height);
+        const diagonalInches = diagonalPixels / (devicePixelRatio * 96); // Estimación
+        
+        let deviceType = 'desktop';
+        let screenCategory = 'standard';
+        
+        // Clasificar dispositivo por características
+        if (isTouchDevice && viewport.width < 768) {
+            deviceType = 'mobile';
+        } else if (isTouchDevice && viewport.width < 1024) {
+            deviceType = 'tablet';
+        } else if (viewport.width >= 1920 && diagonalInches > 20) {
+            deviceType = 'tv';
+            screenCategory = 'large';
+        } else if (viewport.width >= 1600) {
+            deviceType = 'monitor-large';
+            screenCategory = 'large';
+        } else if (viewport.width >= 1280) {
+            deviceType = 'monitor';
+        }
+        
+        // Detectar resolución especial
+        if (devicePixelRatio >= 2) {
+            screenCategory += '-hidpi';
+        }
+        
+        if (viewport.width >= 2560) {
+            screenCategory = '4k-ultra';
+        } else if (viewport.width >= 1920) {
+            screenCategory = 'fullhd';
+        }
+        
+        return {
+            type: deviceType,
+            category: screenCategory,
+            viewport: viewport,
+            screen: { width: screen.width, height: screen.height },
+            pixelRatio: devicePixelRatio,
+            isTouch: isTouchDevice,
+            diagonalInches: diagonalInches
+        };
+    }
+    
+    // Aplicar estilos optimizados según el dispositivo
+    function applyDeviceOptimizations(deviceInfo) {
+        console.log('📱 Dispositivo detectado:', deviceInfo);
+        
+        const body = document.body;
+        const tables = document.querySelectorAll('.excel-table-wrapper');
+        
+        // Remover clases existentes
+        body.classList.remove('device-mobile', 'device-tablet', 'device-desktop', 'device-monitor', 'device-tv', 'screen-4k');
+        
+        // Agregar clases basadas en detección
+        body.classList.add(`device-${deviceInfo.type.replace('-', '')}`);
+        body.classList.add(`screen-${deviceInfo.category.replace('-', '')}`);
+        
+        // Optimizaciones específicas para cada tipo de dispositivo
+        switch (deviceInfo.type) {
+            case 'tv':
+                // TVs necesitan elementos más grandes y mejor contraste
+                document.documentElement.style.setProperty('--table-font-scale', '1.3');
+                document.documentElement.style.setProperty('--table-padding-scale', '1.5');
+                console.log('📺 Optimizaciones para TV aplicadas');
+                break;
+                
+            case 'monitor-large':
+                // Monitores grandes pueden mostrar más información
+                document.documentElement.style.setProperty('--table-font-scale', '1.1');
+                document.documentElement.style.setProperty('--table-padding-scale', '1.2');
+                console.log('🖥️ Optimizaciones para monitor grande aplicadas');
+                break;
+                
+            case 'tablet':
+                // Tablets necesitan elementos táctiles más grandes
+                document.documentElement.style.setProperty('--table-touch-scale', '1.2');
+                console.log('📱 Optimizaciones para tablet aplicadas');
+                break;
+                
+            case 'mobile':
+                // Móviles necesitan interfaz compacta pero accesible
+                document.documentElement.style.setProperty('--table-font-scale', '0.9');
+                document.documentElement.style.setProperty('--table-compact-mode', '1');
+                console.log('📞 Optimizaciones para móvil aplicadas');
+                break;
+        }
+        
+        // Ajustes adicionales para pantallas de alta densidad
+        if (deviceInfo.pixelRatio >= 2) {
+            body.classList.add('high-dpi');
+            document.documentElement.style.setProperty('--font-smoothing', 'antialiased');
+        }
+        
+        // Aplicar optimizaciones a tablas existentes
+        tables.forEach(table => {
+            if (deviceInfo.type === 'tv' || deviceInfo.type === 'monitor-large') {
+                table.style.minWidth = Math.max(1400, deviceInfo.viewport.width * 0.8) + 'px';
+            }
+        });
+    }
+    
+    // Función para reajustar al cambiar tamaño de ventana
+    function handleResize() {
+        clearTimeout(window.resizeTimer);
+        window.resizeTimer = setTimeout(() => {
+            const deviceInfo = detectDeviceType();
+            applyDeviceOptimizations(deviceInfo);
+            console.log('🔄 Tablas redimensionadas para:', deviceInfo.type);
+        }, 250);
+    }
+    
+    // Inicializar cuando el DOM esté listo
+    document.addEventListener('DOMContentLoaded', function() {
+        const deviceInfo = detectDeviceType();
+        applyDeviceOptimizations(deviceInfo);
+        
+        // Escuchar cambios de tamaño
+        window.addEventListener('resize', handleResize);
+        
+        // Escuchar cambios de orientación en dispositivos móviles
+        window.addEventListener('orientationchange', function() {
+            setTimeout(() => {
+                const deviceInfo = detectDeviceType();
+                applyDeviceOptimizations(deviceInfo);
+            }, 100);
+        });
+        
+        console.log('✅ Sistema de redimensionamiento inteligente iniciado');
+    });
+    
+    // Exponer funciones globalmente para depuración
+    window.VolumetriaResponsive = {
+        detectDevice: detectDeviceType,
+        applyOptimizations: applyDeviceOptimizations
+    };
+})();
 </script>
 
 {% endblock %}
