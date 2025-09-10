@@ -2715,40 +2715,18 @@ function mostrarTablaVolumetriaGeneral(datos) {
 
             <!-- Área principal de trabajo -->
             <div id="main-workspace" class="main-workspace">
-                <!-- Header con botón de volver -->
+                <!-- Header reorganizado con resumen del proyecto y botones arriba -->
                 <div class="workspace-header">
-                    <button onclick="window.location.reload()" class="back-button">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                        </svg>
-                        <span>Volver</span>
-                    </button>
-                    <div class="workspace-title">
-                        <h1>Volumetría General</h1>
-                        <p id="workspace-project-info">Configurando proyecto...</p>
-                    </div>
-                </div>
-
-                <!-- Área de tablas -->
-                <div class="tables-container">
-                    <div class="bg-gray-800/90 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl p-6">
-                        <div class="flex items-center justify-between mb-8">
-                            <div class="flex items-center space-x-4">
-                                <div class="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl shadow-lg">
-                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <h1 class="text-3xl font-bold text-white">
-                                    Volumetría General
-                                </h1>
-                                <p class="text-gray-300 mt-1">
-                                    Análisis completo de costos y rentabilidad del proyecto
-                                </p>
-                            </div>
-                        </div>
-                        <div class="flex space-x-3">
+                    <div class="header-top-section">
+                        <button onclick="window.location.reload()" class="back-button">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                            </svg>
+                            <span>Volver</span>
+                        </button>
+                        
+                        <!-- Botones de acción movidos arriba -->
+                        <div class="header-action-buttons">
                             <button onclick="exportarPDF()" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200 shadow-lg">
                                 📄 Guardar PDF
                             </button>
@@ -2758,27 +2736,35 @@ function mostrarTablaVolumetriaGeneral(datos) {
                             <button onclick="nuevaVolumetria()" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200 shadow-lg">
                                 🆕 Nueva Volumetría
                             </button>
-                            <button onclick="cerrarTablaVolumetria()" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200">
-                                ← Regresar
-                            </button>
                         </div>
                     </div>
                     
-                    <!-- Resumen de datos -->
-                    <div class="bg-gray-900/50 rounded-lg p-4 mb-6">
-                        <h3 class="font-semibold text-white mb-3">Resumen del Proyecto</h3>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
-                            <div class="text-gray-300"><span class="text-white font-medium">Categoría:</span> General</div>
-                            <div class="text-gray-300"><span class="text-white font-medium">Cliente:</span> <span id="cliente-display">-</span></div>
-                            <div class="text-gray-300"><span class="text-white font-medium">Oportunidad:</span> <span id="oportunidad-display">-</span></div>
-                            <div class="text-gray-300"><span class="text-white font-medium">Moneda:</span> 
-                                <select id="moneda-select" class="bg-gray-800 border border-gray-600 text-white font-medium rounded px-2 py-1" onchange="cambiarMoneda()">
-                                    <option value="USD">USD</option>
-                                    <option value="MXN">MXN</option>
-                                </select>
+                    <!-- Resumen del proyecto movido arriba -->
+                    <div class="project-summary-header">
+                        <div class="workspace-title">
+                            <h1>Volumetría General</h1>
+                            <p id="workspace-project-info">Configurando proyecto...</p>
+                        </div>
+                        
+                        <!-- Información básica del proyecto (categoría, cliente, oportunidad) -->
+                        <div class="project-details-header">
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
+                                <div class="text-gray-300"><span class="text-white font-medium">Categoría:</span> General</div>
+                                <div class="text-gray-300"><span class="text-white font-medium">Cliente:</span> <span id="cliente-display">-</span></div>
+                                <div class="text-gray-300"><span class="text-white font-medium">Oportunidad:</span> <span id="oportunidad-display">-</span></div>
+                                <div class="text-gray-300"><span class="text-white font-medium">Moneda:</span> 
+                                    <select id="moneda-select" class="bg-gray-800 border border-gray-600 text-white font-medium rounded px-2 py-1" onchange="cambiarMoneda()">
+                                        <option value="USD">USD</option>
+                                        <option value="MXN">MXN</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Área de tablas -->
+                <div class="tables-container">
                     
                     <!-- Tabla Principal de Precios -->
                     <div class="mb-8">
@@ -3111,18 +3097,10 @@ function mostrarTablaVolumetriaGeneral(datos) {
             <!-- Pie de página con resumen y acciones -->
             <div class="workspace-footer">
                 <div class="footer-content">
-                    <!-- Resumen del proyecto en el pie -->
+                    <!-- Solo resumen de precios totales -->
                     <div class="project-summary">
-                        <h3>Resumen del Proyecto</h3>
+                        <h3>Resumen de Precios Totales</h3>
                         <div class="summary-grid">
-                            <div class="summary-item">
-                                <span class="summary-label">Cliente:</span>
-                                <span class="summary-value" id="footer-cliente-display">-</span>
-                            </div>
-                            <div class="summary-item">
-                                <span class="summary-label">Oportunidad:</span>
-                                <span class="summary-value" id="footer-oportunidad-display">-</span>
-                            </div>
                             <div class="summary-item">
                                 <span class="summary-label">Total General:</span>
                                 <span class="summary-value total-highlight" id="footer-total-display">$0.00</span>
@@ -3135,30 +3113,6 @@ function mostrarTablaVolumetriaGeneral(datos) {
                                 </select>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Botones de acción -->
-                    <div class="action-buttons">
-                        <button onclick="exportarPDF()" class="action-btn primary">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                            </svg>
-                            <span>Guardar PDF</span>
-                        </button>
-                        
-                        <button onclick="exportarCSV()" class="action-btn secondary">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                            </svg>
-                            <span>Exportar CSV</span>
-                        </button>
-                        
-                        <button onclick="nuevaVolumetria()" class="action-btn accent">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                            </svg>
-                            <span>Nueva Volumetría</span>
-                        </button>
                     </div>
                 </div>
             </div>
@@ -10254,6 +10208,13 @@ document.addEventListener('DOMContentLoaded', () => {
     overflow: hidden;
 }
 
+/* Hacer que el área de trabajo principal tome más espacio */
+.volumetria-workspace .main-workspace {
+    flex: 1;
+    margin-left: 0;
+    width: calc(100% - 280px); /* Restar el ancho de la sidebar */
+}
+
 /* Barra lateral de componentes */
 .components-sidebar {
     width: 280px;
@@ -10386,12 +10347,14 @@ document.addEventListener('DOMContentLoaded', () => {
     opacity: 0.8;
 }
 
-/* Área principal de trabajo */
+/* Área principal de trabajo - expandida para abarcar toda la página */
 .main-workspace {
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    width: 100%;
+    margin-left: 0;
 }
 
 .workspace-header {
@@ -10444,6 +10407,32 @@ document.addEventListener('DOMContentLoaded', () => {
     flex: 1;
     overflow-y: auto;
     padding: 20px 24px 0;
+}
+
+/* Estilos para header reorganizado */
+.header-top-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.header-action-buttons {
+    display: flex;
+    gap: 12px;
+}
+
+.project-summary-header {
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.project-details-header {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(71, 85, 105, 0.3);
 }
 
 /* Pie de página con resumen y acciones */
