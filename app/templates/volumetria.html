@@ -809,18 +809,7 @@
     </div>
 </div>
 
-<!-- Script para auto-ejecutar volumetría al cargar la página -->
-<script>
-// Auto-ejecutar volumetría integral al cargar la página
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Auto-ejecutando volumetría integral...');
-    
-    // Pequeño delay para mostrar el loading
-    setTimeout(() => {
-        crearVolumetria('general');
-    }, 1000);
-});
-</script>
+<!-- Los scripts de auto-ejecución se movieron al final del archivo -->
 
 <script>
 // ⚡ CACHE BUSTER - VERSION CATÁLOGO 2024-08-27 - PRODUCTOS DEL CATÁLOGO
@@ -10961,11 +10950,19 @@ function mostrarMensajeExito(mensaje) {
 
 // Configurar listeners cuando se cargue la página
 document.addEventListener('DOMContentLoaded', function() {
-    // Agregar un pequeño delay para asegurar que todos los elementos estén cargados
+    console.log('🚀 Auto-ejecutando volumetría integral...');
+    
+    // Auto-ejecutar volumetría directamente al cargar la página
+    setTimeout(() => {
+        crearVolumetria('general');
+        console.log('✅ Volumetría integral iniciada automáticamente');
+    }, 500);
+    
+    // Configurar listeners después de un delay adicional
     setTimeout(() => {
         configurarListenersComponentes();
         console.log('✅ Listeners de componentes configurados');
-    }, 1000);
+    }, 1500);
 });
 </script>
 
