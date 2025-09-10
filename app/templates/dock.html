@@ -17,7 +17,7 @@
     }
 
     /* Auto-hide dock específicamente en volumetría general */
-    body:has(.volumetria-workspace) .macos-dock {
+    .volumetria-mode .macos-dock {
         opacity: 0;
         visibility: hidden;
         transform: translateY(10px);
@@ -25,18 +25,39 @@
     }
 
     /* Mostrar dock al hover solo en volumetría general */
-    body:has(.volumetria-workspace) .macos-dock:hover {
+    .volumetria-mode .macos-dock:hover,
+    .volumetria-mode .dock-activation-zone:hover ~ .macos-dock {
         opacity: 1;
         visibility: visible;
         transform: translateY(0);
     }
 
-    /* Activar dock cuando el cursor esté cerca del borde */
-    body:has(.volumetria-workspace) .dock-activation-zone:hover + .macos-dock,
-    body:has(.volumetria-workspace) .dock-activation-zone:hover ~ .macos-dock {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(0);
+    /* Zona de activación del dock para mejor UX */
+    .dock-activation-zone {
+        position: fixed;
+        z-index: 1400;
+        pointer-events: auto;
+    }
+
+    .dock-zone-left {
+        left: 0;
+        top: 0;
+        width: 30px;
+        height: 100vh;
+    }
+
+    .dock-zone-right {
+        right: 0;
+        top: 0;
+        width: 30px;
+        height: 100vh;
+    }
+
+    .dock-zone-bottom {
+        bottom: 0;
+        left: 0;
+        width: 100vw;
+        height: 30px;
     }
     
     .macos-dock.active {
