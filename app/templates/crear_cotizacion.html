@@ -478,6 +478,7 @@
         {% endif %}
 
                 <form id="cotizacion-form" method="post" action="{% if form_action_url %}{{ form_action_url }}{% elif cliente_id_inicial %}{% url 'crear_cotizacion_with_id' cliente_id_inicial %}{% else %}{% url 'crear_cotizacion' %}{% endif %}">
+                    {% csrf_token %}
             <div class="card p-6 mb-8 shadow-md-dark">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -669,6 +670,7 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
         <div class="rounded-lg shadow-xl p-8 w-full max-w-md" style="background-color: var(--apple-background-secondary); border: 1px solid rgba(255, 255, 255, 0.1);">
             <h2 class="text-2xl font-bold mb-6" style="color: var(--apple-label);"> Agregar Nuevo Cliente</h2>
             <form id="add-client-form">
+                {% csrf_token %}
                 <div class="space-y-4">
                     <div>
                         <label for="new-client-name" class="block text-sm font-medium mb-1" style="color: var(--apple-label-secondary);">Nombre de la Empresa</label>
@@ -696,6 +698,7 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
         <div class="rounded-lg shadow-xl p-8 w-full max-w-md" style="background-color: var(--apple-background-secondary); border: 1px solid rgba(255, 255, 255, 0.1);">
             <h2 class="text-2xl font-bold mb-6" style="color: var(--apple-label);">Crear Nueva Oportunidad</h2>
             <form id="add-opportunity-form">
+                {% csrf_token %}
                 <div class="space-y-4">
                     <div>
                         <label for="opportunity-area" class="block text-sm font-medium mb-1" style="color: var(--apple-label-secondary);">Área</label>
