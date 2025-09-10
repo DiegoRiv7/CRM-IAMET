@@ -6435,9 +6435,9 @@ function cerrarListaVolumetrias() {
     }
 }
 
-// Función para exportar a PDF y guardar volumetría
+// Función para exportar a PDF, crear cotización, proyecto Bitrix24 y carpeta (lógica completa)
 function exportarPDF() {
-    console.log('📄 Iniciando exportación a PDF...');
+    console.log('📄 Iniciando exportación completa: PDF + Cotización + Proyecto Bitrix24...');
     
     // Obtener datos de la volumetría actual
     const datosVolumetria = obtenerDatosVolumetriaActual();
@@ -6456,21 +6456,38 @@ function exportarPDF() {
         };
     }
     
-    console.log('📊 Datos para PDF:', datosVolumetria);
+    // Obtener datos financieros de las tablas
+    const resumenFinanciero = obtenerResumenFinanciero();
+    datosVolumetria.subtotal = resumenFinanciero.totalCliente || 0;
+    datosVolumetria.totalCosto = resumenFinanciero.totalCosto || 0;
+    datosVolumetria.ganancia = resumenFinanciero.ganancia || 0;
+    datosVolumetria.margen = resumenFinanciero.margen || 0;
+    datosVolumetria.iva = datosVolumetria.subtotal * 0.16; // 16% IVA
+    datosVolumetria.total = datosVolumetria.subtotal + datosVolumetria.iva;
+    
+    console.log('📊 Datos completos para procesamiento:', datosVolumetria);
     
     // Guardar en localStorage
     try {
-        guardarVolumetria('nodos', datosVolumetria);
+        guardarVolumetria('general', datosVolumetria);
         console.log('💾 Volumetría guardada en localStorage');
     } catch (e) {
         console.log('⚠️ Error guardando en localStorage:', e);
     }
     
-    // Mostrar indicador de carga
+    // Mostrar indicador de carga con más información
     if (typeof Swal !== 'undefined') {
         Swal.fire({
-            title: 'Generando PDF',
-            text: 'Preparando el documento...',
+            title: 'Procesando Volumetría General',
+            html: `
+                <div class="text-left">
+                    <p class="mb-2">📄 Generando PDF de volumetría</p>
+                    <p class="mb-2">💼 Creando cotización automática</p>
+                    <p class="mb-2">🏗️ Configurando proyecto en Bitrix24</p>
+                    <p class="mb-2">📁 Creando carpeta de volumetrías</p>
+                    <p class="text-sm text-gray-500 mt-3">Este proceso puede tomar unos segundos...</p>
+                </div>
+            `,
             icon: 'info',
             allowOutsideClick: false,
             showConfirmButton: false,
@@ -6479,13 +6496,13 @@ function exportarPDF() {
             }
         });
     } else {
-        console.log('📋 Generando PDF - SweetAlert no disponible');
+        console.log('📋 Procesando volumetría completa - SweetAlert no disponible');
     }
     
-    // Preparar datos para el PDF
+    // Preparar datos completos para el backend
     const pdfData = {
         // Información del proyecto
-        nombre_volumetria: datosVolumetria.nombreVolumetria || '',
+        nombre_volumetria: datosVolumetria.nombreVolumetria || 'Volumetría General',
         cliente_id: datosVolumetria.clienteId || '',
         usuario_final: datosVolumetria.usuarioFinal || '',
         oportunidad_id: datosVolumetria.oportunidadId || '',
@@ -6493,21 +6510,26 @@ function exportarPDF() {
         elaborado_por: '{{ user.get_full_name|default:user.username }}',
         
         // Datos técnicos
-        categoria: datosVolumetria.categoria,
-        color: datosVolumetria.color,
-        distancia: datosVolumetria.distancia,
-        cantidad_nodos: datosVolumetria.cantidadNodos,
+        categoria: datosVolumetria.categoria || 'General',
+        color: datosVolumetria.color || 'Azul',
+        distancia: datosVolumetria.distancia || 0,
+        cantidad_nodos: datosVolumetria.cantidadNodos || 1,
         
-        // Datos financieros
-        subtotal: datosVolumetria.subtotal || 0,
-        iva: datosVolumetria.iva || 0,
-        total: datosVolumetria.total || 0,
+        // Datos financieros actualizados
+        subtotal: datosVolumetria.subtotal,
+        iva: datosVolumetria.iva,
+        total: datosVolumetria.total,
+        total_costo: datosVolumetria.totalCosto,
+        ganancia: datosVolumetria.ganancia,
+        margen: datosVolumetria.margen,
         
-        // Datos de la tabla (items)
-        items: obtenerItemsTabla() || []
+        // Datos de todas las tablas
+        items: obtenerItemsTodasLasTablas() || []
     };
     
-    // Realizar petición para generar PDF
+    console.log('🚀 Enviando datos para procesamiento completo:', pdfData);
+    
+    // Realizar petición para generar PDF y crear todo lo demás
     fetch('/app/api/generar-pdf-volumetria/', {
         method: 'POST',
         headers: {
@@ -6527,48 +6549,251 @@ function exportarPDF() {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `Volumetria_${datosVolumetria.nombreVolumetria || 'Nodos'}_${new Date().getTime()}.pdf`;
+        link.download = `Volumetria_General_${datosVolumetria.nombreVolumetria?.replace(/[^a-zA-Z0-9]/g, '_') || 'SinTitulo'}_${new Date().getTime()}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
         
-        // Mostrar mensaje de éxito
+        // Mostrar mensaje de éxito completo
         if (typeof Swal !== 'undefined') {
             Swal.fire({
-                title: '¡PDF Generado!',
-                text: 'La volumetría se ha guardado y el PDF se está descargando. Generando cotización automática...',
+                title: '¡Volumetría Procesada Exitosamente!',
+                html: `
+                    <div class="text-left">
+                        <p class="mb-2 text-green-600">✅ PDF de volumetría generado y descargado</p>
+                        <p class="mb-2 text-green-600">✅ Cotización automática creada</p>
+                        <p class="mb-2 text-green-600">✅ Proyecto configurado en Bitrix24</p>
+                        <p class="mb-2 text-green-600">✅ Carpeta de volumetrías creada</p>
+                        <p class="mb-2 text-green-600">✅ PDF subido al proyecto</p>
+                        <p class="text-sm text-gray-500 mt-3">La volumetría ha sido procesada completamente y vinculada a la oportunidad en Bitrix24.</p>
+                    </div>
+                `,
                 icon: 'success',
-                confirmButtonText: 'Entendido',
-                confirmButtonColor: '#007aff'
+                confirmButtonText: 'Perfecto',
+                confirmButtonColor: '#10B981'
             });
         }
         
-        // Crear cotización automática después de generar el PDF exitosamente
-        crearCotizacionAutomatica(datosVolumetria);
+        console.log('✅ Volumetría procesada completamente: PDF, cotización, proyecto Bitrix24 y carpeta creados');
     })
     .catch(error => {
-        console.error('Error generando PDF:', error);
+        console.error('❌ Error procesando volumetría completa:', error);
         
-        // Mostrar mensaje de error pero confirmar que se guardó localmente
         if (typeof Swal !== 'undefined') {
             Swal.fire({
-                title: 'PDF no disponible',
+                title: 'Error en el Procesamiento',
                 html: `
-                    <p>No se pudo generar el PDF en este momento, pero la volumetría se ha guardado correctamente.</p>
-                    <p class="text-sm text-gray-600 mt-2">Podrás acceder a ella desde "Ver Volumetrías".</p>
+                    <div class="text-left">
+                        <p class="mb-2">❌ No se pudo completar el procesamiento de la volumetría</p>
+                        <p class="text-sm text-red-500 mb-3">Error: ${error.message}</p>
+                        <p class="text-sm text-gray-500">Verifica que todos los datos estén completos y vuelve a intentarlo.</p>
+                    </div>
                 `,
-                icon: 'warning',
+                icon: 'error',
                 confirmButtonText: 'Entendido',
-                confirmButtonColor: '#007aff'
+                confirmButtonColor: '#EF4444'
             });
-        } else {
-            alert('Volumetría guardada. PDF no disponible temporalmente.');
         }
     });
 }
 
-// Función para obtener los items de la tabla para el PDF
+// ========================================
+// FUNCIONES AUXILIARES PARA VOLUMETRÍA GENERAL
+// ========================================
+
+// Función para obtener resumen financiero de todas las tablas
+function obtenerResumenFinanciero() {
+    console.log('💰 Calculando resumen financiero de todas las tablas');
+    
+    let totalCliente = 0;
+    let totalCosto = 0;
+    
+    // Función auxiliar para sumar totales de una tabla
+    function sumarTotalesTabla(tableId) {
+        const tabla = document.getElementById(tableId);
+        if (!tabla) return { cliente: 0, costo: 0 };
+        
+        let clienteTabla = 0;
+        let costoTabla = 0;
+        
+        const filas = tabla.querySelectorAll('.excel-row:not(.excel-totals-row)');
+        filas.forEach(fila => {
+            const celdas = fila.children;
+            if (celdas.length >= 10) {
+                // Obtener total cliente y total costo de cada fila
+                const totalClienteFila = parseFloat(celdas[6]?.textContent.replace(/[^\d.-]/g, '')) || 0;
+                const totalCostoFila = parseFloat(celdas[9]?.textContent.replace(/[^\d.-]/g, '')) || 0;
+                
+                clienteTabla += totalClienteFila;
+                costoTabla += totalCostoFila;
+            }
+        });
+        
+        return { cliente: clienteTabla, costo: costoTabla };
+    }
+    
+    // Sumar tabla principal
+    const tablaPrincipal = sumarTotalesTabla('excel-table');
+    totalCliente += tablaPrincipal.cliente;
+    totalCosto += tablaPrincipal.costo;
+    
+    // Sumar infraestructura si está visible
+    const seccionInfraestructura = document.getElementById('seccion-infraestructura');
+    if (seccionInfraestructura && seccionInfraestructura.style.display !== 'none') {
+        const tablaInfraestructura = sumarTotalesTabla('excel-table-infraestructura');
+        totalCliente += tablaInfraestructura.cliente;
+        totalCosto += tablaInfraestructura.costo;
+    }
+    
+    // Sumar gastos de instalación si está visible
+    const seccionGastos = document.getElementById('seccion-gastos-instalacion');
+    if (seccionGastos && seccionGastos.style.display !== 'none') {
+        const tablaGastos = document.getElementById('excel-table-gastos');
+        if (tablaGastos) {
+            const filasGastos = tablaGastos.querySelectorAll('.excel-row:not(.excel-totals-row)');
+            filasGastos.forEach(fila => {
+                const celdas = fila.children;
+                if (celdas.length >= 5) {
+                    const totalGasto = parseFloat(celdas[4]?.textContent.replace(/[^\d.-]/g, '')) || 0;
+                    totalCliente += totalGasto; // Los gastos se agregan al precio final
+                }
+            });
+        }
+    }
+    
+    // Sumar mano de obra si está visible
+    const seccionManoObra = document.getElementById('seccion-mano-obra');
+    if (seccionManoObra && seccionManoObra.style.display !== 'none') {
+        const tablaManoObra = document.getElementById('excel-table-mano-obra');
+        if (tablaManoObra) {
+            const filasManoObra = tablaManoObra.querySelectorAll('.excel-row:not(.excel-totals-row)');
+            filasManoObra.forEach(fila => {
+                const celdas = fila.children;
+                if (celdas.length >= 5) {
+                    const costoTotal = parseFloat(celdas[4]?.textContent.replace(/[^\d.-]/g, '')) || 0;
+                    totalCliente += costoTotal; // La mano de obra se agrega al precio final
+                }
+            });
+        }
+    }
+    
+    const ganancia = totalCliente - totalCosto;
+    const margen = totalCosto > 0 ? (ganancia / totalCosto) * 100 : 0;
+    
+    const resumen = {
+        totalCliente: totalCliente,
+        totalCosto: totalCosto,
+        ganancia: ganancia,
+        margen: margen
+    };
+    
+    console.log('💰 Resumen financiero calculado:', resumen);
+    return resumen;
+}
+
+// Función para obtener items de todas las tablas (versión mejorada)
+function obtenerItemsTodasLasTablas() {
+    console.log('📋 Obteniendo items de todas las tablas de volumetría general');
+    
+    const items = [];
+    
+    // Función auxiliar para procesar diferentes tipos de tablas
+    function procesarTablaCompleta(tableId, categoria) {
+        const tabla = document.getElementById(tableId);
+        if (!tabla) return [];
+        
+        const itemsTabla = [];
+        const filas = tabla.querySelectorAll('.excel-row:not(.excel-totals-row)');
+        
+        filas.forEach((fila, index) => {
+            const celdas = fila.children;
+            
+            // Procesar según el tipo de tabla
+            if (categoria === 'Gastos' && celdas.length >= 5) {
+                const descripcion = celdas[1]?.textContent.trim();
+                if (descripcion && descripcion !== '-' && descripcion !== '') {
+                    itemsTabla.push({
+                        numero_parte: `GASTO-${index + 1}`,
+                        cantidad: parseInt(celdas[0]?.textContent) || 0,
+                        descripcion: descripcion,
+                        precio_unitario: parseFloat(celdas[3]?.textContent.replace(/[^\d.-]/g, '')) || 0,
+                        total_cliente: parseFloat(celdas[4]?.textContent.replace(/[^\d.-]/g, '')) || 0,
+                        categoria: categoria
+                    });
+                }
+            } else if (categoria === 'Mano de Obra' && celdas.length >= 6) {
+                const descripcion = celdas[1]?.textContent.trim();
+                if (descripcion && descripcion !== 'Nuevo personal' && descripcion !== '') {
+                    itemsTabla.push({
+                        numero_parte: `LABOR-${index + 1}`,
+                        cantidad: parseInt(celdas[0]?.textContent) || 0,
+                        descripcion: descripcion,
+                        precio_unitario: parseFloat(celdas[2]?.textContent.replace(/[^\d.-]/g, '')) || 0,
+                        total_cliente: parseFloat(celdas[4]?.textContent.replace(/[^\d.-]/g, '')) || 0,
+                        dias: parseInt(celdas[5]?.textContent) || 0,
+                        categoria: categoria
+                    });
+                }
+            } else if (celdas.length >= 11) {
+                // Tabla estándar (Principal e Infraestructura)
+                const numeroParte = celdas[0]?.textContent.trim();
+                if (numeroParte && numeroParte !== 'Nuevo producto' && numeroParte !== '') {
+                    itemsTabla.push({
+                        numero_parte: numeroParte,
+                        cantidad: parseInt(celdas[1]?.textContent) || 0,
+                        descripcion: celdas[2]?.textContent.trim() || '',
+                        precio_lista: parseFloat(celdas[3]?.textContent.replace(/[^\d.-]/g, '')) || 0,
+                        descuento_cliente: parseFloat(celdas[4]?.textContent.replace(/[^\d.-]/g, '')) || 0,
+                        precio_unitario: parseFloat(celdas[5]?.textContent.replace(/[^\d.-]/g, '')) || 0,
+                        total_cliente: parseFloat(celdas[6]?.textContent.replace(/[^\d.-]/g, '')) || 0,
+                        descuento_proveedor: parseFloat(celdas[7]?.textContent.replace(/[^\d.-]/g, '')) || 0,
+                        costo_unitario: parseFloat(celdas[8]?.textContent.replace(/[^\d.-]/g, '')) || 0,
+                        total_costo: parseFloat(celdas[9]?.textContent.replace(/[^\d.-]/g, '')) || 0,
+                        ganancia: parseFloat(celdas[10]?.textContent.replace(/[^\d.-]/g, '')) || 0,
+                        categoria: categoria
+                    });
+                }
+            }
+        });
+        
+        return itemsTabla;
+    }
+    
+    // Procesar tabla principal
+    const itemsPrincipal = procesarTablaCompleta('excel-table', 'Principal');
+    items.push(...itemsPrincipal);
+    console.log(`📦 Items tabla principal: ${itemsPrincipal.length}`);
+    
+    // Procesar infraestructura si está visible
+    const seccionInfraestructura = document.getElementById('seccion-infraestructura');
+    if (seccionInfraestructura && seccionInfraestructura.style.display !== 'none') {
+        const itemsInfraestructura = procesarTablaCompleta('excel-table-infraestructura', 'Infraestructura');
+        items.push(...itemsInfraestructura);
+        console.log(`🏗️ Items infraestructura: ${itemsInfraestructura.length}`);
+    }
+    
+    // Procesar gastos de instalación si está visible
+    const seccionGastos = document.getElementById('seccion-gastos-instalacion');
+    if (seccionGastos && seccionGastos.style.display !== 'none') {
+        const itemsGastos = procesarTablaCompleta('excel-table-gastos', 'Gastos');
+        items.push(...itemsGastos);
+        console.log(`💸 Items gastos: ${itemsGastos.length}`);
+    }
+    
+    // Procesar mano de obra si está visible
+    const seccionManoObra = document.getElementById('seccion-mano-obra');
+    if (seccionManoObra && seccionManoObra.style.display !== 'none') {
+        const itemsManoObra = procesarTablaCompleta('excel-table-mano-obra', 'Mano de Obra');
+        items.push(...itemsManoObra);
+        console.log(`👷 Items mano de obra: ${itemsManoObra.length}`);
+    }
+    
+    console.log(`✅ Total items de todas las tablas: ${items.length}`);
+    return items;
+}
+
+// Función para obtener los items de la tabla para el PDF (mantener compatibilidad)
 function obtenerItemsTabla() {
     console.log('📋 Obteniendo items de tablas Excel unificadas');
     
