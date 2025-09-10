@@ -3548,12 +3548,15 @@ def crear_volumetria_with_opportunity(request, oportunidad_id):
             'timestamp': timezone.now().timestamp()
         }
         
+        # Marcar para autostart de volumetría general
+        request.session['auto_start_volumetria_general'] = True
+        
         # Configurar expiración de la sesión para 30 minutos
         request.session.set_expiry(1800)  # 30 minutos
         
-        messages.success(request, f'Datos de la oportunidad "{oportunidad.oportunidad}" cargados. Selecciona el tipo de volumetría.')
+        messages.success(request, f'Generando volumetría integral para la oportunidad "{oportunidad.oportunidad}".')
         
-        # Redirigir a la sección de volumetrías
+        # Redirigir a la sección de volumetrías (ahora irá directo a volumetría general)
         return redirect('volumetria')
         
     except Exception as e:
@@ -4212,7 +4215,13 @@ def get_session_data(request):
     try:
         session_data = {
             'volumetria_oportunidad_data': request.session.get('volumetria_oportunidad_data'),
+            'auto_start_volumetria_general': request.session.get('auto_start_volumetria_general', False),
         }
+        
+        # Limpiar el flag de auto-start después de leerlo para evitar bucles
+        if 'auto_start_volumetria_general' in request.session:
+            del request.session['auto_start_volumetria_general']
+        
         return JsonResponse(session_data)
     except Exception as e:
         print(f"ERROR: Error obteniendo datos de sesión: {str(e)}")

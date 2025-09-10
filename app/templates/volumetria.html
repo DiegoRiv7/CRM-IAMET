@@ -801,91 +801,23 @@
             <div class="mt-4">
                 <div class="apple-glass-card p-6">
                     
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <!-- Volumetría CCTV -->
-                        <div class="apple-card p-6 volumetria-card">
-                            <div class="flex items-center mb-4">
-                                <div class="bg-gradient-to-r from-red-500 to-red-600 p-3 rounded-xl shadow-lg">
-                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    <!-- Volumetría Integral - Card Única Centrada -->
+                    <div class="flex justify-center">
+                        <div class="apple-card p-8 volumetria-card max-w-md w-full">
+                            <div class="text-center">
+                                <div class="inline-flex bg-gradient-to-r from-blue-500 to-purple-600 p-4 rounded-xl shadow-lg mb-6">
+                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     </svg>
                                 </div>
-                                <h3 class="text-xl font-semibold text-white ml-4">
-                                    CCTV
+                                <h3 class="text-2xl font-bold text-white mb-4">
+                                    Volumetría Integral
                                 </h3>
-                            </div>
-                            <p class="apple-text-secondary mb-6">
-                                Cálculo volumétrico para sistemas de <span class="apple-text-primary font-medium">videovigilancia</span>, <span class="apple-text-primary font-medium">cámaras IP</span>, <span class="apple-text-primary font-medium">DVR/NVR</span>, y infraestructura de <span class="apple-text-primary font-medium">seguridad</span>.
-                            </p>
-                            <div class="flex space-x-3">
-                                <button onclick="crearVolumetria('cctv')" class="apple-btn-primary flex-1 py-3 px-4 text-sm font-medium">
-                                    Crear Volumetría
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Volumetría Nodos de Red -->
-                        <div class="apple-card p-6 volumetria-card">
-                            <div class="flex items-center mb-4">
-                                <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
-                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
-                                    </svg>
-                                </div>
-                                <h3 class="text-xl font-semibold text-white ml-4">
-                                    Nodos de Red
-                                </h3>
-                            </div>
-                            <p class="apple-text-secondary mb-6">
-                                Análisis volumétrico para <span class="apple-text-primary font-medium">infraestructura de red</span>, <span class="apple-text-primary font-medium">switches</span>, <span class="apple-text-primary font-medium">routers</span>, <span class="apple-text-primary font-medium">cableado estructurado</span> y puntos de acceso.
-                            </p>
-                            <div class="flex space-x-3">
-                                <button onclick="crearVolumetria('nodos')" class="apple-btn-primary flex-1 py-3 px-4 text-sm font-medium">
-                                    Crear Volumetría
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Volumetría Control de Acceso -->
-                        <div class="apple-card p-6 volumetria-card">
-                            <div class="flex items-center mb-4">
-                                <div class="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl shadow-lg">
-                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                                    </svg>
-                                </div>
-                                <h3 class="text-xl font-semibold text-white ml-4">
-                                    Control de Acceso
-                                </h3>
-                            </div>
-                            <p class="apple-text-secondary mb-6">
-                                Volumetría para sistemas de <span class="apple-text-primary font-medium">control de acceso</span>, <span class="apple-text-primary font-medium">lectores biométricos</span>, <span class="apple-text-primary font-medium">cerraduras electrónicas</span> y paneles de control.
-                            </p>
-                            <div class="flex space-x-3">
-                                <button onclick="crearVolumetria('acceso')" class="apple-btn-primary flex-1 py-3 px-4 text-sm font-medium">
-                                    Crear Volumetría
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Volumetría General -->
-                        <div class="apple-card p-6 volumetria-card">
-                            <div class="flex items-center mb-4">
-                                <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-3 rounded-xl shadow-lg">
-                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                                    </svg>
-                                </div>
-                                <h3 class="text-xl font-semibold text-white ml-4">
-                                    Volumetría General
-                                </h3>
-                            </div>
-                            <p class="apple-text-secondary mb-6">
-                                Cálculo volumétrico <span class="apple-text-primary font-medium">personalizado</span> para <span class="apple-text-primary font-medium">proyectos mixtos</span> o sistemas no categorizados específicamente.
-                            </p>
-                            <div class="flex space-x-3">
-                                <button onclick="crearVolumetria('general')" class="apple-btn-primary flex-1 py-3 px-4 text-sm font-medium">
-                                    Crear Volumetría
+                                <p class="apple-text-secondary mb-8 text-center">
+                                    Sistema completo de <span class="apple-text-primary font-medium">cálculo volumétrico</span> para proyectos de <span class="apple-text-primary font-medium">tecnología</span> y <span class="apple-text-primary font-medium">seguridad</span>.
+                                </p>
+                                <button onclick="crearVolumetria('general')" class="apple-btn-primary w-full py-4 px-6 text-lg font-medium">
+                                    Crear Nueva Volumetría
                                 </button>
                             </div>
                         </div>
@@ -927,73 +859,22 @@ console.log('🔄 VOLUMETRÍA SCRIPT CARGADO - VERSION CON CATÁLOGO COMPLETO');
 console.log('📦 FUNCIONALIDAD: Auto-relleno desde catálogo activa');
 
 // Función para crear volumetría según el tipo seleccionado
-function crearVolumetria(tipo) {
-    console.log(`Iniciando creación de volumetría: ${tipo}`);
+function crearVolumetria(tipo = 'general') {
+    console.log('🚀 Iniciando creación de volumetría general automáticamente...');
     
-    let titulo = '';
-    let descripcion = '';
-    let color = '';
+    // Solo manejamos volumetría general ahora
+    const titulo = 'Volumetría General';
+    const descripcion = 'Análisis volumétrico completo con tablas de precios, infraestructura, gastos y mano de obra';
     
-    switch(tipo) {
-        case 'cctv':
-            titulo = 'CCTV - Sistema de Videovigilancia';
-            descripcion = 'Volumetría para sistemas de videovigilancia, cámaras IP, DVR/NVR, y infraestructura de seguridad.';
-            color = '#ef4444'; // red-500
-            break;
-        case 'nodos':
-            titulo = 'Nodos de Red - Infraestructura';
-            descripcion = 'Análisis volumétrico para infraestructura de red, switches, routers, cableado estructurado y puntos de acceso.';
-            color = '#3b82f6'; // blue-500
-            break;
-        case 'acceso':
-            titulo = 'Control de Acceso - Seguridad';
-            descripcion = 'Volumetría para sistemas de control de acceso, lectores biométricos, cerraduras electrónicas y paneles de control.';
-            color = '#22c55e'; // green-500
-            break;
-        case 'general':
-            titulo = 'Volumetría General - Personalizada';
-            descripcion = 'Cálculo volumétrico personalizado para proyectos mixtos o sistemas no categorizados específicamente.';
-            color = '#a855f7'; // purple-500
-            break;
-        default:
-            titulo = 'Volumetría';
-            descripcion = 'Análisis volumétrico general';
-            color = '#6b7280';
-    }
-    
-    // Mostrar formulario directamente
-    iniciarVolumetria(tipo, titulo);
+    // Ir directamente a la volumetría general
+    iniciarVolumetria('general', titulo);
 }
 
 // Función para iniciar el proceso de volumetría
 function iniciarVolumetria(tipo, titulo) {
-    if (tipo === 'nodos') {
-        mostrarFormularioNodos();
-    } else if (tipo === 'general') {
-        // Ir directamente a la tabla Excel-like sin formulario
-        console.log('🚀 Creando volumetría general directamente en tabla Excel-like');
-        mostrarVolumetriaGeneralDirecta();
-    } else {
-        // Para otros tipos, mostrar mensaje de desarrollo
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                title: '¡En Desarrollo!',
-                html: `
-                    <div class="text-left">
-                        <p class="mb-3"><strong>Tipo:</strong> ${titulo}</p>
-                        <p class="mb-3">Esta funcionalidad está en desarrollo.</p>
-                        <p class="text-sm text-gray-600">Pronto podrás crear volumetrías específicas para cada categoría de proyecto.</p>
-                    </div>
-                `,
-                icon: 'info',
-                confirmButtonText: 'Entendido',
-                confirmButtonColor: '#3b82f6'
-            });
-        } else {
-            alert(`Funcionalidad en desarrollo para: ${titulo}`);
-        }
-    }
-    console.log(`Creando volumetría de tipo: ${tipo}`);
+    // Solo manejamos volumetría general ahora
+    console.log('🚀 Creando volumetría general directamente');
+    mostrarVolumetriaGeneralDirecta();
 }
 
 // Función para poblar selector de clientes en volumetría
@@ -2546,13 +2427,13 @@ function limpiarEstadoVolumetria() {
 
 // Función para iniciar una nueva volumetría
 function nuevaVolumetria() {
-    console.log('🆕 Iniciando nueva volumetría');
+    console.log('🆕 Iniciando nueva volumetría general automáticamente');
     
     // Limpiar el estado guardado
     limpiarEstadoVolumetria();
     
-    // Recargar la página para mostrar la selección de tipos
-    window.location.reload();
+    // Ir directamente a volumetría general
+    crearVolumetria('general');
 }
 
 // Función para mostrar volumetría general directamente en tabla Excel-like
@@ -2722,6 +2603,145 @@ function mostrarTablaVolumetriaGeneral(datos) {
                             <span class="component-subtitle">Lector/Biométrico</span>
                         </div>
                     </div>
+
+                    <!-- Infraestructura -->
+                    <div class="component-card" data-component="infrastructure" data-type="infraestructura" draggable="true">
+                        <div class="component-icon-large infrastructure-icon">
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="infraGradientSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#7C3AED;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#5B21B6;stop-opacity:1" />
+                                    </linearGradient>
+                                    <filter id="infraShadowSidebar">
+                                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color:#3730A3" flood-opacity="0.4"/>
+                                    </filter>
+                                </defs>
+                                <rect x="4" y="24" width="24" height="4" rx="1" fill="url(#infraGradientSidebar)" filter="url(#infraShadowSidebar)"/>
+                                <rect x="6" y="20" width="4" height="4" rx="1" fill="url(#infraGradientSidebar)"/>
+                                <rect x="14" y="16" width="4" height="8" rx="1" fill="url(#infraGradientSidebar)"/>
+                                <rect x="22" y="12" width="4" height="12" rx="1" fill="url(#infraGradientSidebar)"/>
+                                <circle cx="8" cy="18" r="1" fill="#E5E7EB"/>
+                                <circle cx="16" cy="14" r="1" fill="#E5E7EB"/>
+                                <circle cx="24" cy="10" r="1" fill="#E5E7EB"/>
+                            </svg>
+                        </div>
+                        <div class="component-info">
+                            <span class="component-title">Infraestructura</span>
+                            <span class="component-subtitle">Rack/Gabinete</span>
+                        </div>
+                    </div>
+
+                    <!-- Access Point -->
+                    <div class="component-card" data-component="access-point" data-type="red" draggable="true">
+                        <div class="component-icon-large ap-icon">
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="apGradientSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#10B981;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+                                    </linearGradient>
+                                    <filter id="apShadowSidebar">
+                                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#047857" flood-opacity="0.4"/>
+                                    </filter>
+                                </defs>
+                                <rect x="8" y="14" width="16" height="4" rx="2" fill="url(#apGradientSidebar)" filter="url(#apShadowSidebar)"/>
+                                <circle cx="16" cy="16" r="1" fill="#E5E7EB"/>
+                                <path d="M12 8C12 12 14 14 16 14C18 14 20 12 20 8" stroke="#10B981" stroke-width="1.5" fill="none"/>
+                                <path d="M10 6C10 14 12 16 16 16C20 16 22 14 22 6" stroke="#10B981" stroke-width="1" fill="none" opacity="0.6"/>
+                                <path d="M8 4C8 16 10 18 16 18C22 18 24 16 24 4" stroke="#10B981" stroke-width="0.8" fill="none" opacity="0.4"/>
+                            </svg>
+                        </div>
+                        <div class="component-info">
+                            <span class="component-title">Access Point</span>
+                            <span class="component-subtitle">WiFi/Wireless</span>
+                        </div>
+                    </div>
+
+                    <!-- Plumas -->
+                    <div class="component-card" data-component="barrier" data-type="seguridad" draggable="true">
+                        <div class="component-icon-large barrier-icon">
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="barrierGradientSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#F59E0B;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#D97706;stop-opacity:1" />
+                                    </linearGradient>
+                                    <filter id="barrierShadowSidebar">
+                                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#92400E" flood-opacity="0.4"/>
+                                    </filter>
+                                </defs>
+                                <rect x="6" y="6" width="2" height="20" rx="1" fill="url(#barrierGradientSidebar)" filter="url(#barrierShadowSidebar)"/>
+                                <rect x="24" y="6" width="2" height="20" rx="1" fill="url(#barrierGradientSidebar)"/>
+                                <rect x="8" y="15" width="16" height="2" rx="1" fill="url(#barrierGradientSidebar)"/>
+                                <rect x="6" y="4" width="20" height="2" rx="1" fill="#92400E"/>
+                                <rect x="6" y="26" width="20" height="2" rx="1" fill="#92400E"/>
+                                <circle cx="7" cy="16" r="1" fill="#FEF3C7"/>
+                                <circle cx="25" cy="16" r="1" fill="#FEF3C7"/>
+                            </svg>
+                        </div>
+                        <div class="component-info">
+                            <span class="component-title">Plumas</span>
+                            <span class="component-subtitle">Barrera Vehicular</span>
+                        </div>
+                    </div>
+
+                    <!-- Torniquetes -->
+                    <div class="component-card" data-component="turnstile" data-type="seguridad" draggable="true">
+                        <div class="component-icon-large turnstile-icon">
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="turnstileGradientSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#DC2626;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#B91C1C;stop-opacity:1" />
+                                    </linearGradient>
+                                    <filter id="turnstileShadowSidebar">
+                                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#7F1D1D" flood-opacity="0.4"/>
+                                    </filter>
+                                </defs>
+                                <rect x="14" y="4" width="4" height="24" rx="2" fill="url(#turnstileGradientSidebar)" filter="url(#turnstileShadowSidebar)"/>
+                                <circle cx="16" cy="16" r="8" fill="none" stroke="url(#turnstileGradientSidebar)" stroke-width="2"/>
+                                <rect x="8" y="15" width="6" height="2" rx="1" fill="url(#turnstileGradientSidebar)"/>
+                                <rect x="18" y="15" width="6" height="2" rx="1" fill="url(#turnstileGradientSidebar)"/>
+                                <rect x="15" y="9" width="2" height="6" rx="1" fill="url(#turnstileGradientSidebar)"/>
+                                <rect x="15" y="17" width="2" height="6" rx="1" fill="url(#turnstileGradientSidebar)"/>
+                                <circle cx="16" cy="16" r="2" fill="#FEE2E2"/>
+                            </svg>
+                        </div>
+                        <div class="component-info">
+                            <span class="component-title">Torniquetes</span>
+                            <span class="component-subtitle">Control Peatonal</span>
+                        </div>
+                    </div>
+
+                    <!-- Motores -->
+                    <div class="component-card" data-component="motor" data-type="infraestructura" draggable="true">
+                        <div class="component-icon-large motor-icon">
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="motorGradientSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#374151;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#1F2937;stop-opacity:1" />
+                                    </linearGradient>
+                                    <filter id="motorShadowSidebar">
+                                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#111827" flood-opacity="0.4"/>
+                                    </filter>
+                                </defs>
+                                <circle cx="16" cy="16" r="12" fill="url(#motorGradientSidebar)" filter="url(#motorShadowSidebar)"/>
+                                <circle cx="16" cy="16" r="8" fill="#4B5563"/>
+                                <circle cx="16" cy="16" r="4" fill="#6B7280"/>
+                                <circle cx="16" cy="16" r="2" fill="#9CA3AF"/>
+                                <rect x="14" y="6" width="4" height="4" rx="1" fill="#374151"/>
+                                <rect x="6" y="14" width="4" height="4" rx="1" fill="#374151"/>
+                                <rect x="22" y="14" width="4" height="4" rx="1" fill="#374151"/>
+                                <rect x="14" y="22" width="4" height="4" rx="1" fill="#374151"/>
+                            </svg>
+                        </div>
+                        <div class="component-info">
+                            <span class="component-title">Motores</span>
+                            <span class="component-subtitle">Motor Eléctrico</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -2769,29 +2789,130 @@ function mostrarTablaVolumetriaGeneral(datos) {
                 <!-- Área de tablas -->
                 <div class="tables-container">
                     
-                    <!-- Tabla Principal de Precios -->
+                    <!-- Panel de Control de Tablas -->
                     <div class="mb-8">
-                        <div class="flex items-center justify-between mb-6">
-                            <div class="flex items-center space-x-4">
-                                <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
-                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
+                            <div class="text-center mb-6">
+                                <h2 class="text-2xl font-bold text-white mb-2">Panel de Control de Tablas</h2>
+                                <p class="text-gray-300 text-sm">Selecciona un componente de la izquierda para generar un cuestionario, o agrega manualmente las tablas que necesites</p>
+                            </div>
+                            
+                            <!-- Botones de Agregar Tabla -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <!-- Botón Agregar Tabla Principal -->
+                                <button onclick="agregarTablaPrincipal()" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-4 rounded-lg shadow-lg transition duration-200 flex flex-col items-center space-y-2">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
                                     </svg>
-                                </div>
-                                <div>
-                                    <h2 class="text-2xl font-bold text-white">Tabla de Precios y Costos</h2>
-                                    <p class="text-gray-300 text-sm">Productos principales y configuración de precios del proyecto</p>
-                                </div>
-                            </div>
-                            <div class="flex space-x-3">
-                                <button onclick="agregarFilaExcelGeneral()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2">
-                                    <span>➕</span>
-                                    <span>Agregar Fila</span>
+                                    <span class="font-medium">Agregar Tabla Principal</span>
+                                    <span class="text-xs opacity-75">Precios y Costos</span>
+                                </button>
+                                
+                                <!-- Botón Agregar Gastos de Instalación -->
+                                <button onclick="agregarTablaGastosInstalacion()" class="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-6 py-4 rounded-lg shadow-lg transition duration-200 flex flex-col items-center space-y-2">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <span class="font-medium">Agregar Gastos de Instalación</span>
+                                    <span class="text-xs opacity-75">Costos adicionales</span>
+                                </button>
+                                
+                                <!-- Botón Agregar Mano de Obra -->
+                                <button onclick="agregarTablaManoObra()" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-4 rounded-lg shadow-lg transition duration-200 flex flex-col items-center space-y-2">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                    </svg>
+                                    <span class="font-medium">Agregar Mano de Obra</span>
+                                    <span class="text-xs opacity-75">Personal técnico</span>
                                 </button>
                             </div>
+                            
+                            <!-- Área de Mensaje -->
+                            <div id="mensaje-tabla" class="mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg text-center hidden">
+                                <p class="text-blue-300 text-sm">💡 Selecciona un componente de la izquierda para comenzar con un cuestionario guiado</p>
+                            </div>
                         </div>
-
-                        <!-- Tabla Excel con tema oscuro -->
+                    </div>
+                    
+                    <!-- Contenedor dinámico para tablas -->
+                    <div id="dynamic-tables-container">
+                        <!-- Las tablas aparecerán aquí dinámicamente -->
+                    </div>
+                    
+                    <!-- Resumen Final -->
+                    <div id="resumen-volumetria" class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 hidden">
+                        <div class="bg-gray-800/90 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl p-6">
+                            <h4 class="text-white font-semibold mb-4 text-lg">💰 Resumen Financiero</h4>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-300">Total Cliente:</span>
+                                    <span id="total-cliente" class="text-white font-bold text-lg">$0.00</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-300">Total Costo:</span>
+                                    <span id="total-costo" class="text-white font-bold text-lg">$0.00</span>
+                                </div>
+                                <hr class="border-gray-600">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-300">Ganancia:</span>
+                                    <span id="ganancia-total" class="font-bold text-xl text-green-400">$0.00</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-300">Margen:</span>
+                                    <span id="margen-porcentaje" class="font-bold text-green-400">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-800/90 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl p-6">
+                            <h4 class="text-white font-semibold mb-4 text-lg">📊 Resumen de Estadísticas</h4>
+                            <div class="space-y-4 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Total Items:</span>
+                                    <span id="total-items" class="text-white font-medium">0</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Tablas Activas:</span>
+                                    <span id="tablas-activas" class="text-white font-medium">0</span>
+                                </div>
+                                <!-- Botones de acción -->
+                                <div class="mt-4 space-y-2">
+                                    <button onclick="exportarPDF()" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition duration-200">
+                                        📄 Exportar PDF
+                                    </button>
+                                    <button onclick="exportarCSVGeneral()" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition duration-200">
+                                        📊 Exportar CSV
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Área de modales para cuestionarios de componentes -->
+                <div id="component-questionnaire-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+                    <div class="flex items-center justify-center min-h-screen p-4">
+                        <div class="bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+                            <div class="p-6">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 id="modal-title" class="text-lg font-semibold text-white">Cuestionario de Componente</h3>
+                                    <button onclick="cerrarCuestionario()" class="text-gray-400 hover:text-white">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div id="modal-content">
+                                    <!-- El contenido del cuestionario se insertará aquí -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Estilos específicos para las tablas que se crearán dinámicamente -->
                         <style>
                             /* Override Excel styles for dark theme */
                             .excel-table-wrapper {
@@ -8006,15 +8127,50 @@ document.addEventListener('DOMContentLoaded', function() {
     // Cargar datos de oportunidad si están disponibles en la sesión
     cargarDatosOportunidadGeneral();
     
-    // Verificar si hay un estado guardado
-    const estadoGuardado = cargarEstadoVolumetria();
-    
-    if (estadoGuardado) {
-        console.log('🔄 Restaurando volumetría desde estado guardado');
-        // Mostrar directamente la tabla con los datos guardados
-        mostrarTablaVolumetria(estadoGuardado);
-    } else {
-        // Mostrar animaciones normales para las tarjetas de selección
+    // Verificar si hay auto-start desde oportunidad
+    fetch('/app/api/get-session-data/', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.auto_start_volumetria_general) {
+            console.log('🎯 Auto-iniciando volumetría general desde oportunidad');
+            setTimeout(() => {
+                crearVolumetria('general');
+            }, 500);
+            return;
+        }
+        
+        // Verificar si hay un estado guardado
+        const estadoGuardado = cargarEstadoVolumetria();
+        
+        if (estadoGuardado) {
+            console.log('🔄 Restaurando volumetría desde estado guardado');
+            // Mostrar directamente la tabla con los datos guardados
+            mostrarTablaVolumetria(estadoGuardado);
+        } else {
+            // Mostrar animaciones normales para las tarjetas de selección
+            const cards = document.querySelectorAll('.glass-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(20px)';
+                card.style.transition = 'all 0.6s ease';
+                
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 100);
+            }, index * 200);
+        });
+        }
+    })
+    .catch(error => {
+        console.error('Error obteniendo datos de sesión:', error);
+        // Mostrar animaciones normales si hay error
         const cards = document.querySelectorAll('.glass-card');
         cards.forEach((card, index) => {
             setTimeout(() => {
@@ -8028,7 +8184,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 100);
             }, index * 200);
         });
-    }
+    });
     
     // Función para configurar autocompletado cuando sea necesario
     window.inicializarAutocompletado = function() {
@@ -11702,6 +11858,692 @@ document.addEventListener('DOMContentLoaded', function() {
         applyOptimizations: applyDeviceOptimizations
     };
 })();
+
+// ===========================================
+// NUEVAS FUNCIONES PARA BOTONES DE AGREGAR TABLA
+// ===========================================
+
+// Función para agregar tabla principal dinámicamente
+function agregarTablaPrincipal() {
+    console.log('➕ Agregando tabla principal de precios y costos');
+    
+    const container = document.getElementById('dynamic-tables-container');
+    if (!container) return;
+    
+    // Verificar si ya existe la tabla principal
+    if (document.getElementById('tabla-principal-precios')) {
+        alert('La tabla principal ya está agregada');
+        return;
+    }
+    
+    const tablaHTML = `
+        <div id="tabla-principal-precios" class="mb-8 animate-fade-in">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Tabla de Precios y Costos</h2>
+                        <p class="text-gray-300 text-sm">Productos principales y configuración de precios del proyecto</p>
+                    </div>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="agregarFilaExcelGeneral()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2">
+                        <span>➕</span>
+                        <span>Agregar Fila</span>
+                    </button>
+                    <button onclick="eliminarTablaPrincipal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200">
+                        🗑️ Eliminar Tabla
+                    </button>
+                </div>
+            </div>
+            
+            <div class="excel-table-wrapper bg-gray-900/80 border border-gray-700">
+                <table id="excel-table-general" class="excel-table w-full">
+                    <thead style="position: sticky; top: 0; z-index: 10;">
+                        <tr class="excel-header">
+                            <th colspan="7" class="excel-th-group excel-client-header">INFORMACIÓN DEL CLIENTE</th>
+                            <th colspan="3" class="excel-th-group excel-vendor-header">INFORMACIÓN DEL PROVEEDOR</th>
+                            <th class="excel-th-group excel-action-header">ACCIONES</th>
+                        </tr>
+                        <tr class="excel-subheader">
+                            <th class="excel-th">Ítem</th>
+                            <th class="excel-th">No. Parte</th>
+                            <th class="excel-th">Descripción</th>
+                            <th class="excel-th">Cantidad</th>
+                            <th class="excel-th">Precio Lista</th>
+                            <th class="excel-th">Descuento Cliente (%)</th>
+                            <th class="excel-th">Precio Final Cliente</th>
+                            <th class="excel-th">Descuento Proveedor (%)</th>
+                            <th class="excel-th">Costo Unitario</th>
+                            <th class="excel-th">Costo Total</th>
+                            <th class="excel-th">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="excel-tbody-general">
+                        ${generarFilasVaciasGeneralExcel()}
+                        <tr class="excel-totals-row">
+                            <td colspan="6" class="excel-cell font-bold text-right">TOTALES:</td>
+                            <td id="total-cliente-general" class="excel-cell font-bold">$0.00</td>
+                            <td class="excel-cell"></td>
+                            <td class="excel-cell"></td>
+                            <td id="total-costo-general" class="excel-cell font-bold">$0.00</td>
+                            <td class="excel-cell"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', tablaHTML);
+    actualizarContadorTablas();
+    mostrarResumen();
+    recalcularTotalesGeneral();
+}
+
+// Función para agregar tabla de gastos de instalación
+function agregarTablaGastosInstalacion() {
+    console.log('➕ Agregando tabla de gastos de instalación');
+    
+    const container = document.getElementById('dynamic-tables-container');
+    if (!container) return;
+    
+    // Verificar si ya existe la tabla
+    if (document.getElementById('tabla-gastos-instalacion')) {
+        alert('La tabla de gastos de instalación ya está agregada');
+        return;
+    }
+    
+    const tablaHTML = `
+        <div id="tabla-gastos-instalacion" class="mb-8 animate-fade-in">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-3 rounded-xl shadow-lg">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Gastos de Instalación</h2>
+                        <p class="text-gray-300 text-sm">Costos adicionales del proyecto</p>
+                    </div>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="agregarFilaGastosInstalacion()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2">
+                        <span>➕</span>
+                        <span>Agregar Fila</span>
+                    </button>
+                    <button onclick="eliminarTablaGastosInstalacion()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200">
+                        🗑️ Eliminar Tabla
+                    </button>
+                </div>
+            </div>
+            
+            <div class="excel-table-wrapper bg-gray-900/80 border border-gray-700">
+                <table id="excel-table-gastos" class="excel-table w-full">
+                    <thead style="position: sticky; top: 0; z-index: 10;">
+                        <tr class="excel-header">
+                            <th colspan="5" class="excel-th-group" style="background: linear-gradient(135deg, #7c3aed, #a855f7); color: white;">GASTOS DE INSTALACIÓN</th>
+                        </tr>
+                        <tr class="excel-subheader">
+                            <th class="excel-th">Descripción</th>
+                            <th class="excel-th">Cantidad</th>
+                            <th class="excel-th">Precio Unitario</th>
+                            <th class="excel-th">Total</th>
+                            <th class="excel-th">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="excel-tbody-gastos">
+                        <tr class="excel-row" data-row="0">
+                            <td class="excel-cell editable" contenteditable="true" data-field="descripcion" data-row="0">Transporte y movilización</td>
+                            <td class="excel-cell editable" contenteditable="true" data-field="cantidad" data-row="0" onblur="recalcularFilaGastos(0)">1</td>
+                            <td class="excel-cell editable" contenteditable="true" data-field="precio" data-row="0" onblur="recalcularFilaGastos(0)">$0.00</td>
+                            <td class="excel-cell calculated" data-field="total" data-row="0">$0.00</td>
+                            <td class="excel-cell">
+                                <button onclick="eliminarFilaGastosInstalacion(0)" class="excel-delete-btn" title="Eliminar fila">❌</button>
+                            </td>
+                        </tr>
+                        <tr class="excel-totals-row">
+                            <td colspan="3" class="excel-cell font-bold text-right">TOTAL GASTOS:</td>
+                            <td id="total-gastos" class="excel-cell font-bold">$0.00</td>
+                            <td class="excel-cell"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', tablaHTML);
+    actualizarContadorTablas();
+    mostrarResumen();
+}
+
+// Función para agregar tabla de mano de obra
+function agregarTablaManoObra() {
+    console.log('➕ Agregando tabla de mano de obra');
+    
+    const container = document.getElementById('dynamic-tables-container');
+    if (!container) return;
+    
+    // Verificar si ya existe la tabla
+    if (document.getElementById('tabla-mano-obra')) {
+        alert('La tabla de mano de obra ya está agregada');
+        return;
+    }
+    
+    const tablaHTML = `
+        <div id="tabla-mano-obra" class="mb-8 animate-fade-in">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-xl shadow-lg">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Mano de Obra</h2>
+                        <p class="text-gray-300 text-sm">Personal técnico del proyecto</p>
+                    </div>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="agregarFilaManoObra()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2">
+                        <span>➕</span>
+                        <span>Agregar Fila</span>
+                    </button>
+                    <button onclick="eliminarTablaManoObra()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200">
+                        🗑️ Eliminar Tabla
+                    </button>
+                </div>
+            </div>
+            
+            <div class="excel-table-wrapper bg-gray-900/80 border border-gray-700">
+                <table id="excel-table-mano-obra" class="excel-table w-full">
+                    <thead style="position: sticky; top: 0; z-index: 10;">
+                        <tr class="excel-header">
+                            <th colspan="6" class="excel-th-group" style="background: linear-gradient(135deg, #10b981, #34d399); color: white;">MANO DE OBRA</th>
+                        </tr>
+                        <tr class="excel-subheader">
+                            <th class="excel-th">Descripción</th>
+                            <th class="excel-th">Cantidad Personal</th>
+                            <th class="excel-th">Horas</th>
+                            <th class="excel-th">Precio por Hora</th>
+                            <th class="excel-th">Total</th>
+                            <th class="excel-th">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="excel-tbody-mano-obra">
+                        <tr class="excel-row" data-row="0">
+                            <td class="excel-cell editable" contenteditable="true" data-field="descripcion" data-row="0">Técnico en instalaciones</td>
+                            <td class="excel-cell editable" contenteditable="true" data-field="cantidad" data-row="0" onblur="recalcularFilaManoObra(0)">1</td>
+                            <td class="excel-cell editable" contenteditable="true" data-field="horas" data-row="0" onblur="recalcularFilaManoObra(0)">8</td>
+                            <td class="excel-cell editable" contenteditable="true" data-field="precio" data-row="0" onblur="recalcularFilaManoObra(0)">$0.00</td>
+                            <td class="excel-cell calculated" data-field="total" data-row="0">$0.00</td>
+                            <td class="excel-cell">
+                                <button onclick="eliminarFilaManoObra(0)" class="excel-delete-btn" title="Eliminar fila">❌</button>
+                            </td>
+                        </tr>
+                        <tr class="excel-totals-row">
+                            <td colspan="4" class="excel-cell font-bold text-right">TOTAL MANO DE OBRA:</td>
+                            <td id="total-mano-obra" class="excel-cell font-bold">$0.00</td>
+                            <td class="excel-cell"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', tablaHTML);
+    actualizarContadorTablas();
+    mostrarResumen();
+}
+
+// Funciones de eliminación de tablas
+function eliminarTablaPrincipal() {
+    if (confirm('¿Estás seguro de que quieres eliminar la tabla principal?')) {
+        const tabla = document.getElementById('tabla-principal-precios');
+        if (tabla) {
+            tabla.remove();
+            actualizarContadorTablas();
+            ocultarResumenSiNoHayTablas();
+        }
+    }
+}
+
+function eliminarTablaGastosInstalacion() {
+    if (confirm('¿Estás seguro de que quieres eliminar la tabla de gastos de instalación?')) {
+        const tabla = document.getElementById('tabla-gastos-instalacion');
+        if (tabla) {
+            tabla.remove();
+            actualizarContadorTablas();
+            ocultarResumenSiNoHayTablas();
+        }
+    }
+}
+
+function eliminarTablaManoObra() {
+    if (confirm('¿Estás seguro de que quieres eliminar la tabla de mano de obra?')) {
+        const tabla = document.getElementById('tabla-mano-obra');
+        if (tabla) {
+            tabla.remove();
+            actualizarContadorTablas();
+            ocultarResumenSiNoHayTablas();
+        }
+    }
+}
+
+// Función para actualizar contador de tablas
+function actualizarContadorTablas() {
+    const container = document.getElementById('dynamic-tables-container');
+    const tablasActivas = container ? container.children.length : 0;
+    const contador = document.getElementById('tablas-activas');
+    if (contador) {
+        contador.textContent = tablasActivas;
+    }
+}
+
+// Función para mostrar/ocultar resumen
+function mostrarResumen() {
+    const resumen = document.getElementById('resumen-volumetria');
+    if (resumen) {
+        resumen.classList.remove('hidden');
+    }
+}
+
+function ocultarResumenSiNoHayTablas() {
+    const container = document.getElementById('dynamic-tables-container');
+    const resumen = document.getElementById('resumen-volumetria');
+    if (container && resumen && container.children.length === 0) {
+        resumen.classList.add('hidden');
+    }
+}
+
+// Funciones de cálculo para tablas dinámicas
+function recalcularFilaGastos(rowIndex) {
+    const fila = document.querySelector(`#excel-table-gastos [data-row="${rowIndex}"]`);
+    if (!fila) return;
+    
+    const cantidad = parseFloat(fila.querySelector('[data-field="cantidad"]')?.textContent || '0');
+    const precio = parseFloat(fila.querySelector('[data-field="precio"]')?.textContent?.replace(/[$,]/g, '') || '0');
+    const total = cantidad * precio;
+    
+    const totalCell = fila.querySelector('[data-field="total"]');
+    if (totalCell) {
+        totalCell.textContent = formatearMoneda(total);
+    }
+    
+    // Recalcular total de gastos
+    recalcularTotalGastos();
+}
+
+function recalcularFilaManoObra(rowIndex) {
+    const fila = document.querySelector(`#excel-table-mano-obra [data-row="${rowIndex}"]`);
+    if (!fila) return;
+    
+    const cantidad = parseFloat(fila.querySelector('[data-field="cantidad"]')?.textContent || '0');
+    const horas = parseFloat(fila.querySelector('[data-field="horas"]')?.textContent || '0');
+    const precio = parseFloat(fila.querySelector('[data-field="precio"]')?.textContent?.replace(/[$,]/g, '') || '0');
+    const total = cantidad * horas * precio;
+    
+    const totalCell = fila.querySelector('[data-field="total"]');
+    if (totalCell) {
+        totalCell.textContent = formatearMoneda(total);
+    }
+    
+    // Recalcular total de mano de obra
+    recalcularTotalManoObra();
+}
+
+function recalcularTotalGastos() {
+    const filas = document.querySelectorAll('#excel-table-gastos [data-row]:not(.excel-totals-row)');
+    let total = 0;
+    
+    filas.forEach(fila => {
+        const totalCell = fila.querySelector('[data-field="total"]');
+        if (totalCell) {
+            total += parseFloat(totalCell.textContent?.replace(/[$,]/g, '') || '0');
+        }
+    });
+    
+    const totalElement = document.getElementById('total-gastos');
+    if (totalElement) {
+        totalElement.textContent = formatearMoneda(total);
+    }
+}
+
+function recalcularTotalManoObra() {
+    const filas = document.querySelectorAll('#excel-table-mano-obra [data-row]:not(.excel-totals-row)');
+    let total = 0;
+    
+    filas.forEach(fila => {
+        const totalCell = fila.querySelector('[data-field="total"]');
+        if (totalCell) {
+            total += parseFloat(totalCell.textContent?.replace(/[$,]/g, '') || '0');
+        }
+    });
+    
+    const totalElement = document.getElementById('total-mano-obra');
+    if (totalElement) {
+        totalElement.textContent = formatearMoneda(total);
+    }
+}
+
+// ===========================================
+// SISTEMA DE CUESTIONARIOS PARA COMPONENTES
+// ===========================================
+
+// Función para configurar listeners de componentes
+function configurarListenersComponentes() {
+    const componentCards = document.querySelectorAll('.component-card');
+    componentCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const componentType = this.getAttribute('data-component');
+            abrirCuestionarioComponente(componentType);
+        });
+        
+        // Agregar efecto visual
+        card.style.cursor = 'pointer';
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.05)';
+            this.style.transition = 'transform 0.2s ease';
+        });
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+    });
+}
+
+// Función principal para abrir cuestionarios
+function abrirCuestionarioComponente(componentType) {
+    console.log('🎯 Abriendo cuestionario para:', componentType);
+    
+    const modal = document.getElementById('component-questionnaire-modal');
+    const title = document.getElementById('modal-title');
+    const content = document.getElementById('modal-content');
+    
+    if (!modal || !title || !content) return;
+    
+    // Configurar título y contenido según el componente
+    const cuestionarios = {
+        'network-node': {
+            title: '🌐 Configuración de Nodos de Red',
+            questions: [
+                { id: 'cantidad_nodos', label: 'Cantidad de nodos de red', type: 'number', value: 1 },
+                { id: 'tipo_switch', label: 'Tipo de switch', type: 'select', options: ['24 puertos', '48 puertos', 'PoE+', 'Managed', 'Unmanaged'] },
+                { id: 'velocidad', label: 'Velocidad requerida', type: 'select', options: ['100 Mbps', '1 Gbps', '10 Gbps'] },
+                { id: 'distancia_max', label: 'Distancia máxima (metros)', type: 'number', value: 100 },
+                { id: 'redundancia', label: '¿Requiere redundancia?', type: 'checkbox' }
+            ]
+        },
+        'camera': {
+            title: '📹 Configuración de Cámaras',
+            questions: [
+                { id: 'cantidad_camaras', label: 'Cantidad de cámaras', type: 'number', value: 1 },
+                { id: 'resolucion', label: 'Resolución', type: 'select', options: ['1080p', '4K', '8MP', '12MP'] },
+                { id: 'tipo_camara', label: 'Tipo de cámara', type: 'select', options: ['Domo', 'Bullet', 'PTZ', 'Fisheye'] },
+                { id: 'vision_nocturna', label: '¿Visión nocturna?', type: 'checkbox' },
+                { id: 'almacenamiento_dias', label: 'Días de almacenamiento', type: 'number', value: 30 },
+                { id: 'poe_required', label: '¿Requiere PoE?', type: 'checkbox' }
+            ]
+        },
+        'access-control': {
+            title: '🔐 Control de Acceso',
+            questions: [
+                { id: 'cantidad_lectores', label: 'Cantidad de lectores', type: 'number', value: 1 },
+                { id: 'tipo_lector', label: 'Tipo de lector', type: 'select', options: ['RFID', 'Biométrico', 'Facial', 'QR'] },
+                { id: 'usuarios_max', label: 'Usuarios máximos', type: 'number', value: 100 },
+                { id: 'integracion_sistema', label: 'Integración con sistema', type: 'select', options: ['Standalone', 'Red', 'Cloud'] }
+            ]
+        },
+        'infrastructure': {
+            title: '🏗️ Infraestructura',
+            questions: [
+                { id: 'tipo_rack', label: 'Tipo de rack', type: 'select', options: ['6U', '12U', '24U', '42U'] },
+                { id: 'gabinetes', label: 'Cantidad de gabinetes', type: 'number', value: 1 },
+                { id: 'ventilacion', label: '¿Requiere ventilación?', type: 'checkbox' },
+                { id: 'ups_backup', label: '¿UPS de respaldo?', type: 'checkbox' },
+                { id: 'tiempo_respaldo', label: 'Tiempo de respaldo (horas)', type: 'number', value: 2 }
+            ]
+        },
+        'access-point': {
+            title: '📶 Access Point WiFi',
+            questions: [
+                { id: 'cantidad_ap', label: 'Cantidad de Access Points', type: 'number', value: 1 },
+                { id: 'cobertura_area', label: 'Área de cobertura (m²)', type: 'number', value: 100 },
+                { id: 'usuarios_simultaneos', label: 'Usuarios simultáneos', type: 'number', value: 25 },
+                { id: 'standard_wifi', label: 'Estándar WiFi', type: 'select', options: ['WiFi 5 (802.11ac)', 'WiFi 6 (802.11ax)', 'WiFi 6E'] },
+                { id: 'exterior', label: '¿Para exterior?', type: 'checkbox' }
+            ]
+        },
+        'barrier': {
+            title: '🚧 Plumas Vehiculares',
+            questions: [
+                { id: 'cantidad_plumas', label: 'Cantidad de plumas', type: 'number', value: 1 },
+                { id: 'longitud_brazo', label: 'Longitud del brazo (metros)', type: 'select', options: ['3m', '4m', '5m', '6m'] },
+                { id: 'tipo_barrera', label: 'Tipo de barrera', type: 'select', options: ['Manual', 'Automática', 'Semi-automática'] },
+                { id: 'velocidad_operacion', label: 'Velocidad de operación', type: 'select', options: ['Estándar (6s)', 'Rápida (3s)', 'Alta velocidad (1.5s)'] },
+                { id: 'integracion_acceso', label: '¿Integrar con control de acceso?', type: 'checkbox' }
+            ]
+        },
+        'turnstile': {
+            title: '🚪 Torniquetes',
+            questions: [
+                { id: 'cantidad_torniquetes', label: 'Cantidad de torniquetes', type: 'number', value: 1 },
+                { id: 'tipo_torniquete', label: 'Tipo de torniquete', type: 'select', options: ['Trípode', 'Altura completa', 'Velocidad', 'Óptico'] },
+                { id: 'ancho_paso', label: 'Ancho de paso', type: 'select', options: ['Estándar (55cm)', 'Amplio (70cm)', 'Discapacitados (90cm)'] },
+                { id: 'direccion_paso', label: 'Dirección de paso', type: 'select', options: ['Unidireccional', 'Bidireccional'] },
+                { id: 'material', label: 'Material', type: 'select', options: ['Acero inoxidable', 'Acero pintado', 'Aluminio'] }
+            ]
+        },
+        'motor': {
+            title: '⚙️ Motores',
+            questions: [
+                { id: 'cantidad_motores', label: 'Cantidad de motores', type: 'number', value: 1 },
+                { id: 'potencia', label: 'Potencia (HP)', type: 'select', options: ['1/4 HP', '1/2 HP', '3/4 HP', '1 HP', '2 HP'] },
+                { id: 'voltaje', label: 'Voltaje', type: 'select', options: ['110V', '220V', '440V'] },
+                { id: 'aplicacion', label: 'Aplicación', type: 'select', options: ['Portones', 'Puertas', 'Ventilación', 'Bombas'] },
+                { id: 'control_velocidad', label: '¿Control de velocidad?', type: 'checkbox' }
+            ]
+        }
+    };
+    
+    const cuestionario = cuestionarios[componentType];
+    if (!cuestionario) {
+        alert('Cuestionario no disponible para este componente');
+        return;
+    }
+    
+    title.textContent = cuestionario.title;
+    content.innerHTML = generarFormularioCuestionario(cuestionario.questions, componentType);
+    
+    modal.classList.remove('hidden');
+}
+
+// Función para generar el formulario del cuestionario
+function generarFormularioCuestionario(questions, componentType) {
+    let html = '<form id="component-form" onsubmit="procesarCuestionario(event, \'' + componentType + '\')">';
+    
+    questions.forEach(question => {
+        html += '<div class="mb-4">';
+        html += '<label class="block text-white text-sm font-medium mb-2">' + question.label + '</label>';
+        
+        switch (question.type) {
+            case 'number':
+                html += '<input type="number" id="' + question.id + '" name="' + question.id + '" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none" value="' + (question.value || '') + '">';
+                break;
+            case 'select':
+                html += '<select id="' + question.id + '" name="' + question.id + '" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none">';
+                question.options.forEach(option => {
+                    html += '<option value="' + option + '">' + option + '</option>';
+                });
+                html += '</select>';
+                break;
+            case 'checkbox':
+                html += '<label class="flex items-center"><input type="checkbox" id="' + question.id + '" name="' + question.id + '" class="mr-2 text-blue-500 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"><span class="text-white">Sí</span></label>';
+                break;
+            default:
+                html += '<input type="text" id="' + question.id + '" name="' + question.id + '" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none">';
+        }
+        html += '</div>';
+    });
+    
+    html += '<div class="flex space-x-3 mt-6">';
+    html += '<button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition duration-200">Generar Tabla</button>';
+    html += '<button type="button" onclick="cerrarCuestionario()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg font-medium transition duration-200">Cancelar</button>';
+    html += '</div>';
+    html += '</form>';
+    
+    return html;
+}
+
+// Función para cerrar el cuestionario
+function cerrarCuestionario() {
+    const modal = document.getElementById('component-questionnaire-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Función para procesar el cuestionario y generar tabla automáticamente
+function procesarCuestionario(event, componentType) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const respuestas = {};
+    
+    for (let [key, value] of formData.entries()) {
+        respuestas[key] = value;
+    }
+    
+    console.log('📋 Respuestas del cuestionario:', respuestas);
+    
+    // Generar tabla automáticamente basada en las respuestas
+    generarTablaDesdeRespuestas(componentType, respuestas);
+    
+    // Cerrar modal
+    cerrarCuestionario();
+}
+
+// Función para generar tabla automáticamente desde respuestas
+function generarTablaDesdeRespuestas(componentType, respuestas) {
+    console.log('🔧 Generando tabla automática para:', componentType);
+    
+    // Primero, asegurar que existe la tabla principal
+    if (!document.getElementById('tabla-principal-precios')) {
+        agregarTablaPrincipal();
+    }
+    
+    // Generar items según el tipo de componente
+    const items = generarItemsComponente(componentType, respuestas);
+    
+    // Agregar items a la tabla principal
+    items.forEach(item => {
+        agregarItemATabla(item);
+    });
+    
+    // Mostrar mensaje de éxito
+    mostrarMensajeExito(`Se agregaron ${items.length} items para ${componentType}`);
+}
+
+// Función para generar items según el componente y respuestas
+function generarItemsComponente(componentType, respuestas) {
+    // Esta función contendría la lógica específica para cada componente
+    // Por ahora, genero un item básico como ejemplo
+    
+    const baseItems = {
+        'network-node': [
+            { descripcion: `Switch ${respuestas.tipo_switch || '24 puertos'}`, cantidad: respuestas.cantidad_nodos || 1, precio: 300 },
+            { descripcion: 'Cable UTP Cat6', cantidad: (respuestas.cantidad_nodos || 1) * 10, precio: 2 },
+            { descripcion: 'Patch Panel', cantidad: Math.ceil((respuestas.cantidad_nodos || 1) / 2), precio: 150 }
+        ],
+        'camera': [
+            { descripcion: `Cámara ${respuestas.resolucion || '1080p'} ${respuestas.tipo_camara || 'Domo'}`, cantidad: respuestas.cantidad_camaras || 1, precio: 200 },
+            { descripcion: 'DVR/NVR', cantidad: Math.ceil((respuestas.cantidad_camaras || 1) / 8), precio: 400 },
+            { descripcion: 'Disco duro 1TB', cantidad: Math.ceil((respuestas.cantidad_camaras || 1) / 4), precio: 80 }
+        ],
+        'access-control': [
+            { descripcion: `Lector ${respuestas.tipo_lector || 'RFID'}`, cantidad: respuestas.cantidad_lectores || 1, precio: 150 },
+            { descripcion: 'Panel de control', cantidad: 1, precio: 300 },
+            { descripcion: 'Fuente de poder', cantidad: 1, precio: 50 }
+        ],
+        'infrastructure': [
+            { descripcion: `Rack ${respuestas.tipo_rack || '24U'}`, cantidad: respuestas.gabinetes || 1, precio: 400 },
+            { descripcion: 'UPS', cantidad: respuestas.ups_backup ? 1 : 0, precio: 200 },
+            { descripcion: 'Ventilador para rack', cantidad: respuestas.ventilacion ? (respuestas.gabinetes || 1) : 0, precio: 50 }
+        ]
+    };
+    
+    return baseItems[componentType] || [
+        { descripcion: `Componente ${componentType}`, cantidad: 1, precio: 100 }
+    ];
+}
+
+// Función para agregar item a tabla
+function agregarItemATabla(item) {
+    if (item.cantidad === 0) return; // No agregar items con cantidad 0
+    
+    const tbody = document.getElementById('excel-tbody-general');
+    if (!tbody) return;
+    
+    const newIndex = tbody.children.length - 1; // -1 por la fila de totales
+    
+    const nuevaFila = document.createElement('tr');
+    nuevaFila.className = 'excel-row';
+    nuevaFila.setAttribute('data-row', newIndex);
+    
+    nuevaFila.innerHTML = `
+        <td class="excel-cell" data-field="item">${newIndex + 1}</td>
+        <td class="excel-cell editable" contenteditable="true" data-field="noParte" data-row="${newIndex}">AUTO-${Date.now()}</td>
+        <td class="excel-cell editable" contenteditable="true" data-field="descripcion" data-row="${newIndex}">${item.descripcion}</td>
+        <td class="excel-cell editable" contenteditable="true" data-field="cantidad" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})">${item.cantidad}</td>
+        <td class="excel-cell editable" contenteditable="true" data-field="precioLista" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})">$${item.precio.toFixed(2)}</td>
+        <td class="excel-cell editable" contenteditable="true" data-field="descuentoCliente" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})">0%</td>
+        <td class="excel-cell calculated" data-field="precioFinalCliente" data-row="${newIndex}">$${(item.cantidad * item.precio).toFixed(2)}</td>
+        <td class="excel-cell editable" contenteditable="true" data-field="descuentoProveedor" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})">0%</td>
+        <td class="excel-cell editable" contenteditable="true" data-field="costoUnitario" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})">$${(item.precio * 0.7).toFixed(2)}</td>
+        <td class="excel-cell calculated" data-field="costoTotal" data-row="${newIndex}">$${(item.cantidad * item.precio * 0.7).toFixed(2)}</td>
+        <td class="excel-cell">
+            <button onclick="eliminarFilaExcelGeneral(${newIndex})" class="excel-delete-btn" title="Eliminar fila">❌</button>
+        </td>
+    `;
+    
+    // Insertar antes de la fila de totales
+    const filaTotales = tbody.querySelector('.excel-totals-row');
+    tbody.insertBefore(nuevaFila, filaTotales);
+    
+    // Recalcular totales
+    setTimeout(() => {
+        recalcularFilaExcelGeneral(newIndex);
+        actualizarIndicesFilasGeneral();
+    }, 100);
+}
+
+// Función para mostrar mensaje de éxito
+function mostrarMensajeExito(mensaje) {
+    const mensajeDiv = document.getElementById('mensaje-tabla');
+    if (mensajeDiv) {
+        mensajeDiv.innerHTML = `<p class="text-green-300 text-sm">✅ ${mensaje}</p>`;
+        mensajeDiv.classList.remove('hidden');
+        
+        setTimeout(() => {
+            mensajeDiv.classList.add('hidden');
+        }, 3000);
+    }
+}
+
+// Configurar listeners cuando se cargue la página
+document.addEventListener('DOMContentLoaded', function() {
+    // Agregar un pequeño delay para asegurar que todos los elementos estén cargados
+    setTimeout(() => {
+        configurarListenersComponentes();
+        console.log('✅ Listeners de componentes configurados');
+    }, 1000);
+});
 </script>
 
 {% endblock %}
