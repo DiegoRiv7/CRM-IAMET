@@ -789,69 +789,38 @@
 </style>
 <div class="min-h-screen apple-bg">
     <div class="main-content">
-        <div class="apple-glass-card p-6 animate-fade-in">
-            <!-- Título simplificado -->
-            <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-white mb-2">
-                    Selecciona el tipo de volumetría
-                </h1>
-            </div>
-
-            <!-- Sección Principal - Tipos de Volumetría -->
-            <div class="mt-4">
-                <div class="apple-glass-card p-6">
-                    
-                    <!-- Volumetría Integral - Card Única Centrada -->
-                    <div class="flex justify-center">
-                        <div class="apple-card p-8 volumetria-card max-w-md w-full">
-                            <div class="text-center">
-                                <div class="inline-flex bg-gradient-to-r from-blue-500 to-purple-600 p-4 rounded-xl shadow-lg mb-6">
-                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                </div>
-                                <h3 class="text-2xl font-bold text-white mb-4">
-                                    Volumetría Integral
-                                </h3>
-                                <p class="apple-text-secondary mb-8 text-center">
-                                    Sistema completo de <span class="apple-text-primary font-medium">cálculo volumétrico</span> para proyectos de <span class="apple-text-primary font-medium">tecnología</span> y <span class="apple-text-primary font-medium">seguridad</span>.
-                                </p>
-                                <button onclick="crearVolumetria('general')" class="apple-btn-primary w-full py-4 px-6 text-lg font-medium">
-                                    Crear Nueva Volumetría
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Botón Volver -->
-                    <div class="mt-8 text-center">
-                        <button onclick="window.history.back()" class="apple-btn-secondary py-3 px-6 text-sm font-medium">
-                            ← Volver
-                        </button>
-                    </div>
-
-                    <!-- Sección de acciones rápidas -->
-                    <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <div class="flex justify-center space-x-4">
-                            <a href="{% url 'home' %}" class="apple-btn-secondary font-medium py-2 px-6 rounded-lg transition duration-200">
-                                Regresar al Home
-                            </a>
-                            <a href="{% url 'todos' %}" class="apple-btn-primary font-medium py-2 px-6 rounded-lg transition duration-200">
-                                Ver Oportunidades
-                            </a>
-                        </div>
-                    </div>
+        <!-- Contenedor temporal mientras carga la volumetría -->
+        <div id="loading-volumetria" class="flex items-center justify-center min-h-screen">
+            <div class="text-center">
+                <div class="inline-flex bg-gradient-to-r from-blue-500 to-purple-600 p-4 rounded-xl shadow-lg mb-6 animate-pulse">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
                 </div>
-            </div>
-
-            <!-- Footer de información -->
-            <div class="mt-8 text-center">
-                <p class="text-sm apple-text-secondary">
+                <h3 class="text-2xl font-bold text-white mb-4">
+                    Cargando Volumetría Integral
+                </h3>
+                <p class="text-gray-300 text-center">
+                    Preparando el sistema de cálculo volumétrico...
                 </p>
             </div>
         </div>
+
     </div>
 </div>
+
+<!-- Script para auto-ejecutar volumetría al cargar la página -->
+<script>
+// Auto-ejecutar volumetría integral al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Auto-ejecutando volumetría integral...');
+    
+    // Pequeño delay para mostrar el loading
+    setTimeout(() => {
+        crearVolumetria('general');
+    }, 1000);
+});
+</script>
 
 <script>
 // ⚡ CACHE BUSTER - VERSION CATÁLOGO 2024-08-27 - PRODUCTOS DEL CATÁLOGO
