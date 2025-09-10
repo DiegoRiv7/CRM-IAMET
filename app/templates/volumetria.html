@@ -2590,6 +2590,10 @@ function mostrarTablaVolumetriaGeneral(datos) {
     // Crear HTML con nuevo layout profesional
     const nuevaTabla = `
         <div id="tabla-volumetria" class="volumetria-workspace">
+            <!-- Zonas de activación del dock (invisibles) -->
+            <div class="dock-activation-zone dock-zone-left"></div>
+            <div class="dock-activation-zone dock-zone-right"></div>
+            <div class="dock-activation-zone dock-zone-bottom"></div>
             <!-- Barra lateral de componentes siempre visible -->
             <div id="components-sidebar" class="components-sidebar">
                 <div class="sidebar-header">
@@ -2717,48 +2721,46 @@ function mostrarTablaVolumetriaGeneral(datos) {
             <div id="main-workspace" class="main-workspace">
                 <!-- Header reorganizado con resumen del proyecto y botones arriba -->
                 <div class="workspace-header">
-                    <div class="header-top-section">
-                        <button onclick="window.location.reload()" class="back-button">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                            </svg>
-                            <span>Volver</span>
-                        </button>
-                        
-                        <!-- Botones de acción movidos arriba -->
-                        <div class="header-action-buttons">
-                            <button onclick="exportarPDF()" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200 shadow-lg">
-                                📄 Guardar PDF
+                    <!-- Header compacto con botón volver y datos extendidos -->
+                    <div class="header-extended-section">
+                        <div class="flex items-center justify-between w-full mb-4">
+                            <button onclick="window.location.reload()" class="back-button">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                                </svg>
+                                <span>Volver</span>
                             </button>
-                            <button onclick="exportarCSV()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200 shadow-lg">
-                                📊 Exportar CSV
-                            </button>
-                            <button onclick="nuevaVolumetria()" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200 shadow-lg">
-                                🆕 Nueva Volumetría
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Resumen del proyecto movido arriba -->
-                    <div class="project-summary-header">
-                        <div class="workspace-title">
-                            <h1>Volumetría General</h1>
-                            <p id="workspace-project-info">Configurando proyecto...</p>
+                            <h1 class="text-2xl font-bold text-white">Volumetría General</h1>
+                            <div></div> <!-- Spacer para centrar el título -->
                         </div>
                         
-                        <!-- Información básica del proyecto (categoría, cliente, oportunidad) -->
-                        <div class="project-details-header">
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
-                                <div class="text-gray-300"><span class="text-white font-medium">Categoría:</span> General</div>
-                                <div class="text-gray-300"><span class="text-white font-medium">Cliente:</span> <span id="cliente-display">-</span></div>
-                                <div class="text-gray-300"><span class="text-white font-medium">Oportunidad:</span> <span id="oportunidad-display">-</span></div>
-                                <div class="text-gray-300"><span class="text-white font-medium">Moneda:</span> 
-                                    <select id="moneda-select" class="bg-gray-800 border border-gray-600 text-white font-medium rounded px-2 py-1" onchange="cambiarMoneda()">
+                        <!-- Información del proyecto extendida a lo ancho -->
+                        <div class="project-info-extended bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm items-center">
+                                <div class="text-gray-300">
+                                    <span class="text-white font-medium">Categoría:</span> General
+                                </div>
+                                <div class="text-gray-300">
+                                    <span class="text-white font-medium">Cliente:</span> 
+                                    <span id="cliente-display">-</span>
+                                </div>
+                                <div class="text-gray-300">
+                                    <span class="text-white font-medium">Oportunidad:</span> 
+                                    <span id="oportunidad-display">-</span>
+                                </div>
+                                <div class="text-gray-300">
+                                    <span class="text-white font-medium">Estado:</span> 
+                                    <span class="text-green-400">Activo</span>
+                                </div>
+                                <div class="text-gray-300 flex items-center">
+                                    <span class="text-white font-medium mr-2">Moneda:</span> 
+                                    <select id="moneda-select" class="bg-gray-800 border border-gray-600 text-white text-sm rounded px-2 py-1" onchange="cambiarMoneda()">
                                         <option value="USD">USD</option>
                                         <option value="MXN">MXN</option>
                                     </select>
                                 </div>
                             </div>
+                            <p id="workspace-project-info" class="text-gray-400 text-xs mt-2">Configurando proyecto...</p>
                         </div>
                     </div>
                 </div>
@@ -3069,6 +3071,20 @@ function mostrarTablaVolumetriaGeneral(datos) {
                                     <span class="text-gray-300">Margen:</span>
                                     <span id="margen-porcentaje" class="font-bold text-green-400">0%</span>
                                 </div>
+                                <hr class="border-gray-600">
+                                <div class="bg-gray-900/50 rounded-lg p-3 mt-3">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-gray-300 text-sm">Total General:</span>
+                                        <span id="footer-total-display" class="text-white font-bold">$0.00</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-gray-300 text-sm">Moneda:</span>
+                                        <select id="footer-moneda-select" class="bg-gray-800 border border-gray-600 text-white text-sm rounded px-2 py-1" onchange="cambiarMoneda()">
+                                            <option value="USD">USD</option>
+                                            <option value="MXN">MXN</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -3088,34 +3104,26 @@ function mostrarTablaVolumetriaGeneral(datos) {
                                     <span id="precio-promedio" class="text-white font-medium">$0.00</span>
                                 </div>
                             </div>
+                            
+                            <!-- Botones de acción pequeños al fondo -->
+                            <hr class="border-gray-600 my-4">
+                            <div class="flex justify-center space-x-2">
+                                <button onclick="exportarPDF()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-medium py-1.5 px-3 rounded transition duration-200 shadow">
+                                    📄 PDF
+                                </button>
+                                <button onclick="exportarCSV()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium py-1.5 px-3 rounded transition duration-200 shadow">
+                                    📊 CSV
+                                </button>
+                                <button onclick="nuevaVolumetria()" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium py-1.5 px-3 rounded transition duration-200 shadow">
+                                    🆕 Nueva
+                                </button>
+                            </div>
                         </div>
                     </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Pie de página con resumen y acciones -->
-            <div class="workspace-footer">
-                <div class="footer-content">
-                    <!-- Solo resumen de precios totales -->
-                    <div class="project-summary">
-                        <h3>Resumen de Precios Totales</h3>
-                        <div class="summary-grid">
-                            <div class="summary-item">
-                                <span class="summary-label">Total General:</span>
-                                <span class="summary-value total-highlight" id="footer-total-display">$0.00</span>
-                            </div>
-                            <div class="summary-item">
-                                <span class="summary-label">Moneda:</span>
-                                <select id="footer-moneda-select" class="summary-select" onchange="cambiarMoneda()">
-                                    <option value="USD">USD</option>
-                                    <option value="MXN">MXN</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     `;
     
@@ -10206,18 +10214,47 @@ document.addEventListener('DOMContentLoaded', () => {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     overflow: hidden;
+    position: relative;
+}
+
+/* Zonas de activación del dock - invisibles pero funcionales */
+.dock-activation-zone {
+    position: fixed;
+    z-index: 1000;
+    pointer-events: auto;
+}
+
+.dock-zone-left {
+    left: 0;
+    top: 0;
+    width: 20px;
+    height: 100vh;
+}
+
+.dock-zone-right {
+    right: 0;
+    top: 0;
+    width: 20px;
+    height: 100vh;
+}
+
+.dock-zone-bottom {
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    height: 20px;
 }
 
 /* Hacer que el área de trabajo principal tome más espacio */
 .volumetria-workspace .main-workspace {
     flex: 1;
     margin-left: 0;
-    width: calc(100% - 280px); /* Restar el ancho de la sidebar */
+    width: calc(100% - 220px); /* Restar el ancho de la sidebar más compacta */
 }
 
-/* Barra lateral de componentes */
+/* Barra lateral de componentes - Más compacta */
 .components-sidebar {
-    width: 280px;
+    width: 220px;
     background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
     border-right: 1px solid #475569;
     display: flex;
@@ -10227,16 +10264,16 @@ document.addEventListener('DOMContentLoaded', () => {
 }
 
 .sidebar-header {
-    padding: 24px 20px 20px;
+    padding: 16px 16px 12px;
     border-bottom: 1px solid #475569;
     background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
 }
 
 .sidebar-header h3 {
     color: #f1f5f9;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
-    margin: 0 0 4px 0;
+    margin: 0 0 2px 0;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
@@ -10259,10 +10296,10 @@ document.addEventListener('DOMContentLoaded', () => {
 .component-card {
     display: flex;
     align-items: center;
-    padding: 16px;
+    padding: 12px;
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.5) 100%);
     border: 1px solid #475569;
-    border-radius: 16px;
+    border-radius: 12px;
     cursor: grab;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
@@ -10305,14 +10342,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 .component-icon-large {
     flex-shrink: 0;
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 16px;
+    margin-right: 12px;
     background: rgba(15, 23, 42, 0.9);
-    border-radius: 12px;
+    border-radius: 10px;
     border: 1px solid #374151;
     position: relative;
     z-index: 1;
@@ -10334,9 +10371,9 @@ document.addEventListener('DOMContentLoaded', () => {
 .component-title {
     display: block;
     color: #f1f5f9;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
@@ -10559,7 +10596,7 @@ document.addEventListener('DOMContentLoaded', () => {
 /* Responsive */
 @media (max-width: 1024px) {
     .components-sidebar {
-        width: 240px;
+        width: 200px;
     }
     
     .footer-content {
