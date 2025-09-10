@@ -3827,7 +3827,20 @@ function eliminarSeccionInfraestructura() {
 // Función para mostrar botón de restaurar infraestructura
 function mostrarBotonRestaurarInfraestructura() {
     // Buscar un lugar apropiado para insertar el botón (después de la tabla principal)
-    const tablaPrincipal = document.querySelector('#excel-table').closest('.mt-8');
+    let tablaPrincipal = document.querySelector('#excel-table')?.closest('.mt-8');
+    
+    // Si no encuentra la tabla principal, buscar otras opciones
+    if (!tablaPrincipal) {
+        // Buscar por la tabla de precios y costos en volumetría general
+        tablaPrincipal = document.querySelector('.volumetria-workspace')?.querySelector('.mt-8');
+    }
+    
+    // Si aún no encuentra, buscar cualquier sección de tabla
+    if (!tablaPrincipal) {
+        tablaPrincipal = document.querySelector('div[id*="seccion-"]')?.closest('.mt-8') || 
+                        document.querySelector('.excel-table-wrapper')?.closest('.mt-8') ||
+                        document.querySelector('.volumetria-workspace');
+    }
     
     if (tablaPrincipal && !document.getElementById('boton-restaurar-infraestructura')) {
         const botonRestaurar = document.createElement('div');
@@ -10134,7 +10147,7 @@ function updateFooterTotal(total) {
 // Llamar función de inicialización cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
-        initComponentBar();
+        // initComponentBar(); // DESHABILITADO - componentes ya están fijos en la izquierda
         setupTableDropZones();
         
         // Verificar si estamos en el nuevo workspace
@@ -10154,15 +10167,9 @@ document.addEventListener('DOMContentLoaded', () => {
    ======================================== */
 
 .component-bar-container {
-    position: fixed !important;
-    top: 50% !important;
-    right: 0 !important;
-    transform: translateY(-50%) !important;
-    z-index: 9999 !important;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    pointer-events: auto !important;
-    visibility: visible !important;
-    display: block !important;
+    display: none !important; /* DESHABILITADO - componentes ya están fijos en la izquierda */
+    visibility: hidden !important;
+    pointer-events: none !important;
 }
 
 .component-bar-trigger {

@@ -17,12 +17,31 @@
     }
 
     /* Ocultar dock completamente en volumetría general */
-    body.volumetria-mode .macos-dock {
+    body.volumetria-mode .macos-dock,
+    body.volumetria-mode #dock-left,
+    body.volumetria-mode #dock-right,
+    body.volumetria-mode #dock-top,
+    body.volumetria-mode #dock-bottom {
         display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
     }
 
-    body.volumetria-mode .dock-activation-zone {
+    body.volumetria-mode .dock-activation-zone,
+    body.volumetria-mode .dock-zone-left,
+    body.volumetria-mode .dock-zone-right,
+    body.volumetria-mode .dock-zone-bottom,
+    body.volumetria-mode .dock-zone-top {
         display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+    body.volumetria-mode .position-controls {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
     }
 
     /* Zona de activación del dock para mejor UX */
