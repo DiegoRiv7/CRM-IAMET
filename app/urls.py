@@ -145,6 +145,8 @@ urlpatterns = [
     path('api/get-session-data/', views.get_session_data, name='get_session_data'),
     # API para obtener oportunidades por cliente (usado por volumetría)
     path('api/get-opportunities-by-client/<int:cliente_id>/', views.get_opportunities_by_client_api, name='get_opportunities_by_client_api'),
+    # API para obtener datos del cliente de una oportunidad (auto-detección en volumetría)
+    path('api/get-client-by-opportunity/<int:oportunidad_id>/', views.get_client_by_opportunity_api, name='get_client_by_opportunity_api'),
     
     # APIs para catálogo de productos de volumetría
     path('api/buscar-producto-catalogo/', views.buscar_producto_catalogo, name='buscar_producto_catalogo'),

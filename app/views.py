@@ -4261,6 +4261,36 @@ def get_opportunities_by_client_api(request, cliente_id):
         print(f"ERROR: Error obteniendo oportunidades por cliente: {str(e)}")
         return JsonResponse({'error': 'Error obteniendo oportunidades'}, status=500)
 
+@login_required
+def get_client_by_opportunity_api(request, oportunidad_id):
+    """
+    API para obtener datos del cliente (incluyendo categoría) de una oportunidad específica
+    Usado para auto-detectar cliente cuando se selecciona oportunidad en volumetría
+    """
+    try:
+        oportunidad = get_object_or_404(TodoItem, pk=oportunidad_id)
+        
+        # Verificar que el usuario tenga acceso a esta oportunidad
+        if not is_supervisor(request.user) and oportunidad.usuario != request.user:
+            return JsonResponse({'error': 'Acceso denegado'}, status=403)
+        
+        if not oportunidad.cliente:
+            return JsonResponse({'error': 'Esta oportunidad no tiene cliente asignado'}, status=400)
+        
+        cliente = oportunidad.cliente
+        cliente_data = {
+            'id': cliente.id,
+            'nombre_empresa': cliente.nombre_empresa,
+            'categoria': cliente.categoria,
+            'porcentaje_utilidad': 15 if cliente.categoria == 'A' else 20 if cliente.categoria == 'B' else 25
+        }
+        
+        return JsonResponse(cliente_data)
+        
+    except Exception as e:
+        print(f"ERROR: Error obteniendo cliente por oportunidad: {str(e)}")
+        return JsonResponse({'error': 'Error obteniendo datos del cliente'}, status=500)
+
 # ===============================================
 # NUEVAS FUNCIONES PARA SUBIDA MANUAL DE ARCHIVOS
 # ===============================================

@@ -3165,35 +3165,37 @@ function recalcularFilaExcelGeneral(rowIndex) {
         if (!row) return;
         
         const cantidad = parseFloat(row.querySelector('[data-field="cantidad"]').textContent) || 0;
-        const precioLista = parseFloat(row.querySelector('[data-field="precioLista"]').textContent.replace(/[$,]/g, '')) || 0;
+        const costoUnitario = parseFloat(row.querySelector('[data-field="costoUnitario"]').textContent.replace(/[$,]/g, '')) || 0;
         const descuentoCliente = parseFloat(row.querySelector('[data-field="descuentoCliente"]').textContent.replace('%', '')) || 0;
-        let costoUnitario = parseFloat(row.querySelector('[data-field="costoUnitario"]').textContent.replace(/[$,]/g, '')) || 0;
         
         // NUEVO: Obtener porcentaje de utilidad del cliente seleccionado
         const porcentajeUtilidad = obtenerPorcentajeUtilidadCliente();
         
-        // CÁLCULOS SEGÚN ESPECIFICACIÓN:
+        // NUEVA LÓGICA SEGÚN LO SOLICITADO:
         
-        // 1. P. Unitario = Precio Lista - Descuento Cliente (si no hay descuento, usar precio lista)
-        const precioUnitario = descuentoCliente > 0 ? precioLista * (1 - descuentoCliente / 100) : precioLista;
-        
-        // 2. Total Cliente = P. Unitario × Cantidad 
-        const totalCliente = precioUnitario * cantidad;
-        
-        // NUEVO: Si no hay costo unitario manual, calcularlo automáticamente con el porcentaje de utilidad
-        if (costoUnitario === 0 && precioLista > 0) {
-            // Costo Unitario = Precio Lista / (1 + (Porcentaje Utilidad / 100))
-            costoUnitario = precioLista / (1 + (porcentajeUtilidad / 100));
-            console.log(`💰 Costo unitario calculado automáticamente: $${costoUnitario.toFixed(2)} (utilidad ${porcentajeUtilidad}%)`);
+        // 1. Precio Lista = Costo Unitario × (1 + Porcentaje Utilidad/100)
+        let precioLista = 0;
+        if (costoUnitario > 0) {
+            precioLista = costoUnitario * (1 + (porcentajeUtilidad / 100));
+            console.log(`💰 Precio lista calculado: $${precioLista.toFixed(2)} (costo: $${costoUnitario.toFixed(2)} + ${porcentajeUtilidad}% utilidad)`);
             
-            // Actualizar el campo de costo unitario en la interfaz
-            row.querySelector('[data-field="costoUnitario"]').textContent = formatearMoneda(costoUnitario);
+            // Actualizar el campo precio lista en la interfaz
+            row.querySelector('[data-field="precioLista"]').textContent = formatearMoneda(precioLista);
+        } else {
+            // Si no hay costo unitario, usar precio lista manual
+            precioLista = parseFloat(row.querySelector('[data-field="precioLista"]').textContent.replace(/[$,]/g, '')) || 0;
         }
         
-        // 3. Total Costo = Costo Unitario × Cantidad
+        // 2. P. Unitario = Precio Lista - Descuento Cliente (si no hay descuento, usar precio lista)
+        const precioUnitario = descuentoCliente > 0 ? precioLista * (1 - descuentoCliente / 100) : precioLista;
+        
+        // 3. Total Cliente = P. Unitario × Cantidad 
+        const totalCliente = precioUnitario * cantidad;
+        
+        // 4. Total Costo = Costo Unitario × Cantidad
         const totalCosto = costoUnitario * cantidad;
         
-        // 4. Ganancia = Total Cliente - Total Costo
+        // 5. Ganancia = Total Cliente - Total Costo
         const ganancia = totalCliente - totalCosto;
         
         // Actualizar solo las celdas calculadas
@@ -5918,6 +5920,7 @@ function setupOpportunityChangeListenerGeneral() {
     
     if (!clientSelect || !opportunitySelect) return;
     
+    // Event listener para cambios en la selección de cliente
     clientSelect.addEventListener('change', function() {
         const clienteId = this.value;
         
@@ -5926,7 +5929,7 @@ function setupOpportunityChangeListenerGeneral() {
         if (!clienteId) return;
         
         // Cargar oportunidades del cliente
-        fetch(`/app/api/opportunities-by-client/${clienteId}/`)
+        fetch(`/app/api/get-opportunities-by-client/${clienteId}/`)
             .then(response => response.json())
             .then(data => {
                 data.forEach(opportunity => {
@@ -5938,7 +5941,7 @@ function setupOpportunityChangeListenerGeneral() {
             })
             .catch(error => console.error('Error loading opportunities:', error));
         
-        // NUEVO: Recalcular todas las filas con el nuevo porcentaje de utilidad del cliente
+        // Recalcular todas las filas con el nuevo porcentaje de utilidad del cliente
         console.log('🔄 Cliente cambiado, recalculando filas con nuevo porcentaje de utilidad...');
         setTimeout(() => {
             const table = document.getElementById('excel-table-general');
@@ -5950,6 +5953,52 @@ function setupOpportunityChangeListenerGeneral() {
                 console.log(`✅ ${rows.length} filas recalculadas con nueva categoría de cliente`);
             }
         }, 200);
+    });
+    
+    // NUEVO: Event listener para auto-detectar cliente cuando se selecciona oportunidad
+    opportunitySelect.addEventListener('change', function() {
+        const oportunidadId = this.value;
+        
+        if (!oportunidadId) return;
+        
+        console.log('🔍 Oportunidad seleccionada, auto-detectando cliente...');
+        
+        // Obtener datos del cliente de la oportunidad seleccionada
+        fetch(`/app/api/get-client-by-opportunity/${oportunidadId}/`)
+            .then(response => response.json())
+            .then(clienteData => {
+                if (clienteData.error) {
+                    console.error('Error:', clienteData.error);
+                    return;
+                }
+                
+                // Auto-seleccionar el cliente
+                clientSelect.value = clienteData.id;
+                
+                // Actualizar datos globales del cliente
+                const clienteExistente = clientesDataGlobal.find(c => c.id === clienteData.id);
+                if (clienteExistente) {
+                    clienteExistente.categoria = clienteData.categoria;
+                    clienteExistente.porcentaje_utilidad = clienteData.porcentaje_utilidad;
+                }
+                
+                console.log(`✅ Cliente auto-detectado: ${clienteData.nombre_empresa} (Categoría ${clienteData.categoria} - ${clienteData.porcentaje_utilidad}% utilidad)`);
+                
+                // Recalcular todas las filas con el nuevo cliente
+                setTimeout(() => {
+                    const table = document.getElementById('excel-table-general');
+                    if (table) {
+                        const rows = table.querySelectorAll('.excel-row');
+                        rows.forEach((row, index) => {
+                            recalcularFilaExcelGeneral(index);
+                        });
+                        console.log(`🔄 ${rows.length} filas recalculadas con cliente auto-detectado`);
+                    }
+                }, 200);
+            })
+            .catch(error => {
+                console.error('Error auto-detectando cliente:', error);
+            });
     });
 }
 
