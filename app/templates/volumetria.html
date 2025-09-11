@@ -2415,9 +2415,6 @@ function mostrarVolumetriaGeneralDirecta() {
 function mostrarTablaVolumetriaGeneral(datos) {
     console.log('🆕 Creando nueva tabla volumetría general limpia');
     
-    // Obtener el contenedor principal
-    const container = document.querySelector('.container') || document.body;
-    
     // Crear HTML con nuevo layout profesional
     const nuevaTabla = `
         <div id="tabla-volumetria" class="volumetria-workspace">
@@ -2869,20 +2866,6 @@ function mostrarTablaVolumetriaGeneral(datos) {
     
     // Resolver nombres de cliente y oportunidad
     resolverNombresClienteYOportunidad(datos);
-    
-    // Asegurar que el contenedor de tablas dinámicas esté vacío inicialmente
-    const dynamicContainer = document.getElementById('dynamic-tables-container');
-    if (dynamicContainer) {
-        dynamicContainer.innerHTML = '<!-- Las tablas aparecerán aquí dinámicamente -->';
-        console.log('🧹 Contenedor de tablas dinámicas limpiado');
-    }
-    
-    // Asegurar que el resumen financiero esté oculto inicialmente
-    const resumenVolumetria = document.getElementById('resumen-volumetria');
-    if (resumenVolumetria) {
-        resumenVolumetria.classList.add('hidden');
-        console.log('👁️ Resumen financiero ocultado inicialmente');
-    }
     
     // Configurar listeners para componentes después de que se cargue el DOM
     setTimeout(() => {
@@ -10280,11 +10263,7 @@ function agregarTablaPrincipal() {
     console.log('➕ Agregando tabla principal de precios y costos');
     
     const container = document.getElementById('dynamic-tables-container');
-    if (!container) {
-        console.error('❌ No se encontró el contenedor dynamic-tables-container');
-        return;
-    }
-    console.log('✅ Contenedor encontrado:', container);
+    if (!container) return;
     
     // Verificar si ya existe la tabla principal
     if (document.getElementById('tabla-principal-precios')) {
@@ -10655,9 +10634,6 @@ function recalcularTotalManoObra() {
 
 // Función para configurar listeners de componentes
 function configurarListenersComponentes() {
-    console.log('🔧 Configurando listeners para componentes y botones...');
-    
-    // Configurar componentes
     const componentCards = document.querySelectorAll('.component-card');
     componentCards.forEach(card => {
         card.addEventListener('click', function() {
@@ -10675,49 +10651,6 @@ function configurarListenersComponentes() {
             this.style.transform = 'scale(1)';
         });
     });
-    
-    // Configurar botones de agregar tablas con listeners directos
-    console.log('🔧 Configurando botones de agregar tablas...');
-    
-    // Buscar y configurar botón Agregar Tabla Principal
-    const btnTablaPrincipal = document.querySelector('button[onclick*="agregarTablaPrincipal"]');
-    if (btnTablaPrincipal) {
-        console.log('✅ Configurando botón Agregar Tabla Principal');
-        btnTablaPrincipal.removeAttribute('onclick'); // Quitar onclick
-        btnTablaPrincipal.addEventListener('click', function(e) {
-            e.preventDefault();
-            console.log('🔷 Click en Agregar Tabla Principal - vía listener');
-            agregarTablaPrincipal();
-        });
-    } else {
-        console.warn('❌ No se encontró botón Agregar Tabla Principal');
-    }
-    
-    // Buscar y configurar botón Agregar Gastos Instalación
-    const btnGastosInstalacion = document.querySelector('button[onclick*="agregarTablaGastosInstalacion"]');
-    if (btnGastosInstalacion) {
-        console.log('✅ Configurando botón Agregar Gastos Instalación');
-        btnGastosInstalacion.removeAttribute('onclick');
-        btnGastosInstalacion.addEventListener('click', function(e) {
-            e.preventDefault();
-            console.log('🔷 Click en Agregar Gastos Instalación - vía listener');
-            agregarTablaGastosInstalacion();
-        });
-    }
-    
-    // Buscar y configurar botón Agregar Mano de Obra
-    const btnManoObra = document.querySelector('button[onclick*="agregarTablaManoObra"]');
-    if (btnManoObra) {
-        console.log('✅ Configurando botón Agregar Mano de Obra');
-        btnManoObra.removeAttribute('onclick');
-        btnManoObra.addEventListener('click', function(e) {
-            e.preventDefault();
-            console.log('🔷 Click en Agregar Mano de Obra - vía listener');
-            agregarTablaManoObra();
-        });
-    }
-    
-    console.log('✅ Listeners de componentes y botones configurados');
 }
 
 // Función principal para abrir cuestionarios
@@ -11002,16 +10935,8 @@ function mostrarMensajeExito(mensaje) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Iniciando volumetría integral directamente...');
     
-    // Limpiar contenido existente primero
-    const mainContent = document.querySelector('.container');
-    if (mainContent) {
-        mainContent.innerHTML = '<div id="loading">Cargando volumetría...</div>';
-    }
-    
     // Ejecutar inmediatamente, como si fuera un formulario normal
-    setTimeout(() => {
-        crearVolumetria('general');
-    }, 100);
+    crearVolumetria('general');
 });
 </script>
 
