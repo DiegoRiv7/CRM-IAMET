@@ -2870,6 +2870,20 @@ function mostrarTablaVolumetriaGeneral(datos) {
     // Resolver nombres de cliente y oportunidad
     resolverNombresClienteYOportunidad(datos);
     
+    // Asegurar que el contenedor de tablas dinámicas esté vacío inicialmente
+    const dynamicContainer = document.getElementById('dynamic-tables-container');
+    if (dynamicContainer) {
+        dynamicContainer.innerHTML = '<!-- Las tablas aparecerán aquí dinámicamente -->';
+        console.log('🧹 Contenedor de tablas dinámicas limpiado');
+    }
+    
+    // Asegurar que el resumen financiero esté oculto inicialmente
+    const resumenVolumetria = document.getElementById('resumen-volumetria');
+    if (resumenVolumetria) {
+        resumenVolumetria.classList.add('hidden');
+        console.log('👁️ Resumen financiero ocultado inicialmente');
+    }
+    
     // Configurar listeners para componentes después de que se cargue el DOM
     setTimeout(() => {
         configurarListenersComponentes();
