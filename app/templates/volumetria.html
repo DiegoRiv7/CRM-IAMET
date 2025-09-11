@@ -4333,29 +4333,30 @@ function generarHTMLFilasExcel(productos) {
     return filas;
 }
 
-// Función específica para la tabla principal con estructura correcta
+// Función específica para la tabla principal con estructura correcta (misma que nodos de red)
 function generarFilasVaciasGeneralExcel() {
     console.log('📋 Generando filas vacías para tabla principal de volumetría general');
     
     let filas = '';
-    // Generar 3 filas vacías iniciales con la estructura correcta de la tabla principal
+    // Generar 3 filas vacías iniciales con la estructura de la tabla de nodos de red
     for (let i = 0; i < 3; i++) {
         filas += `
             <tr class="excel-row" data-row="${i}">
-                <td class="excel-cell excel-cell-number" contenteditable="true" data-field="item" data-row="${i}">${i + 1}</td>
-                <td class="excel-cell excel-cell-text" contenteditable="true" data-field="noParte" data-row="${i}" onblur="recalcularFilaGeneral(${i})" placeholder="Número de parte"></td>
-                <td class="excel-cell excel-cell-description" contenteditable="true" data-field="descripcion" data-row="${i}" placeholder="Descripción del producto"></td>
-                <td class="excel-cell excel-cell-number" contenteditable="true" data-field="cantidad" data-row="${i}" onblur="recalcularFilaGeneral(${i})" placeholder="1">1</td>
-                <td class="excel-cell excel-cell-currency" contenteditable="true" data-field="precioLista" data-row="${i}" onblur="recalcularFilaGeneral(${i})" placeholder="$0.00">$0.00</td>
-                <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoCliente" data-row="${i}" onblur="recalcularFilaGeneral(${i})" placeholder="0%">0.00%</td>
-                <td class="excel-cell excel-cell-currency excel-calculated" data-field="precioFinalCliente" data-row="${i}">$0.00</td>
-                <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoProveedor" data-row="${i}" onblur="recalcularFilaGeneral(${i})" placeholder="0%">0.00%</td>
-                <td class="excel-cell excel-cell-currency" contenteditable="true" data-field="costoUnitario" data-row="${i}" onblur="recalcularFilaGeneral(${i})" placeholder="$0.00">$0.00</td>
-                <td class="excel-cell excel-cell-currency excel-calculated" data-field="costoTotal" data-row="${i}">$0.00</td>
+                <td class="excel-cell excel-cell-text editable relative" contenteditable="true" data-field="noParte" data-row="${i}" oninput="buscarProductoExcel(this)">
+                    <div id="suggestions-${i}" class="absolute top-full left-0 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50 hidden max-h-60 overflow-y-auto"></div>
+                </td>
+                <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="cantidad" data-row="${i}" onblur="recalcularFilaExcel(${i})">1</td>
+                <td class="excel-cell excel-cell-description editable" contenteditable="true" data-field="descripcion" data-row="${i}"></td>
+                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioLista" data-row="${i}" onblur="recalcularFilaExcel(${i})">$0.00</td>
+                <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoCliente" data-row="${i}" onblur="recalcularFilaExcel(${i})">0.00%</td>
+                <td class="excel-cell excel-cell-currency calculated" data-field="precioUnitario" data-row="${i}">$0.00</td>
+                <td class="excel-cell excel-cell-currency calculated excel-total-client" data-field="totalCliente" data-row="${i}">$0.00</td>
+                <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoProveedor" data-row="${i}" onblur="recalcularFilaExcel(${i})">0.00%</td>
+                <td class="excel-cell excel-cell-currency calculated" data-field="costoUnitario" data-row="${i}">$0.00</td>
+                <td class="excel-cell excel-cell-currency calculated excel-total-cost" data-field="totalCosto" data-row="${i}">$0.00</td>
+                <td class="excel-cell excel-cell-currency calculated excel-profit" data-field="ganancia" data-row="${i}">$0.00</td>
                 <td class="excel-cell excel-actions">
-                    <button onclick="eliminarFilaGeneral(${i})" class="excel-btn-delete" title="Eliminar fila">
-                        ❌
-                    </button>
+                    <button onclick="eliminarFilaExcel(${i})" class="excel-btn-delete" title="Eliminar fila">❌</button>
                 </td>
             </tr>
         `;
@@ -10332,21 +10333,22 @@ function agregarTablaPrincipal() {
                     <thead style="position: sticky; top: 0; z-index: 10;">
                         <tr class="excel-header">
                             <th colspan="7" class="excel-th-group excel-client-header">INFORMACIÓN DEL CLIENTE</th>
-                            <th colspan="3" class="excel-th-group excel-vendor-header">INFORMACIÓN DEL PROVEEDOR</th>
-                            <th class="excel-th-group excel-action-header">ACCIONES</th>
+                            <th colspan="4" class="excel-th-group excel-cost-header">COSTOS Y MÁRGENES</th>
+                            <th class="excel-th-group">ACCIONES</th>
                         </tr>
                         <tr class="excel-subheader">
-                            <th class="excel-th">Ítem</th>
-                            <th class="excel-th">No. Parte</th>
-                            <th class="excel-th">Descripción</th>
-                            <th class="excel-th">Cantidad</th>
+                            <th class="excel-th">Número de Parte</th>
+                            <th class="excel-th">Cant.</th>
+                            <th class="excel-th excel-description">Descripción del Producto</th>
                             <th class="excel-th">Precio Lista</th>
-                            <th class="excel-th">Descuento Cliente (%)</th>
-                            <th class="excel-th">Precio Final Cliente</th>
-                            <th class="excel-th">Descuento Proveedor (%)</th>
-                            <th class="excel-th">Costo Unitario</th>
-                            <th class="excel-th">Costo Total</th>
-                            <th class="excel-th">Acciones</th>
+                            <th class="excel-th">Desc.%</th>
+                            <th class="excel-th">P. Unitario</th>
+                            <th class="excel-th excel-total">Total Cliente</th>
+                            <th class="excel-th">Desc.%</th>
+                            <th class="excel-th">Costo Unit.</th>
+                            <th class="excel-th excel-total">Total Costo</th>
+                            <th class="excel-th excel-profit">Ganancia</th>
+                            <th class="excel-th">❌</th>
                         </tr>
                     </thead>
                     <tbody id="excel-tbody-general">
@@ -10357,6 +10359,7 @@ function agregarTablaPrincipal() {
                             <td class="excel-cell"></td>
                             <td class="excel-cell"></td>
                             <td id="total-costo-general" class="excel-cell font-bold">$0.00</td>
+                            <td id="ganancia-total-general" class="excel-cell font-bold">$0.00</td>
                             <td class="excel-cell"></td>
                         </tr>
                     </tbody>
