@@ -2597,88 +2597,42 @@ function mostrarTablaVolumetriaGeneral(datos) {
                         </div>
                     </div>
 
-                    <!-- Plumas -->
-                    <div class="component-card" data-component="barrier" data-type="seguridad" draggable="true">
-                        <div class="component-icon-large barrier-icon">
+                    <!-- Control de Acceso Integral (Plumas, Torniquetes, Motores) -->
+                    <div class="component-card" data-component="access-systems" data-type="seguridad" draggable="true">
+                        <div class="component-icon-large access-systems-icon">
                             <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <defs>
-                                    <linearGradient id="barrierGradientSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" style="stop-color:#F59E0B;stop-opacity:1" />
-                                        <stop offset="100%" style="stop-color:#D97706;stop-opacity:1" />
+                                    <linearGradient id="accessSystemsGradientSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:1" />
                                     </linearGradient>
-                                    <filter id="barrierShadowSidebar">
-                                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#92400E" flood-opacity="0.4"/>
+                                    <filter id="accessSystemsShadowSidebar">
+                                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#5B21B6" flood-opacity="0.4"/>
                                     </filter>
                                 </defs>
-                                <rect x="6" y="6" width="2" height="20" rx="1" fill="url(#barrierGradientSidebar)" filter="url(#barrierShadowSidebar)"/>
-                                <rect x="24" y="6" width="2" height="20" rx="1" fill="url(#barrierGradientSidebar)"/>
-                                <rect x="8" y="15" width="16" height="2" rx="1" fill="url(#barrierGradientSidebar)"/>
-                                <rect x="6" y="4" width="20" height="2" rx="1" fill="#92400E"/>
-                                <rect x="6" y="26" width="20" height="2" rx="1" fill="#92400E"/>
-                                <circle cx="7" cy="16" r="1" fill="#FEF3C7"/>
-                                <circle cx="25" cy="16" r="1" fill="#FEF3C7"/>
+                                <!-- Pluma/Barrera -->
+                                <rect x="4" y="14" width="8" height="1.5" rx="0.5" fill="url(#accessSystemsGradientSidebar)" filter="url(#accessSystemsShadowSidebar)"/>
+                                <rect x="3" y="12" width="2" height="8" rx="1" fill="url(#accessSystemsGradientSidebar)"/>
+                                
+                                <!-- Torniquete -->
+                                <circle cx="16" cy="16" r="6" fill="none" stroke="url(#accessSystemsGradientSidebar)" stroke-width="1.5"/>
+                                <rect x="15" y="10" width="2" height="5" rx="1" fill="url(#accessSystemsGradientSidebar)"/>
+                                <rect x="15" y="17" width="2" height="5" rx="1" fill="url(#accessSystemsGradientSidebar)"/>
+                                <rect x="10" y="15" width="5" height="2" rx="1" fill="url(#accessSystemsGradientSidebar)"/>
+                                <rect x="17" y="15" width="5" height="2" rx="1" fill="url(#accessSystemsGradientSidebar)"/>
+                                
+                                <!-- Motor -->
+                                <circle cx="26" cy="16" r="4" fill="url(#accessSystemsGradientSidebar)"/>
+                                <circle cx="26" cy="16" r="2.5" fill="#A855F7"/>
+                                <circle cx="26" cy="16" r="1" fill="#C084FC"/>
+                                
+                                <!-- Conectores -->
+                                <path d="M12 16 L22 16" stroke="url(#accessSystemsGradientSidebar)" stroke-width="1" stroke-dasharray="2,2"/>
                             </svg>
                         </div>
                         <div class="component-info">
-                            <span class="component-title">Plumas</span>
-                            <span class="component-subtitle">Barrera Vehicular</span>
-                        </div>
-                    </div>
-
-                    <!-- Torniquetes -->
-                    <div class="component-card" data-component="turnstile" data-type="seguridad" draggable="true">
-                        <div class="component-icon-large turnstile-icon">
-                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <defs>
-                                    <linearGradient id="turnstileGradientSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" style="stop-color:#DC2626;stop-opacity:1" />
-                                        <stop offset="100%" style="stop-color:#B91C1C;stop-opacity:1" />
-                                    </linearGradient>
-                                    <filter id="turnstileShadowSidebar">
-                                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#7F1D1D" flood-opacity="0.4"/>
-                                    </filter>
-                                </defs>
-                                <rect x="14" y="4" width="4" height="24" rx="2" fill="url(#turnstileGradientSidebar)" filter="url(#turnstileShadowSidebar)"/>
-                                <circle cx="16" cy="16" r="8" fill="none" stroke="url(#turnstileGradientSidebar)" stroke-width="2"/>
-                                <rect x="8" y="15" width="6" height="2" rx="1" fill="url(#turnstileGradientSidebar)"/>
-                                <rect x="18" y="15" width="6" height="2" rx="1" fill="url(#turnstileGradientSidebar)"/>
-                                <rect x="15" y="9" width="2" height="6" rx="1" fill="url(#turnstileGradientSidebar)"/>
-                                <rect x="15" y="17" width="2" height="6" rx="1" fill="url(#turnstileGradientSidebar)"/>
-                                <circle cx="16" cy="16" r="2" fill="#FEE2E2"/>
-                            </svg>
-                        </div>
-                        <div class="component-info">
-                            <span class="component-title">Torniquetes</span>
-                            <span class="component-subtitle">Control Peatonal</span>
-                        </div>
-                    </div>
-
-                    <!-- Motores -->
-                    <div class="component-card" data-component="motor" data-type="infraestructura" draggable="true">
-                        <div class="component-icon-large motor-icon">
-                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <defs>
-                                    <linearGradient id="motorGradientSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" style="stop-color:#374151;stop-opacity:1" />
-                                        <stop offset="100%" style="stop-color:#1F2937;stop-opacity:1" />
-                                    </linearGradient>
-                                    <filter id="motorShadowSidebar">
-                                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#111827" flood-opacity="0.4"/>
-                                    </filter>
-                                </defs>
-                                <circle cx="16" cy="16" r="12" fill="url(#motorGradientSidebar)" filter="url(#motorShadowSidebar)"/>
-                                <circle cx="16" cy="16" r="8" fill="#4B5563"/>
-                                <circle cx="16" cy="16" r="4" fill="#6B7280"/>
-                                <circle cx="16" cy="16" r="2" fill="#9CA3AF"/>
-                                <rect x="14" y="6" width="4" height="4" rx="1" fill="#374151"/>
-                                <rect x="6" y="14" width="4" height="4" rx="1" fill="#374151"/>
-                                <rect x="22" y="14" width="4" height="4" rx="1" fill="#374151"/>
-                                <rect x="14" y="22" width="4" height="4" rx="1" fill="#374151"/>
-                            </svg>
-                        </div>
-                        <div class="component-info">
-                            <span class="component-title">Motores</span>
-                            <span class="component-subtitle">Motor Eléctrico</span>
+                            <span class="component-title">Sistemas de Acceso</span>
+                            <span class="component-subtitle">Plumas, Torniquetes y Motores</span>
                         </div>
                     </div>
                 </div>
@@ -10749,34 +10703,30 @@ function abrirCuestionarioComponente(componentType) {
                 { id: 'exterior', label: '¿Para exterior?', type: 'checkbox' }
             ]
         },
-        'barrier': {
-            title: '🚧 Plumas Vehiculares',
+        'access-systems': {
+            title: '🔐 Sistemas de Control de Acceso',
             questions: [
-                { id: 'cantidad_plumas', label: 'Cantidad de plumas', type: 'number', value: 1 },
-                { id: 'longitud_brazo', label: 'Longitud del brazo (metros)', type: 'select', options: ['3m', '4m', '5m', '6m'] },
-                { id: 'tipo_barrera', label: 'Tipo de barrera', type: 'select', options: ['Manual', 'Automática', 'Semi-automática'] },
-                { id: 'velocidad_operacion', label: 'Velocidad de operación', type: 'select', options: ['Estándar (6s)', 'Rápida (3s)', 'Alta velocidad (1.5s)'] },
-                { id: 'integracion_acceso', label: '¿Integrar con control de acceso?', type: 'checkbox' }
-            ]
-        },
-        'turnstile': {
-            title: '🚪 Torniquetes',
-            questions: [
-                { id: 'cantidad_torniquetes', label: 'Cantidad de torniquetes', type: 'number', value: 1 },
-                { id: 'tipo_torniquete', label: 'Tipo de torniquete', type: 'select', options: ['Trípode', 'Altura completa', 'Velocidad', 'Óptico'] },
-                { id: 'ancho_paso', label: 'Ancho de paso', type: 'select', options: ['Estándar (55cm)', 'Amplio (70cm)', 'Discapacitados (90cm)'] },
-                { id: 'direccion_paso', label: 'Dirección de paso', type: 'select', options: ['Unidireccional', 'Bidireccional'] },
-                { id: 'material', label: 'Material', type: 'select', options: ['Acero inoxidable', 'Acero pintado', 'Aluminio'] }
-            ]
-        },
-        'motor': {
-            title: '⚙️ Motores',
-            questions: [
-                { id: 'cantidad_motores', label: 'Cantidad de motores', type: 'number', value: 1 },
-                { id: 'potencia', label: 'Potencia (HP)', type: 'select', options: ['1/4 HP', '1/2 HP', '3/4 HP', '1 HP', '2 HP'] },
-                { id: 'voltaje', label: 'Voltaje', type: 'select', options: ['110V', '220V', '440V'] },
-                { id: 'aplicacion', label: 'Aplicación', type: 'select', options: ['Portones', 'Puertas', 'Ventilación', 'Bombas'] },
-                { id: 'control_velocidad', label: '¿Control de velocidad?', type: 'checkbox' }
+                // Sección Plumas
+                { id: 'incluir_plumas', label: '¿Incluir plumas vehiculares?', type: 'checkbox' },
+                { id: 'cantidad_plumas', label: 'Cantidad de plumas', type: 'number', value: 1, condition: 'incluir_plumas' },
+                { id: 'longitud_brazo', label: 'Longitud del brazo (metros)', type: 'select', options: ['3m', '4m', '5m', '6m'], condition: 'incluir_plumas' },
+                { id: 'tipo_barrera', label: 'Tipo de barrera', type: 'select', options: ['Manual', 'Automática', 'Semi-automática'], condition: 'incluir_plumas' },
+                
+                // Sección Torniquetes
+                { id: 'incluir_torniquetes', label: '¿Incluir torniquetes?', type: 'checkbox' },
+                { id: 'cantidad_torniquetes', label: 'Cantidad de torniquetes', type: 'number', value: 1, condition: 'incluir_torniquetes' },
+                { id: 'tipo_torniquete', label: 'Tipo de torniquete', type: 'select', options: ['Trípode', 'Altura completa', 'Velocidad', 'Óptico'], condition: 'incluir_torniquetes' },
+                { id: 'ancho_paso', label: 'Ancho de paso', type: 'select', options: ['Estándar (55cm)', 'Amplio (70cm)', 'Discapacitados (90cm)'], condition: 'incluir_torniquetes' },
+                
+                // Sección Motores
+                { id: 'incluir_motores', label: '¿Incluir motores?', type: 'checkbox' },
+                { id: 'cantidad_motores', label: 'Cantidad de motores', type: 'number', value: 1, condition: 'incluir_motores' },
+                { id: 'potencia', label: 'Potencia (HP)', type: 'select', options: ['1/4 HP', '1/2 HP', '3/4 HP', '1 HP', '2 HP'], condition: 'incluir_motores' },
+                { id: 'aplicacion', label: 'Aplicación', type: 'select', options: ['Portones', 'Puertas', 'Ventilación', 'Bombas'], condition: 'incluir_motores' },
+                
+                // Configuración general
+                { id: 'integracion_sistema', label: '¿Sistema integrado?', type: 'checkbox' },
+                { id: 'control_remoto', label: '¿Control remoto?', type: 'checkbox' }
             ]
         }
     };
