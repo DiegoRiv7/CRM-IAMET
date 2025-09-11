@@ -2415,6 +2415,9 @@ function mostrarVolumetriaGeneralDirecta() {
 function mostrarTablaVolumetriaGeneral(datos) {
     console.log('🆕 Creando nueva tabla volumetría general limpia');
     
+    // Obtener el contenedor principal
+    const container = document.querySelector('.container') || document.body;
+    
     // Crear HTML con nuevo layout profesional
     const nuevaTabla = `
         <div id="tabla-volumetria" class="volumetria-workspace">
@@ -9395,6 +9398,44 @@ document.addEventListener('DOMContentLoaded', () => {
     box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
 }
 
+/* Separación visual mejorada para componentes específicos */
+.component-card[data-component="barrier"] {
+    border-left: 4px solid #F59E0B;
+    margin: 8px 0;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(51, 65, 85, 0.5) 100%);
+}
+
+.component-card[data-component="turnstile"] {
+    border-left: 4px solid #DC2626;
+    margin: 8px 0;
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.05) 0%, rgba(51, 65, 85, 0.5) 100%);
+}
+
+.component-card[data-component="motor"] {
+    border-left: 4px solid #374151;
+    margin: 8px 0;
+    background: linear-gradient(135deg, rgba(55, 65, 81, 0.1) 0%, rgba(51, 65, 85, 0.5) 100%);
+}
+
+/* Colores de hover distintivos */
+.component-card[data-component="barrier"]:hover {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(30, 41, 59, 0.9) 100%);
+    border-left-color: #FBBF24;
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+}
+
+.component-card[data-component="turnstile"]:hover {
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(30, 41, 59, 0.9) 100%);
+    border-left-color: #EF4444;
+    box-shadow: 0 8px 25px rgba(220, 38, 38, 0.3);
+}
+
+.component-card[data-component="motor"]:hover {
+    background: linear-gradient(135deg, rgba(55, 65, 81, 0.2) 0%, rgba(30, 41, 59, 0.9) 100%);
+    border-left-color: #6B7280;
+    box-shadow: 0 8px 25px rgba(55, 65, 81, 0.4);
+}
+
 .sidebar-header {
     padding: 16px 16px 12px;
     border-bottom: 1px solid #475569;
@@ -10263,7 +10304,11 @@ function agregarTablaPrincipal() {
     console.log('➕ Agregando tabla principal de precios y costos');
     
     const container = document.getElementById('dynamic-tables-container');
-    if (!container) return;
+    if (!container) {
+        console.error('❌ No se encontró el contenedor dynamic-tables-container');
+        return;
+    }
+    console.log('✅ Contenedor encontrado:', container);
     
     // Verificar si ya existe la tabla principal
     if (document.getElementById('tabla-principal-precios')) {
@@ -10634,6 +10679,9 @@ function recalcularTotalManoObra() {
 
 // Función para configurar listeners de componentes
 function configurarListenersComponentes() {
+    console.log('🔧 Configurando listeners para componentes y botones...');
+    
+    // Configurar componentes
     const componentCards = document.querySelectorAll('.component-card');
     componentCards.forEach(card => {
         card.addEventListener('click', function() {
@@ -10651,6 +10699,49 @@ function configurarListenersComponentes() {
             this.style.transform = 'scale(1)';
         });
     });
+    
+    // Configurar botones de agregar tablas con listeners directos
+    console.log('🔧 Configurando botones de agregar tablas...');
+    
+    // Buscar y configurar botón Agregar Tabla Principal
+    const btnTablaPrincipal = document.querySelector('button[onclick*="agregarTablaPrincipal"]');
+    if (btnTablaPrincipal) {
+        console.log('✅ Configurando botón Agregar Tabla Principal');
+        btnTablaPrincipal.removeAttribute('onclick'); // Quitar onclick
+        btnTablaPrincipal.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('🔷 Click en Agregar Tabla Principal - vía listener');
+            agregarTablaPrincipal();
+        });
+    } else {
+        console.warn('❌ No se encontró botón Agregar Tabla Principal');
+    }
+    
+    // Buscar y configurar botón Agregar Gastos Instalación
+    const btnGastosInstalacion = document.querySelector('button[onclick*="agregarTablaGastosInstalacion"]');
+    if (btnGastosInstalacion) {
+        console.log('✅ Configurando botón Agregar Gastos Instalación');
+        btnGastosInstalacion.removeAttribute('onclick');
+        btnGastosInstalacion.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('🔷 Click en Agregar Gastos Instalación - vía listener');
+            agregarTablaGastosInstalacion();
+        });
+    }
+    
+    // Buscar y configurar botón Agregar Mano de Obra
+    const btnManoObra = document.querySelector('button[onclick*="agregarTablaManoObra"]');
+    if (btnManoObra) {
+        console.log('✅ Configurando botón Agregar Mano de Obra');
+        btnManoObra.removeAttribute('onclick');
+        btnManoObra.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('🔷 Click en Agregar Mano de Obra - vía listener');
+            agregarTablaManoObra();
+        });
+    }
+    
+    console.log('✅ Listeners de componentes y botones configurados');
 }
 
 // Función principal para abrir cuestionarios
@@ -10935,8 +11026,16 @@ function mostrarMensajeExito(mensaje) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Iniciando volumetría integral directamente...');
     
+    // Limpiar contenido existente primero
+    const mainContent = document.querySelector('.container');
+    if (mainContent) {
+        mainContent.innerHTML = '<div id="loading">Cargando volumetría...</div>';
+    }
+    
     // Ejecutar inmediatamente, como si fuera un formulario normal
-    crearVolumetria('general');
+    setTimeout(() => {
+        crearVolumetria('general');
+    }, 100);
 });
 </script>
 
