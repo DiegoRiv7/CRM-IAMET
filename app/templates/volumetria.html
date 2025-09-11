@@ -4333,6 +4333,37 @@ function generarHTMLFilasExcel(productos) {
     return filas;
 }
 
+// Función específica para la tabla principal con estructura correcta
+function generarFilasVaciasGeneralExcel() {
+    console.log('📋 Generando filas vacías para tabla principal de volumetría general');
+    
+    let filas = '';
+    // Generar 3 filas vacías iniciales con la estructura correcta de la tabla principal
+    for (let i = 0; i < 3; i++) {
+        filas += `
+            <tr class="excel-row" data-row="${i}">
+                <td class="excel-cell excel-cell-number" contenteditable="true" data-field="item" data-row="${i}">${i + 1}</td>
+                <td class="excel-cell excel-cell-text" contenteditable="true" data-field="noParte" data-row="${i}" onblur="recalcularFilaGeneral(${i})" placeholder="Número de parte"></td>
+                <td class="excel-cell excel-cell-description" contenteditable="true" data-field="descripcion" data-row="${i}" placeholder="Descripción del producto"></td>
+                <td class="excel-cell excel-cell-number" contenteditable="true" data-field="cantidad" data-row="${i}" onblur="recalcularFilaGeneral(${i})" placeholder="1">1</td>
+                <td class="excel-cell excel-cell-currency" contenteditable="true" data-field="precioLista" data-row="${i}" onblur="recalcularFilaGeneral(${i})" placeholder="$0.00">$0.00</td>
+                <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoCliente" data-row="${i}" onblur="recalcularFilaGeneral(${i})" placeholder="0%">0.00%</td>
+                <td class="excel-cell excel-cell-currency excel-calculated" data-field="precioFinalCliente" data-row="${i}">$0.00</td>
+                <td class="excel-cell excel-cell-percent" contenteditable="true" data-field="descuentoProveedor" data-row="${i}" onblur="recalcularFilaGeneral(${i})" placeholder="0%">0.00%</td>
+                <td class="excel-cell excel-cell-currency" contenteditable="true" data-field="costoUnitario" data-row="${i}" onblur="recalcularFilaGeneral(${i})" placeholder="$0.00">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated" data-field="costoTotal" data-row="${i}">$0.00</td>
+                <td class="excel-cell excel-actions">
+                    <button onclick="eliminarFilaGeneral(${i})" class="excel-btn-delete" title="Eliminar fila">
+                        ❌
+                    </button>
+                </td>
+            </tr>
+        `;
+    }
+    
+    return filas;
+}
+
 // Función de fallback para filas Excel con datos por defecto
 function generarFilasExcelDefecto(datos) {
     console.log('🔄 DEBUGGING: Generando tabla Excel con datos por defecto hardcodeados');
@@ -10319,7 +10350,7 @@ function agregarTablaPrincipal() {
                         </tr>
                     </thead>
                     <tbody id="excel-tbody-general">
-                        ${generarFilasVaciasGeneral()}
+                        ${generarFilasVaciasGeneralExcel()}
                         <tr class="excel-totals-row">
                             <td colspan="6" class="excel-cell font-bold text-right">TOTALES:</td>
                             <td id="total-cliente-general" class="excel-cell font-bold">$0.00</td>
