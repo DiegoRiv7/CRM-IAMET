@@ -4345,18 +4345,18 @@ function generarFilasVaciasGeneralExcel() {
                 <td class="excel-cell excel-cell-text editable relative" contenteditable="true" data-field="noParte" data-row="${i}" oninput="buscarProductoExcel(this)">
                     <div id="suggestions-${i}" class="absolute top-full left-0 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50 hidden max-h-60 overflow-y-auto"></div>
                 </td>
-                <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="cantidad" data-row="${i}" onblur="recalcularFilaExcel(${i})">1</td>
+                <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="cantidad" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">1</td>
                 <td class="excel-cell excel-cell-description editable" contenteditable="true" data-field="descripcion" data-row="${i}"></td>
-                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioLista" data-row="${i}" onblur="recalcularFilaExcel(${i})">$0.00</td>
-                <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoCliente" data-row="${i}" onblur="recalcularFilaExcel(${i})">0.00%</td>
-                <td class="excel-cell excel-cell-currency calculated" data-field="precioUnitario" data-row="${i}">$0.00</td>
-                <td class="excel-cell excel-cell-currency calculated excel-total-client" data-field="totalCliente" data-row="${i}">$0.00</td>
-                <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoProveedor" data-row="${i}" onblur="recalcularFilaExcel(${i})">0.00%</td>
-                <td class="excel-cell excel-cell-currency calculated" data-field="costoUnitario" data-row="${i}">$0.00</td>
-                <td class="excel-cell excel-cell-currency calculated excel-total-cost" data-field="totalCosto" data-row="${i}">$0.00</td>
-                <td class="excel-cell excel-cell-currency calculated excel-profit" data-field="ganancia" data-row="${i}">$0.00</td>
+                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioLista" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">$0.00</td>
+                <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoCliente" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">0.00%</td>
+                <td class="excel-cell excel-cell-currency excel-calculated" data-field="precioUnitario" data-row="${i}">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-client" data-field="totalCliente" data-row="${i}">$0.00</td>
+                <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoProveedor" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">0.00%</td>
+                <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="costoUnitario" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" data-field="totalCosto" data-row="${i}">$0.00</td>
+                <td class="excel-cell excel-cell-currency excel-calculated excel-profit" data-field="ganancia" data-row="${i}">$0.00</td>
                 <td class="excel-cell excel-actions">
-                    <button onclick="eliminarFilaExcel(${i})" class="excel-btn-delete" title="Eliminar fila">❌</button>
+                    <button onclick="eliminarFilaExcelGeneral(${i})" class="excel-btn-delete" title="Eliminar fila">❌</button>
                 </td>
             </tr>
         `;
