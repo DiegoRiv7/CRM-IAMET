@@ -3140,6 +3140,22 @@ function generarFilasVaciasGeneral() {
     return filas;
 }
 
+// Función para obtener el porcentaje de utilidad del cliente seleccionado
+function obtenerPorcentajeUtilidadCliente() {
+    const clientSelect = document.getElementById('cliente-general');
+    if (!clientSelect || !clientSelect.value) return 25; // Default 25% (categoría C)
+    
+    const clienteId = parseInt(clientSelect.value);
+    const clienteData = clientesDataGlobal.find(c => c.id === clienteId);
+    
+    if (clienteData) {
+        console.log(`📊 Cliente seleccionado: ${clienteData.nombre_empresa}, Categoría: ${clienteData.categoria}, Utilidad: ${clienteData.porcentaje_utilidad}%`);
+        return clienteData.porcentaje_utilidad;
+    }
+    
+    return 25; // Default 25% (categoría C)
+}
+
 // Función para recalcular una fila específica en volumetría general
 function recalcularFilaExcelGeneral(rowIndex) {
     console.log(`🧮 Recalculando fila general ${rowIndex}`);
@@ -3151,7 +3167,10 @@ function recalcularFilaExcelGeneral(rowIndex) {
         const cantidad = parseFloat(row.querySelector('[data-field="cantidad"]').textContent) || 0;
         const precioLista = parseFloat(row.querySelector('[data-field="precioLista"]').textContent.replace(/[$,]/g, '')) || 0;
         const descuentoCliente = parseFloat(row.querySelector('[data-field="descuentoCliente"]').textContent.replace('%', '')) || 0;
-        const costoUnitario = parseFloat(row.querySelector('[data-field="costoUnitario"]').textContent.replace(/[$,]/g, '')) || 0;
+        let costoUnitario = parseFloat(row.querySelector('[data-field="costoUnitario"]').textContent.replace(/[$,]/g, '')) || 0;
+        
+        // NUEVO: Obtener porcentaje de utilidad del cliente seleccionado
+        const porcentajeUtilidad = obtenerPorcentajeUtilidadCliente();
         
         // CÁLCULOS SEGÚN ESPECIFICACIÓN:
         
@@ -3161,13 +3180,23 @@ function recalcularFilaExcelGeneral(rowIndex) {
         // 2. Total Cliente = P. Unitario × Cantidad 
         const totalCliente = precioUnitario * cantidad;
         
-        // 3. Total Costo = Costo Unitario × Cantidad (Costo Unitario es MANUAL)
+        // NUEVO: Si no hay costo unitario manual, calcularlo automáticamente con el porcentaje de utilidad
+        if (costoUnitario === 0 && precioLista > 0) {
+            // Costo Unitario = Precio Lista / (1 + (Porcentaje Utilidad / 100))
+            costoUnitario = precioLista / (1 + (porcentajeUtilidad / 100));
+            console.log(`💰 Costo unitario calculado automáticamente: $${costoUnitario.toFixed(2)} (utilidad ${porcentajeUtilidad}%)`);
+            
+            // Actualizar el campo de costo unitario en la interfaz
+            row.querySelector('[data-field="costoUnitario"]').textContent = formatearMoneda(costoUnitario);
+        }
+        
+        // 3. Total Costo = Costo Unitario × Cantidad
         const totalCosto = costoUnitario * cantidad;
         
         // 4. Ganancia = Total Cliente - Total Costo
         const ganancia = totalCliente - totalCosto;
         
-        // Actualizar solo las celdas calculadas (NO costoUnitario que es manual)
+        // Actualizar solo las celdas calculadas
         row.querySelector('[data-field="precioUnitario"]').textContent = formatearMoneda(precioUnitario);
         row.querySelector('[data-field="totalCliente"]').textContent = formatearMoneda(totalCliente);
         row.querySelector('[data-field="totalCosto"]').textContent = formatearMoneda(totalCosto);
@@ -5857,6 +5886,9 @@ function crearCotizacionAutomatica(datosVolumetria) {
 // ==================== FUNCIONES PARA VOLUMETRÍA GENERAL ====================
 
 // Funciones para manejar el formulario de volumetría general
+// Variable global para almacenar datos de clientes con categorías
+let clientesDataGlobal = [];
+
 function populateClientSelectGeneral() {
     const clientSelect = document.getElementById('cliente-general');
     if (!clientSelect) return;
@@ -5864,11 +5896,16 @@ function populateClientSelectGeneral() {
     fetch('/app/api/clients-for-user/')
         .then(response => response.json())
         .then(data => {
+            // Almacenar datos de clientes globalmente para usar en cálculos
+            clientesDataGlobal = data;
+            
             clientSelect.innerHTML = '<option value="">-- Seleccione un cliente --</option>';
             data.forEach(client => {
                 const option = document.createElement('option');
                 option.value = client.id;
-                option.textContent = client.nombre_empresa;
+                option.textContent = `${client.nombre_empresa} (Categoría ${client.categoria} - ${client.porcentaje_utilidad}% utilidad)`;
+                option.setAttribute('data-categoria', client.categoria);
+                option.setAttribute('data-porcentaje', client.porcentaje_utilidad);
                 clientSelect.appendChild(option);
             });
         })
@@ -5888,6 +5925,7 @@ function setupOpportunityChangeListenerGeneral() {
         
         if (!clienteId) return;
         
+        // Cargar oportunidades del cliente
         fetch(`/app/api/opportunities-by-client/${clienteId}/`)
             .then(response => response.json())
             .then(data => {
@@ -5899,6 +5937,19 @@ function setupOpportunityChangeListenerGeneral() {
                 });
             })
             .catch(error => console.error('Error loading opportunities:', error));
+        
+        // NUEVO: Recalcular todas las filas con el nuevo porcentaje de utilidad del cliente
+        console.log('🔄 Cliente cambiado, recalculando filas con nuevo porcentaje de utilidad...');
+        setTimeout(() => {
+            const table = document.getElementById('excel-table-general');
+            if (table) {
+                const rows = table.querySelectorAll('.excel-row');
+                rows.forEach((row, index) => {
+                    recalcularFilaExcelGeneral(index);
+                });
+                console.log(`✅ ${rows.length} filas recalculadas con nueva categoría de cliente`);
+            }
+        }, 200);
     });
 }
 

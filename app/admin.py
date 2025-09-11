@@ -11,12 +11,18 @@ class ClienteAdmin(admin.ModelAdmin):
     Configuración para el modelo Cliente en el panel de administración de Django.
     """
     # Campos que se mostrarán en la lista de clientes
-    list_display = ('nombre_empresa', 'email', 'telefono', 'asignado_a') # 'fecha_creacion' eliminado
+    list_display = ('nombre_empresa', 'email', 'telefono', 'categoria', 'get_porcentaje_utilidad', 'asignado_a')
     # Campos por los cuales se puede buscar
     search_fields = ('nombre_empresa', 'email', 'telefono')
     # Campos por los cuales se puede filtrar la lista
-    list_filter = ('asignado_a',) # 'fecha_creacion' eliminado
+    list_filter = ('asignado_a', 'categoria')
     # No hay date_hierarchy para Cliente ya que no tiene campo de fecha_creacion directo
+    
+    def get_porcentaje_utilidad(self, obj):
+        """Muestra el porcentaje de utilidad basado en la categoría"""
+        porcentajes = {'A': '15%', 'B': '20%', 'C': '25%'}
+        return porcentajes.get(obj.categoria, '25%')
+    get_porcentaje_utilidad.short_description = 'Utilidad'
 
 # Registra el modelo TodoItem (Oportunidad de Venta) en el panel de administración
 @admin.register(TodoItem)

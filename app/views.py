@@ -553,7 +553,9 @@ def get_user_clients_api(request):
                 'name': client.nombre_empresa, # Mapear nombre_empresa a 'name'
                 'nombre_empresa': client.nombre_empresa, # Mantener también el nombre original
                 'address': client.direccion, # Mapear direccion a 'address'
-                'taxId': client.email # Mapear email a 'taxId' (o el campo que uses para ID Fiscal)
+                'taxId': client.email, # Mapear email a 'taxId' (o el campo que uses para ID Fiscal)
+                'categoria': client.categoria, # Categoría del cliente (A, B, C)
+                'porcentaje_utilidad': 15 if client.categoria == 'A' else 20 if client.categoria == 'B' else 25 # Porcentaje de utilidad según categoría
                 # Puedes añadir más campos aquí si los necesitas en el frontend
             })
         return JsonResponse(clients_data, safe=False) # safe=False permite serializar listas directamente

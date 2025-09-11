@@ -71,12 +71,29 @@ class Cliente(models.Model):
     """
     Modelo para representar un cliente en la base de datos.
     """
+    # Categorías de cliente con porcentajes de utilidad
+    CATEGORIA_CHOICES = [
+        ('A', 'Categoría A - 15% utilidad'),
+        ('B', 'Categoría B - 20% utilidad'),
+        ('C', 'Categoría C - 25% utilidad'),
+    ]
+    
     nombre_empresa = models.CharField(max_length=200, verbose_name="Nombre de la Empresa")
     contacto_principal = models.CharField(max_length=200, blank=True, null=True, verbose_name="Contacto Principal")
     telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono")
     email = models.EmailField(blank=True, null=True, verbose_name="Email")
     direccion = models.CharField(max_length=255, blank=True, null=True, verbose_name="Dirección")
     bitrix_company_id = models.IntegerField(unique=True, null=True, blank=True, verbose_name="ID de Compañía en Bitrix24")
+    
+    # Campo de categorización del cliente
+    categoria = models.CharField(
+        max_length=1,
+        choices=CATEGORIA_CHOICES,
+        default='C',
+        verbose_name="Categoría del Cliente",
+        help_text="Categoría que determina el porcentaje de utilidad aplicado en las volumetrías"
+    )
+    
     # Relación con el modelo User de Django para asignar un cliente a un usuario
     asignado_a = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='clientes_asignados', verbose_name="Asignado a")
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
