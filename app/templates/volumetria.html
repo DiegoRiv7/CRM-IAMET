@@ -10754,13 +10754,37 @@ function abrirCuestionarioComponente(componentType) {
     // Configurar título y contenido según el componente
     const cuestionarios = {
         'network-node': {
-            title: '🌐 Configuración de Nodos de Red',
+            title: '🌐 Cuestionario para Crear Volumetría de Nodos de Red',
             questions: [
-                { id: 'cantidad_nodos', label: 'Cantidad de nodos de red', type: 'number', value: 1 },
-                { id: 'tipo_switch', label: 'Tipo de switch', type: 'select', options: ['24 puertos', '48 puertos', 'PoE+', 'Managed', 'Unmanaged'] },
-                { id: 'velocidad', label: 'Velocidad requerida', type: 'select', options: ['100 Mbps', '1 Gbps', '10 Gbps'] },
-                { id: 'distancia_max', label: 'Distancia máxima (metros)', type: 'number', value: 100 },
-                { id: 'redundancia', label: '¿Requiere redundancia?', type: 'checkbox' }
+                { id: 'cantidad_nodos', label: 'Cantidad de nodos', type: 'number', value: 1, required: true },
+                { id: 'marca_accesorios', label: 'Marca de accesorios', type: 'text', placeholder: 'Ej: Panduit, CommScope, Legrand', required: false },
+                { id: 'longitud_nodo', label: 'Longitud del nodo en metros', type: 'number', value: 100, required: true },
+                { id: 'uso_cable', label: 'Uso de cable', type: 'select', options: ['Interior', 'Exterior'], required: true },
+                { id: 'tipo_cable', label: 'Tipo de cable', type: 'select', options: ['Propósitos Generales (PUC)', 'Riser', 'Plenum'], required: true },
+                { id: 'categoria_cable', label: 'Categoría de cable', type: 'select', options: ['5e', '6', '6A'], required: true },
+                { id: 'color_cable', label: 'Color del cable', type: 'text', placeholder: 'Ej: Azul, Blanco, Gris', required: false },
+                { id: 'color_jack', label: 'Color del jack', type: 'text', placeholder: 'Ej: Azul, Blanco, Negro', required: false },
+                { id: 'longitud_patch_cord', label: 'Longitud del patch cord en pies', type: 'select', options: ['1', '3', '5', '7', '10', '15', '20', '25', '30'], required: true },
+                { id: 'color_patch_cord', label: 'Color del patch cord', type: 'text', placeholder: 'Ej: Azul, Verde, Rojo', required: false },
+                { id: 'diametro_patch_cord', label: 'Diámetro del patch cord', type: 'select', options: ['Normal', 'Reducido'], required: true },
+                { id: 'cantidad_face_plate', label: 'Cantidad de face plate', type: 'number', value: 1, required: true },
+                { id: 'color_face_plate', label: 'Color del face plate', type: 'select', options: ['Blanco', 'Blanco Oficina'], required: true },
+                { id: 'puertos_face_plate', label: 'Cantidad de puertos del face plate', type: 'select', options: ['1', '2', '4', '6'], required: true },
+                { id: 'cantidad_paneles', label: 'Cantidad de paneles', type: 'number', value: 1, required: true },
+                { id: 'tipo_panel', label: 'Tipo de panel', type: 'select', options: ['Plano', 'Angulado'], required: true },
+                { id: 'puertos_panel', label: 'Cantidad de puertos de panel', type: 'select', options: ['24', '48'], required: true },
+                { id: 'unidades_rack_panel', label: 'Unidades de rack del panel', type: 'select', options: ['1', '2'], required: true },
+                { id: 'tipo_gancho_j', label: 'Tipo de gancho J', type: 'select', options: ['Normal', 'Soporte', 'Abrazadera', 'Abrazadera'], required: true },
+                { id: 'cantidad_ganchos', label: 'Cantidad de ganchos', type: 'number', value: 0, required: false },
+                { id: 'rack', label: 'Rack', type: 'text', placeholder: 'Especificaciones del rack', required: false },
+                { id: 'marca_rack', label: 'Marca de rack', type: 'text', placeholder: 'Ej: APC, Tripp Lite, Black Box', required: false },
+                { id: 'organizadores_verticales', label: 'Organizadores verticales', type: 'text', placeholder: 'Especificaciones', required: false },
+                { id: 'organizadores_horizontales', label: 'Organizadores horizontales', type: 'text', placeholder: 'Especificaciones', required: false },
+                { id: 'gabinete', label: 'Gabinete', type: 'text', placeholder: 'Especificaciones del gabinete', required: false },
+                { id: 'marca_gabinete', label: 'Marca de gabinete', type: 'text', placeholder: 'Ej: APC, Tripp Lite', required: false },
+                { id: 'tipo_gabinete', label: 'Tipo de gabinete', type: 'select', options: ['Pared', 'Piso'], required: false },
+                { id: 'unidades_rack_gabinete', label: 'Unidades de rack de gabinete', type: 'select', options: ['12', '18', '24', '26', '42', '45'], required: false },
+                { id: 'escalerilla_bajada', label: 'Escalerilla para bajada en rack', type: 'select', options: ['Sí', 'No'], required: false }
             ]
         },
         'camera': {
@@ -10845,37 +10869,57 @@ function abrirCuestionarioComponente(componentType) {
 
 // Función para generar el formulario del cuestionario
 function generarFormularioCuestionario(questions, componentType) {
-    let html = '<form id="component-form" onsubmit="procesarCuestionario(event, \'' + componentType + '\')">';
+    let html = '<div class="max-h-96 overflow-y-auto mb-4"><form id="component-form" onsubmit="procesarCuestionario(event, \'' + componentType + '\')">';
     
     questions.forEach(question => {
         html += '<div class="mb-4">';
-        html += '<label class="block text-white text-sm font-medium mb-2">' + question.label + '</label>';
+        
+        // Label con indicador de requerido
+        const requiredIndicator = question.required ? '<span class="text-red-400">*</span>' : '';
+        html += '<label class="block text-white text-sm font-medium mb-2">' + question.label + ' ' + requiredIndicator + '</label>';
+        
+        // Atributos comunes
+        const requiredAttr = question.required ? 'required' : '';
+        const placeholderAttr = question.placeholder ? 'placeholder="' + question.placeholder + '"' : '';
+        const baseClasses = 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none';
         
         switch (question.type) {
             case 'number':
-                html += '<input type="number" id="' + question.id + '" name="' + question.id + '" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none" value="' + (question.value || '') + '">';
+                html += '<input type="number" id="' + question.id + '" name="' + question.id + '" class="' + baseClasses + '" value="' + (question.value || '') + '" ' + requiredAttr + ' ' + placeholderAttr + ' min="0">';
                 break;
+                
             case 'select':
-                html += '<select id="' + question.id + '" name="' + question.id + '" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none">';
+                html += '<select id="' + question.id + '" name="' + question.id + '" class="' + baseClasses + '" ' + requiredAttr + '>';
+                if (!question.required) {
+                    html += '<option value="">Seleccionar (opcional)...</option>';
+                } else {
+                    html += '<option value="">Seleccionar...</option>';
+                }
                 question.options.forEach(option => {
                     html += '<option value="' + option + '">' + option + '</option>';
                 });
                 html += '</select>';
                 break;
+                
+            case 'text':
+                html += '<input type="text" id="' + question.id + '" name="' + question.id + '" class="' + baseClasses + '" ' + requiredAttr + ' ' + placeholderAttr + '>';
+                break;
+                
             case 'checkbox':
                 html += '<label class="flex items-center"><input type="checkbox" id="' + question.id + '" name="' + question.id + '" class="mr-2 text-blue-500 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"><span class="text-white">Sí</span></label>';
                 break;
+                
             default:
-                html += '<input type="text" id="' + question.id + '" name="' + question.id + '" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none">';
+                html += '<input type="text" id="' + question.id + '" name="' + question.id + '" class="' + baseClasses + '" ' + requiredAttr + ' ' + placeholderAttr + '>';
         }
         html += '</div>';
     });
     
-    html += '<div class="flex space-x-3 mt-6">';
-    html += '<button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition duration-200">Generar Tabla</button>';
+    html += '</form></div>';
+    html += '<div class="flex space-x-3 mt-6 pt-4 border-t border-gray-600">';
+    html += '<button type="submit" form="component-form" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition duration-200">Generar Tabla</button>';
     html += '<button type="button" onclick="cerrarCuestionario()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg font-medium transition duration-200">Cancelar</button>';
     html += '</div>';
-    html += '</form>';
     
     return html;
 }
