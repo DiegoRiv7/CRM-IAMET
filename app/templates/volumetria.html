@@ -1477,6 +1477,466 @@ function cerrarFormulario() {
     }
 }
 
+// NUEVA FUNCIÓN: Mostrar formulario específico de nodos en volumetría general
+function mostrarFormularioNodosEnGeneral() {
+    console.log('🌐 Mostrando formulario específico de nodos de red en volumetría general');
+    
+    // Cerrar cualquier modal que esté abierto
+    const modalExistente = document.getElementById('component-questionnaire-modal');
+    if (modalExistente) {
+        modalExistente.style.display = 'none';
+    }
+    
+    // Ocultar la workspace de volumetría general temporalmente
+    const workspace = document.getElementById('tabla-volumetria');
+    if (workspace) {
+        workspace.style.display = 'none';
+    }
+    
+    // Crear el formulario específico de nodos de red adaptado para volumetría general
+    const formularioHTML = `
+        <div id="formulario-nodos-general" class="min-h-screen apple-bg">
+            <div class="apple-bg min-h-screen">
+                <div class="apple-glass-card p-6 animate-fade-in">
+                    <div class="flex items-center justify-between mb-8">
+                        <div class="flex items-center space-x-4">
+                            <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
+                                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 class="text-3xl font-bold apple-text-primary">
+                                    Formulario Nodos de Red
+                                </h1>
+                                <p class="apple-text-secondary mt-1">
+                                    Configuración de volumetría para infraestructura de red
+                                </p>
+                            </div>
+                        </div>
+                        <button onclick="regresarAVolumetriaGeneral()" class="apple-btn-secondary font-medium py-2 px-6 transition duration-200">
+                            ← Regresar a Volumetría General
+                        </button>
+                    </div>
+                
+                    <form id="form-nodos-general" class="space-y-8">
+                    
+                    <!-- Información del Proyecto -->
+                    <div class="border-b border-gray-200 dark:border-gray-700 pb-6">
+                        <h3 class="text-lg font-medium apple-text-primary mb-4">Información del Proyecto</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Nombre de la Volumetría</label>
+                                <input type="text" id="nombre-volumetria-general" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: Volumetría Campus Universitario" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Cliente</label>
+                                <div class="flex items-center space-x-2">
+                                    <select id="cliente-volumetria-general" class="flex-grow px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                                        <option value="">-- Seleccione un cliente --</option>
+                                    </select>
+                                    <button type="button" class="apple-btn-secondary py-2 px-3 text-sm">+</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Usuario Final</label>
+                                <input type="text" id="usuario-final-general" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: Juan Pérez">
+                                <p class="text-xs mt-1 apple-text-secondary">💡 Persona de contacto específica del cliente</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium apple-text-primary mb-2">Oportunidad Bitrix24</label>
+                                <div class="flex items-center space-x-2">
+                                    <select id="oportunidad-volumetria-general" class="flex-grow px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500">
+                                        <option value="">-- Seleccione una oportunidad --</option>
+                                    </select>
+                                    <button type="button" class="apple-btn-secondary py-2 px-3 text-sm">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Parte 1: Cableado -->
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-8 bg-white dark:bg-gray-800">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+                            <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">1</span>
+                            Cableado
+                        </h3>
+                        <p class="text-sm text-gray-400 mb-8">Configure los componentes del cableado estructurado</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Información básica -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-3">Cantidad de Nodos</label>
+                                <input type="number" id="cantidad-nodos-general" min="1" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="50" required>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-3">Metros de Cable</label>
+                                <input type="number" id="metros-cable-general" min="1" step="0.1" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="1500" required>
+                            </div>
+                            
+                            <!-- Números de parte -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-3">Cable</label>
+                                <div class="autocomplete-container">
+                                    <input type="text" id="cable-numero-parte-general" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="PUL6004BL-BOX" required oninput="onVolumetriaInput('cable-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'cable-numero-parte-general')" onfocus="onVolumetriaFocus('cable-numero-parte-general')" onblur="onVolumetriaBlur('cable-numero-parte-general')">
+                                    <div id="suggestions_cable-numero-parte-general" class="autocomplete-suggestions"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-3">Jack</label>
+                                <div class="autocomplete-container">
+                                    <input type="text" id="jack-numero-parte-general" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="CJ6X88TBL" required oninput="onVolumetriaInput('jack-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'jack-numero-parte-general')" onfocus="onVolumetriaFocus('jack-numero-parte-general')" onblur="onVolumetriaBlur('jack-numero-parte-general')">
+                                    <div id="suggestions_jack-numero-parte-general" class="autocomplete-suggestions"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-3">Patch Cord</label>
+                                <div class="autocomplete-container">
+                                    <input type="text" id="patchcord-numero-parte-general" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="UTP28SP3BL" required oninput="onVolumetriaInput('patchcord-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'patchcord-numero-parte-general')" onfocus="onVolumetriaFocus('patchcord-numero-parte-general')" onblur="onVolumetriaBlur('patchcord-numero-parte-general')">
+                                    <div id="suggestions_patchcord-numero-parte-general" class="autocomplete-suggestions"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-3">Faceplate</label>
+                                <div class="autocomplete-container">
+                                    <input type="text" id="faceplate-numero-parte-general" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="NK2FHDEI" required oninput="onVolumetriaInput('faceplate-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'faceplate-numero-parte-general')" onfocus="onVolumetriaFocus('faceplate-numero-parte-general')" onblur="onVolumetriaBlur('faceplate-numero-parte-general')">
+                                    <div id="suggestions_faceplate-numero-parte-general" class="autocomplete-suggestions"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Botones de acción -->
+                    <div class="flex justify-center space-x-4 pt-6">
+                        <button type="button" onclick="regresarAVolumetriaGeneral()" class="apple-btn-secondary px-8 py-3 text-lg font-medium">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="apple-btn-primary px-8 py-3 text-lg font-medium bg-blue-600 hover:bg-blue-700">
+                            Generar Volumetría
+                        </button>
+                    </div>
+                    
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Insertar el formulario al final del body
+    document.body.insertAdjacentHTML('beforeend', formularioHTML);
+    
+    // Configurar eventos del formulario
+    document.getElementById('form-nodos-general').addEventListener('submit', function(e) {
+        e.preventDefault();
+        procesarFormularioNodosGeneral();
+    });
+    
+    // Poblar selectores de cliente y oportunidad
+    populateClientSelectVolumetria('cliente-volumetria-general', 'oportunidad-volumetria-general');
+    setupOpportunityChangeListenerGeneral();
+    
+    console.log('✅ Formulario específico de nodos mostrado en volumetría general');
+}
+
+// Función para procesar el formulario de nodos en volumetría general
+function procesarFormularioNodosGeneral() {
+    console.log('🚀 Procesando formulario de nodos en volumetría general...');
+    
+    try {
+        // Recopilar datos del formulario (con IDs específicos para general)
+        const nombreVolumetria = document.getElementById('nombre-volumetria-general')?.value || 'Volumetría Sin Título';
+        const clienteId = document.getElementById('cliente-volumetria-general')?.value || '';
+        const usuarioFinal = document.getElementById('usuario-final-general')?.value || '';
+        const oportunidadId = document.getElementById('oportunidad-volumetria-general')?.value || '';
+        const cantidadNodos = parseInt(document.getElementById('cantidad-nodos-general')?.value) || 1;
+        const metrosCable = parseFloat(document.getElementById('metros-cable-general')?.value) || 100;
+        
+        // Números de parte
+        const numerosParte = {
+            cable: document.getElementById('cable-numero-parte-general')?.value?.trim() || '',
+            jack: document.getElementById('jack-numero-parte-general')?.value?.trim() || '',
+            patchcord: document.getElementById('patchcord-numero-parte-general')?.value?.trim() || '',
+            faceplate: document.getElementById('faceplate-numero-parte-general')?.value?.trim() || ''
+        };
+        
+        console.log('📊 Datos recopilados:', {
+            nombreVolumetria,
+            clienteId,
+            usuarioFinal,
+            oportunidadId,
+            cantidadNodos,
+            metrosCable,
+            numerosParte
+        });
+        
+        // Cerrar formulario y mostrar animación
+        cerrarFormularioNodosGeneral();
+        mostrarAnimacionCarga();
+        
+        // Preparar datos para generar volumetría (adaptado para volumetría general)
+        const datosVolumetria = {
+            nombreVolumetria,
+            clienteId,
+            usuarioFinal,
+            oportunidadId,
+            categoria: 'Nodos de Red', // Categoría específica
+            color: 'Azul',
+            distancia: metrosCable,
+            cantidadNodos,
+            numerosParte
+        };
+        
+        // Generar volumetría después de un delay para la animación
+        setTimeout(() => {
+            // En lugar de usar generarVolumetria, vamos a integrar con la tabla de volumetría general
+            integrarNodosEnVolumetriaGeneral(datosVolumetria);
+        }, 2000);
+        
+    } catch (error) {
+        console.error('❌ Error en procesarFormularioNodosGeneral:', error);
+        alert('Error al procesar volumetría. Ver consola para detalles.');
+    }
+}
+
+// Función para integrar los datos de nodos en la volumetría general
+function integrarNodosEnVolumetriaGeneral(datos) {
+    console.log('🔄 Integrando datos de nodos en volumetría general...', datos);
+    
+    try {
+        // Obtener productos del catálogo usando la misma lógica que el formulario original
+        obtenerProductosCatalogo().then(productos => {
+            // Calcular cantidades según la lógica original
+            const cantidadCable = Math.ceil((datos.distancia * datos.cantidadNodos) / 305);
+            const cantidadFaceplates = datos.cantidadNodos;
+            const cantidadJacksUsuario = datos.cantidadNodos;
+            const cantidadJacksPatchpanel = datos.cantidadNodos;
+            const cantidadPatchcordsUsuario = datos.cantidadNodos;
+            const cantidadPatchcordsPatchpanel = datos.cantidadNodos;
+            
+            // Crear los datos finales con toda la información
+            const datosCompletos = {
+                ...datos,
+                cantidadCable,
+                cantidadFaceplates,
+                cantidadJacksUsuario,
+                cantidadJacksPatchpanel,
+                cantidadPatchcordsUsuario,
+                cantidadPatchcordsPatchpanel,
+                productosCompletos: productos
+            };
+            
+            // Restaurar la workspace y generar tabla con datos de nodos
+            restaurarVolumetriaGeneralConNodos(datosCompletos);
+            
+        }).catch(error => {
+            console.error('❌ Error obteniendo productos:', error);
+            // Proceder con datos básicos si hay error
+            restaurarVolumetriaGeneralConNodos({
+                ...datos,
+                cantidadCable: Math.ceil((datos.distancia * datos.cantidadNodos) / 305),
+                cantidadFaceplates: datos.cantidadNodos,
+                cantidadJacksUsuario: datos.cantidadNodos,
+                cantidadJacksPatchpanel: datos.cantidadNodos,
+                cantidadPatchcordsUsuario: datos.cantidadNodos,
+                cantidadPatchcordsPatchpanel: datos.cantidadNodos
+            });
+        });
+        
+    } catch (error) {
+        console.error('❌ Error integrando nodos en volumetría general:', error);
+        alert('Error al integrar datos. Ver consola para detalles.');
+    }
+}
+
+// Función para restaurar volumetría general con datos de nodos
+function restaurarVolumetriaGeneralConNodos(datos) {
+    console.log('🔄 Restaurando volumetría general con datos de nodos...', datos);
+    
+    // Mostrar nuevamente la workspace de volumetría general
+    const workspace = document.getElementById('tabla-volumetria');
+    if (workspace) {
+        workspace.style.display = 'block';
+    }
+    
+    // Poblar automáticamente la tabla "General" con los productos de nodos de red calculados
+    poblarTablaGeneralConNodos(datos);
+    
+    // Ocultar animación de carga
+    ocultarAnimacionCarga();
+    
+    console.log('✅ Volumetría general restaurada con datos de nodos');
+}
+
+// Función para regresar a volumetría general
+function regresarAVolumetriaGeneral() {
+    cerrarFormularioNodosGeneral();
+    
+    // Mostrar la workspace de volumetría general
+    const workspace = document.getElementById('tabla-volumetria');
+    if (workspace) {
+        workspace.style.display = 'block';
+    }
+}
+
+// Función para cerrar el formulario de nodos general
+function cerrarFormularioNodosGeneral() {
+    const formulario = document.getElementById('formulario-nodos-general');
+    if (formulario) {
+        formulario.remove();
+    }
+}
+
+// Función auxiliar para configurar listener de oportunidad específico para general
+function setupOpportunityChangeListenerGeneral() {
+    const clienteSelect = document.getElementById('cliente-volumetria-general');
+    if (clienteSelect) {
+        clienteSelect.addEventListener('change', function() {
+            const clienteId = this.value;
+            if (clienteId) {
+                cargarOportunidadesPorCliente(clienteId, 'oportunidad-volumetria-general');
+            }
+        });
+    }
+}
+
+// Función para poblar la tabla General con datos de nodos de red
+function poblarTablaGeneralConNodos(datos) {
+    console.log('📋 Poblando tabla General con datos de nodos de red...', datos);
+    
+    try {
+        const tablaGeneral = document.getElementById('excel-table-general');
+        if (!tablaGeneral) {
+            console.error('❌ No se encontró la tabla General');
+            return;
+        }
+        
+        const tbody = tablaGeneral.querySelector('tbody');
+        if (!tbody) {
+            console.error('❌ No se encontró el tbody de la tabla General');
+            return;
+        }
+        
+        // Productos de nodos de red con sus cantidades calculadas
+        const productosNodos = [
+            {
+                noParte: datos.numerosParte.cable || 'PUL6004BL-BOX',
+                descripcion: 'Cable UTP Cat 6 - Bobina 305m',
+                cantidad: datos.cantidadCable || 1,
+                precioLista: 180.00,
+                costoUnitario: 145.00
+            },
+            {
+                noParte: datos.numerosParte.jack || 'CJ6X88TBL',
+                descripcion: 'Jack RJ45 Cat 6 - Azul',
+                cantidad: (datos.cantidadJacksUsuario || 0) + (datos.cantidadJacksPatchpanel || 0),
+                precioLista: 8.50,
+                costoUnitario: 6.80
+            },
+            {
+                noParte: datos.numerosParte.patchcord || 'UTP28SP3BL',
+                descripcion: 'Patch Cord Cat 6 - 3 pies Azul',
+                cantidad: (datos.cantidadPatchcordsUsuario || 0) + (datos.cantidadPatchcordsPatchpanel || 0),
+                precioLista: 12.00,
+                costoUnitario: 9.60
+            },
+            {
+                noParte: datos.numerosParte.faceplate || 'NK2FHDEI',
+                descripcion: 'Faceplate 2 puertos - Blanco',
+                cantidad: datos.cantidadFaceplates || 1,
+                precioLista: 15.50,
+                costoUnitario: 12.40
+            }
+        ];
+        
+        // Obtener filas existentes vacías o crear nuevas
+        const filasExistentes = tbody.querySelectorAll('.excel-row:not(.excel-totals-row)');
+        let indiceProducto = 0;
+        
+        // Llenar productos en las filas existentes y crear nuevas si es necesario
+        productosNodos.forEach((producto, index) => {
+            let fila;
+            
+            if (index < filasExistentes.length) {
+                // Usar fila existente
+                fila = filasExistentes[index];
+            } else {
+                // Crear nueva fila (usando la misma estructura que generarFilasVaciasGeneralExcel)
+                const nuevaFila = document.createElement('tr');
+                nuevaFila.className = 'excel-row';
+                nuevaFila.setAttribute('data-row', index);
+                
+                nuevaFila.innerHTML = `
+                    <td class="excel-cell excel-cell-text editable relative" contenteditable="true" data-field="noParte" data-row="${index}" oninput="buscarProductoExcel(this)">
+                        <div id="suggestions-${index}" class="absolute top-full left-0 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50 hidden max-h-60 overflow-y-auto"></div>
+                    </td>
+                    <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="cantidad" data-row="${index}" onblur="recalcularFilaExcelGeneral(${index})">1</td>
+                    <td class="excel-cell excel-cell-description editable" contenteditable="true" data-field="descripcion" data-row="${index}"></td>
+                    <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioLista" data-row="${index}" onblur="recalcularFilaExcelGeneral(${index})">$0.00</td>
+                    <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoCliente" data-row="${index}" onblur="recalcularFilaExcelGeneral(${index})">0.00%</td>
+                    <td class="excel-cell excel-cell-currency excel-calculated" data-field="precioUnitario" data-row="${index}">$0.00</td>
+                    <td class="excel-cell excel-cell-currency excel-calculated excel-total-client" data-field="totalCliente" data-row="${index}">$0.00</td>
+                    <td class="excel-cell excel-cell-percent editable" contenteditable="true" data-field="descuentoProveedor" data-row="${index}" onblur="recalcularFilaExcelGeneral(${index})">0.00%</td>
+                    <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="costoUnitario" data-row="${index}" onblur="recalcularFilaExcelGeneral(${index})">$0.00</td>
+                    <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" data-field="totalCosto" data-row="${index}">$0.00</td>
+                    <td class="excel-cell excel-cell-currency excel-calculated excel-profit" data-field="ganancia" data-row="${index}">$0.00</td>
+                    <td class="excel-cell excel-cell-action">
+                        <button onclick="eliminarFilaExcelGeneral(${index})" class="delete-btn">×</button>
+                    </td>
+                `;
+                
+                // Insertar antes de la fila de totales
+                const filaTotales = tbody.querySelector('.excel-totals-row');
+                if (filaTotales) {
+                    tbody.insertBefore(nuevaFila, filaTotales);
+                } else {
+                    tbody.appendChild(nuevaFila);
+                }
+                
+                fila = nuevaFila;
+            }
+            
+            // Llenar datos del producto en la fila
+            if (fila) {
+                const celdaNoParte = fila.querySelector('[data-field="noParte"]');
+                const celdaCantidad = fila.querySelector('[data-field="cantidad"]');
+                const celdaDescripcion = fila.querySelector('[data-field="descripcion"]');
+                const celdaPrecioLista = fila.querySelector('[data-field="precioLista"]');
+                const celdaCostoUnitario = fila.querySelector('[data-field="costoUnitario"]');
+                
+                if (celdaNoParte) celdaNoParte.textContent = producto.noParte;
+                if (celdaCantidad) celdaCantidad.textContent = producto.cantidad;
+                if (celdaDescripcion) celdaDescripcion.textContent = producto.descripcion;
+                if (celdaPrecioLista) celdaPrecioLista.textContent = `$${producto.precioLista.toFixed(2)}`;
+                if (celdaCostoUnitario) celdaCostoUnitario.textContent = `$${producto.costoUnitario.toFixed(2)}`;
+                
+                // Recalcular la fila para actualizar totales
+                setTimeout(() => {
+                    if (typeof recalcularFilaExcelGeneral === 'function') {
+                        recalcularFilaExcelGeneral(index);
+                    } else if (typeof recalcularFilaGeneral === 'function') {
+                        recalcularFilaGeneral(index);
+                    }
+                }, 100);
+            }
+        });
+        
+        // Recalcular totales generales después de poblar
+        setTimeout(() => {
+            if (typeof recalcularTotalesGeneral === 'function') {
+                recalcularTotalesGeneral();
+            }
+            console.log('✅ Tabla General poblada exitosamente con productos de nodos de red');
+        }, 500);
+        
+    } catch (error) {
+        console.error('❌ Error poblando tabla General con nodos:', error);
+    }
+}
+
 // Función para mostrar el formulario de volumetría general
 function mostrarFormularioGeneral() {
     // Ocultar contenido principal
@@ -10744,6 +11204,13 @@ function configurarListenersComponentes() {
 // Función principal para abrir cuestionarios
 function abrirCuestionarioComponente(componentType) {
     console.log('🎯 Abriendo cuestionario para:', componentType);
+    
+    // NUEVO: Para nodos de red, usar el formulario específico
+    if (componentType === 'network-node') {
+        console.log('🌐 Usando formulario específico para nodos de red');
+        mostrarFormularioNodosEnGeneral();
+        return;
+    }
     
     const modal = document.getElementById('component-questionnaire-modal');
     const title = document.getElementById('modal-title');
