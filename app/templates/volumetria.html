@@ -1493,11 +1493,11 @@ function mostrarFormularioNodosEnGeneral() {
         workspace.style.display = 'none';
     }
     
-    // Crear el formulario específico de nodos de red adaptado para volumetría general
+    // Crear el formulario específico de nodos de red adaptado para volumetría general (tema oscuro, sin info proyecto)
     const formularioHTML = `
-        <div id="formulario-nodos-general" class="min-h-screen apple-bg">
-            <div class="apple-bg min-h-screen">
-                <div class="apple-glass-card p-6 animate-fade-in">
+        <div id="formulario-nodos-general" class="min-h-screen bg-gray-900">
+            <div class="min-h-screen bg-gray-900">
+                <div class="bg-gray-800 border border-gray-700 rounded-xl p-6 animate-fade-in mx-4 my-4">
                     <div class="flex items-center justify-between mb-8">
                         <div class="flex items-center space-x-4">
                             <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
@@ -1506,58 +1506,24 @@ function mostrarFormularioNodosEnGeneral() {
                                 </svg>
                             </div>
                             <div>
-                                <h1 class="text-3xl font-bold apple-text-primary">
+                                <h1 class="text-3xl font-bold text-white">
                                     Formulario Nodos de Red
                                 </h1>
-                                <p class="apple-text-secondary mt-1">
+                                <p class="text-gray-400 mt-1">
                                     Configuración de volumetría para infraestructura de red
                                 </p>
                             </div>
                         </div>
-                        <button onclick="regresarAVolumetriaGeneral()" class="apple-btn-secondary font-medium py-2 px-6 transition duration-200">
+                        <button onclick="regresarAVolumetriaGeneral()" class="bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 px-6 rounded-lg transition duration-200 border border-gray-600">
                             ← Regresar a Volumetría General
                         </button>
                     </div>
                 
                     <form id="form-nodos-general" class="space-y-8">
                     
-                    <!-- Información del Proyecto -->
-                    <div class="border-b border-gray-200 dark:border-gray-700 pb-6">
-                        <h3 class="text-lg font-medium apple-text-primary mb-4">Información del Proyecto</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium apple-text-primary mb-2">Nombre de la Volumetría</label>
-                                <input type="text" id="nombre-volumetria-general" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: Volumetría Campus Universitario" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium apple-text-primary mb-2">Cliente</label>
-                                <div class="flex items-center space-x-2">
-                                    <select id="cliente-volumetria-general" class="flex-grow px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" required>
-                                        <option value="">-- Seleccione un cliente --</option>
-                                    </select>
-                                    <button type="button" class="apple-btn-secondary py-2 px-3 text-sm">+</button>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium apple-text-primary mb-2">Usuario Final</label>
-                                <input type="text" id="usuario-final-general" class="w-full px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: Juan Pérez">
-                                <p class="text-xs mt-1 apple-text-secondary">💡 Persona de contacto específica del cliente</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium apple-text-primary mb-2">Oportunidad Bitrix24</label>
-                                <div class="flex items-center space-x-2">
-                                    <select id="oportunidad-volumetria-general" class="flex-grow px-3 py-2 border border-gray-600 bg-gray-800 apple-text-primary rounded-lg focus:ring-2 focus:ring-blue-500">
-                                        <option value="">-- Seleccione una oportunidad --</option>
-                                    </select>
-                                    <button type="button" class="apple-btn-secondary py-2 px-3 text-sm">+</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
                     <!-- Parte 1: Cableado -->
-                    <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-8 bg-white dark:bg-gray-800">
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+                    <div class="border border-gray-600 rounded-xl p-8 bg-gray-800">
+                        <h3 class="text-lg font-medium text-white mb-4 flex items-center">
                             <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">1</span>
                             Cableado
                         </h3>
@@ -1567,19 +1533,19 @@ function mostrarFormularioNodosEnGeneral() {
                             <!-- Información básica -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-3">Cantidad de Nodos</label>
-                                <input type="number" id="cantidad-nodos-general" min="1" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="50" required>
+                                <input type="number" id="cantidad-nodos-general" min="1" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="50" required>
                             </div>
                             
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-3">Metros de Cable</label>
-                                <input type="number" id="metros-cable-general" min="1" step="0.1" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="1500" required>
+                                <input type="number" id="metros-cable-general" min="1" step="0.1" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="1500" required>
                             </div>
                             
                             <!-- Números de parte -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-3">Cable</label>
                                 <div class="autocomplete-container">
-                                    <input type="text" id="cable-numero-parte-general" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="PUL6004BL-BOX" required oninput="onVolumetriaInput('cable-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'cable-numero-parte-general')" onfocus="onVolumetriaFocus('cable-numero-parte-general')" onblur="onVolumetriaBlur('cable-numero-parte-general')">
+                                    <input type="text" id="cable-numero-parte-general" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="PUL6004BL-BOX" required oninput="onVolumetriaInput('cable-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'cable-numero-parte-general')" onfocus="onVolumetriaFocus('cable-numero-parte-general')" onblur="onVolumetriaBlur('cable-numero-parte-general')">
                                     <div id="suggestions_cable-numero-parte-general" class="autocomplete-suggestions"></div>
                                 </div>
                             </div>
@@ -1587,7 +1553,7 @@ function mostrarFormularioNodosEnGeneral() {
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-3">Jack</label>
                                 <div class="autocomplete-container">
-                                    <input type="text" id="jack-numero-parte-general" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="CJ6X88TBL" required oninput="onVolumetriaInput('jack-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'jack-numero-parte-general')" onfocus="onVolumetriaFocus('jack-numero-parte-general')" onblur="onVolumetriaBlur('jack-numero-parte-general')">
+                                    <input type="text" id="jack-numero-parte-general" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="CJ6X88TBL" required oninput="onVolumetriaInput('jack-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'jack-numero-parte-general')" onfocus="onVolumetriaFocus('jack-numero-parte-general')" onblur="onVolumetriaBlur('jack-numero-parte-general')">
                                     <div id="suggestions_jack-numero-parte-general" class="autocomplete-suggestions"></div>
                                 </div>
                             </div>
@@ -1595,7 +1561,7 @@ function mostrarFormularioNodosEnGeneral() {
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-3">Patch Cord</label>
                                 <div class="autocomplete-container">
-                                    <input type="text" id="patchcord-numero-parte-general" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="UTP28SP3BL" required oninput="onVolumetriaInput('patchcord-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'patchcord-numero-parte-general')" onfocus="onVolumetriaFocus('patchcord-numero-parte-general')" onblur="onVolumetriaBlur('patchcord-numero-parte-general')">
+                                    <input type="text" id="patchcord-numero-parte-general" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="UTP28SP3BL" required oninput="onVolumetriaInput('patchcord-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'patchcord-numero-parte-general')" onfocus="onVolumetriaFocus('patchcord-numero-parte-general')" onblur="onVolumetriaBlur('patchcord-numero-parte-general')">
                                     <div id="suggestions_patchcord-numero-parte-general" class="autocomplete-suggestions"></div>
                                 </div>
                             </div>
@@ -1603,7 +1569,7 @@ function mostrarFormularioNodosEnGeneral() {
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-3">Faceplate</label>
                                 <div class="autocomplete-container">
-                                    <input type="text" id="faceplate-numero-parte-general" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="NK2FHDEI" required oninput="onVolumetriaInput('faceplate-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'faceplate-numero-parte-general')" onfocus="onVolumetriaFocus('faceplate-numero-parte-general')" onblur="onVolumetriaBlur('faceplate-numero-parte-general')">
+                                    <input type="text" id="faceplate-numero-parte-general" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="NK2FHDEI" required oninput="onVolumetriaInput('faceplate-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'faceplate-numero-parte-general')" onfocus="onVolumetriaFocus('faceplate-numero-parte-general')" onblur="onVolumetriaBlur('faceplate-numero-parte-general')">
                                     <div id="suggestions_faceplate-numero-parte-general" class="autocomplete-suggestions"></div>
                                 </div>
                             </div>
@@ -1612,10 +1578,10 @@ function mostrarFormularioNodosEnGeneral() {
                     
                     <!-- Botones de acción -->
                     <div class="flex justify-center space-x-4 pt-6">
-                        <button type="button" onclick="regresarAVolumetriaGeneral()" class="apple-btn-secondary px-8 py-3 text-lg font-medium">
+                        <button type="button" onclick="regresarAVolumetriaGeneral()" class="bg-gray-700 hover:bg-gray-600 text-white px-8 py-3 text-lg font-medium rounded-lg border border-gray-600 transition duration-200">
                             Cancelar
                         </button>
-                        <button type="submit" class="apple-btn-primary px-8 py-3 text-lg font-medium bg-blue-600 hover:bg-blue-700">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-medium rounded-lg transition duration-200">
                             Generar Volumetría
                         </button>
                     </div>
@@ -1635,10 +1601,6 @@ function mostrarFormularioNodosEnGeneral() {
         procesarFormularioNodosGeneral();
     });
     
-    // Poblar selectores de cliente y oportunidad
-    populateClientSelectVolumetria('cliente-volumetria-general', 'oportunidad-volumetria-general');
-    setupOpportunityChangeListenerGeneral();
-    
     console.log('✅ Formulario específico de nodos mostrado en volumetría general');
 }
 
@@ -1647,11 +1609,7 @@ function procesarFormularioNodosGeneral() {
     console.log('🚀 Procesando formulario de nodos en volumetría general...');
     
     try {
-        // Recopilar datos del formulario (con IDs específicos para general)
-        const nombreVolumetria = document.getElementById('nombre-volumetria-general')?.value || 'Volumetría Sin Título';
-        const clienteId = document.getElementById('cliente-volumetria-general')?.value || '';
-        const usuarioFinal = document.getElementById('usuario-final-general')?.value || '';
-        const oportunidadId = document.getElementById('oportunidad-volumetria-general')?.value || '';
+        // Recopilar datos del formulario (solo datos técnicos, sin información del proyecto)
         const cantidadNodos = parseInt(document.getElementById('cantidad-nodos-general')?.value) || 1;
         const metrosCable = parseFloat(document.getElementById('metros-cable-general')?.value) || 100;
         
@@ -1664,10 +1622,6 @@ function procesarFormularioNodosGeneral() {
         };
         
         console.log('📊 Datos recopilados:', {
-            nombreVolumetria,
-            clienteId,
-            usuarioFinal,
-            oportunidadId,
             cantidadNodos,
             metrosCable,
             numerosParte
@@ -1677,13 +1631,13 @@ function procesarFormularioNodosGeneral() {
         cerrarFormularioNodosGeneral();
         mostrarAnimacionCarga();
         
-        // Preparar datos para generar volumetría (adaptado para volumetría general)
+        // Preparar datos para generar volumetría (solo datos técnicos)
         const datosVolumetria = {
-            nombreVolumetria,
-            clienteId,
-            usuarioFinal,
-            oportunidadId,
-            categoria: 'Nodos de Red', // Categoría específica
+            nombreVolumetria: 'Volumetría Nodos de Red',
+            clienteId: '',
+            usuarioFinal: '',
+            oportunidadId: '',
+            categoria: 'Nodos de Red',
             color: 'Azul',
             distancia: metrosCable,
             cantidadNodos,
