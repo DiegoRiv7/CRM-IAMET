@@ -2039,13 +2039,17 @@ function agregarProductoExtra(tipo) {
 
 // Función para generar volumetría específicamente para la tabla General
 function generarVolumetriaParaGeneral(datos) {
-    console.log('🏗️ Generando volumetría para tabla General con datos:', datos);
-    
-    // Guardar datos globalmente para el PDF
-    window.currentVolumetriaData = datos;
-    
     cerrarAnimacionCarga();
 
+    // Forzar un reflow para corregir posibles problemas de layout
+    setTimeout(() => {
+        const workspace = document.getElementById('tabla-volumetria');
+        if (workspace) {
+            workspace.style.display = 'none'; // Ocultar temporalmente
+            workspace.offsetHeight; // Forzar reflow
+            workspace.style.display = 'block'; // Mostrar de nuevo
+        }
+    }, 50); // Pequeño retraso para asegurar que el DOM esté listo
     // Asegurarse de que el workspace principal de volumetría esté visible
     const workspace = document.getElementById('tabla-volumetria');
     if (workspace) {
