@@ -6260,17 +6260,31 @@ def buscar_productos_catalogo(request):
         if filtros.get('categoria'):
             categoria_filtro = filtros['categoria']
             if categoria_filtro == '6A':
-                # Buscar SOLO productos que tengan exactamente "Cat6A" en el campo categoria
-                productos_query = productos_query.filter(categoria__iexact='Cat6A')
-                print(f"🎯 Filtrando SOLO por categoría exacta: Cat6A")
+                # Múltiples intentos para encontrar Cat6A - probando diferentes formatos
+                productos_query = productos_query.filter(
+                    Q(categoria__iexact='Cat6A') |
+                    Q(categoria__iexact='6A') |
+                    Q(categoria__icontains='6A')
+                ).exclude(
+                    # Excluir explícitamente los que son SOLO Cat6 sin A
+                    Q(categoria__iexact='Cat6') |
+                    Q(categoria__iexact='6')
+                )
+                print(f"🎯 Filtrando por Cat6A (excluyendo Cat6 simple)")
             elif categoria_filtro == '6':
-                # Buscar SOLO productos que tengan exactamente "Cat6" (sin la A)
-                productos_query = productos_query.filter(categoria__iexact='Cat6')
-                print(f"🎯 Filtrando SOLO por categoría exacta: Cat6")
+                # Buscar Cat6 pero NO Cat6A
+                productos_query = productos_query.filter(
+                    Q(categoria__iexact='Cat6') |
+                    Q(categoria__iexact='6')
+                ).exclude(categoria__icontains='6A')
+                print(f"🎯 Filtrando SOLO por Cat6 (excluyendo Cat6A)")
             elif categoria_filtro == '5e':
-                # Buscar exactamente "Cat5e" en el campo categoria
-                productos_query = productos_query.filter(categoria__iexact='Cat5e')
-                print(f"🎯 Filtrando SOLO por categoría exacta: Cat5e")
+                # Buscar Cat5e
+                productos_query = productos_query.filter(
+                    Q(categoria__iexact='Cat5e') |
+                    Q(categoria__iexact='5e')
+                )
+                print(f"🎯 Filtrando por Cat5e")
             else:
                 # Para otros casos, buscar que contenga el valor
                 productos_query = productos_query.filter(categoria__icontains=categoria_filtro)
@@ -6292,6 +6306,17 @@ def buscar_productos_catalogo(request):
             )
             print(f"🔌 Filtrando solo jacks/conectores")
         
+        # DEBUGGING: Mostrar TODAS las categorías que existen en la base de datos
+        if filtros.get('categoria'):
+            todas_las_categorias = ProductoCatalogo.objects.values_list('categoria', flat=True).distinct()
+            print(f"🔍 TODAS las categorías en la BD: {list(todas_las_categorias)}")
+            
+            # Mostrar productos específicos que contienen "6" en la categoría
+            productos_con_6 = ProductoCatalogo.objects.filter(categoria__icontains='6')
+            print(f"📋 Productos con '6' en categoría:")
+            for p in productos_con_6[:10]:  # Solo los primeros 10
+                print(f"   - {p.no_parte}: categoria='{p.categoria}' desc='{p.descripcion[:30]}...'")
+        
         # Obtener productos (sin límite por ahora para debugging)
         productos = productos_query.order_by('marca__nombre', 'no_parte')  # Sin límite temporalmente
         
@@ -6300,7 +6325,7 @@ def buscar_productos_catalogo(request):
         # Log de todas las categorías únicas para debugging
         if filtros.get('categoria'):
             categorias_encontradas = set(p.categoria for p in productos if p.categoria)
-            print(f"📋 Categorías encontradas en resultados: {categorias_encontradas}")
+            print(f"📋 Categorías encontradas en RESULTADOS FINALES: {categorias_encontradas}")
         
         # Convertir a formato JSON
         productos_data = []
