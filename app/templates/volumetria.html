@@ -3094,7 +3094,7 @@ async function obtenerDatosProductosCatalogo(numerosParte) {
             if (data.success && data.sugerencias && data.sugerencias.length > 0) {
                 // Buscar coincidencia exacta
                 const producto = data.sugerencias.find(p => 
-                    p.numero_parte.toLowerCase() === numeroParte.toLowerCase()
+                    (typeof p.numero_parte === 'string' ? p.numero_parte.toLowerCase() : '') === numeroParte.toLowerCase()
                 ) || data.sugerencias[0]; // Si no hay coincidencia exacta, usar el primero
                 
                 productosCompletos[tipo] = {
