@@ -6228,7 +6228,7 @@ def buscar_producto_catalogo_api(request):
 def buscar_productos_catalogo(request):
     """
     Endpoint para buscar productos en el catálogo de volumetría con motor inteligente.
-    Filtra por tipo, categoría, marca, color, uso y texto.
+    Filtra por tipo, categoría, marca, color, uso y texto, y prioriza "bobina" para cables.
     """
     try:
         query = request.GET.get('q', '').strip()
@@ -6249,12 +6249,17 @@ def buscar_productos_catalogo(request):
         # Consulta base sobre el modelo correcto: CatalogoCableado
         productos_query = CatalogoCableado.objects.filter(activo=True)
 
-        # 1. Filtrar por TIPO DE PRODUCTO (descripción) si se especifica 'cable'.
+        # 1. Priorizar "bobina" y filtrar por tipo 'cable'.
         if tipo_producto == 'cable':
-            productos_query = productos_query.filter(
+            productos_query = productos_query.annotate(
+                bobina_priority=Case(
+                    When(descripcion__icontains='bobina', then=Value(1)),
+                    default=Value(2)
+                )
+            ).filter(
                 Q(descripcion__icontains='bobina') | Q(descripcion__icontains='cable')
             )
-            print(f"🔌 Filtro de descripción para 'cable'/'bobina' aplicado.")
+            print(f"🔌 Filtro de descripción para 'cable'/'bobina' aplicado con prioridad a 'bobina'.")
 
         # 2. Filtrar por categoría si se proporciona en los filtros.
         categoria_filtro = filtros.get('categoria')
@@ -6295,8 +6300,11 @@ def buscar_productos_catalogo(request):
             )
             print(f"🎯 Filtro de texto aplicado: '{query}'")
 
-        # Limitar resultados y ordenar
-        productos = productos_query.distinct().order_by('numero_parte')[:50]
+        # Ordenar y limitar resultados
+        if tipo_producto == 'cable':
+            productos = productos_query.distinct().order_by('bobina_priority', 'numero_parte')[:50]
+        else:
+            productos = productos_query.distinct().order_by('numero_parte')[:50]
         
         print(f"📦 Productos encontrados después del filtrado: {productos.count()}")
 
