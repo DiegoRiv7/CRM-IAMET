@@ -6260,17 +6260,17 @@ def buscar_productos_catalogo(request):
         if filtros.get('categoria'):
             categoria_filtro = filtros['categoria']
             if categoria_filtro == '6A':
-                # Buscar SOLO productos que tengan exactamente "6A" (no "6" ni otros)
-                productos_query = productos_query.filter(categoria__iexact='6A')
-                print(f"🎯 Filtrando SOLO categoría 6A (excluyendo Cat 6)")
+                # Buscar SOLO productos que tengan exactamente "Cat6A" en el campo categoria
+                productos_query = productos_query.filter(categoria__iexact='Cat6A')
+                print(f"🎯 Filtrando SOLO por categoría exacta: Cat6A")
             elif categoria_filtro == '6':
-                # Buscar SOLO productos que tengan exactamente "6" (no "6A")
-                productos_query = productos_query.filter(categoria__iexact='6').exclude(categoria__icontains='6A')
-                print(f"🎯 Filtrando SOLO categoría 6 (excluyendo Cat 6A)")
+                # Buscar SOLO productos que tengan exactamente "Cat6" (sin la A)
+                productos_query = productos_query.filter(categoria__iexact='Cat6')
+                print(f"🎯 Filtrando SOLO por categoría exacta: Cat6")
             elif categoria_filtro == '5e':
-                # Buscar exactamente "5e" en el campo categoria
-                productos_query = productos_query.filter(categoria__iexact='5e')
-                print(f"🎯 Filtrando SOLO categoría 5e")
+                # Buscar exactamente "Cat5e" en el campo categoria
+                productos_query = productos_query.filter(categoria__iexact='Cat5e')
+                print(f"🎯 Filtrando SOLO por categoría exacta: Cat5e")
             else:
                 # Para otros casos, buscar que contenga el valor
                 productos_query = productos_query.filter(categoria__icontains=categoria_filtro)
