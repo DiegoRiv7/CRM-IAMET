@@ -5,7 +5,14 @@
 
 {% block content %}
 <style>
-    /* Summer Pink Light Theme Overrides for Volumetría - v2 */
+    html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%; /* Asegurar que html y body tomen la altura completa */
+    overflow: hidden; /* Evitar scroll del body si volumetria-workspace toma el control */
+}
+
+/* Summer Pink Light Theme Overrides for Volumetría - v2 */
     .light-theme .apple-bg {
         background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 100%);
     }
@@ -11750,7 +11757,11 @@ document.addEventListener('DOMContentLoaded', () => {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     overflow: hidden;
-    position: relative;
+    position: fixed; /* Cambiado a fixed */
+    top: 0;          /* Anclado arriba */
+    left: 0;         /* Anclado a la izquierda */
+    width: 100vw;    /* Ancho completo del viewport */
+    z-index: 999;    /* Asegurar que esté por encima de otros contenidos */
 }
 
 /* Zonas de activación del dock - invisibles pero funcionales */
