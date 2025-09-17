@@ -1665,6 +1665,13 @@ function generarVolumetriaParaGeneral(datos) {
     
     cerrarAnimacionCarga();
 
+    // Limpiar tabla existente si existe
+    const tablaExistente = document.getElementById('tabla-volumetria');
+    if (tablaExistente) {
+        console.log('🗑️ Limpiando tabla existente de volumetría');
+        tablaExistente.remove();
+    }
+
     // Usar números de parte que vienen en los datos
     console.log('🔍 Usando números de parte capturados desde datos:', datos.numerosParte);
     
@@ -1693,9 +1700,10 @@ function generarVolumetriaParaGeneral(datos) {
         const cantidadPatchcordsUsuario = datos.cantidadNodos; // 1 por nodo (color usuario)
         const cantidadPatchcordsPatchpanel = datos.cantidadNodos; // 1 por nodo (color patchpanel)
         
-        // Crear tabla de volumetría con productos completos - IGUAL QUE EL FORMULARIO ORIGINAL
-        mostrarTablaVolumetria({
+        // Crear tabla de volumetría general específica - para volumetría general
+        mostrarTablaVolumetriaGeneral({
             ...datos,
+            categoria: 'General', // Forzar categoría General
             cantidadCable,
             cantidadFaceplates,
             cantidadJacksUsuario,
@@ -1710,8 +1718,9 @@ function generarVolumetriaParaGeneral(datos) {
     }).catch(error => {
         console.error('❌ Error obteniendo productos del catálogo:', error);
         // Proceder con datos básicos si hay error
-        mostrarTablaVolumetria({
+        mostrarTablaVolumetriaGeneral({
             ...datos,
+            categoria: 'General', // Forzar categoría General
             cantidadCable: Math.ceil((datos.distancia * datos.cantidadNodos) / 305),
             cantidadFaceplates: datos.cantidadNodos,
             cantidadJacksUsuario: datos.cantidadNodos,
@@ -2726,7 +2735,7 @@ function generarVolumetria(datos) {
         const cantidadPatchcordsPatchpanel = datos.cantidadNodos; // 1 por nodo (color patchpanel)
         
         // Crear tabla de volumetría con productos completos
-        mostrarTablaVolumetria({
+        mostrarTablaVolumetriaGeneral({
             ...datos,
             cantidadCable,
             cantidadFaceplates,
@@ -2739,8 +2748,9 @@ function generarVolumetria(datos) {
     }).catch(error => {
         console.error('❌ Error obteniendo productos del catálogo:', error);
         // Proceder con datos básicos si hay error
-        mostrarTablaVolumetria({
+        mostrarTablaVolumetriaGeneral({
             ...datos,
+            categoria: 'General', // Forzar categoría General
             cantidadCable: Math.ceil((datos.distancia * datos.cantidadNodos) / 305),
             cantidadFaceplates: datos.cantidadNodos,
             cantidadJacksUsuario: datos.cantidadNodos,
