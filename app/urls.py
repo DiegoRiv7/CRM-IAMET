@@ -158,6 +158,7 @@ urlpatterns = [
     path('api/eliminar-producto-catalogo/<int:producto_id>/', views.eliminar_producto_catalogo, name='eliminar_producto_catalogo'),
     path('api/vista-previa-volumetria/', views.vista_previa_volumetria_api, name='vista_previa_volumetria_api'),
     path('api/sugerencias-productos/', views.sugerencias_productos_api, name='sugerencias_productos_api'),
+    path('api/buscar-productos-por-numeros-parte/', views.buscar_productos_por_numeros_parte, name='buscar_productos_por_numeros_parte'),
     
     # Gestión de catálogo de volumetría (solo superusuarios)
     path('gestion-catalogo-volumetria/', views.gestion_catalogo_volumetria, name='gestion_catalogo_volumetria'),

@@ -6228,8 +6228,7 @@ def buscar_producto_catalogo_api(request):
 def buscar_productos_catalogo(request):
     """
     Endpoint para buscar productos en el catálogo de volumetría con motor inteligente.
-    Usa el modelo correcto (CatalogoCableado) y filtra por categoría y texto de forma precisa.
-    Ahora filtra por descripción para 'cable' en lugar de 'tipo_producto'.
+    Filtra por tipo, categoría, marca, color, uso y texto.
     """
     try:
         query = request.GET.get('q', '').strip()
@@ -6250,7 +6249,7 @@ def buscar_productos_catalogo(request):
         # Consulta base sobre el modelo correcto: CatalogoCableado
         productos_query = CatalogoCableado.objects.filter(activo=True)
 
-        # 1. Filtrar por descripción si el tipo es 'cable'.
+        # 1. Filtrar por TIPO DE PRODUCTO (descripción) si se especifica 'cable'.
         if tipo_producto == 'cable':
             productos_query = productos_query.filter(
                 Q(descripcion__icontains='bobina') | Q(descripcion__icontains='cable')
@@ -6272,11 +6271,23 @@ def buscar_productos_catalogo(request):
                 productos_query = productos_query.filter(categoria__iexact=exact_category)
                 print(f"🎯 Filtro de categoría exacto aplicado: {exact_category}")
             else:
-                # Fallback para otras categorías
                 productos_query = productos_query.filter(categoria__icontains=categoria_filtro)
                 print(f"🎯 Filtro de categoría icontains aplicado: {categoria_filtro}")
 
-        # 3. Filtrar por el query de texto en número de parte y descripción.
+        # 3. Filtrar por marca, color y uso.
+        if 'marca' in filtros and filtros['marca']:
+            productos_query = productos_query.filter(marca__iexact=filtros['marca'])
+            print(f"🏷️ Filtro de marca aplicado: {filtros['marca']}")
+        
+        if 'color' in filtros and filtros['color']:
+            productos_query = productos_query.filter(color__iexact=filtros['color'])
+            print(f"🎨 Filtro de color aplicado: {filtros['color']}")
+
+        if 'uso' in filtros and filtros['uso']:
+            productos_query = productos_query.filter(descripcion__icontains=filtros['uso'])
+            print(f"🏠 Filtro de uso aplicado: {filtros['uso']}")
+
+        # 4. Filtrar por el query de texto en número de parte y descripción.
         if query:
             productos_query = productos_query.filter(
                 Q(numero_parte__icontains=query) | 
@@ -6317,3 +6328,31 @@ def buscar_productos_catalogo(request):
             'success': False,
             'error': str(e)
         }, status=500)
+
+@login_required
+@require_http_methods(["POST"])
+def buscar_productos_por_numeros_parte(request):
+    try:
+        data = json.loads(request.body)
+        numeros_parte = data.get('numeros_parte', [])
+
+        if not numeros_parte:
+            return JsonResponse({'success': False, 'error': 'No se proporcionaron números de parte'})
+
+        productos = CatalogoCableado.objects.filter(numero_parte__in=numeros_parte, activo=True)
+        
+        productos_data = []
+        for producto in productos:
+            productos_data.append({
+                'numero_parte': producto.numero_parte,
+                'descripcion': producto.descripcion,
+                'precio_lista': float(producto.precio_unitario) if producto.precio_unitario else 0.0,
+                'costo_unitario': float(producto.precio_proveedor) if producto.precio_proveedor else 0.0,
+                'marca': producto.marca,
+                'categoria': producto.categoria or '',
+            })
+
+        return JsonResponse({'success': True, 'productos': productos_data})
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

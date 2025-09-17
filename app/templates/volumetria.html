@@ -5061,9 +5061,37 @@ function mostrarPopupBusquedaAvanzada(fieldId) {
         setTimeout(() => searchInput.focus(), 200);
     }
     
-    // Cargar productos iniciales inmediatamente (mostrar catálogo completo)
+    // Cargar productos iniciales o recientes
     setTimeout(() => {
-        cargarProductosIniciales(tipoProducto);
+        const recentProducts = JSON.parse(localStorage.getItem(`recentProducts_${tipoProducto}`)) || [];
+
+        if (recentProducts.length > 0) {
+            mostrarMensajeResultados('🔄 Cargando productos recientes...');
+            // Fetch details of recent products
+            fetch(`/app/api/buscar-productos-por-numeros-parte/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ numeros_parte: recentProducts })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.productos) {
+                    mostrarResultadosPopup(data.productos);
+                } else {
+                    // Fallback to initial products if fetching recent fails
+                    cargarProductosIniciales(tipoProducto);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching recent products:', error);
+                cargarProductosIniciales(tipoProducto);
+            });
+        } else {
+            cargarProductosIniciales(tipoProducto);
+        }
     }, 300);
 }
 
@@ -5483,7 +5511,21 @@ function mostrarResultadosPopup(productos) {
 // Función para seleccionar producto desde el popup
 function seleccionarProductoDesdePopup(numeroParte, descripcion, precioLista, costoUnitario) {
     if (!currentFieldId) return;
+
+    // Store the selected product in localStorage
+    const tipoProducto = detectarTipoProducto(currentFieldId);
+    let recentProducts = JSON.parse(localStorage.getItem(`recentProducts_${tipoProducto}`)) || [];
     
+    // Add the new product to the beginning of the list
+    recentProducts.unshift(numeroParte);
+    
+    // Remove duplicates and keep only the last 3
+    recentProducts = [...new Set(recentProducts)].slice(0, 3);
+    
+    localStorage.setItem(`recentProducts_${tipoProducto}`, JSON.stringify(recentProducts));
+
+    console.log(`✅ Producto seleccionado y guardado en recientes: ${numeroParte}`);
+
     // Actualizar el campo correspondiente
     const targetField = document.getElementById(currentFieldId);
     if (targetField) {
