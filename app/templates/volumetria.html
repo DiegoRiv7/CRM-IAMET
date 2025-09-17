@@ -2046,30 +2046,20 @@ function generarVolumetriaParaGeneral(datos) {
     
     cerrarAnimacionCarga();
 
-    // Limpiar tabla existente si existe
-    const tablaExistente = document.getElementById('tabla-volumetria');
-    if (tablaExistente) {
-        console.log('🗑️ Limpiando tabla existente de volumetría');
-        tablaExistente.remove();
+    // Asegurarse de que el workspace principal de volumetría esté visible
+    const workspace = document.getElementById('tabla-volumetria');
+    if (workspace) {
+        workspace.style.display = 'block';
+        console.log('📊 Workspace de volumetría principal visible.');
+    } else {
+        // Si por alguna razón el workspace no existe, crearlo (esto no debería pasar si el flujo es correcto)
+        console.warn('⚠️ Workspace de volumetría principal no encontrado, recreando...');
+        mostrarVolumetriaGeneralDirecta(); // This function creates the workspace
+        // After this, the workspace should exist and be visible.
     }
 
-    // Usar números de parte que vienen en los datos
-    console.log('🔍 Usando números de parte capturados desde datos:', datos.numerosParte);
-    
-    const numerosParte = datos.numerosParte || {
-        cable: '',
-        jack: '',
-        patchcord: '',
-        faceplate: ''
-    };
-    
-    // Verificar si al menos uno tiene valor
-    const tieneValores = Object.values(numerosParte).some(val => val);
-    console.log('🔍 ¿Tiene algún número de parte?', tieneValores);
-    console.log('🔍 Números de parte a procesar:', numerosParte);
-    
     // Obtener información completa de productos del catálogo
-    obtenerDatosProductosCatalogo(numerosParte).then(productosCompletos => {
+    obtenerDatosProductosCatalogo(datos.numerosParte).then(productosCompletos => {
         console.log('📦 Productos completos del catálogo:', productosCompletos);
         
         // Calcular cantidad de cable
@@ -2093,45 +2083,42 @@ function generarVolumetriaParaGeneral(datos) {
         const cantidadPatchcordsUsuario = datos.cantidadNodos; // 1 por nodo (color usuario)
         const cantidadPatchcordsPatchpanel = datos.cantidadNodos; // 1 por nodo (color patchpanel)
         
-        // Crear tabla de volumetría general específica - para volumetría general
-        mostrarTablaVolumetriaGeneral({
-            ...datos,
-            categoria: 'General', // Forzar categoría General
+        // Asegurarse de que la tabla principal (excel-table-general) exista
+        let mainExcelTable = document.getElementById('tabla-principal-precios');
+        if (!mainExcelTable) {
+            console.log('🚀 La tabla principal no existe, agregándola...');
+            agregarTablaPrincipal(); // This function adds the HTML for the table
+            mainExcelTable = document.getElementById('tabla-principal-precios'); // Get reference after creation
+        } else {
+            console.log('🔄 La tabla principal ya existe, limpiando su contenido...');
+            const tbody = document.getElementById('excel-tbody-general');
+            if (tbody) {
+                // Keep the totals row, remove others
+                const totalsRow = tbody.querySelector('.excel-totals-row');
+                tbody.innerHTML = ''; // Clear all
+                if (totalsRow) {
+                    tbody.appendChild(totalsRow); // Add totals row back
+                }
+            }
+        }
+        
+        // Poblar la tabla con los productos de nodos
+        poblarTablaGeneralConNodos({
             cantidadCable,
             cantidadFaceplates,
             cantidadJacksUsuario,
             cantidadJacksPatchpanel,
             cantidadPatchcordsUsuario,
             cantidadPatchcordsPatchpanel,
-            productosCompletos: productosCompletos
+            productosCompletos,
+            numerosParte: datos.numerosParte
         });
-        
-        // Después de crear el panel, automaticamente crear y poblar la tabla General
-        setTimeout(() => {
-            console.log('🚀 Auto-creando tabla General con productos de nodos de red...');
-            if (typeof agregarTablaPrincipal === 'function') {
-                agregarTablaPrincipal();
-                // Poblar la tabla con los productos de nodos
-                setTimeout(() => {
-                    poblarTablaGeneralConNodos({
-                        cantidadCable,
-                        cantidadFaceplates,
-                        cantidadJacksUsuario,
-                        cantidadJacksPatchpanel,
-                        cantidadPatchcordsUsuario,
-                        cantidadPatchcordsPatchpanel,
-                        productosCompletos,
-                        numerosParte: datos.numerosParte
-                    });
-                }, 500);
-            }
-        }, 1000);
         
         console.log('✅ Volumetría generada exitosamente');
         
     }).catch(error => {
         console.error('❌ Error obteniendo productos del catálogo:', error);
-        // Proceder con datos básicos si hay error
+        // Fallback: If there's an error fetching products, still try to show the table with basic data
         const datosBasicos = {
             ...datos,
             categoria: 'General', // Forzar categoría General
@@ -2143,18 +2130,24 @@ function generarVolumetriaParaGeneral(datos) {
             cantidadPatchcordsPatchpanel: datos.cantidadNodos
         };
         
-        mostrarTablaVolumetriaGeneral(datosBasicos);
-        
-        // También crear tabla automáticamente en caso de error
-        setTimeout(() => {
-            console.log('🚀 Auto-creando tabla General con datos básicos...');
-            if (typeof agregarTablaPrincipal === 'function') {
-                agregarTablaPrincipal();
-                setTimeout(() => {
-                    poblarTablaGeneralConNodos(datosBasicos);
-                }, 500);
+        let mainExcelTable = document.getElementById('tabla-principal-precios');
+        if (!mainExcelTable) {
+            console.log('🚀 La tabla principal no existe (fallback), agregándola...');
+            agregarTablaPrincipal();
+            mainExcelTable = document.getElementById('tabla-principal-precios');
+        } else {
+            console.log('🔄 La tabla principal ya existe (fallback), limpiando su contenido...');
+            const tbody = document.getElementById('excel-tbody-general');
+            if (tbody) {
+                const totalsRow = tbody.querySelector('.excel-totals-row');
+                tbody.innerHTML = '';
+                if (totalsRow) {
+                    tbody.appendChild(totalsRow);
+                }
             }
-        }, 1000);
+        }
+        
+        poblarTablaGeneralConNodos(datosBasicos);
     });
 }
 
@@ -12669,9 +12662,10 @@ function agregarTablaPrincipal() {
     const container = document.getElementById('dynamic-tables-container');
     if (!container) return;
     
-    // Verificar si ya existe la tabla principal
+    // Verificar si ya existe la tabla principal. Si existe, no la agregamos de nuevo.
+    // La lógica de limpiar y poblar ahora está en generarVolumetriaParaGeneral.
     if (document.getElementById('tabla-principal-precios')) {
-        alert('La tabla principal ya está agregada');
+        console.log('⚠️ La tabla principal ya existe, no se agregará de nuevo.');
         return;
     }
     
