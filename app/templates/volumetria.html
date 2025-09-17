@@ -786,6 +786,292 @@
             font-size: 12px;
         }
     }
+
+    /* Estilos para Popup de Búsqueda Avanzada */
+    .search-popup-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 10000;
+        display: none;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+    }
+
+    .search-popup-overlay.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .search-popup {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        width: 90%;
+        max-width: 800px;
+        max-height: 80vh;
+        overflow: hidden;
+        animation: searchPopupSlideIn 0.3s ease-out;
+        border: 1px solid #e5e7eb;
+    }
+
+    @keyframes searchPopupSlideIn {
+        from {
+            opacity: 0;
+            transform: scale(0.9) translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .search-popup-header {
+        background: linear-gradient(135deg, #3b82f6, #6366f1);
+        color: white;
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .search-popup-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .search-popup-close {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 6px;
+        transition: background-color 0.2s;
+    }
+
+    .search-popup-close:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .search-popup-content {
+        padding: 20px;
+        overflow-y: auto;
+        max-height: calc(80vh - 140px);
+    }
+
+    .search-input-container {
+        margin-bottom: 20px;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 16px;
+        transition: border-color 0.2s;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .search-filters {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+        padding: 20px;
+        background: #f8fafc;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .filter-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .filter-input, .filter-select {
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.2s;
+    }
+
+    .filter-input:focus, .filter-select:focus {
+        outline: none;
+        border-color: #3b82f6;
+    }
+
+    .search-results {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+    }
+
+    .search-result-item {
+        padding: 12px 16px;
+        border-bottom: 1px solid #f3f4f6;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .search-result-item:hover {
+        background-color: #f8fafc;
+    }
+
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
+
+    .search-result-info {
+        flex: 1;
+    }
+
+    .search-result-part {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 2px;
+    }
+
+    .search-result-description {
+        color: #6b7280;
+        font-size: 14px;
+        margin-bottom: 2px;
+    }
+
+    .search-result-details {
+        font-size: 12px;
+        color: #9ca3af;
+    }
+
+    .search-result-price {
+        text-align: right;
+        font-weight: 600;
+    }
+
+    .search-result-list-price {
+        color: #1f2937;
+        margin-bottom: 2px;
+    }
+
+    .search-result-client-price {
+        color: #059669;
+        font-size: 14px;
+    }
+
+    .search-actions {
+        padding: 20px;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        background: #f9fafb;
+    }
+
+    .search-btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+    }
+
+    .search-btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+    }
+
+    .search-btn-secondary:hover {
+        background: #e5e7eb;
+    }
+
+    .search-btn-primary {
+        background: #3b82f6;
+        color: white;
+    }
+
+    .search-btn-primary:hover {
+        background: #2563eb;
+    }
+
+    /* Dark theme para el popup */
+    .dark .search-popup {
+        background: #1f2937;
+        border-color: #374151;
+    }
+
+    .dark .search-popup-content {
+        color: #f9fafb;
+    }
+
+    .dark .search-input {
+        background: #374151;
+        border-color: #4b5563;
+        color: #f9fafb;
+    }
+
+    .dark .search-filters {
+        background: #374151;
+        border-color: #4b5563;
+    }
+
+    .dark .filter-input, .dark .filter-select {
+        background: #4b5563;
+        border-color: #6b7280;
+        color: #f9fafb;
+    }
+
+    .dark .search-results {
+        border-color: #4b5563;
+    }
+
+    .dark .search-result-item {
+        border-color: #374151;
+    }
+
+    .dark .search-result-item:hover {
+        background-color: #374151;
+    }
+
+    .dark .search-actions {
+        background: #374151;
+        border-color: #4b5563;
+    }
+
+    .dark .search-btn-secondary {
+        background: #4b5563;
+        color: #f9fafb;
+    }
+
+    .dark .search-btn-secondary:hover {
+        background: #6b7280;
+    }
 </style>
 <!-- Contenido directo de volumetría integral -->
 <div id="volumetria-main" class="min-h-screen apple-bg">
@@ -1155,7 +1441,7 @@ function mostrarFormularioNodos() {
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-3">Cable</label>
                                 <div class="autocomplete-container">
-                                    <input type="text" id="cable-numero-parte" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="PUL6004BL-BOX" required oninput="onVolumetriaInput('cable-numero-parte')" onkeydown="onVolumetriaKeydown(event, 'cable-numero-parte')" onfocus="onVolumetriaFocus('cable-numero-parte')" onblur="onVolumetriaBlur('cable-numero-parte')">
+                                    <input type="text" id="cable-numero-parte" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="PUL6004BL-BOX" required oninput="onVolumetriaInput('cable-numero-parte')" onkeydown="onVolumetriaKeydown(event, 'cable-numero-parte')" onfocus="onVolumetriaFocus('cable-numero-parte')" onblur="onVolumetriaBlur('cable-numero-parte')" onclick="mostrarPopupBusquedaAvanzada('cable-numero-parte')">
                                     <div id="suggestions_cable-numero-parte" class="autocomplete-suggestions"></div>
                                 </div>
                             </div>
@@ -1163,7 +1449,7 @@ function mostrarFormularioNodos() {
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-3">Jack</label>
                                 <div class="autocomplete-container">
-                                    <input type="text" id="jack-numero-parte" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="CJ6X88TBL" required oninput="onVolumetriaInput('jack-numero-parte')" onkeydown="onVolumetriaKeydown(event, 'jack-numero-parte')" onfocus="onVolumetriaFocus('jack-numero-parte')" onblur="onVolumetriaBlur('jack-numero-parte')">
+                                    <input type="text" id="jack-numero-parte" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="CJ6X88TBL" required oninput="onVolumetriaInput('jack-numero-parte')" onkeydown="onVolumetriaKeydown(event, 'jack-numero-parte')" onfocus="onVolumetriaFocus('jack-numero-parte')" onblur="onVolumetriaBlur('jack-numero-parte')" onclick="mostrarPopupBusquedaAvanzada('jack-numero-parte')">
                                     <div id="suggestions_jack-numero-parte" class="autocomplete-suggestions"></div>
                                 </div>
                             </div>
@@ -1171,7 +1457,7 @@ function mostrarFormularioNodos() {
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-3">Patchcord</label>
                                 <div class="autocomplete-container">
-                                    <input type="text" id="patchcord-numero-parte" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="UTP6SP3BL" required oninput="onVolumetriaInput('patchcord-numero-parte')" onkeydown="onVolumetriaKeydown(event, 'patchcord-numero-parte')" onfocus="onVolumetriaFocus('patchcord-numero-parte')" onblur="onVolumetriaBlur('patchcord-numero-parte')">
+                                    <input type="text" id="patchcord-numero-parte" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="UTP6SP3BL" required oninput="onVolumetriaInput('patchcord-numero-parte')" onkeydown="onVolumetriaKeydown(event, 'patchcord-numero-parte')" onfocus="onVolumetriaFocus('patchcord-numero-parte')" onblur="onVolumetriaBlur('patchcord-numero-parte')" onclick="mostrarPopupBusquedaAvanzada('patchcord-numero-parte')">
                                     <div id="suggestions_patchcord-numero-parte" class="autocomplete-suggestions"></div>
                                 </div>
                             </div>
@@ -1179,7 +1465,7 @@ function mostrarFormularioNodos() {
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-3">Faceplate</label>
                                 <div class="autocomplete-container">
-                                    <input type="text" id="faceplate-numero-parte" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="NK2FWH" required oninput="onVolumetriaInput('faceplate-numero-parte')" onkeydown="onVolumetriaKeydown(event, 'faceplate-numero-parte')" onfocus="onVolumetriaFocus('faceplate-numero-parte')" onblur="onVolumetriaBlur('faceplate-numero-parte')">
+                                    <input type="text" id="faceplate-numero-parte" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200" placeholder="NK2FWH" required oninput="onVolumetriaInput('faceplate-numero-parte')" onkeydown="onVolumetriaKeydown(event, 'faceplate-numero-parte')" onfocus="onVolumetriaFocus('faceplate-numero-parte')" onblur="onVolumetriaBlur('faceplate-numero-parte')" onclick="mostrarPopupBusquedaAvanzada('faceplate-numero-parte')">
                                     <div id="suggestions_faceplate-numero-parte" class="autocomplete-suggestions"></div>
                                 </div>
                             </div>
@@ -1788,12 +2074,28 @@ function restaurarVolumetriaGeneralConNodos(datos) {
 
 // Función para regresar a volumetría general
 function regresarAVolumetriaGeneral() {
+    console.log('🔙 Regresando a volumetría general...');
+    
+    // Cerrar el formulario de nodos
     cerrarFormularioNodosGeneral();
     
-    // Mostrar la workspace de volumetría general
+    // Verificar si existe tabla de volumetría (caso: ya había una tabla)
     const workspace = document.getElementById('tabla-volumetria');
     if (workspace) {
+        console.log('📊 Mostrando tabla de volumetría existente');
         workspace.style.display = 'block';
+        return;
+    }
+    
+    // Si no hay tabla, regresar al panel de componentes (caso: venimos del panel inicial)
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        console.log('🎛️ Mostrando panel de componentes');
+        mainContent.style.display = 'block';
+    } else {
+        console.log('⚠️ No se encontró contenido principal, recargando página');
+        // Fallback: recargar la página para volver al estado inicial
+        window.location.reload();
     }
 }
 
@@ -3138,7 +3440,7 @@ function mostrarTablaVolumetriaGeneral(datos) {
                     <!-- Header compacto con botón volver y datos extendidos -->
                     <div class="header-extended-section">
                         <div class="flex items-center justify-between w-full mb-4">
-                            <button onclick="window.location.reload()" class="back-button">
+                            <button onclick="volverAPaginaAnterior()" class="back-button">
                                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                                 </svg>
@@ -4535,6 +4837,874 @@ function calcularPrecioSegunCategoria(costoUnitario, categoria) {
 // Función para obtener la categoría del cliente actual
 function obtenerCategoriaClienteActual() {
     return window.categoriaClienteActual || 'C'; // Por defecto categoría C
+}
+
+// Función para búsqueda de productos en tabla Excel con nueva lógica de precios
+function buscarProductoExcel(inputElement) {
+    const query = inputElement.textContent.trim();
+    const rowIndex = inputElement.getAttribute('data-row');
+    const suggestionsDiv = document.getElementById(`suggestions-${rowIndex}`);
+    
+    if (!query || query.length < 2) {
+        if (suggestionsDiv) {
+            suggestionsDiv.style.display = 'none';
+        }
+        return;
+    }
+    
+    console.log(`🔍 Buscando producto: "${query}" para fila ${rowIndex}`);
+    
+    // Llamar API para buscar productos
+    fetch(`/app/api/sugerencias-productos/?q=${encodeURIComponent(query)}&limit=5`)
+        .then(response => response.json())
+        .then(productos => {
+            if (productos && productos.length > 0) {
+                mostrarSugerenciasProductos(productos, rowIndex, suggestionsDiv);
+            } else {
+                if (suggestionsDiv) {
+                    suggestionsDiv.style.display = 'none';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error buscando productos:', error);
+            if (suggestionsDiv) {
+                suggestionsDiv.style.display = 'none';
+            }
+        });
+}
+
+// Función para mostrar sugerencias de productos
+function mostrarSugerenciasProductos(productos, rowIndex, suggestionsDiv) {
+    if (!suggestionsDiv) return;
+    
+    const categoriaCliente = obtenerCategoriaClienteActual();
+    
+    let html = '';
+    productos.forEach(producto => {
+        // Calcular precio según categoría del cliente
+        const costoUnitario = parseFloat(producto.precio_proveedor) || 0;
+        const precioLista = calcularPrecioSegunCategoria(costoUnitario, categoriaCliente);
+        
+        html += `
+            <div class="suggestion-item p-2 hover:bg-gray-700 cursor-pointer border-b border-gray-600" 
+                 onclick="seleccionarProductoExcel('${producto.numero_parte}', '${producto.descripcion}', ${costoUnitario}, ${precioLista}, ${rowIndex})">
+                <div class="font-medium text-white">${producto.numero_parte}</div>
+                <div class="text-sm text-gray-300">${producto.descripcion}</div>
+                <div class="text-xs text-gray-400">Costo: $${costoUnitario.toFixed(2)} → Lista: $${precioLista.toFixed(2)} (Cat. ${categoriaCliente})</div>
+            </div>
+        `;
+    });
+    
+    suggestionsDiv.innerHTML = html;
+    suggestionsDiv.style.display = 'block';
+}
+
+// Función para seleccionar un producto de las sugerencias
+function seleccionarProductoExcel(numeroParte, descripcion, costoUnitario, precioLista, rowIndex) {
+    console.log(`✅ Seleccionando producto: ${numeroParte} para fila ${rowIndex}`);
+    
+    const row = document.querySelector(`[data-row="${rowIndex}"]`);
+    if (!row) return;
+    
+    // Llenar campos del producto
+    const celdaNoParte = row.querySelector('[data-field="noParte"]');
+    const celdaDescripcion = row.querySelector('[data-field="descripcion"]');
+    const celdaCostoUnitario = row.querySelector('[data-field="costoUnitario"]');
+    const celdaPrecioLista = row.querySelector('[data-field="precioLista"]');
+    
+    if (celdaNoParte) celdaNoParte.textContent = numeroParte;
+    if (celdaDescripcion) celdaDescripcion.textContent = descripcion;
+    if (celdaCostoUnitario) celdaCostoUnitario.textContent = `$${costoUnitario.toFixed(2)}`;
+    if (celdaPrecioLista) celdaPrecioLista.textContent = `$${precioLista.toFixed(2)}`;
+    
+    // Ocultar sugerencias
+    const suggestionsDiv = document.getElementById(`suggestions-${rowIndex}`);
+    if (suggestionsDiv) {
+        suggestionsDiv.style.display = 'none';
+    }
+    
+    // Recalcular la fila
+    setTimeout(() => {
+        if (typeof recalcularFilaExcelGeneral === 'function') {
+            recalcularFilaExcelGeneral(rowIndex);
+        }
+    }, 100);
+}
+
+// Ocultar sugerencias cuando se hace clic fuera
+document.addEventListener('click', function(event) {
+    // Verificar si el clic no fue en un campo de búsqueda o en las sugerencias
+    if (!event.target.closest('[data-field="noParte"]') && !event.target.closest('[id^="suggestions-"]')) {
+        // Ocultar todas las sugerencias visibles
+        const allSuggestions = document.querySelectorAll('[id^="suggestions-"]');
+        allSuggestions.forEach(suggestion => {
+            suggestion.style.display = 'none';
+        });
+    }
+});
+
+// Función para volver a la página anterior
+function volverAPaginaAnterior() {
+    console.log('🔙 Volviendo a la página anterior...');
+    
+    // Limpiar estado de volumetría guardado
+    localStorage.removeItem('volumetria_estado');
+    
+    // Verificar si hay historial de navegación
+    if (window.history.length > 1) {
+        // Usar history.back() para volver a la página anterior
+        window.history.back();
+    } else {
+        // Si no hay historial, redirigir a la página principal de oportunidades
+        window.location.href = '/app/todos/';
+    }
+}
+
+// Función para evitar error de designBtn no definido
+function initDesignPanel() {
+    console.log('🎨 initDesignPanel llamado - función de compatibilidad');
+    // Esta función evita errores de JavaScript relacionados con designBtn
+    // que podrían estar referenciados en otro código pero no definidos
+    try {
+        if (typeof designBtn !== 'undefined') {
+            // Si designBtn existe, proceder normalmente
+            console.log('✅ designBtn está definido');
+        } else {
+            // Si no existe, crear una referencia vacía para evitar errores
+            console.log('⚠️ designBtn no definido - creando referencia vacía');
+            window.designBtn = null;
+        }
+    } catch (error) {
+        console.log('⚠️ Error en initDesignPanel:', error);
+    }
+}
+
+// ========================================
+// SISTEMA DE BÚSQUEDA AVANZADA DE PRODUCTOS
+// ========================================
+
+// Estado global para el popup de búsqueda
+let currentSearchPopup = null;
+let currentFieldId = null;
+
+// Función mejorada para mostrar popup de búsqueda al hacer clic en campo
+function mostrarPopupBusquedaAvanzada(fieldId) {
+    console.log(`🔍 Abriendo búsqueda avanzada para: ${fieldId}`);
+    
+    // Cerrar popup existente si hay uno
+    cerrarPopupBusquedaActual();
+    
+    // Guardar referencia al campo actual
+    currentFieldId = fieldId;
+    
+    // Determinar tipo de producto basado en el fieldId
+    const tipoProducto = detectarTipoProducto(fieldId);
+    
+    // Crear el popup de búsqueda avanzada
+    const popup = crearPopupBusquedaAvanzada(tipoProducto, fieldId);
+    
+    // Agregar al DOM
+    document.body.appendChild(popup);
+    currentSearchPopup = popup;
+    
+    // Activar el popup con animación
+    setTimeout(() => {
+        popup.classList.add('active');
+    }, 10);
+    
+    // Enfocar en el campo de búsqueda después de la animación
+    const searchInput = popup.querySelector('#search-input-popup');
+    if (searchInput) {
+        setTimeout(() => searchInput.focus(), 200);
+    }
+}
+
+// Función para detectar tipo de producto basado en fieldId
+function detectarTipoProducto(fieldId) {
+    if (fieldId.includes('cable')) return 'cable';
+    if (fieldId.includes('jack')) return 'jack';
+    if (fieldId.includes('patchcord')) return 'patchcord';
+    if (fieldId.includes('faceplate')) return 'faceplate';
+    return 'general';
+}
+
+// Función para crear el popup de búsqueda avanzada
+function crearPopupBusquedaAvanzada(tipoProducto, fieldId) {
+    const overlay = document.createElement('div');
+    overlay.className = 'search-popup-overlay';
+    overlay.id = 'search-popup-overlay';
+    
+    const tipoLabel = {
+        'cable': 'Cable UTP',
+        'jack': 'Jack RJ45', 
+        'patchcord': 'Patch Cord',
+        'faceplate': 'Faceplate'
+    };
+    
+    overlay.innerHTML = `
+        <div class="search-popup">
+            <!-- Header -->
+            <div class="search-popup-header">
+                <h3 class="search-popup-title">🔍 Buscar ${tipoLabel[tipoProducto] || 'Producto'}</h3>
+                <button onclick="cerrarPopupBusquedaActual()" class="search-popup-close">×</button>
+            </div>
+            
+            <!-- Contenido -->
+            <div class="search-popup-content">
+                <!-- Búsqueda principal -->
+                <div class="search-input-container">
+                    <input 
+                        type="text" 
+                        id="search-input-popup" 
+                        placeholder="Buscar por número de parte o descripción..."
+                        oninput="buscarProductosEnPopup(this.value)"
+                        class="search-input"
+                    >
+                </div>
+                
+                <!-- Filtros -->
+                <div class="search-filters" id="search-filters">
+                    ${crearFiltrosSegunTipo(tipoProducto)}
+                </div>
+                
+                <!-- Resultados -->
+                <div class="search-results" id="popup-search-results">
+                    <div style="padding: 20px; text-align: center; color: #6b7280;">
+                        🔍 Escriba para buscar productos...
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="search-actions">
+                <button onclick="cerrarPopupBusquedaActual()" class="search-btn search-btn-secondary">
+                    Cancelar
+                </button>
+                <button onclick="limpiarFiltrosPopup()" class="search-btn search-btn-secondary">
+                    Limpiar Filtros
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Cerrar popup al hacer clic en el overlay
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            cerrarPopupBusquedaActual();
+        }
+    });
+    
+    return overlay;
+}
+
+// Función para crear filtros específicos según el tipo de producto
+function crearFiltrosSegunTipo(tipoProducto) {
+    const filtrosBase = `
+        <div class="filter-group">
+            <label class="filter-label">💰 Precio máximo</label>
+            <input type="number" id="filter-precio-max" class="filter-input" placeholder="Ej: 150.00" min="0" step="0.01" onchange="aplicarFiltrosAutomatico()">
+        </div>
+        <div class="filter-group">
+            <label class="filter-label">🏷️ Marca</label>
+            <select id="filter-marca" class="filter-select" onchange="aplicarFiltrosAutomatico()">
+                <option value="">Todas las marcas</option>
+                <option value="Panduit">Panduit</option>
+                <option value="CommScope">CommScope</option>
+                <option value="Legrand">Legrand</option>
+                <option value="Belden">Belden</option>
+                <option value="3M">3M</option>
+                <option value="Nexans">Nexans</option>
+                <option value="Superior Essex">Superior Essex</option>
+            </select>
+        </div>
+    `;
+    
+    let filtrosEspecificos = '';
+    
+    switch (tipoProducto) {
+        case 'cable':
+            filtrosEspecificos = `
+                <div class="filter-group">
+                    <label class="filter-label">📏 Categoría</label>
+                    <select id="filter-categoria" class="filter-select" onchange="aplicarFiltrosAutomatico()">
+                        <option value="">Todas</option>
+                        <option value="5e">Cat 5e</option>
+                        <option value="6">Cat 6</option>
+                        <option value="6A">Cat 6A</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">🎨 Color</label>
+                    <select id="filter-color" class="filter-select" onchange="aplicarFiltrosAutomatico()">
+                        <option value="">Todos</option>
+                        <option value="azul">Azul</option>
+                        <option value="blanco">Blanco</option>
+                        <option value="gris">Gris</option>
+                        <option value="negro">Negro</option>
+                        <option value="rojo">Rojo</option>
+                        <option value="verde">Verde</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">🏠 Uso</label>
+                    <select id="filter-uso" class="filter-select" onchange="aplicarFiltrosAutomatico()">
+                        <option value="">Todos</option>
+                        <option value="interior">Interior</option>
+                        <option value="exterior">Exterior</option>
+                        <option value="plenum">Plenum</option>
+                        <option value="riser">Riser</option>
+                    </select>
+                </div>
+            `;
+            break;
+            
+        case 'jack':
+            filtrosEspecificos = `
+                <div class="filter-group">
+                    <label class="filter-label">📏 Categoría</label>
+                    <select id="filter-categoria" class="filter-select" onchange="aplicarFiltrosAutomatico()">
+                        <option value="">Todas</option>
+                        <option value="5e">Cat 5e</option>
+                        <option value="6">Cat 6</option>
+                        <option value="6A">Cat 6A</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">🎨 Color</label>
+                    <select id="filter-color" class="filter-select" onchange="aplicarFiltrosAutomatico()">
+                        <option value="">Todos</option>
+                        <option value="azul">Azul</option>
+                        <option value="blanco">Blanco</option>
+                        <option value="negro">Negro</option>
+                        <option value="rojo">Rojo</option>
+                        <option value="amarillo">Amarillo</option>
+                        <option value="verde">Verde</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">🔌 Tipo</label>
+                    <select id="filter-tipo" class="filter-select" onchange="aplicarFiltrosAutomatico()">
+                        <option value="">Todos</option>
+                        <option value="RJ45">RJ45 Estándar</option>
+                        <option value="blindado">Blindado</option>
+                        <option value="keystone">Keystone</option>
+                    </select>
+                </div>
+            `;
+            break;
+            
+        case 'patchcord':
+            filtrosEspecificos = `
+                <div class="filter-group">
+                    <label class="filter-label">📏 Longitud</label>
+                    <select id="filter-longitud" class="filter-select" onchange="aplicarFiltrosAutomatico()">
+                        <option value="">Todas</option>
+                        <option value="1">1 pie</option>
+                        <option value="3">3 pies</option>
+                        <option value="5">5 pies</option>
+                        <option value="7">7 pies</option>
+                        <option value="10">10 pies</option>
+                        <option value="15">15 pies</option>
+                        <option value="25">25 pies</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">🎨 Color</label>
+                    <select id="filter-color" class="filter-select" onchange="aplicarFiltrosAutomatico()">
+                        <option value="">Todos</option>
+                        <option value="azul">Azul</option>
+                        <option value="rojo">Rojo</option>
+                        <option value="amarillo">Amarillo</option>
+                        <option value="verde">Verde</option>
+                        <option value="blanco">Blanco</option>
+                        <option value="negro">Negro</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">📏 Categoría</label>
+                    <select id="filter-categoria" class="filter-select" onchange="aplicarFiltrosAutomatico()">
+                        <option value="">Todas</option>
+                        <option value="5e">Cat 5e</option>
+                        <option value="6">Cat 6</option>
+                        <option value="6A">Cat 6A</option>
+                    </select>
+                </div>
+            `;
+            break;
+            
+        case 'faceplate':
+            filtrosEspecificos = `
+                <div class="filter-group">
+                    <label class="filter-label">🔢 Puertos</label>
+                    <select id="filter-puertos" class="filter-select" onchange="aplicarFiltrosAutomatico()">
+                        <option value="">Todos</option>
+                        <option value="1">1 puerto</option>
+                        <option value="2">2 puertos</option>
+                        <option value="4">4 puertos</option>
+                        <option value="6">6 puertos</option>
+                        <option value="8">8 puertos</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">🎨 Color</label>
+                    <select id="filter-color" class="filter-select" onchange="aplicarFiltrosAutomatico()">
+                        <option value="">Todos</option>
+                        <option value="blanco">Blanco</option>
+                        <option value="marfil">Marfil</option>
+                        <option value="negro">Negro</option>
+                        <option value="gris">Gris</option>
+                        <option value="beige">Beige</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">🏠 Tipo</label>
+                    <select id="filter-tipo" class="filter-select" onchange="aplicarFiltrosAutomatico()">
+                        <option value="">Todos</option>
+                        <option value="standard">Estándar</option>
+                        <option value="angulado">Angulado</option>
+                        <option value="plano">Plano</option>
+                        <option value="flush">Flush Mount</option>
+                    </select>
+                </div>
+            `;
+            break;
+    }
+    
+    return filtrosBase + filtrosEspecificos;
+}
+
+// Función para cerrar popup actual
+function cerrarPopupBusquedaActual() {
+    if (currentSearchPopup) {
+        currentSearchPopup.classList.remove('active');
+        setTimeout(() => {
+            currentSearchPopup.remove();
+            currentSearchPopup = null;
+            currentFieldId = null;
+        }, 300);
+    }
+}
+
+// Función para buscar productos en el popup
+function buscarProductosEnPopup(query) {
+    if (!query || query.length < 2) {
+        mostrarMensajeResultados('🔍 Escriba al menos 2 caracteres para buscar...');
+        return;
+    }
+    
+    mostrarMensajeResultados('🔄 Buscando productos...');
+    
+    const tipoProducto = detectarTipoProducto(currentFieldId);
+    const filtros = obtenerFiltrosActuales();
+    
+    // Simular búsqueda en catálogo (aquí iría la llamada real al backend)
+    setTimeout(() => {
+        const productos = simularBusquedaProductos(query, tipoProducto, filtros);
+        mostrarResultadosPopup(productos);
+    }, 500);
+}
+
+// Función para obtener filtros actuales del popup
+function obtenerFiltrosActuales() {
+    const filtros = {};
+    
+    // Filtros base
+    const precioMax = document.getElementById('filter-precio-max')?.value;
+    if (precioMax) filtros.precioMax = parseFloat(precioMax);
+    
+    const marca = document.getElementById('filter-marca')?.value;
+    if (marca) filtros.marca = marca;
+    
+    // Filtros específicos según tipo
+    const categoria = document.getElementById('filter-categoria')?.value;
+    if (categoria) filtros.categoria = categoria;
+    
+    const color = document.getElementById('filter-color')?.value;
+    if (color) filtros.color = color;
+    
+    const uso = document.getElementById('filter-uso')?.value;
+    if (uso) filtros.uso = uso;
+    
+    const tipo = document.getElementById('filter-tipo')?.value;
+    if (tipo) filtros.tipo = tipo;
+    
+    const longitud = document.getElementById('filter-longitud')?.value;
+    if (longitud) filtros.longitud = longitud;
+    
+    const puertos = document.getElementById('filter-puertos')?.value;
+    if (puertos) filtros.puertos = puertos;
+    
+    return filtros;
+}
+
+// Función para aplicar filtros automáticamente
+function aplicarFiltrosAutomatico() {
+    const query = document.getElementById('search-input-popup')?.value || '';
+    if (query.length >= 2) {
+        buscarProductosEnPopup(query);
+    }
+}
+
+// Función para limpiar filtros del popup
+function limpiarFiltrosPopup() {
+    const selects = document.querySelectorAll('#search-filters select');
+    const inputs = document.querySelectorAll('#search-filters input');
+    
+    selects.forEach(select => select.value = '');
+    inputs.forEach(input => input.value = '');
+    
+    // Reejecutar búsqueda si hay texto
+    const query = document.getElementById('search-input-popup')?.value || '';
+    if (query.length >= 2) {
+        buscarProductosEnPopup(query);
+    }
+}
+
+// Función para mostrar mensaje en resultados
+function mostrarMensajeResultados(mensaje) {
+    const resultsContainer = document.getElementById('popup-search-results');
+    if (resultsContainer) {
+        resultsContainer.innerHTML = `
+            <div style="padding: 20px; text-align: center; color: #6b7280;">
+                ${mensaje}
+            </div>
+        `;
+    }
+}
+
+// Función para mostrar resultados del popup
+function mostrarResultadosPopup(productos) {
+    const resultsContainer = document.getElementById('popup-search-results');
+    if (!resultsContainer) return;
+    
+    if (productos.length === 0) {
+        mostrarMensajeResultados('❌ No se encontraron productos con los criterios especificados.');
+        return;
+    }
+    
+    const categoria = obtenerCategoriaClienteActual();
+    
+    const resultadosHTML = productos.map(producto => {
+        const precioCliente = calcularPrecioSegunCategoria(producto.costo_unitario, categoria);
+        
+        return `
+            <div class="search-result-item" onclick="seleccionarProductoDesdePopup('${producto.numero_parte}', '${producto.descripcion}', ${producto.precio_lista}, ${producto.costo_unitario})">
+                <div class="search-result-info">
+                    <div class="search-result-part">${producto.numero_parte}</div>
+                    <div class="search-result-description">${producto.descripcion}</div>
+                    <div class="search-result-details">
+                        ${producto.marca ? `Marca: ${producto.marca}` : ''} 
+                        ${producto.categoria ? `| Cat: ${producto.categoria}` : ''} 
+                        ${producto.color ? `| Color: ${producto.color}` : ''}
+                    </div>
+                </div>
+                <div class="search-result-price">
+                    <div class="search-result-list-price">Lista: $${producto.precio_lista.toFixed(2)}</div>
+                    <div class="search-result-client-price">Cliente ${categoria}: $${precioCliente.toFixed(2)}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    resultsContainer.innerHTML = resultadosHTML;
+}
+
+// Función para seleccionar producto desde el popup
+function seleccionarProductoDesdePopup(numeroParte, descripcion, precioLista, costoUnitario) {
+    if (!currentFieldId) return;
+    
+    // Actualizar el campo correspondiente
+    const targetField = document.getElementById(currentFieldId);
+    if (targetField) {
+        targetField.value = numeroParte;
+        
+        // Disparar evento para que el sistema actualice otros campos relacionados
+        const event = new Event('input', { bubbles: true });
+        targetField.dispatchEvent(event);
+        
+        // Si hay función de autocomplete específica, llamarla
+        if (window.onVolumetriaInput) {
+            window.onVolumetriaInput(currentFieldId);
+        }
+    }
+    
+    console.log(`✅ Producto seleccionado: ${numeroParte} - ${descripcion}`);
+    
+    // Cerrar popup
+    cerrarPopupBusquedaActual();
+}
+
+// Función para simular búsqueda de productos (en producción sería una llamada al backend)
+function simularBusquedaProductos(query, tipoProducto, filtros) {
+    // Datos de ejemplo (en producción vendría del backend)
+    const productosEjemplo = {
+        cable: [
+            { numero_parte: 'PUL6004BL-BOX', descripcion: 'Cable UTP Cat 6 Azul 305m', precio_lista: 285.50, costo_unitario: 190.33, marca: 'Panduit', categoria: '6', color: 'azul', uso: 'interior' },
+            { numero_parte: 'PUL6004WH-BOX', descripcion: 'Cable UTP Cat 6 Blanco 305m', precio_lista: 285.50, costo_unitario: 190.33, marca: 'Panduit', categoria: '6', color: 'blanco', uso: 'interior' },
+            { numero_parte: 'PUL5E04BL-BOX', descripcion: 'Cable UTP Cat 5e Azul 305m', precio_lista: 195.75, costo_unitario: 130.50, marca: 'Panduit', categoria: '5e', color: 'azul', uso: 'interior' },
+        ],
+        jack: [
+            { numero_parte: 'CJ6X88TBL', descripcion: 'Jack RJ45 Cat 6 Azul', precio_lista: 8.25, costo_unitario: 5.50, marca: 'Panduit', categoria: '6', color: 'azul', tipo: 'keystone' },
+            { numero_parte: 'CJ6X88TWH', descripcion: 'Jack RJ45 Cat 6 Blanco', precio_lista: 8.25, costo_unitario: 5.50, marca: 'Panduit', categoria: '6', color: 'blanco', tipo: 'keystone' },
+            { numero_parte: 'CJ5E88TBL', descripcion: 'Jack RJ45 Cat 5e Azul', precio_lista: 6.50, costo_unitario: 4.33, marca: 'Panduit', categoria: '5e', color: 'azul', tipo: 'keystone' },
+        ],
+        patchcord: [
+            { numero_parte: 'UTP6SP3BL', descripcion: 'Patch Cord Cat 6 Azul 3 pies', precio_lista: 12.50, costo_unitario: 8.33, marca: 'Panduit', categoria: '6', color: 'azul', longitud: '3' },
+            { numero_parte: 'UTP6SP5BL', descripcion: 'Patch Cord Cat 6 Azul 5 pies', precio_lista: 15.75, costo_unitario: 10.50, marca: 'Panduit', categoria: '6', color: 'azul', longitud: '5' },
+            { numero_parte: 'UTP6SP7BL', descripcion: 'Patch Cord Cat 6 Azul 7 pies', precio_lista: 18.25, costo_unitario: 12.17, marca: 'Panduit', categoria: '6', color: 'azul', longitud: '7' },
+        ],
+        faceplate: [
+            { numero_parte: 'NK2FWH', descripcion: 'Faceplate 2 puertos Blanco', precio_lista: 15.50, costo_unitario: 10.33, marca: 'Panduit', puertos: '2', color: 'blanco', tipo: 'standard' },
+            { numero_parte: 'NK4FWH', descripcion: 'Faceplate 4 puertos Blanco', precio_lista: 22.75, costo_unitario: 15.17, marca: 'Panduit', puertos: '4', color: 'blanco', tipo: 'standard' },
+            { numero_parte: 'NK6FWH', descripcion: 'Faceplate 6 puertos Blanco', precio_lista: 28.50, costo_unitario: 19.00, marca: 'Panduit', puertos: '6', color: 'blanco', tipo: 'standard' },
+        ]
+    };
+    
+    let productos = productosEjemplo[tipoProducto] || [];
+    
+    // Filtrar por query (número de parte o descripción)
+    productos = productos.filter(producto => 
+        producto.numero_parte.toLowerCase().includes(query.toLowerCase()) ||
+        producto.descripcion.toLowerCase().includes(query.toLowerCase())
+    );
+    
+    // Aplicar filtros adicionales
+    if (filtros.marca) {
+        productos = productos.filter(p => p.marca && p.marca.toLowerCase() === filtros.marca.toLowerCase());
+    }
+    
+    if (filtros.categoria) {
+        productos = productos.filter(p => p.categoria === filtros.categoria);
+    }
+    
+    if (filtros.color) {
+        productos = productos.filter(p => p.color && p.color.toLowerCase() === filtros.color.toLowerCase());
+    }
+    
+    if (filtros.precioMax) {
+        productos = productos.filter(p => p.precio_lista <= filtros.precioMax);
+    }
+    
+    // Filtros específicos según tipo
+    if (filtros.uso && tipoProducto === 'cable') {
+        productos = productos.filter(p => p.uso === filtros.uso);
+    }
+    
+    if (filtros.tipo && (tipoProducto === 'jack' || tipoProducto === 'faceplate')) {
+        productos = productos.filter(p => p.tipo === filtros.tipo);
+    }
+    
+    if (filtros.longitud && tipoProducto === 'patchcord') {
+        productos = productos.filter(p => p.longitud === filtros.longitud);
+    }
+    
+    if (filtros.puertos && tipoProducto === 'faceplate') {
+        productos = productos.filter(p => p.puertos === filtros.puertos);
+    }
+    
+    return productos;
+}
+
+// Función para obtener filtros actuales del popup
+function obtenerFiltrosActuales() {
+    if (!currentSearchPopup) return {};
+    
+    const filtros = {};
+    
+    // Filtros base
+    const precioMax = currentSearchPopup.querySelector('#filter-precio-max')?.value;
+    if (precioMax) filtros.precioMax = parseFloat(precioMax);
+    
+    const marca = currentSearchPopup.querySelector('#filter-marca')?.value;
+    if (marca) filtros.marca = marca;
+    
+    // Filtros específicos
+    const categoria = currentSearchPopup.querySelector('#filter-categoria')?.value;
+    if (categoria) filtros.categoria = categoria;
+    
+    const color = currentSearchPopup.querySelector('#filter-color')?.value;
+    if (color) filtros.color = color;
+    
+    const tipo = currentSearchPopup.querySelector('#filter-tipo')?.value;
+    if (tipo) filtros.tipo = tipo;
+    
+    const uso = currentSearchPopup.querySelector('#filter-uso')?.value;
+    if (uso) filtros.uso = uso;
+    
+    const longitud = currentSearchPopup.querySelector('#filter-longitud')?.value;
+    if (longitud) filtros.longitud = longitud;
+    
+    const puertos = currentSearchPopup.querySelector('#filter-puertos')?.value;
+    if (puertos) filtros.puertos = puertos;
+    
+    return filtros;
+}
+
+// Función para aplicar filtros
+function aplicarFiltros() {
+    const query = currentSearchPopup.querySelector('#search-input-popup')?.value || '';
+    const tipoProducto = detectarTipoProducto(currentFieldId);
+    const filtros = obtenerFiltrosActuales();
+    
+    console.log('🎯 Aplicando filtros:', filtros);
+    buscarProductosConFiltros(query, tipoProducto, filtros);
+}
+
+// Función principal para buscar productos con filtros
+async function buscarProductosConFiltros(query, tipoProducto, filtros) {
+    const resultsContainer = document.getElementById('popup-results');
+    const resultsCount = document.getElementById('results-count');
+    
+    if (!resultsContainer) return;
+    
+    // Mostrar loading
+    resultsContainer.innerHTML = '<div class="loading-message">🔄 Buscando productos...</div>';
+    
+    try {
+        // Construir parámetros de búsqueda
+        const params = new URLSearchParams();
+        if (query.trim()) params.append('q', query);
+        params.append('limit', '20');
+        
+        // Agregar filtros a la URL
+        Object.entries(filtros).forEach(([key, value]) => {
+            if (value) params.append(key, value);
+        });
+        
+        // Realizar búsqueda
+        const response = await fetch(`/app/api/sugerencias-productos/?${params}`);
+        const productos = await response.json();
+        
+        // Filtrar por tipo de producto si es necesario
+        const productosFiltrados = filtrarPorTipoProducto(productos, tipoProducto, filtros);
+        
+        // Mostrar resultados
+        mostrarResultadosEnPopup(productosFiltrados);
+        
+        // Actualizar contador
+        if (resultsCount) {
+            resultsCount.textContent = `${productosFiltrados.length} productos encontrados`;
+        }
+        
+    } catch (error) {
+        console.error('❌ Error buscando productos:', error);
+        resultsContainer.innerHTML = '<div class="error-message">❌ Error al buscar productos. Intenta de nuevo.</div>';
+    }
+}
+
+// Función para filtrar productos por tipo específico
+function filtrarPorTipoProducto(productos, tipoProducto, filtros) {
+    return productos.filter(producto => {
+        // Filtros por tipo de producto
+        const desc = producto.descripcion?.toLowerCase() || '';
+        const numeroParte = producto.numero_parte?.toLowerCase() || '';
+        
+        let coincideTipo = true;
+        
+        switch (tipoProducto) {
+            case 'cable':
+                coincideTipo = desc.includes('cable') || desc.includes('utp') || numeroParte.includes('pul');
+                break;
+            case 'jack':
+                coincideTipo = desc.includes('jack') || desc.includes('rj45') || numeroParte.includes('cj');
+                break;
+            case 'patchcord':
+                coincideTipo = desc.includes('patch') || desc.includes('cord') || numeroParte.includes('utp');
+                break;
+            case 'faceplate':
+                coincideTipo = desc.includes('faceplate') || desc.includes('placa') || numeroParte.includes('nk');
+                break;
+        }
+        
+        // Aplicar filtros adicionales
+        if (filtros.color && !desc.includes(filtros.color.toLowerCase())) {
+            return false;
+        }
+        
+        if (filtros.categoria) {
+            const catPattern = filtros.categoria === '6A' ? '6a' : filtros.categoria;
+            if (!desc.includes(`cat ${catPattern}`) && !desc.includes(`cat${catPattern}`)) {
+                return false;
+            }
+        }
+        
+        if (filtros.precioMax && producto.precio_lista > filtros.precioMax) {
+            return false;
+        }
+        
+        return coincideTipo;
+    });
+}
+
+// Función para mostrar resultados en el popup
+function mostrarResultadosEnPopup(productos) {
+    const resultsContainer = document.getElementById('popup-results');
+    if (!resultsContainer) return;
+    
+    if (productos.length === 0) {
+        resultsContainer.innerHTML = `
+            <div class="no-results">
+                <p>🔍 No se encontraron productos con los criterios especificados</p>
+                <p class="hint">Intenta con menos filtros o términos de búsqueda diferentes</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const categoriaCliente = obtenerCategoriaClienteActual();
+    
+    let html = '';
+    productos.forEach(producto => {
+        const costoUnitario = parseFloat(producto.precio_proveedor) || 0;
+        const precioLista = calcularPrecioSegunCategoria(costoUnitario, categoriaCliente);
+        
+        html += `
+            <div class="product-result-item" onclick="seleccionarProductoDelPopup('${producto.numero_parte}', '${producto.descripcion?.replace(/'/g, "\\'")}', ${costoUnitario}, ${precioLista})">
+                <div class="product-header">
+                    <div class="product-part-number">${producto.numero_parte}</div>
+                    <div class="product-price">$${precioLista.toFixed(2)}</div>
+                </div>
+                <div class="product-description">${producto.descripcion}</div>
+                <div class="product-details">
+                    <span class="product-cost">Costo: $${costoUnitario.toFixed(2)}</span>
+                    <span class="product-margin">Utilidad: ${categoriaCliente === 'A' ? '15%' : categoriaCliente === 'B' ? '20%' : '25%'}</span>
+                    ${producto.marca ? `<span class="product-brand">${producto.marca}</span>` : ''}
+                </div>
+            </div>
+        `;
+    });
+    
+    resultsContainer.innerHTML = html;
+}
+
+// Función para seleccionar producto del popup
+function seleccionarProductoDelPopup(numeroParte, descripcion, costoUnitario, precioLista) {
+    console.log(`✅ Producto seleccionado: ${numeroParte}`);
+    
+    if (!currentFieldId) return;
+    
+    // Llenar el campo original
+    const field = document.getElementById(currentFieldId);
+    if (field) {
+        field.value = numeroParte;
+        
+        // Disparar evento para actualizar otros campos relacionados
+        const event = new Event('input', { bubbles: true });
+        field.dispatchEvent(event);
+    }
+    
+    // También llenar campos relacionados si existen
+    const fieldPrefix = currentFieldId.replace('-numero-parte', '');
+    
+    // Buscar campo de descripción relacionado
+    const descriptionField = document.querySelector(`[id*="${fieldPrefix}"][id*="descripcion"]`);
+    if (descriptionField) {
+        descriptionField.value = descripcion;
+    }
+    
+    // Cerrar popup
+    cerrarPopupBusquedaActual();
 }
 
 // Función para generar las filas de la tabla usando datos del catálogo
@@ -7202,14 +8372,21 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Verificar si hay un estado guardado
+        // Verificar si hay un estado guardado (pero solo si no venimos de usar "Volver")
         const estadoGuardado = cargarEstadoVolumetria();
         
-        if (estadoGuardado) {
+        // Verificar si hay un parámetro que indique que venimos de navegación de vuelta
+        const urlParams = new URLSearchParams(window.location.search);
+        const esNavegacionVuelta = urlParams.get('from_back') === 'true';
+        
+        if (estadoGuardado && !esNavegacionVuelta) {
             console.log('🔄 Restaurando volumetría desde estado guardado');
             // Mostrar directamente la tabla con los datos guardados
             mostrarTablaVolumetria(estadoGuardado);
         } else {
+            if (esNavegacionVuelta) {
+                console.log('🔙 Navegación de vuelta detectada - no restaurando estado');
+            }
             // Mostrar animaciones normales para las tarjetas de selección
             const cards = document.querySelectorAll('.glass-card');
             cards.forEach((card, index) => {
