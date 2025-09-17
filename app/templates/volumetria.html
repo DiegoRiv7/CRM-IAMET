@@ -1871,35 +1871,39 @@ function mostrarFormularioNodosEnGeneral() {
                             
                             <!-- Números de parte -->
                             <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-3">Cable</label>
+                                <label class="block text-sm font-medium text-gray-300 mb-3">Cable <button type="button" onclick="agregarProductoExtra('cable')" class="ml-2 text-blue-500 hover:text-blue-400">+</button></label>
                                 <div class="autocomplete-container">
                                     <input type="text" id="cable-numero-parte-general" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="PUL6004BL-BOX" required oninput="onVolumetriaInput('cable-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'cable-numero-parte-general')" onfocus="onVolumetriaFocus('cable-numero-parte-general')" onblur="onVolumetriaBlur('cable-numero-parte-general')" onclick="mostrarPopupBusquedaAvanzada('cable-numero-parte-general')">
                                     <div id="suggestions_cable-numero-parte-general" class="autocomplete-suggestions"></div>
                                 </div>
+                                <div id="extra-productos-cable"></div>
                             </div>
                             
                             <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-3">Jack</label>
+                                <label class="block text-sm font-medium text-gray-300 mb-3">Jack <button type="button" onclick="agregarProductoExtra('jack')" class="ml-2 text-blue-500 hover:text-blue-400">+</button></label>
                                 <div class="autocomplete-container">
                                     <input type="text" id="jack-numero-parte-general" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="CJ6X88TBL" required oninput="onVolumetriaInput('jack-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'jack-numero-parte-general')" onfocus="onVolumetriaFocus('jack-numero-parte-general')" onblur="onVolumetriaBlur('jack-numero-parte-general')" onclick="mostrarPopupBusquedaAvanzada('jack-numero-parte-general')">
                                     <div id="suggestions_jack-numero-parte-general" class="autocomplete-suggestions"></div>
                                 </div>
+                                <div id="extra-productos-jack"></div>
                             </div>
                             
                             <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-3">Patch Cord</label>
+                                <label class="block text-sm font-medium text-gray-300 mb-3">Patch Cord <button type="button" onclick="agregarProductoExtra('patchcord')" class="ml-2 text-blue-500 hover:text-blue-400">+</button></label>
                                 <div class="autocomplete-container">
                                     <input type="text" id="patchcord-numero-parte-general" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="UTP28SP3BL" required oninput="onVolumetriaInput('patchcord-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'patchcord-numero-parte-general')" onfocus="onVolumetriaFocus('patchcord-numero-parte-general')" onblur="onVolumetriaBlur('patchcord-numero-parte-general')" onclick="mostrarPopupBusquedaAvanzada('patchcord-numero-parte-general')">
                                     <div id="suggestions_patchcord-numero-parte-general" class="autocomplete-suggestions"></div>
                                 </div>
+                                <div id="extra-productos-patchcord"></div>
                             </div>
                             
                             <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-3">Faceplate</label>
+                                <label class="block text-sm font-medium text-gray-300 mb-3">Faceplate <button type="button" onclick="agregarProductoExtra('faceplate')" class="ml-2 text-blue-500 hover:text-blue-400">+</button></label>
                                 <div class="autocomplete-container">
                                     <input type="text" id="faceplate-numero-parte-general" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="NK2FHDEI" required oninput="onVolumetriaInput('faceplate-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'faceplate-numero-parte-general')" onfocus="onVolumetriaFocus('faceplate-numero-parte-general')" onblur="onVolumetriaBlur('faceplate-numero-parte-general')" onclick="mostrarPopupBusquedaAvanzada('faceplate-numero-parte-general')">
                                     <div id="suggestions_faceplate-numero-parte-general" class="autocomplete-suggestions"></div>
                                 </div>
+                                <div id="extra-productos-faceplate"></div>
                             </div>
                         </div>
                     </div>
@@ -1943,16 +1947,44 @@ function procesarFormularioNodosGeneral() {
         
         // Números de parte
         const numerosParte = {
-            cable: document.getElementById('cable-numero-parte-general')?.value?.trim() || '',
-            jack: document.getElementById('jack-numero-parte-general')?.value?.trim() || '',
-            patchcord: document.getElementById('patchcord-numero-parte-general')?.value?.trim() || '',
-            faceplate: document.getElementById('faceplate-numero-parte-general')?.value?.trim() || ''
+            cable: [document.getElementById('cable-numero-parte-general')?.value?.trim() || ''],
+            jack: [document.getElementById('jack-numero-parte-general')?.value?.trim() || ''],
+            patchcord: [document.getElementById('patchcord-numero-parte-general')?.value?.trim() || ''],
+            faceplate: [document.getElementById('faceplate-numero-parte-general')?.value?.trim() || '']
         };
+
+        const cantidades = {
+            cable: [document.getElementById('metros-cable-general')?.value || 100],
+            jack: [],
+            patchcord: [],
+            faceplate: []
+        };
+
+        // Collect extra products
+        ['cable', 'jack', 'patchcord', 'faceplate'].forEach(tipo => {
+            const container = document.getElementById(`extra-productos-${tipo}`);
+            if (container) {
+                for (let i = 0; i < container.children.length; i++) {
+                    const numeroParteInput = document.getElementById(`${tipo}-numero-parte-extra-${i}`);
+                    const cantidadInput = document.getElementById(`${tipo}-cantidad-extra-${i}`);
+                    
+                    if (numeroParteInput && numeroParteInput.value) {
+                        numerosParte[tipo].push(numeroParteInput.value.trim());
+                        if (cantidadInput && cantidadInput.value) {
+                            cantidades[tipo].push(cantidadInput.value);
+                        } else {
+                            cantidades[tipo].push(1);
+                        }
+                    }
+                }
+            }
+        });
         
         console.log('📊 Datos recopilados:', {
             cantidadNodos,
             metrosCable,
-            numerosParte
+            numerosParte,
+            cantidades
         });
         
         // Cerrar formulario y mostrar animación
@@ -1969,7 +2001,8 @@ function procesarFormularioNodosGeneral() {
             color: 'Azul',
             distancia: metrosCable,
             cantidadNodos,
-            numerosParte
+            numerosParte,
+            cantidades
         };
         
         // Generar volumetría después de un delay para la animación
@@ -1982,6 +2015,24 @@ function procesarFormularioNodosGeneral() {
         console.error('❌ Error en procesarFormularioNodosGeneral:', error);
         alert('Error al procesar volumetría. Ver consola para detalles.');
     }
+}
+
+function agregarProductoExtra(tipo) {
+    const container = document.getElementById(`extra-productos-${tipo}`);
+    const index = container.children.length;
+    
+    const newRow = document.createElement('div');
+    newRow.className = 'flex items-center space-x-2 mt-2';
+    newRow.innerHTML = `
+        <div class="autocomplete-container flex-grow">
+            <input type="text" id="${tipo}-numero-parte-extra-${index}" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="Número de parte" oninput="onVolumetriaInput('${tipo}-numero-parte-extra-${index}')" onclick="mostrarPopupBusquedaAvanzada('${tipo}-numero-parte-extra-${index}')">
+            <div id="suggestions_${tipo}-numero-parte-extra-${index}" class="autocomplete-suggestions"></div>
+        </div>
+        <input type="number" id="${tipo}-cantidad-extra-${index}" class="w-24 px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="Cant." min="1">
+        <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-400">-</button>
+    `;
+    
+    container.appendChild(newRow);
 }
 
 // Función para generar volumetría específicamente para la tabla General
