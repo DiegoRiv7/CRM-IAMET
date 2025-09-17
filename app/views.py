@@ -6228,52 +6228,55 @@ def buscar_producto_catalogo_api(request):
 def buscar_productos_catalogo(request):
     """
     Endpoint para buscar productos en el catálogo de volumetría con motor inteligente.
-    Ahora usa el modelo correcto (CatalogoCableado) y filtra por categoría de forma precisa.
+    Usa el modelo correcto (CatalogoCableado) y filtra por categoría y texto de forma precisa.
     """
     try:
         query = request.GET.get('q', '').strip()
+        filtros_json = request.GET.get('filtros', '{}')
         
-        print(f"🔍 Búsqueda en catálogo: query='{query}'")
+        print(f"🔍 Búsqueda en catálogo: query='{query}', filtros='{filtros_json}'")
 
-        # Si no hay query, no devolver nada.
-        if not query:
-            return JsonResponse({'success': True, 'productos': [], 'total': 0})
+        try:
+            filtros = json.loads(filtros_json)
+        except json.JSONDecodeError:
+            filtros = {}
 
-        # Dividir la consulta en partes para detectar categorías.
-        query_parts = query.lower().split()
-        
-        # Lista de posibles categorías a detectar.
-        known_categories = ['cat5e', 'cat6', 'cat6a']
-        
-        found_category = None
-        other_query_parts = []
+        # Si no hay ni query ni filtros, no devolver nada.
+        if not query and not filtros:
+             return JsonResponse({'success': True, 'productos': [], 'total': 0})
 
-        for part in query_parts:
-            if part in known_categories:
-                found_category = part
-            else:
-                other_query_parts.append(part)
-        
         # Consulta base sobre el modelo correcto: CatalogoCableado
         productos_query = CatalogoCableado.objects.filter(activo=True)
 
-        # 1. Filtrar por categoría si se encontró una.
-        if found_category:
-            # Usar 'iexact' para una coincidencia exacta e insensible a mayúsculas/minúsculas.
-            productos_query = productos_query.filter(categoria__iexact=found_category)
-            print(f"🎯 Filtro de categoría aplicado: {found_category}")
+        # 1. Filtrar por categoría si se proporciona en los filtros.
+        categoria_filtro = filtros.get('categoria')
+        if categoria_filtro:
+            exact_category = ''
+            if categoria_filtro == '6A':
+                exact_category = 'Cat6A'
+            elif categoria_filtro == '6':
+                exact_category = 'Cat6'
+            elif categoria_filtro == '5e':
+                exact_category = 'Cat5e'
+            
+            if exact_category:
+                productos_query = productos_query.filter(categoria__iexact=exact_category)
+                print(f"🎯 Filtro de categoría exacto aplicado: {exact_category}")
+            else:
+                # Fallback para otras categorías
+                productos_query = productos_query.filter(categoria__icontains=categoria_filtro)
+                print(f"🎯 Filtro de categoría icontains aplicado: {categoria_filtro}")
 
-        # 2. Filtrar por el resto de la consulta en número de parte y descripción.
-        remaining_query = ' '.join(other_query_parts)
-        if remaining_query:
+        # 2. Filtrar por el query de texto en número de parte y descripción.
+        if query:
             productos_query = productos_query.filter(
-                Q(numero_parte__icontains=remaining_query) | 
-                Q(descripcion__icontains=remaining_query)
+                Q(numero_parte__icontains=query) | 
+                Q(descripcion__icontains=query)
             )
-            print(f"🎯 Filtro de texto aplicado: '{remaining_query}'")
+            print(f"🎯 Filtro de texto aplicado: '{query}'")
 
         # Limitar resultados y ordenar
-        productos = productos_query.order_by('numero_parte')[:50]
+        productos = productos_query.distinct().order_by('numero_parte')[:50]
         
         print(f"📦 Productos encontrados después del filtrado: {productos.count()}")
 
