@@ -6228,7 +6228,7 @@ def buscar_producto_catalogo_api(request):
 def buscar_productos_catalogo(request):
     """
     Endpoint para buscar productos en el catálogo de volumetría con motor inteligente.
-    Filtra por tipo, categoría, marca, color, uso y texto, y prioriza "bobina" para cables.
+    Filtra por tipo, categoría, marca, color, uso y texto, y prioriza palabras clave en la descripción.
     """
     try:
         query = request.GET.get('q', '').strip()
@@ -6249,17 +6249,31 @@ def buscar_productos_catalogo(request):
         # Consulta base sobre el modelo correcto: CatalogoCableado
         productos_query = CatalogoCableado.objects.filter(activo=True)
 
-        # 1. Priorizar "bobina" y filtrar por tipo 'cable'.
-        if tipo_producto == 'cable':
-            productos_query = productos_query.annotate(
-                bobina_priority=Case(
-                    When(descripcion__icontains='bobina', then=Value(1)),
-                    default=Value(2)
+        # 1. Priorizar y/o filtrar por palabra clave en la descripción según el tipo de producto.
+        if tipo_producto:
+            keyword = ''
+            if tipo_producto == 'cable':
+                keyword = 'bobina'
+                # Filtro restrictivo para cable
+                productos_query = productos_query.filter(
+                    Q(descripcion__icontains='bobina') | Q(descripcion__icontains='cable')
                 )
-            ).filter(
-                Q(descripcion__icontains='bobina') | Q(descripcion__icontains='cable')
-            )
-            print(f"🔌 Filtro de descripción para 'cable'/'bobina' aplicado con prioridad a 'bobina'.")
+                print(f"🔌 Filtro RESTRICTIVO para 'cable'/'bobina' aplicado.")
+            elif tipo_producto == 'jack':
+                keyword = 'jack'
+            elif tipo_producto == 'patchcord':
+                keyword = 'patchcord'
+            elif tipo_producto == 'faceplate':
+                keyword = 'faceplate'
+            
+            if keyword:
+                productos_query = productos_query.annotate(
+                    priority=Case(
+                        When(descripcion__icontains=keyword, then=Value(1)),
+                        default=Value(2)
+                    )
+                )
+                print(f"🔌 Prioridad aplicada para '{keyword}' en tipo '{tipo_producto}'.")
 
         # 2. Filtrar por categoría si se proporciona en los filtros.
         categoria_filtro = filtros.get('categoria')
@@ -6301,8 +6315,8 @@ def buscar_productos_catalogo(request):
             print(f"🎯 Filtro de texto aplicado: '{query}'")
 
         # Ordenar y limitar resultados
-        if tipo_producto == 'cable':
-            productos = productos_query.distinct().order_by('bobina_priority', 'numero_parte')[:50]
+        if tipo_producto and 'priority' in productos_query.query.annotations:
+            productos = productos_query.distinct().order_by('priority', 'numero_parte')[:50]
         else:
             productos = productos_query.distinct().order_by('numero_parte')[:50]
         
