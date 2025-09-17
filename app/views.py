@@ -6256,6 +6256,42 @@ def buscar_productos_catalogo(request):
                 Q(descripcion__icontains=query)
             )
         
+        # Aplicar filtros específicos
+        if filtros.get('categoria'):
+            categoria_filtro = filtros['categoria']
+            if categoria_filtro == '6A':
+                # Buscar exactamente "6A" en el campo categoria
+                productos_query = productos_query.filter(categoria__iexact='6A')
+                print(f"🎯 Filtrando por categoría exacta: 6A")
+            elif categoria_filtro == '6':
+                # Buscar exactamente "6" en el campo categoria (excluyendo 6A)
+                productos_query = productos_query.filter(categoria__iexact='6')
+                print(f"🎯 Filtrando por categoría exacta: 6")
+            elif categoria_filtro == '5e':
+                # Buscar exactamente "5e" en el campo categoria
+                productos_query = productos_query.filter(categoria__iexact='5e')
+                print(f"🎯 Filtrando por categoría exacta: 5e")
+            else:
+                # Para otros casos, buscar que contenga el valor
+                productos_query = productos_query.filter(categoria__icontains=categoria_filtro)
+                print(f"🎯 Filtrando por categoría que contenga: {categoria_filtro}")
+        
+        # Filtrar por tipo de producto si se especifica
+        if tipo_producto == 'cable':
+            productos_query = productos_query.filter(
+                Q(descripcion__icontains='cable') | 
+                Q(descripcion__icontains='bobina') |
+                Q(descripcion__icontains='utp')
+            )
+            print(f"🔌 Filtrando solo cables/bobinas")
+        elif tipo_producto == 'jack':
+            productos_query = productos_query.filter(
+                Q(descripcion__icontains='jack') | 
+                Q(descripcion__icontains='rj45') |
+                Q(descripcion__icontains='conector')
+            )
+            print(f"🔌 Filtrando solo jacks/conectores")
+        
         # Obtener productos (sin límite por ahora para debugging)
         productos = productos_query.order_by('marca__nombre', 'no_parte')  # Sin límite temporalmente
         
@@ -6270,6 +6306,7 @@ def buscar_productos_catalogo(request):
                 'precio_lista': float(producto.precio_lista) if producto.precio_lista else 0.0,
                 'costo_unitario': float(producto.costo_unitario) if producto.costo_unitario else 0.0,
                 'marca': producto.marca.nombre if producto.marca else '',
+                'categoria': producto.categoria or '',
             }
             productos_data.append(producto_data)
             

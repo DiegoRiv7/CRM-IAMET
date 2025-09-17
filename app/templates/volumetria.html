@@ -6078,48 +6078,24 @@ async function buscarProductosConFiltros(query, tipoProducto, filtros) {
     }
 }
 
-// Función para filtrar productos por tipo específico
+// Función para filtrar productos por tipo específico (simplificada - backend hace el trabajo pesado)
 function filtrarPorTipoProducto(productos, tipoProducto, filtros) {
+    console.log(`🔍 Filtrado frontend: ${productos.length} productos recibidos`);
+    
     return productos.filter(producto => {
-        // Filtros por tipo de producto
-        const desc = producto.descripcion?.toLowerCase() || '';
-        const numeroParte = producto.numero_parte?.toLowerCase() || '';
-        
-        let coincideTipo = true;
-        
-        switch (tipoProducto) {
-            case 'cable':
-                coincideTipo = desc.includes('cable') || desc.includes('utp') || numeroParte.includes('pul');
-                break;
-            case 'jack':
-                coincideTipo = desc.includes('jack') || desc.includes('rj45') || numeroParte.includes('cj');
-                break;
-            case 'patchcord':
-                coincideTipo = desc.includes('patch') || desc.includes('cord') || numeroParte.includes('utp');
-                break;
-            case 'faceplate':
-                coincideTipo = desc.includes('faceplate') || desc.includes('placa') || numeroParte.includes('nk');
-                break;
-        }
-        
-        // Aplicar filtros adicionales
-        if (filtros.color && !detectarColorEnDescripcion(producto.descripcion, filtros.color)) {
-            return false;
-        }
-        
+        // Log para debugging
         if (filtros.categoria) {
-            const coincideCategoria = detectarCategoriaEnDescripcion(producto.descripcion, filtros.categoria);
-            console.log(`🔍 Producto: "${producto.descripcion}" | Filtro: "${filtros.categoria}" | Coincide: ${coincideCategoria}`);
-            if (!coincideCategoria) {
-                return false;
-            }
+            console.log(`📋 Producto: ${producto.numero_parte} | Categoría BD: "${producto.categoria}" | Filtro: "${filtros.categoria}"`);
         }
         
+        // Filtro adicional por precio máximo (si se especifica)
         if (filtros.precioMax && producto.precio_lista > filtros.precioMax) {
+            console.log(`💰 Producto ${producto.numero_parte} excluido por precio: ${producto.precio_lista} > ${filtros.precioMax}`);
             return false;
         }
         
-        return coincideTipo;
+        // El backend ya filtró por categoría y tipo, solo aplicamos filtros adicionales aquí
+        return true;
     });
 }
 
