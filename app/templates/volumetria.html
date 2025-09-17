@@ -5369,13 +5369,10 @@ function buscarProductosEnPopup(query) {
         }
     }
     
-    mostrarMensajeResultados('🔄 Buscando productos...');
+    mostrarMensajeResultados('🔄 Buscando en catálogo...');
     
-    // Simular búsqueda en catálogo (aquí iría la llamada real al backend)
-    setTimeout(() => {
-        const productos = simularBusquedaProductos(query || '', tipoProducto, filtros);
-        mostrarResultadosPopup(productos);
-    }, 300);
+    // Llamada real al backend para obtener productos del catálogo
+    buscarProductosRealesEnCatalogo(query || '', tipoProducto, filtros);
 }
 
 // Función para obtener filtros actuales del popup
@@ -5593,6 +5590,58 @@ function simularBusquedaProductos(query, tipoProducto, filtros) {
     return productos;
 }
 
+// Función para buscar productos reales en el catálogo de la base de datos
+function buscarProductosRealesEnCatalogo(query, tipoProducto, filtros) {
+    console.log(`🔍 Buscando productos reales en el catálogo para: ${tipoProducto}`);
+    console.log('Query:', query);
+    console.log('Filtros:', filtros);
+    
+    // Preparar parámetros para la llamada AJAX
+    const params = new URLSearchParams({
+        q: query || '',
+        tipo: tipoProducto,
+        filtros: JSON.stringify(filtros)
+    });
+    
+    // Llamada AJAX al endpoint del catálogo
+    fetch(`/app/api/buscar-productos-catalogo/?${params}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('📦 Productos recibidos del backend:', data);
+        
+        if (data.success && data.productos) {
+            // Aplicar motor de búsqueda inteligente a los productos reales
+            let productosReales = data.productos;
+            productosReales = aplicarMotorBusquedaInteligente(productosReales, filtros, tipoProducto);
+            
+            console.log(`✅ Mostrando ${productosReales.length} productos después del filtrado inteligente`);
+            mostrarResultadosPopup(productosReales);
+        } else {
+            console.log('❌ No se encontraron productos o error en la respuesta');
+            mostrarMensajeResultados('❌ No se encontraron productos en el catálogo.');
+        }
+    })
+    .catch(error => {
+        console.error('❌ Error al buscar productos en el catálogo:', error);
+        
+        // Fallback: usar productos de ejemplo si falla la llamada
+        console.log('🔄 Usando productos de ejemplo como fallback...');
+        const productos = simularBusquedaProductos(query, tipoProducto, filtros);
+        mostrarResultadosPopup(productos);
+    });
+}
+
 // Motor de búsqueda inteligente que analiza descripciones
 function aplicarMotorBusquedaInteligente(productos, filtros, tipoProducto) {
     console.log(`🤖 Aplicando motor de búsqueda inteligente para ${tipoProducto}`);
@@ -5645,18 +5694,59 @@ function aplicarMotorBusquedaInteligente(productos, filtros, tipoProducto) {
     return productos;
 }
 
-// Función para detectar categoría en la descripción
+// Función para detectar categoría en la descripción (MEJORADA para Cat 6A)
 function detectarCategoriaEnDescripcion(descripcion, categoriaFiltro) {
     const desc = descripcion.toLowerCase();
     
+    console.log(`🔍 Analizando categoría "${categoriaFiltro}" en: "${descripcion}"`);
+    
     switch (categoriaFiltro) {
         case '5e':
-            return desc.includes('cat 5e') || desc.includes('category 5e') || desc.includes('categoría 5e');
+            const es5e = desc.includes('cat 5e') || 
+                        desc.includes('category 5e') || 
+                        desc.includes('categoría 5e') ||
+                        desc.includes('cat5e') ||
+                        desc.includes('5e') ||
+                        /\bcat\s*5e\b/.test(desc) ||
+                        /\bcategory\s*5e\b/.test(desc);
+            console.log(`   ✅ Es Cat 5e: ${es5e}`);
+            return es5e;
+            
         case '6':
-            return (desc.includes('cat 6') || desc.includes('category 6')) && !desc.includes('6a');
+            // Cat 6 pero NO 6A
+            const esCat6 = (desc.includes('cat 6') || 
+                           desc.includes('category 6') ||
+                           desc.includes('categoría 6') ||
+                           desc.includes('cat6') ||
+                           /\bcat\s*6\b/.test(desc) ||
+                           /\bcategory\s*6\b/.test(desc)) && 
+                          !desc.includes('6a') && 
+                          !desc.includes('6-a') &&
+                          !desc.includes('cat6a') &&
+                          !desc.includes('category6a');
+            console.log(`   ✅ Es Cat 6 (no 6A): ${esCat6}`);
+            return esCat6;
+            
         case '6A':
         case '6a':
-            return desc.includes('cat 6a') || desc.includes('category 6a') || desc.includes('6a');
+            // Múltiples formas de detectar Cat 6A
+            const esCat6A = desc.includes('cat 6a') || 
+                           desc.includes('category 6a') || 
+                           desc.includes('categoría 6a') ||
+                           desc.includes('cat6a') ||
+                           desc.includes('6a') ||
+                           desc.includes('6-a') ||
+                           desc.includes('category6a') ||
+                           desc.includes('cat 6-a') ||
+                           /\bcat\s*6a\b/.test(desc) ||
+                           /\bcategory\s*6a\b/.test(desc) ||
+                           /\b6a\b/.test(desc) ||
+                           desc.includes('augmented') ||
+                           desc.includes('enhanced category 6') ||
+                           desc.includes('enhanced cat 6');
+            console.log(`   🎯 Es Cat 6A: ${esCat6A}`);
+            return esCat6A;
+            
         default:
             return true;
     }
@@ -5775,12 +5865,15 @@ function extraerCaracteristicasInteligentes(descripcion, tipoProducto) {
     const desc = descripcion.toLowerCase();
     const caracteristicas = [];
     
-    // Detectar categoría
-    if (desc.includes('cat 5e') || desc.includes('category 5e')) {
-        caracteristicas.push('Cat 5e');
-    } else if (desc.includes('cat 6a') || desc.includes('category 6a')) {
+    // Detectar categoría (mejorado para Cat 6A)
+    if (desc.includes('cat 6a') || desc.includes('category 6a') || desc.includes('6a') || 
+        desc.includes('cat6a') || desc.includes('augmented') || /\b6a\b/.test(desc)) {
         caracteristicas.push('Cat 6A');
-    } else if (desc.includes('cat 6') || desc.includes('category 6')) {
+    } else if (desc.includes('cat 5e') || desc.includes('category 5e') || desc.includes('5e') || 
+               desc.includes('cat5e') || /\bcat\s*5e\b/.test(desc)) {
+        caracteristicas.push('Cat 5e');
+    } else if ((desc.includes('cat 6') || desc.includes('category 6') || /\bcat\s*6\b/.test(desc)) && 
+               !desc.includes('6a') && !desc.includes('6-a')) {
         caracteristicas.push('Cat 6');
     }
     
@@ -5860,15 +5953,8 @@ function cargarProductosIniciales(tipoProducto) {
     
     mostrarMensajeResultados('📦 Cargando catálogo de productos...');
     
-    // Obtener todos los productos del tipo especificado
-    const productos = simularBusquedaProductos('', tipoProducto, {});
-    
-    if (productos.length > 0) {
-        mostrarResultadosPopup(productos);
-        console.log(`✅ Mostrando ${productos.length} productos de ${tipoProducto}`);
-    } else {
-        mostrarMensajeResultados(`❌ No hay productos disponibles de tipo ${tipoProducto}`);
-    }
+    // Llamada real al backend para obtener todos los productos del catálogo
+    buscarProductosRealesEnCatalogo('', tipoProducto, {});
 }
 
 // Función para buscar con filtros (llamada por el botón)
@@ -5890,17 +5976,8 @@ function buscarConFiltros() {
     
     mostrarMensajeResultados('🤖 Analizando descripciones con IA...');
     
-    // Ejecutar búsqueda con filtros
-    setTimeout(() => {
-        const productos = simularBusquedaProductos(query, tipoProducto, filtros);
-        mostrarResultadosPopup(productos);
-        
-        // Mostrar resumen de filtros aplicados
-        const filtrosAplicados = Object.keys(filtros).filter(key => filtros[key] && filtros[key] !== '');
-        if (filtrosAplicados.length > 0) {
-            console.log(`✅ Búsqueda completada con ${filtrosAplicados.length} filtros: ${filtrosAplicados.join(', ')}`);
-        }
-    }, 300);
+    // Ejecutar búsqueda con filtros en el catálogo real
+    buscarProductosRealesEnCatalogo(query, tipoProducto, filtros);
 }
 
 // Función para obtener filtros actuales del popup

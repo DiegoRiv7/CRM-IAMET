@@ -6222,3 +6222,70 @@ def buscar_producto_catalogo_api(request):
             'success': False,
             'error': 'Error interno del servidor'
         }, status=500)
+
+@login_required
+@require_http_methods(["GET"])
+def buscar_productos_catalogo(request):
+    """
+    Endpoint para buscar productos en el catálogo de volumetría con motor inteligente
+    """
+    try:
+        from .models import ProductoCatalogo
+        
+        query = request.GET.get('q', '').strip()
+        tipo_producto = request.GET.get('tipo', '').strip()
+        filtros_json = request.GET.get('filtros', '{}')
+        
+        print(f"🔍 Búsqueda en catálogo: query='{query}', tipo='{tipo_producto}'")
+        
+        # Parsear filtros
+        try:
+            filtros = json.loads(filtros_json)
+        except:
+            filtros = {}
+        
+        print(f"📋 Filtros recibidos: {filtros}")
+        
+        # Consulta base para obtener productos
+        productos_query = ProductoCatalogo.objects.all()
+        
+        # Filtrar por query si se proporciona
+        if query:
+            productos_query = productos_query.filter(
+                Q(no_parte__icontains=query) | 
+                Q(descripcion__icontains=query)
+            )
+        
+        # Obtener productos
+        productos = productos_query.order_by('marca__nombre', 'no_parte')[:50]  # Limitar a 50 productos
+        
+        print(f"📦 Productos encontrados: {productos.count()}")
+        
+        # Convertir a formato JSON
+        productos_data = []
+        for producto in productos:
+            producto_data = {
+                'numero_parte': producto.no_parte,
+                'descripcion': producto.descripcion,
+                'precio_lista': float(producto.precio_lista) if producto.precio_lista else 0.0,
+                'costo_unitario': float(producto.costo_unitario) if producto.costo_unitario else 0.0,
+                'marca': producto.marca.nombre if producto.marca else '',
+            }
+            productos_data.append(producto_data)
+        
+        print(f"✅ Enviando {len(productos_data)} productos al frontend")
+        
+        return JsonResponse({
+            'success': True,
+            'productos': productos_data,
+            'total': len(productos_data)
+        })
+        
+    except Exception as e:
+        print(f"❌ Error en búsqueda de catálogo: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
