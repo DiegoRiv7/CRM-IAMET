@@ -966,7 +966,7 @@
 
     .search-result-part {
         font-weight: 600;
-        color: #1f2937;
+        color: #ffffff;
         margin-bottom: 2px;
     }
 
@@ -2215,23 +2215,24 @@ function regresarAVolumetriaGeneral() {
     // Cerrar el formulario de nodos
     cerrarFormularioNodosGeneral();
     
-    // Verificar si existe tabla de volumetría (caso: ya había una tabla)
-    const workspace = document.getElementById('tabla-volumetria');
+    // Verificar si existe tabla de volumetría
+    let workspace = document.getElementById('tabla-volumetria');
     if (workspace) {
         console.log('📊 Mostrando tabla de volumetría existente');
         workspace.style.display = 'block';
-        return;
+    } else {
+        console.log('⚠️ Tabla de volumetría no encontrada, recreándola...');
+        mostrarVolumetriaGeneralDirecta(); // Esto creará la tabla
+        workspace = document.getElementById('tabla-volumetria'); // Obtener la referencia después de la creación
+        if (workspace) {
+            workspace.style.display = 'block';
+        }
     }
     
-    // Si no hay tabla, regresar al panel de componentes (caso: venimos del panel inicial)
+    // Asegurarse de que el contenido principal inicial esté oculto si la tabla de volumetría está visible
     const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-        console.log('🎛️ Mostrando panel de componentes');
-        mainContent.style.display = 'block';
-    } else {
-        console.log('⚠️ No se encontró contenido principal, recargando página');
-        // Fallback: recargar la página para volver al estado inicial
-        window.location.reload();
+    if (mainContent && workspace && workspace.style.display === 'block') {
+        mainContent.style.display = 'none';
     }
 }
 
