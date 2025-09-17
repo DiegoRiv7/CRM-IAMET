@@ -3064,9 +3064,12 @@ async function obtenerDatosProductosCatalogo(numerosParte) {
     const productosCompletos = {};
     
     // Procesar cada producto
-    for (const [tipo, numeroParte] of Object.entries(numerosParte)) {
-        if (!numeroParte) {
-            console.log(`⚠️ No hay número de parte para ${tipo}, usando datos por defecto`);
+    for (const [tipo, rawNumeroParte] of Object.entries(numerosParte)) {
+        // Asegurarse de que numeroParte sea una cadena. Si es un array, tomar el primer elemento.
+        const numeroParte = Array.isArray(rawNumeroParte) ? rawNumeroParte[0] : rawNumeroParte;
+
+        if (!numeroParte || typeof numeroParte !== 'string') { // Añadir comprobación de tipo aquí
+            console.log(`⚠️ No hay número de parte válido para ${tipo}, usando datos por defecto`);
             productosCompletos[tipo] = {
                 numero_parte: '',
                 descripcion: `${tipo.charAt(0).toUpperCase() + tipo.slice(1)} sin especificar`,
