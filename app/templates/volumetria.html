@@ -924,10 +924,11 @@
     }
 
     .search-results {
-        max-height: 300px;
+        max-height: 400px;
         overflow-y: auto;
         border: 1px solid #e5e7eb;
         border-radius: 8px;
+        min-height: 200px;
     }
 
     .search-result-item {
@@ -1071,6 +1072,47 @@
 
     .dark .search-btn-secondary:hover {
         background: #6b7280;
+    }
+
+    /* Botón de búsqueda con filtros */
+    .search-filter-btn {
+        width: 100%;
+        padding: 12px 16px;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .search-filter-btn:hover {
+        background: linear-gradient(135deg, #2563eb, #1e40af);
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+        transform: translateY(-1px);
+    }
+
+    .search-filter-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+    }
+
+    /* Dark theme para el botón */
+    .dark .search-filter-btn {
+        background: linear-gradient(135deg, #4f46e5, #3730a3);
+        box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+    }
+
+    .dark .search-filter-btn:hover {
+        background: linear-gradient(135deg, #4338ca, #312e81);
+        box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
     }
 </style>
 <!-- Contenido directo de volumetría integral -->
@@ -5161,6 +5203,11 @@ function crearFiltrosSegunTipo(tipoProducto) {
                         <option value="riser">Riser</option>
                     </select>
                 </div>
+                <div class="filter-group">
+                    <button onclick="buscarConFiltros()" class="search-filter-btn">
+                        🔍 Buscar con Filtros
+                    </button>
+                </div>
             `;
             break;
             
@@ -5195,6 +5242,11 @@ function crearFiltrosSegunTipo(tipoProducto) {
                         <option value="blindado">Blindado</option>
                         <option value="keystone">Keystone</option>
                     </select>
+                </div>
+                <div class="filter-group">
+                    <button onclick="buscarConFiltros()" class="search-filter-btn">
+                        🔍 Buscar con Filtros
+                    </button>
                 </div>
             `;
             break;
@@ -5235,6 +5287,11 @@ function crearFiltrosSegunTipo(tipoProducto) {
                         <option value="6A">Cat 6A</option>
                     </select>
                 </div>
+                <div class="filter-group">
+                    <button onclick="buscarConFiltros()" class="search-filter-btn">
+                        🔍 Buscar con Filtros
+                    </button>
+                </div>
             `;
             break;
             
@@ -5271,6 +5328,11 @@ function crearFiltrosSegunTipo(tipoProducto) {
                         <option value="plano">Plano</option>
                         <option value="flush">Flush Mount</option>
                     </select>
+                </div>
+                <div class="filter-group">
+                    <button onclick="buscarConFiltros()" class="search-filter-btn">
+                        🔍 Buscar con Filtros
+                    </button>
                 </div>
             `;
             break;
@@ -5454,21 +5516,57 @@ function simularBusquedaProductos(query, tipoProducto, filtros) {
             { numero_parte: 'PUL6004BL-BOX', descripcion: 'Cable UTP Cat 6 Azul 305m', precio_lista: 285.50, costo_unitario: 190.33, marca: 'Panduit', categoria: '6', color: 'azul', uso: 'interior' },
             { numero_parte: 'PUL6004WH-BOX', descripcion: 'Cable UTP Cat 6 Blanco 305m', precio_lista: 285.50, costo_unitario: 190.33, marca: 'Panduit', categoria: '6', color: 'blanco', uso: 'interior' },
             { numero_parte: 'PUL5E04BL-BOX', descripcion: 'Cable UTP Cat 5e Azul 305m', precio_lista: 195.75, costo_unitario: 130.50, marca: 'Panduit', categoria: '5e', color: 'azul', uso: 'interior' },
+            { numero_parte: 'PUL5E04WH-BOX', descripcion: 'Cable UTP Cat 5e Blanco 305m', precio_lista: 195.75, costo_unitario: 130.50, marca: 'Panduit', categoria: '5e', color: 'blanco', uso: 'interior' },
+            { numero_parte: 'PUL6004GR-BOX', descripcion: 'Cable UTP Cat 6 Gris 305m', precio_lista: 285.50, costo_unitario: 190.33, marca: 'Panduit', categoria: '6', color: 'gris', uso: 'interior' },
+            { numero_parte: 'PUL6A04BL-BOX', descripcion: 'Cable UTP Cat 6A Azul 305m', precio_lista: 385.75, costo_unitario: 257.17, marca: 'Panduit', categoria: '6A', color: 'azul', uso: 'interior' },
+            { numero_parte: 'CS6004BL-BOX', descripcion: 'Cable UTP Cat 6 Azul 305m CommScope', precio_lista: 275.25, costo_unitario: 183.50, marca: 'CommScope', categoria: '6', color: 'azul', uso: 'interior' },
+            { numero_parte: 'CS6004WH-BOX', descripcion: 'Cable UTP Cat 6 Blanco 305m CommScope', precio_lista: 275.25, costo_unitario: 183.50, marca: 'CommScope', categoria: '6', color: 'blanco', uso: 'interior' },
+            { numero_parte: 'PUL6004BL-EXT', descripcion: 'Cable UTP Cat 6 Azul Exterior 305m', precio_lista: 325.80, costo_unitario: 217.20, marca: 'Panduit', categoria: '6', color: 'azul', uso: 'exterior' },
+            { numero_parte: 'PUL6004BL-PLN', descripcion: 'Cable UTP Cat 6 Azul Plenum 305m', precio_lista: 415.60, costo_unitario: 277.07, marca: 'Panduit', categoria: '6', color: 'azul', uso: 'plenum' },
+            { numero_parte: 'PUL6004BL-RSR', descripcion: 'Cable UTP Cat 6 Azul Riser 305m', precio_lista: 335.45, costo_unitario: 223.63, marca: 'Panduit', categoria: '6', color: 'azul', uso: 'riser' },
+            { numero_parte: 'BDN6004BL-BOX', descripcion: 'Cable UTP Cat 6 Azul 305m Belden', precio_lista: 295.30, costo_unitario: 196.87, marca: 'Belden', categoria: '6', color: 'azul', uso: 'interior' },
         ],
         jack: [
             { numero_parte: 'CJ6X88TBL', descripcion: 'Jack RJ45 Cat 6 Azul', precio_lista: 8.25, costo_unitario: 5.50, marca: 'Panduit', categoria: '6', color: 'azul', tipo: 'keystone' },
             { numero_parte: 'CJ6X88TWH', descripcion: 'Jack RJ45 Cat 6 Blanco', precio_lista: 8.25, costo_unitario: 5.50, marca: 'Panduit', categoria: '6', color: 'blanco', tipo: 'keystone' },
             { numero_parte: 'CJ5E88TBL', descripcion: 'Jack RJ45 Cat 5e Azul', precio_lista: 6.50, costo_unitario: 4.33, marca: 'Panduit', categoria: '5e', color: 'azul', tipo: 'keystone' },
+            { numero_parte: 'CJ5E88TWH', descripcion: 'Jack RJ45 Cat 5e Blanco', precio_lista: 6.50, costo_unitario: 4.33, marca: 'Panduit', categoria: '5e', color: 'blanco', tipo: 'keystone' },
+            { numero_parte: 'CJ6X88TRD', descripcion: 'Jack RJ45 Cat 6 Rojo', precio_lista: 8.25, costo_unitario: 5.50, marca: 'Panduit', categoria: '6', color: 'rojo', tipo: 'keystone' },
+            { numero_parte: 'CJ6X88TYL', descripcion: 'Jack RJ45 Cat 6 Amarillo', precio_lista: 8.25, costo_unitario: 5.50, marca: 'Panduit', categoria: '6', color: 'amarillo', tipo: 'keystone' },
+            { numero_parte: 'CJ6X88TGR', descripcion: 'Jack RJ45 Cat 6 Verde', precio_lista: 8.25, costo_unitario: 5.50, marca: 'Panduit', categoria: '6', color: 'verde', tipo: 'keystone' },
+            { numero_parte: 'CJ6A88TBL', descripcion: 'Jack RJ45 Cat 6A Azul', precio_lista: 12.75, costo_unitario: 8.50, marca: 'Panduit', categoria: '6A', color: 'azul', tipo: 'keystone' },
+            { numero_parte: 'CS6J88BL', descripcion: 'Jack RJ45 Cat 6 Azul CommScope', precio_lista: 7.85, costo_unitario: 5.23, marca: 'CommScope', categoria: '6', color: 'azul', tipo: 'keystone' },
+            { numero_parte: 'CS6J88WH', descripcion: 'Jack RJ45 Cat 6 Blanco CommScope', precio_lista: 7.85, costo_unitario: 5.23, marca: 'CommScope', categoria: '6', color: 'blanco', tipo: 'keystone' },
+            { numero_parte: 'CJ6X88BLD', descripcion: 'Jack RJ45 Cat 6 Azul Blindado', precio_lista: 15.25, costo_unitario: 10.17, marca: 'Panduit', categoria: '6', color: 'azul', tipo: 'blindado' },
+            { numero_parte: 'LG6J88BL', descripcion: 'Jack RJ45 Cat 6 Azul Legrand', precio_lista: 7.95, costo_unitario: 5.30, marca: 'Legrand', categoria: '6', color: 'azul', tipo: 'keystone' },
         ],
         patchcord: [
             { numero_parte: 'UTP6SP3BL', descripcion: 'Patch Cord Cat 6 Azul 3 pies', precio_lista: 12.50, costo_unitario: 8.33, marca: 'Panduit', categoria: '6', color: 'azul', longitud: '3' },
             { numero_parte: 'UTP6SP5BL', descripcion: 'Patch Cord Cat 6 Azul 5 pies', precio_lista: 15.75, costo_unitario: 10.50, marca: 'Panduit', categoria: '6', color: 'azul', longitud: '5' },
             { numero_parte: 'UTP6SP7BL', descripcion: 'Patch Cord Cat 6 Azul 7 pies', precio_lista: 18.25, costo_unitario: 12.17, marca: 'Panduit', categoria: '6', color: 'azul', longitud: '7' },
+            { numero_parte: 'UTP6SP1BL', descripcion: 'Patch Cord Cat 6 Azul 1 pie', precio_lista: 9.75, costo_unitario: 6.50, marca: 'Panduit', categoria: '6', color: 'azul', longitud: '1' },
+            { numero_parte: 'UTP6SP10BL', descripcion: 'Patch Cord Cat 6 Azul 10 pies', precio_lista: 22.50, costo_unitario: 15.00, marca: 'Panduit', categoria: '6', color: 'azul', longitud: '10' },
+            { numero_parte: 'UTP6SP3RD', descripcion: 'Patch Cord Cat 6 Rojo 3 pies', precio_lista: 12.50, costo_unitario: 8.33, marca: 'Panduit', categoria: '6', color: 'rojo', longitud: '3' },
+            { numero_parte: 'UTP6SP3YL', descripcion: 'Patch Cord Cat 6 Amarillo 3 pies', precio_lista: 12.50, costo_unitario: 8.33, marca: 'Panduit', categoria: '6', color: 'amarillo', longitud: '3' },
+            { numero_parte: 'UTP6SP3GR', descripcion: 'Patch Cord Cat 6 Verde 3 pies', precio_lista: 12.50, costo_unitario: 8.33, marca: 'Panduit', categoria: '6', color: 'verde', longitud: '3' },
+            { numero_parte: 'UTP6SP3WH', descripcion: 'Patch Cord Cat 6 Blanco 3 pies', precio_lista: 12.50, costo_unitario: 8.33, marca: 'Panduit', categoria: '6', color: 'blanco', longitud: '3' },
+            { numero_parte: 'UTP5ESP3BL', descripcion: 'Patch Cord Cat 5e Azul 3 pies', precio_lista: 9.25, costo_unitario: 6.17, marca: 'Panduit', categoria: '5e', color: 'azul', longitud: '3' },
+            { numero_parte: 'CS6SP5BL', descripcion: 'Patch Cord Cat 6 Azul 5 pies CommScope', precio_lista: 14.25, costo_unitario: 9.50, marca: 'CommScope', categoria: '6', color: 'azul', longitud: '5' },
+            { numero_parte: 'UTP6SP15BL', descripcion: 'Patch Cord Cat 6 Azul 15 pies', precio_lista: 28.75, costo_unitario: 19.17, marca: 'Panduit', categoria: '6', color: 'azul', longitud: '15' },
         ],
         faceplate: [
             { numero_parte: 'NK2FWH', descripcion: 'Faceplate 2 puertos Blanco', precio_lista: 15.50, costo_unitario: 10.33, marca: 'Panduit', puertos: '2', color: 'blanco', tipo: 'standard' },
             { numero_parte: 'NK4FWH', descripcion: 'Faceplate 4 puertos Blanco', precio_lista: 22.75, costo_unitario: 15.17, marca: 'Panduit', puertos: '4', color: 'blanco', tipo: 'standard' },
             { numero_parte: 'NK6FWH', descripcion: 'Faceplate 6 puertos Blanco', precio_lista: 28.50, costo_unitario: 19.00, marca: 'Panduit', puertos: '6', color: 'blanco', tipo: 'standard' },
+            { numero_parte: 'NK1FWH', descripcion: 'Faceplate 1 puerto Blanco', precio_lista: 12.25, costo_unitario: 8.17, marca: 'Panduit', puertos: '1', color: 'blanco', tipo: 'standard' },
+            { numero_parte: 'NK8FWH', descripcion: 'Faceplate 8 puertos Blanco', precio_lista: 35.75, costo_unitario: 23.83, marca: 'Panduit', puertos: '8', color: 'blanco', tipo: 'standard' },
+            { numero_parte: 'NK2FIV', descripcion: 'Faceplate 2 puertos Marfil', precio_lista: 15.50, costo_unitario: 10.33, marca: 'Panduit', puertos: '2', color: 'marfil', tipo: 'standard' },
+            { numero_parte: 'NK4FIV', descripcion: 'Faceplate 4 puertos Marfil', precio_lista: 22.75, costo_unitario: 15.17, marca: 'Panduit', puertos: '4', color: 'marfil', tipo: 'standard' },
+            { numero_parte: 'NK2FBK', descripcion: 'Faceplate 2 puertos Negro', precio_lista: 15.50, costo_unitario: 10.33, marca: 'Panduit', puertos: '2', color: 'negro', tipo: 'standard' },
+            { numero_parte: 'NK2FWH-ANG', descripcion: 'Faceplate 2 puertos Blanco Angulado', precio_lista: 18.75, costo_unitario: 12.50, marca: 'Panduit', puertos: '2', color: 'blanco', tipo: 'angulado' },
+            { numero_parte: 'NK4FWH-ANG', descripcion: 'Faceplate 4 puertos Blanco Angulado', precio_lista: 26.25, costo_unitario: 17.50, marca: 'Panduit', puertos: '4', color: 'blanco', tipo: 'angulado' },
+            { numero_parte: 'CS2FWH', descripcion: 'Faceplate 2 puertos Blanco CommScope', precio_lista: 14.50, costo_unitario: 9.67, marca: 'CommScope', puertos: '2', color: 'blanco', tipo: 'standard' },
+            { numero_parte: 'LG2FWH', descripcion: 'Faceplate 2 puertos Blanco Legrand', precio_lista: 14.75, costo_unitario: 9.83, marca: 'Legrand', puertos: '2', color: 'blanco', tipo: 'standard' },
         ]
     };
     
@@ -5534,6 +5632,38 @@ function cargarProductosIniciales(tipoProducto) {
     } else {
         mostrarMensajeResultados(`❌ No hay productos disponibles de tipo ${tipoProducto}`);
     }
+}
+
+// Función para buscar con filtros (llamada por el botón)
+function buscarConFiltros() {
+    console.log('🔍 Ejecutando búsqueda con filtros aplicados');
+    
+    if (!currentFieldId) {
+        console.error('❌ No hay campo activo para búsqueda');
+        return;
+    }
+    
+    const tipoProducto = detectarTipoProducto(currentFieldId);
+    const filtros = obtenerFiltrosActuales();
+    const query = document.getElementById('search-input-popup')?.value || '';
+    
+    console.log('Filtros aplicados:', filtros);
+    console.log('Query:', query);
+    console.log('Tipo producto:', tipoProducto);
+    
+    mostrarMensajeResultados('🔄 Aplicando filtros y buscando...');
+    
+    // Ejecutar búsqueda con filtros
+    setTimeout(() => {
+        const productos = simularBusquedaProductos(query, tipoProducto, filtros);
+        mostrarResultadosPopup(productos);
+        
+        // Mostrar resumen de filtros aplicados
+        const filtrosAplicados = Object.keys(filtros).filter(key => filtros[key] && filtros[key] !== '');
+        if (filtrosAplicados.length > 0) {
+            console.log(`✅ Búsqueda completada con ${filtrosAplicados.length} filtros: ${filtrosAplicados.join(', ')}`);
+        }
+    }, 300);
 }
 
 // Función para obtener filtros actuales del popup
