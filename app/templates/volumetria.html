@@ -680,27 +680,28 @@
     .excel-delete-btn {
         background: none;
         border: none;
-        color: #ff453a; /* Apple Red */
-        font-size: 16px;
+        color: #6b7280; /* Gray-500 más discreto */
+        font-size: 18px;
         cursor: pointer;
-        padding: 8px;
-        border-radius: 8px;
+        padding: 6px;
+        border-radius: 6px;
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         display: flex;
         align-items: center;
         justify-content: center;
-        opacity: 0.7;
+        opacity: 0.5; /* Más sutil por defecto */
     }
 
     .excel-delete-btn:hover {
-        background: rgba(255, 69, 58, 0.1); /* Apple Red with 10% opacity */
+        background: rgba(239, 68, 68, 0.1); /* Solo se muestra rojo al hover */
+        color: #ef4444;
         opacity: 1;
-        transform: scale(1.1);
+        transform: scale(1.05);
     }
 
     .excel-delete-btn:active {
         transform: scale(0.95);
-        background: rgba(255, 69, 58, 0.2);
+        background: rgba(239, 68, 68, 0.2);
     }
 
     .excel-row:nth-child(even) {
@@ -1046,6 +1047,11 @@
 
     .search-filter-btn:hover {
         background: #2563eb;
+    }
+
+    .product-part-number {
+        color: #ffffff;
+        font-weight: 600;
     }
 
     /* Dark theme para el popup */
@@ -4060,7 +4066,7 @@ function generarFilasVaciasGeneral() {
                 <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" contenteditable="true">$0.00</td>
                 <td class="excel-cell excel-cell-currency excel-calculated excel-profit" contenteditable="true">$0.00</td>
                 <td class="excel-cell excel-cell-action">
-                    <button onclick="eliminarFilaExcel(${i})" class="excel-delete-btn" title="Eliminar fila">❌</button>
+                    <button onclick="eliminarFilaExcel(${i})" class="excel-delete-btn" title="Eliminar fila">⋯</button>
                 </td>
             </tr>
         `;
@@ -4190,7 +4196,7 @@ function recalcularTotalesGeneral() {
         // Actualizar elementos del resumen
         const totalClienteEl = document.getElementById('total-cliente-general');
         const totalCostoEl = document.getElementById('total-costo-general');
-        const gananciaEl = document.getElementById('ganancia-general');
+        const gananciaEl = document.getElementById('ganancia-total-general');
         const margenEl = document.getElementById('margen-general');
         
         if (totalClienteEl) totalClienteEl.textContent = formatearMoneda(totalCliente);
@@ -4239,7 +4245,7 @@ function agregarFilaExcelGeneral() {
         <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" data-field="totalCosto" data-row="${newIndex}">$0.00</td>
         <td class="excel-cell excel-cell-currency excel-calculated excel-profit" data-field="ganancia" data-row="${newIndex}">$0.00</td>
         <td class="excel-cell excel-cell-action">
-            <button onclick="eliminarFilaExcelGeneral(${newIndex})" class="excel-delete-btn" title="Eliminar fila">❌</button>
+            <button onclick="eliminarFilaExcelGeneral(${newIndex})" class="excel-delete-btn" title="Eliminar fila">⋯</button>
         </td>
     `;
     
@@ -4453,7 +4459,7 @@ function procesarCSVImport(csvData) {
                 <td class="excel-cell excel-cell-currency excel-calculated" contenteditable="true">$0.00</td>
                 <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" contenteditable="true">$0.00</td>
                 <td class="excel-cell excel-cell-action">
-                    <button onclick="eliminarFilaExcelGeneral(${rowIndex})" class="excel-delete-btn" title="Eliminar fila">❌</button>
+                    <button onclick="eliminarFilaExcelGeneral(${rowIndex})" class="excel-delete-btn" title="Eliminar fila">⋯</button>
                 </td>
             `;
             
@@ -4797,7 +4803,7 @@ function mostrarTablaVolumetria(datos) {
                                                 <th class="excel-th">Costo Unit.</th>
                                                 <th class="excel-th excel-total">Total Costo</th>
                                                 <th class="excel-th excel-profit">Ganancia</th>
-                                                <th class="excel-th">❌</th>
+                                                <th class="excel-th">⋯</th>
                                             </tr>
                                         </thead>
                                         <tbody id="excel-tbody-nodos" class="excel-tbody">
@@ -6680,7 +6686,7 @@ function generarFilasVaciasGeneralExcel() {
                 <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" data-field="totalCosto" data-row="${i}">$0.00</td>
                 <td class="excel-cell excel-cell-currency excel-calculated excel-profit" data-field="ganancia" data-row="${i}">$0.00</td>
                 <td class="excel-cell excel-actions">
-                    <button onclick="eliminarFilaExcelGeneral(${i})" class="excel-btn-delete" title="Eliminar fila">❌</button>
+                    <button onclick="eliminarFilaExcelGeneral(${i})" class="excel-btn-delete" title="Eliminar fila">⋯</button>
                 </td>
             </tr>
         `;
@@ -9650,7 +9656,7 @@ function agregarFilaExcel() {
             <td class="excel-cell excel-cell-currency editable excel-total-cost" contenteditable="true" data-field="totalCosto" data-row="${newIndex}" onblur="recalcularFilaExcel(${newIndex})">$0.00</td>
             <td class="excel-cell excel-cell-currency editable excel-profit" contenteditable="true" data-field="ganancia" data-row="${newIndex}" onblur="recalcularFilaExcel(${newIndex})">$0.00</td>
             <td class="excel-cell excel-cell-action">
-                <button onclick="eliminarFilaExcel(${newIndex})" class="excel-delete-btn" title="Eliminar fila">❌</button>
+                <button onclick="eliminarFilaExcel(${newIndex})" class="excel-delete-btn" title="Eliminar fila">⋯</button>
             </td>
         </tr>
     `;
@@ -10360,7 +10366,7 @@ function agregarFilaGastosInstalacion() {
             <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioUnitario" data-row="${newIndex}" onblur="recalcularFilaGastosInstalacion(${newIndex})" oninput="recalcularFilaGastosInstalacion(${newIndex})">$0.00</td>
             <td class="excel-cell excel-cell-currency excel-total" data-field="total" data-row="${newIndex}">$0.00</td>
             <td class="excel-cell excel-cell-action">
-                <button onclick="eliminarFilaGastosInstalacion(${newIndex})" class="excel-delete-btn" title="Eliminar fila">❌</button>
+                <button onclick="eliminarFilaGastosInstalacion(${newIndex})" class="excel-delete-btn" title="Eliminar fila">⋯</button>
             </td>
         </tr>
     `;
@@ -10486,7 +10492,7 @@ function agregarFilaManoObra() {
             <td class="excel-cell excel-cell-currency" data-field="costoTotal" data-row="${newIndex}">$0.00</td>
             <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="dias" data-row="${newIndex}" onblur="recalcularFilaManoObra(${newIndex})">0</td>
             <td class="excel-cell excel-cell-action">
-                <button onclick="eliminarFilaManoObra(${newIndex})" class="excel-delete-btn" title="Eliminar fila">❌</button>
+                <button onclick="eliminarFilaManoObra(${newIndex})" class="excel-delete-btn" title="Eliminar fila">⋯</button>
             </td>
         </tr>
     `;
@@ -12750,7 +12756,7 @@ function agregarTablaPrincipal() {
                             <th class="excel-th">Costo Unit.</th>
                             <th class="excel-th excel-total">Total Costo</th>
                             <th class="excel-th excel-profit">Ganancia</th>
-                            <th class="excel-th">❌</th>
+                            <th class="excel-th">⋯</th>
                         </tr>
                     </thead>
                     <tbody id="excel-tbody-general">
@@ -12835,7 +12841,7 @@ function agregarTablaGastosInstalacion() {
                             <td class="excel-cell editable" contenteditable="true" data-field="precio" data-row="0" onblur="recalcularFilaGastos(0)">$0.00</td>
                             <td class="excel-cell calculated" data-field="total" data-row="0">$0.00</td>
                             <td class="excel-cell">
-                                <button onclick="eliminarFilaGastosInstalacion(0)" class="excel-delete-btn" title="Eliminar fila">❌</button>
+                                <button onclick="eliminarFilaGastosInstalacion(0)" class="excel-delete-btn" title="Eliminar fila">⋯</button>
                             </td>
                         </tr>
                         <tr class="excel-totals-row">
@@ -12915,7 +12921,7 @@ function agregarTablaManoObra() {
                             <td class="excel-cell editable" contenteditable="true" data-field="precio" data-row="0" onblur="recalcularFilaManoObra(0)">$0.00</td>
                             <td class="excel-cell calculated" data-field="total" data-row="0">$0.00</td>
                             <td class="excel-cell">
-                                <button onclick="eliminarFilaManoObra(0)" class="excel-delete-btn" title="Eliminar fila">❌</button>
+                                <button onclick="eliminarFilaManoObra(0)" class="excel-delete-btn" title="Eliminar fila">⋯</button>
                             </td>
                         </tr>
                         <tr class="excel-totals-row">
@@ -13386,7 +13392,7 @@ function agregarItemATabla(item) {
         <td class="excel-cell editable" contenteditable="true" data-field="costoUnitario" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})">$${(item.precio * 0.7).toFixed(2)}</td>
         <td class="excel-cell calculated" data-field="costoTotal" data-row="${newIndex}">$${(item.cantidad * item.precio * 0.7).toFixed(2)}</td>
         <td class="excel-cell">
-            <button onclick="eliminarFilaExcelGeneral(${newIndex})" class="excel-delete-btn" title="Eliminar fila">❌</button>
+            <button onclick="eliminarFilaExcelGeneral(${newIndex})" class="excel-delete-btn" title="Eliminar fila">⋯</button>
         </td>
     `;
     
