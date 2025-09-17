@@ -808,15 +808,16 @@
     }
 
     .search-popup {
-        background: white;
+        background: #1f2937;
         border-radius: 16px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         width: 90%;
         max-width: 800px;
         max-height: 80vh;
         overflow: hidden;
         animation: searchPopupSlideIn 0.3s ease-out;
-        border: 1px solid #e5e7eb;
+        border: 1px solid #374151;
+        color: #f9fafb;
     }
 
     @keyframes searchPopupSlideIn {
@@ -831,12 +832,13 @@
     }
 
     .search-popup-header {
-        background: linear-gradient(135deg, #3b82f6, #6366f1);
+        background: linear-gradient(135deg, #111827, #1f2937);
         color: white;
         padding: 20px;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        border-bottom: 1px solid #374151;
     }
 
     .search-popup-title {
@@ -864,6 +866,8 @@
         padding: 20px;
         overflow-y: auto;
         max-height: calc(80vh - 140px);
+        background: #1f2937;
+        color: #f9fafb;
     }
 
     .search-input-container {
@@ -873,10 +877,12 @@
     .search-input {
         width: 100%;
         padding: 12px 16px;
-        border: 2px solid #e5e7eb;
+        border: 2px solid #374151;
         border-radius: 10px;
         font-size: 16px;
         transition: border-color 0.2s;
+        background: #374151;
+        color: #f9fafb;
     }
 
     .search-input:focus {
@@ -891,9 +897,9 @@
         gap: 15px;
         margin-bottom: 20px;
         padding: 20px;
-        background: #f8fafc;
+        background: #374151;
         border-radius: 10px;
-        border: 1px solid #e5e7eb;
+        border: 1px solid #4b5563;
     }
 
     .filter-group {
@@ -905,17 +911,19 @@
     .filter-label {
         font-size: 12px;
         font-weight: 600;
-        color: #374151;
+        color: #d1d5db;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
 
     .filter-input, .filter-select {
         padding: 8px 12px;
-        border: 1px solid #d1d5db;
+        border: 1px solid #6b7280;
         border-radius: 6px;
         font-size: 14px;
         transition: border-color 0.2s;
+        background: #4b5563;
+        color: #f9fafb;
     }
 
     .filter-input:focus, .filter-select:focus {
@@ -926,23 +934,25 @@
     .search-results {
         max-height: 400px;
         overflow-y: auto;
-        border: 1px solid #e5e7eb;
+        border: 1px solid #4b5563;
         border-radius: 8px;
         min-height: 200px;
+        background: #1f2937;
     }
 
     .search-result-item {
         padding: 12px 16px;
-        border-bottom: 1px solid #f3f4f6;
+        border-bottom: 1px solid #374151;
         cursor: pointer;
         transition: background-color 0.2s;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        color: #f9fafb;
     }
 
     .search-result-item:hover {
-        background-color: #f8fafc;
+        background-color: #374151;
     }
 
     .search-result-item:last-child {
@@ -976,7 +986,7 @@
     }
 
     .search-result-list-price {
-        color: #1f2937;
+        color: #d1d5db;
         margin-bottom: 2px;
     }
 
@@ -987,11 +997,11 @@
 
     .search-actions {
         padding: 20px;
-        border-top: 1px solid #e5e7eb;
+        border-top: 1px solid #4b5563;
         display: flex;
         justify-content: flex-end;
         gap: 12px;
-        background: #f9fafb;
+        background: #374151;
     }
 
     .search-btn {
@@ -1004,12 +1014,12 @@
     }
 
     .search-btn-secondary {
-        background: #f3f4f6;
-        color: #374151;
+        background: #4b5563;
+        color: #f9fafb;
     }
 
     .search-btn-secondary:hover {
-        background: #e5e7eb;
+        background: #6b7280;
     }
 
     .search-btn-primary {
@@ -1018,6 +1028,23 @@
     }
 
     .search-btn-primary:hover {
+        background: #2563eb;
+    }
+
+    .search-filter-btn {
+        background: #3b82f6;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        width: 100%;
+    }
+
+    .search-filter-btn:hover {
         background: #2563eb;
     }
 
