@@ -5468,8 +5468,7 @@ function mostrarResultadosPopup(productos) {
                     <div class="search-result-description">${producto.descripcion}</div>
                     <div class="search-result-details">
                         ${producto.marca ? `Marca: ${producto.marca}` : ''} 
-                        ${producto.categoria ? `| Cat: ${producto.categoria}` : ''} 
-                        ${producto.color ? `| Color: ${producto.color}` : ''}
+                        ${extraerCaracteristicasInteligentes(producto.descripcion, tipoProducto)}
                     </div>
                 </div>
                 <div class="search-result-price">
@@ -5513,60 +5512,67 @@ function simularBusquedaProductos(query, tipoProducto, filtros) {
     // Datos de ejemplo (en producción vendría del backend)
     const productosEjemplo = {
         cable: [
-            { numero_parte: 'PUL6004BL-BOX', descripcion: 'Cable UTP Cat 6 Azul 305m', precio_lista: 285.50, costo_unitario: 190.33, marca: 'Panduit', categoria: '6', color: 'azul', uso: 'interior' },
-            { numero_parte: 'PUL6004WH-BOX', descripcion: 'Cable UTP Cat 6 Blanco 305m', precio_lista: 285.50, costo_unitario: 190.33, marca: 'Panduit', categoria: '6', color: 'blanco', uso: 'interior' },
-            { numero_parte: 'PUL5E04BL-BOX', descripcion: 'Cable UTP Cat 5e Azul 305m', precio_lista: 195.75, costo_unitario: 130.50, marca: 'Panduit', categoria: '5e', color: 'azul', uso: 'interior' },
-            { numero_parte: 'PUL5E04WH-BOX', descripcion: 'Cable UTP Cat 5e Blanco 305m', precio_lista: 195.75, costo_unitario: 130.50, marca: 'Panduit', categoria: '5e', color: 'blanco', uso: 'interior' },
-            { numero_parte: 'PUL6004GR-BOX', descripcion: 'Cable UTP Cat 6 Gris 305m', precio_lista: 285.50, costo_unitario: 190.33, marca: 'Panduit', categoria: '6', color: 'gris', uso: 'interior' },
-            { numero_parte: 'PUL6A04BL-BOX', descripcion: 'Cable UTP Cat 6A Azul 305m', precio_lista: 385.75, costo_unitario: 257.17, marca: 'Panduit', categoria: '6A', color: 'azul', uso: 'interior' },
-            { numero_parte: 'CS6004BL-BOX', descripcion: 'Cable UTP Cat 6 Azul 305m CommScope', precio_lista: 275.25, costo_unitario: 183.50, marca: 'CommScope', categoria: '6', color: 'azul', uso: 'interior' },
-            { numero_parte: 'CS6004WH-BOX', descripcion: 'Cable UTP Cat 6 Blanco 305m CommScope', precio_lista: 275.25, costo_unitario: 183.50, marca: 'CommScope', categoria: '6', color: 'blanco', uso: 'interior' },
-            { numero_parte: 'PUL6004BL-EXT', descripcion: 'Cable UTP Cat 6 Azul Exterior 305m', precio_lista: 325.80, costo_unitario: 217.20, marca: 'Panduit', categoria: '6', color: 'azul', uso: 'exterior' },
-            { numero_parte: 'PUL6004BL-PLN', descripcion: 'Cable UTP Cat 6 Azul Plenum 305m', precio_lista: 415.60, costo_unitario: 277.07, marca: 'Panduit', categoria: '6', color: 'azul', uso: 'plenum' },
-            { numero_parte: 'PUL6004BL-RSR', descripcion: 'Cable UTP Cat 6 Azul Riser 305m', precio_lista: 335.45, costo_unitario: 223.63, marca: 'Panduit', categoria: '6', color: 'azul', uso: 'riser' },
-            { numero_parte: 'BDN6004BL-BOX', descripcion: 'Cable UTP Cat 6 Azul 305m Belden', precio_lista: 295.30, costo_unitario: 196.87, marca: 'Belden', categoria: '6', color: 'azul', uso: 'interior' },
+            { numero_parte: 'PUL6004BL-BOX', descripcion: 'Cable UTP Cat 6 Azul 305m Interior Propósito General', precio_lista: 285.50, costo_unitario: 190.33, marca: 'Panduit' },
+            { numero_parte: 'PUL6004WH-BOX', descripcion: 'Cable UTP Cat 6 Blanco 305m para Oficinas Interiores', precio_lista: 285.50, costo_unitario: 190.33, marca: 'Panduit' },
+            { numero_parte: 'PUL5E04BL-BOX', descripcion: 'Cable UTP Cat 5e Blue 305m Indoor General Purpose', precio_lista: 195.75, costo_unitario: 130.50, marca: 'Panduit' },
+            { numero_parte: 'PUL5E04WH-BOX', descripcion: 'Cable UTP Categoría 5e White 305m Interior Standard', precio_lista: 195.75, costo_unitario: 130.50, marca: 'Panduit' },
+            { numero_parte: 'PUL6004GR-BOX', descripcion: 'Cable UTP Cat 6 Gray Grey 305m Edificios Interiores', precio_lista: 285.50, costo_unitario: 190.33, marca: 'Panduit' },
+            { numero_parte: 'PUL6A04BL-BOX', descripcion: 'Cable UTP Category 6A Blue Azul 305m High Performance Indoor', precio_lista: 385.75, costo_unitario: 257.17, marca: 'Panduit' },
+            { numero_parte: 'CS6004BL-BOX', descripcion: 'Cable UTP Cat 6 Blue Azul 305m Interior CommScope', precio_lista: 275.25, costo_unitario: 183.50, marca: 'CommScope' },
+            { numero_parte: 'CS6004WH-BOX', descripcion: 'Cable UTP Cat 6 White Blanco 305m Indoor Office CommScope', precio_lista: 275.25, costo_unitario: 183.50, marca: 'CommScope' },
+            { numero_parte: 'PUL6004BL-EXT', descripcion: 'Cable UTP Cat 6 Azul Exterior Outdoor 305m Resistente UV', precio_lista: 325.80, costo_unitario: 217.20, marca: 'Panduit' },
+            { numero_parte: 'PUL6004BL-PLN', descripcion: 'Cable UTP Cat 6 Blue Plenum CMP Rated 305m Fire Retardant', precio_lista: 415.60, costo_unitario: 277.07, marca: 'Panduit' },
+            { numero_parte: 'PUL6004BL-RSR', descripcion: 'Cable UTP Cat 6 Azul Riser CMR 305m Vertical Applications', precio_lista: 335.45, costo_unitario: 223.63, marca: 'Panduit' },
+            { numero_parte: 'BDN6004BL-BOX', descripcion: 'Cable UTP Cat 6 Blue 305m Interior Standard Belden', precio_lista: 295.30, costo_unitario: 196.87, marca: 'Belden' },
+            { numero_parte: 'PUL6004BK-BOX', descripcion: 'Cable UTP Cat 6 Black Negro 305m Interior Offices', precio_lista: 285.50, costo_unitario: 190.33, marca: 'Panduit' },
+            { numero_parte: 'PUL6004RD-BOX', descripcion: 'Cable UTP Cat 6 Red Rojo 305m Indoor Identification', precio_lista: 285.50, costo_unitario: 190.33, marca: 'Panduit' },
+            { numero_parte: 'PUL6004YL-EXT', descripcion: 'Cable UTP Cat 6 Yellow Amarillo 305m Outdoor External', precio_lista: 325.80, costo_unitario: 217.20, marca: 'Panduit' },
         ],
         jack: [
-            { numero_parte: 'CJ6X88TBL', descripcion: 'Jack RJ45 Cat 6 Azul', precio_lista: 8.25, costo_unitario: 5.50, marca: 'Panduit', categoria: '6', color: 'azul', tipo: 'keystone' },
-            { numero_parte: 'CJ6X88TWH', descripcion: 'Jack RJ45 Cat 6 Blanco', precio_lista: 8.25, costo_unitario: 5.50, marca: 'Panduit', categoria: '6', color: 'blanco', tipo: 'keystone' },
-            { numero_parte: 'CJ5E88TBL', descripcion: 'Jack RJ45 Cat 5e Azul', precio_lista: 6.50, costo_unitario: 4.33, marca: 'Panduit', categoria: '5e', color: 'azul', tipo: 'keystone' },
-            { numero_parte: 'CJ5E88TWH', descripcion: 'Jack RJ45 Cat 5e Blanco', precio_lista: 6.50, costo_unitario: 4.33, marca: 'Panduit', categoria: '5e', color: 'blanco', tipo: 'keystone' },
-            { numero_parte: 'CJ6X88TRD', descripcion: 'Jack RJ45 Cat 6 Rojo', precio_lista: 8.25, costo_unitario: 5.50, marca: 'Panduit', categoria: '6', color: 'rojo', tipo: 'keystone' },
-            { numero_parte: 'CJ6X88TYL', descripcion: 'Jack RJ45 Cat 6 Amarillo', precio_lista: 8.25, costo_unitario: 5.50, marca: 'Panduit', categoria: '6', color: 'amarillo', tipo: 'keystone' },
-            { numero_parte: 'CJ6X88TGR', descripcion: 'Jack RJ45 Cat 6 Verde', precio_lista: 8.25, costo_unitario: 5.50, marca: 'Panduit', categoria: '6', color: 'verde', tipo: 'keystone' },
-            { numero_parte: 'CJ6A88TBL', descripcion: 'Jack RJ45 Cat 6A Azul', precio_lista: 12.75, costo_unitario: 8.50, marca: 'Panduit', categoria: '6A', color: 'azul', tipo: 'keystone' },
-            { numero_parte: 'CS6J88BL', descripcion: 'Jack RJ45 Cat 6 Azul CommScope', precio_lista: 7.85, costo_unitario: 5.23, marca: 'CommScope', categoria: '6', color: 'azul', tipo: 'keystone' },
-            { numero_parte: 'CS6J88WH', descripcion: 'Jack RJ45 Cat 6 Blanco CommScope', precio_lista: 7.85, costo_unitario: 5.23, marca: 'CommScope', categoria: '6', color: 'blanco', tipo: 'keystone' },
-            { numero_parte: 'CJ6X88BLD', descripcion: 'Jack RJ45 Cat 6 Azul Blindado', precio_lista: 15.25, costo_unitario: 10.17, marca: 'Panduit', categoria: '6', color: 'azul', tipo: 'blindado' },
-            { numero_parte: 'LG6J88BL', descripcion: 'Jack RJ45 Cat 6 Azul Legrand', precio_lista: 7.95, costo_unitario: 5.30, marca: 'Legrand', categoria: '6', color: 'azul', tipo: 'keystone' },
+            { numero_parte: 'CJ6X88TBL', descripcion: 'Jack RJ45 Cat 6 Blue Azul Keystone Module', precio_lista: 8.25, costo_unitario: 5.50, marca: 'Panduit' },
+            { numero_parte: 'CJ6X88TWH', descripcion: 'Jack RJ45 Category 6 White Blanco Keystone Insert', precio_lista: 8.25, costo_unitario: 5.50, marca: 'Panduit' },
+            { numero_parte: 'CJ5E88TBL', descripcion: 'Jack RJ45 Cat 5e Blue Keystone Connector Module', precio_lista: 6.50, costo_unitario: 4.33, marca: 'Panduit' },
+            { numero_parte: 'CJ5E88TWH', descripcion: 'Jack RJ45 Category 5e White Keystone Standard Module', precio_lista: 6.50, costo_unitario: 4.33, marca: 'Panduit' },
+            { numero_parte: 'CJ6X88TRD', descripcion: 'Jack RJ45 Cat 6 Red Rojo Keystone Identification Module', precio_lista: 8.25, costo_unitario: 5.50, marca: 'Panduit' },
+            { numero_parte: 'CJ6X88TYL', descripcion: 'Jack RJ45 Cat 6 Yellow Amarillo Keystone Network Module', precio_lista: 8.25, costo_unitario: 5.50, marca: 'Panduit' },
+            { numero_parte: 'CJ6X88TGR', descripcion: 'Jack RJ45 Cat 6 Green Verde Keystone Data Module', precio_lista: 8.25, costo_unitario: 5.50, marca: 'Panduit' },
+            { numero_parte: 'CJ6A88TBL', descripcion: 'Jack RJ45 Category 6A Blue High Performance Keystone', precio_lista: 12.75, costo_unitario: 8.50, marca: 'Panduit' },
+            { numero_parte: 'CS6J88BL', descripcion: 'Jack RJ45 Cat 6 Blue Keystone Module CommScope', precio_lista: 7.85, costo_unitario: 5.23, marca: 'CommScope' },
+            { numero_parte: 'CS6J88WH', descripcion: 'Jack RJ45 Cat 6 White Keystone Insert CommScope', precio_lista: 7.85, costo_unitario: 5.23, marca: 'CommScope' },
+            { numero_parte: 'CJ6X88BLD', descripcion: 'Jack RJ45 Cat 6 Blue Shielded Blindado FTP Module', precio_lista: 15.25, costo_unitario: 10.17, marca: 'Panduit' },
+            { numero_parte: 'LG6J88BL', descripcion: 'Jack RJ45 Cat 6 Blue Keystone Connector Legrand', precio_lista: 7.95, costo_unitario: 5.30, marca: 'Legrand' },
+            { numero_parte: 'CJ6X88TBK', descripcion: 'Jack RJ45 Cat 6 Black Negro Keystone Professional', precio_lista: 8.25, costo_unitario: 5.50, marca: 'Panduit' },
+            { numero_parte: 'CJ5E88TGR', descripcion: 'Jack RJ45 Cat 5e Green Keystone Standard Module', precio_lista: 6.50, costo_unitario: 4.33, marca: 'Panduit' },
         ],
         patchcord: [
-            { numero_parte: 'UTP6SP3BL', descripcion: 'Patch Cord Cat 6 Azul 3 pies', precio_lista: 12.50, costo_unitario: 8.33, marca: 'Panduit', categoria: '6', color: 'azul', longitud: '3' },
-            { numero_parte: 'UTP6SP5BL', descripcion: 'Patch Cord Cat 6 Azul 5 pies', precio_lista: 15.75, costo_unitario: 10.50, marca: 'Panduit', categoria: '6', color: 'azul', longitud: '5' },
-            { numero_parte: 'UTP6SP7BL', descripcion: 'Patch Cord Cat 6 Azul 7 pies', precio_lista: 18.25, costo_unitario: 12.17, marca: 'Panduit', categoria: '6', color: 'azul', longitud: '7' },
-            { numero_parte: 'UTP6SP1BL', descripcion: 'Patch Cord Cat 6 Azul 1 pie', precio_lista: 9.75, costo_unitario: 6.50, marca: 'Panduit', categoria: '6', color: 'azul', longitud: '1' },
-            { numero_parte: 'UTP6SP10BL', descripcion: 'Patch Cord Cat 6 Azul 10 pies', precio_lista: 22.50, costo_unitario: 15.00, marca: 'Panduit', categoria: '6', color: 'azul', longitud: '10' },
-            { numero_parte: 'UTP6SP3RD', descripcion: 'Patch Cord Cat 6 Rojo 3 pies', precio_lista: 12.50, costo_unitario: 8.33, marca: 'Panduit', categoria: '6', color: 'rojo', longitud: '3' },
-            { numero_parte: 'UTP6SP3YL', descripcion: 'Patch Cord Cat 6 Amarillo 3 pies', precio_lista: 12.50, costo_unitario: 8.33, marca: 'Panduit', categoria: '6', color: 'amarillo', longitud: '3' },
-            { numero_parte: 'UTP6SP3GR', descripcion: 'Patch Cord Cat 6 Verde 3 pies', precio_lista: 12.50, costo_unitario: 8.33, marca: 'Panduit', categoria: '6', color: 'verde', longitud: '3' },
-            { numero_parte: 'UTP6SP3WH', descripcion: 'Patch Cord Cat 6 Blanco 3 pies', precio_lista: 12.50, costo_unitario: 8.33, marca: 'Panduit', categoria: '6', color: 'blanco', longitud: '3' },
-            { numero_parte: 'UTP5ESP3BL', descripcion: 'Patch Cord Cat 5e Azul 3 pies', precio_lista: 9.25, costo_unitario: 6.17, marca: 'Panduit', categoria: '5e', color: 'azul', longitud: '3' },
-            { numero_parte: 'CS6SP5BL', descripcion: 'Patch Cord Cat 6 Azul 5 pies CommScope', precio_lista: 14.25, costo_unitario: 9.50, marca: 'CommScope', categoria: '6', color: 'azul', longitud: '5' },
-            { numero_parte: 'UTP6SP15BL', descripcion: 'Patch Cord Cat 6 Azul 15 pies', precio_lista: 28.75, costo_unitario: 19.17, marca: 'Panduit', categoria: '6', color: 'azul', longitud: '15' },
+            { numero_parte: 'UTP6SP3BL', descripcion: 'Patch Cord Cat 6 Blue Azul 3 ft feet Network Cable', precio_lista: 12.50, costo_unitario: 8.33, marca: 'Panduit' },
+            { numero_parte: 'UTP6SP5BL', descripcion: 'Patch Cord Category 6 Blue 5 feet RJ45 Cable', precio_lista: 15.75, costo_unitario: 10.50, marca: 'Panduit' },
+            { numero_parte: 'UTP6SP7BL', descripcion: 'Patch Cord Cat 6 Blue 7 ft Network Jumper Cable', precio_lista: 18.25, costo_unitario: 12.17, marca: 'Panduit' },
+            { numero_parte: 'UTP6SP1BL', descripcion: 'Patch Cord Cat 6 Blue Short 1 foot Network Cable', precio_lista: 9.75, costo_unitario: 6.50, marca: 'Panduit' },
+            { numero_parte: 'UTP6SP10BL', descripcion: 'Patch Cord Cat 6 Blue 10 feet Long Network Cable', precio_lista: 22.50, costo_unitario: 15.00, marca: 'Panduit' },
+            { numero_parte: 'UTP6SP3RD', descripcion: 'Patch Cord Cat 6 Red Rojo 3 ft Identification Cable', precio_lista: 12.50, costo_unitario: 8.33, marca: 'Panduit' },
+            { numero_parte: 'UTP6SP3YL', descripcion: 'Patch Cord Cat 6 Yellow Amarillo 3 feet Network', precio_lista: 12.50, costo_unitario: 8.33, marca: 'Panduit' },
+            { numero_parte: 'UTP6SP3GR', descripcion: 'Patch Cord Cat 6 Green Verde 3 ft Data Cable', precio_lista: 12.50, costo_unitario: 8.33, marca: 'Panduit' },
+            { numero_parte: 'UTP6SP3WH', descripcion: 'Patch Cord Cat 6 White Blanco 3 feet Standard', precio_lista: 12.50, costo_unitario: 8.33, marca: 'Panduit' },
+            { numero_parte: 'UTP5ESP3BL', descripcion: 'Patch Cord Category 5e Blue 3 ft Basic Network', precio_lista: 9.25, costo_unitario: 6.17, marca: 'Panduit' },
+            { numero_parte: 'CS6SP5BL', descripcion: 'Patch Cord Cat 6 Blue 5 feet CommScope Network', precio_lista: 14.25, costo_unitario: 9.50, marca: 'CommScope' },
+            { numero_parte: 'UTP6SP15BL', descripcion: 'Patch Cord Cat 6 Blue Extra Long 15 feet Cable', precio_lista: 28.75, costo_unitario: 19.17, marca: 'Panduit' },
+            { numero_parte: 'UTP6SP25BL', descripcion: 'Patch Cord Cat 6 Blue Extended 25 ft Long Cable', precio_lista: 35.50, costo_unitario: 23.67, marca: 'Panduit' },
         ],
         faceplate: [
-            { numero_parte: 'NK2FWH', descripcion: 'Faceplate 2 puertos Blanco', precio_lista: 15.50, costo_unitario: 10.33, marca: 'Panduit', puertos: '2', color: 'blanco', tipo: 'standard' },
-            { numero_parte: 'NK4FWH', descripcion: 'Faceplate 4 puertos Blanco', precio_lista: 22.75, costo_unitario: 15.17, marca: 'Panduit', puertos: '4', color: 'blanco', tipo: 'standard' },
-            { numero_parte: 'NK6FWH', descripcion: 'Faceplate 6 puertos Blanco', precio_lista: 28.50, costo_unitario: 19.00, marca: 'Panduit', puertos: '6', color: 'blanco', tipo: 'standard' },
-            { numero_parte: 'NK1FWH', descripcion: 'Faceplate 1 puerto Blanco', precio_lista: 12.25, costo_unitario: 8.17, marca: 'Panduit', puertos: '1', color: 'blanco', tipo: 'standard' },
-            { numero_parte: 'NK8FWH', descripcion: 'Faceplate 8 puertos Blanco', precio_lista: 35.75, costo_unitario: 23.83, marca: 'Panduit', puertos: '8', color: 'blanco', tipo: 'standard' },
-            { numero_parte: 'NK2FIV', descripcion: 'Faceplate 2 puertos Marfil', precio_lista: 15.50, costo_unitario: 10.33, marca: 'Panduit', puertos: '2', color: 'marfil', tipo: 'standard' },
-            { numero_parte: 'NK4FIV', descripcion: 'Faceplate 4 puertos Marfil', precio_lista: 22.75, costo_unitario: 15.17, marca: 'Panduit', puertos: '4', color: 'marfil', tipo: 'standard' },
-            { numero_parte: 'NK2FBK', descripcion: 'Faceplate 2 puertos Negro', precio_lista: 15.50, costo_unitario: 10.33, marca: 'Panduit', puertos: '2', color: 'negro', tipo: 'standard' },
-            { numero_parte: 'NK2FWH-ANG', descripcion: 'Faceplate 2 puertos Blanco Angulado', precio_lista: 18.75, costo_unitario: 12.50, marca: 'Panduit', puertos: '2', color: 'blanco', tipo: 'angulado' },
-            { numero_parte: 'NK4FWH-ANG', descripcion: 'Faceplate 4 puertos Blanco Angulado', precio_lista: 26.25, costo_unitario: 17.50, marca: 'Panduit', puertos: '4', color: 'blanco', tipo: 'angulado' },
-            { numero_parte: 'CS2FWH', descripcion: 'Faceplate 2 puertos Blanco CommScope', precio_lista: 14.50, costo_unitario: 9.67, marca: 'CommScope', puertos: '2', color: 'blanco', tipo: 'standard' },
-            { numero_parte: 'LG2FWH', descripcion: 'Faceplate 2 puertos Blanco Legrand', precio_lista: 14.75, costo_unitario: 9.83, marca: 'Legrand', puertos: '2', color: 'blanco', tipo: 'standard' },
+            { numero_parte: 'NK2FWH', descripcion: 'Faceplate Dual 2-Port White Blanco Standard Mount', precio_lista: 15.50, costo_unitario: 10.33, marca: 'Panduit' },
+            { numero_parte: 'NK4FWH', descripcion: 'Faceplate Quad 4-Port White Standard Wall Mount', precio_lista: 22.75, costo_unitario: 15.17, marca: 'Panduit' },
+            { numero_parte: 'NK6FWH', descripcion: 'Faceplate Six 6-Port White Blanco Multi-Port Panel', precio_lista: 28.50, costo_unitario: 19.00, marca: 'Panduit' },
+            { numero_parte: 'NK1FWH', descripcion: 'Faceplate Single 1-Port White Solo Outlet Panel', precio_lista: 12.25, costo_unitario: 8.17, marca: 'Panduit' },
+            { numero_parte: 'NK8FWH', descripcion: 'Faceplate Eight 8-Port White High Density Panel', precio_lista: 35.75, costo_unitario: 23.83, marca: 'Panduit' },
+            { numero_parte: 'NK2FIV', descripcion: 'Faceplate 2-Port Ivory Marfil Beige Standard', precio_lista: 15.50, costo_unitario: 10.33, marca: 'Panduit' },
+            { numero_parte: 'NK4FIV', descripcion: 'Faceplate 4-Port Ivory Marfil Multi-Outlet Panel', precio_lista: 22.75, costo_unitario: 15.17, marca: 'Panduit' },
+            { numero_parte: 'NK2FBK', descripcion: 'Faceplate 2-Port Black Negro Professional Panel', precio_lista: 15.50, costo_unitario: 10.33, marca: 'Panduit' },
+            { numero_parte: 'NK2FWH-ANG', descripcion: 'Faceplate 2-Port White Angled Angulado Low Profile', precio_lista: 18.75, costo_unitario: 12.50, marca: 'Panduit' },
+            { numero_parte: 'NK4FWH-ANG', descripcion: 'Faceplate 4-Port White Angled Low Profile Mount', precio_lista: 26.25, costo_unitario: 17.50, marca: 'Panduit' },
+            { numero_parte: 'CS2FWH', descripcion: 'Faceplate 2-Port White Standard CommScope Panel', precio_lista: 14.50, costo_unitario: 9.67, marca: 'CommScope' },
+            { numero_parte: 'LG2FWH', descripcion: 'Faceplate Dual 2-Port White Standard Legrand', precio_lista: 14.75, costo_unitario: 9.83, marca: 'Legrand' },
+            { numero_parte: 'NK2FGR', descripcion: 'Faceplate 2-Port Gray Grey Professional Panel', precio_lista: 15.50, costo_unitario: 10.33, marca: 'Panduit' },
         ]
     };
     
@@ -5580,41 +5586,271 @@ function simularBusquedaProductos(query, tipoProducto, filtros) {
         );
     }
     
-    // Aplicar filtros adicionales
+    // Motor de búsqueda inteligente basado en descripción
+    productos = aplicarMotorBusquedaInteligente(productos, filtros, tipoProducto);
+    
+    return productos;
+}
+
+// Motor de búsqueda inteligente que analiza descripciones
+function aplicarMotorBusquedaInteligente(productos, filtros, tipoProducto) {
+    console.log(`🤖 Aplicando motor de búsqueda inteligente para ${tipoProducto}`);
+    console.log(`📋 Total productos inicial: ${productos.length}`);
+    
+    // Aplicar filtro de marca (directo)
     if (filtros.marca) {
+        const antes = productos.length;
         productos = productos.filter(p => p.marca && p.marca.toLowerCase() === filtros.marca.toLowerCase());
+        console.log(`🏷️ Filtro marca "${filtros.marca}": ${antes} → ${productos.length} productos`);
     }
     
+    // Aplicar filtro de precio máximo (directo)
+    if (filtros.precioMax) {
+        const antes = productos.length;
+        productos = productos.filter(p => p.precio_lista <= filtros.precioMax);
+        console.log(`💰 Filtro precio ≤$${filtros.precioMax}: ${antes} → ${productos.length} productos`);
+    }
+    
+    // Aplicar filtros inteligentes basados en descripción
     if (filtros.categoria) {
-        productos = productos.filter(p => p.categoria === filtros.categoria);
+        const antes = productos.length;
+        productos = productos.filter(p => detectarCategoriaEnDescripcion(p.descripcion, filtros.categoria));
+        console.log(`📏 Filtro categoría "${filtros.categoria}" (análisis IA): ${antes} → ${productos.length} productos`);
     }
     
     if (filtros.color) {
-        productos = productos.filter(p => p.color && p.color.toLowerCase() === filtros.color.toLowerCase());
+        const antes = productos.length;
+        productos = productos.filter(p => detectarColorEnDescripcion(p.descripcion, filtros.color));
+        console.log(`🎨 Filtro color "${filtros.color}" (análisis IA): ${antes} → ${productos.length} productos`);
     }
     
-    if (filtros.precioMax) {
-        productos = productos.filter(p => p.precio_lista <= filtros.precioMax);
+    // Filtros específicos por tipo de producto
+    if (tipoProducto === 'cable' && filtros.uso) {
+        productos = productos.filter(p => detectarUsoEnDescripcion(p.descripcion, filtros.uso));
     }
     
-    // Filtros específicos según tipo
-    if (filtros.uso && tipoProducto === 'cable') {
-        productos = productos.filter(p => p.uso === filtros.uso);
+    if ((tipoProducto === 'jack' || tipoProducto === 'faceplate') && filtros.tipo) {
+        productos = productos.filter(p => detectarTipoEnDescripcion(p.descripcion, filtros.tipo, tipoProducto));
     }
     
-    if (filtros.tipo && (tipoProducto === 'jack' || tipoProducto === 'faceplate')) {
-        productos = productos.filter(p => p.tipo === filtros.tipo);
+    if (tipoProducto === 'patchcord' && filtros.longitud) {
+        productos = productos.filter(p => detectarLongitudEnDescripcion(p.descripcion, filtros.longitud));
     }
     
-    if (filtros.longitud && tipoProducto === 'patchcord') {
-        productos = productos.filter(p => p.longitud === filtros.longitud);
-    }
-    
-    if (filtros.puertos && tipoProducto === 'faceplate') {
-        productos = productos.filter(p => p.puertos === filtros.puertos);
+    if (tipoProducto === 'faceplate' && filtros.puertos) {
+        productos = productos.filter(p => detectarPuertosEnDescripcion(p.descripcion, filtros.puertos));
     }
     
     return productos;
+}
+
+// Función para detectar categoría en la descripción
+function detectarCategoriaEnDescripcion(descripcion, categoriaFiltro) {
+    const desc = descripcion.toLowerCase();
+    
+    switch (categoriaFiltro) {
+        case '5e':
+            return desc.includes('cat 5e') || desc.includes('category 5e') || desc.includes('categoría 5e');
+        case '6':
+            return (desc.includes('cat 6') || desc.includes('category 6')) && !desc.includes('6a');
+        case '6A':
+        case '6a':
+            return desc.includes('cat 6a') || desc.includes('category 6a') || desc.includes('6a');
+        default:
+            return true;
+    }
+}
+
+// Función para detectar color en la descripción
+function detectarColorEnDescripcion(descripcion, colorFiltro) {
+    const desc = descripcion.toLowerCase();
+    const colorMap = {
+        'azul': ['blue', 'azul'],
+        'blanco': ['white', 'blanco'],
+        'negro': ['black', 'negro'],
+        'rojo': ['red', 'rojo'],
+        'amarillo': ['yellow', 'amarillo'],
+        'verde': ['green', 'verde'],
+        'gris': ['gray', 'grey', 'gris'],
+        'marfil': ['ivory', 'marfil', 'beige'],
+        'beige': ['beige', 'marfil', 'ivory']
+    };
+    
+    const coloresABuscar = colorMap[colorFiltro.toLowerCase()] || [colorFiltro.toLowerCase()];
+    return coloresABuscar.some(color => desc.includes(color));
+}
+
+// Función para detectar uso de cable en la descripción
+function detectarUsoEnDescripcion(descripcion, usoFiltro) {
+    const desc = descripcion.toLowerCase();
+    
+    switch (usoFiltro) {
+        case 'interior':
+            return desc.includes('interior') || desc.includes('indoor') || desc.includes('office') || desc.includes('oficina') || desc.includes('general purpose') || desc.includes('standard') || desc.includes('edificio');
+        case 'exterior':
+            return desc.includes('exterior') || desc.includes('outdoor') || desc.includes('external') || desc.includes('uv');
+        case 'plenum':
+            return desc.includes('plenum') || desc.includes('cmp') || desc.includes('fire retardant');
+        case 'riser':
+            return desc.includes('riser') || desc.includes('cmr') || desc.includes('vertical');
+        default:
+            return true;
+    }
+}
+
+// Función para detectar tipo en la descripción
+function detectarTipoEnDescripcion(descripcion, tipoFiltro, tipoProducto) {
+    const desc = descripcion.toLowerCase();
+    
+    if (tipoProducto === 'jack') {
+        switch (tipoFiltro) {
+            case 'keystone':
+                return desc.includes('keystone') || (!desc.includes('blindado') && !desc.includes('shielded'));
+            case 'blindado':
+                return desc.includes('blindado') || desc.includes('shielded') || desc.includes('ftp');
+            case 'RJ45':
+                return desc.includes('rj45') || desc.includes('rj-45');
+            default:
+                return true;
+        }
+    }
+    
+    if (tipoProducto === 'faceplate') {
+        switch (tipoFiltro) {
+            case 'standard':
+                return desc.includes('standard') || (!desc.includes('angled') && !desc.includes('angulado') && !desc.includes('low profile') && !desc.includes('flush'));
+            case 'angulado':
+                return desc.includes('angled') || desc.includes('angulado') || desc.includes('low profile');
+            case 'plano':
+                return desc.includes('plano') || desc.includes('flat') || desc.includes('flush');
+            case 'flush':
+                return desc.includes('flush') || desc.includes('flat');
+            default:
+                return true;
+        }
+    }
+    
+    return true;
+}
+
+// Función para detectar longitud en la descripción
+function detectarLongitudEnDescripcion(descripcion, longitudFiltro) {
+    const desc = descripcion.toLowerCase();
+    const longitud = longitudFiltro.toString();
+    
+    // Buscar la longitud específica seguida de unidades
+    return desc.includes(`${longitud} ft`) || 
+           desc.includes(`${longitud} feet`) || 
+           desc.includes(`${longitud} foot`) ||
+           desc.includes(`${longitud}ft`) ||
+           desc.includes(`${longitud}feet`);
+}
+
+// Función para detectar número de puertos en la descripción
+function detectarPuertosEnDescripcion(descripcion, puertosFiltro) {
+    const desc = descripcion.toLowerCase();
+    const puertos = puertosFiltro.toString();
+    
+    // Mapeo de números a palabras
+    const numeroMap = {
+        '1': ['1', 'single', 'solo', 'one'],
+        '2': ['2', 'dual', 'double', 'two'],
+        '4': ['4', 'quad', 'four'],
+        '6': ['6', 'six'],
+        '8': ['8', 'eight']
+    };
+    
+    const numerosABuscar = numeroMap[puertos] || [puertos];
+    return numerosABuscar.some(num => {
+        return desc.includes(`${num}-port`) || 
+               desc.includes(`${num} port`) ||
+               desc.includes(`${num}port`) ||
+               desc.includes(num + ' ');
+    });
+}
+
+// Función para extraer características inteligentemente de la descripción
+function extraerCaracteristicasInteligentes(descripcion, tipoProducto) {
+    const desc = descripcion.toLowerCase();
+    const caracteristicas = [];
+    
+    // Detectar categoría
+    if (desc.includes('cat 5e') || desc.includes('category 5e')) {
+        caracteristicas.push('Cat 5e');
+    } else if (desc.includes('cat 6a') || desc.includes('category 6a')) {
+        caracteristicas.push('Cat 6A');
+    } else if (desc.includes('cat 6') || desc.includes('category 6')) {
+        caracteristicas.push('Cat 6');
+    }
+    
+    // Detectar colores
+    const colores = {
+        'blue': 'Azul', 'azul': 'Azul',
+        'white': 'Blanco', 'blanco': 'Blanco',
+        'black': 'Negro', 'negro': 'Negro',
+        'red': 'Rojo', 'rojo': 'Rojo',
+        'yellow': 'Amarillo', 'amarillo': 'Amarillo',
+        'green': 'Verde', 'verde': 'Verde',
+        'gray': 'Gris', 'grey': 'Gris', 'gris': 'Gris',
+        'ivory': 'Marfil', 'marfil': 'Marfil'
+    };
+    
+    for (const [key, value] of Object.entries(colores)) {
+        if (desc.includes(key)) {
+            caracteristicas.push(value);
+            break;
+        }
+    }
+    
+    // Características específicas por tipo
+    if (tipoProducto === 'cable') {
+        if (desc.includes('exterior') || desc.includes('outdoor')) {
+            caracteristicas.push('Exterior');
+        } else if (desc.includes('plenum')) {
+            caracteristicas.push('Plenum');
+        } else if (desc.includes('riser')) {
+            caracteristicas.push('Riser');
+        } else if (desc.includes('interior') || desc.includes('indoor')) {
+            caracteristicas.push('Interior');
+        }
+    }
+    
+    if (tipoProducto === 'jack') {
+        if (desc.includes('keystone')) {
+            caracteristicas.push('Keystone');
+        }
+        if (desc.includes('blindado') || desc.includes('shielded')) {
+            caracteristicas.push('Blindado');
+        }
+    }
+    
+    if (tipoProducto === 'patchcord') {
+        // Detectar longitud
+        const longitudes = ['1', '3', '5', '7', '10', '15', '25'];
+        for (const long of longitudes) {
+            if (desc.includes(`${long} ft`) || desc.includes(`${long} feet`) || desc.includes(`${long}ft`)) {
+                caracteristicas.push(`${long} pies`);
+                break;
+            }
+        }
+    }
+    
+    if (tipoProducto === 'faceplate') {
+        // Detectar número de puertos
+        const puertos = ['1', '2', '4', '6', '8'];
+        for (const puerto of puertos) {
+            if (desc.includes(`${puerto}-port`) || desc.includes(`${puerto} port`)) {
+                caracteristicas.push(`${puerto} puerto${puerto !== '1' ? 's' : ''}`);
+                break;
+            }
+        }
+        
+        if (desc.includes('angled') || desc.includes('angulado')) {
+            caracteristicas.push('Angulado');
+        }
+    }
+    
+    return caracteristicas.length > 0 ? `| ${caracteristicas.join(' | ')}` : '';
 }
 
 // Función para cargar productos iniciales (mostrar catálogo completo al abrir)
@@ -5651,7 +5887,7 @@ function buscarConFiltros() {
     console.log('Query:', query);
     console.log('Tipo producto:', tipoProducto);
     
-    mostrarMensajeResultados('🔄 Aplicando filtros y buscando...');
+    mostrarMensajeResultados('🤖 Analizando descripciones con IA...');
     
     // Ejecutar búsqueda con filtros
     setTimeout(() => {
