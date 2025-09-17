@@ -6256,39 +6256,45 @@ def buscar_productos_catalogo(request):
                 Q(descripcion__icontains=query)
             )
         
-        # Aplicar filtros específicos
+        # Aplicar filtros específicos (buscar en DESCRIPCIÓN ya que no hay campo categoria)
         if filtros.get('categoria'):
             categoria_filtro = filtros['categoria']
             if categoria_filtro == '6A':
-                # Múltiples intentos para encontrar Cat6A - probando diferentes formatos
+                # Buscar Cat6A en la descripción (SOLO 6A, no 6)
                 productos_query = productos_query.filter(
-                    Q(categoria__iexact='Cat6A') |
-                    Q(categoria__iexact='6A') |
-                    Q(categoria__icontains='6A')
+                    Q(descripcion__icontains='Cat6A') |
+                    Q(descripcion__icontains='Cat 6A') |
+                    Q(descripcion__icontains='6A') |
+                    Q(descripcion__icontains='category 6A') |
+                    Q(descripcion__icontains='categoría 6A')
                 ).exclude(
-                    # Excluir explícitamente los que son SOLO Cat6 sin A
-                    Q(categoria__iexact='Cat6') |
-                    Q(categoria__iexact='6')
+                    # Excluir explícitamente productos que solo digan Cat6 sin A
+                    Q(descripcion__iregex=r'\bCat6\b(?!A)') |
+                    Q(descripcion__iregex=r'\bCat 6\b(?!A)')
                 )
-                print(f"🎯 Filtrando por Cat6A (excluyendo Cat6 simple)")
+                print(f"🎯 Filtrando por Cat6A en descripción (excluyendo Cat6 simple)")
             elif categoria_filtro == '6':
-                # Buscar Cat6 pero NO Cat6A
+                # Buscar Cat6 en descripción pero NO Cat6A
                 productos_query = productos_query.filter(
-                    Q(categoria__iexact='Cat6') |
-                    Q(categoria__iexact='6')
-                ).exclude(categoria__icontains='6A')
-                print(f"🎯 Filtrando SOLO por Cat6 (excluyendo Cat6A)")
+                    Q(descripcion__iregex=r'\bCat6\b(?!A)') |
+                    Q(descripcion__iregex=r'\bCat 6\b(?!A)') |
+                    Q(descripcion__icontains='category 6') |
+                    Q(descripcion__icontains='categoría 6')
+                ).exclude(descripcion__icontains='6A')
+                print(f"🎯 Filtrando SOLO por Cat6 en descripción (excluyendo Cat6A)")
             elif categoria_filtro == '5e':
-                # Buscar Cat5e
+                # Buscar Cat5e en descripción
                 productos_query = productos_query.filter(
-                    Q(categoria__iexact='Cat5e') |
-                    Q(categoria__iexact='5e')
+                    Q(descripcion__icontains='Cat5e') |
+                    Q(descripcion__icontains='Cat 5e') |
+                    Q(descripcion__icontains='5e') |
+                    Q(descripcion__icontains='category 5e')
                 )
-                print(f"🎯 Filtrando por Cat5e")
+                print(f"🎯 Filtrando por Cat5e en descripción")
             else:
-                # Para otros casos, buscar que contenga el valor
-                productos_query = productos_query.filter(categoria__icontains=categoria_filtro)
-                print(f"🎯 Filtrando por categoría que contenga: {categoria_filtro}")
+                # Para otros casos, buscar que contenga el valor en descripción
+                productos_query = productos_query.filter(descripcion__icontains=categoria_filtro)
+                print(f"🎯 Filtrando por descripción que contenga: {categoria_filtro}")
         
         # Filtrar por tipo de producto si se especifica
         if tipo_producto == 'cable':
@@ -6306,33 +6312,23 @@ def buscar_productos_catalogo(request):
             )
             print(f"🔌 Filtrando solo jacks/conectores")
         
-        # DEBUGGING EXTREMO: Mostrar todo
-        todas_las_categorias = ProductoCatalogo.objects.values_list('categoria', flat=True).distinct()
-        print(f"🔍 TODAS las categorías en la BD: {sorted([c for c in todas_las_categorias if c])}")
-        
-        # Mostrar TODOS los productos con "6" en la categoría
-        productos_con_6 = ProductoCatalogo.objects.filter(categoria__icontains='6')
-        print(f"📋 TODOS los productos con '6' en categoría ({productos_con_6.count()} total):")
-        for p in productos_con_6:
-            print(f"   - {p.no_parte}: categoria='{p.categoria}' | desc='{p.descripcion[:50]}...'")
+        # DEBUGGING: Mostrar productos con "6" en la descripción  
+        productos_con_6 = ProductoCatalogo.objects.filter(descripcion__icontains='6')
+        print(f"📋 Productos con '6' en descripción ({productos_con_6.count()} total):")
+        for p in productos_con_6[:20]:  # Solo los primeros 20
+            print(f"   - {p.no_parte}: desc='{p.descripcion}'")
         
         # Obtener productos (sin límite por ahora para debugging)
         productos = productos_query.order_by('marca__nombre', 'no_parte')  # Sin límite temporalmente
         
         print(f"📦 Productos encontrados después del filtrado: {productos.count()}")
-        print(f"📋 QUERY SQL FINAL: {str(productos_query.query)}")
-        
-        # Log de todas las categorías únicas para debugging
-        categorias_encontradas = set(p.categoria for p in productos if p.categoria)
-        print(f"📋 Categorías encontradas en RESULTADOS FINALES: {categorias_encontradas}")
         
         # Mostrar cada producto que llegó al final
         print(f"🎯 PRODUCTOS FINALES QUE LLEGARON AL FRONTEND:")
-        for p in productos:
-            print(f"   - {p.no_parte}: categoria='{p.categoria}' | desc='{p.descripcion[:30]}...'")
-            if len([p.no_parte for p in productos]) > 15:  # Limitar output
-                print(f"   ... y {productos.count() - 15} más")
-                break
+        for p in productos[:15]:  # Solo los primeros 15
+            print(f"   - {p.no_parte}: desc='{p.descripcion}'")
+        if productos.count() > 15:
+            print(f"   ... y {productos.count() - 15} más")
         
         # Convertir a formato JSON
         productos_data = []
