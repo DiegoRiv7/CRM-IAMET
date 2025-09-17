@@ -6047,7 +6047,7 @@ async function buscarProductosConFiltros(query, tipoProducto, filtros) {
         });
         
         // Realizar búsqueda
-        const response = await fetch(`/app/api/sugerencias-productos/?${params}`);
+        const response = await fetch(`/app/api/buscar-productos-catalogo/?${params}`);
         const productos = await response.json();
         
         // Filtrar por tipo de producto si es necesario
@@ -6092,15 +6092,12 @@ function filtrarPorTipoProducto(productos, tipoProducto, filtros) {
         }
         
         // Aplicar filtros adicionales
-        if (filtros.color && !desc.includes(filtros.color.toLowerCase())) {
+        if (filtros.color && !detectarColorEnDescripcion(producto.descripcion, filtros.color)) {
             return false;
         }
         
-        if (filtros.categoria) {
-            const catPattern = filtros.categoria === '6A' ? '6a' : filtros.categoria;
-            if (!desc.includes(`cat ${catPattern}`) && !desc.includes(`cat${catPattern}`)) {
-                return false;
-            }
+        if (filtros.categoria && !detectarCategoriaEnDescripcion(producto.descripcion, filtros.categoria)) {
+            return false;
         }
         
         if (filtros.precioMax && producto.precio_lista > filtros.precioMax) {
