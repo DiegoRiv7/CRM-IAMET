@@ -1660,53 +1660,66 @@ function procesarFormularioNodosGeneral() {
 function generarVolumetriaParaGeneral(datos) {
     console.log('🏗️ Generando volumetría para tabla General con datos:', datos);
     
-    try {
-        // Cerrar animación de carga
-        cerrarAnimacionCarga();
+    // Guardar datos globalmente para el PDF
+    window.currentVolumetriaData = datos;
+    
+    cerrarAnimacionCarga();
+
+    // Usar números de parte que vienen en los datos
+    console.log('🔍 Usando números de parte capturados desde datos:', datos.numerosParte);
+    
+    const numerosParte = datos.numerosParte || {
+        cable: '',
+        jack: '',
+        patchcord: '',
+        faceplate: ''
+    };
+    
+    // Verificar si al menos uno tiene valor
+    const tieneValores = Object.values(numerosParte).some(val => val);
+    console.log('🔍 ¿Tiene algún número de parte?', tieneValores);
+    console.log('🔍 Números de parte a procesar:', numerosParte);
+    
+    // Obtener información completa de productos del catálogo
+    obtenerDatosProductosCatalogo(numerosParte).then(productosCompletos => {
+        console.log('📦 Productos completos del catálogo:', productosCompletos);
         
-        // Calcular cantidades usando la misma lógica que el formulario original
-        const cantidadCable = Math.ceil((datos.distancia * datos.cantidadNodos) / 305);
+        // Calcular cantidades automáticas usando la misma lógica que el formulario original
+        const totalMetrosCable = datos.distancia * datos.cantidadNodos;
+        const cantidadCable = Math.ceil(totalMetrosCable / 305);
         const cantidadFaceplates = datos.cantidadNodos;
-        const cantidadJacksUsuario = datos.cantidadNodos;
-        const cantidadJacksPatchpanel = datos.cantidadNodos;
-        const cantidadPatchcordsUsuario = datos.cantidadNodos;
-        const cantidadPatchcordsPatchpanel = datos.cantidadNodos;
+        const cantidadJacksUsuario = datos.cantidadNodos; // 1 por nodo
+        const cantidadJacksPatchpanel = datos.cantidadNodos; // 1 por nodo
+        const cantidadPatchcordsUsuario = datos.cantidadNodos; // 1 por nodo (color usuario)
+        const cantidadPatchcordsPatchpanel = datos.cantidadNodos; // 1 por nodo (color patchpanel)
         
-        // Preparar datos completos para poblar tabla
-        const datosCompletos = {
+        // Crear tabla de volumetría con productos completos - IGUAL QUE EL FORMULARIO ORIGINAL
+        mostrarTablaVolumetria({
             ...datos,
             cantidadCable,
             cantidadFaceplates,
             cantidadJacksUsuario,
             cantidadJacksPatchpanel,
             cantidadPatchcordsUsuario,
-            cantidadPatchcordsPatchpanel
-        };
+            cantidadPatchcordsPatchpanel,
+            productosCompletos: productosCompletos
+        });
         
-        console.log('📊 Datos completos calculados:', datosCompletos);
+        console.log('✅ Volumetría generada exitosamente');
         
-        // Restaurar la workspace de volumetría general
-        const workspace = document.getElementById('tabla-volumetria');
-        if (workspace) {
-            workspace.style.display = 'block';
-        }
-        
-        // Poblar la tabla General con los productos calculados
-        poblarTablaGeneralConNodos(datosCompletos);
-        
-        console.log('✅ Volumetría generada exitosamente en tabla General');
-        
-    } catch (error) {
-        console.error('❌ Error generando volumetría para General:', error);
-        alert('Error al generar volumetría. Ver consola para detalles.');
-        
-        // Restaurar workspace en caso de error
-        const workspace = document.getElementById('tabla-volumetria');
-        if (workspace) {
-            workspace.style.display = 'block';
-        }
-        cerrarAnimacionCarga();
-    }
+    }).catch(error => {
+        console.error('❌ Error obteniendo productos del catálogo:', error);
+        // Proceder con datos básicos si hay error
+        mostrarTablaVolumetria({
+            ...datos,
+            cantidadCable: Math.ceil((datos.distancia * datos.cantidadNodos) / 305),
+            cantidadFaceplates: datos.cantidadNodos,
+            cantidadJacksUsuario: datos.cantidadNodos,
+            cantidadJacksPatchpanel: datos.cantidadNodos,
+            cantidadPatchcordsUsuario: datos.cantidadNodos,
+            cantidadPatchcordsPatchpanel: datos.cantidadNodos
+        });
+    });
 }
 
 // Función para restaurar volumetría general con datos de nodos
