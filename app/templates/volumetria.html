@@ -1646,8 +1646,8 @@ function procesarFormularioNodosGeneral() {
         
         // Generar volumetría después de un delay para la animación
         setTimeout(() => {
-            // En lugar de usar generarVolumetria, vamos a integrar con la tabla de volumetría general
-            integrarNodosEnVolumetriaGeneral(datosVolumetria);
+            // Usar la misma lógica que el formulario original de nodos
+            generarVolumetriaParaGeneral(datosVolumetria);
         }, 2000);
         
     } catch (error) {
@@ -1656,53 +1656,56 @@ function procesarFormularioNodosGeneral() {
     }
 }
 
-// Función para integrar los datos de nodos en la volumetría general
-function integrarNodosEnVolumetriaGeneral(datos) {
-    console.log('🔄 Integrando datos de nodos en volumetría general...', datos);
+// Función para generar volumetría específicamente para la tabla General
+function generarVolumetriaParaGeneral(datos) {
+    console.log('🏗️ Generando volumetría para tabla General con datos:', datos);
     
     try {
-        // Obtener productos del catálogo usando la misma lógica que el formulario original
-        obtenerProductosCatalogo().then(productos => {
-            // Calcular cantidades según la lógica original
-            const cantidadCable = Math.ceil((datos.distancia * datos.cantidadNodos) / 305);
-            const cantidadFaceplates = datos.cantidadNodos;
-            const cantidadJacksUsuario = datos.cantidadNodos;
-            const cantidadJacksPatchpanel = datos.cantidadNodos;
-            const cantidadPatchcordsUsuario = datos.cantidadNodos;
-            const cantidadPatchcordsPatchpanel = datos.cantidadNodos;
-            
-            // Crear los datos finales con toda la información
-            const datosCompletos = {
-                ...datos,
-                cantidadCable,
-                cantidadFaceplates,
-                cantidadJacksUsuario,
-                cantidadJacksPatchpanel,
-                cantidadPatchcordsUsuario,
-                cantidadPatchcordsPatchpanel,
-                productosCompletos: productos
-            };
-            
-            // Restaurar la workspace y generar tabla con datos de nodos
-            restaurarVolumetriaGeneralConNodos(datosCompletos);
-            
-        }).catch(error => {
-            console.error('❌ Error obteniendo productos:', error);
-            // Proceder con datos básicos si hay error
-            restaurarVolumetriaGeneralConNodos({
-                ...datos,
-                cantidadCable: Math.ceil((datos.distancia * datos.cantidadNodos) / 305),
-                cantidadFaceplates: datos.cantidadNodos,
-                cantidadJacksUsuario: datos.cantidadNodos,
-                cantidadJacksPatchpanel: datos.cantidadNodos,
-                cantidadPatchcordsUsuario: datos.cantidadNodos,
-                cantidadPatchcordsPatchpanel: datos.cantidadNodos
-            });
-        });
+        // Cerrar animación de carga
+        cerrarAnimacionCarga();
+        
+        // Calcular cantidades usando la misma lógica que el formulario original
+        const cantidadCable = Math.ceil((datos.distancia * datos.cantidadNodos) / 305);
+        const cantidadFaceplates = datos.cantidadNodos;
+        const cantidadJacksUsuario = datos.cantidadNodos;
+        const cantidadJacksPatchpanel = datos.cantidadNodos;
+        const cantidadPatchcordsUsuario = datos.cantidadNodos;
+        const cantidadPatchcordsPatchpanel = datos.cantidadNodos;
+        
+        // Preparar datos completos para poblar tabla
+        const datosCompletos = {
+            ...datos,
+            cantidadCable,
+            cantidadFaceplates,
+            cantidadJacksUsuario,
+            cantidadJacksPatchpanel,
+            cantidadPatchcordsUsuario,
+            cantidadPatchcordsPatchpanel
+        };
+        
+        console.log('📊 Datos completos calculados:', datosCompletos);
+        
+        // Restaurar la workspace de volumetría general
+        const workspace = document.getElementById('tabla-volumetria');
+        if (workspace) {
+            workspace.style.display = 'block';
+        }
+        
+        // Poblar la tabla General con los productos calculados
+        poblarTablaGeneralConNodos(datosCompletos);
+        
+        console.log('✅ Volumetría generada exitosamente en tabla General');
         
     } catch (error) {
-        console.error('❌ Error integrando nodos en volumetría general:', error);
-        alert('Error al integrar datos. Ver consola para detalles.');
+        console.error('❌ Error generando volumetría para General:', error);
+        alert('Error al generar volumetría. Ver consola para detalles.');
+        
+        // Restaurar workspace en caso de error
+        const workspace = document.getElementById('tabla-volumetria');
+        if (workspace) {
+            workspace.style.display = 'block';
+        }
+        cerrarAnimacionCarga();
     }
 }
 
@@ -1720,7 +1723,7 @@ function restaurarVolumetriaGeneralConNodos(datos) {
     poblarTablaGeneralConNodos(datos);
     
     // Ocultar animación de carga
-    ocultarAnimacionCarga();
+    cerrarAnimacionCarga();
     
     console.log('✅ Volumetría general restaurada con datos de nodos');
 }
