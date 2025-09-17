@@ -2070,11 +2070,21 @@ function generarVolumetriaParaGeneral(datos) {
     obtenerDatosProductosCatalogo(numerosParte).then(productosCompletos => {
         console.log('📦 Productos completos del catálogo:', productosCompletos);
         
-        // Calcular cantidades automáticas usando la misma lógica que el formulario original
-        const totalMetrosCable = datos.distancia * datos.cantidadNodos;
-        const cantidadCable = Math.ceil(totalMetrosCable / 305);
+        // Calcular cantidad de cable
+        const cableProducto = productosCompletos.cable;
+        let longitudBobina = 305; // Default
+        if (cableProducto && cableProducto.descripcion) {
+            const match = cableProducto.descripcion.match(/(\d+)\s*m/i);
+            if (match && match[1]) {
+                longitudBobina = parseInt(match[1]);
+            }
+        }
         
-        console.log(`📏 Cálculo de cable: ${totalMetrosCable} metros totales ÷ 305m/bobina = ${cantidadCable} bobinas necesarias`);
+        const totalMetrosCable = datos.distancia; // Usar directamente la distancia total
+        const cantidadCable = Math.ceil(totalMetrosCable / longitudBobina);
+        
+        console.log(`📏 Cálculo de cable: ${totalMetrosCable}m requeridos / ${longitudBobina}m por bobina = ${cantidadCable} bobinas`);
+
         const cantidadFaceplates = datos.cantidadNodos;
         const cantidadJacksUsuario = datos.cantidadNodos; // 1 por nodo
         const cantidadJacksPatchpanel = datos.cantidadNodos; // 1 por nodo
@@ -2238,7 +2248,7 @@ function poblarTablaGeneralConNodos(datos) {
         const productosNodos = [
             {
                 noParte: datos.numerosParte.cable || 'PUL6004BL-BOX',
-                descripcion: 'Cable UTP Cat 6 - Bobina 305m (cantidad = bobinas necesarias)',
+                descripcion: datos.productosCompletos.cable.descripcion || 'Cable UTP Cat 6 - Bobina 305m',
                 cantidad: datos.cantidadCable || 1,
                 costoUnitario: 145.00,
                 precioLista: calcularPrecioSegunCategoria(145.00, categoriaCliente)
@@ -4188,7 +4198,9 @@ function agregarFilaExcelGeneral() {
     newRow.setAttribute('data-row', newIndex);
     
     newRow.innerHTML = `
-        <td class="excel-cell excel-cell-text editable" contenteditable="true" data-field="noParte" data-row="${newIndex}" placeholder="Número de parte"></td>
+        <td class="excel-cell excel-cell-text editable relative" contenteditable="true" data-field="noParte" data-row="${newIndex}" id="noParte-general-${newIndex}" onclick="mostrarPopupBusquedaAvanzada('noParte-general-${newIndex}')" oninput="buscarProductoExcel(this)">
+            <div id="suggestions-noParte-general-${newIndex}" class="absolute top-full left-0 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50 hidden max-h-60 overflow-y-auto"></div>
+        </td>
         <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="cantidad" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})" placeholder="1">1</td>
         <td class="excel-cell excel-cell-description editable" contenteditable="true" data-field="descripcion" data-row="${newIndex}" placeholder="Descripción del producto"></td>
         <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioLista" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})" placeholder="$0.00">$0.00</td>
@@ -6627,8 +6639,8 @@ function generarFilasVaciasGeneralExcel() {
     for (let i = 0; i < 3; i++) {
         filas += `
             <tr class="excel-row" data-row="${i}">
-                <td class="excel-cell excel-cell-text editable relative" contenteditable="true" data-field="noParte" data-row="${i}" oninput="buscarProductoExcel(this)">
-                    <div id="suggestions-${i}" class="absolute top-full left-0 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50 hidden max-h-60 overflow-y-auto"></div>
+                <td class="excel-cell excel-cell-text editable relative" contenteditable="true" data-field="noParte" data-row="${i}" id="noParte-general-${i}" onclick="mostrarPopupBusquedaAvanzada('noParte-general-${i}')" oninput="buscarProductoExcel(this)">
+                    <div id="suggestions-noParte-general-${i}" class="absolute top-full left-0 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50 hidden max-h-60 overflow-y-auto"></div>
                 </td>
                 <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="cantidad" data-row="${i}" onblur="recalcularFilaExcelGeneral(${i})">1</td>
                 <td class="excel-cell excel-cell-description editable" contenteditable="true" data-field="descripcion" data-row="${i}"></td>
