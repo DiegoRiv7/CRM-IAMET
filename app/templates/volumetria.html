@@ -1713,12 +1713,33 @@ function generarVolumetriaParaGeneral(datos) {
             productosCompletos: productosCompletos
         });
         
+        // Después de crear el panel, automaticamente crear y poblar la tabla General
+        setTimeout(() => {
+            console.log('🚀 Auto-creando tabla General con productos de nodos de red...');
+            if (typeof agregarTablaPrincipal === 'function') {
+                agregarTablaPrincipal();
+                // Poblar la tabla con los productos de nodos
+                setTimeout(() => {
+                    poblarTablaGeneralConNodos({
+                        cantidadCable,
+                        cantidadFaceplates,
+                        cantidadJacksUsuario,
+                        cantidadJacksPatchpanel,
+                        cantidadPatchcordsUsuario,
+                        cantidadPatchcordsPatchpanel,
+                        productosCompletos,
+                        numerosParte: datos.numerosParte
+                    });
+                }, 500);
+            }
+        }, 1000);
+        
         console.log('✅ Volumetría generada exitosamente');
         
     }).catch(error => {
         console.error('❌ Error obteniendo productos del catálogo:', error);
         // Proceder con datos básicos si hay error
-        mostrarTablaVolumetriaGeneral({
+        const datosBasicos = {
             ...datos,
             categoria: 'General', // Forzar categoría General
             cantidadCable: Math.ceil((datos.distancia * datos.cantidadNodos) / 305),
@@ -1727,7 +1748,20 @@ function generarVolumetriaParaGeneral(datos) {
             cantidadJacksPatchpanel: datos.cantidadNodos,
             cantidadPatchcordsUsuario: datos.cantidadNodos,
             cantidadPatchcordsPatchpanel: datos.cantidadNodos
-        });
+        };
+        
+        mostrarTablaVolumetriaGeneral(datosBasicos);
+        
+        // También crear tabla automáticamente en caso de error
+        setTimeout(() => {
+            console.log('🚀 Auto-creando tabla General con datos básicos...');
+            if (typeof agregarTablaPrincipal === 'function') {
+                agregarTablaPrincipal();
+                setTimeout(() => {
+                    poblarTablaGeneralConNodos(datosBasicos);
+                }, 500);
+            }
+        }, 1000);
     });
 }
 
@@ -2748,7 +2782,7 @@ function generarVolumetria(datos) {
     }).catch(error => {
         console.error('❌ Error obteniendo productos del catálogo:', error);
         // Proceder con datos básicos si hay error
-        mostrarTablaVolumetriaGeneral({
+        const datosBasicos = {
             ...datos,
             categoria: 'General', // Forzar categoría General
             cantidadCable: Math.ceil((datos.distancia * datos.cantidadNodos) / 305),
@@ -2757,7 +2791,20 @@ function generarVolumetria(datos) {
             cantidadJacksPatchpanel: datos.cantidadNodos,
             cantidadPatchcordsUsuario: datos.cantidadNodos,
             cantidadPatchcordsPatchpanel: datos.cantidadNodos
-        });
+        };
+        
+        mostrarTablaVolumetriaGeneral(datosBasicos);
+        
+        // También crear tabla automáticamente en caso de error
+        setTimeout(() => {
+            console.log('🚀 Auto-creando tabla General con datos básicos...');
+            if (typeof agregarTablaPrincipal === 'function') {
+                agregarTablaPrincipal();
+                setTimeout(() => {
+                    poblarTablaGeneralConNodos(datosBasicos);
+                }, 500);
+            }
+        }, 1000);
     });
 }
 
