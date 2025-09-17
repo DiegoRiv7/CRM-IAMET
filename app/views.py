@@ -6260,17 +6260,17 @@ def buscar_productos_catalogo(request):
         if filtros.get('categoria'):
             categoria_filtro = filtros['categoria']
             if categoria_filtro == '6A':
-                # Buscar exactamente "6A" en el campo categoria
+                # Buscar SOLO productos que tengan exactamente "6A" (no "6" ni otros)
                 productos_query = productos_query.filter(categoria__iexact='6A')
-                print(f"🎯 Filtrando por categoría exacta: 6A")
+                print(f"🎯 Filtrando SOLO categoría 6A (excluyendo Cat 6)")
             elif categoria_filtro == '6':
-                # Buscar exactamente "6" en el campo categoria (excluyendo 6A)
-                productos_query = productos_query.filter(categoria__iexact='6')
-                print(f"🎯 Filtrando por categoría exacta: 6")
+                # Buscar SOLO productos que tengan exactamente "6" (no "6A")
+                productos_query = productos_query.filter(categoria__iexact='6').exclude(categoria__icontains='6A')
+                print(f"🎯 Filtrando SOLO categoría 6 (excluyendo Cat 6A)")
             elif categoria_filtro == '5e':
                 # Buscar exactamente "5e" en el campo categoria
                 productos_query = productos_query.filter(categoria__iexact='5e')
-                print(f"🎯 Filtrando por categoría exacta: 5e")
+                print(f"🎯 Filtrando SOLO categoría 5e")
             else:
                 # Para otros casos, buscar que contenga el valor
                 productos_query = productos_query.filter(categoria__icontains=categoria_filtro)
@@ -6295,7 +6295,12 @@ def buscar_productos_catalogo(request):
         # Obtener productos (sin límite por ahora para debugging)
         productos = productos_query.order_by('marca__nombre', 'no_parte')  # Sin límite temporalmente
         
-        print(f"📦 Productos encontrados: {productos.count()}")
+        print(f"📦 Productos encontrados después del filtrado: {productos.count()}")
+        
+        # Log de todas las categorías únicas para debugging
+        if filtros.get('categoria'):
+            categorias_encontradas = set(p.categoria for p in productos if p.categoria)
+            print(f"📋 Categorías encontradas en resultados: {categorias_encontradas}")
         
         # Convertir a formato JSON
         productos_data = []
@@ -6310,9 +6315,9 @@ def buscar_productos_catalogo(request):
             }
             productos_data.append(producto_data)
             
-            # Log detallado para productos con "6" en la descripción
-            if '6' in producto.descripcion.lower():
-                print(f"🔍 Producto Cat6: {producto.no_parte} - {producto.descripcion}")
+            # Log detallado para productos con categoría que contenga "6"
+            if producto.categoria and '6' in str(producto.categoria):
+                print(f"🔍 Producto: {producto.no_parte} | Categoría: '{producto.categoria}' | Desc: {producto.descripcion[:50]}...")
         
         print(f"✅ Enviando {len(productos_data)} productos al frontend")
         
