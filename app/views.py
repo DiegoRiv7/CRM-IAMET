@@ -6256,8 +6256,8 @@ def buscar_productos_catalogo(request):
                 Q(descripcion__icontains=query)
             )
         
-        # Obtener productos
-        productos = productos_query.order_by('marca__nombre', 'no_parte')[:50]  # Limitar a 50 productos
+        # Obtener productos (sin límite por ahora para debugging)
+        productos = productos_query.order_by('marca__nombre', 'no_parte')  # Sin límite temporalmente
         
         print(f"📦 Productos encontrados: {productos.count()}")
         
@@ -6272,6 +6272,10 @@ def buscar_productos_catalogo(request):
                 'marca': producto.marca.nombre if producto.marca else '',
             }
             productos_data.append(producto_data)
+            
+            # Log detallado para productos con "6" en la descripción
+            if '6' in producto.descripcion.lower():
+                print(f"🔍 Producto Cat6: {producto.no_parte} - {producto.descripcion}")
         
         print(f"✅ Enviando {len(productos_data)} productos al frontend")
         

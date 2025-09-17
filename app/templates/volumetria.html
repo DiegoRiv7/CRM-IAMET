@@ -5729,7 +5729,7 @@ function detectarCategoriaEnDescripcion(descripcion, categoriaFiltro) {
             
         case '6A':
         case '6a':
-            // Múltiples formas de detectar Cat 6A
+            // Patrones MUY amplios para detectar Cat 6A - incluye todas las variaciones posibles
             const esCat6A = desc.includes('cat 6a') || 
                            desc.includes('category 6a') || 
                            desc.includes('categoría 6a') ||
@@ -5738,13 +5738,19 @@ function detectarCategoriaEnDescripcion(descripcion, categoriaFiltro) {
                            desc.includes('6-a') ||
                            desc.includes('category6a') ||
                            desc.includes('cat 6-a') ||
-                           /\bcat\s*6a\b/.test(desc) ||
-                           /\bcategory\s*6a\b/.test(desc) ||
-                           /\b6a\b/.test(desc) ||
+                           desc.includes('cat6') ||  // Muchos productos solo dicen "cat6"
+                           desc.includes('category 6') ||
+                           desc.includes('categoría 6') ||
+                           /\bcat\s*6a?\b/i.test(desc) ||
+                           /\bcategory\s*6a?\b/i.test(desc) ||
+                           /\bcategoría\s*6a?\b/i.test(desc) ||
+                           /\b6a?\b/.test(desc) ||
                            desc.includes('augmented') ||
                            desc.includes('enhanced category 6') ||
-                           desc.includes('enhanced cat 6');
-            console.log(`   🎯 Es Cat 6A: ${esCat6A}`);
+                           desc.includes('enhanced cat 6') ||
+                           desc.includes('clase 6') ||
+                           desc.includes('class 6');
+            console.log(`   🎯 Es Cat 6A: ${esCat6A} (Texto: "${desc.substring(0, 100)}...")`);
             return esCat6A;
             
         default:
@@ -6048,7 +6054,12 @@ async function buscarProductosConFiltros(query, tipoProducto, filtros) {
         
         // Realizar búsqueda
         const response = await fetch(`/app/api/buscar-productos-catalogo/?${params}`);
-        const productos = await response.json();
+        const data = await response.json();
+        
+        console.log('📦 Respuesta completa del backend:', data);
+        
+        // Extraer productos del objeto de respuesta
+        const productos = data.productos || [];
         
         // Filtrar por tipo de producto si es necesario
         const productosFiltrados = filtrarPorTipoProducto(productos, tipoProducto, filtros);
@@ -6096,8 +6107,12 @@ function filtrarPorTipoProducto(productos, tipoProducto, filtros) {
             return false;
         }
         
-        if (filtros.categoria && !detectarCategoriaEnDescripcion(producto.descripcion, filtros.categoria)) {
-            return false;
+        if (filtros.categoria) {
+            const coincideCategoria = detectarCategoriaEnDescripcion(producto.descripcion, filtros.categoria);
+            console.log(`🔍 Producto: "${producto.descripcion}" | Filtro: "${filtros.categoria}" | Coincide: ${coincideCategoria}`);
+            if (!coincideCategoria) {
+                return false;
+            }
         }
         
         if (filtros.precioMax && producto.precio_lista > filtros.precioMax) {
