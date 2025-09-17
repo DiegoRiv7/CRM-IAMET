@@ -6229,6 +6229,7 @@ def buscar_productos_catalogo(request):
     """
     Endpoint para buscar productos en el catálogo de volumetría con motor inteligente.
     Usa el modelo correcto (CatalogoCableado) y filtra por categoría y texto de forma precisa.
+    Ahora filtra por descripción para 'cable' en lugar de 'tipo_producto'.
     """
     try:
         query = request.GET.get('q', '').strip()
@@ -6249,10 +6250,12 @@ def buscar_productos_catalogo(request):
         # Consulta base sobre el modelo correcto: CatalogoCableado
         productos_query = CatalogoCableado.objects.filter(activo=True)
 
-        # 1. Filtrar por TIPO DE PRODUCTO si se proporciona.
-        if tipo_producto:
-            productos_query = productos_query.filter(tipo_producto__iexact=tipo_producto)
-            print(f"🔌 Filtro de tipo de producto aplicado: {tipo_producto}")
+        # 1. Filtrar por descripción si el tipo es 'cable'.
+        if tipo_producto == 'cable':
+            productos_query = productos_query.filter(
+                Q(descripcion__icontains='bobina') | Q(descripcion__icontains='cable')
+            )
+            print(f"🔌 Filtro de descripción para 'cable'/'bobina' aplicado.")
 
         # 2. Filtrar por categoría si se proporciona en los filtros.
         categoria_filtro = filtros.get('categoria')
