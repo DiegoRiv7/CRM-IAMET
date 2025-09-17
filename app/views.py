@@ -6306,26 +6306,33 @@ def buscar_productos_catalogo(request):
             )
             print(f"🔌 Filtrando solo jacks/conectores")
         
-        # DEBUGGING: Mostrar TODAS las categorías que existen en la base de datos
-        if filtros.get('categoria'):
-            todas_las_categorias = ProductoCatalogo.objects.values_list('categoria', flat=True).distinct()
-            print(f"🔍 TODAS las categorías en la BD: {list(todas_las_categorias)}")
-            
-            # Mostrar productos específicos que contienen "6" en la categoría
-            productos_con_6 = ProductoCatalogo.objects.filter(categoria__icontains='6')
-            print(f"📋 Productos con '6' en categoría:")
-            for p in productos_con_6[:10]:  # Solo los primeros 10
-                print(f"   - {p.no_parte}: categoria='{p.categoria}' desc='{p.descripcion[:30]}...'")
+        # DEBUGGING EXTREMO: Mostrar todo
+        todas_las_categorias = ProductoCatalogo.objects.values_list('categoria', flat=True).distinct()
+        print(f"🔍 TODAS las categorías en la BD: {sorted([c for c in todas_las_categorias if c])}")
+        
+        # Mostrar TODOS los productos con "6" en la categoría
+        productos_con_6 = ProductoCatalogo.objects.filter(categoria__icontains='6')
+        print(f"📋 TODOS los productos con '6' en categoría ({productos_con_6.count()} total):")
+        for p in productos_con_6:
+            print(f"   - {p.no_parte}: categoria='{p.categoria}' | desc='{p.descripcion[:50]}...'")
         
         # Obtener productos (sin límite por ahora para debugging)
         productos = productos_query.order_by('marca__nombre', 'no_parte')  # Sin límite temporalmente
         
         print(f"📦 Productos encontrados después del filtrado: {productos.count()}")
+        print(f"📋 QUERY SQL FINAL: {str(productos_query.query)}")
         
         # Log de todas las categorías únicas para debugging
-        if filtros.get('categoria'):
-            categorias_encontradas = set(p.categoria for p in productos if p.categoria)
-            print(f"📋 Categorías encontradas en RESULTADOS FINALES: {categorias_encontradas}")
+        categorias_encontradas = set(p.categoria for p in productos if p.categoria)
+        print(f"📋 Categorías encontradas en RESULTADOS FINALES: {categorias_encontradas}")
+        
+        # Mostrar cada producto que llegó al final
+        print(f"🎯 PRODUCTOS FINALES QUE LLEGARON AL FRONTEND:")
+        for p in productos:
+            print(f"   - {p.no_parte}: categoria='{p.categoria}' | desc='{p.descripcion[:30]}...'")
+            if len([p.no_parte for p in productos]) > 15:  # Limitar output
+                print(f"   ... y {productos.count() - 15} más")
+                break
         
         # Convertir a formato JSON
         productos_data = []
