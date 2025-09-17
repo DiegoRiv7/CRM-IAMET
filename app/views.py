@@ -6233,8 +6233,9 @@ def buscar_productos_catalogo(request):
     try:
         query = request.GET.get('q', '').strip()
         filtros_json = request.GET.get('filtros', '{}')
+        tipo_producto = request.GET.get('tipo', '').strip()
         
-        print(f"🔍 Búsqueda en catálogo: query='{query}', filtros='{filtros_json}'")
+        print(f"🔍 Búsqueda en catálogo: query='{query}', filtros='{filtros_json}', tipo='{tipo_producto}'")
 
         try:
             filtros = json.loads(filtros_json)
@@ -6248,7 +6249,12 @@ def buscar_productos_catalogo(request):
         # Consulta base sobre el modelo correcto: CatalogoCableado
         productos_query = CatalogoCableado.objects.filter(activo=True)
 
-        # 1. Filtrar por categoría si se proporciona en los filtros.
+        # 1. Filtrar por TIPO DE PRODUCTO si se proporciona.
+        if tipo_producto:
+            productos_query = productos_query.filter(tipo_producto__iexact=tipo_producto)
+            print(f"🔌 Filtro de tipo de producto aplicado: {tipo_producto}")
+
+        # 2. Filtrar por categoría si se proporciona en los filtros.
         categoria_filtro = filtros.get('categoria')
         if categoria_filtro:
             exact_category = ''
@@ -6267,7 +6273,7 @@ def buscar_productos_catalogo(request):
                 productos_query = productos_query.filter(categoria__icontains=categoria_filtro)
                 print(f"🎯 Filtro de categoría icontains aplicado: {categoria_filtro}")
 
-        # 2. Filtrar por el query de texto en número de parte y descripción.
+        # 3. Filtrar por el query de texto en número de parte y descripción.
         if query:
             productos_query = productos_query.filter(
                 Q(numero_parte__icontains=query) | 
@@ -6299,15 +6305,6 @@ def buscar_productos_catalogo(request):
             'productos': productos_data,
             'total': len(productos_data)
         })
-        
-    except Exception as e:
-        print(f"❌ Error en búsqueda de catálogo: {e}")
-        import traceback
-        traceback.print_exc()
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        }, status=500)
         
     except Exception as e:
         print(f"❌ Error en búsqueda de catálogo: {e}")
