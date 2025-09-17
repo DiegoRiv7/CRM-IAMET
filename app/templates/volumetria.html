@@ -5457,6 +5457,7 @@ function mostrarResultadosPopup(productos) {
     }
     
     const categoria = obtenerCategoriaClienteActual();
+    const tipoProducto = detectarTipoProducto(currentFieldId); // Obtener tipo de producto
     
     const resultadosHTML = productos.map(producto => {
         const precioCliente = calcularPrecioSegunCategoria(producto.costo_unitario, categoria);
