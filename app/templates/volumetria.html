@@ -4250,7 +4250,19 @@ function recalcularTotalesGeneral() {
         
         const ganancia = totalCliente - totalCosto;
         const margen = totalCliente > 0 ? (ganancia / totalCliente) * 100 : 0;
-        
+
+        // Actualizar fila de totales en la tabla
+        const totalsRow = table.querySelector('.excel-totals-row');
+        if (totalsRow) {
+            const totalClienteCell = totalsRow.querySelector('#total-cliente-general');
+            const totalCostoCell = totalsRow.querySelector('#total-costo-general');
+            const gananciaTotalCell = totalsRow.querySelector('#ganancia-total-general');
+
+            if (totalClienteCell) totalClienteCell.textContent = formatearMoneda(totalCliente);
+            if (totalCostoCell) totalCostoCell.textContent = formatearMoneda(totalCosto);
+            if (gananciaTotalCell) gananciaTotalCell.textContent = formatearMoneda(ganancia);
+        }
+
         // Actualizar elementos del resumen
         const totalClienteEl = document.getElementById('total-cliente');
         const totalCostoEl = document.getElementById('total-costo');
