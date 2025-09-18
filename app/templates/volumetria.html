@@ -1852,6 +1852,11 @@ function cerrarFormulario() {
     }
 }
 
+function agregarVolumetria() {
+    // For now, just show the "nodos de red" form
+    mostrarFormularioNodosEnGeneral();
+}
+
 // NUEVA FUNCIÓN: Mostrar formulario específico de nodos en volumetría general
 function mostrarFormularioNodosEnGeneral() {
     console.log('🌐 Mostrando formulario específico de nodos de red en volumetría general (dentro del modal)');
@@ -14204,7 +14209,15 @@ function crearWorkspaceInicial() {
                             </div>
                             
                             <!-- Botones de Agregar Tabla -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <!-- Botón Agregar Volumetria -->
+                                <button onclick="agregarVolumetria()" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-4 rounded-lg shadow-lg transition duration-200 flex flex-col items-center space-y-2">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                    </svg>
+                                    <span class="font-medium">Agregar Volumetría</span>
+                                    <span class="text-xs opacity-75">Nodos de red, etc.</span>
+                                </button>
                                 <!-- Botón Agregar Gastos de Instalación -->
                                 <button onclick="agregarTablaGastosInstalacion()" class="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-6 py-4 rounded-lg shadow-lg transition duration-200 flex flex-col items-center space-y-2">
                                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
