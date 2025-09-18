@@ -8,9 +8,9 @@
     html, body {
     margin: 0;
     padding: 0;
-    height: 100% !important; /* Cambiado de nuevo a 100% y añadido !important */
-    min-height: 100% !important; /* Cambiado a 100% y añadido !important */
-    overflow: hidden !important; /* Mantener !important */
+    height: 100% !important;
+    min-height: 100% !important;
+    /* Remove overflow: hidden !important; */
 }
 
 /* Summer Pink Light Theme Overrides for Volumetría - v2 */
@@ -11777,14 +11777,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 .volumetria-workspace {
     display: flex;
-    height: 100% !important; /* Cambiado a 100% y mantener !important */
+    height: 100% !important;
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    overflow: hidden !important; /* Mantener !important */
-    position: fixed !important; /* Mantener !important */
+    /* Remove overflow: hidden !important; */
+    position: fixed !important;
     top: 0;
     left: 0;
-    width: 100% !important; /* Cambiado a 100% y mantener !important */
+    width: 100% !important;
     z-index: 999;
 }
 
