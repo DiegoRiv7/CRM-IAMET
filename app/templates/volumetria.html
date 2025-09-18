@@ -5115,6 +5115,152 @@ function resolverNombresClienteYOportunidad(datos) {
     }
 }
 
+// ========================================
+// FUNCIONES DEL FORMULARIO DE VOLUMETRÍA
+// ========================================
+
+// Función para mostrar formulario de volumetría con tipos de componentes
+function mostrarFormularioVolumetria() {
+    console.log('➕ Mostrando formulario de volumetría con tipos de componentes');
+    
+    // Crear overlay del formulario
+    const formOverlay = document.createElement('div');
+    formOverlay.id = 'volumetria-form-overlay';
+    formOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center';
+    
+    formOverlay.innerHTML = `
+        <div class="bg-gray-800/95 backdrop-blur-xl border border-gray-600/50 rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 animate-fade-in-up">
+            <!-- Header del Modal -->
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-white">Agregar Volumetría</h2>
+                <button onclick="cerrarFormularioVolumetria()" class="text-gray-400 hover:text-white transition-colors">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Contenido del Modal -->
+            <div class="space-y-6">
+                <!-- Selector de Tipo de Volumetría -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-3">
+                        Tipo de Volumetría
+                    </label>
+                    <select id="tipo-volumetria" onchange="manejarCambioTipoVolumetria()" 
+                            class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors">
+                        <option value="">Selecciona un tipo...</option>
+                        <option value="network-node">🌐 Nodos de Red (Switch/Router)</option>
+                        <option value="pipe">🔧 Tubería (Conducto/Canaleta)</option>
+                        <option value="camera">📹 Cámaras (Videovigilancia)</option>
+                        <option value="access-control">🔐 Control de Acceso (Lector/Biométrico)</option>
+                        <option value="infrastructure">🏗️ Infraestructura (Rack/Gabinete)</option>
+                        <option value="access-point">📶 Access Point (WiFi/Wireless)</option>
+                        <option value="access-systems">🚧 Sistemas de Acceso (Plumas/Torniquetes/Motores)</option>
+                    </select>
+                </div>
+                
+                <!-- Formulario Expandible -->
+                <div id="formulario-expandible" class="hidden">
+                    <!-- El formulario específico aparecerá aquí según el tipo seleccionado -->
+                </div>
+                
+                <!-- Botones de Acción -->
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button onclick="cerrarFormularioVolumetria()" 
+                            class="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                        Cancelar
+                    </button>
+                    <button id="btn-procesar" onclick="procesarFormularioVolumetria()" 
+                            class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors opacity-50 cursor-not-allowed" 
+                            disabled>
+                        Agregar
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Agregar al DOM
+    document.body.appendChild(formOverlay);
+    
+    // Cerrar al hacer clic fuera del modal
+    formOverlay.addEventListener('click', function(e) {
+        if (e.target === formOverlay) {
+            cerrarFormularioVolumetria();
+        }
+    });
+}
+
+// Función para cerrar formulario de volumetría
+function cerrarFormularioVolumetria() {
+    const overlay = document.getElementById('volumetria-form-overlay');
+    if (overlay) {
+        overlay.remove();
+    }
+}
+
+// Función para manejar cambio de tipo de volumetría
+function manejarCambioTipoVolumetria() {
+    const tipoSelect = document.getElementById('tipo-volumetria');
+    const formularioExpandible = document.getElementById('formulario-expandible');
+    const btnProcesar = document.getElementById('btn-procesar');
+    
+    if (!tipoSelect || !formularioExpandible || !btnProcesar) return;
+    
+    const tipoSeleccionado = tipoSelect.value;
+    
+    if (tipoSeleccionado) {
+        console.log('🔄 Tipo seleccionado:', tipoSeleccionado);
+        
+        // Mostrar formulario expandible
+        formularioExpandible.classList.remove('hidden');
+        
+        // Habilitar botón procesar
+        btnProcesar.disabled = false;
+        btnProcesar.classList.remove('opacity-50', 'cursor-not-allowed');
+        
+        // Cargar formulario específico según el tipo
+        cargarFormularioEspecifico(tipoSeleccionado, formularioExpandible);
+    } else {
+        // Ocultar formulario expandible
+        formularioExpandible.classList.add('hidden');
+        
+        // Deshabilitar botón procesar
+        btnProcesar.disabled = true;
+        btnProcesar.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+}
+
+// Función para cargar formulario específico según el tipo
+function cargarFormularioEspecifico(tipo, container) {
+    console.log('📋 Cargando formulario para tipo:', tipo);
+    
+    // Por ahora solo crear un formulario básico
+    // TODO: Implementar formularios específicos para cada tipo
+    container.innerHTML = `
+        <div class="space-y-4 pt-4 border-t border-gray-600">
+            <h3 class="text-lg font-semibold text-white">Configuración de ${tipo}</h3>
+            <p class="text-gray-400 text-sm">Formulario específico para ${tipo} se implementará próximamente.</p>
+        </div>
+    `;
+}
+
+// Función para procesar formulario de volumetría
+function procesarFormularioVolumetria() {
+    const tipoSelect = document.getElementById('tipo-volumetria');
+    const tipoSeleccionado = tipoSelect.value;
+    
+    console.log('✅ Procesando volumetría de tipo:', tipoSeleccionado);
+    
+    // Por ahora solo cerrar el formulario
+    // TODO: Implementar lógica específica para cada tipo
+    cerrarFormularioVolumetria();
+    
+    // Mostrar mensaje de éxito
+    console.log('🎉 Volumetría agregada exitosamente');
+}
+
 // Función para calcular precio de lista basado en categoría del cliente
 function calcularPrecioSegunCategoria(costoUnitario, categoria) {
     if (!categoria || !costoUnitario) {
