@@ -9087,13 +9087,14 @@ document.addEventListener('DOMContentLoaded', function() {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.auto_start_volumetria_general) {
-            console.log('🎯 Auto-iniciando volumetría general desde oportunidad');
-            setTimeout(() => {
-                crearVolumetria('general');
-            }, 500);
-            return;
-        }
+        // NO auto-iniciar volumetría desde oportunidad - dejar que el usuario decida
+        // if (data.auto_start_volumetria_general) {
+        //     console.log('🎯 Auto-iniciando volumetría general desde oportunidad');
+        //     setTimeout(() => {
+        //         crearVolumetria('general');
+        //     }, 500);
+        //     return;
+        // }
         
         // Verificar si hay un estado guardado (pero solo si no venimos de usar "Volver")
         const estadoGuardado = cargarEstadoVolumetria();
@@ -9102,20 +9103,24 @@ document.addEventListener('DOMContentLoaded', function() {
         const urlParams = new URLSearchParams(window.location.search);
         const esNavegacionVuelta = urlParams.get('from_back') === 'true';
         
-        if (estadoGuardado && !esNavegacionVuelta) {
-            console.log('🔄 Restaurando volumetría desde estado guardado');
-            // Mostrar directamente la tabla con los datos guardados
-            mostrarTablaVolumetria(estadoGuardado);
-        } else {
-            if (esNavegacionVuelta) {
-                console.log('🔙 Navegación de vuelta detectada - no restaurando estado');
-            }
-            // Mostrar animaciones normales para las tarjetas de selección
-            const cards = document.querySelectorAll('.glass-card');
-            cards.forEach((card, index) => {
-                setTimeout(() => {
-                    card.style.opacity = '0';
-                    card.style.transform = 'translateY(20px)';
+        // NO auto-restaurar estado guardado - dejar workspace inicial limpio
+        // if (estadoGuardado && !esNavegacionVuelta) {
+        //     console.log('🔄 Restaurando volumetría desde estado guardado');
+        //     // Mostrar directamente la tabla con los datos guardados
+        //     mostrarTablaVolumetria(estadoGuardado);
+        // } else {
+        
+        if (esNavegacionVuelta) {
+            console.log('🔙 Navegación de vuelta detectada - no restaurando estado');
+        }
+        
+        // Siempre mostrar el workspace inicial limpio con animaciones normales
+        // Mostrar animaciones normales para las tarjetas de selección
+        const cards = document.querySelectorAll('.glass-card');
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
                 card.style.transition = 'all 0.6s ease';
                 
                 setTimeout(() => {
@@ -9124,7 +9129,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 100);
             }, index * 200);
         });
-        }
     })
     .catch(error => {
         console.error('Error obteniendo datos de sesión:', error);
@@ -13607,13 +13611,13 @@ function mostrarMensajeExito(mensaje) {
     }
 }
 
-// Auto-ejecutar volumetría directamente al cargar la página
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Iniciando volumetría integral directamente...');
-    
-    // Ejecutar inmediatamente, como si fuera un formulario normal
-    crearVolumetria('general');
-});
+// NO auto-ejecutar volumetría - dejar que el usuario decida cuándo crear
+// document.addEventListener('DOMContentLoaded', function() {
+//     console.log('🚀 Iniciando volumetría integral directamente...');
+//     
+//     // Ejecutar inmediatamente, como si fuera un formulario normal
+//     crearVolumetria('general');
+// });
 </script>
 
 {% endblock %}
