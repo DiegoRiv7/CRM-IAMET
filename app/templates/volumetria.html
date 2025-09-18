@@ -9115,23 +9115,34 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         console.log('✅ Mostrando workspace inicial con Panel de Control de Tablas');
-        // Asegurar que el contenido inicial esté visible
+        
+        // Buscar todos los elementos posibles del workspace inicial
         const tablesContainer = document.querySelector('.tables-container');
         const mainContent = document.querySelector('.main-content');
+        const mainWorkspace = document.getElementById('main-workspace');
+        const body = document.body;
         
-        if (tablesContainer) {
-            tablesContainer.style.display = 'block';
-            tablesContainer.style.visibility = 'visible';
-            tablesContainer.style.opacity = '1';
-            console.log('✅ Panel de Control de Tablas visible');
-        } else {
-            console.log('⚠️ .tables-container no encontrado');
-        }
+        console.log('🔍 Elementos encontrados:', {
+            tablesContainer: tablesContainer ? 'SÍ' : 'NO',
+            mainContent: mainContent ? 'SÍ' : 'NO', 
+            mainWorkspace: mainWorkspace ? 'SÍ' : 'NO',
+            bodyChildren: body.children.length
+        });
         
-        if (mainContent) {
-            mainContent.style.display = 'block';
-            mainContent.style.visibility = 'visible';
-            mainContent.style.opacity = '1';
+        // Asegurar que todos los elementos estén visibles
+        [tablesContainer, mainContent, mainWorkspace].forEach(element => {
+            if (element) {
+                element.style.display = 'block';
+                element.style.visibility = 'visible';
+                element.style.opacity = '1';
+                element.style.position = 'static';
+                console.log(`✅ ${element.className || element.id} visible`);
+            }
+        });
+        
+        if (!tablesContainer && !mainWorkspace) {
+            console.log('⚠️ Ningún elemento del workspace inicial encontrado');
+            console.log('📋 Contenido del body:', body.innerHTML.substring(0, 500) + '...');
         }
         
         // Aplicar animaciones a botones y elementos visibles (si existen)
@@ -9147,22 +9158,30 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('Error obteniendo datos de sesión:', error);
         
         console.log('⚠️ Error en datos de sesión - mostrando workspace inicial por defecto');
-        // Asegurar que el contenido inicial esté visible como respaldo
+        
+        // Buscar elementos del workspace inicial como respaldo
         const tablesContainer = document.querySelector('.tables-container');
         const mainContent = document.querySelector('.main-content');
+        const mainWorkspace = document.getElementById('main-workspace');
+        const body = document.body;
         
-        if (tablesContainer) {
-            tablesContainer.style.display = 'block';
-            tablesContainer.style.visibility = 'visible';
-            tablesContainer.style.opacity = '1';
-            console.log('✅ Panel de Control de Tablas visible (respaldo)');
-        }
+        console.log('🔍 Elementos encontrados (respaldo):', {
+            tablesContainer: tablesContainer ? 'SÍ' : 'NO',
+            mainContent: mainContent ? 'SÍ' : 'NO', 
+            mainWorkspace: mainWorkspace ? 'SÍ' : 'NO',
+            bodyChildren: body.children.length
+        });
         
-        if (mainContent) {
-            mainContent.style.display = 'block';
-            mainContent.style.visibility = 'visible';
-            mainContent.style.opacity = '1';
-        }
+        // Asegurar que todos los elementos estén visibles
+        [tablesContainer, mainContent, mainWorkspace].forEach(element => {
+            if (element) {
+                element.style.display = 'block';
+                element.style.visibility = 'visible';
+                element.style.opacity = '1';
+                element.style.position = 'static';
+                console.log(`✅ ${element.className || element.id} visible (respaldo)`);
+            }
+        });
         
         // Aplicar animaciones a botones y elementos visibles (si existen)
         const buttons = document.querySelectorAll('button[onclick*="agregar"]');
