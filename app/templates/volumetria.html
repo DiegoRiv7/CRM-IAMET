@@ -8,8 +8,9 @@
     html, body {
     margin: 0;
     padding: 0;
-    height: 100%; /* Asegurar que html y body tomen la altura completa */
-    overflow: hidden; /* Evitar scroll del body si volumetria-workspace toma el control */
+    height: 100vh !important; /* Cambiado a 100vh y añadido !important */
+    min-height: 100vh !important; /* Añadido min-height 100vh y !important */
+    overflow: hidden !important; /* Añadido !important */
 }
 
 /* Summer Pink Light Theme Overrides for Volumetría - v2 */
