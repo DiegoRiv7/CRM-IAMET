@@ -4252,7 +4252,7 @@ function recalcularTotalesGeneral() {
         const margen = totalCliente > 0 ? (ganancia / totalCliente) * 100 : 0;
 
         // Actualizar fila de totales en la tabla
-        const totalsRow = table.querySelector('.excel-totals-row');
+        const totalsRow = table.querySelector('tfoot .excel-totals-row');
         if (totalsRow) {
             const totalClienteCell = totalsRow.querySelector('#total-cliente-general');
             const totalCostoCell = totalsRow.querySelector('#total-costo-general');
