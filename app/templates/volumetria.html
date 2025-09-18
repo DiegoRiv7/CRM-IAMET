@@ -8,9 +8,10 @@
     html, body {
     margin: 0;
     padding: 0;
-    position: absolute !important; /* Forzar posicionamiento absoluto */
-    inset: 0 !important; /* top:0; right:0; bottom:0; left:0; */
-    overflow: hidden !important; /* Volver a añadir overflow hidden */
+    position: relative !important; /* Cambiar a posicionamiento relativo */
+    width: 100% !important;
+    height: 100% !important;
+    overflow: auto !important; /* Permitir scroll normal */
 }
 
 /* Summer Pink Light Theme Overrides for Volumetría - v2 */
@@ -2168,10 +2169,24 @@ function generarVolumetriaParaGeneral(datos) {
             });
             
             if (workspace) {
-                workspace.style.display = 'block';
-                workspace.style.visibility = 'visible';
-                workspace.style.opacity = '1';
-                console.log('✅ Workspace forzado a visible');
+                // Limpiar completamente todos los estilos inline y aplicar los correctos
+                workspace.style.cssText = '';
+                
+                // Aplicar estilos correctos con !important para sobrescribir cualquier CSS problemático
+                workspace.style.display = 'block !important';
+                workspace.style.visibility = 'visible !important';
+                workspace.style.opacity = '1 !important';
+                workspace.style.position = 'static !important';
+                workspace.style.top = 'auto !important';
+                workspace.style.left = 'auto !important';
+                workspace.style.width = '100% !important';
+                workspace.style.height = 'auto !important';
+                workspace.style.transform = 'none !important';
+                workspace.style.zIndex = 'auto !important';
+                
+                // Forzar reflow
+                workspace.offsetHeight;
+                console.log('✅ Workspace completamente limpiado y forzado a layout estático');
             }
             
             if (tablesContainer) {
@@ -11824,16 +11839,15 @@ document.addEventListener('DOMContentLoaded', () => {
    ======================================== */
 
 .volumetria-workspace {
-    display: flex;
-    height: 100% !important;
+    display: block !important;
+    height: auto !important;
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    /* Remove overflow: hidden !important; */
-    position: fixed !important;
-    top: 0;
-    left: 0;
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
     width: 100% !important;
-    z-index: 999;
+    z-index: auto !important;
 }
 
 /* Zonas de activación del dock - invisibles pero funcionales */
@@ -13354,34 +13368,51 @@ function cerrarCuestionario() {
         modal.classList.add('hidden');
     }
     
-    // Restaurar el estado del body y página completamente
-    document.body.style.overflow = 'auto';
+    // Restaurar el estado del body y página completamente - más agresivo
+    document.body.style.cssText = '';
+    document.documentElement.style.cssText = '';
+    
+    // Aplicar los estilos correctos manualmente
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
     document.body.style.position = 'relative';
     document.body.style.width = '100%';
     document.body.style.height = 'auto';
-    document.body.style.top = 'auto';
-    document.body.style.left = 'auto';
+    document.body.style.overflow = 'auto';
     
-    // Forzar un reflow del documento
-    document.documentElement.style.overflow = 'auto';
+    document.documentElement.style.margin = '0';
+    document.documentElement.style.padding = '0';
     document.documentElement.style.position = 'relative';
+    document.documentElement.style.width = '100%';
+    document.documentElement.style.height = '100%';
+    document.documentElement.style.overflow = 'auto';
     
     // Asegurar que el workspace principal esté visible y bien posicionado
     setTimeout(() => {
         const workspace = document.getElementById('tabla-volumetria');
         if (workspace) {
+            // Limpiar todos los estilos inline del workspace
+            workspace.style.cssText = '';
+            
+            // Aplicar estilos correctos
             workspace.style.display = 'block';
             workspace.style.visibility = 'visible';
-            workspace.style.position = 'relative';
-            workspace.style.top = 'auto';
-            workspace.style.left = 'auto';
+            workspace.style.position = 'static';
             workspace.style.width = '100%';
             workspace.style.height = 'auto';
+            workspace.style.top = 'auto';
+            workspace.style.left = 'auto';
+            workspace.style.transform = 'none';
+            workspace.style.zIndex = 'auto';
+            
+            // Forzar un reflow
+            workspace.offsetHeight;
         }
         
         // Scroll hacia arriba para mostrar las tablas
         window.scrollTo(0, 0);
-    }, 100);
+        console.log('✅ Layout completamente restaurado después de cerrar modal');
+    }, 50);
 }
 
 // Función para procesar el cuestionario y generar tabla automáticamente
