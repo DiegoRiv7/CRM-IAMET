@@ -1865,28 +1865,18 @@ function agregarVolumetria() {
     }
 
     const formHTML = getFormularioNodosHTML(false);
-    container.innerHTML = formHTML;
+    const parser = new DOMParser();
+    const formDoc = parser.parseFromString(formHTML, 'text/html');
+    const form = formDoc.body.firstChild;
+
+    container.appendChild(form);
+
 
     // Configurar eventos del formulario
     document.getElementById('form-nodos-general').addEventListener('submit', function(e) {
         e.preventDefault();
         procesarFormularioNodosGeneral();
         container.innerHTML = '';
-    });
-
-    // Attach onclick events manually
-    const buttons = container.querySelectorAll('button[onclick]');
-    buttons.forEach(button => {
-        const onclickAttr = button.getAttribute('onclick');
-        button.removeAttribute('onclick');
-        button.addEventListener('click', new Function(onclickAttr));
-    });
-
-    const inputs = container.querySelectorAll('input[onclick]');
-    inputs.forEach(input => {
-        const onclickAttr = input.getAttribute('onclick');
-        input.removeAttribute('onclick');
-        input.addEventListener('click', new Function(onclickAttr));
     });
 }
 
