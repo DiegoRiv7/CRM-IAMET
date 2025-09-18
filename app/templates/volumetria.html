@@ -1870,6 +1870,7 @@ function agregarVolumetria() {
     const form = formDoc.body.firstChild;
 
     container.appendChild(form);
+    console.log('✅ Formulario de nodos de red agregado al contenedor.');
 
 
     // Configurar eventos del formulario
@@ -5547,22 +5548,10 @@ function restaurarContenidoInicial() {
 // Función para volver a la página anterior
 function volverAPaginaAnterior() {
     console.log('🔙 Volviendo a la página anterior...');
-    
-    // Intentar restaurar el contenido inicial primero
-    const existingTable = document.getElementById('tabla-volumetria');
-    if (existingTable) {
-        // Si hay una tabla activa, solo restaurar el contenido inicial
-        restaurarContenidoInicial();
-        return;
-    }
-    
-    // Limpiar estado de volumetría guardado
-    localStorage.removeItem('volumetria_estado');
-    
+
     // Redirigir a la página de oportunidades con el filtro de volumetrías
     window.location.href = '/app/todos/?tipo=volumetrias';
 }
-
 // Función para evitar error de designBtn no definido
 function initDesignPanel() {
     console.log('🎨 initDesignPanel llamado - función de compatibilidad');
