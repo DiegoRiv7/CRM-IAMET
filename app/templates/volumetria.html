@@ -1170,6 +1170,9 @@ console.log('🔄 VOLUMETRÍA SCRIPT CARGADO - VERSION CON CATÁLOGO COMPLETO');
 console.log('📦 FUNCIONALIDAD: Auto-relleno desde catálogo activa');
 
 // Función para crear volumetría según el tipo seleccionado
+let grandTotalCliente = 0;
+let grandTotalCosto = 0;
+
 function crearVolumetria(tipo = 'general') {
     console.log('🚀 Iniciando creación de volumetría general automáticamente...');
     
@@ -2306,6 +2309,8 @@ function setupOpportunityChangeListenerGeneral() {
 
 // Función para poblar la tabla General con datos de nodos de red
 function poblarTablaGeneralConNodos(datos) {
+    grandTotalCliente = 0;
+    grandTotalCosto = 0;
     console.log('📋 Poblando tabla General con datos de nodos de red...', datos);
     
     try {
@@ -4205,10 +4210,11 @@ function recalcularFilaExcelGeneral(rowIndex) {
         row.querySelector('[data-field="totalCosto"]').textContent = formatearMoneda(totalCosto);
         row.querySelector('[data-field="ganancia"]').textContent = formatearMoneda(ganancia);
 
-        // Force reflow
-        row.offsetHeight;
+        grandTotalCliente += totalCliente;
+        grandTotalCosto += totalCosto;
 
         // Recalcular totales generales
+        recalcularTotalesGeneral(grandTotalCliente, grandTotalCosto);
         recalcularTotalesGeneral();
         
     } catch (error) {
@@ -4217,32 +4223,12 @@ function recalcularFilaExcelGeneral(rowIndex) {
 }
 
 // Función para recalcular totales generales
-function recalcularTotalesGeneral() {
+function recalcularTotalesGeneral(totalCliente, totalCosto) {
     console.log('📊 Recalculando totales generales');
-    
+
     try {
         const table = document.getElementById('excel-table-general');
-        if (!table) return;
-        
-        let totalCliente = 0;
-        let totalCosto = 0;
-        
-        const rows = table.querySelectorAll('.excel-row');
-        rows.forEach(row => {
-            const totalClienteCell = row.querySelector('.excel-total-client');
-            const totalCostoCell = row.querySelector('.excel-total-cost');
-
-            if (totalClienteCell) {
-                const valor = parseFloat(totalClienteCell.textContent.replace(/[$,]/g, '')) || 0;
-                totalCliente += valor;
-            }
-
-            if (totalCostoCell) {
-                const valor = parseFloat(totalCostoCell.textContent.replace(/[$,]/g, '')) || 0;
-                totalCosto += valor;
-            }
-        });
-        
+        if (!table) return;        
         const ganancia = totalCliente - totalCosto;
         const margen = totalCliente > 0 ? (ganancia / totalCliente) * 100 : 0;
 
