@@ -1858,17 +1858,47 @@ function agregarVolumetria() {
         console.error('❌ Contenedor para formulario de nodos no encontrado');
         return;
     }
-    const formHTML = getFormularioNodosHTML();
+
+    if (container.innerHTML !== '') {
+        container.innerHTML = '';
+        return;
+    }
+
+    const formHTML = getFormularioNodosHTML(false);
     container.innerHTML = formHTML;
 
     // Configurar eventos del formulario
     document.getElementById('form-nodos-general').addEventListener('submit', function(e) {
         e.preventDefault();
         procesarFormularioNodosGeneral();
+        container.innerHTML = '';
+    });
+
+    // Attach onclick events manually
+    const buttons = container.querySelectorAll('button[onclick]');
+    buttons.forEach(button => {
+        const onclickAttr = button.getAttribute('onclick');
+        button.removeAttribute('onclick');
+        button.addEventListener('click', new Function(onclickAttr));
+    });
+
+    const inputs = container.querySelectorAll('input[onclick]');
+    inputs.forEach(input => {
+        const onclickAttr = input.getAttribute('onclick');
+        input.removeAttribute('onclick');
+        input.addEventListener('click', new Function(onclickAttr));
     });
 }
 
-function getFormularioNodosHTML() {
+function getFormularioNodosHTML(isModal = true) {
+    const cancelButtonHTML = isModal ?
+        `<button type="button" onclick="cerrarCuestionario(); regresarAVolumetriaGeneral();" class="bg-gray-700 hover:bg-gray-600 text-white px-8 py-3 text-lg font-medium rounded-lg border border-gray-600 transition duration-200">
+            Cancelar
+        </button>` :
+        `<button type="button" onclick="document.getElementById('formulario-nodos-container').innerHTML = ''" class="bg-gray-700 hover:bg-gray-600 text-white px-8 py-3 text-lg font-medium rounded-lg border border-gray-600 transition duration-200">
+            Cancelar
+        </button>`;
+
     return `
         <form id="form-nodos-general" class="space-y-8">
             <!-- Parte 1: Cableado -->
@@ -1932,9 +1962,7 @@ function getFormularioNodosHTML() {
             
             <!-- Botones de acción -->
             <div class="flex justify-center space-x-4 pt-6">
-                <button type="button" onclick="cerrarCuestionario(); regresarAVolumetriaGeneral();" class="bg-gray-700 hover:bg-gray-600 text-white px-8 py-3 text-lg font-medium rounded-lg border border-gray-600 transition duration-200">
-                    Cancelar
-                </button>
+                ${cancelButtonHTML}
                 <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-medium rounded-lg transition duration-200">
                     Generar Volumetría
                 </button>
@@ -1958,7 +1986,7 @@ function mostrarFormularioNodosEnGeneral() {
 
     titleElement.textContent = 'Formulario Nodos de Red';
     
-    const formHTML = getFormularioNodosHTML();
+    const formHTML = getFormularioNodosHTML(true);
     
     contentElement.innerHTML = formHTML;
     modal.classList.remove('hidden'); // Show the modal
@@ -14251,6 +14279,8 @@ function crearWorkspaceInicial() {
                                     <span class="text-xs opacity-75">Personal técnico</span>
                                 </button>
                             </div>
+                            <div id="formulario-nodos-container" class="mt-8"></div>
+                            <div id="formulario-nodos-container" class="mt-8"></div>
                         </div>
                     </div>
                     
