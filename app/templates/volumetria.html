@@ -4252,15 +4252,15 @@ function recalcularTotalesGeneral() {
         const margen = totalCliente > 0 ? (ganancia / totalCliente) * 100 : 0;
         
         // Actualizar elementos del resumen
-        const totalClienteEl = document.getElementById('total-cliente-general');
-        const totalCostoEl = document.getElementById('total-costo-general');
-        const gananciaEl = document.getElementById('ganancia-total-general');
-        const margenEl = document.getElementById('margen-general');
+        const totalClienteEl = document.getElementById('total-cliente');
+        const totalCostoEl = document.getElementById('total-costo');
+        const gananciaEl = document.getElementById('ganancia-total');
+        const margenEl = document.getElementById('margen-porcentaje');
         
         if (totalClienteEl) totalClienteEl.textContent = formatearMoneda(totalCliente);
         if (totalCostoEl) totalCostoEl.textContent = formatearMoneda(totalCosto);
         if (gananciaEl) gananciaEl.textContent = formatearMoneda(ganancia);
-        if (margenEl) margenEl.textContent = `${margen.toFixed(1)}% margen`;
+        if (margenEl) margenEl.textContent = `${margen.toFixed(1)}%`;
         
         console.log('✅ Totales actualizados:', { totalCliente, totalCosto, ganancia, margen });
         
