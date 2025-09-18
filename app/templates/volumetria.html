@@ -5549,8 +5549,16 @@ function restaurarContenidoInicial() {
 function volverAPaginaAnterior() {
     console.log('🔙 Volviendo a la página anterior...');
 
-    // Redirigir a la página de oportunidades con el filtro de volumetrías
-    window.location.href = '/app/todos/?tipo=volumetrias';
+    let redirectUrl = '/app/todos/?tipo=volumetrias'; // Default redirect
+
+    if (window.currentVolumetriaData && window.currentVolumetriaData.oportunidadId) {
+        redirectUrl = `/app/oportunidad/${window.currentVolumetriaData.oportunidadId}/?tipo=volumetrias`;
+        console.log(`🔙 Redirigiendo a oportunidad específica: ${redirectUrl}`);
+    } else {
+        console.log('🔙 No se encontró ID de oportunidad, redirigiendo a página general de volumetrías.');
+    }
+
+    window.location.href = redirectUrl;
 }
 // Función para evitar error de designBtn no definido
 function initDesignPanel() {
