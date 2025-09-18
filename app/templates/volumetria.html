@@ -5559,14 +5559,8 @@ function volverAPaginaAnterior() {
     // Limpiar estado de volumetría guardado
     localStorage.removeItem('volumetria_estado');
     
-    // Verificar si hay historial de navegación
-    if (window.history.length > 1) {
-        // Usar history.back() para volver a la página anterior
-        window.history.back();
-    } else {
-        // Si no hay historial, redirigir a la página principal de oportunidades
-        window.location.href = '/app/todos/';
-    }
+    // Redirigir a la página de oportunidades con el filtro de volumetrías
+    window.location.href = '/app/todos/?tipo=volumetrias';
 }
 
 // Función para evitar error de designBtn no definido
