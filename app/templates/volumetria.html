@@ -9087,14 +9087,13 @@ document.addEventListener('DOMContentLoaded', function() {
     })
     .then(response => response.json())
     .then(data => {
-        // NO auto-iniciar volumetría desde oportunidad - dejar que el usuario decida
-        // if (data.auto_start_volumetria_general) {
-        //     console.log('🎯 Auto-iniciando volumetría general desde oportunidad');
-        //     setTimeout(() => {
-        //         crearVolumetria('general');
-        //     }, 500);
-        //     return;
-        // }
+        if (data.auto_start_volumetria_general) {
+            console.log('🎯 Auto-iniciando volumetría general desde oportunidad');
+            setTimeout(() => {
+                crearVolumetria('general');
+            }, 500);
+            return;
+        }
         
         // Verificar si hay un estado guardado (pero solo si no venimos de usar "Volver")
         const estadoGuardado = cargarEstadoVolumetria();
@@ -9103,59 +9102,30 @@ document.addEventListener('DOMContentLoaded', function() {
         const urlParams = new URLSearchParams(window.location.search);
         const esNavegacionVuelta = urlParams.get('from_back') === 'true';
         
-        // NO auto-restaurar estado guardado - dejar workspace inicial limpio
-        // if (estadoGuardado && !esNavegacionVuelta) {
-        //     console.log('🔄 Restaurando volumetría desde estado guardado');
-        //     // Mostrar directamente la tabla con los datos guardados
-        //     mostrarTablaVolumetria(estadoGuardado);
-        // } else {
+        if (estadoGuardado && !esNavegacionVuelta) {
+            console.log('🔄 Restaurando volumetría desde estado guardado');
+            // Mostrar directamente la tabla con los datos guardados
+            mostrarTablaVolumetria(estadoGuardado);
+        } else {
         
-        if (esNavegacionVuelta) {
-            console.log('🔙 Navegación de vuelta detectada - no restaurando estado');
-        }
-        
-        console.log('✅ Mostrando workspace inicial con Panel de Control de Tablas');
-        
-        // Buscar todos los elementos posibles del workspace inicial
-        const tablesContainer = document.querySelector('.tables-container');
-        const mainContent = document.querySelector('.main-content');
-        const mainWorkspace = document.getElementById('main-workspace');
-        const body = document.body;
-        
-        console.log('🔍 Elementos encontrados:', {
-            tablesContainer: tablesContainer ? 'SÍ' : 'NO',
-            mainContent: mainContent ? 'SÍ' : 'NO', 
-            mainWorkspace: mainWorkspace ? 'SÍ' : 'NO',
-            bodyChildren: body.children.length
-        });
-        
-        // Asegurar que todos los elementos estén visibles
-        [tablesContainer, mainContent, mainWorkspace].forEach(element => {
-            if (element) {
-                element.style.display = 'block';
-                element.style.visibility = 'visible';
-                element.style.opacity = '1';
-                element.style.position = 'static';
-                console.log(`✅ ${element.className || element.id} visible`);
+            if (esNavegacionVuelta) {
+                console.log('🔙 Navegación de vuelta detectada - no restaurando estado');
             }
-        });
-        
-        if (!tablesContainer && !mainWorkspace) {
-            console.log('⚠️ Ningún elemento del workspace inicial encontrado - creando HTML manualmente');
-            console.log('📋 Contenido del body:', body.innerHTML.substring(0, 500) + '...');
-            
-            // Crear el HTML del workspace inicial manualmente
-            crearWorkspaceInicial();
+            // Mostrar animaciones normales para las tarjetas de selección
+            const cards = document.querySelectorAll('.glass-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(20px)';
+                    card.style.transition = 'all 0.6s ease';
+                    
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, 100);
+                }, index * 200);
+            });
         }
-        
-        // Aplicar animaciones a botones y elementos visibles (si existen)
-        const buttons = document.querySelectorAll('button[onclick*="agregar"]');
-        buttons.forEach((button, index) => {
-            setTimeout(() => {
-                button.style.opacity = '1';
-                button.style.transform = 'translateY(0)';
-            }, index * 100);
-        });
     })
     .catch(error => {
         console.error('Error obteniendo datos de sesión:', error);
@@ -13984,13 +13954,13 @@ function crearWorkspaceInicial() {
     }
 }
 
-// NO auto-ejecutar volumetría - dejar que el usuario decida cuándo crear
-// document.addEventListener('DOMContentLoaded', function() {
-//     console.log('🚀 Iniciando volumetría integral directamente...');
-//     
-//     // Ejecutar inmediatamente, como si fuera un formulario normal
-//     crearVolumetria('general');
-// });
+// Restaurar la carga automática del contenido inicial
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Iniciando volumetría integral directamente...');
+    
+    // Ejecutar inmediatamente para mostrar el workspace inicial
+    crearVolumetria('general');
+});
 </script>
 
 {% endblock %}
