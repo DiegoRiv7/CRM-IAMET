@@ -2427,13 +2427,7 @@ function poblarTablaGeneralConNodos(datos) {
             }
         });
         
-        // Recalcular totales generales después de poblar
-        requestAnimationFrame(() => {
-            if (typeof recalcularTotalesGeneral === 'function') {
-                recalcularTotalesGeneral();
-            }
-            console.log('✅ Tabla General poblada exitosamente con productos de nodos de red');
-        });
+        console.log('✅ Tabla General poblada exitosamente con productos de nodos de red');
         
     } catch (error) {
         console.error('❌ Error poblando tabla General con nodos:', error);
@@ -4210,8 +4204,12 @@ function recalcularFilaExcelGeneral(rowIndex) {
         row.querySelector('[data-field="totalCliente"]').textContent = formatearMoneda(totalCliente);
         row.querySelector('[data-field="totalCosto"]').textContent = formatearMoneda(totalCosto);
         row.querySelector('[data-field="ganancia"]').textContent = formatearMoneda(ganancia);
-        
-        // Recalcular totales generales al final
+
+        // Force reflow
+        row.offsetHeight;
+
+        // Recalcular totales generales
+        recalcularTotalesGeneral();
         
     } catch (error) {
         console.error('❌ Error recalculando fila general:', error);
