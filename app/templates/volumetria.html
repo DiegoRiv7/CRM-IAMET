@@ -2064,12 +2064,18 @@ function generarVolumetriaParaGeneral(datos) {
         if (workspace) {
             workspace.style.display = 'block';
             workspace.style.visibility = 'visible';
+            workspace.style.position = 'relative'; // Cambiar de fixed a relative
+            workspace.style.top = 'auto';
+            workspace.style.left = 'auto';
+            workspace.style.width = '100%';
+            workspace.style.height = 'auto';
             workspace.offsetHeight; // Forzar reflow
         }
         
         // Restaurar scroll y body
-        document.body.style.overflow = '';
-        document.body.style.position = '';
+        document.body.style.overflow = 'auto';
+        document.body.style.position = 'relative';
+        document.documentElement.style.overflow = 'auto';
         window.scrollTo(0, 0);
     }, 50);
 
@@ -13324,21 +13330,29 @@ function cerrarCuestionario() {
         modal.classList.add('hidden');
     }
     
-    // Restaurar el estado del body y página
-    document.body.style.overflow = '';
-    document.body.style.position = '';
-    document.body.style.width = '';
-    document.body.style.height = '';
+    // Restaurar el estado del body y página completamente
+    document.body.style.overflow = 'auto';
+    document.body.style.position = 'relative';
+    document.body.style.width = '100%';
+    document.body.style.height = 'auto';
+    document.body.style.top = 'auto';
+    document.body.style.left = 'auto';
     
     // Forzar un reflow del documento
-    document.documentElement.style.overflow = '';
+    document.documentElement.style.overflow = 'auto';
+    document.documentElement.style.position = 'relative';
     
-    // Asegurar que el workspace principal esté visible
+    // Asegurar que el workspace principal esté visible y bien posicionado
     setTimeout(() => {
         const workspace = document.getElementById('tabla-volumetria');
         if (workspace) {
             workspace.style.display = 'block';
             workspace.style.visibility = 'visible';
+            workspace.style.position = 'relative';
+            workspace.style.top = 'auto';
+            workspace.style.left = 'auto';
+            workspace.style.width = '100%';
+            workspace.style.height = 'auto';
         }
         
         // Scroll hacia arriba para mostrar las tablas
