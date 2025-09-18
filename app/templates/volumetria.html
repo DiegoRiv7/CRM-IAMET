@@ -4270,30 +4270,48 @@ function recalcularTotalesGeneral() {
         // Actualizar fila de totales en la tabla
         const totalsRow = table.querySelector('.excel-totals-row');
         if (totalsRow) {
-            // Buscar celdas de totales por posición (estructura estándar de tabla excel)
-            const totalClienteCell = totalsRow.children[6]; // Columna Total Cliente
-            const totalCostoCell = totalsRow.children[9];   // Columna Total Costo  
-            const gananciaTotalCell = totalsRow.children[10]; // Columna Ganancia
+            // Buscar celdas de totales por múltiples métodos
+            let totalClienteCell = totalsRow.querySelector('[data-field="totalCliente"]') || 
+                                  totalsRow.children[6]; // Columna Total Cliente
+            let totalCostoCell = totalsRow.querySelector('[data-field="totalCosto"]') || 
+                                totalsRow.children[9];   // Columna Total Costo  
+            let gananciaTotalCell = totalsRow.querySelector('[data-field="ganancia"]') || 
+                                   totalsRow.children[10]; // Columna Ganancia
 
-            if (totalClienteCell) totalClienteCell.textContent = formatearMoneda(totalCliente);
-            if (totalCostoCell) totalCostoCell.textContent = formatearMoneda(totalCosto);
-            if (gananciaTotalCell) gananciaTotalCell.textContent = formatearMoneda(ganancia);
+            // Si no encontramos por data-field, buscar por texto de header
+            if (!totalClienteCell || !totalCostoCell) {
+                const headers = table.querySelectorAll('th');
+                headers.forEach((header, index) => {
+                    const headerText = header.textContent.toLowerCase();
+                    if (headerText.includes('total cliente')) {
+                        totalClienteCell = totalsRow.children[index];
+                    } else if (headerText.includes('total costo')) {
+                        totalCostoCell = totalsRow.children[index];
+                    } else if (headerText.includes('ganancia')) {
+                        gananciaTotalCell = totalsRow.children[index];
+                    }
+                });
+            }
+
+            if (totalClienteCell) {
+                totalClienteCell.textContent = formatearMoneda(totalCliente);
+                console.log(`✅ Total Cliente actualizado: ${formatearMoneda(totalCliente)}`);
+            }
+            if (totalCostoCell) {
+                totalCostoCell.textContent = formatearMoneda(totalCosto);
+                console.log(`✅ Total Costo actualizado: ${formatearMoneda(totalCosto)}`);
+            }
+            if (gananciaTotalCell) {
+                gananciaTotalCell.textContent = formatearMoneda(ganancia);
+                console.log(`✅ Ganancia actualizada: ${formatearMoneda(ganancia)}`);
+            }
+        } else {
+            console.warn('⚠️ No se encontró la fila de totales (.excel-totals-row)');
         }
 
         console.log('✅ Totales calculados:', { totalCliente, totalCosto, ganancia, margen });
 
-        // Actualizar elementos del resumen
-        const totalClienteEl = document.getElementById('total-cliente');
-        const totalCostoEl = document.getElementById('total-costo');
-        const gananciaEl = document.getElementById('ganancia-total');
-        const margenEl = document.getElementById('margen-porcentaje');
-        
-        if (totalClienteEl) totalClienteEl.textContent = formatearMoneda(totalCliente);
-        if (totalCostoEl) totalCostoEl.textContent = formatearMoneda(totalCosto);
-        if (gananciaEl) gananciaEl.textContent = formatearMoneda(ganancia);
-        if (margenEl) margenEl.textContent = `${margen.toFixed(1)}%`;
-        
-        console.log('✅ Totales actualizados:', { totalCliente, totalCosto, ganancia, margen });
+        console.log('✅ Totales calculados en tabla:', { totalCliente, totalCosto, ganancia, margen });
         
         // Actualizar resumen consolidado y financiero
         setTimeout(() => {
@@ -13997,19 +14015,29 @@ function actualizarResumenFinanciero() {
             // Buscar la fila de totales específica para tablas de componentes
             const filaTotales = tabla.querySelector('.excel-totals-row');
             if (filaTotales) {
-                // Buscar las celdas específicas de totales por posición e identificador
-                const celdaTotalCliente = filaTotales.querySelector('[data-field="totalCliente"]') || 
-                                         filaTotales.querySelector('.excel-total-client') ||
-                                         filaTotales.children[6]; // Posición 6 para Total Cliente
-                const celdaTotalCosto = filaTotales.querySelector('[data-field="totalCosto"]') ||
-                                       filaTotales.querySelector('.excel-total-cost') ||
-                                       filaTotales.children[9]; // Posición 9 para Total Costo
+                // Buscar headers para identificar columnas correctamente
+                const headers = tabla.querySelectorAll('th');
+                let indexTotalCliente = -1;
+                let indexTotalCosto = -1;
+                
+                headers.forEach((header, index) => {
+                    const headerText = header.textContent.toLowerCase();
+                    if (headerText.includes('total cliente')) {
+                        indexTotalCliente = index;
+                    } else if (headerText.includes('total costo')) {
+                        indexTotalCosto = index;
+                    }
+                });
+                
+                // Usar índices encontrados o posiciones por defecto
+                const celdaTotalCliente = filaTotales.children[indexTotalCliente >= 0 ? indexTotalCliente : 6];
+                const celdaTotalCosto = filaTotales.children[indexTotalCosto >= 0 ? indexTotalCosto : 9];
                 
                 if (celdaTotalCliente) {
                     const valor = parseFloat(celdaTotalCliente.textContent.replace(/[^0-9.-]/g, '')) || 0;
                     if (valor > 0) {
                         totalCliente += valor;
-                        console.log(`📊 Tabla componente - Total Cliente: $${valor.toFixed(2)}`);
+                        console.log(`📊 Tabla componente - Total Cliente: $${valor.toFixed(2)} (columna ${indexTotalCliente})`);
                     }
                 }
                 
@@ -14017,7 +14045,7 @@ function actualizarResumenFinanciero() {
                     const valor = parseFloat(celdaTotalCosto.textContent.replace(/[^0-9.-]/g, '')) || 0;
                     if (valor > 0) {
                         totalCosto += valor;
-                        console.log(`📊 Tabla componente - Total Costo: $${valor.toFixed(2)}`);
+                        console.log(`📊 Tabla componente - Total Costo: $${valor.toFixed(2)} (columna ${indexTotalCosto})`);
                     }
                 }
                 
@@ -14031,6 +14059,14 @@ function actualizarResumenFinanciero() {
                     }
                 });
                 totalItems += filasConDatos;
+                
+                console.log(`🔍 Debug tabla componente:`, {
+                    filaTotales: !!filaTotales,
+                    indexTotalCliente,
+                    indexTotalCosto,
+                    totalClienteText: celdaTotalCliente?.textContent,
+                    totalCostoText: celdaTotalCosto?.textContent
+                });
             }
         });
         
@@ -14458,6 +14494,15 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         configurarObservadorTablas();
         configurarListenersInputs();
+        
+        // Forzar recálculo de todas las tablas existentes
+        const tablasExistentes = document.querySelectorAll('#excel-table-general');
+        tablasExistentes.forEach(tabla => {
+            if (typeof recalcularTotalesGeneral === 'function') {
+                console.log('🔄 Forzando recálculo de tabla existente...');
+                recalcularTotalesGeneral();
+            }
+        });
         
         // Actualizar resumen inicial
         actualizarResumenFinanciero();
