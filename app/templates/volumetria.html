@@ -2428,10 +2428,12 @@ function poblarTablaGeneralConNodos(datos) {
         });
         
         // Recalcular totales generales después de poblar
-        if (typeof recalcularTotalesGeneral === 'function') {
-            recalcularTotalesGeneral();
-        }
-        console.log('✅ Tabla General poblada exitosamente con productos de nodos de red');
+        requestAnimationFrame(() => {
+            if (typeof recalcularTotalesGeneral === 'function') {
+                recalcularTotalesGeneral();
+            }
+            console.log('✅ Tabla General poblada exitosamente con productos de nodos de red');
+        });
         
     } catch (error) {
         console.error('❌ Error poblando tabla General con nodos:', error);
