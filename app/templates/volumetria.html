@@ -4313,12 +4313,24 @@ function recalcularTotalesGeneral() {
                 console.log(`✅ Total Cliente actualizado: ${formatearMoneda(totalCliente)} en celda:`, totalClienteCell);
             } else {
                 console.warn(`❌ No se encontró celda Total Cliente en fila de totales`);
+                // Fallback: buscar por ID específico
+                const fallbackClienteCell = document.getElementById('total-cliente-general');
+                if (fallbackClienteCell) {
+                    fallbackClienteCell.textContent = formatearMoneda(totalCliente);
+                    console.log(`✅ Total Cliente actualizado via fallback ID: ${formatearMoneda(totalCliente)}`);
+                }
             }
             if (totalCostoCell) {
                 totalCostoCell.textContent = formatearMoneda(totalCosto);
                 console.log(`✅ Total Costo actualizado: ${formatearMoneda(totalCosto)} en celda:`, totalCostoCell);
             } else {
                 console.warn(`❌ No se encontró celda Total Costo en fila de totales`);
+                // Fallback: buscar por ID específico
+                const fallbackCostoCell = document.getElementById('total-costo-general');
+                if (fallbackCostoCell) {
+                    fallbackCostoCell.textContent = formatearMoneda(totalCosto);
+                    console.log(`✅ Total Costo actualizado via fallback ID: ${formatearMoneda(totalCosto)}`);
+                }
             }
             
             // Verificar si las actualizaciones se aplicaron
@@ -4337,6 +4349,12 @@ function recalcularTotalesGeneral() {
                 console.log(`✅ Ganancia actualizada: ${formatearMoneda(ganancia)} en celda:`, gananciaTotalCell);
             } else {
                 console.warn(`❌ No se encontró celda Ganancia en fila de totales`);
+                // Fallback: buscar por ID específico
+                const fallbackGananciaCell = document.getElementById('ganancia-total-general');
+                if (fallbackGananciaCell) {
+                    fallbackGananciaCell.textContent = formatearMoneda(ganancia);
+                    console.log(`✅ Ganancia actualizada via fallback ID: ${formatearMoneda(ganancia)}`);
+                }
             }
         } else {
             console.warn('⚠️ No se encontró la fila de totales (.excel-totals-row)');
@@ -4363,6 +4381,23 @@ function recalcularTotalesGeneral() {
     } catch (error) {
         console.error('❌ Error recalculando totales generales:', error);
     }
+}
+
+// Función para forzar manualmente el recálculo (para debugging)
+function forzarRecalculoTotales() {
+    console.log('🔧 FORZANDO RECÁLCULO MANUAL DE TOTALES...');
+    
+    // Intentar recalcular la tabla principal
+    if (typeof recalcularTotalesGeneral === 'function') {
+        recalcularTotalesGeneral();
+    }
+    
+    // También actualizar el resumen financiero
+    if (typeof actualizarResumenFinanciero === 'function') {
+        actualizarResumenFinanciero();
+    }
+    
+    console.log('✅ Recálculo manual completado');
 }
 
 // Función para agregar nueva fila en volumetría general
