@@ -9141,8 +9141,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         if (!tablesContainer && !mainWorkspace) {
-            console.log('⚠️ Ningún elemento del workspace inicial encontrado');
+            console.log('⚠️ Ningún elemento del workspace inicial encontrado - creando HTML manualmente');
             console.log('📋 Contenido del body:', body.innerHTML.substring(0, 500) + '...');
+            
+            // Crear el HTML del workspace inicial manualmente
+            crearWorkspaceInicial();
         }
         
         // Aplicar animaciones a botones y elementos visibles (si existen)
@@ -13653,6 +13656,99 @@ function mostrarMensajeExito(mensaje) {
         setTimeout(() => {
             mensajeDiv.classList.add('hidden');
         }, 3000);
+    }
+}
+
+// Función para crear el workspace inicial cuando el template no lo renderiza correctamente
+function crearWorkspaceInicial() {
+    console.log('🏗️ Creando workspace inicial manualmente...');
+    
+    const workspaceHTML = `
+        <div style="display: flex; min-height: 100vh; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+            <!-- Sidebar de Componentes -->
+            <div class="components-sidebar" style="width: 220px; background: rgba(15, 23, 42, 0.95); border-right: 1px solid rgba(75, 85, 99, 0.3); padding: 20px;">
+                <div style="margin-bottom: 30px;">
+                    <h2 style="color: white; font-size: 18px; font-weight: bold; margin-bottom: 8px;">Componentes</h2>
+                    <p style="color: #9CA3AF; font-size: 12px;">Selecciona para generar</p>
+                </div>
+                
+                <!-- Nodos de Red -->
+                <div onclick="mostrarCuestionario('network-node')" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="background: linear-gradient(135deg, #3B82F6, #1D4ED8); padding: 8px; border-radius: 8px; color: white;">
+                            🌐
+                        </div>
+                        <div>
+                            <div style="color: white; font-weight: 600; font-size: 14px;">Nodo de Red</div>
+                            <div style="color: #9CA3AF; font-size: 11px;">Switch/Router</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tubería -->
+                <div onclick="mostrarCuestionario('conduit')" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="background: linear-gradient(135deg, #10B981, #047857); padding: 8px; border-radius: 8px; color: white;">
+                            🚰
+                        </div>
+                        <div>
+                            <div style="color: white; font-weight: 600; font-size: 14px;">Tubería</div>
+                            <div style="color: #9CA3AF; font-size: 11px;">Conducto/Canaleta</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Más componentes... -->
+            </div>
+            
+            <!-- Área Principal -->
+            <div id="main-workspace" class="main-workspace" style="flex: 1; padding: 20px;">
+                <div class="tables-container">
+                    <div class="mb-8">
+                        <div style="background: rgba(75, 85, 99, 0.5); border-radius: 12px; padding: 24px; border: 1px solid rgba(75, 85, 99, 0.7);">
+                            <div style="text-align: center; margin-bottom: 24px;">
+                                <h2 style="color: white; font-size: 24px; font-weight: bold; margin-bottom: 8px;">Panel de Control de Tablas</h2>
+                                <p style="color: #D1D5DB; font-size: 14px;">Selecciona un componente de la izquierda para generar un cuestionario, o agrega manualmente las tablas que necesites</p>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+                                <!-- Botón Tabla Principal -->
+                                <button onclick="agregarTablaPrincipal()" style="background: linear-gradient(135deg, #3B82F6, #1D4ED8); color: white; padding: 24px; border-radius: 12px; border: none; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                                    <div style="font-size: 32px;">📊</div>
+                                    <div style="font-weight: 600; font-size: 16px;">Agregar Tabla Principal</div>
+                                    <div style="font-size: 12px; opacity: 0.8;">Precios y Costos</div>
+                                </button>
+                                
+                                <!-- Botón Gastos de Instalación -->
+                                <button onclick="agregarTablaGastosInstalacion()" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED); color: white; padding: 24px; border-radius: 12px; border: none; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                                    <div style="font-size: 32px;">💰</div>
+                                    <div style="font-weight: 600; font-size: 16px;">Agregar Gastos de Instalación</div>
+                                    <div style="font-size: 12px; opacity: 0.8;">Costos adicionales</div>
+                                </button>
+                                
+                                <!-- Botón Mano de Obra -->
+                                <button onclick="agregarTablaManoObra()" style="background: linear-gradient(135deg, #10B981, #047857); color: white; padding: 24px; border-radius: 12px; border: none; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                                    <div style="font-size: 32px;">👥</div>
+                                    <div style="font-weight: 600; font-size: 16px;">Agregar Mano de Obra</div>
+                                    <div style="font-size: 12px; opacity: 0.8;">Personal técnico</div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Buscar el contenedor principal y reemplazar su contenido
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.innerHTML = workspaceHTML;
+        mainContent.style.padding = '0';
+        mainContent.style.margin = '0';
+        mainContent.style.width = '100%';
+        mainContent.style.height = '100vh';
+        console.log('✅ Workspace inicial creado exitosamente');
     }
 }
 
