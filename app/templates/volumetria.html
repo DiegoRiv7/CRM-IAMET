@@ -5150,13 +5150,13 @@ function mostrarFormularioVolumetria() {
                     <select id="tipo-volumetria" onchange="manejarCambioTipoVolumetria()" 
                             class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors">
                         <option value="">Selecciona un tipo...</option>
-                        <option value="network-node">🌐 Nodos de Red (Switch/Router)</option>
-                        <option value="pipe">🔧 Tubería (Conducto/Canaleta)</option>
-                        <option value="camera">📹 Cámaras (Videovigilancia)</option>
-                        <option value="access-control">🔐 Control de Acceso (Lector/Biométrico)</option>
-                        <option value="infrastructure">🏗️ Infraestructura (Rack/Gabinete)</option>
-                        <option value="access-point">📶 Access Point (WiFi/Wireless)</option>
-                        <option value="access-systems">🚧 Sistemas de Acceso (Plumas/Torniquetes/Motores)</option>
+                        <option value="network-node">🌐 Nodos de Red</option>
+                        <option value="pipe">🔧 Tubería</option>
+                        <option value="camera">📹 Cámaras</option>
+                        <option value="access-control">🔐 Control de Acceso</option>
+                        <option value="infrastructure">🏗️ Infraestructura</option>
+                        <option value="access-point">📶 Access Point</option>
+                        <option value="access-systems">🚧 Sistemas de Acceso</option>
                     </select>
                 </div>
                 
@@ -5236,12 +5236,231 @@ function manejarCambioTipoVolumetria() {
 function cargarFormularioEspecifico(tipo, container) {
     console.log('📋 Cargando formulario para tipo:', tipo);
     
-    // Por ahora solo crear un formulario básico
-    // TODO: Implementar formularios específicos para cada tipo
+    if (tipo === 'network-node') {
+        cargarFormularioNodosRed(container);
+    } else {
+        // Para otros tipos, mostrar formulario básico
+        container.innerHTML = `
+            <div class="space-y-4 pt-4 border-t border-gray-600">
+                <h3 class="text-lg font-semibold text-white">Configuración de ${tipo}</h3>
+                <p class="text-gray-400 text-sm">Formulario específico para ${tipo} se implementará próximamente.</p>
+            </div>
+        `;
+    }
+}
+
+// Función para cargar formulario específico de Nodos de Red
+function cargarFormularioNodosRed(container) {
+    console.log('🌐 Cargando formulario específico de Nodos de Red');
+    
     container.innerHTML = `
         <div class="space-y-4 pt-4 border-t border-gray-600">
-            <h3 class="text-lg font-semibold text-white">Configuración de ${tipo}</h3>
-            <p class="text-gray-400 text-sm">Formulario específico para ${tipo} se implementará próximamente.</p>
+            <h3 class="text-lg font-semibold text-white mb-4">🌐 Configuración de Nodos de Red</h3>
+            
+            <div class="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
+                <!-- Cantidad de nodos -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Cantidad de nodos *</label>
+                    <input type="number" id="cantidad_nodos" value="1" min="1" required
+                           class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                </div>
+                
+                <!-- Marca de accesorios -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Marca de accesorios</label>
+                    <input type="text" id="marca_accesorios" placeholder="Ej: Panduit, CommScope, Legrand"
+                           class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                </div>
+                
+                <!-- Longitud del nodo -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Longitud del nodo en metros *</label>
+                    <input type="number" id="longitud_nodo" value="100" min="1" required
+                           class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                </div>
+                
+                <!-- Uso de cable -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Uso de cable *</label>
+                    <select id="uso_cable" required
+                            class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                        <option value="">Seleccionar...</option>
+                        <option value="Interior">Interior</option>
+                        <option value="Exterior">Exterior</option>
+                    </select>
+                </div>
+                
+                <!-- Tipo de cable -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Tipo de cable *</label>
+                    <select id="tipo_cable" required
+                            class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                        <option value="">Seleccionar...</option>
+                        <option value="Propósitos Generales (PUC)">Propósitos Generales (PUC)</option>
+                        <option value="Riser">Riser</option>
+                        <option value="Plenum">Plenum</option>
+                    </select>
+                </div>
+                
+                <!-- Categoría de cable -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Categoría de cable *</label>
+                    <select id="categoria_cable" required
+                            class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                        <option value="">Seleccionar...</option>
+                        <option value="5e">5e</option>
+                        <option value="6">6</option>
+                        <option value="6A">6A</option>
+                    </select>
+                </div>
+                
+                <!-- Color del cable -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Color del cable</label>
+                    <input type="text" id="color_cable" placeholder="Ej: Azul, Blanco, Gris"
+                           class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                </div>
+                
+                <!-- Color del jack -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Color del jack</label>
+                    <input type="text" id="color_jack" placeholder="Ej: Azul, Blanco, Negro"
+                           class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                </div>
+                
+                <!-- Longitud del patch cord -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Longitud del patch cord en pies *</label>
+                    <select id="longitud_patch_cord" required
+                            class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                        <option value="">Seleccionar...</option>
+                        <option value="1">1</option>
+                        <option value="3">3</option>
+                        <option value="5">5</option>
+                        <option value="7">7</option>
+                        <option value="10">10</option>
+                        <option value="15">15</option>
+                        <option value="20">20</option>
+                        <option value="25">25</option>
+                        <option value="30">30</option>
+                    </select>
+                </div>
+                
+                <!-- Color del patch cord -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Color del patch cord</label>
+                    <input type="text" id="color_patch_cord" placeholder="Ej: Azul, Verde, Rojo"
+                           class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                </div>
+                
+                <!-- Diámetro del patch cord -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Diámetro del patch cord *</label>
+                    <select id="diametro_patch_cord" required
+                            class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                        <option value="">Seleccionar...</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Reducido">Reducido</option>
+                    </select>
+                </div>
+                
+                <!-- Cantidad de face plate -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Cantidad de face plate *</label>
+                    <input type="number" id="cantidad_face_plate" value="1" min="1" required
+                           class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                </div>
+                
+                <!-- Color del face plate -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Color del face plate *</label>
+                    <select id="color_face_plate" required
+                            class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                        <option value="">Seleccionar...</option>
+                        <option value="Blanco">Blanco</option>
+                        <option value="Blanco Oficina">Blanco Oficina</option>
+                    </select>
+                </div>
+                
+                <!-- Puertos del face plate -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Cantidad de puertos del face plate *</label>
+                    <select id="puertos_face_plate" required
+                            class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                        <option value="">Seleccionar...</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="4">4</option>
+                        <option value="6">6</option>
+                    </select>
+                </div>
+                
+                <!-- Cantidad de paneles -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Cantidad de paneles *</label>
+                    <input type="number" id="cantidad_paneles" value="1" min="1" required
+                           class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                </div>
+                
+                <!-- Tipo de panel -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Tipo de panel *</label>
+                    <select id="tipo_panel" required
+                            class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                        <option value="">Seleccionar...</option>
+                        <option value="Plano">Plano</option>
+                        <option value="Angulado">Angulado</option>
+                    </select>
+                </div>
+                
+                <!-- Puertos del panel -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Cantidad de puertos de panel *</label>
+                    <select id="puertos_panel" required
+                            class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                        <option value="">Seleccionar...</option>
+                        <option value="24">24</option>
+                        <option value="48">48</option>
+                    </select>
+                </div>
+                
+                <!-- Unidades de rack del panel -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Unidades de rack del panel *</label>
+                    <select id="unidades_rack_panel" required
+                            class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                        <option value="">Seleccionar...</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                    </select>
+                </div>
+                
+                <!-- Tipo de gancho J -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Tipo de gancho J *</label>
+                    <select id="tipo_gancho_j" required
+                            class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                        <option value="">Seleccionar...</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Soporte">Soporte</option>
+                        <option value="Abrazadera">Abrazadera</option>
+                    </select>
+                </div>
+                
+                <!-- Cantidad de ganchos -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Cantidad de ganchos</label>
+                    <input type="number" id="cantidad_ganchos" value="0" min="0"
+                           class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                </div>
+                
+                <!-- Rack -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Rack</label>
+                    <input type="text" id="rack" placeholder="Especificaciones del rack"
+                           class="w-full bg-gray-700/50 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                </div>
+            </div>
         </div>
     `;
 }
