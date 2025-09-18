@@ -4264,9 +4264,12 @@ function recalcularTotalesGeneral() {
         
         console.log('✅ Totales actualizados:', { totalCliente, totalCosto, ganancia, margen });
         
-        // Actualizar resumen consolidado
+        // Actualizar resumen consolidado y financiero
         setTimeout(() => {
             actualizarResumenConsolidado();
+            if (typeof actualizarResumenFinanciero === 'function') {
+                actualizarResumenFinanciero();
+            }
         }, 100);
         
     } catch (error) {
@@ -9763,9 +9766,12 @@ function recalcularTotalesExcel() {
         totalsRow.children[10].textContent = formatearMoneda(gananciaTotal); // Ganancia
     }
     
-    // Actualizar resumen consolidado
+    // Actualizar resumen consolidado y financiero
     setTimeout(() => {
         actualizarResumenConsolidado();
+        if (typeof actualizarResumenFinanciero === 'function') {
+            actualizarResumenFinanciero();
+        }
     }, 100);
 }
 
@@ -13953,83 +13959,86 @@ function actualizarResumenFinanciero() {
     // Buscar todas las tablas dentro del contenedor dinámico
     const container = document.getElementById('dynamic-tables-container');
     if (container) {
-        const todasLasTablas = container.querySelectorAll('table, .tabla-gastos-instalacion, .tabla-mano-obra, .tabla-principal, .tabla-componente');
-        
-        todasLasTablas.forEach(tabla => {
+        // 1. Buscar tablas de componentes (con estructura excel)
+        const tablasComponentes = container.querySelectorAll('table');
+        tablasComponentes.forEach(tabla => {
             tablasActivas++;
             
-            // Identificar el tipo de tabla por su contenedor padre
-            const contenedorTabla = tabla.closest('[id*="tabla-"]') || tabla.closest('div');
-            let esTablaGastos = contenedorTabla && (contenedorTabla.classList.contains('tabla-gastos-instalacion') || contenedorTabla.id.includes('gastos'));
-            let esTablaManoObra = contenedorTabla && (contenedorTabla.classList.contains('tabla-mano-obra') || contenedorTabla.id.includes('mano-obra'));
-            
-            // Buscar filas de datos en la tabla
-            const filas = tabla.querySelectorAll('tbody tr, tr');
-            filas.forEach(fila => {
-                // Buscar inputs o celdas con valores monetarios
-                const inputs = fila.querySelectorAll('input[type="number"], input[name*="total"], input[name*="precio"], input[name*="costo"]');
-                const celdas = fila.querySelectorAll('td, .excel-cell');
+            // Buscar la fila de totales específica para tablas de componentes
+            const filaTotales = tabla.querySelector('.excel-totals-row');
+            if (filaTotales) {
+                // Buscar las celdas específicas de totales por posición e identificador
+                const celdaTotalCliente = filaTotales.querySelector('[data-field="totalCliente"]') || 
+                                         filaTotales.querySelector('.excel-total-client') ||
+                                         filaTotales.children[6]; // Posición 6 para Total Cliente
+                const celdaTotalCosto = filaTotales.querySelector('[data-field="totalCosto"]') ||
+                                       filaTotales.querySelector('.excel-total-cost') ||
+                                       filaTotales.children[9]; // Posición 9 para Total Costo
                 
-                // Procesar inputs de formularios
-                inputs.forEach(input => {
-                    const valor = parseFloat(input.value) || 0;
+                if (celdaTotalCliente) {
+                    const valor = parseFloat(celdaTotalCliente.textContent.replace(/[^0-9.-]/g, '')) || 0;
                     if (valor > 0) {
-                        totalItems++;
-                        
-                        // Lógica según el nombre del campo
-                        if (input.name && (input.name.includes('total') || input.name.includes('precio'))) {
-                            if (esTablaGastos || esTablaManoObra) {
-                                // Gastos de instalación y mano de obra van a TOTAL CLIENTE (se cobran al cliente)
-                                totalCliente += valor;
-                            } else if (input.name.includes('cliente') || input.name.includes('venta')) {
-                                totalCliente += valor;
-                            } else if (input.name.includes('proveedor') || input.name.includes('costo')) {
-                                totalCosto += valor;
-                            } else {
-                                // Por defecto, si no podemos identificar el tipo, asumimos que es total cliente
-                                totalCliente += valor;
-                            }
-                        }
+                        totalCliente += valor;
+                        console.log(`📊 Tabla componente - Total Cliente: $${valor.toFixed(2)}`);
                     }
-                });
+                }
                 
-                // Procesar celdas de tablas estáticas (generadas por componentes)
-                celdas.forEach((celda, index) => {
-                    const texto = celda.textContent || celda.innerText || '';
-                    const valor = parseFloat(texto.replace(/[^0-9.-]/g, '')) || 0;
-                    
-                    if (valor > 0 && (texto.includes('$') || texto.includes('USD') || index >= 3)) {
-                        totalItems++;
-                        
-                        // Para tablas de gastos/mano de obra: todo va a total cliente
-                        if (esTablaGastos || esTablaManoObra) {
-                            totalCliente += valor;
-                        } else {
-                            // Para tablas de componentes: dividir entre cliente y costo
-                            // Heurística mejorada para identificar columnas
-                            const textoLower = texto.toLowerCase();
-                            const esPrecioCosto = textoLower.includes('costo') || textoLower.includes('proveedor') || 
-                                                textoLower.includes('compra') || textoLower.includes('cost') ||
-                                                index === celdas.length - 3; // Penúltima columna suele ser costo
-                            const esPrecioCliente = textoLower.includes('cliente') || textoLower.includes('venta') || 
-                                                  textoLower.includes('precio') || index === celdas.length - 1 || 
-                                                  index === celdas.length - 2; // Últimas columnas suelen ser precio cliente
-                            
-                            if (esPrecioCosto) {
-                                totalCosto += valor;
-                            } else if (esPrecioCliente) {
-                                totalCliente += valor;
-                            } else {
-                                // Si no podemos identificar claramente, usar posición de columna
-                                if (index >= celdas.length - 2) {
-                                    totalCliente += valor; // Últimas columnas van a cliente
-                                } else if (index >= celdas.length - 4) {
-                                    totalCosto += valor; // Columnas anteriores van a costo
-                                }
-                            }
-                        }
+                if (celdaTotalCosto) {
+                    const valor = parseFloat(celdaTotalCosto.textContent.replace(/[^0-9.-]/g, '')) || 0;
+                    if (valor > 0) {
+                        totalCosto += valor;
+                        console.log(`📊 Tabla componente - Total Costo: $${valor.toFixed(2)}`);
+                    }
+                }
+                
+                // Contar items de la tabla (filas con datos, excluyendo totales)
+                const filasProductos = tabla.querySelectorAll('.excel-row:not(.excel-totals-row)');
+                let filasConDatos = 0;
+                filasProductos.forEach(fila => {
+                    const noParte = fila.querySelector('[data-field="noParte"]');
+                    if (noParte && noParte.textContent.trim()) {
+                        filasConDatos++;
                     }
                 });
+                totalItems += filasConDatos;
+            }
+        });
+        
+        // 2. Buscar tablas de gastos de instalación
+        const tablasGastos = container.querySelectorAll('.tabla-gastos-instalacion');
+        tablasGastos.forEach(tabla => {
+            tablasActivas++;
+            
+            const filas = tabla.querySelectorAll('tbody tr');
+            filas.forEach(fila => {
+                const inputTotal = fila.querySelector('input[name*="total"]');
+                if (inputTotal && inputTotal.value) {
+                    const valor = parseFloat(inputTotal.value) || 0;
+                    if (valor > 0) {
+                        totalCliente += valor; // Los gastos van a total cliente
+                        totalItems++;
+                        console.log(`💼 Gastos instalación: $${valor}`);
+                    }
+                }
+            });
+        });
+        
+        // 3. Buscar tablas de mano de obra
+        const tablasManoObra = container.querySelectorAll('.tabla-mano-obra');
+        tablasManoObra.forEach(tabla => {
+            tablasActivas++;
+            
+            const filas = tabla.querySelectorAll('tbody tr');
+            filas.forEach(fila => {
+                const inputTotal = fila.querySelector('input[name*="total"]');
+                if (inputTotal && inputTotal.value) {
+                    const valor = parseFloat(inputTotal.value) || 0;
+                    if (valor > 0) {
+                        totalCliente += valor; // La mano de obra va a total cliente
+                        totalItems++;
+                        console.log(`👷 Mano de obra: $${valor}`);
+                    }
+                }
             });
         });
     }
