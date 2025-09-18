@@ -13665,75 +13665,289 @@ function crearWorkspaceInicial() {
     
     const workspaceHTML = `
         <div style="display: flex; min-height: 100vh; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
-            <!-- Sidebar de Componentes -->
-            <div class="components-sidebar" style="width: 220px; background: rgba(15, 23, 42, 0.95); border-right: 1px solid rgba(75, 85, 99, 0.3); padding: 20px;">
-                <div style="margin-bottom: 30px;">
-                    <h2 style="color: white; font-size: 18px; font-weight: bold; margin-bottom: 8px;">Componentes</h2>
-                    <p style="color: #9CA3AF; font-size: 12px;">Selecciona para generar</p>
+            <!-- Sidebar de Componentes Completo -->
+            <div id="components-sidebar" class="components-sidebar">
+                <div class="sidebar-header">
+                    <h3>Componentes</h3>
+                    <p>Arrastra para agregar</p>
                 </div>
                 
-                <!-- Nodos de Red -->
-                <div onclick="mostrarCuestionario('network-node')" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="background: linear-gradient(135deg, #3B82F6, #1D4ED8); padding: 8px; border-radius: 8px; color: white;">
-                            🌐
+                <div class="components-grid">
+                    <!-- Nodo de Red -->
+                    <div class="component-card" data-component="network-node" data-type="red" draggable="true">
+                        <div class="component-icon-large network-node-icon">
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="networkGradientSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#60A5FA;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#3B82F6;stop-opacity:1" />
+                                    </linearGradient>
+                                    <filter id="networkShadowSidebar">
+                                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1E40AF" flood-opacity="0.3"/>
+                                    </filter>
+                                </defs>
+                                <rect x="4" y="10" width="24" height="12" rx="2" fill="url(#networkGradientSidebar)" filter="url(#networkShadowSidebar)"/>
+                                <rect x="6" y="13" width="2" height="1.5" rx="0.3" fill="#E5E7EB"/>
+                                <rect x="9" y="13" width="2" height="1.5" rx="0.3" fill="#E5E7EB"/>
+                                <rect x="12" y="13" width="2" height="1.5" rx="0.3" fill="#E5E7EB"/>
+                                <rect x="15" y="13" width="2" height="1.5" rx="0.3" fill="#E5E7EB"/>
+                                <circle cx="24" cy="14" r="1" fill="#10B981"/>
+                                <circle cx="24" cy="17" r="1" fill="#F59E0B"/>
+                                <path d="M16 8L16 10M16 22L16 24M8 6L16 8M24 6L16 8" stroke="#60A5FA" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
                         </div>
-                        <div>
-                            <div style="color: white; font-weight: 600; font-size: 14px;">Nodo de Red</div>
-                            <div style="color: #9CA3AF; font-size: 11px;">Switch/Router</div>
+                        <div class="component-info">
+                            <span class="component-title">Nodo de Red</span>
+                            <span class="component-subtitle">Switch/Router</span>
+                        </div>
+                    </div>
+                    <!-- Tubería -->
+                    <div class="component-card" data-component="pipe" data-type="infraestructura" draggable="true">
+                        <div class="component-icon-large pipe-icon">
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="pipeGradientSidebar" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" style="stop-color:#6B7280;stop-opacity:1" />
+                                        <stop offset="50%" style="stop-color:#9CA3AF;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#4B5563;stop-opacity:1" />
+                                    </linearGradient>
+                                    <filter id="pipeShadowSidebar">
+                                        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#374151" flood-opacity="0.4"/>
+                                    </filter>
+                                </defs>
+                                <rect x="2" y="13" width="28" height="6" rx="3" fill="url(#pipeGradientSidebar)" filter="url(#pipeShadowSidebar)"/>
+                                <ellipse cx="8" cy="16" rx="2" ry="3" fill="#D1D5DB"/>
+                                <ellipse cx="16" cy="16" rx="2" ry="3" fill="#D1D5DB"/>
+                                <ellipse cx="24" cy="16" rx="2" ry="3" fill="#D1D5DB"/>
+                                <rect x="2" y="14" width="28" height="2" rx="1" fill="#F3F4F6" opacity="0.3"/>
+                            </svg>
+                        </div>
+                        <div class="component-info">
+                            <span class="component-title">Tubería</span>
+                            <span class="component-subtitle">Conducto/Canaleta</span>
+                        </div>
+                    </div>
+                    <!-- Cámara -->
+                    <div class="component-card" data-component="camera" data-type="seguridad" draggable="true">
+                        <div class="component-icon-large camera-icon">
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="cameraGradientSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#1F2937;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#374151;stop-opacity:1" />
+                                    </linearGradient>
+                                    <filter id="cameraShadowSidebar">
+                                        <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#111827" flood-opacity="0.5"/>
+                                    </filter>
+                                </defs>
+                                <ellipse cx="16" cy="16" rx="12" ry="8" fill="url(#cameraGradientSidebar)" filter="url(#cameraShadowSidebar)"/>
+                                <circle cx="16" cy="16" r="6" fill="#4B5563"/>
+                                <circle cx="16" cy="16" r="4" fill="#111827"/>
+                                <circle cx="16" cy="16" r="2" fill="#6366F1"/>
+                                <ellipse cx="14" cy="14" rx="1" ry="1" fill="#93C5FD" opacity="0.6"/>
+                                <rect x="14" y="8" width="4" height="3" rx="1" fill="#9CA3AF"/>
+                                <circle cx="6" cy="12" r="1.5" fill="#EF4444"/>
+                            </svg>
+                        </div>
+                        <div class="component-info">
+                            <span class="component-title">Cámara</span>
+                            <span class="component-subtitle">Videovigilancia</span>
+                        </div>
+                    </div>
+                    <!-- Control de Acceso -->
+                    <div class="component-card" data-component="access-control" data-type="seguridad" draggable="true">
+                        <div class="component-icon-large access-icon">
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="accessGradientSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#059669;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#047857;stop-opacity:1" />
+                                    </linearGradient>
+                                    <filter id="accessShadowSidebar">
+                                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#064E3B" flood-opacity="0.4"/>
+                                    </filter>
+                                </defs>
+                                <rect x="6" y="8" width="20" height="16" rx="3" fill="url(#accessGradientSidebar)" filter="url(#accessShadowSidebar)"/>
+                                <rect x="9" y="11" width="14" height="6" rx="1" fill="#1F2937"/>
+                                <circle cx="23" cy="14" r="1" fill="#10B981"/>
+                                <circle cx="23" cy="17" r="1" fill="#F59E0B"/>
+                                <rect x="11" y="19" width="2" height="2" rx="0.3" fill="#E5E7EB"/>
+                                <rect x="15" y="19" width="2" height="2" rx="0.3" fill="#E5E7EB"/>
+                                <rect x="19" y="19" width="2" height="2" rx="0.3" fill="#E5E7EB"/>
+                                <rect x="9" y="13" width="6" height="1" rx="0.5" fill="#374151"/>
+                            </svg>
+                        </div>
+                        <div class="component-info">
+                            <span class="component-title">Control de Acceso</span>
+                            <span class="component-subtitle">Lector/Biométrico</span>
+                        </div>
+                    </div>
+                    <!-- Infraestructura -->
+                    <div class="component-card" data-component="infrastructure" data-type="infraestructura" draggable="true">
+                        <div class="component-icon-large infrastructure-icon">
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="infraGradientSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#7C3AED;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#5B21B6;stop-opacity:1" />
+                                    </linearGradient>
+                                    <filter id="infraShadowSidebar">
+                                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color:#3730A3" flood-opacity="0.4"/>
+                                    </filter>
+                                </defs>
+                                <rect x="4" y="24" width="24" height="4" rx="1" fill="url(#infraGradientSidebar)" filter="url(#infraShadowSidebar)"/>
+                                <rect x="6" y="20" width="4" height="4" rx="1" fill="url(#infraGradientSidebar)"/>
+                                <rect x="14" y="16" width="4" height="8" rx="1" fill="url(#infraGradientSidebar)"/>
+                                <rect x="22" y="12" width="4" height="12" rx="1" fill="url(#infraGradientSidebar)"/>
+                                <circle cx="8" cy="18" r="1" fill="#E5E7EB"/>
+                                <circle cx="16" cy="14" r="1" fill="#E5E7EB"/>
+                                <circle cx="24" cy="10" r="1" fill="#E5E7EB"/>
+                            </svg>
+                        </div>
+                        <div class="component-info">
+                            <span class="component-title">Infraestructura</span>
+                            <span class="component-subtitle">Rack/Gabinete</span>
+                        </div>
+                    </div>
+                    <!-- Access Point -->
+                    <div class="component-card" data-component="access-point" data-type="red" draggable="true">
+                        <div class="component-icon-large ap-icon">
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="apGradientSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#10B981;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+                                    </linearGradient>
+                                    <filter id="apShadowSidebar">
+                                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#047857" flood-opacity="0.4"/>
+                                    </filter>
+                                </defs>
+                                <rect x="8" y="14" width="16" height="4" rx="2" fill="url(#apGradientSidebar)" filter="url(#apShadowSidebar)"/>
+                                <circle cx="16" cy="16" r="1" fill="#E5E7EB"/>
+                                <path d="M12 8C12 12 14 14 16 14C18 14 20 12 20 8" stroke="#10B981" stroke-width="1.5" fill="none"/>
+                                <path d="M10 6C10 14 12 16 16 16C20 16 22 14 22 6" stroke="#10B981" stroke-width="1" fill="none" opacity="0.6"/>
+                                <path d="M8 4C8 16 10 18 16 18C22 18 24 16 24 4" stroke="#10B981" stroke-width="0.8" fill="none" opacity="0.4"/>
+                            </svg>
+                        </div>
+                        <div class="component-info">
+                            <span class="component-title">Access Point</span>
+                            <span class="component-subtitle">WiFi/Wireless</span>
+                        </div>
+                    </div>
+                    <!-- Sistemas de Acceso -->
+                    <div class="component-card" data-component="access-systems" data-type="seguridad" draggable="true">
+                        <div class="component-icon-large access-systems-icon">
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="accessSystemsGradientSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:1" />
+                                    </linearGradient>
+                                    <filter id="accessSystemsShadowSidebar">
+                                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#5B21B6" flood-opacity="0.4"/>
+                                    </filter>
+                                </defs>
+                                <rect x="4" y="14" width="8" height="1.5" rx="0.5" fill="url(#accessSystemsGradientSidebar)" filter="url(#accessSystemsShadowSidebar)"/>
+                                <rect x="3" y="12" width="2" height="8" rx="1" fill="url(#accessSystemsGradientSidebar)"/>
+                                <circle cx="16" cy="16" r="6" fill="none" stroke="url(#accessSystemsGradientSidebar)" stroke-width="1.5"/>
+                                <rect x="15" y="10" width="2" height="5" rx="1" fill="url(#accessSystemsGradientSidebar)"/>
+                                <rect x="15" y="17" width="2" height="5" rx="1" fill="url(#accessSystemsGradientSidebar)"/>
+                                <rect x="10" y="15" width="5" height="2" rx="1" fill="url(#accessSystemsGradientSidebar)"/>
+                                <rect x="17" y="15" width="5" height="2" rx="1" fill="url(#accessSystemsGradientSidebar)"/>
+                                <circle cx="26" cy="16" r="4" fill="url(#accessSystemsGradientSidebar)"/>
+                                <circle cx="26" cy="16" r="2.5" fill="#A855F7"/>
+                                <circle cx="26" cy="16" r="1" fill="#C084FC"/>
+                                <path d="M12 16 L22 16" stroke="url(#accessSystemsGradientSidebar)" stroke-width="1" stroke-dasharray="2,2"/>
+                            </svg>
+                        </div>
+                        <div class="component-info">
+                            <span class="component-title">Sistemas de Acceso</span>
+                            <span class="component-subtitle">Plumas, Torniquetes y Motores</span>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Tubería -->
-                <div onclick="mostrarCuestionario('conduit')" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="background: linear-gradient(135deg, #10B981, #047857); padding: 8px; border-radius: 8px; color: white;">
-                            🚰
-                        </div>
-                        <div>
-                            <div style="color: white; font-weight: 600; font-size: 14px;">Tubería</div>
-                            <div style="color: #9CA3AF; font-size: 11px;">Conducto/Canaleta</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Más componentes... -->
             </div>
             
             <!-- Área Principal -->
-            <div id="main-workspace" class="main-workspace" style="flex: 1; padding: 20px;">
+            <div id="main-workspace" class="main-workspace">
+                <!-- Header del workspace -->
+                <div class="workspace-header">
+                    <div class="header-extended-section">
+                        <div class="flex items-center justify-between w-full mb-4">
+                            <button onclick="volverAPaginaAnterior()" class="back-button">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                                </svg>
+                                <span>Volver</span>
+                            </button>
+                            <div class="header-info">
+                                <div id="workspace-project-title" class="workspace-title">Volumetría General</div>
+                                <div id="workspace-project-subtitle" class="workspace-subtitle">Análisis volumétrico completo con tablas de precios, infraestructura, gastos y mano de obra</div>
+                            </div>
+                        </div>
+                        <div class="project-info-section">
+                            <div class="project-data-item">
+                                <span class="data-label">Cliente:</span>
+                                <span id="workspace-client-name" class="data-value">Configurando proyecto...</span>
+                            </div>
+                            <div class="project-data-item">
+                                <span class="data-label">Oportunidad:</span>
+                                <span id="workspace-opportunity-name" class="data-value">-</span>
+                            </div>
+                            <div class="project-data-item">
+                                <span class="data-label">Monto:</span>
+                                <span id="workspace-opportunity-amount" class="data-value">$0</span>
+                            </div>
+                            <p id="workspace-project-info" class="text-gray-400 text-xs mt-2">Configurando proyecto...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Área de tablas -->
                 <div class="tables-container">
+                    <!-- Panel de Control de Tablas -->
                     <div class="mb-8">
-                        <div style="background: rgba(75, 85, 99, 0.5); border-radius: 12px; padding: 24px; border: 1px solid rgba(75, 85, 99, 0.7);">
-                            <div style="text-align: center; margin-bottom: 24px;">
-                                <h2 style="color: white; font-size: 24px; font-weight: bold; margin-bottom: 8px;">Panel de Control de Tablas</h2>
-                                <p style="color: #D1D5DB; font-size: 14px;">Selecciona un componente de la izquierda para generar un cuestionario, o agrega manualmente las tablas que necesites</p>
+                        <div class="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
+                            <div class="text-center mb-6">
+                                <h2 class="text-2xl font-bold text-white mb-2">Panel de Control de Tablas</h2>
+                                <p class="text-gray-300 text-sm">Selecciona un componente de la izquierda para generar un cuestionario, o agrega manualmente las tablas que necesites</p>
                             </div>
                             
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
-                                <!-- Botón Tabla Principal -->
-                                <button onclick="agregarTablaPrincipal()" style="background: linear-gradient(135deg, #3B82F6, #1D4ED8); color: white; padding: 24px; border-radius: 12px; border: none; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                                    <div style="font-size: 32px;">📊</div>
-                                    <div style="font-weight: 600; font-size: 16px;">Agregar Tabla Principal</div>
-                                    <div style="font-size: 12px; opacity: 0.8;">Precios y Costos</div>
+                            <!-- Botones de Agregar Tabla -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <!-- Botón Agregar Tabla Principal -->
+                                <button onclick="agregarTablaPrincipal()" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-4 rounded-lg shadow-lg transition duration-200 flex flex-col items-center space-y-2">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                    </svg>
+                                    <span class="font-medium">Agregar Tabla Principal</span>
+                                    <span class="text-xs opacity-75">Precios y Costos</span>
                                 </button>
                                 
-                                <!-- Botón Gastos de Instalación -->
-                                <button onclick="agregarTablaGastosInstalacion()" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED); color: white; padding: 24px; border-radius: 12px; border: none; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                                    <div style="font-size: 32px;">💰</div>
-                                    <div style="font-weight: 600; font-size: 16px;">Agregar Gastos de Instalación</div>
-                                    <div style="font-size: 12px; opacity: 0.8;">Costos adicionales</div>
+                                <!-- Botón Agregar Gastos de Instalación -->
+                                <button onclick="agregarTablaGastosInstalacion()" class="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-6 py-4 rounded-lg shadow-lg transition duration-200 flex flex-col items-center space-y-2">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <span class="font-medium">Agregar Gastos de Instalación</span>
+                                    <span class="text-xs opacity-75">Costos adicionales</span>
                                 </button>
                                 
-                                <!-- Botón Mano de Obra -->
-                                <button onclick="agregarTablaManoObra()" style="background: linear-gradient(135deg, #10B981, #047857); color: white; padding: 24px; border-radius: 12px; border: none; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                                    <div style="font-size: 32px;">👥</div>
-                                    <div style="font-weight: 600; font-size: 16px;">Agregar Mano de Obra</div>
-                                    <div style="font-size: 12px; opacity: 0.8;">Personal técnico</div>
+                                <!-- Botón Agregar Mano de Obra -->
+                                <button onclick="agregarTablaManoObra()" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-4 rounded-lg shadow-lg transition duration-200 flex flex-col items-center space-y-2">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                    </svg>
+                                    <span class="font-medium">Agregar Mano de Obra</span>
+                                    <span class="text-xs opacity-75">Personal técnico</span>
                                 </button>
                             </div>
                         </div>
+                    </div>
+                    
+                    <!-- Área donde se insertarán las tablas dinámicamente -->
+                    <div id="dynamic-tables-container">
+                        <!-- Las tablas se agregarán aquí dinámicamente -->
                     </div>
                 </div>
             </div>
@@ -13749,6 +13963,24 @@ function crearWorkspaceInicial() {
         mainContent.style.width = '100%';
         mainContent.style.height = '100vh';
         console.log('✅ Workspace inicial creado exitosamente');
+        
+        // Configurar event listeners para los componentes después de crear el HTML
+        setTimeout(() => {
+            configurarListenersComponentes();
+            cargarDatosOportunidadGeneral();
+            
+            // Configurar eventos para los componentes del sidebar
+            const componentCards = document.querySelectorAll('.component-card');
+            componentCards.forEach(card => {
+                const component = card.dataset.component;
+                card.addEventListener('click', () => {
+                    console.log(`🎯 Componente clickeado: ${component}`);
+                    mostrarCuestionario(component);
+                });
+            });
+            
+            console.log('✅ Listeners de componentes configurados para workspace creado manualmente');
+        }, 100);
     }
 }
 
