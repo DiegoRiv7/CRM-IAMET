@@ -2155,16 +2155,40 @@ function generarVolumetriaParaGeneral(datos) {
         
         console.log('✅ Volumetría generada exitosamente');
         
-        // Mostrar mensaje de éxito al usuario
+        // Mostrar mensaje de éxito al usuario y forzar visibilidad
         setTimeout(() => {
             const workspace = document.getElementById('tabla-volumetria');
-            if (workspace && workspace.style.display !== 'none') {
-                console.log('✅ Workspace visible, volumetría lista');
-                // Scroll suave hacia la tabla generada
-                const tabla = document.getElementById('tabla-principal-precios');
-                if (tabla) {
-                    tabla.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
+            const tablesContainer = document.getElementById('dynamic-tables-container');
+            const tabla = document.getElementById('tabla-principal-precios');
+            
+            console.log('🔍 Estados después de generar:', {
+                workspace: workspace ? 'exists' : 'missing',
+                tablesContainer: tablesContainer ? 'exists' : 'missing', 
+                tabla: tabla ? 'exists' : 'missing'
+            });
+            
+            if (workspace) {
+                workspace.style.display = 'block';
+                workspace.style.visibility = 'visible';
+                workspace.style.opacity = '1';
+                console.log('✅ Workspace forzado a visible');
+            }
+            
+            if (tablesContainer) {
+                tablesContainer.style.display = 'block';
+                tablesContainer.style.visibility = 'visible';
+                tablesContainer.style.opacity = '1';
+                console.log('✅ Tables container forzado a visible');
+            }
+            
+            if (tabla) {
+                tabla.style.display = 'block';
+                tabla.style.visibility = 'visible';
+                tabla.style.opacity = '1';
+                console.log('✅ Tabla principal forzada a visible');
+                tabla.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                console.error('❌ Tabla principal no encontrada después de generar');
             }
         }, 500);
         
