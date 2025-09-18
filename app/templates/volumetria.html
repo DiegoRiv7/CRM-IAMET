@@ -3802,7 +3802,23 @@ function mostrarTablaVolumetriaGeneral(datos) {
     document.body.classList.add('volumetria-mode');
     console.log('✅ Clase volumetria-mode agregada al body');
     
-    document.body.insertAdjacentHTML('beforeend', nuevaTabla);
+    // Ocultar el contenido inicial de la página para que la tabla ocupe su lugar
+    const initialContent = document.querySelector('.tables-container, .main-content, .container, #initial-workspace');
+    if (initialContent) {
+        initialContent.style.display = 'none';
+        console.log('✅ Contenido inicial ocultado');
+    }
+    
+    // Buscar si ya existe una tabla de volumetría y reemplazarla
+    const existingTable = document.getElementById('tabla-volumetria');
+    if (existingTable) {
+        existingTable.replaceWith(document.createRange().createContextualFragment(nuevaTabla).firstElementChild);
+        console.log('✅ Tabla existente reemplazada');
+    } else {
+        // Insertar al principio del body para que aparezca en la parte superior
+        document.body.insertAdjacentHTML('afterbegin', nuevaTabla);
+        console.log('✅ Nueva tabla insertada al principio del documento');
+    }
     
     // Resolver nombres de cliente y oportunidad
     resolverNombresClienteYOportunidad(datos);
@@ -4890,7 +4906,23 @@ function mostrarTablaVolumetria(datos) {
         mainContent.style.display = 'none';
     }
     
-    document.body.insertAdjacentHTML('beforeend', tablaHTML);
+    // Ocultar el contenido inicial de la página
+    const initialContent = document.querySelector('.tables-container, .container, #initial-workspace');
+    if (initialContent) {
+        initialContent.style.display = 'none';
+        console.log('✅ Contenido inicial ocultado para tabla específica');
+    }
+    
+    // Buscar si ya existe una tabla de volumetría y reemplazarla
+    const existingTable = document.getElementById('tabla-volumetria');
+    if (existingTable) {
+        existingTable.replaceWith(document.createRange().createContextualFragment(tablaHTML).firstElementChild);
+        console.log('✅ Tabla específica existente reemplazada');
+    } else {
+        // Insertar al principio del body para que aparezca en la parte superior
+        document.body.insertAdjacentHTML('afterbegin', tablaHTML);
+        console.log('✅ Nueva tabla específica insertada al principio del documento');
+    }
     
     // Resolver nombres de cliente y oportunidad
     resolverNombresClienteYOportunidad(datos);
@@ -5133,9 +5165,42 @@ document.addEventListener('click', function(event) {
     }
 });
 
+// Función para restaurar el contenido inicial de volumetría
+function restaurarContenidoInicial() {
+    console.log('🔄 Restaurando contenido inicial de volumetría...');
+    
+    // Mostrar el contenido inicial nuevamente
+    const initialContent = document.querySelector('.tables-container, .main-content, .container, #initial-workspace');
+    if (initialContent) {
+        initialContent.style.display = 'block';
+        console.log('✅ Contenido inicial restaurado');
+    }
+    
+    // Eliminar la tabla de volumetría actual
+    const existingTable = document.getElementById('tabla-volumetria');
+    if (existingTable) {
+        existingTable.remove();
+        console.log('✅ Tabla de volumetría eliminada');
+    }
+    
+    // Remover clase de modo volumetría
+    document.body.classList.remove('volumetria-mode');
+    
+    // Limpiar estado de volumetría guardado
+    localStorage.removeItem('volumetria_estado');
+}
+
 // Función para volver a la página anterior
 function volverAPaginaAnterior() {
     console.log('🔙 Volviendo a la página anterior...');
+    
+    // Intentar restaurar el contenido inicial primero
+    const existingTable = document.getElementById('tabla-volumetria');
+    if (existingTable) {
+        // Si hay una tabla activa, solo restaurar el contenido inicial
+        restaurarContenidoInicial();
+        return;
+    }
     
     // Limpiar estado de volumetría guardado
     localStorage.removeItem('volumetria_estado');
