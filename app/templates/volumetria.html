@@ -9114,37 +9114,63 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('🔙 Navegación de vuelta detectada - no restaurando estado');
         }
         
-        // Siempre mostrar el workspace inicial limpio con animaciones normales
-        // Mostrar animaciones normales para las tarjetas de selección
-        const cards = document.querySelectorAll('.glass-card');
-        cards.forEach((card, index) => {
+        console.log('✅ Mostrando workspace inicial con Panel de Control de Tablas');
+        // Asegurar que el contenido inicial esté visible
+        const tablesContainer = document.querySelector('.tables-container');
+        const mainContent = document.querySelector('.main-content');
+        
+        if (tablesContainer) {
+            tablesContainer.style.display = 'block';
+            tablesContainer.style.visibility = 'visible';
+            tablesContainer.style.opacity = '1';
+            console.log('✅ Panel de Control de Tablas visible');
+        } else {
+            console.log('⚠️ .tables-container no encontrado');
+        }
+        
+        if (mainContent) {
+            mainContent.style.display = 'block';
+            mainContent.style.visibility = 'visible';
+            mainContent.style.opacity = '1';
+        }
+        
+        // Aplicar animaciones a botones y elementos visibles (si existen)
+        const buttons = document.querySelectorAll('button[onclick*="agregar"]');
+        buttons.forEach((button, index) => {
             setTimeout(() => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
-                card.style.transition = 'all 0.6s ease';
-                
-                setTimeout(() => {
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                }, 100);
-            }, index * 200);
+                button.style.opacity = '1';
+                button.style.transform = 'translateY(0)';
+            }, index * 100);
         });
     })
     .catch(error => {
         console.error('Error obteniendo datos de sesión:', error);
-        // Mostrar animaciones normales si hay error
-        const cards = document.querySelectorAll('.glass-card');
-        cards.forEach((card, index) => {
+        
+        console.log('⚠️ Error en datos de sesión - mostrando workspace inicial por defecto');
+        // Asegurar que el contenido inicial esté visible como respaldo
+        const tablesContainer = document.querySelector('.tables-container');
+        const mainContent = document.querySelector('.main-content');
+        
+        if (tablesContainer) {
+            tablesContainer.style.display = 'block';
+            tablesContainer.style.visibility = 'visible';
+            tablesContainer.style.opacity = '1';
+            console.log('✅ Panel de Control de Tablas visible (respaldo)');
+        }
+        
+        if (mainContent) {
+            mainContent.style.display = 'block';
+            mainContent.style.visibility = 'visible';
+            mainContent.style.opacity = '1';
+        }
+        
+        // Aplicar animaciones a botones y elementos visibles (si existen)
+        const buttons = document.querySelectorAll('button[onclick*="agregar"]');
+        buttons.forEach((button, index) => {
             setTimeout(() => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
-                card.style.transition = 'all 0.6s ease';
-                
-                setTimeout(() => {
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                }, 100);
-            }, index * 200);
+                button.style.opacity = '1';
+                button.style.transform = 'translateY(0)';
+            }, index * 100);
         });
     });
     
