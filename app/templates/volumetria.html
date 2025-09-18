@@ -4242,7 +4242,10 @@ function recalcularTotalesGeneral() {
 
     try {
         const table = document.getElementById('excel-table-general');
-        if (!table) return;
+        if (!table) {
+            console.warn('❌ Tabla excel-table-general no encontrada');
+            return;
+        }
 
         let totalCliente = 0;
         let totalCosto = 0;
@@ -4293,23 +4296,59 @@ function recalcularTotalesGeneral() {
                 });
             }
 
+            // Debug específico para entender el problema de visualización
+            console.log('🔍 Debug información de celdas de totales:', {
+                totalClienteCalculado: totalCliente,
+                totalCostoCalculado: totalCosto,
+                totalClienteCell: !!totalClienteCell,
+                totalCostoCell: !!totalCostoCell,
+                totalClienteCellContent: totalClienteCell?.textContent,
+                totalCostoCellContent: totalCostoCell?.textContent,
+                totalsRowChildren: totalsRow ? Array.from(totalsRow.children).map(child => child.textContent) : 'No totals row',
+                tablaId: table.id
+            });
+
             if (totalClienteCell) {
                 totalClienteCell.textContent = formatearMoneda(totalCliente);
-                console.log(`✅ Total Cliente actualizado: ${formatearMoneda(totalCliente)}`);
+                console.log(`✅ Total Cliente actualizado: ${formatearMoneda(totalCliente)} en celda:`, totalClienteCell);
+            } else {
+                console.warn(`❌ No se encontró celda Total Cliente en fila de totales`);
             }
             if (totalCostoCell) {
                 totalCostoCell.textContent = formatearMoneda(totalCosto);
-                console.log(`✅ Total Costo actualizado: ${formatearMoneda(totalCosto)}`);
+                console.log(`✅ Total Costo actualizado: ${formatearMoneda(totalCosto)} en celda:`, totalCostoCell);
+            } else {
+                console.warn(`❌ No se encontró celda Total Costo en fila de totales`);
             }
+            
+            // Verificar si las actualizaciones se aplicaron
+            setTimeout(() => {
+                const verificacionClienteCell = table.querySelector('.excel-totals-row')?.children[6];
+                const verificacionCostoCell = table.querySelector('.excel-totals-row')?.children[9];
+                console.log('🔍 Verificación post-actualización:', {
+                    clienteDisplayed: verificacionClienteCell?.textContent || 'NO ENCONTRADO',
+                    costoDisplayed: verificacionCostoCell?.textContent || 'NO ENCONTRADO',
+                    clienteCalculated: formatearMoneda(totalCliente),
+                    costoCalculated: formatearMoneda(totalCosto)
+                });
+            }, 100);
             if (gananciaTotalCell) {
                 gananciaTotalCell.textContent = formatearMoneda(ganancia);
-                console.log(`✅ Ganancia actualizada: ${formatearMoneda(ganancia)}`);
+                console.log(`✅ Ganancia actualizada: ${formatearMoneda(ganancia)} en celda:`, gananciaTotalCell);
+            } else {
+                console.warn(`❌ No se encontró celda Ganancia en fila de totales`);
             }
         } else {
             console.warn('⚠️ No se encontró la fila de totales (.excel-totals-row)');
         }
 
         console.log('✅ Totales calculados:', { totalCliente, totalCosto, ganancia, margen });
+        console.log('🔍 Debug estructura tabla:', {
+            tableFound: !!table,
+            totalsRowFound: !!totalsRow,
+            rowsFound: rows.length,
+            headerCount: table ? table.querySelectorAll('th').length : 0
+        });
 
         console.log('✅ Totales calculados en tabla:', { totalCliente, totalCosto, ganancia, margen });
         
@@ -13953,7 +13992,7 @@ function crearWorkspaceInicial() {
                     </div>
                     
                     <!-- Área donde se insertarán las tablas dinámicamente -->
-                    <div id="dynamic-tables-container">
+                    <div id="dynamic-tables-container-workspace">
                         <!-- Las tablas se agregarán aquí dinámicamente -->
                     </div>
                 </div>
@@ -14065,7 +14104,10 @@ function actualizarResumenFinanciero() {
                     indexTotalCliente,
                     indexTotalCosto,
                     totalClienteText: celdaTotalCliente?.textContent,
-                    totalCostoText: celdaTotalCosto?.textContent
+                    totalCostoText: celdaTotalCosto?.textContent,
+                    headersFound: Array.from(headers).map(h => h.textContent),
+                    totalClienteValue: celdaTotalCliente ? parseFloat(celdaTotalCliente.textContent.replace(/[^0-9.-]/g, '')) : 0,
+                    totalCostoValue: celdaTotalCosto ? parseFloat(celdaTotalCosto.textContent.replace(/[^0-9.-]/g, '')) : 0
                 });
             }
         });
@@ -14107,6 +14149,8 @@ function actualizarResumenFinanciero() {
                 }
             });
         });
+    } else {
+        console.error('❌ Error: dynamic-tables-container not found');
     }
     
     // Calcular ganancia y margen
