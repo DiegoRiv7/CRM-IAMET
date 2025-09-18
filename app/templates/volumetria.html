@@ -2062,11 +2062,16 @@ function generarVolumetriaParaGeneral(datos) {
     setTimeout(() => {
         const workspace = document.getElementById('tabla-volumetria');
         if (workspace) {
-            workspace.style.display = 'none'; // Ocultar temporalmente
+            workspace.style.display = 'block';
+            workspace.style.visibility = 'visible';
             workspace.offsetHeight; // Forzar reflow
-            workspace.style.display = 'block'; // Mostrar de nuevo
         }
-    }, 50); // Pequeño retraso para asegurar que el DOM esté listo
+        
+        // Restaurar scroll y body
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        window.scrollTo(0, 0);
+    }, 50);
 
     console.log('--- After reflow and animation closed ---');
     logElementDimensions('html', document.documentElement);
@@ -2143,6 +2148,19 @@ function generarVolumetriaParaGeneral(datos) {
         });
         
         console.log('✅ Volumetría generada exitosamente');
+        
+        // Mostrar mensaje de éxito al usuario
+        setTimeout(() => {
+            const workspace = document.getElementById('tabla-volumetria');
+            if (workspace && workspace.style.display !== 'none') {
+                console.log('✅ Workspace visible, volumetría lista');
+                // Scroll suave hacia la tabla generada
+                const tabla = document.getElementById('tabla-principal-precios');
+                if (tabla) {
+                    tabla.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        }, 500);
         
     }).catch(error => {
         console.error('❌ Error obteniendo productos del catálogo:', error);
@@ -13305,6 +13323,27 @@ function cerrarCuestionario() {
     if (modal) {
         modal.classList.add('hidden');
     }
+    
+    // Restaurar el estado del body y página
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.height = '';
+    
+    // Forzar un reflow del documento
+    document.documentElement.style.overflow = '';
+    
+    // Asegurar que el workspace principal esté visible
+    setTimeout(() => {
+        const workspace = document.getElementById('tabla-volumetria');
+        if (workspace) {
+            workspace.style.display = 'block';
+            workspace.style.visibility = 'visible';
+        }
+        
+        // Scroll hacia arriba para mostrar las tablas
+        window.scrollTo(0, 0);
+    }, 100);
 }
 
 // Función para procesar el cuestionario y generar tabla automáticamente
