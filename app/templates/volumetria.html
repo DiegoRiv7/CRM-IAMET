@@ -2434,6 +2434,14 @@ function poblarTablaGeneralConNodos(datos) {
         
         console.log('✅ Tabla General poblada exitosamente con productos de nodos de red');
         
+        // Forzar recálculo de totales después de poblar todos los datos
+        setTimeout(() => {
+            if (typeof recalcularTotalesGeneral === 'function') {
+                recalcularTotalesGeneral();
+                console.log('🔄 Totales recalculados después de poblar datos');
+            }
+        }, 200);
+        
     } catch (error) {
         console.error('❌ Error poblando tabla General con nodos:', error);
     }
@@ -4155,8 +4163,10 @@ function recalcularFilaExcelGeneral(rowIndex) {
         if (!row) return;
         
         const cantidad = parseFloat(row.querySelector('[data-field="cantidad"]').textContent) || 0;
-        const costoUnitario = parseFloat(row.querySelector('[data-field="costoUnitario"]').textContent.replace(/[$,]/g, '')) || 0;
-        const descuentoCliente = parseFloat(row.querySelector('[data-field="descuentoCliente"]').textContent.replace('%', '')) || 0;
+        const costoUnitario = parseFloat(row.querySelector('[data-field="costoUnitario"]').textContent.replace(/[$,\s]/g, '')) || 0;
+        const descuentoCliente = parseFloat(row.querySelector('[data-field="descuentoCliente"]').textContent.replace(/[%\s]/g, '')) || 0;
+        
+        console.log(`📊 Valores leídos fila ${rowIndex}:`, { cantidad, costoUnitario, descuentoCliente });
         
         // NUEVO: Obtener porcentaje de utilidad según categoría del cliente
         const categoriaCliente = obtenerCategoriaClienteActual();
@@ -4204,17 +4214,21 @@ function recalcularFilaExcelGeneral(rowIndex) {
         // 5. Ganancia = Total Cliente - Total Costo
         const ganancia = totalCliente - totalCosto;
         
+        console.log(`💰 Cálculos fila ${rowIndex}:`, {
+            precioLista,
+            precioUnitario,
+            totalCliente,
+            totalCosto,
+            ganancia
+        });
+        
         // Actualizar solo las celdas calculadas
         row.querySelector('[data-field="precioUnitario"]').textContent = formatearMoneda(precioUnitario);
         row.querySelector('[data-field="totalCliente"]').textContent = formatearMoneda(totalCliente);
         row.querySelector('[data-field="totalCosto"]').textContent = formatearMoneda(totalCosto);
         row.querySelector('[data-field="ganancia"]').textContent = formatearMoneda(ganancia);
 
-        grandTotalCliente += totalCliente;
-        grandTotalCosto += totalCosto;
-
         // Recalcular totales generales
-        recalcularTotalesGeneral(grandTotalCliente, grandTotalCosto);
         recalcularTotalesGeneral();
         
     } catch (error) {
@@ -4223,26 +4237,50 @@ function recalcularFilaExcelGeneral(rowIndex) {
 }
 
 // Función para recalcular totales generales
-function recalcularTotalesGeneral(totalCliente, totalCosto) {
+function recalcularTotalesGeneral() {
     console.log('📊 Recalculando totales generales');
 
     try {
         const table = document.getElementById('excel-table-general');
-        if (!table) return;        
+        if (!table) return;
+
+        let totalCliente = 0;
+        let totalCosto = 0;
+
+        // Sumar todos los totales de las filas (excluyendo la fila de totales)
+        const rows = table.querySelectorAll('.excel-row:not(.excel-totals-row)');
+        rows.forEach(row => {
+            const totalClienteCell = row.querySelector('[data-field="totalCliente"]');
+            const totalCostoCell = row.querySelector('[data-field="totalCosto"]');
+
+            if (totalClienteCell) {
+                const valor = parseFloat(totalClienteCell.textContent.replace(/[$,]/g, '')) || 0;
+                totalCliente += valor;
+            }
+
+            if (totalCostoCell) {
+                const valor = parseFloat(totalCostoCell.textContent.replace(/[$,]/g, '')) || 0;
+                totalCosto += valor;
+            }
+        });
+
         const ganancia = totalCliente - totalCosto;
         const margen = totalCliente > 0 ? (ganancia / totalCliente) * 100 : 0;
 
         // Actualizar fila de totales en la tabla
-        const totalsRow = table.querySelector('tfoot .excel-totals-row');
+        const totalsRow = table.querySelector('.excel-totals-row');
         if (totalsRow) {
-            const totalClienteCell = totalsRow.querySelector('#total-cliente-general');
-            const totalCostoCell = totalsRow.querySelector('#total-costo-general');
-            const gananciaTotalCell = totalsRow.querySelector('#ganancia-total-general');
+            // Buscar celdas de totales por posición (estructura estándar de tabla excel)
+            const totalClienteCell = totalsRow.children[6]; // Columna Total Cliente
+            const totalCostoCell = totalsRow.children[9];   // Columna Total Costo  
+            const gananciaTotalCell = totalsRow.children[10]; // Columna Ganancia
 
             if (totalClienteCell) totalClienteCell.textContent = formatearMoneda(totalCliente);
             if (totalCostoCell) totalCostoCell.textContent = formatearMoneda(totalCosto);
             if (gananciaTotalCell) gananciaTotalCell.textContent = formatearMoneda(ganancia);
         }
+
+        console.log('✅ Totales calculados:', { totalCliente, totalCosto, ganancia, margen });
 
         // Actualizar elementos del resumen
         const totalClienteEl = document.getElementById('total-cliente');
@@ -14070,14 +14108,7 @@ function actualizarResumenFinanciero() {
     });
 }
 
-// Función para formatear moneda
-function formatearMoneda(valor) {
-    return new Intl.NumberFormat('es-MX', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2
-    }).format(valor);
-}
+// Función para formatear moneda ya está definida anteriormente
 
 // Función para agregar tabla de gastos de instalación
 function agregarTablaGastosInstalacion() {
