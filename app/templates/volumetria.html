@@ -2419,13 +2419,11 @@ function poblarTablaGeneralConNodos(datos) {
                 if (celdaCostoUnitario) celdaCostoUnitario.textContent = `$${producto.costoUnitario.toFixed(2)}`;
                 
                 // Recalcular la fila para actualizar totales
-                setTimeout(() => {
-                    if (typeof recalcularFilaExcelGeneral === 'function') {
-                        recalcularFilaExcelGeneral(index);
-                    } else if (typeof recalcularFilaGeneral === 'function') {
-                        recalcularFilaGeneral(index);
-                    }
-                }, 100);
+                if (typeof recalcularFilaExcelGeneral === 'function') {
+                    recalcularFilaExcelGeneral(index);
+                } else if (typeof recalcularFilaGeneral === 'function') {
+                    recalcularFilaGeneral(index);
+                }
             }
         });
         
@@ -4213,8 +4211,7 @@ function recalcularFilaExcelGeneral(rowIndex) {
         row.querySelector('[data-field="totalCosto"]').textContent = formatearMoneda(totalCosto);
         row.querySelector('[data-field="ganancia"]').textContent = formatearMoneda(ganancia);
         
-        // Recalcular totales generales
-        recalcularTotalesGeneral();
+        // Recalcular totales generales al final
         
     } catch (error) {
         console.error('❌ Error recalculando fila general:', error);
