@@ -4207,6 +4207,7 @@ function recalcularFilaExcelGeneral(rowIndex) {
         
         // Actualizar solo las celdas calculadas
         row.querySelector('[data-field="precioUnitario"]').textContent = formatearMoneda(precioUnitario);
+        console.log(`Updating cell totalCliente with value: ${formatearMoneda(totalCliente)}`);
         row.querySelector('[data-field="totalCliente"]').textContent = formatearMoneda(totalCliente);
         row.querySelector('[data-field="totalCosto"]').textContent = formatearMoneda(totalCosto);
         row.querySelector('[data-field="ganancia"]').textContent = formatearMoneda(ganancia);
