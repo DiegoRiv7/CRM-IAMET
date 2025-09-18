@@ -3673,40 +3673,15 @@ function mostrarTablaVolumetriaGeneral(datos) {
                 <!-- Área de tablas -->
                 <div class="tables-container">
                     
-                    <!-- Panel de Control de Tablas -->
-                    <div class="mb-8">
-                        <div class="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
-                            <div class="text-center mb-6">
-                                <h2 class="text-2xl font-bold text-white mb-2">Panel de Control de Tablas</h2>
-                                <p class="text-gray-300 text-sm">Selecciona un componente de la izquierda para generar un cuestionario, o agrega manualmente las tablas que necesites</p>
-                            </div>
-                            
-                            <!-- Botones de Agregar Tabla -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <!-- Botón Agregar Gastos de Instalación -->
-                                <button onclick="agregarTablaGastosInstalacion()" class="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-6 py-4 rounded-lg shadow-lg transition duration-200 flex flex-col items-center space-y-2">
-                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    <span class="font-medium">Agregar Gastos de Instalación</span>
-                                    <span class="text-xs opacity-75">Costos adicionales</span>
-                                </button>
-                                
-                                <!-- Botón Agregar Mano de Obra -->
-                                <button onclick="agregarTablaManoObra()" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-4 rounded-lg shadow-lg transition duration-200 flex flex-col items-center space-y-2">
-                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                                    </svg>
-                                    <span class="font-medium">Agregar Mano de Obra</span>
-                                    <span class="text-xs opacity-75">Personal técnico</span>
-                                </button>
-                            </div>
-                            
-                            <!-- Área de Mensaje -->
-                            <div id="mensaje-tabla" class="mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg text-center hidden">
-                                <p class="text-blue-300 text-sm">💡 Selecciona un componente de la izquierda para comenzar con un cuestionario guiado</p>
-                            </div>
-                        </div>
+                    <!-- Botón + Para Agregar Volumetría -->
+                    <div class="mb-8 text-center">
+                        <button onclick="mostrarFormularioVolumetria()" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-6 rounded-xl shadow-lg transition duration-200 flex flex-col items-center space-y-3 mx-auto">
+                            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                            <span class="text-xl font-semibold">Agregar Volumetría</span>
+                            <span class="text-sm opacity-75">Agregar componentes al proyecto</span>
+                        </button>
                     </div>
                     
                     <!-- Contenedor dinámico para tablas -->
