@@ -1853,26 +1853,23 @@ function cerrarFormulario() {
 }
 
 function agregarVolumetria() {
-    // For now, just show the "nodos de red" form
-    mostrarFormularioNodosEnGeneral();
-}
-
-// NUEVA FUNCIÓN: Mostrar formulario específico de nodos en volumetría general
-function mostrarFormularioNodosEnGeneral() {
-    console.log('🌐 Mostrando formulario específico de nodos de red en volumetría general (dentro del modal)');
-    
-    const modal = document.getElementById('component-questionnaire-modal');
-    const titleElement = modal.querySelector('#modal-title');
-    const contentElement = modal.querySelector('#modal-content');
-    
-    if (!modal || !titleElement || !contentElement) {
-        console.error('❌ Elementos del modal no encontrados para mostrar formulario de nodos.');
+    const container = document.getElementById('formulario-nodos-container');
+    if (!container) {
+        console.error('❌ Contenedor para formulario de nodos no encontrado');
         return;
     }
+    const formHTML = getFormularioNodosHTML();
+    container.innerHTML = formHTML;
 
-    titleElement.textContent = 'Formulario Nodos de Red';
-    
-    const formHTML = `
+    // Configurar eventos del formulario
+    document.getElementById('form-nodos-general').addEventListener('submit', function(e) {
+        e.preventDefault();
+        procesarFormularioNodosGeneral();
+    });
+}
+
+function getFormularioNodosHTML() {
+    return `
         <form id="form-nodos-general" class="space-y-8">
             <!-- Parte 1: Cableado -->
             <div class="border border-gray-600 rounded-xl p-8 bg-gray-800">
@@ -1944,6 +1941,24 @@ function mostrarFormularioNodosEnGeneral() {
             </div>
         </form>
     `;
+}
+
+// NUEVA FUNCIÓN: Mostrar formulario específico de nodos en volumetría general
+function mostrarFormularioNodosEnGeneral() {
+    console.log('🌐 Mostrando formulario específico de nodos de red en volumetría general (dentro del modal)');
+    
+    const modal = document.getElementById('component-questionnaire-modal');
+    const titleElement = modal.querySelector('#modal-title');
+    const contentElement = modal.querySelector('#modal-content');
+    
+    if (!modal || !titleElement || !contentElement) {
+        console.error('❌ Elementos del modal no encontrados para mostrar formulario de nodos.');
+        return;
+    }
+
+    titleElement.textContent = 'Formulario Nodos de Red';
+    
+    const formHTML = getFormularioNodosHTML();
     
     contentElement.innerHTML = formHTML;
     modal.classList.remove('hidden'); // Show the modal
