@@ -13937,12 +13937,499 @@ function crearWorkspaceInicial() {
     }
 }
 
+// ========================================
+// FUNCIONES DE CÁLCULO Y RESUMEN FINANCIERO
+// ========================================
+
+// Función para actualizar el resumen financiero principal
+function actualizarResumenFinanciero() {
+    console.log('💰 Actualizando resumen financiero...');
+    
+    let totalCliente = 0;
+    let totalCosto = 0;
+    let totalItems = 0;
+    let tablasActivas = 0;
+    
+    // Buscar todas las tablas dentro del contenedor dinámico
+    const container = document.getElementById('dynamic-tables-container');
+    if (container) {
+        const todasLasTablas = container.querySelectorAll('table, .tabla-gastos-instalacion, .tabla-mano-obra, .tabla-principal, .tabla-componente');
+        
+        todasLasTablas.forEach(tabla => {
+            tablasActivas++;
+            
+            // Identificar el tipo de tabla por su contenedor padre
+            const contenedorTabla = tabla.closest('[id*="tabla-"]') || tabla.closest('div');
+            let esTablaGastos = contenedorTabla && (contenedorTabla.classList.contains('tabla-gastos-instalacion') || contenedorTabla.id.includes('gastos'));
+            let esTablaManoObra = contenedorTabla && (contenedorTabla.classList.contains('tabla-mano-obra') || contenedorTabla.id.includes('mano-obra'));
+            
+            // Buscar filas de datos en la tabla
+            const filas = tabla.querySelectorAll('tbody tr, tr');
+            filas.forEach(fila => {
+                // Buscar inputs o celdas con valores monetarios
+                const inputs = fila.querySelectorAll('input[type="number"], input[name*="total"], input[name*="precio"], input[name*="costo"]');
+                const celdas = fila.querySelectorAll('td, .excel-cell');
+                
+                // Procesar inputs de formularios
+                inputs.forEach(input => {
+                    const valor = parseFloat(input.value) || 0;
+                    if (valor > 0) {
+                        totalItems++;
+                        
+                        // Lógica según el nombre del campo
+                        if (input.name && (input.name.includes('total') || input.name.includes('precio'))) {
+                            if (esTablaGastos || esTablaManoObra) {
+                                // Gastos de instalación y mano de obra van a TOTAL CLIENTE (se cobran al cliente)
+                                totalCliente += valor;
+                            } else if (input.name.includes('cliente') || input.name.includes('venta')) {
+                                totalCliente += valor;
+                            } else if (input.name.includes('proveedor') || input.name.includes('costo')) {
+                                totalCosto += valor;
+                            } else {
+                                // Por defecto, si no podemos identificar el tipo, asumimos que es total cliente
+                                totalCliente += valor;
+                            }
+                        }
+                    }
+                });
+                
+                // Procesar celdas de tablas estáticas (generadas por componentes)
+                celdas.forEach((celda, index) => {
+                    const texto = celda.textContent || celda.innerText || '';
+                    const valor = parseFloat(texto.replace(/[^0-9.-]/g, '')) || 0;
+                    
+                    if (valor > 0 && (texto.includes('$') || texto.includes('USD') || index >= 3)) {
+                        totalItems++;
+                        
+                        // Para tablas de gastos/mano de obra: todo va a total cliente
+                        if (esTablaGastos || esTablaManoObra) {
+                            totalCliente += valor;
+                        } else {
+                            // Para tablas de componentes: dividir entre cliente y costo
+                            // Heurística mejorada para identificar columnas
+                            const textoLower = texto.toLowerCase();
+                            const esPrecioCosto = textoLower.includes('costo') || textoLower.includes('proveedor') || 
+                                                textoLower.includes('compra') || textoLower.includes('cost') ||
+                                                index === celdas.length - 3; // Penúltima columna suele ser costo
+                            const esPrecioCliente = textoLower.includes('cliente') || textoLower.includes('venta') || 
+                                                  textoLower.includes('precio') || index === celdas.length - 1 || 
+                                                  index === celdas.length - 2; // Últimas columnas suelen ser precio cliente
+                            
+                            if (esPrecioCosto) {
+                                totalCosto += valor;
+                            } else if (esPrecioCliente) {
+                                totalCliente += valor;
+                            } else {
+                                // Si no podemos identificar claramente, usar posición de columna
+                                if (index >= celdas.length - 2) {
+                                    totalCliente += valor; // Últimas columnas van a cliente
+                                } else if (index >= celdas.length - 4) {
+                                    totalCosto += valor; // Columnas anteriores van a costo
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        });
+    }
+    
+    // Calcular ganancia y margen
+    const ganancia = totalCliente - totalCosto;
+    const margen = totalCliente > 0 ? (ganancia / totalCliente) * 100 : 0;
+    
+    // Actualizar elementos en el DOM
+    const totalClienteEl = document.getElementById('total-cliente');
+    const totalCostoEl = document.getElementById('total-costo');
+    const gananciaTotalEl = document.getElementById('ganancia-total');
+    const margenPorcentajeEl = document.getElementById('margen-porcentaje');
+    const totalItemsEl = document.getElementById('total-items');
+    const tablasActivasEl = document.getElementById('tablas-activas');
+    
+    if (totalClienteEl) totalClienteEl.textContent = formatearMoneda(totalCliente);
+    if (totalCostoEl) totalCostoEl.textContent = formatearMoneda(totalCosto);
+    if (gananciaTotalEl) gananciaTotalEl.textContent = formatearMoneda(ganancia);
+    if (margenPorcentajeEl) margenPorcentajeEl.textContent = `${margen.toFixed(1)}%`;
+    if (totalItemsEl) totalItemsEl.textContent = totalItems.toString();
+    if (tablasActivasEl) tablasActivasEl.textContent = tablasActivas.toString();
+    
+    // Mostrar el resumen si hay datos
+    const resumenVolumetria = document.getElementById('resumen-volumetria');
+    if (resumenVolumetria && (totalItems > 0 || tablasActivas > 0)) {
+        resumenVolumetria.classList.remove('hidden');
+    }
+    
+    console.log('✅ Resumen financiero actualizado:', {
+        totalCliente,
+        totalCosto,
+        ganancia,
+        margen: `${margen.toFixed(1)}%`,
+        totalItems,
+        tablasActivas
+    });
+}
+
+// Función para formatear moneda
+function formatearMoneda(valor) {
+    return new Intl.NumberFormat('es-MX', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2
+    }).format(valor);
+}
+
+// Función para agregar tabla de gastos de instalación
+function agregarTablaGastosInstalacion() {
+    console.log('💼 Agregando tabla de gastos de instalación...');
+    
+    const container = document.getElementById('dynamic-tables-container');
+    if (!container) {
+        console.error('❌ No se encontró el contenedor de tablas dinámicas');
+        return;
+    }
+    
+    const tablaId = `tabla-gastos-${Date.now()}`;
+    const tablaHTML = `
+        <div class="tabla-gastos-instalacion mb-8" id="${tablaId}">
+            <div class="bg-gray-800/90 backdrop-blur-xl border border-purple-500/30 rounded-2xl shadow-2xl overflow-hidden">
+                <div class="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4 flex justify-between items-center">
+                    <h3 class="text-white font-bold text-lg">💰 Gastos de Instalación</h3>
+                    <button onclick="eliminarTabla('${tablaId}')" class="text-white hover:text-red-300 transition duration-200">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-white font-medium">Descripción</th>
+                                <th class="px-4 py-3 text-left text-white font-medium">Cantidad</th>
+                                <th class="px-4 py-3 text-left text-white font-medium">Precio Unitario</th>
+                                <th class="px-4 py-3 text-left text-white font-medium">Total</th>
+                                <th class="px-4 py-3 text-center text-white font-medium">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Las filas se agregarán dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="bg-gray-700 px-6 py-3 flex justify-between items-center">
+                    <button onclick="agregarFilaGastos('${tablaId}')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition duration-200">
+                        + Agregar Gasto
+                    </button>
+                    <div class="text-white font-bold">
+                        Total: <span class="text-purple-300" id="${tablaId}-total">$0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', tablaHTML);
+    
+    // Agregar primera fila automáticamente
+    setTimeout(() => {
+        agregarFilaGastos(tablaId);
+    }, 100);
+    
+    actualizarResumenFinanciero();
+}
+
+// Función para agregar tabla de mano de obra
+function agregarTablaManoObra() {
+    console.log('👷 Agregando tabla de mano de obra...');
+    
+    const container = document.getElementById('dynamic-tables-container');
+    if (!container) {
+        console.error('❌ No se encontró el contenedor de tablas dinámicas');
+        return;
+    }
+    
+    const tablaId = `tabla-mano-obra-${Date.now()}`;
+    const tablaHTML = `
+        <div class="tabla-mano-obra mb-8" id="${tablaId}">
+            <div class="bg-gray-800/90 backdrop-blur-xl border border-green-500/30 rounded-2xl shadow-2xl overflow-hidden">
+                <div class="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 flex justify-between items-center">
+                    <h3 class="text-white font-bold text-lg">👷 Mano de Obra</h3>
+                    <button onclick="eliminarTabla('${tablaId}')" class="text-white hover:text-red-300 transition duration-200">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-white font-medium">Descripción</th>
+                                <th class="px-4 py-3 text-left text-white font-medium">Cantidad</th>
+                                <th class="px-4 py-3 text-left text-white font-medium">Precio por Hora/Día</th>
+                                <th class="px-4 py-3 text-left text-white font-medium">Total</th>
+                                <th class="px-4 py-3 text-center text-white font-medium">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Las filas se agregarán dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="bg-gray-700 px-6 py-3 flex justify-between items-center">
+                    <button onclick="agregarFilaManoObra('${tablaId}')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition duration-200">
+                        + Agregar Personal
+                    </button>
+                    <div class="text-white font-bold">
+                        Total: <span class="text-green-300" id="${tablaId}-total">$0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', tablaHTML);
+    
+    // Agregar primera fila automáticamente
+    setTimeout(() => {
+        agregarFilaManoObra(tablaId);
+    }, 100);
+    
+    actualizarResumenFinanciero();
+}
+
+// Función para agregar fila a tabla de gastos
+function agregarFilaGastos(tablaId) {
+    const tabla = document.getElementById(tablaId);
+    if (!tabla) return;
+    
+    const tbody = tabla.querySelector('tbody');
+    const filaId = `fila-${Date.now()}`;
+    
+    const filaHTML = `
+        <tr id="${filaId}" class="border-b border-gray-600">
+            <td class="px-4 py-3">
+                <input type="text" name="descripcion_${filaId}" placeholder="Descripción del gasto" 
+                       class="w-full bg-gray-600 text-white px-3 py-2 rounded border border-gray-500 focus:border-purple-400 focus:outline-none">
+            </td>
+            <td class="px-4 py-3">
+                <input type="number" name="cantidad_${filaId}" placeholder="1" value="1" min="0" step="1"
+                       class="w-full bg-gray-600 text-white px-3 py-2 rounded border border-gray-500 focus:border-purple-400 focus:outline-none"
+                       onchange="calcularTotalFila('${filaId}', '${tablaId}')">
+            </td>
+            <td class="px-4 py-3">
+                <input type="number" name="precio_${filaId}" placeholder="0.00" min="0" step="0.01"
+                       class="w-full bg-gray-600 text-white px-3 py-2 rounded border border-gray-500 focus:border-purple-400 focus:outline-none"
+                       onchange="calcularTotalFila('${filaId}', '${tablaId}')">
+            </td>
+            <td class="px-4 py-3">
+                <input type="number" name="total_${filaId}" placeholder="0.00" readonly
+                       class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-500">
+            </td>
+            <td class="px-4 py-3 text-center">
+                <button onclick="eliminarFila('${filaId}', '${tablaId}')" class="text-red-400 hover:text-red-300 transition duration-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+            </td>
+        </tr>
+    `;
+    
+    tbody.insertAdjacentHTML('beforeend', filaHTML);
+}
+
+// Función para agregar fila a tabla de mano de obra
+function agregarFilaManoObra(tablaId) {
+    const tabla = document.getElementById(tablaId);
+    if (!tabla) return;
+    
+    const tbody = tabla.querySelector('tbody');
+    const filaId = `fila-${Date.now()}`;
+    
+    const filaHTML = `
+        <tr id="${filaId}" class="border-b border-gray-600">
+            <td class="px-4 py-3">
+                <input type="text" name="descripcion_${filaId}" placeholder="Tipo de personal (ej: Técnico, Ingeniero)" 
+                       class="w-full bg-gray-600 text-white px-3 py-2 rounded border border-gray-500 focus:border-green-400 focus:outline-none">
+            </td>
+            <td class="px-4 py-3">
+                <input type="number" name="cantidad_${filaId}" placeholder="1" value="1" min="0" step="1"
+                       class="w-full bg-gray-600 text-white px-3 py-2 rounded border border-gray-500 focus:border-green-400 focus:outline-none"
+                       onchange="calcularTotalFila('${filaId}', '${tablaId}')">
+            </td>
+            <td class="px-4 py-3">
+                <input type="number" name="precio_${filaId}" placeholder="0.00" min="0" step="0.01"
+                       class="w-full bg-gray-600 text-white px-3 py-2 rounded border border-gray-500 focus:border-green-400 focus:outline-none"
+                       onchange="calcularTotalFila('${filaId}', '${tablaId}')">
+            </td>
+            <td class="px-4 py-3">
+                <input type="number" name="total_${filaId}" placeholder="0.00" readonly
+                       class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-500">
+            </td>
+            <td class="px-4 py-3 text-center">
+                <button onclick="eliminarFila('${filaId}', '${tablaId}')" class="text-red-400 hover:text-red-300 transition duration-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+            </td>
+        </tr>
+    `;
+    
+    tbody.insertAdjacentHTML('beforeend', filaHTML);
+}
+
+// Función para calcular total de una fila
+function calcularTotalFila(filaId, tablaId) {
+    const cantidadInput = document.querySelector(`input[name="cantidad_${filaId}"]`);
+    const precioInput = document.querySelector(`input[name="precio_${filaId}"]`);
+    const totalInput = document.querySelector(`input[name="total_${filaId}"]`);
+    
+    if (cantidadInput && precioInput && totalInput) {
+        const cantidad = parseFloat(cantidadInput.value) || 0;
+        const precio = parseFloat(precioInput.value) || 0;
+        const total = cantidad * precio;
+        
+        totalInput.value = total.toFixed(2);
+        
+        // Actualizar total de la tabla
+        actualizarTotalTabla(tablaId);
+        
+        // Actualizar resumen general
+        actualizarResumenFinanciero();
+    }
+}
+
+// Función para actualizar total de una tabla específica
+function actualizarTotalTabla(tablaId) {
+    const tabla = document.getElementById(tablaId);
+    if (!tabla) return;
+    
+    let total = 0;
+    const totalInputs = tabla.querySelectorAll('input[name*="total_"]');
+    totalInputs.forEach(input => {
+        total += parseFloat(input.value) || 0;
+    });
+    
+    const totalDisplay = document.getElementById(`${tablaId}-total`);
+    if (totalDisplay) {
+        totalDisplay.textContent = formatearMoneda(total);
+    }
+}
+
+// Función para eliminar una fila
+function eliminarFila(filaId, tablaId) {
+    const fila = document.getElementById(filaId);
+    if (fila) {
+        fila.remove();
+        actualizarTotalTabla(tablaId);
+        actualizarResumenFinanciero();
+    }
+}
+
+// Función para eliminar una tabla completa
+function eliminarTabla(tablaId) {
+    const tabla = document.getElementById(tablaId);
+    if (tabla) {
+        tabla.remove();
+        actualizarResumenFinanciero();
+    }
+}
+
+// Funciones para exportar (placeholder)
+function exportarPDF() {
+    console.log('📄 Exportando PDF...');
+    alert('Función de exportar PDF en desarrollo');
+}
+
+function exportarCSVGeneral() {
+    console.log('📊 Exportando CSV...');
+    alert('Función de exportar CSV en desarrollo');
+}
+
+// ========================================
+// OBSERVADORES Y LISTENERS AUTOMÁTICOS
+// ========================================
+
+// Función para configurar observador de cambios en el contenedor dinámico
+function configurarObservadorTablas() {
+    const container = document.getElementById('dynamic-tables-container');
+    if (!container) return;
+    
+    // Observer para detectar cuando se agregan nuevas tablas
+    const observer = new MutationObserver(function(mutations) {
+        let huboChangios = false;
+        
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList') {
+                if (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0) {
+                    huboChangios = true;
+                }
+            }
+        });
+        
+        if (huboChangios) {
+            console.log('📊 Detectados cambios en tablas - actualizando resumen...');
+            setTimeout(() => {
+                actualizarResumenFinanciero();
+            }, 100);
+        }
+    });
+    
+    observer.observe(container, {
+        childList: true,
+        subtree: true,
+        attributes: false
+    });
+    
+    console.log('👁️ Observador de tablas configurado');
+}
+
+// Función para agregar listeners de input a todas las tablas existentes
+function configurarListenersInputs() {
+    const container = document.getElementById('dynamic-tables-container');
+    if (!container) return;
+    
+    // Agregar listeners a todos los inputs existentes
+    const inputs = container.querySelectorAll('input[type="number"], input[name*="total"], input[name*="precio"], input[name*="costo"]');
+    inputs.forEach(input => {
+        input.addEventListener('change', () => {
+            console.log('💰 Input modificado - actualizando resumen...');
+            actualizarResumenFinanciero();
+        });
+        
+        input.addEventListener('input', () => {
+            // Actualización en tiempo real mientras se escribe
+            clearTimeout(input.updateTimeout);
+            input.updateTimeout = setTimeout(() => {
+                actualizarResumenFinanciero();
+            }, 500);
+        });
+    });
+    
+    console.log(`🎛️ Configurados listeners para ${inputs.length} inputs`);
+}
+
+// ========================================
+// INICIALIZACIÓN
+// ========================================
+
 // Restaurar la carga automática del contenido inicial
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Iniciando volumetría integral directamente...');
     
     // Ejecutar inmediatamente para mostrar el workspace inicial
     crearVolumetria('general');
+    
+    // Configurar observadores después de un breve delay
+    setTimeout(() => {
+        configurarObservadorTablas();
+        configurarListenersInputs();
+        
+        // Actualizar resumen inicial
+        actualizarResumenFinanciero();
+    }, 1000);
 });
 </script>
 
