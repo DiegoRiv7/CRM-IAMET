@@ -1997,6 +1997,13 @@ function procesarFormularioNodosGeneral() {
         });
         
         // Cerrar formulario y mostrar animación
+        console.log('--- Before closing modal and showing animation ---');
+        logElementDimensions('html', document.documentElement);
+        logElementDimensions('body', document.body);
+        logElementDimensions('tabla-volumetria', document.getElementById('tabla-volumetria'));
+        logElementDimensions('main-workspace', document.getElementById('main-workspace'));
+        logElementDimensions('tables-container', document.getElementById('tables-container'));
+
         cerrarCuestionario(); // Cerrar el modal
         mostrarAnimacionCarga();
         
@@ -2057,6 +2064,13 @@ function generarVolumetriaParaGeneral(datos) {
             workspace.style.display = 'block'; // Mostrar de nuevo
         }
     }, 50); // Pequeño retraso para asegurar que el DOM esté listo
+
+    console.log('--- After reflow and animation closed ---');
+    logElementDimensions('html', document.documentElement);
+    logElementDimensions('body', document.body);
+    logElementDimensions('tabla-volumetria', document.getElementById('tabla-volumetria'));
+    logElementDimensions('main-workspace', document.getElementById('main-workspace'));
+    logElementDimensions('tables-container', document.getElementById('tables-container'));
     // Asegurarse de que el workspace principal de volumetría esté visible
     const workspace = document.getElementById('tabla-volumetria');
     if (workspace) {
@@ -8921,6 +8935,13 @@ function getCookie(name) {
 
 // Animaciones de entrada
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('--- DOMContentLoaded: Initial Layout Check ---');
+    logElementDimensions('html', document.documentElement);
+    logElementDimensions('body', document.body);
+    logElementDimensions('tabla-volumetria', document.getElementById('tabla-volumetria'));
+    logElementDimensions('main-workspace', document.getElementById('main-workspace'));
+    logElementDimensions('tables-container', document.getElementById('tables-container'));
+
     console.log('🚀 Inicializando volumetría con recuperación de estado');
     
     // Cargar datos de oportunidad si están disponibles en la sesión
@@ -12479,6 +12500,20 @@ document.addEventListener('DOMContentLoaded', () => {
 </style>
 
 <script>
+function logElementDimensions(name, element) {
+    if (!element) {
+        console.log(`Element ${name} not found.`);
+        return;
+    }
+    const rect = element.getBoundingClientRect();
+    console.log(`--- ${name} Dimensions ---`);
+    console.log(`  Offset: W=${element.offsetWidth}, H=${element.offsetHeight}`);
+    console.log(`  Client: W=${element.clientWidth}, H=${element.clientHeight}`);
+    console.log(`  Scroll: W=${element.scrollWidth}, H=${element.scrollHeight}`);
+    console.log(`  Rect: X=${rect.x}, Y=${rect.y}, W=${rect.width}, H=${rect.height}`);
+    console.log(`  Computed Style: position=${getComputedStyle(element).position}, top=${getComputedStyle(element).top}, left=${getComputedStyle(element).left}, overflow=${getComputedStyle(element).overflow}, display=${getComputedStyle(element).display}, flex-direction=${getComputedStyle(element).flexDirection}, height=${getComputedStyle(element).height}, min-height=${getComputedStyle(element).minHeight}, margin-top=${getComputedStyle(element).marginTop}, padding-top=${getComputedStyle(element).paddingTop}`);
+}
+
 // Script para ocultar dock automáticamente al detectar volumetría general
 document.addEventListener('DOMContentLoaded', function() {
     // Verificar si ya estamos en modo volumetría
