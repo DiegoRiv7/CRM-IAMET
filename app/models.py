@@ -170,6 +170,15 @@ class TodoItem(models.Model):
     bitrix_deal_id = models.IntegerField(blank=True, null=True, verbose_name="ID de Oportunidad en Bitrix24")
     bitrix_company_id = models.IntegerField(blank=True, null=True, verbose_name="ID de Compañía en Bitrix24")
     bitrix_stage_id = models.CharField(max_length=50, blank=True, null=True, verbose_name="ID de Etapa en Bitrix24")
+    
+    # Nuevo campo para CRM avanzado
+    estado_crm = models.CharField(
+        max_length=50, 
+        default='nueva',
+        verbose_name="Estado CRM",
+        help_text="Estado detallado para seguimiento tipo Bitrix24"
+    )
+    
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Última Actualización")
 
@@ -1076,3 +1085,209 @@ class ImportacionProductos(models.Model):
         verbose_name = "Importación de Productos"
         verbose_name_plural = "Importaciones de Productos"
         ordering = ['-fecha_importacion']
+
+
+# ===============================================
+# MODELOS PARA CRM AVANZADO DE OPORTUNIDADES  
+# ===============================================
+
+class OportunidadEstado(models.Model):
+    """
+    Estados personalizados para el seguimiento detallado de oportunidades (tipo Bitrix24)
+    """
+    ESTADO_CHOICES = [
+        ('nueva', 'Nueva'),
+        ('contacto_inicial', 'Contacto Inicial'),
+        ('calificada', 'Calificada'),
+        ('propuesta', 'Propuesta Enviada'),
+        ('negociacion', 'En Negociación'),
+        ('cotizacion_enviada', 'Cotización Enviada'),
+        ('seguimiento', 'En Seguimiento'),
+        ('vendida', 'Vendida'),
+        ('entregada', 'Entregada'),
+        ('facturada', 'Facturada'),
+        ('pagada', 'Pagada'),
+        ('perdida', 'Perdida'),
+        ('cancelada', 'Cancelada'),
+        ('pausada', 'Pausada'),
+    ]
+    
+    COLOR_CHOICES = [
+        ('#007AFF', 'Azul'),
+        ('#32D74B', 'Verde'),
+        ('#FFD60A', 'Amarillo'),
+        ('#FF9F0A', 'Naranja'),
+        ('#FF453A', 'Rojo'),
+        ('#AF52DE', 'Morado'),
+        ('#8E8E93', 'Gris'),
+    ]
+    
+    codigo = models.CharField(max_length=50, choices=ESTADO_CHOICES, unique=True, verbose_name="Código del Estado")
+    nombre = models.CharField(max_length=100, verbose_name="Nombre del Estado")
+    descripcion = models.TextField(blank=True, null=True, verbose_name="Descripción")
+    color = models.CharField(max_length=7, choices=COLOR_CHOICES, default='#007AFF', verbose_name="Color")
+    orden = models.PositiveIntegerField(default=0, verbose_name="Orden de Visualización")
+    activo = models.BooleanField(default=True, verbose_name="Estado Activo")
+    
+    class Meta:
+        verbose_name = "Estado de Oportunidad"
+        verbose_name_plural = "Estados de Oportunidades"
+        ordering = ['orden', 'nombre']
+    
+    def __str__(self):
+        return self.nombre
+
+
+class OportunidadActividad(models.Model):
+    """
+    Timeline de actividades para cada oportunidad (estilo Bitrix24)
+    """
+    TIPO_ACTIVIDAD_CHOICES = [
+        ('creacion', '🆕 Oportunidad Creada'),
+        ('cambio_estado', '🔄 Cambio de Estado'),
+        ('comentario', '💬 Comentario'),
+        ('llamada', '📞 Llamada'),
+        ('email', '📧 Email'),
+        ('reunion', '🤝 Reunión'),
+        ('cotizacion', '📄 Cotización'),
+        ('documento', '📎 Documento'),
+        ('tarea', '✅ Tarea'),
+        ('seguimiento', '👁️ Seguimiento'),
+        ('propuesta', '📋 Propuesta'),
+        ('sistema', '⚙️ Sistema'),
+    ]
+    
+    oportunidad = models.ForeignKey(
+        TodoItem, 
+        on_delete=models.CASCADE, 
+        related_name='actividades',
+        verbose_name="Oportunidad"
+    )
+    
+    tipo = models.CharField(
+        max_length=20, 
+        choices=TIPO_ACTIVIDAD_CHOICES,
+        verbose_name="Tipo de Actividad"
+    )
+    
+    titulo = models.CharField(max_length=200, verbose_name="Título")
+    descripcion = models.TextField(blank=True, null=True, verbose_name="Descripción")
+    
+    usuario = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE,
+        verbose_name="Usuario"
+    )
+    
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
+    
+    # Campos opcionales para diferentes tipos de actividad
+    estado_anterior = models.CharField(max_length=50, blank=True, null=True, verbose_name="Estado Anterior")
+    estado_nuevo = models.CharField(max_length=50, blank=True, null=True, verbose_name="Estado Nuevo")
+    monto_anterior = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, verbose_name="Monto Anterior")
+    monto_nuevo = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, verbose_name="Monto Nuevo")
+    
+    class Meta:
+        verbose_name = "Actividad de Oportunidad"
+        verbose_name_plural = "Actividades de Oportunidades"
+        ordering = ['-fecha_creacion']
+    
+    def __str__(self):
+        return f"{self.titulo} - {self.oportunidad.oportunidad}"
+
+
+class OportunidadComentario(models.Model):
+    """
+    Comentarios en el timeline de la oportunidad
+    """
+    oportunidad = models.ForeignKey(
+        TodoItem,
+        on_delete=models.CASCADE,
+        related_name='comentarios',
+        verbose_name="Oportunidad"
+    )
+    
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name="Usuario"
+    )
+    
+    contenido = models.TextField(verbose_name="Contenido del Comentario")
+    
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
+    fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Última Actualización")
+    
+    # Para respuestas a comentarios
+    comentario_padre = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        related_name='respuestas',
+        verbose_name="Comentario Padre"
+    )
+    
+    class Meta:
+        verbose_name = "Comentario de Oportunidad"
+        verbose_name_plural = "Comentarios de Oportunidades"
+        ordering = ['-fecha_creacion']
+    
+    def __str__(self):
+        return f"Comentario de {self.usuario.username} en {self.oportunidad.oportunidad}"
+
+
+class OportunidadArchivo(models.Model):
+    """
+    Archivos adjuntos a las oportunidades
+    """
+    TIPO_ARCHIVO_CHOICES = [
+        ('imagen', '🖼️ Imagen'),
+        ('documento', '📄 Documento'),
+        ('cotizacion', '📋 Cotización'),
+        ('contrato', '📝 Contrato'),
+        ('presentacion', '📊 Presentación'),
+        ('otro', '📎 Otro'),
+    ]
+    
+    oportunidad = models.ForeignKey(
+        TodoItem,
+        on_delete=models.CASCADE,
+        related_name='archivos',
+        verbose_name="Oportunidad"
+    )
+    
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name="Subido por"
+    )
+    
+    archivo = models.FileField(
+        upload_to='oportunidades_archivos/%Y/%m/',
+        verbose_name="Archivo"
+    )
+    
+    nombre_original = models.CharField(max_length=255, verbose_name="Nombre Original")
+    tipo = models.CharField(max_length=20, choices=TIPO_ARCHIVO_CHOICES, default='otro', verbose_name="Tipo de Archivo")
+    descripcion = models.TextField(blank=True, null=True, verbose_name="Descripción")
+    
+    fecha_subida = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Subida")
+    tamaño = models.PositiveIntegerField(default=0, verbose_name="Tamaño (bytes)")
+    
+    class Meta:
+        verbose_name = "Archivo de Oportunidad"
+        verbose_name_plural = "Archivos de Oportunidades"
+        ordering = ['-fecha_subida']
+    
+    def __str__(self):
+        return f"{self.nombre_original} - {self.oportunidad.oportunidad}"
+    
+    @property
+    def tamaño_legible(self):
+        """Convierte bytes a formato legible"""
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if self.tamaño < 1024.0:
+                return f"{self.tamaño:.1f} {unit}"
+            self.tamaño /= 1024.0
+        return f"{self.tamaño:.1f} TB"

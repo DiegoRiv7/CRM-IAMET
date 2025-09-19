@@ -35,6 +35,11 @@ urlpatterns = [
     path("nueva-oportunidad/", views.nueva_oportunidad, name="nueva_oportunidad"),
     path("api/buscar-clientes/", views.api_buscar_clientes, name="api_buscar_clientes"),
     path("api/buscar-contactos/", views.api_buscar_contactos, name="api_buscar_contactos"),
+    
+    # APIs para CRM avanzado (solo superusuarios)
+    path("api/cambiar-estado-oportunidad/<int:oportunidad_id>/", views.cambiar_estado_oportunidad, name="cambiar_estado_oportunidad"),
+    path("api/agregar-comentario-oportunidad/<int:oportunidad_id>/", views.agregar_comentario_oportunidad, name="agregar_comentario_oportunidad"),
+    path("api/timeline-oportunidad/<int:oportunidad_id>/", views.timeline_oportunidad, name="timeline_oportunidad"),
 
     # Rutas de autenticación (registro, login, logout)
     path("register/", views.register, name="register"),

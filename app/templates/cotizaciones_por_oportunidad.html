@@ -1,564 +1,868 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ tipo_contenido|title }} de {{ oportunidad.oportunidad }}{% endblock %}
+{% block title %}{{ oportunidad.oportunidad }}{% endblock %}
 
 {% block content %}
-
+{% if user.is_superuser %}
+<!-- CRM AVANZADO SOLO PARA SUPERUSUARIOS -->
 <style>
     :root {
-        --apple-background-secondary: rgba(29, 29, 31, 0.7);
-        --apple-separator: #38383A;
+        /* Apple Color System */
         --apple-blue: #007AFF;
         --apple-green: #32D74B;
+        --apple-orange: #FF9F0A;
+        --apple-red: #FF453A;
+        --apple-purple: #AF52DE;
         --apple-yellow: #FFD60A;
-        --apple-orange: #FF6B35;
+        --apple-gray: #8E8E93;
+        --apple-gray-light: #F2F2F7;
+        --apple-background: #000000;
+        --apple-background-secondary: #1D1D1F;
+        --apple-background-tertiary: #2C2C2E;
         --apple-label: #FFFFFF;
         --apple-label-secondary: #EBEBF599;
+        --apple-separator: #38383A;
+        --apple-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif;
     }
 
-    /* Light theme variables - Summer Pink Edition */
-    .light-theme {
-        --apple-background-secondary: rgba(255, 240, 245, 0.8);
-        --apple-separator: rgba(255, 107, 157, 0.25);
-        --apple-blue: #FF6B9D;
-        --apple-green: #FF91A4;
-        --apple-yellow: #FFB6C1;
-        --apple-orange: #FF8C69;
-        --apple-label: #2D1B2E;
-        --apple-label-secondary: #4A2B4D99;
-        
-        /* Summer background gradients */
-        background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%);
-    }
-    
-    /* Apply summer gradient to light theme body */
-    .light-theme body {
-        background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%) !important;
-        background-attachment: fixed;
+    body {
+        background: var(--apple-background);
+        color: var(--apple-label);
+        font-family: var(--apple-font-family);
+        margin: 0;
+        padding: 0;
     }
 
-    .apple-container { width: 100%; max-width: 1400px; margin: 2rem auto; padding: 2rem; animation: appleFadeIn 0.5s ease-out; }
-    @keyframes appleFadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-
-    .apple-header-card {
-        background: var(--apple-background-secondary);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-        padding: 2rem;
-        margin-bottom: 2.5rem;
-        text-align: center;
-    }
-    
-    .light-theme .apple-header-card {
-        background: linear-gradient(135deg, 
-            rgba(255, 255, 255, 0.9) 0%, 
-            rgba(255, 248, 250, 0.85) 50%, 
-            rgba(255, 240, 245, 0.8) 100%);
-        border: 1px solid rgba(255, 107, 157, 0.2);
-    }
-
-    .apple-title { font-size: 2.5rem; font-weight: 600; color: var(--apple-label); margin-bottom: 0.5rem; }
-    .apple-subtitle { font-size: 1.2rem; color: var(--apple-label-secondary); }
-    .apple-info { color: var(--apple-green); font-weight: 500; }
-
-    /* SWITCH TOGGLE STYLES */
-    .content-switch-container {
+    /* CRM LAYOUT */
+    .crm-container {
         display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 2rem;
-        margin: 2rem 0;
-        padding: 1rem;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    .crm-header {
         background: var(--apple-background-secondary);
-        border-radius: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .light-theme .content-switch-container {
-        background: linear-gradient(135deg, 
-            rgba(255, 255, 255, 0.9) 0%, 
-            rgba(255, 248, 250, 0.85) 100%);
-        border: 1px solid rgba(255, 107, 157, 0.2);
-    }
-
-    .content-switch {
+        border-bottom: 1px solid var(--apple-separator);
+        padding: 1rem 2rem;
         display: flex;
+        justify-content: space-between;
         align-items: center;
+        flex-shrink: 0;
+    }
+
+    .crm-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--apple-label);
+        margin: 0;
+    }
+
+    .crm-actions {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .crm-main {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+    }
+
+    /* COLUMNA IZQUIERDA - INFORMACIÓN */
+    .crm-info-panel {
+        width: 40%;
+        background: var(--apple-background-secondary);
+        border-right: 1px solid var(--apple-separator);
+        overflow-y: auto;
+        padding: 0;
+    }
+
+    .info-section {
+        border-bottom: 1px solid var(--apple-separator);
+        padding: 1.5rem;
+    }
+
+    .info-section:last-child {
+        border-bottom: none;
+    }
+
+    .section-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--apple-label-secondary);
+        margin-bottom: 1rem;
+        letter-spacing: 0.5px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
         gap: 1rem;
     }
 
-    .switch-label {
+    .info-item {
+        margin-bottom: 1rem;
+    }
+
+    .info-label {
+        font-size: 0.8rem;
+        color: var(--apple-label-secondary);
+        margin-bottom: 0.25rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .info-value {
+        font-size: 1rem;
         font-weight: 500;
         color: var(--apple-label);
-        font-size: 1.1rem;
     }
 
-    .switch-toggle {
+    /* ESTADOS */
+    .estado-selector {
         position: relative;
-        width: 60px;
-        height: 32px;
-        background: var(--apple-separator);
-        border-radius: 16px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
     }
 
-    .switch-toggle.active-cotizaciones {
+    .estado-current {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--apple-background-tertiary);
+        border: 1px solid var(--apple-separator);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .estado-current:hover {
+        border-color: var(--apple-blue);
+    }
+
+    .estado-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
         background: var(--apple-blue);
     }
 
-    .switch-toggle.active-volumetrias {
-        background: var(--apple-orange);
-    }
-
-    .switch-slider {
+    .estado-dropdown {
         position: absolute;
-        top: 2px;
-        left: 2px;
-        width: 28px;
-        height: 28px;
-        background: white;
-        border-radius: 50%;
-        transition: transform 0.3s ease;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--apple-background-tertiary);
+        border: 1px solid var(--apple-separator);
+        border-radius: 8px;
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
     }
 
-    .switch-toggle.active-volumetrias .switch-slider {
-        transform: translateX(28px);
-    }
-
-    .switch-counts {
+    .estado-option {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        transition: background 0.2s ease;
+        border-bottom: 1px solid var(--apple-separator);
+    }
+
+    .estado-option:hover {
+        background: rgba(0, 122, 255, 0.1);
+    }
+
+    .estado-option:last-child {
+        border-bottom: none;
+    }
+
+    /* COLUMNA DERECHA - TIMELINE */
+    .crm-timeline-panel {
+        flex: 1;
+        background: var(--apple-background);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .timeline-header {
+        background: var(--apple-background-secondary);
+        border-bottom: 1px solid var(--apple-separator);
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .timeline-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--apple-label);
+    }
+
+    .timeline-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem 1.5rem;
+    }
+
+    /* NUEVO COMENTARIO */
+    .new-comment {
+        background: var(--apple-background-secondary);
+        border: 1px solid var(--apple-separator);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .comment-input {
+        width: 100%;
+        background: var(--apple-background-tertiary);
+        border: 1px solid var(--apple-separator);
+        border-radius: 8px;
+        padding: 0.75rem;
+        color: var(--apple-label);
         font-size: 0.9rem;
+        resize: vertical;
+        min-height: 80px;
+        margin-bottom: 0.75rem;
+    }
+
+    .comment-input:focus {
+        outline: none;
+        border-color: var(--apple-blue);
+    }
+
+    .comment-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .file-upload {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    /* TIMELINE ITEMS */
+    .timeline-item {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 40px;
+        bottom: -15px;
+        width: 2px;
+        background: var(--apple-separator);
+    }
+
+    .timeline-item:last-child::before {
+        display: none;
+    }
+
+    .timeline-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--apple-blue);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+        z-index: 1;
+        position: relative;
+    }
+
+    .timeline-content-item {
+        flex: 1;
+        background: var(--apple-background-secondary);
+        border-radius: 12px;
+        padding: 1rem;
+        border: 1px solid var(--apple-separator);
+    }
+
+    .timeline-header-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.5rem;
+    }
+
+    .timeline-title-item {
+        font-weight: 600;
+        color: var(--apple-label);
+        font-size: 0.9rem;
+    }
+
+    .timeline-time {
+        font-size: 0.8rem;
         color: var(--apple-label-secondary);
     }
 
-    .count-badge {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 12px;
-        padding: 4px 12px;
-        font-weight: 500;
-        font-size: 0.85rem;
+    .timeline-text {
+        color: var(--apple-label);
+        font-size: 0.9rem;
+        line-height: 1.4;
     }
 
-    .apple-actions {
-        display: flex; justify-content: center; gap: 1rem; margin-bottom: 2.5rem;
-    }
-
+    /* BOTONES */
     .apple-button {
         background: var(--apple-blue);
-        color: white; border: none; border-radius: 8px; padding: 10px 20px;
-        font-size: 1rem; font-weight: 500; cursor: pointer; text-decoration: none;
-        display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.3s;
-    }
-    .apple-button:hover { filter: brightness(1.1); transform: translateY(-1px); }
-    .apple-button-secondary { background: var(--apple-separator); color: var(--apple-label); }
-    .apple-button-volumetria { 
-        background: linear-gradient(135deg, var(--apple-orange) 0%, #F7931E 100%); 
-    }
-
-    /* Conditional button visibility */
-    .create-button { display: none; }
-    .create-button.active { display: inline-flex; }
-
-    .apple-table-container { 
-        background: var(--apple-background-secondary); 
-        backdrop-filter: blur(12px); 
-        -webkit-backdrop-filter: blur(12px); 
-        border: 1px solid rgba(255, 255, 255, 0.1); 
-        border-radius: 12px; 
-        overflow: hidden; 
-        min-height: 200px;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
     }
 
-    .light-theme .apple-table-container {
-        background: linear-gradient(135deg, 
-            rgba(255, 208, 220, 0.9) 0%, 
-            rgba(255, 192, 203, 0.85) 50%, 
-            rgba(255, 182, 193, 0.8) 100%);
-        border: 1px solid rgba(255, 107, 157, 0.3);
+    .apple-button:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
     }
 
-    .light-theme .count-badge {
-        background: rgba(255, 107, 157, 0.1);
-        border-color: rgba(255, 107, 157, 0.2);
-        color: #D94674; /* Darker pink for text */
-        font-weight: 600;
-    }
-
-    .light-theme .apple-button-volumetria {
-        background: linear-gradient(135deg, #FF6B9D 0%, #FF8C69 100%);
-    }
-    
-    .apple-table { width: 100%; border-collapse: collapse; }
-    .apple-table th, .apple-table td { padding: 16px 20px; text-align: left; border-bottom: 1px solid var(--apple-separator); }
-    .apple-table th { font-size: 0.8rem; text-transform: uppercase; color: var(--apple-label-secondary); }
-    .apple-table tr:last-child td { border-bottom: none; }
-    .apple-table tr:hover { background: rgba(255, 255, 255, 0.05); }
-
-    .light-theme .apple-table th,
-    .light-theme .apple-table td {
+    .apple-button-secondary {
+        background: var(--apple-separator);
         color: var(--apple-label);
     }
 
-    .content-section { display: none; }
-    .content-section.active { display: block; }
+    .apple-button-volumetria {
+        background: linear-gradient(135deg, var(--apple-orange) 0%, #F7931E 100%);
+        color: white;
+    }
 
-    .no-content {
-        text-align: center;
-        padding: 4rem 2rem;
+    .apple-button-small {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 1024px) {
+        .crm-main {
+            flex-direction: column;
+        }
+        
+        .crm-info-panel {
+            width: 100%;
+            max-height: 40vh;
+        }
+        
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* COTIZACIONES COMPACTAS */
+    .cotizaciones-compactas {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .cotizacion-item {
+        background: var(--apple-background-tertiary);
+        border: 1px solid var(--apple-separator);
+        border-radius: 8px;
+        padding: 0.75rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .cotizacion-info {
+        flex: 1;
+    }
+
+    .cotizacion-titulo {
+        font-weight: 500;
+        color: var(--apple-label);
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .cotizacion-detalles {
+        font-size: 0.8rem;
         color: var(--apple-label-secondary);
     }
 
-    .no-content h3 {
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
-        color: var(--apple-label);
-    }
-
-    .no-content p {
+    .cotizacion-monto {
+        font-weight: 600;
+        color: var(--apple-green);
         font-size: 1rem;
-        margin-bottom: 2rem;
+        margin-right: 1rem;
     }
 
-    .action-button {
-        background: var(--apple-separator); 
-        color: var(--apple-label); 
-        border: none; 
+    .cotizacion-acciones {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .action-btn {
+        padding: 0.3rem 0.6rem;
         border-radius: 6px;
-        padding: 6px 12px; 
-        font-size: 0.8rem; 
-        font-weight: 500; 
-        cursor: pointer; 
-        transition: all 0.2s;
-        display: inline-flex; 
-        align-items: center; 
-        gap: 0.4rem; 
-        text-decoration: none;
-        margin: 0 2px;
+        border: none;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
     }
-    .action-button:hover { filter: brightness(1.2); transform: translateY(-1px); }
-    .action-button.view { color: var(--apple-green); }
-    .action-button.download { color: var(--apple-blue); }
-    .action-button.edit { color: var(--apple-yellow); }
-    .action-button.delete { color: #FF453A; }
 
-    /* Responsividad */
-    @media (max-width: 768px) {
-        .content-switch-container {
-            flex-direction: column;
-            gap: 1rem;
-            padding: 1.5rem 1rem;
-        }
-        
-        .apple-actions {
-            flex-wrap: wrap;
-        }
-        
-        .apple-table-container {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .apple-table {
-            min-width: 600px;
-            font-size: 0.875rem;
-        }
-        
-        .apple-table th, .apple-table td {
-            padding: 12px 16px;
-        }
-        
-        .action-button {
-            padding: 4px 8px;
-            font-size: 0.75rem;
-        }
+    .action-btn.view {
+        background: var(--apple-blue);
+        color: white;
+    }
+
+    .action-btn.edit {
+        background: var(--apple-orange);
+        color: white;
     }
 </style>
 
-<div class="apple-container">
-    <div class="apple-header-card">
-        <h1 class="apple-title">{{ oportunidad.oportunidad }}</h1>
-        <p class="apple-subtitle">Cliente: {{ oportunidad.cliente.nombre_empresa }}</p>
-        <p class="apple-subtitle">Monto: <span class="apple-info">${{ oportunidad.monto|floatformat:2 }}</span></p>
-    </div>
-
-    <!-- CONTENT SWITCH -->
-    <div class="content-switch-container">
-        <div class="content-switch">
-            <span class="switch-label">Cotizaciones</span>
-            <div class="switch-toggle" id="contentSwitch" onclick="toggleContent()">
-                <div class="switch-slider"></div>
-            </div>
-            <span class="switch-label">Volumetrías</span>
-        </div>
-        
-        <div class="switch-counts">
-            <div class="count-badge">
-                📄 {{ cotizaciones.count }} cotizacion{{ cotizaciones.count|pluralize:"es" }}
-            </div>
-            <div class="count-badge">
-                📊 {{ volumetrias.count }} volumetría{{ volumetrias.count|pluralize:"s" }}
-            </div>
+<div class="crm-container">
+    <!-- HEADER -->
+    <div class="crm-header">
+        <h1 class="crm-title">{{ oportunidad.oportunidad }}</h1>
+        <div class="crm-actions">
+            <a href="{% url 'todos' %}" class="apple-button apple-button-secondary">← Volver</a>
+            <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="apple-button">+ Nueva Cotización</a>
+            {% if is_engineer %}
+            <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="apple-button apple-button-volumetria">📊 Nueva Volumetría</a>
+            {% endif %}
         </div>
     </div>
 
-    <!-- ACTIONS -->
-    <div class="apple-actions">
-        <a href="{% url 'todos' %}" class="apple-button apple-button-secondary">&#8592; Volver</a>
-        <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="apple-button create-button" id="btnCotizacion">+ Nueva Cotización</a>
-        {% if is_engineer %}
-        <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="apple-button apple-button-volumetria create-button" id="btnVolumetria">📊 Nueva Volumetría</a>
-        {% endif %}
-    </div>
+    <!-- MAIN CONTENT -->
+    <div class="crm-main">
+        <!-- COLUMNA IZQUIERDA - INFORMACIÓN -->
+        <div class="crm-info-panel">
+            <!-- INFORMACIÓN BÁSICA -->
+            <div class="info-section">
+                <div class="section-title">Información de la Oportunidad</div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Cliente</div>
+                        <div class="info-value">{{ oportunidad.cliente.nombre_empresa|default:"Sin cliente" }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Contacto</div>
+                        <div class="info-value">{{ oportunidad.contacto|default:"Sin contacto" }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Vendedor</div>
+                        <div class="info-value">{{ oportunidad.usuario.get_full_name|default:oportunidad.usuario.username }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Área</div>
+                        <div class="info-value">{{ oportunidad.get_area_display }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Producto</div>
+                        <div class="info-value">{{ oportunidad.get_producto_display }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Monto</div>
+                        <div class="info-value" style="color: var(--apple-green); font-weight: 600;">${{ oportunidad.monto }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Probabilidad</div>
+                        <div class="info-value">{{ oportunidad.probabilidad_cierre }}%</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Mes Cierre</div>
+                        <div class="info-value">{{ oportunidad.get_mes_cierre_display }}</div>
+                    </div>
+                </div>
+            </div>
 
-    <!-- COTIZACIONES SECTION -->
-    <div class="content-section" id="cotizaciones-section">
-        <div class="apple-table-container">
-            {% if cotizaciones %}
-            <table class="apple-table">
-                <thead>
-                    <tr>
-                        <th>Título</th>
-                        <th>Total</th>
-                        <th>Moneda</th>
-                        <th>Fecha</th>
-                        <th>Creado Por</th>
-                        <th style="text-align: center; width: 50px;">#</th>
-                        <th style="text-align: right;">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
+            <!-- CONTROL DE ESTADO -->
+            <div class="info-section">
+                <div class="section-title">Estado de la Oportunidad</div>
+                <div class="estado-selector">
+                    <div class="estado-current" onclick="toggleEstadoDropdown()">
+                        <div class="estado-dot" id="estadoDot"></div>
+                        <span id="estadoText">{{ oportunidad.estado_crm|title }}</span>
+                        <span style="margin-left: auto;">▼</span>
+                    </div>
+                    <div class="estado-dropdown" id="estadoDropdown">
+                        <div class="estado-option" onclick="cambiarEstado('nueva', '#007AFF')">
+                            <div class="estado-dot" style="background: #007AFF;"></div>
+                            <span>Nueva</span>
+                        </div>
+                        <div class="estado-option" onclick="cambiarEstado('contacto_inicial', '#32D74B')">
+                            <div class="estado-dot" style="background: #32D74B;"></div>
+                            <span>Contacto Inicial</span>
+                        </div>
+                        <div class="estado-option" onclick="cambiarEstado('cotizacion_enviada', '#FFD60A')">
+                            <div class="estado-dot" style="background: #FFD60A;"></div>
+                            <span>Cotización Enviada</span>
+                        </div>
+                        <div class="estado-option" onclick="cambiarEstado('negociacion', '#FF9F0A')">
+                            <div class="estado-dot" style="background: #FF9F0A;"></div>
+                            <span>En Negociación</span>
+                        </div>
+                        <div class="estado-option" onclick="cambiarEstado('vendida', '#32D74B')">
+                            <div class="estado-dot" style="background: #32D74B;"></div>
+                            <span>Vendida</span>
+                        </div>
+                        <div class="estado-option" onclick="cambiarEstado('perdida', '#FF453A')">
+                            <div class="estado-dot" style="background: #FF453A;"></div>
+                            <span>Perdida</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COTIZACIONES -->
+            <div class="info-section">
+                <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Cotizaciones ({{ cotizaciones.count }})</span>
+                    <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="apple-button apple-button-small">+ Crear</a>
+                </div>
+                <div class="cotizaciones-compactas">
                     {% for cotizacion in cotizaciones %}
-                    <tr>
-                        <td class="font-medium">{{ cotizacion.titulo }}</td>
-                        <td class="font-semibold" style="color: var(--apple-green);">${{ cotizacion.total|floatformat:2 }}</td>
-                        <td>{{ cotizacion.moneda }}</td>
-                        <td>{{ cotizacion.fecha_creacion|date:"d/m/Y" }}</td>
-                        <td>{{ cotizacion.created_by.first_name|default:cotizacion.created_by.username }}</td>
-                        <td style="text-align: center; font-weight: 600; color: var(--apple-blue);">{{ cotizacion.id }}</td>
-                        <td style="text-align: right;">
-                            <div class="flex justify-end space-x-2">
-                                <a href="{% url 'view_cotizacion_pdf' cotizacion.id %}" target="_blank" class="action-button view" title="Ver PDF">
-                                    👁️ Ver
-                                </a>
-                                <a href="{% url 'generate_cotizacion_pdf' cotizacion.id %}" class="action-button download" title="Descargar PDF">
-                                    ⬇️ Descargar
-                                </a>
-                                <a href="{% url 'editar_cotizacion' cotizacion.id %}" class="action-button edit" title="Editar">
-                                    ✏️ Editar
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
+                    <div class="cotizacion-item">
+                        <div class="cotizacion-info">
+                            <div class="cotizacion-titulo">{{ cotizacion.titulo }}</div>
+                            <div class="cotizacion-detalles">{{ cotizacion.fecha_creacion|date:"d/m/Y" }}</div>
+                        </div>
+                        <div class="cotizacion-monto">${{ cotizacion.total|floatformat:2 }}</div>
+                        <div class="cotizacion-acciones">
+                            <a href="{% url 'view_cotizacion_pdf' cotizacion.id %}" target="_blank" class="action-btn view">👁️</a>
+                            <a href="{% url 'editar_cotizacion' cotizacion.id %}" class="action-btn edit">✏️</a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div style="text-align: center; color: var(--apple-label-secondary); padding: 1rem;">
+                        Sin cotizaciones aún
+                    </div>
                     {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <div class="no-content">
-                <h3>📄 No hay cotizaciones</h3>
-                <p>Esta oportunidad aún no tiene cotizaciones creadas</p>
-                <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="apple-button">+ Crear Primera Cotización</a>
+                </div>
+            </div>
+
+            <!-- VOLUMETRÍAS -->
+            {% if volumetrias or is_engineer %}
+            <div class="info-section">
+                <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Volumetrías ({{ volumetrias.count }})</span>
+                    {% if is_engineer %}
+                    <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="apple-button apple-button-small" style="background: var(--apple-orange);">+ Crear</a>
+                    {% endif %}
+                </div>
+                <div class="cotizaciones-compactas">
+                    {% for volumetria in volumetrias %}
+                    <div class="cotizacion-item">
+                        <div class="cotizacion-info">
+                            <div class="cotizacion-titulo">{{ volumetria.titulo }}</div>
+                            <div class="cotizacion-detalles">{{ volumetria.fecha_creacion|date:"d/m/Y" }} • {{ volumetria.cantidad_nodos }} nodos</div>
+                        </div>
+                        <div class="cotizacion-monto">${{ volumetria.total|floatformat:2 }}</div>
+                        <div class="cotizacion-acciones">
+                            <a href="{% url 'view_volumetria_pdf' volumetria.id %}" target="_blank" class="action-btn view">👁️</a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    {% if is_engineer %}
+                    <div style="text-align: center; color: var(--apple-label-secondary); padding: 1rem;">
+                        Sin volumetrías aún
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
             </div>
             {% endif %}
         </div>
-    </div>
 
-    <!-- VOLUMETRÍAS SECTION -->
-    <div class="content-section" id="volumetrias-section">
-        <div class="apple-table-container">
-            {% if volumetrias %}
-            <table class="apple-table">
-                <thead>
-                    <tr>
-                        <th>Título</th>
-                        <th>Nodos</th>
-                        <th>Categoría</th>
-                        <th>Total</th>
-                        <th>Fecha</th>
-                        <th>Creado Por</th>
-                        <th class="text-center">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for volumetria in volumetrias %}
-                    <tr>
-                        <td class="font-medium">{{ volumetria.titulo }}</td>
-                        <td><span class="count-badge">{{ volumetria.cantidad_nodos }}</span></td>
-                        <td>{{ volumetria.categoria }} - {{ volumetria.color }}</td>
-                        <td class="font-semibold" style="color: var(--apple-green);">${{ volumetria.total|floatformat:2 }} {{ volumetria.moneda }}</td>
-                        <td>{{ volumetria.fecha_creacion|date:"d/m/Y" }}</td>
-                        <td>{{ volumetria.created_by.first_name|default:volumetria.created_by.username }}</td>
-                        <td class="text-center">
-                            <div class="flex justify-center space-x-2">
-                                <a href="{% url 'view_volumetria_pdf' volumetria.id %}" target="_blank" class="action-button view" title="Ver PDF">
-                                    👁️ Ver
-                                </a>
-                                <a href="{% url 'download_volumetria_pdf' volumetria.id %}" class="action-button download" title="Descargar PDF">
-                                    ⬇️ Descargar
-                                </a>
-                                {% if user.is_superuser or user == volumetria.created_by %}
-                                <button onclick="eliminarVolumetria({{ volumetria.id }}, '{{ volumetria.titulo|escapejs }}')" class="action-button delete" title="Eliminar">
-                                    🗑️ Eliminar
-                                </button>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <div class="no-content">
-                <h3>📊 No hay volumetrías</h3>
-                <p>Esta oportunidad aún no tiene volumetrías creadas</p>
-                {% if is_engineer %}
-                <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="apple-button apple-button-volumetria">📊 Crear Primera Volumetría</a>
-                {% endif %}
+        <!-- COLUMNA DERECHA - TIMELINE -->
+        <div class="crm-timeline-panel">
+            <div class="timeline-header">
+                <div class="timeline-title">Timeline de Actividades</div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="apple-button apple-button-small">📄 Cotización</a>
+                    {% if is_engineer %}
+                    <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="apple-button apple-button-small" style="background: var(--apple-orange);">📊 Volumetría</a>
+                    {% endif %}
+                    <button class="apple-button apple-button-small apple-button-secondary" onclick="actualizarTimeline()">🔄</button>
+                </div>
             </div>
-            {% endif %}
+            
+            <div class="timeline-content">
+                <!-- NUEVO COMENTARIO -->
+                <div class="new-comment">
+                    <textarea class="comment-input" id="nuevoComentario" placeholder="Agregar comentario sobre esta oportunidad..."></textarea>
+                    <div class="comment-actions">
+                        <div class="file-upload">
+                            <button class="apple-button apple-button-small">📎 Archivo</button>
+                            <button class="apple-button apple-button-small">📷 Imagen</button>
+                        </div>
+                        <button class="apple-button apple-button-small" onclick="agregarComentario()">💬 Comentar</button>
+                    </div>
+                </div>
+
+                <!-- TIMELINE ITEMS -->
+                <div id="timelineItems">
+                    <!-- Item de ejemplo: Oportunidad creada -->
+                    <div class="timeline-item">
+                        <div class="timeline-icon" style="background: var(--apple-green);">🆕</div>
+                        <div class="timeline-content-item">
+                            <div class="timeline-header-item">
+                                <div class="timeline-title-item">Oportunidad Creada</div>
+                                <div class="timeline-time">{{ oportunidad.fecha_creacion|date:"d/m/Y H:i" }}</div>
+                            </div>
+                            <div class="timeline-text">
+                                Oportunidad creada por {{ oportunidad.usuario.get_full_name|default:oportunidad.usuario.username }}
+                                <br><strong>Cliente:</strong> {{ oportunidad.cliente.nombre_empresa|default:"Sin cliente" }}
+                                <br><strong>Monto:</strong> ${{ oportunidad.monto }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cotizaciones como timeline items -->
+                    {% for cotizacion in cotizaciones %}
+                    <div class="timeline-item">
+                        <div class="timeline-icon" style="background: var(--apple-blue);">📄</div>
+                        <div class="timeline-content-item">
+                            <div class="timeline-header-item">
+                                <div class="timeline-title-item">Cotización Creada</div>
+                                <div class="timeline-time">{{ cotizacion.fecha_creacion|date:"d/m/Y H:i" }}</div>
+                            </div>
+                            <div class="timeline-text">
+                                <strong>{{ cotizacion.titulo }}</strong><br>
+                                Monto: <span style="color: var(--apple-green); font-weight: 600;">${{ cotizacion.total|floatformat:2 }} {{ cotizacion.moneda }}</span>
+                                <br><a href="{% url 'view_cotizacion_pdf' cotizacion.id %}" target="_blank" style="color: var(--apple-blue);">Ver cotización →</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <!-- Volumetrías como timeline items -->
+                    {% for volumetria in volumetrias %}
+                    <div class="timeline-item">
+                        <div class="timeline-icon" style="background: var(--apple-orange);">📊</div>
+                        <div class="timeline-content-item">
+                            <div class="timeline-header-item">
+                                <div class="timeline-title-item">Volumetría Creada</div>
+                                <div class="timeline-time">{{ volumetria.fecha_creacion|date:"d/m/Y H:i" }}</div>
+                            </div>
+                            <div class="timeline-text">
+                                <strong>{{ volumetria.titulo }}</strong><br>
+                                {{ volumetria.cantidad_nodos }} nodos • ${{ volumetria.total|floatformat:2 }}
+                                <br><a href="{% url 'view_volumetria_pdf' volumetria.id %}" target="_blank" style="color: var(--apple-orange);">Ver volumetría →</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-let currentContent = '{{ tipo_contenido }}'; // 'cotizaciones' o 'volumetrias'
-
-function toggleContent() {
-    const switchElement = document.getElementById('contentSwitch');
-    const cotizacionesSection = document.getElementById('cotizaciones-section');
-    const volumetriasSection = document.getElementById('volumetrias-section');
-    const btnCotizacion = document.getElementById('btnCotizacion');
-    const btnVolumetria = document.getElementById('btnVolumetria');
-    
-    if (currentContent === 'cotizaciones') {
-        // Cambiar a volumetrías
-        currentContent = 'volumetrias';
-        switchElement.classList.remove('active-cotizaciones');
-        switchElement.classList.add('active-volumetrias');
-        cotizacionesSection.classList.remove('active');
-        volumetriasSection.classList.add('active');
-        btnCotizacion.classList.remove('active');
-        if (btnVolumetria) btnVolumetria.classList.add('active');
-        
-        // Actualizar URL sin recargar página
-        const url = new URL(window.location);
-        url.searchParams.set('tipo', 'volumetrias');
-        window.history.pushState({}, '', url);
-        document.title = 'Volumetrías de {{ oportunidad.oportunidad }}';
-        
-    } else {
-        // Cambiar a cotizaciones
-        currentContent = 'cotizaciones';
-        switchElement.classList.remove('active-volumetrias');
-        switchElement.classList.add('active-cotizaciones');
-        volumetriasSection.classList.remove('active');
-        cotizacionesSection.classList.add('active');
-        if (btnVolumetria) btnVolumetria.classList.remove('active');
-        btnCotizacion.classList.add('active');
-        
-        // Actualizar URL sin recargar página
-        const url = new URL(window.location);
-        url.searchParams.set('tipo', 'cotizaciones');
-        window.history.pushState({}, '', url);
-        document.title = 'Cotizaciones de {{ oportunidad.oportunidad }}';
+    // Control de estados
+    function toggleEstadoDropdown() {
+        const dropdown = document.getElementById('estadoDropdown');
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
     }
-}
 
-function eliminarVolumetria(volumetriaId, titulo) {
-    Swal.fire({
-        title: '¿Eliminar volumetría?',
-        text: `¿Estás seguro de eliminar "${titulo}"? Esta acción no se puede deshacer.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#FF453A',
-        cancelButtonColor: '#8E8E93',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar',
-        background: getComputedStyle(document.documentElement).getPropertyValue('--apple-background-secondary'),
-        color: getComputedStyle(document.documentElement).getPropertyValue('--apple-label')
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch(`/app/api/eliminar-volumetria/${volumetriaId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
-                    'Content-Type': 'application/json'
-                }
+    function cambiarEstado(estado, color) {
+        const estadoDot = document.getElementById('estadoDot');
+        const estadoText = document.getElementById('estadoText');
+        const dropdown = document.getElementById('estadoDropdown');
+        
+        estadoDot.style.background = color;
+        estadoText.textContent = estado.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+        dropdown.style.display = 'none';
+        
+        // Aquí harías la llamada AJAX para actualizar en el servidor
+        fetch(`/app/api/cambiar-estado-oportunidad/{{ oportunidad.id }}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                estado: estado
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: '¡Eliminada!',
-                        text: data.message,
-                        background: getComputedStyle(document.documentElement).getPropertyValue('--apple-background-secondary'),
-                        color: getComputedStyle(document.documentElement).getPropertyValue('--apple-label')
-                    }).then(() => {
-                        location.reload();
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: data.error,
-                        background: getComputedStyle(document.documentElement).getPropertyValue('--apple-background-secondary'),
-                        color: getComputedStyle(document.documentElement).getPropertyValue('--apple-label')
-                    });
-                }
+        }).then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  agregarActividadTimeline('cambio_estado', `Estado cambiado a: ${estadoText.textContent}`, '🔄');
+              }
+          });
+    }
+
+    // Gestión de comentarios
+    function agregarComentario() {
+        const comentario = document.getElementById('nuevoComentario').value.trim();
+        if (!comentario) return;
+        
+        fetch(`/app/api/agregar-comentario-oportunidad/{{ oportunidad.id }}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                contenido: comentario
             })
-            .catch(error => {
-                console.error('Error:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Error de conexión',
-                    background: getComputedStyle(document.documentElement).getPropertyValue('--apple-background-secondary'),
-                    color: getComputedStyle(document.documentElement).getPropertyValue('--apple-label')
-                });
-            });
+        }).then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  document.getElementById('nuevoComentario').value = '';
+                  agregarActividadTimeline('comentario', comentario, '💬');
+              }
+          });
+    }
+
+    function agregarActividadTimeline(tipo, descripcion, icono) {
+        const timelineItems = document.getElementById('timelineItems');
+        const now = new Date().toLocaleString('es-ES');
+        
+        const item = document.createElement('div');
+        item.className = 'timeline-item';
+        item.innerHTML = `
+            <div class="timeline-icon" style="background: var(--apple-blue);">${icono}</div>
+            <div class="timeline-content-item">
+                <div class="timeline-header-item">
+                    <div class="timeline-title-item">${tipo === 'comentario' ? 'Nuevo Comentario' : 'Cambio de Estado'}</div>
+                    <div class="timeline-time">${now}</div>
+                </div>
+                <div class="timeline-text">${descripcion}</div>
+            </div>
+        `;
+        timelineItems.insertBefore(item, timelineItems.firstChild);
+    }
+
+    function actualizarTimeline() {
+        location.reload();
+    }
+
+    // Cerrar dropdown al hacer click fuera
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.estado-selector')) {
+            document.getElementById('estadoDropdown').style.display = 'none';
         }
     });
-}
 
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
+    // Función para obtener CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
             }
         }
+        return cookieValue;
     }
-    return cookieValue;
-}
 
-// Inicializar estado basado en URL
-document.addEventListener('DOMContentLoaded', function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tipo = urlParams.get('tipo') || 'cotizaciones';
-    
-    // Establecer estado inicial
-    if (tipo === 'volumetrias') {
-        currentContent = 'cotizaciones'; // Será invertido por toggleContent()
-        toggleContent(); // Cambiará a volumetrías y mostrará el botón correcto
-    } else {
-        // Por defecto mostrar cotizaciones
-        currentContent = 'volumetrias'; // Será invertido por toggleContent()  
-        toggleContent(); // Cambiará a cotizaciones y mostrará el botón correcto
-    }
-});
+    // Inicializar color del estado
+    document.addEventListener('DOMContentLoaded', function() {
+        const estadoActual = '{{ oportunidad.estado_crm }}';
+        const colores = {
+            'nueva': '#007AFF',
+            'contacto_inicial': '#32D74B',
+            'cotizacion_enviada': '#FFD60A',
+            'negociacion': '#FF9F0A',
+            'vendida': '#32D74B',
+            'perdida': '#FF453A'
+        };
+        
+        const estadoDot = document.getElementById('estadoDot');
+        estadoDot.style.background = colores[estadoActual] || '#007AFF';
+    });
 </script>
 
+{% else %}
+<!-- VISTA NORMAL PARA USUARIOS NO SUPERUSUARIOS -->
+<div style="padding: 2rem; text-align: center;">
+    <h2 style="color: var(--apple-label); margin-bottom: 1rem;">{{ oportunidad.oportunidad }}</h2>
+    <p style="color: var(--apple-label-secondary); margin-bottom: 2rem;">
+        Esta vista avanzada está disponible solo para administradores.
+    </p>
+    
+    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+        <a href="{% url 'todos' %}" class="apple-button apple-button-secondary">← Volver</a>
+        <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="apple-button">+ Nueva Cotización</a>
+        {% if is_engineer %}
+        <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="apple-button">📊 Nueva Volumetría</a>
+        {% endif %}
+    </div>
+    
+    <!-- Lista simple de cotizaciones -->
+    {% if cotizaciones %}
+    <div style="margin-top: 2rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+        <h3 style="color: var(--apple-label); margin-bottom: 1rem;">Cotizaciones</h3>
+        {% for cotizacion in cotizaciones %}
+        <div style="background: var(--apple-background-secondary); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-weight: 500; color: var(--apple-label);">{{ cotizacion.titulo }}</div>
+                <div style="font-size: 0.9rem; color: var(--apple-label-secondary);">${{ cotizacion.total|floatformat:2 }} • {{ cotizacion.fecha_creacion|date:"d/m/Y" }}</div>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="{% url 'view_cotizacion_pdf' cotizacion.id %}" target="_blank" class="apple-button apple-button-small">Ver</a>
+                <a href="{% url 'editar_cotizacion' cotizacion.id %}" class="apple-button apple-button-small">Editar</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .apple-button {
+        background: var(--apple-blue);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .apple-button:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
+    }
+
+    .apple-button-secondary {
+        background: var(--apple-separator);
+        color: var(--apple-label);
+    }
+
+    .apple-button-small {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+    }
+</style>
+{% endif %}
 {% endblock %}

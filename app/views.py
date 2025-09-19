@@ -8,7 +8,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.models import User
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado
 from . import views_exportar
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
 from django.db.models import Sum, Count, F, Q, Case, When, Value
@@ -3557,7 +3557,7 @@ def crear_volumetria_with_opportunity(request, oportunidad_id):
         # Configurar expiración de la sesión para 30 minutos
         request.session.set_expiry(1800)  # 30 minutos
         
-        messages.success(request, f'Generando volumetría integral para la oportunidad "{oportunidad.oportunidad}".')
+        # messages.success(request, f'Generando volumetría integral para la oportunidad "{oportunidad.oportunidad}".')
         
         # Redirigir a la sección de volumetrías (ahora irá directo a volumetría general)
         return redirect('volumetria')
@@ -6488,3 +6488,144 @@ def api_buscar_contactos(request):
         
     except Exception as e:
         return JsonResponse({'contactos': [], 'error': str(e)}, status=500)
+
+
+# ===============================================
+# API PARA CRM AVANZADO DE OPORTUNIDADES
+# ===============================================
+
+@login_required
+@require_http_methods(["POST"])
+def cambiar_estado_oportunidad(request, oportunidad_id):
+    """
+    API para cambiar el estado CRM de una oportunidad (solo superusuarios)
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Acceso denegado'}, status=403)
+    
+    try:
+        import json
+        data = json.loads(request.body)
+        estado = data.get('estado')
+        
+        if not estado:
+            return JsonResponse({'error': 'Estado requerido'}, status=400)
+        
+        # Obtener la oportunidad
+        oportunidad = get_object_or_404(TodoItem, id=oportunidad_id)
+        
+        # Validar que el usuario puede modificar esta oportunidad
+        if not is_supervisor(request.user) and oportunidad.usuario != request.user:
+            return JsonResponse({'error': 'No tienes permisos para modificar esta oportunidad'}, status=403)
+        
+        # Guardar estado anterior para actividad
+        estado_anterior = oportunidad.estado_crm
+        
+        # Actualizar estado
+        oportunidad.estado_crm = estado
+        oportunidad.save()
+        
+        # Crear actividad en el timeline
+        OportunidadActividad.objects.create(
+            oportunidad=oportunidad,
+            tipo='cambio_estado',
+            titulo='Cambio de Estado',
+            descripcion=f'Estado cambiado de "{estado_anterior}" a "{estado}"',
+            usuario=request.user,
+            estado_anterior=estado_anterior,
+            estado_nuevo=estado
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'nuevo_estado': estado,
+            'message': f'Estado actualizado a {estado}'
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def agregar_comentario_oportunidad(request, oportunidad_id):
+    """
+    API para agregar comentarios a una oportunidad (solo superusuarios)
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Acceso denegado'}, status=403)
+    
+    try:
+        import json
+        data = json.loads(request.body)
+        contenido = data.get('contenido', '').strip()
+        
+        if not contenido:
+            return JsonResponse({'error': 'Contenido del comentario requerido'}, status=400)
+        
+        # Obtener la oportunidad
+        oportunidad = get_object_or_404(TodoItem, id=oportunidad_id)
+        
+        # Crear comentario
+        comentario = OportunidadComentario.objects.create(
+            oportunidad=oportunidad,
+            usuario=request.user,
+            contenido=contenido
+        )
+        
+        # Crear actividad en el timeline
+        OportunidadActividad.objects.create(
+            oportunidad=oportunidad,
+            tipo='comentario',
+            titulo='Nuevo Comentario',
+            descripcion=contenido[:200] + ('...' if len(contenido) > 200 else ''),
+            usuario=request.user
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'comentario': {
+                'id': comentario.id,
+                'contenido': comentario.contenido,
+                'usuario': request.user.get_full_name() or request.user.username,
+                'fecha': comentario.fecha_creacion.strftime('%d/%m/%Y %H:%M')
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def timeline_oportunidad(request, oportunidad_id):
+    """
+    API para obtener el timeline completo de una oportunidad
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Acceso denegado'}, status=403)
+    
+    try:
+        oportunidad = get_object_or_404(TodoItem, id=oportunidad_id)
+        
+        # Obtener todas las actividades
+        actividades = OportunidadActividad.objects.filter(oportunidad=oportunidad).order_by('-fecha_creacion')
+        
+        timeline_data = []
+        for actividad in actividades:
+            timeline_data.append({
+                'id': actividad.id,
+                'tipo': actividad.tipo,
+                'titulo': actividad.titulo,
+                'descripcion': actividad.descripcion,
+                'usuario': actividad.usuario.get_full_name() or actividad.usuario.username,
+                'fecha': actividad.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+                'icono': dict(OportunidadActividad.TIPO_ACTIVIDAD_CHOICES).get(actividad.tipo, '⚙️')
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'timeline': timeline_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
