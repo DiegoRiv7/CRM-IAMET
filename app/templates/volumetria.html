@@ -3439,7 +3439,7 @@ function mostrarVolumetriaGeneralDirecta() {
 
 // Función específica para mostrar tabla de volumetría general (4 tablas: General, Infraestructura, Gastos, Mano de obra)
 function mostrarTablaVolumetriaGeneral(datos) {
-    console.log('🆕 Creando nueva tabla volumetría general limpia');
+    console.log('📊 Creando nueva tabla volumetría general limpia');
     
     // Crear HTML con nuevo layout profesional
     const nuevaTabla = `
@@ -3819,21 +3819,25 @@ function mostrarTablaVolumetriaGeneral(datos) {
         console.log('✅ Contenido inicial ocultado');
     }
     
-    // Limpiar el body de contenido anterior
-    const existingVolumetria = document.getElementById('tabla-volumetria');
-    if (existingVolumetria) {
-        existingVolumetria.remove();
+    // Buscar si ya existe una tabla de volumetría y reemplazarla
+    const existingTable = document.getElementById('tabla-volumetria');
+    if (existingTable) {
+        existingTable.replaceWith(document.createRange().createContextualFragment(nuevaTabla).firstElementChild);
         console.log('✅ Tabla existente reemplazada');
     } else {
         // Insertar al principio del body para que aparezca en la parte superior
-        document.body.insertAdjacentHTML('afterbegin', vistaLimpia);
-        console.log('🍏 Nueva vista limpia insertada al principio del documento');
+        document.body.insertAdjacentHTML('afterbegin', nuevaTabla);
+        console.log('✅ Nueva tabla insertada al principio del documento');
     }
     
     // Resolver nombres de cliente y oportunidad
     resolverNombresClienteYOportunidad(datos);
     
-    console.log('🍏 Vista limpia estilo Apple creada exitosamente');
+    // Configurar listeners para componentes después de que se cargue el DOM
+    setTimeout(() => {
+        configurarListenersComponentes();
+        console.log('✅ Listeners de componentes configurados después de mostrar tabla');
+    }, 500);
 }
 
 </script>
