@@ -5618,7 +5618,7 @@ function mostrarPopupBusquedaAvanzada(fieldId) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
+                    'X-CSRFToken': getCSRFToken()
                 },
                 body: JSON.stringify({ numeros_parte: recentProducts })
             })
@@ -9242,7 +9242,7 @@ async function buscarProductoEnCatalogo(numeroParte) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
+                'X-CSRFToken': '{{ csrf_token }}'
             },
             body: JSON.stringify({
                 numero_parte: numeroParte.trim()
@@ -9487,7 +9487,27 @@ async function getVolumetriaProductos(query = '') {
 }
 
 /**
- * Función auxiliar para obtener el token CSRF
+ * Función auxiliar para obtener el token CSRF de forma robusta
+ */
+function getCSRFToken() {
+    // Priorizar el token del template de Django
+    const templateToken = '{{ csrf_token }}';
+    if (templateToken && templateToken !== '{{ csrf_token }}') {
+        return templateToken;
+    }
+    
+    // Fallback: buscar en el DOM
+    const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrfInput) {
+        return csrfInput.value;
+    }
+    
+    // Fallback: buscar en cookies
+    return getCookie('csrftoken') || '';
+}
+
+/**
+ * Función auxiliar para obtener el token CSRF desde cookies
  */
 function getCookie(name) {
     let cookieValue = null;
@@ -9924,7 +9944,7 @@ function mostrarPopupBusquedaAvanzadaConCategoria(fieldId, categoria) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
+                    'X-CSRFToken': getCSRFToken()
                 },
                 body: JSON.stringify({ numeros_parte: recentProducts })
             })
@@ -9974,7 +9994,7 @@ async function getVolumetriaProductosConCategoria(query, categoria) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                'X-CSRFToken': getCSRFToken()
             },
             body: JSON.stringify({ 
                 query: query,
