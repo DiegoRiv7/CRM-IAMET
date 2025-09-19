@@ -951,7 +951,7 @@
                             <button class="action-button-small" title="Adjuntar archivo">📎</button>
                             <button class="action-button-small" title="Adjuntar imagen">📷</button>
                         </div>
-                        <button class="apple-button apple-button-small" onclick="agregarComentario()" id="btnComentar">
+                        <button class="apple-button apple-button-small" onclick="agregarComentario()" id="btnComentar" disabled>
                             💬 Comentar
                         </button>
                     </div>
@@ -1058,8 +1058,18 @@
         }).then(response => response.json())
           .then(data => {
               if (data.success) {
-                  agregarActividadTimeline('cambio_estado', `Estado cambiado a: ${estadoText.textContent}`, '🔄');
+                  // Silenciosamente guardado - no mostrar ningún mensaje
+                  console.log('Estado actualizado exitosamente');
+              } else {
+                  console.error('Error al cambiar estado:', data.error);
+                  // Revertir cambio visual si falló
+                  location.reload();
               }
+          })
+          .catch(error => {
+              console.error('Error de red al cambiar estado:', error);
+              // Revertir cambio visual si falló
+              location.reload();
           });
     }
 
@@ -1068,31 +1078,47 @@
         const comentario = document.getElementById('nuevoComentario').value.trim();
         const btnComentar = document.getElementById('btnComentar');
         
+        // Verificar que hay contenido
         if (!comentario) {
-            alert('Por favor escribe un comentario antes de enviar.');
-            return;
+            return; // Silenciosamente no hacer nada si está vacío
         }
         
         // Deshabilitar botón mientras se procesa
         btnComentar.disabled = true;
+        btnComentar.style.opacity = '0.6';
         btnComentar.innerHTML = '⏳ Enviando...';
         
-        // Por ahora simularemos la creación del comentario
-        // En el futuro esto hará una llamada AJAX real
-        setTimeout(() => {
-            // Crear el nuevo item del timeline para el comentario
-            agregarComentarioTimeline(comentario);
-            
-            // Limpiar el input
-            document.getElementById('nuevoComentario').value = '';
-            
-            // Restaurar botón
-            btnComentar.disabled = false;
-            btnComentar.innerHTML = '💬 Comentar';
-            
-            // Mostrar mensaje de éxito (opcional)
-            mostrarNotificacion('Comentario agregado exitosamente', 'success');
-        }, 500);
+        // Guardar comentario en el servidor
+        fetch(`/app/api/agregar-comentario-oportunidad/{{ oportunidad.id }}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                contenido: comentario
+            })
+        }).then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  // Crear el nuevo item del timeline para el comentario
+                  agregarComentarioTimeline(comentario);
+                  
+                  // Limpiar el input
+                  document.getElementById('nuevoComentario').value = '';
+              } else {
+                  console.error('Error al guardar comentario:', data.error);
+              }
+          })
+          .catch(error => {
+              console.error('Error de red:', error);
+          })
+          .finally(() => {
+              // Restaurar botón al estado deshabilitado inicial
+              btnComentar.disabled = true;
+              btnComentar.style.opacity = '0.6';
+              btnComentar.innerHTML = '💬 Comentar';
+          });
     }
 
     function agregarComentarioTimeline(contenido) {
@@ -1135,35 +1161,6 @@
         actualizarContadorActividades();
     }
 
-    function mostrarNotificacion(mensaje, tipo = 'info') {
-        // Crear una notificación temporal
-        const notificacion = document.createElement('div');
-        notificacion.className = `notificacion ${tipo}`;
-        notificacion.textContent = mensaje;
-        notificacion.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--apple-green);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            z-index: 10000;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        `;
-        
-        document.body.appendChild(notificacion);
-        
-        // Mostrar
-        setTimeout(() => notificacion.style.opacity = '1', 100);
-        
-        // Ocultar y remover
-        setTimeout(() => {
-            notificacion.style.opacity = '0';
-            setTimeout(() => document.body.removeChild(notificacion), 300);
-        }, 3000);
-    }
 
     function actualizarContadorActividades() {
         const contador = document.querySelector('.timeline-count');
@@ -1173,27 +1170,6 @@
         }
     }
 
-    // Habilitar el botón de comentar cuando hay texto
-    document.addEventListener('DOMContentLoaded', function() {
-        const comentarioInput = document.getElementById('nuevoComentario');
-        const btnComentar = document.getElementById('btnComentar');
-        
-        if (comentarioInput && btnComentar) {
-            comentarioInput.addEventListener('input', function() {
-                const hasText = this.value.trim().length > 0;
-                btnComentar.style.opacity = hasText ? '1' : '0.6';
-                btnComentar.style.cursor = hasText ? 'pointer' : 'not-allowed';
-            });
-            
-            // Enter para enviar comentario (Ctrl+Enter o Cmd+Enter)
-            comentarioInput.addEventListener('keydown', function(e) {
-                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                    e.preventDefault();
-                    agregarComentario();
-                }
-            });
-        }
-    });
 
     // Función para eliminar volumetrías
     function eliminarVolumetria(volumetriaId, titulo) {
@@ -1245,8 +1221,9 @@
         return cookieValue;
     }
 
-    // Inicializar color del estado en header
+    // Inicializar componentes
     document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar color del estado en header
         const estadoActual = '{{ oportunidad.estado_crm }}';
         const colores = {
             'nueva': '#007AFF',
@@ -1260,6 +1237,33 @@
         const estadoDot = document.getElementById('estadoDotHeader');
         if (estadoDot) {
             estadoDot.style.background = colores[estadoActual] || '#007AFF';
+        }
+
+        // Inicializar botón de comentar
+        const comentarioInput = document.getElementById('nuevoComentario');
+        const btnComentar = document.getElementById('btnComentar');
+        
+        if (comentarioInput && btnComentar) {
+            // Estado inicial del botón
+            btnComentar.style.opacity = '0.6';
+            btnComentar.style.cursor = 'not-allowed';
+            
+            comentarioInput.addEventListener('input', function() {
+                const hasText = this.value.trim().length > 0;
+                btnComentar.style.opacity = hasText ? '1' : '0.6';
+                btnComentar.style.cursor = hasText ? 'pointer' : 'not-allowed';
+                btnComentar.disabled = !hasText;
+            });
+            
+            // Enter para enviar comentario (Ctrl+Enter o Cmd+Enter)
+            comentarioInput.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    if (this.value.trim().length > 0) {
+                        agregarComentario();
+                    }
+                }
+            });
         }
     });
 </script>
