@@ -6550,11 +6550,8 @@ def cambiar_estado_oportunidad(request, oportunidad_id):
 @require_http_methods(["POST"])
 def agregar_comentario_oportunidad(request, oportunidad_id):
     """
-    API para agregar comentarios a una oportunidad (solo superusuarios)
+    API para agregar comentarios a una oportunidad
     """
-    if not request.user.is_superuser:
-        return JsonResponse({'error': 'Acceso denegado'}, status=403)
-    
     try:
         import json
         data = json.loads(request.body)
@@ -6565,6 +6562,10 @@ def agregar_comentario_oportunidad(request, oportunidad_id):
         
         # Obtener la oportunidad
         oportunidad = get_object_or_404(TodoItem, id=oportunidad_id)
+        
+        # Verificar permisos: supervisores ven todo, usuarios solo sus propias oportunidades
+        if not is_supervisor(request.user) and oportunidad.usuario != request.user:
+            return JsonResponse({'error': 'No tienes permisos para comentar en esta oportunidad'}, status=403)
         
         # Crear comentario
         comentario = OportunidadComentario.objects.create(

@@ -1046,7 +1046,8 @@
         arrow.style.transform = 'rotate(0deg)';
         
         // Llamada AJAX para actualizar en el servidor
-        fetch(`/app/api/cambiar-estado-oportunidad/{{ oportunidad.id }}/`, {
+        const oportunidadId = {{ oportunidad.id }};
+        fetch(`/app/api/cambiar-estado-oportunidad/${oportunidadId}/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1089,7 +1090,13 @@
         btnComentar.innerHTML = '⏳ Enviando...';
         
         // Guardar comentario en el servidor
-        fetch(`/app/api/agregar-comentario-oportunidad/{{ oportunidad.id }}/`, {
+        const oportunidadId = {{ oportunidad.id }};
+        const isSuper = {{ user.is_superuser|yesno:"true,false" }};
+        console.log('Es superusuario:', isSuper);
+        console.log('Enviando comentario a:', `/app/api/agregar-comentario-oportunidad/${oportunidadId}/`);
+        console.log('Contenido:', comentario);
+        
+        fetch(`/app/api/agregar-comentario-oportunidad/${oportunidadId}/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1098,7 +1105,14 @@
             body: JSON.stringify({
                 contenido: comentario
             })
-        }).then(response => response.json())
+        }).then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
           .then(data => {
               if (data.success) {
                   // Crear el nuevo item del timeline para el comentario
