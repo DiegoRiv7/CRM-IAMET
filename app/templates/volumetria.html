@@ -6158,30 +6158,24 @@ function mostrarResultadosPopup(productos) {
 function seleccionarProductoDesdePopup(numeroParte, descripcion, precioLista, costoUnitario) {
     if (!currentFieldId) return;
 
-    // Store the selected product in localStorage with enhanced specificity
-    const tipoProducto = detectarTipoProducto(currentFieldId);
-    const clienteId = window.currentVolumetriaData?.clienteId || 'general';
-    const categoria = window.categoriaFiltroActual || 'general';
-    
-    // Create specific key for client + category + field type
-    const storageKey = `recentProducts_${clienteId}_${categoria}_${tipoProducto}`;
-    
-    let recentProducts = JSON.parse(localStorage.getItem(storageKey)) || [];
-    
-    // Add the new product to the beginning of the list
-    recentProducts.unshift(numeroParte);
-    
-    // Remove duplicates and keep only the last 3
-    recentProducts = [...new Set(recentProducts)].slice(0, 3);
-    
-    localStorage.setItem(storageKey, JSON.stringify(recentProducts));
-
-    console.log(`✅ Producto seleccionado y guardado en recientes para cliente ${clienteId}, categoría ${categoria}, tipo ${tipoProducto}: ${numeroParte}`);
-
-    // Actualizar el campo correspondiente
     const targetField = document.getElementById(currentFieldId);
     if (targetField) {
-        targetField.value = numeroParte;
+        const rowIndex = currentFieldId.split('-').pop();
+        const row = document.querySelector(`#excel-table-general > tbody > tr[data-row="${rowIndex}"]`);
+        
+        if (row) {
+            row.querySelector('[data-field="noParte"]').textContent = numeroParte;
+            row.querySelector('[data-field="descripcion"]').textContent = descripcion;
+            row.querySelector('[data-field="precioLista"]').textContent = formatearMoneda(precioLista);
+            row.querySelector('[data-field="costoUnitario"]').textContent = formatearMoneda(costoUnitario);
+            
+            // Recalcular la fila
+            setTimeout(() => {
+                recalcularFilaExcelGeneral(rowIndex);
+            }, 100);
+        } else {
+            targetField.value = numeroParte;
+        }
     }
     
     console.log(`✅ Producto seleccionado: ${numeroParte} - ${descripcion}`);
