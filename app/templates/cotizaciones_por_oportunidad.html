@@ -959,59 +959,10 @@
 
                 <!-- TIMELINE ITEMS -->
                 <div id="timelineItems">
-                    <!-- Cotizaciones más recientes primero -->
-                    {% for cotizacion in cotizaciones %}
-                    <div class="timeline-item" data-tipo="cotizacion">
-                        <div class="timeline-icon cotizacion-icon">📄</div>
-                        <div class="timeline-content-item">
-                            <div class="timeline-header-item">
-                                <div class="timeline-title-item">Cotización Creada</div>
-                                <div class="timeline-time">{{ cotizacion.fecha_creacion|date:"d/m/Y H:i" }}</div>
-                            </div>
-                            <div class="timeline-text">
-                                <strong>{{ cotizacion.titulo }}</strong><br>
-                                <span class="activity-meta">Monto: ${{ cotizacion.total|floatformat:2 }} {{ cotizacion.moneda }}</span>
-                                <div class="activity-actions">
-                                    <a href="{% url 'view_cotizacion_pdf' cotizacion.id %}" target="_blank" class="activity-link cotizacion-link">Ver cotización →</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-
-                    <!-- Volumetrías -->
-                    {% for volumetria in volumetrias %}
-                    <div class="timeline-item" data-tipo="volumetria">
-                        <div class="timeline-icon volumetria-icon">📊</div>
-                        <div class="timeline-content-item">
-                            <div class="timeline-header-item">
-                                <div class="timeline-title-item">Volumetría Creada</div>
-                                <div class="timeline-time">{{ volumetria.fecha_creacion|date:"d/m/Y H:i" }}</div>
-                            </div>
-                            <div class="timeline-text">
-                                <strong>{{ volumetria.titulo }}</strong><br>
-                                <span class="activity-meta">{{ volumetria.cantidad_nodos }} nodos • ${{ volumetria.total|floatformat:2 }} {{ volumetria.moneda }}</span>
-                                <div class="activity-actions">
-                                    <a href="{% url 'view_volumetria_pdf' volumetria.id %}" target="_blank" class="activity-link volumetria-link">Ver volumetría →</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-
-                    <!-- Oportunidad creada (siempre al final por ser la más antigua) -->
-                    <div class="timeline-item" data-tipo="creacion">
-                        <div class="timeline-icon creacion-icon">🆕</div>
-                        <div class="timeline-content-item">
-                            <div class="timeline-header-item">
-                                <div class="timeline-title-item">Oportunidad Creada</div>
-                                <div class="timeline-time">{{ oportunidad.fecha_creacion|date:"d/m/Y H:i" }}</div>
-                            </div>
-                            <div class="timeline-text">
-                                Oportunidad creada por <strong>{{ oportunidad.usuario.get_full_name|default:oportunidad.usuario.username }}</strong>
-                                <br><span class="activity-meta">Cliente: {{ oportunidad.cliente.nombre_empresa|default:"Sin cliente" }} • Monto: ${{ oportunidad.monto }}</span>
-                            </div>
-                        </div>
+                    <!-- Contenido cargado dinámicamente por JavaScript -->
+                    <div class="no-items-message-simple" id="loadingTimelineMessage">
+                        <div class="no-items-icon">⏳</div>
+                        <div class="no-items-text">Cargando actividades del timeline...</div>
                     </div>
                 </div>
             </div>
@@ -1115,8 +1066,8 @@
         })
           .then(data => {
               if (data.success) {
-                  // Crear el nuevo item del timeline para el comentario
-                  agregarComentarioTimeline(comentario);
+                  // Recargar el timeline completo para incluir el nuevo comentario
+                  await loadTimeline();
                   
                   // Limpiar el input
                   document.getElementById('nuevoComentario').value = '';
@@ -1135,46 +1086,113 @@
           });
     }
 
-    function agregarComentarioTimeline(contenido) {
-        const timelineItems = document.getElementById('timelineItems');
-        const now = new Date();
-        const timeString = now.toLocaleString('es-ES', {
-            day: '2-digit',
-            month: '2-digit', 
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-        
-        const username = '{{ user.get_full_name|default:user.username|escapejs }}';
-        const userInitial = '{{ user.username|first|upper|escapejs }}';
-        
-        const comentarioHTML = `
-            <div class="timeline-item" data-tipo="comentario">
-                <div class="timeline-icon comentario-icon">💬</div>
+    function renderTimelineItem(activity) {
+        let icon = '';
+        let title = activity.titulo;
+        let content = activity.descripcion;
+        let linkHtml = '';
+        let avatarHtml = '';
+        let activityClass = '';
+
+        switch (activity.tipo) {
+            case 'creacion':
+                icon = '🆕';
+                activityClass = 'creacion-icon';
+                content = `Oportunidad creada por <strong>${activity.usuario}</strong><br><span class="activity-meta">${activity.descripcion}</span>`;
+                break;
+            case 'cambio_estado':
+                icon = '🔄';
+                activityClass = 'cambio-estado-icon';
+                content = `Estado cambiado de <strong>${activity.estado_anterior.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</strong> a <strong>${activity.estado_nuevo.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</strong>`;
+                break;
+            case 'comentario':
+                icon = '💬';
+                activityClass = 'comentario-icon';
+                avatarHtml = `
+                    <div class="comment-author">
+                        <div class="avatar-circle-small">${activity.usuario.charAt(0).toUpperCase()}</div>
+                        <strong>${activity.usuario}</strong>
+                    </div>
+                `;
+                content = `
+                    ${avatarHtml}
+                    <div class="comment-content">${activity.contenido || activity.descripcion}</div>
+                `;
+                break;
+            case 'cotizacion':
+                icon = '📄';
+                activityClass = 'cotizacion-icon';
+                linkHtml = `<div class="activity-actions"><a href="${activity.url}" target="_blank" class="activity-link cotizacion-link">Ver cotización →</a></div>`;
+                break;
+            case 'volumetria':
+                icon = '📊';
+                activityClass = 'volumetria-icon';
+                linkHtml = `<div class="activity-actions"><a href="${activity.url}" target="_blank" class="activity-link volumetria-link">Ver volumetría →</a></div>`;
+                break;
+            default:
+                icon = '⚙️';
+                activityClass = 'sistema-icon';
+                break;
+        }
+
+        return `
+            <div class="timeline-item" data-tipo="${activity.tipo}">
+                <div class="timeline-icon ${activityClass}">${icon}</div>
                 <div class="timeline-content-item">
                     <div class="timeline-header-item">
-                        <div class="timeline-title-item">Comentario Creado</div>
-                        <div class="timeline-time">${timeString}</div>
+                        <div class="timeline-title-item">${title}</div>
+                        <div class="timeline-time">${activity.fecha}</div>
                     </div>
                     <div class="timeline-text">
-                        <div class="comment-author">
-                            <div class="avatar-circle-small">${userInitial}</div>
-                            <strong>${username}</strong>
-                        </div>
-                        <div class="comment-content">${contenido}</div>
+                        ${content}
+                        ${linkHtml}
                     </div>
                 </div>
             </div>
         `;
-        
-        // Insertar al principio del timeline (después del primer elemento si existe)
-        timelineItems.insertAdjacentHTML('afterbegin', comentarioHTML);
-        
-        // Actualizar contador de actividades
-        actualizarContadorActividades();
     }
 
+    async function loadTimeline() {
+        const timelineItemsContainer = document.getElementById('timelineItems');
+        const loadingMessage = document.getElementById('loadingTimelineMessage');
+        const oportunidadId = {{ oportunidad.id }};
+
+        if (loadingMessage) {
+            loadingMessage.style.display = 'block';
+        }
+        timelineItemsContainer.innerHTML = ''; // Clear existing content
+
+        try {
+            const response = await fetch(`/app/api/timeline-oportunidad/${oportunidadId}/`);
+            const data = await response.json();
+
+            if (data.success && data.timeline.length > 0) {
+                data.timeline.forEach(activity => {
+                    timelineItemsContainer.insertAdjacentHTML('beforeend', renderTimelineItem(activity));
+                });
+            } else {
+                timelineItemsContainer.innerHTML = `
+                    <div class="no-items-message-simple">
+                        <div class="no-items-icon">🤷‍♂️</div>
+                        <div class="no-items-text">No hay actividades registradas para esta oportunidad.</div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error loading timeline:', error);
+            timelineItemsContainer.innerHTML = `
+                <div class="no-items-message-simple">
+                    <div class="no-items-icon">❌</div>
+                    <div class="no-items-text">Error al cargar el timeline. Intenta recargar la página.</div>
+                </div>
+            `;
+        } finally {
+            if (loadingMessage) {
+                loadingMessage.style.display = 'none';
+            }
+            actualizarContadorActividades();
+        }
+    }
 
     function actualizarContadorActividades() {
         const contador = document.querySelector('.timeline-count');
@@ -1237,48 +1255,8 @@
 
     // Inicializar componentes
     document.addEventListener('DOMContentLoaded', function() {
-        // Inicializar color del estado en header
-        const estadoActual = '{{ oportunidad.estado_crm }}';
-        const colores = {
-            'nueva': '#007AFF',
-            'contacto_inicial': '#32D74B',
-            'cotizacion_enviada': '#FFD60A',
-            'negociacion': '#FF9F0A',
-            'vendida': '#32D74B',
-            'perdida': '#FF453A'
-        };
-        
-        const estadoDot = document.getElementById('estadoDotHeader');
-        if (estadoDot) {
-            estadoDot.style.background = colores[estadoActual] || '#007AFF';
-        }
-
-        // Inicializar botón de comentar
-        const comentarioInput = document.getElementById('nuevoComentario');
-        const btnComentar = document.getElementById('btnComentar');
-        
-        if (comentarioInput && btnComentar) {
-            // Estado inicial del botón
-            btnComentar.style.opacity = '0.6';
-            btnComentar.style.cursor = 'not-allowed';
-            
-            comentarioInput.addEventListener('input', function() {
-                const hasText = this.value.trim().length > 0;
-                btnComentar.style.opacity = hasText ? '1' : '0.6';
-                btnComentar.style.cursor = hasText ? 'pointer' : 'not-allowed';
-                btnComentar.disabled = !hasText;
-            });
-            
-            // Enter para enviar comentario (Ctrl+Enter o Cmd+Enter)
-            comentarioInput.addEventListener('keydown', function(e) {
-                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                    e.preventDefault();
-                    if (this.value.trim().length > 0) {
-                        agregarComentario();
-                    }
-                }
-            });
-        }
+        // Cargar el timeline al cargar la página
+        loadTimeline();
     });
 </script>
 
