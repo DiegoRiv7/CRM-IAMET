@@ -4381,38 +4381,49 @@ function actualizarDatosProyecto() {
 function exportarCSVGeneral() {
     console.log('📊 Exportando CSV de volumetría general');
     
-    const table = document.getElementById('excel-table-general');
-    if (!table) return;
+    const tables = document.querySelectorAll('.excel-table');
+    if (tables.length === 0) {
+        alert('No hay tablas para exportar.');
+        return;
+    }
     
     let csvContent = 'data:text/csv;charset=utf-8,';
     
-    // Headers
-    const headers = [
-        'No. Parte', 'Cantidad', 'Descripción', 'Marca', 
-        'Precio Lista', 'Desc. Cliente %', 'Precio Unit.', 'Total Cliente',
-        'Desc. Prov. %', 'Costo Unit.', 'Total Costo'
-    ];
-    csvContent += headers.join(',') + '\n';
-    
-    // Data rows
-    const rows = table.querySelectorAll('.excel-row');
-    rows.forEach(row => {
-        const rowData = [];
-        const cells = row.querySelectorAll('.excel-cell:not(.excel-cell-action)');
-        
-        cells.forEach(cell => {
-            let value = cell.textContent.trim();
-            // Escapar comillas y agregar comillas si contiene comas
-            if (value.includes(',') || value.includes('"')) {
-                value = '"' + value.replace(/"/g, '""') + '"';
-            }
-            rowData.push(value);
-        });
-        
-        // Solo agregar filas que tengan al menos un campo lleno
-        if (rowData.some(data => data && data !== '$0.00' && data !== '0%')) {
-            csvContent += rowData.join(',') + '\n';
+    tables.forEach((table, index) => {
+        if (index > 0) {
+            csvContent += '\n\n';
         }
+        
+        const tableName = table.closest('.mb-8').querySelector('h2').textContent;
+        csvContent += tableName + '\n';
+
+        // Headers
+        const headers = [];
+        table.querySelectorAll('.excel-subheader th:not(.excel-cell-action)').forEach(th => {
+            headers.push(th.textContent.trim());
+        });
+        csvContent += headers.join(',') + '\n';
+        
+        // Data rows
+        const rows = table.querySelectorAll('.excel-row');
+        rows.forEach(row => {
+            const rowData = [];
+            const cells = row.querySelectorAll('.excel-cell:not(.excel-cell-action)');
+            
+            cells.forEach(cell => {
+                let value = cell.textContent.trim();
+                // Escapar comillas y agregar comillas si contiene comas
+                if (value.includes(',') || value.includes('"')) {
+                    value = '"' + value.replace(/"/g, '""') + '"';
+                }
+                rowData.push(value);
+            });
+            
+            // Solo agregar filas que tengan al menos un campo lleno
+            if (rowData.some(data => data && data !== '$0.00' && data !== '0%')) {
+                csvContent += rowData.join(',') + '\n';
+            }
+        });
     });
     
     // Crear y descargar archivo
