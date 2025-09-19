@@ -13100,7 +13100,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
 .table-actions-container {
     display: flex;
-    gap: 12px;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Ajustar el header de la tabla para mejor distribución */
+.table-header-layout {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.table-title-left {
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.table-actions-right {
+    display: flex;
+    gap: 8px;
     align-items: center;
 }
 
@@ -13315,44 +13335,81 @@ document.addEventListener('DOMContentLoaded', function() {
 // NUEVAS FUNCIONES PARA BOTONES DE AGREGAR TABLA
 // ===========================================
 
+// Función para verificar si hay tablas y mostrar/ocultar el botón + grande
+function verificarEstadoBotonGrande() {
+    console.log('🔍 Verificando estado del botón + grande');
+    
+    // Buscar si existe alguna tabla activa
+    const tablasExistentes = document.querySelectorAll('#tabla-principal-precios, .table-container, [id*="tabla"]');
+    const botonGrande = document.querySelector('.add-volumetria-btn, .add-volumetria-container');
+    
+    if (tablasExistentes.length > 0) {
+        // Hay tablas, ocultar botón grande
+        if (botonGrande) {
+            botonGrande.style.display = 'none';
+            console.log('✅ Botón + grande ocultado (hay tablas)');
+        }
+    } else {
+        // No hay tablas, mostrar botón grande
+        if (botonGrande) {
+            botonGrande.style.display = 'block';
+            console.log('✅ Botón + grande mostrado (no hay tablas)');
+        }
+    }
+}
+
 // Función para mostrar la sección de tabla y mover el botón +
 function mostrarSeccionTablaYMoverBoton() {
     console.log('🔄 Mostrando tabla y moviendo botón +');
     
-    // Buscar el botón + grande en cualquier parte de la página y ocultarlo
-    const botonGrande = document.querySelector('.add-volumetria-btn, .add-volumetria-container');
-    if (botonGrande) {
-        botonGrande.style.display = 'none';
-        console.log('✅ Botón + grande ocultado');
-    }
+    // Verificar estado del botón grande basado en tablas existentes
+    verificarEstadoBotonGrande();
     
     // Buscar el header de la tabla que se acaba de crear
-    const headerTabla = document.querySelector('#tabla-principal-precios .flex.items-center.justify-between, .table-header');
+    const headerTabla = document.querySelector('#tabla-principal-precios .flex.items-center.justify-between');
     if (headerTabla && !document.getElementById('add-volumetria-small')) {
-        console.log('📍 Header de tabla encontrado, agregando botón pequeño');
+        console.log('📍 Header de tabla encontrado, reorganizando layout');
         
-        const botonPequeno = `
-            <button onclick="mostrarFormularioVolumetria()" id="add-volumetria-small" class="add-volumetria-small-btn">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                </svg>
-                Agregar Tipo
-            </button>
-        `;
+        // Reorganizar el header para tener título a la izquierda y botones a la derecha
+        headerTabla.className = 'table-header-layout mb-6';
         
-        // Buscar donde están los botones de acción (lado derecho del header)
-        let actionArea = headerTabla.querySelector('.flex:last-child, .table-actions, [class*="button"]')?.parentElement;
+        // Buscar el título y los botones existentes
+        const tituloExistente = headerTabla.querySelector('h2');
+        const botonesExistentes = headerTabla.querySelector('.flex');
         
-        if (!actionArea) {
-            // Si no hay área de acciones, crear una
-            actionArea = document.createElement('div');
-            actionArea.className = 'table-actions-container';
-            headerTabla.appendChild(actionArea);
+        if (tituloExistente) {
+            // Envolver el título en un contenedor de la izquierda
+            const tituloContainer = document.createElement('div');
+            tituloContainer.className = 'table-title-left';
+            tituloContainer.appendChild(tituloExistente);
+            
+            // Crear contenedor para los botones de la derecha
+            const botonesContainer = document.createElement('div');
+            botonesContainer.className = 'table-actions-right';
+            
+            // Agregar el botón pequeño de "Agregar Tipo"
+            const botonPequeno = `
+                <button onclick="mostrarFormularioVolumetria()" id="add-volumetria-small" class="add-volumetria-small-btn">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                    Agregar Tipo
+                </button>
+            `;
+            
+            // Primero agregar el botón "Agregar Tipo", luego los botones existentes
+            botonesContainer.innerHTML = botonPequeno;
+            if (botonesExistentes) {
+                botonesContainer.appendChild(botonesExistentes);
+            }
+            
+            // Limpiar el header y reorganizar
+            headerTabla.innerHTML = '';
+            headerTabla.appendChild(tituloContainer);
+            headerTabla.appendChild(botonesContainer);
+            
+            console.log('✅ Header reorganizado con título a la izquierda y botones a la derecha');
         }
-        
-        // Agregar el botón pequeño al área de acciones
-        actionArea.insertAdjacentHTML('afterbegin', botonPequeno);
-        console.log('✅ Botón + pequeño agregado al header de la tabla');
     } else if (!headerTabla) {
         console.log('⚠️ No se encontró header de tabla para agregar botón pequeño');
     }
@@ -14874,6 +14931,11 @@ function eliminarTabla(tablaId) {
     if (tabla) {
         tabla.remove();
         actualizarResumenFinanciero();
+        
+        // Verificar si quedan tablas para mostrar/ocultar el botón + grande
+        setTimeout(() => {
+            verificarEstadoBotonGrande();
+        }, 100);
     }
 }
 
@@ -14961,6 +15023,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Ejecutar inmediatamente para mostrar el workspace inicial
     crearVolumetria('general');
+    
+    // Verificar estado inicial del botón + grande
+    setTimeout(() => {
+        verificarEstadoBotonGrande();
+    }, 500);
     
     // Configurar observadores después de un breve delay
     setTimeout(() => {
