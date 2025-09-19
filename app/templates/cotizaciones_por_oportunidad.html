@@ -1041,7 +1041,7 @@
         
         // Guardar comentario en el servidor
         const oportunidadId = {{ oportunidad.id }};
-        const isSuper = {{ user.is_superuser|yesno:"true,false" }};
+        const isSuper = "{{ user.is_superuser|yesno:"true,false" }}";
         console.log('Es superusuario:', isSuper);
         console.log('Enviando comentario a:', `/app/api/agregar-comentario-oportunidad/${oportunidadId}/`);
         console.log('Contenido:', comentario);
