@@ -539,20 +539,39 @@
                 </div>
                 <div class="cotizaciones-compactas">
                     {% for cotizacion in cotizaciones %}
-                    <div class="cotizacion-item">
-                        <div class="cotizacion-info">
-                            <div class="cotizacion-titulo">{{ cotizacion.titulo }}</div>
-                            <div class="cotizacion-detalles">{{ cotizacion.fecha_creacion|date:"d/m/Y" }}</div>
+                    <div class="cotizacion-item-expandida">
+                        <div class="cotizacion-header">
+                            <div class="cotizacion-info">
+                                <div class="cotizacion-titulo">{{ cotizacion.titulo }}</div>
+                                <div class="cotizacion-detalles">
+                                    <span class="cotizacion-fecha">{{ cotizacion.fecha_creacion|date:"d/m/Y H:i" }}</span>
+                                    <span class="cotizacion-creador">por {{ cotizacion.usuario.get_full_name|default:cotizacion.usuario.username }}</span>
+                                </div>
+                            </div>
+                            <div class="cotizacion-monto">${{ cotizacion.total|floatformat:2 }} {{ cotizacion.moneda }}</div>
                         </div>
-                        <div class="cotizacion-monto">${{ cotizacion.total|floatformat:2 }}</div>
-                        <div class="cotizacion-acciones">
-                            <a href="{% url 'view_cotizacion_pdf' cotizacion.id %}" target="_blank" class="action-btn view">👁️</a>
-                            <a href="{% url 'editar_cotizacion' cotizacion.id %}" class="action-btn edit">✏️</a>
+                        <div class="cotizacion-acciones-completas">
+                            <a href="{% url 'view_cotizacion_pdf' cotizacion.id %}" target="_blank" class="action-btn-full view" title="Ver PDF">
+                                👁️ Ver
+                            </a>
+                            <a href="{% url 'generate_cotizacion_pdf' cotizacion.id %}" class="action-btn-full download" title="Descargar PDF">
+                                ⬇️ Descargar
+                            </a>
+                            <a href="{% url 'editar_cotizacion' cotizacion.id %}" class="action-btn-full edit" title="Editar">
+                                ✏️ Editar
+                            </a>
                         </div>
+                        {% if cotizacion.descripcion %}
+                        <div class="cotizacion-descripcion">
+                            {{ cotizacion.descripcion|truncatewords:15 }}
+                        </div>
+                        {% endif %}
                     </div>
                     {% empty %}
-                    <div style="text-align: center; color: var(--apple-label-secondary); padding: 1rem;">
-                        Sin cotizaciones aún
+                    <div class="no-items-message">
+                        <div class="no-items-icon">📄</div>
+                        <div class="no-items-text">Sin cotizaciones aún</div>
+                        <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="apple-button apple-button-small">Crear Primera Cotización</a>
                     </div>
                     {% endfor %}
                 </div>
@@ -569,20 +588,41 @@
                 </div>
                 <div class="cotizaciones-compactas">
                     {% for volumetria in volumetrias %}
-                    <div class="cotizacion-item">
-                        <div class="cotizacion-info">
-                            <div class="cotizacion-titulo">{{ volumetria.titulo }}</div>
-                            <div class="cotizacion-detalles">{{ volumetria.fecha_creacion|date:"d/m/Y" }} • {{ volumetria.cantidad_nodos }} nodos</div>
+                    <div class="cotizacion-item-expandida">
+                        <div class="cotizacion-header">
+                            <div class="cotizacion-info">
+                                <div class="cotizacion-titulo">{{ volumetria.titulo }}</div>
+                                <div class="cotizacion-detalles">
+                                    <span class="cotizacion-fecha">{{ volumetria.fecha_creacion|date:"d/m/Y H:i" }}</span>
+                                    <span class="cotizacion-creador">por {{ volumetria.created_by.get_full_name|default:volumetria.created_by.username }}</span>
+                                </div>
+                                <div class="volumetria-info-extra">
+                                    <span class="volumetria-nodos">{{ volumetria.cantidad_nodos }} nodos</span>
+                                    <span class="volumetria-categoria">{{ volumetria.categoria }} - {{ volumetria.color }}</span>
+                                </div>
+                            </div>
+                            <div class="cotizacion-monto">${{ volumetria.total|floatformat:2 }} {{ volumetria.moneda }}</div>
                         </div>
-                        <div class="cotizacion-monto">${{ volumetria.total|floatformat:2 }}</div>
-                        <div class="cotizacion-acciones">
-                            <a href="{% url 'view_volumetria_pdf' volumetria.id %}" target="_blank" class="action-btn view">👁️</a>
+                        <div class="cotizacion-acciones-completas">
+                            <a href="{% url 'view_volumetria_pdf' volumetria.id %}" target="_blank" class="action-btn-full view" title="Ver PDF">
+                                👁️ Ver
+                            </a>
+                            <a href="{% url 'download_volumetria_pdf' volumetria.id %}" class="action-btn-full download" title="Descargar PDF">
+                                ⬇️ Descargar
+                            </a>
+                            {% if user.is_superuser or user == volumetria.created_by %}
+                            <button onclick="eliminarVolumetria({{ volumetria.id }}, '{{ volumetria.titulo|escapejs }}')" class="action-btn-full delete" title="Eliminar">
+                                🗑️ Eliminar
+                            </button>
+                            {% endif %}
                         </div>
                     </div>
                     {% empty %}
                     {% if is_engineer %}
-                    <div style="text-align: center; color: var(--apple-label-secondary); padding: 1rem;">
-                        Sin volumetrías aún
+                    <div class="no-items-message">
+                        <div class="no-items-icon">📊</div>
+                        <div class="no-items-text">Sin volumetrías aún</div>
+                        <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="apple-button apple-button-small" style="background: var(--apple-orange);">Crear Primera Volumetría</a>
                     </div>
                     {% endif %}
                     {% endfor %}
