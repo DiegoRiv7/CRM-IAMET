@@ -6608,7 +6608,7 @@ def timeline_oportunidad(request, oportunidad_id):
         oportunidad = get_object_or_404(TodoItem, id=oportunidad_id)
         
         # Obtener todas las actividades
-        actividades = OportunidadActividad.objects.filter(oportunidad=oportunidad).order_by('-fecha_creacion')
+        actividades = oportunidad.actividades_crm.all().order_by('-fecha_creacion')
         
         timeline_data = []
         for actividad in actividades:

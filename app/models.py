@@ -1160,7 +1160,7 @@ class OportunidadActividad(models.Model):
     oportunidad = models.ForeignKey(
         TodoItem, 
         on_delete=models.CASCADE, 
-        related_name='actividades',
+        related_name='actividades_crm',
         verbose_name="Oportunidad"
     )
     
@@ -1203,7 +1203,7 @@ class OportunidadComentario(models.Model):
     oportunidad = models.ForeignKey(
         TodoItem,
         on_delete=models.CASCADE,
-        related_name='comentarios',
+        related_name='comentarios_crm',
         verbose_name="Oportunidad"
     )
     
@@ -1224,7 +1224,7 @@ class OportunidadComentario(models.Model):
         on_delete=models.CASCADE,
         blank=True,
         null=True,
-        related_name='respuestas',
+        related_name='respuestas_crm',
         verbose_name="Comentario Padre"
     )
     
@@ -1253,7 +1253,7 @@ class OportunidadArchivo(models.Model):
     oportunidad = models.ForeignKey(
         TodoItem,
         on_delete=models.CASCADE,
-        related_name='archivos',
+        related_name='archivos_crm',
         verbose_name="Oportunidad"
     )
     

@@ -72,8 +72,18 @@ RELEASE NOTES - CRM AVANZADO
 - JavaScript optimizado para UX
 - Arquitectura escalable para más funcionalidades
 
+=== CORRECCIONES ===
+- Fixed: Conflicto de nombres entre TodoItem.comentarios y OportunidadComentario.comentarios
+- Updated: related_name de modelos CRM para evitar conflictos (actividades_crm, comentarios_crm, archivos_crm)
+
 === PRÓXIMAS FUNCIONALIDADES ===
 - Subida de archivos al timeline
 - Notificaciones en tiempo real
 - Automatización de seguimientos
-- Integración con IA para sugerencias 
+- Integración con IA para sugerencias
+
+=== INSTRUCCIONES DE DEPLOY ===
+1. Hacer backup de la base de datos
+2. python manage.py makemigrations
+3. python manage.py migrate
+4. Reiniciar servidor Django 
