@@ -665,9 +665,11 @@
                 </thead>
                 <tbody>
                     {% for o in ultimas_oportunidades %}
-                    <tr onclick="handleOpportunityClick({{ o.id }})" style="cursor: pointer;">
+                    <tr style="cursor: pointer;" onclick="window.location.href='{% url 'cotizaciones_por_oportunidad' o.id %}'">
                         <td data-label="Oportunidad">
-                            <span style="font-weight: 500;">{{ o.nombre|truncatechars:30 }}</span>
+                            <a href="{% url 'cotizaciones_por_oportunidad' o.id %}" style="font-weight: 500; color: var(--apple-blue); text-decoration: none;">
+                                {{ o.nombre|truncatechars:30 }}
+                            </a>
                         </td>
                         <td data-label="Cliente">
                             {{ o.cliente|default:'Sin cliente asignado'|truncatechars:20 }}
@@ -746,56 +748,6 @@
             </div>
         </div>
     </div>
-    </section>
-    <!-- Modal para seleccionar acción de oportunidad -->
-    <div id="opportunity-action-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
-        <div class="bg-gray-800 p-8 rounded-lg shadow-xl text-center transform transition-all sm:max-w-lg sm:w-full">
-            <h3 class="text-xl font-semibold text-white mb-4">Selecciona una acción para la oportunidad</h3>
-            <p class="text-gray-300 mb-6" id="modal-opportunity-name"></p>
-            <div class="flex justify-center space-x-4">
-                <button id="create-quotation-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition duration-200">
-                    Crear Cotización
-                </button>
-                <button id="create-volumetry-btn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition duration-200">
-                    Crear Volumetría
-                </button>
-                <button onclick="closeOpportunityActionModal()" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition duration-200">
-                    Cancelar
-                </button>
-            </div>
-        </div>
-    </div>
 </main>
-<script>
-    let selectedOpportunityId = null;
-    let selectedOpportunityName = '';
-
-    function handleOpportunityClick(opportunityId) {
-        selectedOpportunityId = opportunityId;
-        const opportunityNameElement = event.currentTarget.querySelector('[data-label="Oportunidad"] span');
-        selectedOpportunityName = opportunityNameElement ? opportunityNameElement.textContent : `Oportunidad ${opportunityId}`;
-
-        document.getElementById('modal-opportunity-name').textContent = `Oportunidad: ${selectedOpportunityName}`;
-        document.getElementById('opportunity-action-modal').classList.remove('hidden');
-    }
-
-    function closeOpportunityActionModal() {
-        document.getElementById('opportunity-action-modal').classList.add('hidden');
-        selectedOpportunityId = null;
-        selectedOpportunityName = '';
-    }
-
-    document.getElementById('create-quotation-btn').addEventListener('click', function() {
-        if (selectedOpportunityId) {
-            window.location.href = `/app/crear-cotizacion/oportunidad/${selectedOpportunityId}/`;
-        }
-    });
-
-    document.getElementById('create-volumetry-btn').addEventListener('click', function() {
-        if (selectedOpportunityId) {
-            window.location.href = `/app/crear-volumetria/oportunidad/${selectedOpportunityId}/`;
-        }
-    });
-</script>
 {% endblock %}
 
