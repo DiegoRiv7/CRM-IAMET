@@ -12328,10 +12328,23 @@ document.addEventListener('DOMContentLoaded', () => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 24px;
+    padding: 20px 0; /* Eliminar padding lateral para usar todo el ancho */
     background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
     border-bottom: 1px solid #475569;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    width: 100vw; /* Usar todo el ancho de la ventana */
+    margin-left: calc(-50vw + 50%); /* Centrar y expandir */
+    position: relative;
+}
+
+/* Estilos para las secciones internas del header */
+.header-extended-section {
+    width: 100%;
+    padding: 0 24px; /* Agregar padding interno para el contenido */
+}
+
+.project-info-extended {
+    width: 100%; /* Asegurar que use todo el ancho disponible */
 }
 
 .back-button {
