@@ -13075,23 +13075,25 @@ document.addEventListener('DOMContentLoaded', () => {
 .add-volumetria-small-btn {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    gap: 6px;
+    padding: 8px 12px;
+    background: #1f2937;
+    border: 1px solid #374151;
     border-radius: 8px;
     color: #60a5fa;
     font-size: 14px;
     font-weight: 500;
     transition: all 0.2s ease;
     cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .add-volumetria-small-btn:hover {
-    background: rgba(59, 130, 246, 0.2);
-    border-color: rgba(59, 130, 246, 0.5);
+    background: #374151;
+    border-color: #60a5fa;
     color: #93c5fd;
     transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .add-volumetria-small-btn svg {
@@ -13339,21 +13341,21 @@ document.addEventListener('DOMContentLoaded', function() {
 function verificarEstadoBotonGrande() {
     console.log('🔍 Verificando estado del botón + grande');
     
-    // Buscar si existe alguna tabla activa
-    const tablasExistentes = document.querySelectorAll('#tabla-principal-precios, .table-container, [id*="tabla"]');
+    // Buscar específicamente la tabla de precios que es la que nos importa
+    const tablaPrincipal = document.getElementById('tabla-principal-precios');
     const botonGrande = document.querySelector('.add-volumetria-btn, .add-volumetria-container');
     
-    if (tablasExistentes.length > 0) {
-        // Hay tablas, ocultar botón grande
+    if (tablaPrincipal) {
+        // Hay tabla principal, ocultar botón grande
         if (botonGrande) {
             botonGrande.style.display = 'none';
-            console.log('✅ Botón + grande ocultado (hay tablas)');
+            console.log('✅ Botón + grande ocultado (tabla principal existe)');
         }
     } else {
-        // No hay tablas, mostrar botón grande
+        // No hay tabla principal, mostrar botón grande
         if (botonGrande) {
             botonGrande.style.display = 'block';
-            console.log('✅ Botón + grande mostrado (no hay tablas)');
+            console.log('✅ Botón + grande mostrado (no hay tabla principal)');
         }
     }
 }
@@ -13365,53 +13367,32 @@ function mostrarSeccionTablaYMoverBoton() {
     // Verificar estado del botón grande basado en tablas existentes
     verificarEstadoBotonGrande();
     
-    // Buscar el header de la tabla que se acaba de crear
-    const headerTabla = document.querySelector('#tabla-principal-precios .flex.items-center.justify-between');
-    if (headerTabla && !document.getElementById('add-volumetria-small')) {
-        console.log('📍 Header de tabla encontrado, reorganizando layout');
+    // Buscar el área de botones existente en la tabla (lado derecho del header)
+    const areaBotones = document.querySelector('#tabla-principal-precios .flex.space-x-3');
+    if (areaBotones && !document.getElementById('add-volumetria-small')) {
+        console.log('📍 Área de botones encontrada, agregando botón pequeño');
         
-        // Reorganizar el header para tener título a la izquierda y botones a la derecha
-        headerTabla.className = 'table-header-layout mb-6';
+        // Crear el botón pequeño de "Agregar Tipo"
+        const botonPequeno = document.createElement('button');
+        botonPequeno.id = 'add-volumetria-small';
+        botonPequeno.className = 'add-volumetria-small-btn';
+        botonPequeno.onclick = function() { mostrarFormularioVolumetria(); };
         
-        // Buscar el título y los botones existentes
-        const tituloExistente = headerTabla.querySelector('h2');
-        const botonesExistentes = headerTabla.querySelector('.flex');
+        botonPequeno.innerHTML = `
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            Agregar Tipo
+        `;
         
-        if (tituloExistente) {
-            // Envolver el título en un contenedor de la izquierda
-            const tituloContainer = document.createElement('div');
-            tituloContainer.className = 'table-title-left';
-            tituloContainer.appendChild(tituloExistente);
-            
-            // Crear contenedor para los botones de la derecha
-            const botonesContainer = document.createElement('div');
-            botonesContainer.className = 'table-actions-right';
-            
-            // Agregar el botón pequeño de "Agregar Tipo"
-            const botonPequeno = `
-                <button onclick="mostrarFormularioVolumetria()" id="add-volumetria-small" class="add-volumetria-small-btn">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                    </svg>
-                    Agregar Tipo
-                </button>
-            `;
-            
-            // Primero agregar el botón "Agregar Tipo", luego los botones existentes
-            botonesContainer.innerHTML = botonPequeno;
-            if (botonesExistentes) {
-                botonesContainer.appendChild(botonesExistentes);
-            }
-            
-            // Limpiar el header y reorganizar
-            headerTabla.innerHTML = '';
-            headerTabla.appendChild(tituloContainer);
-            headerTabla.appendChild(botonesContainer);
-            
-            console.log('✅ Header reorganizado con título a la izquierda y botones a la derecha');
-        }
-    } else if (!headerTabla) {
-        console.log('⚠️ No se encontró header de tabla para agregar botón pequeño');
+        // Agregar el botón al INICIO del área de botones (antes del botón "Agregar Fila")
+        areaBotones.insertBefore(botonPequeno, areaBotones.firstChild);
+        
+        console.log('✅ Botón "Agregar Tipo" agregado antes del botón "Agregar Fila"');
+    } else if (!areaBotones) {
+        console.log('⚠️ No se encontró área de botones en la tabla');
+    } else {
+        console.log('ℹ️ Botón pequeño ya existe, no se agrega de nuevo');
     }
 }
 
