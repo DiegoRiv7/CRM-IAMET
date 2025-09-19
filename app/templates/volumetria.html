@@ -13140,28 +13140,40 @@ function verificarEstadoBotonGrande() {
     
     // Buscar específicamente la tabla de precios que es la que nos importa
     const tablaPrincipal = document.getElementById('tabla-principal-precios');
+    // También verificar otras tablas de contenido real
+    const tablaInfraestructura = document.getElementById('tabla-infraestructura');
+    const tablaGastos = document.getElementById('tabla-gastos-instalacion');
+    const tablaManoObra = document.getElementById('tabla-mano-obra');
+    
     // Buscar el botón + grande de forma más específica (el que está en .tables-container)
     const botonGrande = document.querySelector('.tables-container button[onclick="mostrarFormularioVolumetria()"]');
     
+    // Solo considerar que hay contenido si hay tablas con datos reales
+    const hayContenidoReal = tablaPrincipal || tablaInfraestructura || tablaGastos || tablaManoObra;
+    
     console.log('🔍 Estado actual:', {
         tablaPrincipal: tablaPrincipal ? 'EXISTS' : 'NOT_FOUND',
+        tablaInfraestructura: tablaInfraestructura ? 'EXISTS' : 'NOT_FOUND',
+        tablaGastos: tablaGastos ? 'EXISTS' : 'NOT_FOUND',
+        tablaManoObra: tablaManoObra ? 'EXISTS' : 'NOT_FOUND',
+        hayContenidoReal: hayContenidoReal,
         botonGrande: botonGrande ? 'EXISTS' : 'NOT_FOUND',
         botonGrandeVisible: botonGrande ? (botonGrande.style.display !== 'none') : 'N/A'
     });
     
-    if (tablaPrincipal) {
-        // Hay tabla principal, ocultar botón grande
+    if (hayContenidoReal) {
+        // Hay tabla, ocultar el botón + grande
         if (botonGrande) {
             botonGrande.style.display = 'none';
-            console.log('✅ Botón + grande ocultado (tabla principal existe)');
+            console.log('✅ Botón + grande ocultado (hay contenido real)');
         } else {
             console.log('⚠️ No se encontró el botón + grande para ocultar');
         }
     } else {
-        // No hay tabla principal, mostrar botón grande
+        // No hay tabla, mostrar el botón + grande
         if (botonGrande) {
-            botonGrande.style.display = 'block';
-            console.log('✅ Botón + grande mostrado (no hay tabla principal)');
+            botonGrande.style.display = 'flex'; // Mantener como flex para el diseño centrado
+            console.log('✅ Botón + grande mostrado (no hay contenido real)');
         } else {
             console.log('⚠️ No se encontró el botón + grande para mostrar');
         }
@@ -13172,8 +13184,8 @@ function verificarEstadoBotonGrande() {
 function mostrarSeccionTablaYMoverBoton() {
     console.log('🔄 Mostrando tabla y moviendo botón +');
     
-    // Verificar estado del botón grande basado en tablas existentes
-    verificarEstadoBotonGrande();
+    // No verificar estado inmediatamente, dejar que el MutationObserver lo detecte
+    // verificarEstadoBotonGrande();
     
     // Buscar el área de botones existente en la tabla (lado derecho del header)
     const areaBotones = document.querySelector('#tabla-principal-precios .flex.space-x-3');
@@ -13218,15 +13230,17 @@ function agregarTablaPrincipal() {
         return;
     }
     
-    // Mostrar la sección de tabla y mover el botón + (con delay para asegurar que el DOM esté listo)
-    setTimeout(() => {
-        mostrarSeccionTablaYMoverBoton();
-        
-        // Verificación adicional del botón grande después de crear la tabla
-        setTimeout(() => {
-            verificarEstadoBotonGrande();
-        }, 100);
-    }, 100);
+    // No llamar inmediatamente a la función de mover botón
+    // porque puede causar comportamiento inesperado con el botón +
+    // El MutationObserver ahora se encarga de detectar cuando realmente se agregan tablas
+    // setTimeout(() => {
+    //     mostrarSeccionTablaYMoverBoton();
+    //     
+    //     // Verificación adicional del botón grande después de crear la tabla
+    //     setTimeout(() => {
+    //         verificarEstadoBotonGrande();
+    //     }, 100);
+    // }, 100);
     
     const tablaHTML = `
         <div id="tabla-principal-precios" class="mb-8 animate-fade-in">
@@ -13298,10 +13312,11 @@ function agregarTablaPrincipal() {
     mostrarResumen();
     recalcularTotalesGeneral();
     
-    // Verificar estado del botón + grande después de crear la tabla
-    setTimeout(() => {
-        verificarEstadoBotonGrande();
-    }, 200);
+    // El MutationObserver ahora se encarga de detectar cambios automáticamente
+    // No es necesario llamar manualmente a verificarEstadoBotonGrande()
+    // setTimeout(() => {
+    //     verificarEstadoBotonGrande();
+    // }, 200);
 }
 
 // Función para agregar tabla de gastos de instalación
@@ -14731,10 +14746,11 @@ function eliminarTabla(tablaId) {
         tabla.remove();
         actualizarResumenFinanciero();
         
-        // Verificar si quedan tablas para mostrar/ocultar el botón + grande
-        setTimeout(() => {
-            verificarEstadoBotonGrande();
-        }, 100);
+        // El MutationObserver detectará automáticamente la eliminación de tablas
+        // No es necesario llamar manualmente a verificarEstadoBotonGrande()
+        // setTimeout(() => {
+        //     verificarEstadoBotonGrande();
+        // }, 100);
     }
 }
 
@@ -14823,22 +14839,47 @@ document.addEventListener('DOMContentLoaded', function() {
     // Ejecutar inmediatamente para mostrar el workspace inicial
     crearVolumetria('general');
     
-    // Verificar estado inicial del botón + grande
-    setTimeout(() => {
-        verificarEstadoBotonGrande();
-    }, 500);
+    // No verificar estado inicial del botón + grande inmediatamente
+    // porque el workspace se está creando y puede causar comportamiento inesperado
+    // setTimeout(() => {
+    //     verificarEstadoBotonGrande();
+    // }, 500);
     
-    // Configurar observador para monitorer cambios en la tabla
+    // Configurar observador para monitorer cambios en la tabla (más específico)
     const observer = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
             // Si se agregaron o quitaron nodos, verificar el estado
             if (mutation.type === 'childList') {
                 const target = mutation.target;
-                // Verificar si el cambio fue en el contenedor de tablas
-                if (target.id === 'dynamic-tables-container' || target.classList.contains('tables-container')) {
-                    setTimeout(() => {
-                        verificarEstadoBotonGrande();
-                    }, 100);
+                // Solo reaccionar a cambios en el contenedor dinámico, no en tables-container
+                if (target.id === 'dynamic-tables-container') {
+                    // Verificar si realmente se agregaron tablas de contenido, no solo divs
+                    const addedNodes = Array.from(mutation.addedNodes);
+                    const removedNodes = Array.from(mutation.removedNodes);
+                    
+                    const hayTablasAgregadas = addedNodes.some(node => 
+                        node.nodeType === 1 && (
+                            node.id === 'tabla-principal-precios' ||
+                            node.id === 'tabla-infraestructura' ||
+                            node.id === 'tabla-gastos-instalacion' ||
+                            node.id === 'tabla-mano-obra'
+                        )
+                    );
+                    
+                    const hayTablasEliminadas = removedNodes.some(node => 
+                        node.nodeType === 1 && (
+                            node.id === 'tabla-principal-precios' ||
+                            node.id === 'tabla-infraestructura' ||
+                            node.id === 'tabla-gastos-instalacion' ||
+                            node.id === 'tabla-mano-obra'
+                        )
+                    );
+                    
+                    if (hayTablasAgregadas || hayTablasEliminadas) {
+                        setTimeout(() => {
+                            verificarEstadoBotonGrande();
+                        }, 200);
+                    }
                 }
             }
         });
