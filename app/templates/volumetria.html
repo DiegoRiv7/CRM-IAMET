@@ -6835,10 +6835,6 @@ function seleccionarProductoDelPopup(numeroParte, descripcion, costoUnitario, pr
     const field = document.getElementById(currentFieldId);
     if (field) {
         field.value = numeroParte;
-        
-        // Disparar evento para actualizar otros campos relacionados
-        const event = new Event('input', { bubbles: true });
-        field.dispatchEvent(event);
     }
     
     // También llenar campos relacionados si existen
