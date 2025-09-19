@@ -4997,6 +4997,11 @@ function resolverNombresClienteYOportunidad(datos) {
                     clienteDisplay.textContent = cliente.name;
                     console.log('DEBUG: Cliente resuelto:', cliente.name);
                     
+                    // Guardar nombre del cliente globalmente para los popups
+                    if (window.currentVolumetriaData) {
+                        window.currentVolumetriaData.clienteNombre = cliente.name;
+                    }
+                    
                     // Actualizar categoría del cliente
                     if (categoriaDisplay && cliente.categoria) {
                         categoriaDisplay.textContent = `Tipo ${cliente.categoria}`;
@@ -5598,12 +5603,16 @@ function mostrarPopupBusquedaAvanzada(fieldId) {
         setTimeout(() => searchInput.focus(), 200);
     }
     
-    // Cargar productos iniciales o recientes
+    // Cargar productos iniciales o recientes específicos por cliente y categoría
     setTimeout(() => {
-        const recentProducts = JSON.parse(localStorage.getItem(`recentProducts_${tipoProducto}`)) || [];
+        const clienteId = window.currentVolumetriaData?.clienteId || 'general';
+        const categoria = window.categoriaFiltroActual || 'general';
+        const storageKey = `recentProducts_${clienteId}_${categoria}_${tipoProducto}`;
+        
+        const recentProducts = JSON.parse(localStorage.getItem(storageKey)) || [];
 
         if (recentProducts.length > 0) {
-            mostrarMensajeResultados('🔄 Cargando productos recientes...');
+            mostrarMensajeResultados(`🔄 Cargando últimos 3 productos de ${tipoProducto} para este cliente...`);
             // Fetch details of recent products
             fetch(`/app/api/buscar-productos-por-numeros-parte/`, {
                 method: 'POST',
@@ -5616,7 +5625,16 @@ function mostrarPopupBusquedaAvanzada(fieldId) {
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.productos) {
-                    mostrarResultadosPopup(data.productos);
+                    // Agregar header especial para productos recientes del cliente
+                    const productosConHeader = {
+                        ...data,
+                        productos: data.productos.map((producto, index) => ({
+                            ...producto,
+                            isRecent: true,
+                            recentIndex: index + 1
+                        }))
+                    };
+                    mostrarResultadosPopupConHeader(productosConHeader, clienteId, categoria, tipoProducto);
                 } else {
                     // Fallback to initial products if fetching recent fails
                     cargarProductosIniciales(tipoProducto);
@@ -5627,9 +5645,100 @@ function mostrarPopupBusquedaAvanzada(fieldId) {
                 cargarProductosIniciales(tipoProducto);
             });
         } else {
-            cargarProductosIniciales(tipoProducto);
+            // No hay productos recientes para este cliente/categoría, mostrar productos iniciales
+            mostrarMensajeResultados(`🆕 Primera vez usando ${tipoProducto} para este cliente. Mostrando productos populares...`);
+            setTimeout(() => cargarProductosIniciales(tipoProducto), 1000);
         }
     }, 300);
+}
+
+// Función para mostrar resultados del popup con header especial para productos recientes
+function mostrarResultadosPopupConHeader(data, clienteId, categoria, tipoProducto) {
+    const resultsContainer = document.getElementById('popup-search-results');
+    if (!resultsContainer) return;
+    
+    const productos = data.productos || [];
+    
+    if (productos.length === 0) {
+        mostrarMensajeResultados('🔍 No se encontraron productos.');
+        return;
+    }
+    
+    // Crear header informativo
+    const clienteInfo = window.currentVolumetriaData?.clienteNombre || `Cliente ${clienteId}`;
+    const categoriaDisplay = categoria === 'general' ? 'Sin categoría específica' : categoria;
+    
+    let html = `
+        <div style="background: linear-gradient(135deg, #3B82F6, #1E40AF); padding: 16px; margin-bottom: 16px; border-radius: 12px; text-align: center;">
+            <div style="color: white; font-weight: 600; font-size: 16px; margin-bottom: 4px;">
+                📋 Últimos productos de ${tipoProducto} seleccionados
+            </div>
+            <div style="color: rgba(255,255,255,0.9); font-size: 14px;">
+                👤 ${clienteInfo} • 🏷️ ${categoriaDisplay}
+            </div>
+            <div style="color: rgba(255,255,255,0.7); font-size: 12px; margin-top: 8px;">
+                Haz clic en cualquier producto para seleccionarlo rápidamente
+            </div>
+        </div>
+    `;
+    
+    // Agregar productos con indicadores especiales
+    productos.forEach((producto, index) => {
+        const recentBadge = producto.isRecent ? `
+            <div style="position: absolute; top: 8px; left: 8px; background: #10B981; color: white; 
+                        padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">
+                #${producto.recentIndex} Reciente
+            </div>
+        ` : '';
+        
+        html += `
+            <div class="search-result" onclick="seleccionarProductoDelPopup('${producto.numero_parte}', '${producto.descripcion?.replace(/'/g, "\\'")}', ${producto.precio_lista || 0}, ${producto.costo_unitario || 0})" 
+                 style="position: relative; margin-bottom: 12px; padding: 16px; background: ${producto.isRecent ? 'linear-gradient(135deg, #F0FDF4, #DCFCE7)' : '#f9fafb'}; 
+                        border-radius: 12px; cursor: pointer; transition: all 0.2s ease; border: 2px solid ${producto.isRecent ? '#10B981' : '#e5e7eb'};">
+                ${recentBadge}
+                <div style="margin-top: ${producto.isRecent ? '20px' : '0'};">
+                    <div style="font-weight: 600; color: #1f2937; font-size: 16px; margin-bottom: 4px;">
+                        ${producto.numero_parte}
+                    </div>
+                    <div style="color: #6b7280; font-size: 14px; line-height: 1.4; margin-bottom: 8px;">
+                        ${producto.descripcion || 'Sin descripción'}
+                    </div>
+                    <div style="display: flex; justify-content: between; align-items: center;">
+                        <div style="flex: 1;">
+                            <span style="color: #059669; font-weight: 600; font-size: 16px;">
+                                $${(producto.precio_lista || 0).toFixed(2)} USD
+                            </span>
+                            ${producto.costo_unitario ? `
+                                <span style="color: #6b7280; font-size: 12px; margin-left: 8px;">
+                                    Costo: $${producto.costo_unitario.toFixed(2)}
+                                </span>
+                            ` : ''}
+                        </div>
+                        <div style="color: #3B82F6; font-size: 12px; font-weight: 500;">
+                            ${producto.marca || 'Sin marca'} ${producto.isRecent ? '• 🔥 Usado recientemente' : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    // Agregar link para ver más productos
+    html += `
+        <div style="text-align: center; margin-top: 16px; padding: 12px;">
+            <div style="color: #6b7280; font-size: 14px; margin-bottom: 8px;">
+                💡 ¿No encuentras lo que buscas?
+            </div>
+            <button onclick="cargarProductosIniciales('${tipoProducto}')" 
+                    style="background: linear-gradient(135deg, #6B7280, #4B5563); color: white; 
+                           padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; 
+                           font-size: 13px; transition: all 0.2s ease;">
+                🔍 Ver todos los productos de ${tipoProducto}
+            </button>
+        </div>
+    `;
+    
+    resultsContainer.innerHTML = html;
 }
 
 // Función para detectar tipo de producto basado en fieldId
@@ -6049,9 +6158,15 @@ function mostrarResultadosPopup(productos) {
 function seleccionarProductoDesdePopup(numeroParte, descripcion, precioLista, costoUnitario) {
     if (!currentFieldId) return;
 
-    // Store the selected product in localStorage
+    // Store the selected product in localStorage with enhanced specificity
     const tipoProducto = detectarTipoProducto(currentFieldId);
-    let recentProducts = JSON.parse(localStorage.getItem(`recentProducts_${tipoProducto}`)) || [];
+    const clienteId = window.currentVolumetriaData?.clienteId || 'general';
+    const categoria = window.categoriaFiltroActual || 'general';
+    
+    // Create specific key for client + category + field type
+    const storageKey = `recentProducts_${clienteId}_${categoria}_${tipoProducto}`;
+    
+    let recentProducts = JSON.parse(localStorage.getItem(storageKey)) || [];
     
     // Add the new product to the beginning of the list
     recentProducts.unshift(numeroParte);
@@ -6059,9 +6174,9 @@ function seleccionarProductoDesdePopup(numeroParte, descripcion, precioLista, co
     // Remove duplicates and keep only the last 3
     recentProducts = [...new Set(recentProducts)].slice(0, 3);
     
-    localStorage.setItem(`recentProducts_${tipoProducto}`, JSON.stringify(recentProducts));
+    localStorage.setItem(storageKey, JSON.stringify(recentProducts));
 
-    console.log(`✅ Producto seleccionado y guardado en recientes: ${numeroParte}`);
+    console.log(`✅ Producto seleccionado y guardado en recientes para cliente ${clienteId}, categoría ${categoria}, tipo ${tipoProducto}: ${numeroParte}`);
 
     // Actualizar el campo correspondiente
     const targetField = document.getElementById(currentFieldId);
@@ -9797,11 +9912,54 @@ function mostrarPopupBusquedaAvanzadaConCategoria(fieldId, categoria) {
             }
         }
         
-        // Enfocar en el campo de búsqueda
-        const searchInput = document.getElementById('search-input-popup');
-        if (searchInput) {
-            searchInput.focus();
+        // Cargar productos recientes específicos por cliente y categoría
+        const clienteId = window.currentVolumetriaData?.clienteId || 'general';
+        const categoriaStorage = categoria || 'general';
+        const storageKey = `recentProducts_${clienteId}_${categoriaStorage}_${tipoProducto}`;
+        const recentProducts = JSON.parse(localStorage.getItem(storageKey)) || [];
+
+        if (recentProducts.length > 0) {
+            mostrarMensajeResultados(`🔄 Cargando últimos 3 productos de ${tipoProducto} para este cliente...`);
+            fetch(`/app/api/buscar-productos-por-numeros-parte/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ numeros_parte: recentProducts })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.productos) {
+                    const productosConHeader = {
+                        ...data,
+                        productos: data.productos.map((producto, index) => ({
+                            ...producto,
+                            isRecent: true,
+                            recentIndex: index + 1
+                        }))
+                    };
+                    mostrarResultadosPopupConHeader(productosConHeader, clienteId, categoriaStorage, tipoProducto);
+                } else {
+                    cargarProductosIniciales(tipoProducto);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching recent products:', error);
+                cargarProductosIniciales(tipoProducto);
+            });
+        } else {
+            mostrarMensajeResultados(`🆕 Primera vez usando ${tipoProducto} para este cliente y categoría. Mostrando productos populares...`);
+            setTimeout(() => cargarProductosIniciales(tipoProducto), 1000);
         }
+        
+        // Enfocar en el campo de búsqueda después de cargar productos
+        setTimeout(() => {
+            const searchInput = document.getElementById('search-input-popup');
+            if (searchInput) {
+                searchInput.focus();
+            }
+        }, 500);
     }, 200);
 }
 
