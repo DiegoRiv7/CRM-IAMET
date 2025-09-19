@@ -2500,29 +2500,29 @@ function poblarTablaGeneralConNodos(datos) {
                 noParte: datos.numerosParte.cable || 'PUL6004BL-BOX',
                 descripcion: datos.productosCompletos.cable.descripcion || 'Cable UTP Cat 6 - Bobina 305m',
                 cantidad: datos.cantidadCable || 1,
-                costoUnitario: 145.00,
-                precioLista: calcularPrecioSegunCategoria(145.00, categoriaCliente)
+                costoUnitario: datos.productosCompletos.cable.precio_proveedor,
+                precioLista: calcularPrecioSegunCategoria(datos.productosCompletos.cable.precio_proveedor, categoriaCliente)
             },
             {
                 noParte: datos.numerosParte.jack || 'CJ6X88TBL',
                 descripcion: 'Jack RJ45 Cat 6 - Azul',
                 cantidad: (datos.cantidadJacksUsuario || 0) + (datos.cantidadJacksPatchpanel || 0),
-                costoUnitario: 6.80,
-                precioLista: calcularPrecioSegunCategoria(6.80, categoriaCliente)
+                costoUnitario: datos.productosCompletos.jack.precio_proveedor,
+                precioLista: calcularPrecioSegunCategoria(datos.productosCompletos.jack.precio_proveedor, categoriaCliente)
             },
             {
                 noParte: datos.numerosParte.patchcord || 'UTP28SP3BL',
                 descripcion: 'Patch Cord Cat 6 - 3 pies Azul',
                 cantidad: (datos.cantidadPatchcordsUsuario || 0) + (datos.cantidadPatchcordsPatchpanel || 0),
-                costoUnitario: 9.60,
-                precioLista: calcularPrecioSegunCategoria(9.60, categoriaCliente)
+                costoUnitario: datos.productosCompletos.patchcord.precio_proveedor,
+                precioLista: calcularPrecioSegunCategoria(datos.productosCompletos.patchcord.precio_proveedor, categoriaCliente)
             },
             {
                 noParte: datos.numerosParte.faceplate || 'NK2FHDEI',
                 descripcion: 'Faceplate 2 puertos - Blanco',
                 cantidad: datos.cantidadFaceplates || 1,
-                costoUnitario: 12.40,
-                precioLista: calcularPrecioSegunCategoria(12.40, categoriaCliente)
+                costoUnitario: datos.productosCompletos.faceplate.precio_proveedor,
+                precioLista: calcularPrecioSegunCategoria(datos.productosCompletos.faceplate.precio_proveedor, categoriaCliente)
             }
         ];
         
