@@ -996,8 +996,7 @@
         dropdown.style.display = 'none';
         arrow.style.transform = 'rotate(0deg)';
         
-        // Llamada AJAX para actualizar en el servidor
-        const oportunidadId = {{ oportunidad.id }};
+        const oportunidadId = "{{ oportunidad.id }}";
         fetch(`/app/api/cambiar-estado-oportunidad/${oportunidadId}/`, {
             method: 'POST',
             headers: {
