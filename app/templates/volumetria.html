@@ -13343,19 +13343,30 @@ function verificarEstadoBotonGrande() {
     
     // Buscar específicamente la tabla de precios que es la que nos importa
     const tablaPrincipal = document.getElementById('tabla-principal-precios');
-    const botonGrande = document.querySelector('.add-volumetria-btn, .add-volumetria-container');
+    // Buscar el botón + grande de forma más específica (el que está en .tables-container)
+    const botonGrande = document.querySelector('.tables-container button[onclick="mostrarFormularioVolumetria()"]');
+    
+    console.log('🔍 Estado actual:', {
+        tablaPrincipal: tablaPrincipal ? 'EXISTS' : 'NOT_FOUND',
+        botonGrande: botonGrande ? 'EXISTS' : 'NOT_FOUND',
+        botonGrandeVisible: botonGrande ? (botonGrande.style.display !== 'none') : 'N/A'
+    });
     
     if (tablaPrincipal) {
         // Hay tabla principal, ocultar botón grande
         if (botonGrande) {
             botonGrande.style.display = 'none';
             console.log('✅ Botón + grande ocultado (tabla principal existe)');
+        } else {
+            console.log('⚠️ No se encontró el botón + grande para ocultar');
         }
     } else {
         // No hay tabla principal, mostrar botón grande
         if (botonGrande) {
             botonGrande.style.display = 'block';
             console.log('✅ Botón + grande mostrado (no hay tabla principal)');
+        } else {
+            console.log('⚠️ No se encontró el botón + grande para mostrar');
         }
     }
 }
@@ -13413,6 +13424,11 @@ function agregarTablaPrincipal() {
     // Mostrar la sección de tabla y mover el botón + (con delay para asegurar que el DOM esté listo)
     setTimeout(() => {
         mostrarSeccionTablaYMoverBoton();
+        
+        // Verificación adicional del botón grande después de crear la tabla
+        setTimeout(() => {
+            verificarEstadoBotonGrande();
+        }, 100);
     }, 100);
     
     const tablaHTML = `
@@ -13484,6 +13500,11 @@ function agregarTablaPrincipal() {
     actualizarContadorTablas();
     mostrarResumen();
     recalcularTotalesGeneral();
+    
+    // Verificar estado del botón + grande después de crear la tabla
+    setTimeout(() => {
+        verificarEstadoBotonGrande();
+    }, 200);
 }
 
 // Función para agregar tabla de gastos de instalación
@@ -15009,6 +15030,31 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         verificarEstadoBotonGrande();
     }, 500);
+    
+    // Configurar observador para monitorer cambios en la tabla
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            // Si se agregaron o quitaron nodos, verificar el estado
+            if (mutation.type === 'childList') {
+                const target = mutation.target;
+                // Verificar si el cambio fue en el contenedor de tablas
+                if (target.id === 'dynamic-tables-container' || target.classList.contains('tables-container')) {
+                    setTimeout(() => {
+                        verificarEstadoBotonGrande();
+                    }, 100);
+                }
+            }
+        });
+    });
+    
+    // Observar cambios en el contenedor de tablas
+    const tablesContainer = document.getElementById('dynamic-tables-container');
+    if (tablesContainer) {
+        observer.observe(tablesContainer, {
+            childList: true,
+            subtree: true
+        });
+    }
     
     // Configurar observadores después de un breve delay
     setTimeout(() => {
