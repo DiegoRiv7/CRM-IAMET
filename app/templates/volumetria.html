@@ -305,6 +305,13 @@
         color: #ff0000;
     }
 
+    .excel-cell[data-field="precioUnitario"],
+    .excel-cell[data-field="totalCliente"],
+    .excel-cell[data-field="totalCosto"],
+    .excel-cell[data-field="ganancia"] {
+        color: #ff0000;
+    }
+
     .excel-calculated {
         background: #f0f9ff !important;
         color: #000000 !important;
@@ -320,10 +327,14 @@
         font-weight: 700;
     }
 
+    .excel-th.excel-profit {
+        color: #000000;
+    }
+
     .excel-delete-btn {
         background: transparent;
         border: none;
-        color: #000000;
+        color: #999;
         font-size: 18px;
         cursor: pointer;
         opacity: 0;
@@ -336,6 +347,10 @@
 
     .excel-delete-btn:hover {
         color: #ff0000;
+    }
+
+    .excel-cell-action {
+        background-color: #000000;
     }
     
     /* ============================= */
@@ -3587,6 +3602,14 @@ function mostrarTablaVolumetriaGeneral(datos) {
                             <h4 class="text-white font-semibold mb-4 text-lg">📊 Resumen de Estadísticas</h4>
                             <div class="space-y-4 text-sm">
                                 <div class="flex justify-between">
+                                    <span class="text-gray-300">Tipo:</span>
+                                    <span id="resumen-tipo" class="text-white font-medium">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Cantidad de Nodos:</span>
+                                    <span id="resumen-nodos" class="text-white font-medium">-</span>
+                                </div>
+                                <div class="flex justify-between">
                                     <span class="text-gray-300">Total Items:</span>
                                     <span id="total-items" class="text-white font-medium">0</span>
                                 </div>
@@ -5785,16 +5808,24 @@ function crearFiltrosSegunTipo(tipoProducto) {
             <label class="filter-label">🏷️ Marca</label>
             <select id="filter-marca" class="filter-select" onchange="aplicarFiltrosAutomatico()">
                 <option value="">Todas las marcas</option>
-                <option value="Panduit">Panduit</option>
-                <option value="CommScope">CommScope</option>
-                <option value="Legrand">Legrand</option>
-                <option value="Belden">Belden</option>
-                <option value="3M">3M</option>
-                <option value="Nexans">Nexans</option>
-                <option value="Superior Essex">Superior Essex</option>
             </select>
         </div>
     `;
+    
+    // Fetch marcas
+    fetch('/app/api/get-marcas-catalogo/')
+        .then(response => response.json())
+        .then(marcas => {
+            const marcaSelect = document.getElementById('filter-marca');
+            if (marcaSelect) {
+                marcas.forEach(marca => {
+                    const option = document.createElement('option');
+                    option.value = marca;
+                    option.textContent = marca;
+                    marcaSelect.appendChild(option);
+                });
+            }
+        });
     
     let filtrosEspecificos = '';
     
@@ -11084,7 +11115,7 @@ function agregarFilaGastosInstalacion() {
             <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="precioUnitario" data-row="${newIndex}" onblur="recalcularFilaGastosInstalacion(${newIndex})" oninput="recalcularFilaGastosInstalacion(${newIndex})">$0.00</td>
             <td class="excel-cell excel-cell-currency excel-total" data-field="total" data-row="${newIndex}">$0.00</td>
             <td class="excel-cell excel-cell-action">
-                <button onclick="eliminarFilaGastosInstalacion(${newIndex})" class="excel-delete-btn" title="Eliminar fila">⋯</button>
+                <button onclick="eliminarFilaGastosInstalacion(${newIndex})" class="excel-delete-btn" title="Eliminar fila">x</button>
             </td>
         </tr>
     `;
@@ -11210,7 +11241,7 @@ function agregarFilaManoObra() {
             <td class="excel-cell excel-cell-currency" data-field="costoTotal" data-row="${newIndex}">$0.00</td>
             <td class="excel-cell excel-cell-number editable" contenteditable="true" data-field="dias" data-row="${newIndex}" onblur="recalcularFilaManoObra(${newIndex})">0</td>
             <td class="excel-cell excel-cell-action">
-                <button onclick="eliminarFilaManoObra(${newIndex})" class="excel-delete-btn" title="Eliminar fila">⋯</button>
+                <button onclick="eliminarFilaManoObra(${newIndex})" class="excel-delete-btn" title="Eliminar fila">x</button>
             </td>
         </tr>
     `;
@@ -14750,6 +14781,18 @@ function actualizarResumenFinanciero() {
         resumenVolumetria.classList.remove('hidden');
     }
     
+    const resumenTipoEl = document.getElementById('resumen-tipo');
+    const resumenNodosEl = document.getElementById('resumen-nodos');
+
+    if (window.currentVolumetriaData) {
+        if (resumenTipoEl) {
+            resumenTipoEl.textContent = window.currentVolumetriaData.categoria || 'General';
+        }
+        if (resumenNodosEl) {
+            resumenNodosEl.textContent = window.currentVolumetriaData.cantidadNodos || '-';
+        }
+    }
+
     console.log('✅ Resumen financiero actualizado:', {
         totalCliente,
         totalCosto,
