@@ -6182,15 +6182,6 @@ function seleccionarProductoDesdePopup(numeroParte, descripcion, precioLista, co
     const targetField = document.getElementById(currentFieldId);
     if (targetField) {
         targetField.value = numeroParte;
-        
-        // Disparar evento para que el sistema actualice otros campos relacionados
-        const event = new Event('input', { bubbles: true });
-        targetField.dispatchEvent(event);
-        
-        // Si hay función de autocomplete específica, llamarla
-        if (window.onVolumetriaInput) {
-            window.onVolumetriaInput(currentFieldId);
-        }
     }
     
     console.log(`✅ Producto seleccionado: ${numeroParte} - ${descripcion}`);
