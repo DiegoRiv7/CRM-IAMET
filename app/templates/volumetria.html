@@ -231,190 +231,79 @@
     }
 
     /* ============================= */
-    /* ESTILOS TABLA EXCEL           */
+    /* ESTILOS TABLA EXCEL (Apple-like) */
     /* ============================= */
     .excel-container {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    .excel-btn-primary {
-        background: #217346;
-        color: white;
-        padding: 8px 16px;
-        border: none;
-        border-radius: 4px;
-        font-size: 14px;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        transition: background-color 0.2s;
-    }
-
-    .excel-btn-primary:hover {
-        background: #1e6440;
-    }
-
-    .excel-btn-secondary {
-        background: #f3f3f3;
-        color: #333;
-        padding: 8px 16px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        font-size: 14px;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        transition: background-color 0.2s;
-    }
-
-    .excel-btn-secondary:hover {
-        background: #e9e9e9;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     }
 
     .excel-table-wrapper {
         background: #ffffff;
-        border-radius: 16px;
+        border-radius: 12px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05);
-        overflow-x: auto;
-        overflow-y: visible;
-        border: none;
+        overflow: hidden;
         margin: 20px 0;
-        min-width: 0;
     }
 
     .excel-table {
-        border-collapse: separate;
-        border-spacing: 0;
-        font-size: 13px;
-        line-height: 1.5;
-        background: #ffffff;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', 'Helvetica', Arial, sans-serif;
+        border-collapse: collapse;
         width: 100%;
-        min-width: 1100px; /* Reducido para mejor ajuste */
-        table-layout: auto; /* Permite mejor distribución de columnas */
     }
 
     .excel-th-group {
-        background: #f8fafc;
-        color: #334155;
-        padding: 20px 12px;
+        background: #f7f7f7;
+        color: #333;
+        padding: 16px 12px;
         text-align: center;
         font-weight: 600;
-        font-size: 13px;
-        letter-spacing: 0.5px;
+        font-size: 12px;
         text-transform: uppercase;
-        border-bottom: 2px solid #e2e8f0;
-        border-right: 1px solid #e2e8f0;
-        position: relative;
-    }
-
-    .excel-client-header {
-        background: #3b82f6;
-        color: #ffffff;
-    }
-
-    .excel-cost-header {
-        background: #10b981;
-        color: #ffffff;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #e5e5e5;
     }
 
     .excel-th {
-        background: #ffffff;
-        color: #475569;
+        background: #f7f7f7;
+        color: #555;
         padding: 12px 8px;
         text-align: center;
         font-weight: 500;
         font-size: 11px;
-        letter-spacing: 0.25px;
-        border-bottom: 1px solid #e2e8f0;
-        border-right: 1px solid #e2e8f0;
-        white-space: nowrap;
-        text-transform: uppercase;
-    }
-
-    .excel-description {
-        min-width: 250px;
+        border-bottom: 1px solid #e5e5e5;
     }
 
     .excel-cell {
         padding: 12px 10px;
-        border-right: 1px solid #e2e8f0;
-        border-bottom: 1px solid #f1f5f9;
-        background: #ffffff;
-        color: #334155;
-        position: relative;
-        transition: all 0.15s ease;
-        cursor: text;
-        outline: none;
-        font-weight: 400;
-        min-height: 44px;
-        vertical-align: middle;
+        border-bottom: 1px solid #f0f0f0;
+        color: #333;
         font-size: 13px;
     }
 
-    .excel-cell:hover {
-        background: #f8fafc;
-        border-color: #94a3b8;
-        box-shadow: inset 0 0 0 1px #0ea5e9, 0 0 0 1px rgba(14, 165, 233, 0.3);
-        transform: scale(1.01);
-        z-index: 3;
+    .excel-row:last-child .excel-cell {
+        border-bottom: none;
     }
 
-    .excel-cell:focus {
-        outline: none;
-        background: #2d2d2d;
-        color: #ffffff;
-        border-color: #0ea5e9;
-        box-shadow: inset 0 0 0 2px #0ea5e9, 0 0 0 3px rgba(14, 165, 233, 0.2);
-        transform: scale(1.01);
-        z-index: 4;
-    }
-
-    .excel-cell-text {
-        text-align: left;
+    .excel-cell-number, .excel-cell-currency, .excel-cell-percent {
+        color: #000000;
         font-family: 'SF Mono', 'Monaco', 'Consolas', 'Roboto Mono', monospace;
-        font-size: 13px;
-        font-weight: 400;
     }
 
-    .excel-cell-number {
-        text-align: center;
-        min-width: 60px;
-        max-width: 80px;
-        font-family: 'SF Mono', 'Monaco', 'Consolas', 'Roboto Mono', monospace;
-        font-weight: 600;
+    .excel-delete-btn {
+        background: transparent;
+        border: none;
+        color: #999;
+        font-size: 18px;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.2s ease;
     }
 
-    .excel-cell-currency {
-        text-align: right;
-        min-width: 75px;
-        max-width: 95px;
-        font-family: 'SF Mono', 'Monaco', 'Consolas', 'Roboto Mono', monospace;
-        font-weight: 600;
-        color: #34d399;
+    .excel-row:hover .excel-delete-btn {
+        opacity: 1;
     }
 
-    .excel-cell-percent {
-        text-align: center;
-        min-width: 60px;
-        max-width: 75px;
-        font-family: 'SF Mono', 'Monaco', 'Consolas', 'Roboto Mono', monospace;
-        font-weight: 600;
-        color: #fbbf24;
-    }
-
-    .excel-cell-description {
-        min-width: 200px;
-        max-width: 300px;
-        word-wrap: break-word;
-        text-align: left;
-        font-weight: 400;
-        white-space: normal;
-    }
-    
-    /* Container para autocompletado en celdas */
-    .excel-cell[data-field="noParte"] {
-        position: relative;
+    .excel-delete-btn:hover {
+        color: #ff0000;
     }
     
     /* ============================= */
