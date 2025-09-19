@@ -13563,6 +13563,10 @@ function agregarTablaPrincipal() {
                     </div>
                 </div>
                 <div class="flex space-x-3">
+                    <button onclick="mostrarFormularioVolumetria()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2">
+                        <span>➕</span>
+                        <span>Agregar Tabla</span>
+                    </button>
                     <button onclick="agregarFilaExcelGeneral()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg transition duration-200 flex items-center space-x-2">
                         <span>➕</span>
                         <span>Agregar Fila</span>
@@ -14647,125 +14651,20 @@ function crearWorkspaceInicial() {
 function actualizarResumenFinanciero() {
     console.log('💰 Actualizando resumen financiero...');
     
-    let totalCliente = 0;
-    let totalCosto = 0;
-    let totalItems = 0;
-    let tablasActivas = 0;
+    const totalesGeneral = obtenerTotalesTabla('excel-table-general');
+    const totalesInfra = obtenerTotalesTabla('excel-table-infraestructura');
+    const totalGastos = obtenerTotalesGastos();
+    const totalManoObra = obtenerTotalesManoObra();
     
-    // Buscar todas las tablas dentro del contenedor dinámico
-    const container = document.getElementById('dynamic-tables-container');
-    if (container) {
-        // 1. Buscar tablas de componentes (con estructura excel)
-        const tablasComponentes = container.querySelectorAll('table');
-        tablasComponentes.forEach(tabla => {
-            tablasActivas++;
-            
-            // Buscar la fila de totales específica para tablas de componentes
-            const filaTotales = tabla.querySelector('.excel-totals-row');
-            if (filaTotales) {
-                // Buscar headers para identificar columnas correctamente
-                const headers = tabla.querySelectorAll('th');
-                let indexTotalCliente = -1;
-                let indexTotalCosto = -1;
-                
-                headers.forEach((header, index) => {
-                    const headerText = header.textContent.toLowerCase();
-                    if (headerText.includes('total cliente')) {
-                        indexTotalCliente = index;
-                    } else if (headerText.includes('total costo')) {
-                        indexTotalCosto = index;
-                    }
-                });
-                
-                // Usar índices encontrados o posiciones por defecto
-                const celdaTotalCliente = filaTotales.children[indexTotalCliente >= 0 ? indexTotalCliente : 6];
-                const celdaTotalCosto = filaTotales.children[indexTotalCosto >= 0 ? indexTotalCosto : 9];
-                
-                if (celdaTotalCliente) {
-                    const valor = parseFloat(celdaTotalCliente.textContent.replace(/[^0-9.-]/g, '')) || 0;
-                    if (valor > 0) {
-                        totalCliente += valor;
-                        console.log(`📊 Tabla componente - Total Cliente: $${valor.toFixed(2)} (columna ${indexTotalCliente})`);
-                    }
-                }
-                
-                if (celdaTotalCosto) {
-                    const valor = parseFloat(celdaTotalCosto.textContent.replace(/[^0-9.-]/g, '')) || 0;
-                    if (valor > 0) {
-                        totalCosto += valor;
-                        console.log(`📊 Tabla componente - Total Costo: $${valor.toFixed(2)} (columna ${indexTotalCosto})`);
-                    }
-                }
-                
-                // Contar items de la tabla (filas con datos, excluyendo totales)
-                const filasProductos = tabla.querySelectorAll('.excel-row:not(.excel-totals-row)');
-                let filasConDatos = 0;
-                filasProductos.forEach(fila => {
-                    const noParte = fila.querySelector('[data-field="noParte"]');
-                    if (noParte && noParte.textContent.trim()) {
-                        filasConDatos++;
-                    }
-                });
-                totalItems += filasConDatos;
-                
-                console.log(`🔍 Debug tabla componente:`, {
-                    filaTotales: !!filaTotales,
-                    indexTotalCliente,
-                    indexTotalCosto,
-                    totalClienteText: celdaTotalCliente?.textContent,
-                    totalCostoText: celdaTotalCosto?.textContent,
-                    headersFound: Array.from(headers).map(h => h.textContent),
-                    totalClienteValue: celdaTotalCliente ? parseFloat(celdaTotalCliente.textContent.replace(/[^0-9.-]/g, '')) : 0,
-                    totalCostoValue: celdaTotalCosto ? parseFloat(celdaTotalCosto.textContent.replace(/[^0-9.-]/g, '')) : 0
-                });
-            }
-        });
-        
-        // 2. Buscar tablas de gastos de instalación
-        const tablasGastos = container.querySelectorAll('.tabla-gastos-instalacion');
-        tablasGastos.forEach(tabla => {
-            tablasActivas++;
-            
-            const filas = tabla.querySelectorAll('tbody tr');
-            filas.forEach(fila => {
-                const inputTotal = fila.querySelector('input[name*="total"]');
-                if (inputTotal && inputTotal.value) {
-                    const valor = parseFloat(inputTotal.value) || 0;
-                    if (valor > 0) {
-                        totalCliente += valor; // Los gastos van a total cliente
-                        totalItems++;
-                        console.log(`💼 Gastos instalación: $${valor}`);
-                    }
-                }
-            });
-        });
-        
-        // 3. Buscar tablas de mano de obra
-        const tablasManoObra = container.querySelectorAll('.tabla-mano-obra');
-        tablasManoObra.forEach(tabla => {
-            tablasActivas++;
-            
-            const filas = tabla.querySelectorAll('tbody tr');
-            filas.forEach(fila => {
-                const inputTotal = fila.querySelector('input[name*="total"]');
-                if (inputTotal && inputTotal.value) {
-                    const valor = parseFloat(inputTotal.value) || 0;
-                    if (valor > 0) {
-                        totalCliente += valor; // La mano de obra va a total cliente
-                        totalItems++;
-                        console.log(`👷 Mano de obra: $${valor}`);
-                    }
-                }
-            });
-        });
-    } else {
-        console.error('❌ Error: dynamic-tables-container not found');
-    }
+    const totalCliente = totalesGeneral.cliente + totalesInfra.cliente + totalGastos + totalManoObra;
+    const totalCosto = totalesGeneral.costo + totalesInfra.costo;
     
-    // Calcular ganancia y margen
     const ganancia = totalCliente - totalCosto;
     const margen = totalCliente > 0 ? (ganancia / totalCliente) * 100 : 0;
     
+    const totalItems = document.querySelectorAll('.excel-row:not(.excel-totals-row)').length;
+    const tablasActivas = document.querySelectorAll('.excel-table-wrapper').length;
+
     // Actualizar elementos en el DOM
     const totalClienteEl = document.getElementById('total-cliente');
     const totalCostoEl = document.getElementById('total-costo');
