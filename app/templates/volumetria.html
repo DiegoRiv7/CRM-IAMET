@@ -13069,6 +13069,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 }
 
+/* ========================================
+   BOTÓN + PEQUEÑO PARA AGREGAR TIPOS
+   ======================================== */
+.add-volumetria-small-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    color: #60a5fa;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.add-volumetria-small-btn:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.5);
+    color: #93c5fd;
+    transform: translateY(-1px);
+}
+
+.add-volumetria-small-btn svg {
+    color: currentColor;
+}
+
+.table-actions-container {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
 </style>
 
 <script>
@@ -13280,6 +13315,49 @@ document.addEventListener('DOMContentLoaded', function() {
 // NUEVAS FUNCIONES PARA BOTONES DE AGREGAR TABLA
 // ===========================================
 
+// Función para mostrar la sección de tabla y mover el botón +
+function mostrarSeccionTablaYMoverBoton() {
+    console.log('🔄 Mostrando tabla y moviendo botón +');
+    
+    // Buscar el botón + grande en cualquier parte de la página y ocultarlo
+    const botonGrande = document.querySelector('.add-volumetria-btn, .add-volumetria-container');
+    if (botonGrande) {
+        botonGrande.style.display = 'none';
+        console.log('✅ Botón + grande ocultado');
+    }
+    
+    // Buscar el header de la tabla que se acaba de crear
+    const headerTabla = document.querySelector('#tabla-principal-precios .flex.items-center.justify-between, .table-header');
+    if (headerTabla && !document.getElementById('add-volumetria-small')) {
+        console.log('📍 Header de tabla encontrado, agregando botón pequeño');
+        
+        const botonPequeno = `
+            <button onclick="mostrarFormularioVolumetria()" id="add-volumetria-small" class="add-volumetria-small-btn">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Agregar Tipo
+            </button>
+        `;
+        
+        // Buscar donde están los botones de acción (lado derecho del header)
+        let actionArea = headerTabla.querySelector('.flex:last-child, .table-actions, [class*="button"]')?.parentElement;
+        
+        if (!actionArea) {
+            // Si no hay área de acciones, crear una
+            actionArea = document.createElement('div');
+            actionArea.className = 'table-actions-container';
+            headerTabla.appendChild(actionArea);
+        }
+        
+        // Agregar el botón pequeño al área de acciones
+        actionArea.insertAdjacentHTML('afterbegin', botonPequeno);
+        console.log('✅ Botón + pequeño agregado al header de la tabla');
+    } else if (!headerTabla) {
+        console.log('⚠️ No se encontró header de tabla para agregar botón pequeño');
+    }
+}
+
 // Función para agregar tabla principal dinámicamente
 function agregarTablaPrincipal() {
     console.log('➕ Agregando tabla principal de precios y costos');
@@ -13293,6 +13371,11 @@ function agregarTablaPrincipal() {
         console.log('⚠️ La tabla principal ya existe, no se agregará de nuevo.');
         return;
     }
+    
+    // Mostrar la sección de tabla y mover el botón + (con delay para asegurar que el DOM esté listo)
+    setTimeout(() => {
+        mostrarSeccionTablaYMoverBoton();
+    }, 100);
     
     const tablaHTML = `
         <div id="tabla-principal-precios" class="mb-8 animate-fade-in">
