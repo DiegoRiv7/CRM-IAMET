@@ -9985,33 +9985,46 @@ function mostrarPopupBusquedaAvanzadaConCategoria(fieldId, categoria) {
 
 // La función detectarTipoProducto ya existe arriba, no necesitamos duplicarla
 
-// Función para buscar productos con filtro de categoría
 async function getVolumetriaProductosConCategoria(query, categoria) {
     console.log(`🔍 Buscando productos de ${categoria} con query: "${query}"`);
     
     try {
-        const response = await fetch('/app/api/buscar-productos-catalogo/', {
-            method: 'POST',
+        const params = new URLSearchParams({
+            q: query || '',
+            filtros: JSON.stringify({ categoria: categoria })
+        });
+
+        const response = await fetch(`/app/api/buscar-productos-catalogo/?${params}`, {
+            method: 'GET',
             headers: {
+                'X-Requested-With': 'XMLHttpRequest',
                 'Content-Type': 'application/json',
-                'X-CSRFToken': getCSRFToken()
-            },
-            body: JSON.stringify({ 
-                query: query,
-                categoria: categoria // Agregar filtro de categoría
-            })
+            }
         });
         
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
         }
         
         const data = await response.json();
-        console.log(`✅ Productos encontrados de ${categoria}:`, data.productos?.length || 0);
         
-        return data.productos || [];
+        if (data.success && data.productos) {
+            const productos = data.productos.map(p => ({
+                noParte: p.numero_parte,
+                descripcion: p.descripcion,
+                precio: p.precio_proveedor || p.precio_lista || 0
+            }));
+            
+            // Cache the results
+            const cacheKey = `volumetria_${query}_${categoria}`;
+            productosCache[cacheKey] = productos;
+            
+            return productos;
+        }
+        
+        return [];
     } catch (error) {
-        console.error('💥 Error fetching productos con categoría:', error);
+        console.error(`💥 Error fetching productos con categoría: ${error.message}`);
         throw error;
     }
 }
