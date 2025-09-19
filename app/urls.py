@@ -30,6 +30,11 @@ urlpatterns = [
     # Rutas para ingresar nuevas oportunidades de venta
     path("ingresar-venta/", views.ingresar_venta_todoitem, name="ingresar_venta_todoitem"),
     path("ingresar-venta-exitosa/", views.ingresar_venta_todoitem_exitosa, name="ingresar_venta_todoitem_exitosa"),
+    
+    # Nueva funcionalidad de oportunidades optimizada
+    path("nueva-oportunidad/", views.nueva_oportunidad, name="nueva_oportunidad"),
+    path("api/buscar-clientes/", views.api_buscar_clientes, name="api_buscar_clientes"),
+    path("api/buscar-contactos/", views.api_buscar_contactos, name="api_buscar_contactos"),
 
     # Rutas de autenticación (registro, login, logout)
     path("register/", views.register, name="register"),

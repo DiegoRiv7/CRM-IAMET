@@ -10,7 +10,7 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.auth.models import User
 from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado
 from . import views_exportar
-from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm
+from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
 from django.db.models import Sum, Count, F, Q, Case, When, Value
 from django.db.models.functions import Upper, Coalesce
 from django.db.models import Value
@@ -6384,3 +6384,107 @@ def buscar_productos_por_numeros_parte(request):
 def get_marcas_catalogo(request):
     marcas = CatalogoCableado.objects.values_list('marca', flat=True).distinct().order_by('marca')
     return JsonResponse(list(marcas), safe=False)
+
+
+@login_required
+def nueva_oportunidad(request):
+    """
+    Vista optimizada para crear nuevas oportunidades con mejor UX y automatización.
+    """
+    if request.method == 'POST':
+        form = NuevaOportunidadForm(request.POST, user=request.user)
+        if form.is_valid():
+            try:
+                oportunidad = form.save()
+                messages.success(request, f'Oportunidad "{oportunidad.oportunidad}" creada exitosamente.')
+                return redirect('todos')  # Redirigir a la lista de oportunidades
+            except Exception as e:
+                messages.error(request, f'Error al crear la oportunidad: {str(e)}')
+        else:
+            # Mostrar errores específicos del formulario
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
+    else:
+        form = NuevaOportunidadForm(user=request.user)
+    
+    # Obtener lista de clientes para autocompletado
+    clientes = Cliente.objects.all().order_by('nombre_empresa')
+    
+    context = {
+        'form': form,
+        'clientes': clientes,
+        'title': 'Nueva Oportunidad'
+    }
+    
+    return render(request, 'nueva_oportunidad.html', context)
+
+
+@login_required
+def api_buscar_clientes(request):
+    """
+    API para autocompletado de clientes en el formulario de nueva oportunidad.
+    """
+    query = request.GET.get('q', '').strip()
+    
+    if len(query) < 2:
+        return JsonResponse({'clientes': []})
+    
+    # Buscar clientes que coincidan con el query
+    if is_supervisor(request.user):
+        clientes = Cliente.objects.filter(
+            nombre_empresa__icontains=query
+        ).order_by('nombre_empresa')[:10]
+    else:
+        clientes = Cliente.objects.filter(
+            Q(nombre_empresa__icontains=query) & 
+            (Q(asignado_a=request.user) | Q(asignado_a__isnull=True))
+        ).order_by('nombre_empresa')[:10]
+    
+    clientes_data = []
+    for cliente in clientes:
+        clientes_data.append({
+            'id': cliente.id,
+            'nombre': cliente.nombre_empresa,
+            'contacto_principal': cliente.contacto_principal or '',
+            'email': cliente.email or '',
+            'telefono': cliente.telefono or ''
+        })
+    
+    return JsonResponse({'clientes': clientes_data})
+
+
+@login_required  
+def api_buscar_contactos(request):
+    """
+    API para autocompletado de contactos basado en el cliente seleccionado.
+    """
+    cliente_id = request.GET.get('cliente_id')
+    query = request.GET.get('q', '').strip()
+    
+    if not cliente_id:
+        return JsonResponse({'contactos': []})
+    
+    try:
+        contactos = Contacto.objects.filter(cliente_id=cliente_id)
+        
+        if query:
+            contactos = contactos.filter(
+                Q(nombre__icontains=query) | Q(apellido__icontains=query)
+            )
+        
+        contactos = contactos.order_by('nombre')[:10]
+        
+        contactos_data = []
+        for contacto in contactos:
+            contactos_data.append({
+                'id': contacto.id,
+                'nombre_completo': f"{contacto.nombre} {contacto.apellido or ''}".strip(),
+                'nombre': contacto.nombre,
+                'apellido': contacto.apellido or ''
+            })
+        
+        return JsonResponse({'contactos': contactos_data})
+        
+    except Exception as e:
+        return JsonResponse({'contactos': [], 'error': str(e)}, status=500)

@@ -1,0 +1,489 @@
+{% extends 'base.html' %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nueva Oportunidad</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Apple Color System */
+            --apple-blue: #007AFF;
+            --apple-blue-light: #4DA8FF;
+            --apple-blue-dark: #0056CC;
+            --apple-gray: #8E8E93;
+            --apple-gray-2: #AEAEB2;
+            --apple-gray-3: #C7C7CC;
+            --apple-gray-4: #D1D1D6;
+            --apple-gray-5: #E5E5EA;
+            --apple-gray-6: #F2F2F7;
+            --apple-background: #000000;
+            --apple-background-secondary: #1D1D1F;
+            --apple-background-tertiary: #2C2C2E;
+            --apple-background-quaternary: #3A3A3C;
+            --apple-label: #FFFFFF;
+            --apple-label-secondary: #EBEBF5;
+            --apple-label-tertiary: #EBEBF599;
+            --apple-separator: #38383A;
+            --apple-green: #32D74B;
+            --apple-red: #FF453A;
+            --apple-orange: #FF9F0A;
+            --apple-yellow: #FFD60A;
+            --apple-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif;
+        }
+
+        body {
+            background: var(--apple-background);
+            color: var(--apple-label);
+            font-family: var(--apple-font-family);
+        }
+
+        .apple-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background: 
+                radial-gradient(ellipse at top left, rgba(0, 122, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom right, rgba(0, 122, 255, 0.05) 0%, transparent 50%),
+                linear-gradient(180deg, var(--apple-background) 0%, var(--apple-background-secondary) 100%);
+        }
+
+        .apple-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .apple-card {
+            background: rgba(29, 29, 31, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .apple-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--apple-label);
+            margin-bottom: 0.5rem;
+        }
+
+        .apple-subtitle {
+            color: var(--apple-label-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 500;
+            color: var(--apple-label);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            width: 100%;
+            background: rgba(58, 58, 60, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: var(--apple-label);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
+            background: rgba(58, 58, 60, 0.9);
+        }
+
+        .form-control::placeholder {
+            color: var(--apple-label-tertiary);
+        }
+
+        .form-help {
+            font-size: 0.8rem;
+            color: var(--apple-label-tertiary);
+            margin-top: 0.25rem;
+        }
+
+        .apple-button {
+            background: var(--apple-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .apple-button:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        .apple-button-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .apple-button-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .autocomplete-container {
+            position: relative;
+        }
+
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(58, 58, 60, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            border-top: none;
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .autocomplete-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .autocomplete-item:hover {
+            background: rgba(0, 122, 255, 0.2);
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .error-message {
+            background: rgba(255, 69, 58, 0.1);
+            border: 1px solid var(--apple-red);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 1rem;
+            color: var(--apple-red);
+        }
+
+        .success-message {
+            background: rgba(50, 215, 75, 0.1);
+            border: 1px solid var(--apple-green);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 1rem;
+            color: var(--apple-green);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .apple-container {
+                padding: 1rem;
+            }
+
+            .apple-card {
+                padding: 1.5rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="apple-bg"></div>
+    
+    <div class="apple-container">
+        <div class="apple-card">
+            <h1 class="apple-title">Nueva Oportunidad</h1>
+            <p class="apple-subtitle">Crea una nueva oportunidad de venta con información automatizada</p>
+
+            <!-- Mensajes de error/éxito -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="{% if message.tags == 'error' %}error-message{% else %}success-message{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST" id="nuevaOportunidadForm">
+                {% csrf_token %}
+                
+                <!-- Cliente -->
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.cliente_nombre.id_for_label }}">
+                        {{ form.cliente_nombre.label }}
+                    </label>
+                    <div class="autocomplete-container">
+                        {{ form.cliente_nombre }}
+                        <div class="autocomplete-dropdown" id="clientesDropdown"></div>
+                    </div>
+                    {% if form.cliente_nombre.help_text %}
+                        <div class="form-help">{{ form.cliente_nombre.help_text }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Contacto -->
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.contacto_nombre.id_for_label }}">
+                        {{ form.contacto_nombre.label }}
+                    </label>
+                    <div class="autocomplete-container">
+                        {{ form.contacto_nombre }}
+                        <div class="autocomplete-dropdown" id="contactosDropdown"></div>
+                    </div>
+                </div>
+
+                <!-- Nombre de la Oportunidad -->
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.oportunidad.id_for_label }}">
+                        {{ form.oportunidad.label }}
+                    </label>
+                    {{ form.oportunidad }}
+                </div>
+
+                <!-- Fila con Monto y Probabilidad -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.monto.id_for_label }}">
+                            {{ form.monto.label }}
+                        </label>
+                        {{ form.monto }}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.probabilidad_cierre.id_for_label }}">
+                            {{ form.probabilidad_cierre.label }}
+                        </label>
+                        {{ form.probabilidad_cierre }}
+                    </div>
+                </div>
+
+                <!-- Fila con Área y Producto -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.area.id_for_label }}">
+                            {{ form.area.label }}
+                        </label>
+                        {{ form.area }}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.producto.id_for_label }}">
+                            {{ form.producto.label }}
+                        </label>
+                        {{ form.producto }}
+                    </div>
+                </div>
+
+                <!-- Mes de Cierre -->
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.mes_cierre.id_for_label }}">
+                        {{ form.mes_cierre.label }}
+                    </label>
+                    {{ form.mes_cierre }}
+                </div>
+
+                <!-- Comentarios -->
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.comentarios.id_for_label }}">
+                        {{ form.comentarios.label }}
+                    </label>
+                    {{ form.comentarios }}
+                </div>
+
+                <!-- Botones -->
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                    <a href="{% url 'todos' %}" class="apple-button apple-button-secondary">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="apple-button">
+                        Crear Oportunidad
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Datalist para clientes (fallback) -->
+    <datalist id="clientes-list">
+        {% for cliente in clientes %}
+            <option value="{{ cliente.nombre_empresa }}">
+        {% endfor %}
+    </datalist>
+
+    <script>
+        // Autocompletado de clientes
+        const clienteInput = document.getElementById('id_cliente_nombre');
+        const clientesDropdown = document.getElementById('clientesDropdown');
+        let selectedClienteId = null;
+
+        clienteInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            if (query.length < 2) {
+                clientesDropdown.style.display = 'none';
+                return;
+            }
+
+            fetch(`/app/api/buscar-clientes/?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    clientesDropdown.innerHTML = '';
+                    
+                    if (data.clientes && data.clientes.length > 0) {
+                        data.clientes.forEach(cliente => {
+                            const div = document.createElement('div');
+                            div.className = 'autocomplete-item';
+                            div.innerHTML = `
+                                <div style="font-weight: 500;">${cliente.nombre}</div>
+                                ${cliente.contacto_principal ? `<div style="font-size: 0.8rem; color: var(--apple-label-tertiary);">${cliente.contacto_principal}</div>` : ''}
+                            `;
+                            div.addEventListener('click', () => {
+                                clienteInput.value = cliente.nombre;
+                                selectedClienteId = cliente.id;
+                                clientesDropdown.style.display = 'none';
+                                
+                                // Limpiar contactos cuando se cambia de cliente
+                                document.getElementById('id_contacto_nombre').value = '';
+                                loadContactosForCliente(cliente.id);
+                            });
+                            clientesDropdown.appendChild(div);
+                        });
+                        clientesDropdown.style.display = 'block';
+                    } else {
+                        clientesDropdown.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al buscar clientes:', error);
+                    clientesDropdown.style.display = 'none';
+                });
+        });
+
+        // Autocompletado de contactos
+        const contactoInput = document.getElementById('id_contacto_nombre');
+        const contactosDropdown = document.getElementById('contactosDropdown');
+
+        function loadContactosForCliente(clienteId) {
+            if (!clienteId) return;
+
+            fetch(`/app/api/buscar-contactos/?cliente_id=${clienteId}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Precargar contactos del cliente seleccionado
+                    console.log('Contactos cargados para cliente:', data.contactos);
+                })
+                .catch(error => {
+                    console.error('Error al cargar contactos:', error);
+                });
+        }
+
+        contactoInput.addEventListener('input', function() {
+            if (!selectedClienteId) return;
+
+            const query = this.value.trim();
+            
+            fetch(`/app/api/buscar-contactos/?cliente_id=${selectedClienteId}&q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    contactosDropdown.innerHTML = '';
+                    
+                    if (data.contactos && data.contactos.length > 0) {
+                        data.contactos.forEach(contacto => {
+                            const div = document.createElement('div');
+                            div.className = 'autocomplete-item';
+                            div.innerHTML = `<div>${contacto.nombre_completo}</div>`;
+                            div.addEventListener('click', () => {
+                                contactoInput.value = contacto.nombre_completo;
+                                contactosDropdown.style.display = 'none';
+                            });
+                            contactosDropdown.appendChild(div);
+                        });
+                        contactosDropdown.style.display = 'block';
+                    } else {
+                        contactosDropdown.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al buscar contactos:', error);
+                });
+        });
+
+        // Cerrar dropdowns al hacer click fuera
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.autocomplete-container')) {
+                clientesDropdown.style.display = 'none';
+                contactosDropdown.style.display = 'none';
+            }
+        });
+
+        // Mejorar validación del formulario
+        document.getElementById('nuevaOportunidadForm').addEventListener('submit', function(e) {
+            const cliente = document.getElementById('id_cliente_nombre').value.trim();
+            const oportunidad = document.getElementById('id_oportunidad').value.trim();
+            const monto = document.getElementById('id_monto').value;
+
+            if (!cliente) {
+                e.preventDefault();
+                alert('Por favor, selecciona un cliente');
+                return;
+            }
+
+            if (!oportunidad) {
+                e.preventDefault();
+                alert('Por favor, ingresa el nombre de la oportunidad');
+                return;
+            }
+
+            if (!monto || parseFloat(monto) <= 0) {
+                e.preventDefault();
+                alert('Por favor, ingresa un monto válido');
+                return;
+            }
+        });
+    </script>
+</body>
+</html>
+{% endblock %}

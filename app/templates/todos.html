@@ -120,6 +120,17 @@
         filter: brightness(1.1);
     }
 
+    .apple-button-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+    }
+
+    .apple-button-secondary:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+
     .apple-table-container {
         background: rgba(29, 29, 31, 0.7);
         backdrop-filter: blur(12px);
@@ -219,6 +230,20 @@
         box-shadow: 
             0 4px 12px rgba(0, 102, 204, 0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    }
+
+    .light-theme .apple-button-secondary {
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(29, 53, 87, 0.2);
+        color: var(--apple-blue);
+        box-shadow: 
+            0 2px 8px rgba(0, 122, 255, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    .light-theme .apple-button-secondary:hover {
+        background: rgba(255, 255, 255, 0.95);
+        border-color: var(--apple-blue);
     }
 
     /* Liquid Glass Table Effect for Light Theme */
@@ -362,6 +387,7 @@
                 <input id="searchOportunidad" type="text" placeholder="Buscar en todas las oportunidades..." class="apple-search-input" value="{{ search_query }}">
             </div>
             <a href="{% url 'crear_cotizacion' %}" class="apple-button">+ Nueva Cotización</a>
+            <a href="{% url 'nueva_oportunidad' %}" class="apple-button apple-button-secondary">+ Nueva Oportunidad</a>
         </div>
     </div>
 

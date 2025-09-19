@@ -3,6 +3,7 @@ from django.db.models import Q
 from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, Contacto, CatalogoCableado, CableadoNodoRed # Importa Contacto
 from django.contrib.auth.models import User
 from .models import UserProfile # Import UserProfile
+from datetime import date
 
 
 class ClienteForm(forms.ModelForm):
@@ -301,3 +302,159 @@ class DetalleCotizacionForm(forms.ModelForm):
             'descuento_porcentaje': 'Descuento (%)',
             'marca': 'Marca',
         }
+
+
+class NuevaOportunidadForm(forms.ModelForm):
+    """
+    Formulario optimizado para crear nuevas oportunidades con autocompletado y validaciones inteligentes.
+    """
+    
+    # Campo para cliente con autocompletado
+    cliente_nombre = forms.CharField(
+        max_length=200, 
+        label="Cliente",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Buscar cliente existente o crear uno nuevo...',
+            'autocomplete': 'off',
+            'list': 'clientes-list'
+        }),
+        help_text="Empieza a escribir para buscar clientes existentes"
+    )
+    
+    # Campo para contacto con autocompletado
+    contacto_nombre = forms.CharField(
+        max_length=200,
+        label="Contacto",
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Nombre del contacto...',
+            'autocomplete': 'off'
+        })
+    )
+    
+    # Campos mejorados con mejor UX
+    oportunidad = forms.CharField(
+        max_length=200,
+        label="Nombre de la Oportunidad",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ej: Implementación de sistema de seguridad...'
+        })
+    )
+    
+    monto = forms.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        label="Monto Estimado (USD)",
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': '0.00',
+            'step': '0.01',
+            'min': '0'
+        })
+    )
+    
+    comentarios = forms.CharField(
+        required=False,
+        label="Comentarios / Observaciones",
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Información adicional relevante para esta oportunidad...'
+        })
+    )
+    
+    # Campos calculados automáticamente
+    mes_cierre_auto = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="Calcular mes de cierre automáticamente",
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+
+    class Meta:
+        model = TodoItem
+        fields = [
+            'oportunidad', 'monto', 'probabilidad_cierre', 
+            'mes_cierre', 'area', 'producto', 'comentarios'
+        ]
+        widgets = {
+            'probabilidad_cierre': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '5',
+                'max': '100',
+                'step': '5',
+                'value': '25'
+            }),
+            'mes_cierre': forms.Select(attrs={'class': 'form-control'}),
+            'area': forms.Select(attrs={'class': 'form-control'}),
+            'producto': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Configurar mes de cierre automático (mes actual + 1)
+        if not self.initial.get('mes_cierre'):
+            current_month = date.today().month
+            next_month = current_month + 1 if current_month < 12 else 1
+            self.fields['mes_cierre'].initial = f"{next_month:02d}"
+        
+        # Configurar usuario por defecto
+        if self.user:
+            # No mostrar campo de usuario, se asigna automáticamente
+            pass
+    
+    def clean_cliente_nombre(self):
+        cliente_nombre = self.cleaned_data.get('cliente_nombre')
+        if not cliente_nombre or len(cliente_nombre.strip()) < 2:
+            raise forms.ValidationError("El nombre del cliente debe tener al menos 2 caracteres.")
+        return cliente_nombre.strip()
+    
+    def clean_monto(self):
+        monto = self.cleaned_data.get('monto')
+        if monto and monto < 0:
+            raise forms.ValidationError("El monto no puede ser negativo.")
+        return monto
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        
+        # Asignar usuario automáticamente
+        if self.user:
+            instance.usuario = self.user
+        
+        # Buscar o crear cliente
+        cliente_nombre = self.cleaned_data.get('cliente_nombre')
+        if cliente_nombre:
+            cliente, created = Cliente.objects.get_or_create(
+                nombre_empresa__iexact=cliente_nombre,
+                defaults={
+                    'nombre_empresa': cliente_nombre,
+                    'asignado_a': self.user
+                }
+            )
+            instance.cliente = cliente
+        
+        # Buscar o crear contacto si se proporcionó
+        contacto_nombre = self.cleaned_data.get('contacto_nombre')
+        if contacto_nombre and instance.cliente:
+            nombre_parts = contacto_nombre.split(' ', 1)
+            contacto, created = Contacto.objects.get_or_create(
+                nombre__iexact=nombre_parts[0],
+                cliente=instance.cliente,
+                defaults={
+                    'nombre': nombre_parts[0],
+                    'apellido': nombre_parts[1] if len(nombre_parts) > 1 else '',
+                    'cliente': instance.cliente
+                }
+            )
+            instance.contacto = contacto
+        
+        if commit:
+            instance.save()
+        
+        return instance
