@@ -228,6 +228,7 @@ def bienvenida(request):
     ultimas_oportunidades_qs = TodoItem.objects.select_related('cliente', 'usuario').order_by('-fecha_creacion')[:8]
     ultimas_oportunidades = [
         {
+            'id': o.id,  # Add the ID here
             'nombre': o.oportunidad,
             'cliente': o.cliente.nombre_empresa if o.cliente else '',
             'monto': o.monto,

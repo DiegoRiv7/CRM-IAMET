@@ -1,0 +1,18 @@
+--- Release Notes ---
+
+Feature: Clickable 'Últimas Oportunidades' in bienvenida.html
+Details: Each opportunity row (<tr>) in the 'Últimas Oportunidades' table is now clickable.
+Functionality: Clicking an opportunity opens a modal with options to 'Crear Cotización' or 'Crear Volumetría' for that specific opportunity.
+Files affected: bienvenida.html (added onclick to <tr>, added modal HTML, added JavaScript functions handleOpportunityClick, closeOpportunityActionModal, and event listeners for modal buttons).
+
+Feature: Improved 'Volver' button in volumetria.html
+Details: The 'Volver' button now attempts to redirect to the specific opportunity page (/app/cotizaciones/oportunidad/<ID>/?tipo=volumetrias) from which the volumetry was initiated.
+Files affected: volumetria.html (modified volverAPaginaAnterior function).
+
+Bug Fix: 405 Method Not Allowed for buscar-productos-catalogo API
+Details: Changed the fetch request in getVolumetriaProductosConCategoria from POST to GET and updated to use URL parameters instead of a request body.
+Files affected: volumetria.html (modified getVolumetriaProductosConCategoria function).
+
+Feature: Direct navigation to opportunity quotations from 'Últimas Oportunidades' table
+Details: Clicking any row in the 'Últimas Oportunidades' table on bienvenida.html now directly navigates to the 'cotizaciones por oportunidad' page for that specific opportunity. The modal for selecting quotation or volumetry creation has been removed.
+Files affected: bienvenida.html (removed modal HTML and JS functions, added direct link to <tr> and <td>).
