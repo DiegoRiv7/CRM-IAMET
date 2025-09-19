@@ -298,6 +298,13 @@
         font-family: 'SF Mono', 'Monaco', 'Consolas', 'Roboto Mono', monospace;
     }
 
+    .excel-cell[data-field="precioUnitario"],
+    .excel-cell[data-field="totalCliente"],
+    .excel-cell[data-field="totalCosto"],
+    .excel-cell[data-field="ganancia"] {
+        color: #ff0000;
+    }
+
     .excel-calculated {
         background: #f0f9ff !important;
         color: #000000 !important;
@@ -316,7 +323,7 @@
     .excel-delete-btn {
         background: transparent;
         border: none;
-        color: #999;
+        color: #000000;
         font-size: 18px;
         cursor: pointer;
         opacity: 0;
@@ -4265,8 +4272,7 @@ function agregarFilaExcelGeneral() {
         <td class="excel-cell excel-cell-currency editable" contenteditable="true" data-field="costoUnitario" data-row="${newIndex}" onblur="recalcularFilaExcelGeneral(${newIndex})" placeholder="$0.00">$0.00</td>
         <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" data-field="totalCosto" data-row="${newIndex}">$0.00</td>
         <td class="excel-cell excel-cell-currency excel-calculated excel-profit" data-field="ganancia" data-row="${newIndex}">$0.00</td>
-        <td class="excel-cell excel-cell-action">
-            <button onclick="eliminarFilaExcelGeneral(${newIndex})" class="excel-delete-btn" title="Eliminar fila">⋯</button>
+<button onclick="eliminarFilaExcelGeneral(${newIndex})" class="excel-delete-btn" title="Eliminar fila">x</button>
         </td>
     `;
     
@@ -5735,6 +5741,41 @@ function crearPopupBusquedaAvanzada(tipoProducto, fieldId) {
 
 // Función para crear filtros específicos según el tipo de producto
 function crearFiltrosSegunTipo(tipoProducto) {
+    if (currentFieldId && currentFieldId.startsWith('noParte-general-')) {
+        // Popup para la tabla
+        let filtros = `
+            <div class="filter-group">
+                <label class="filter-label">🏷️ Marca</label>
+                <select id="filter-marca" class="filter-select" onchange="aplicarFiltrosAutomatico()">
+                    <option value="">Todas las marcas</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <button onclick="buscarConFiltros()" class="search-filter-btn">
+                    🔍 Buscar con Filtros
+                </button>
+            </div>
+        `;
+        
+        // Fetch marcas
+        fetch('/app/api/get-marcas-catalogo/')
+            .then(response => response.json())
+            .then(marcas => {
+                const marcaSelect = document.getElementById('filter-marca');
+                if (marcaSelect) {
+                    marcas.forEach(marca => {
+                        const option = document.createElement('option');
+                        option.value = marca;
+                        option.textContent = marca;
+                        marcaSelect.appendChild(option);
+                    });
+                }
+            });
+            
+        return filtros;
+    }
+
+    // Popup para el formulario de nodos de red
     const filtrosBase = `
         <div class="filter-group">
             <label class="filter-label">💰 Precio máximo</label>
@@ -7088,9 +7129,7 @@ function generarHTMLFilasExcel(productos) {
                 <td class="excel-cell excel-cell-currency excel-calculated excel-total-cost" contenteditable="true">${formatearMoneda(totalProductoCosto)}</td>
                 <td class="excel-cell excel-cell-currency excel-calculated excel-profit" contenteditable="true">${formatearMoneda(ganancia)}</td>
                 <td class="excel-cell excel-cell-action">
-                    <button onclick="eliminarFilaExcel(${index})" class="excel-delete-btn" title="Eliminar fila">
-                        ❌
-                    </button>
+                    <button onclick="eliminarFilaExcel(${index})" class="excel-delete-btn" title="Eliminar fila">x</button>
                 </td>
             </tr>
         `;
@@ -10335,7 +10374,7 @@ function agregarFilaExcel() {
             <td class="excel-cell excel-cell-currency editable excel-total-cost" contenteditable="true" data-field="totalCosto" data-row="${newIndex}" onblur="recalcularFilaExcel(${newIndex})">$0.00</td>
             <td class="excel-cell excel-cell-currency editable excel-profit" contenteditable="true" data-field="ganancia" data-row="${newIndex}" onblur="recalcularFilaExcel(${newIndex})">$0.00</td>
             <td class="excel-cell excel-cell-action">
-                <button onclick="eliminarFilaExcel(${newIndex})" class="excel-delete-btn" title="Eliminar fila">⋯</button>
+                <button onclick="eliminarFilaExcel(${newIndex})" class="excel-delete-btn" title="Eliminar fila">x</button>
             </td>
         </tr>
     `;

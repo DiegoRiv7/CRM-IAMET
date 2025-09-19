@@ -6378,3 +6378,8 @@ def buscar_productos_por_numeros_parte(request):
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@login_required
+def get_marcas_catalogo(request):
+    marcas = CatalogoCableado.objects.values_list('marca', flat=True).distinct().order_by('marca')
+    return JsonResponse(list(marcas), safe=False)
