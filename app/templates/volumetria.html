@@ -1881,7 +1881,32 @@ function agregarVolumetria() {
     });
 }
 
-function getFormularioNodosHTML(isModal = true) {
+function getFormularioNodosHTML(isModal = true, categoria = null) {
+    // Definir placeholders específicos por categoría
+    const placeholdersPorCategoria = {
+        'CAT5E': {
+            cable: 'PUL5004BL-BOX',
+            jack: 'CJ5X88TBL', 
+            patchcord: 'UTP25SP3BL',
+            faceplate: 'NK2FHDEI'
+        },
+        'CAT6': {
+            cable: 'PUL6004BL-BOX',
+            jack: 'CJ6X88TBL',
+            patchcord: 'UTP28SP3BL', 
+            faceplate: 'NK2FHDEI'
+        },
+        'CAT6A': {
+            cable: 'PUL6A04BL-BOX',
+            jack: 'CJ6AX88TBL',
+            patchcord: 'UTP6A8SP3BL',
+            faceplate: 'NK2FHDEI'
+        }
+    };
+    
+    // Usar placeholders por defecto si no hay categoría seleccionada
+    const placeholders = categoria ? placeholdersPorCategoria[categoria] : placeholdersPorCategoria['CAT6'];
+    
     const cancelButtonHTML = isModal ?
         `<button type="button" onclick="cerrarCuestionario(); regresarAVolumetriaGeneral();" class="bg-gray-700 hover:bg-gray-600 text-white px-8 py-3 text-lg font-medium rounded-lg border border-gray-600 transition duration-200">
             Cancelar
@@ -1914,36 +1939,36 @@ function getFormularioNodosHTML(isModal = true) {
                     
                     <!-- Números de parte -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-3">Cable <button type="button" onclick="agregarProductoExtra('cable')" class="ml-2 text-blue-500 hover:text-blue-400">+</button></label>
+                        <label class="block text-sm font-medium text-gray-300 mb-3">Cable <button type="button" onclick="agregarProductoExtraConCategoria('cable', '${categoria}')" class="ml-2 text-blue-500 hover:text-blue-400">+</button></label>
                         <div class="autocomplete-container">
-                            <input type="text" id="cable-numero-parte-general" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="PUL6004BL-BOX" required oninput="onVolumetriaInput('cable-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'cable-numero-parte-general')" onfocus="onVolumetriaFocus('cable-numero-parte-general')" onblur="onVolumetriaBlur('cable-numero-parte-general')" onclick="mostrarPopupBusquedaAvanzada('cable-numero-parte-general')">
+                            <input type="text" id="cable-numero-parte-general" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="${placeholders.cable}" required oninput="onVolumetriaInputConCategoria('cable-numero-parte-general', '${categoria}')" onkeydown="onVolumetriaKeydown(event, 'cable-numero-parte-general')" onfocus="onVolumetriaFocus('cable-numero-parte-general')" onblur="onVolumetriaBlur('cable-numero-parte-general')" onclick="mostrarPopupBusquedaAvanzadaConCategoria('cable-numero-parte-general', '${categoria}')">
                             <div id="suggestions_cable-numero-parte-general" class="autocomplete-suggestions"></div>
                         </div>
                         <div id="extra-productos-cable"></div>
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-3">Jack <button type="button" onclick="agregarProductoExtra('jack')" class="ml-2 text-blue-500 hover:text-blue-400">+</button></label>
+                        <label class="block text-sm font-medium text-gray-300 mb-3">Jack <button type="button" onclick="agregarProductoExtraConCategoria('jack', '${categoria}')" class="ml-2 text-blue-500 hover:text-blue-400">+</button></label>
                         <div class="autocomplete-container">
-                            <input type="text" id="jack-numero-parte-general" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="CJ6X88TBL" required oninput="onVolumetriaInput('jack-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'jack-numero-parte-general')" onfocus="onVolumetriaFocus('jack-numero-parte-general')" onblur="onVolumetriaBlur('jack-numero-parte-general')" onclick="mostrarPopupBusquedaAvanzada('jack-numero-parte-general')">
+                            <input type="text" id="jack-numero-parte-general" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="${placeholders.jack}" required oninput="onVolumetriaInputConCategoria('jack-numero-parte-general', '${categoria}')" onkeydown="onVolumetriaKeydown(event, 'jack-numero-parte-general')" onfocus="onVolumetriaFocus('jack-numero-parte-general')" onblur="onVolumetriaBlur('jack-numero-parte-general')" onclick="mostrarPopupBusquedaAvanzadaConCategoria('jack-numero-parte-general', '${categoria}')">
                             <div id="suggestions_jack-numero-parte-general" class="autocomplete-suggestions"></div>
                         </div>
                         <div id="extra-productos-jack"></div>
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-3">Patch Cord <button type="button" onclick="agregarProductoExtra('patchcord')" class="ml-2 text-blue-500 hover:text-blue-400">+</button></label>
+                        <label class="block text-sm font-medium text-gray-300 mb-3">Patch Cord <button type="button" onclick="agregarProductoExtraConCategoria('patchcord', '${categoria}')" class="ml-2 text-blue-500 hover:text-blue-400">+</button></label>
                         <div class="autocomplete-container">
-                            <input type="text" id="patchcord-numero-parte-general" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="UTP28SP3BL" required oninput="onVolumetriaInput('patchcord-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'patchcord-numero-parte-general')" onfocus="onVolumetriaFocus('patchcord-numero-parte-general')" onblur="onVolumetriaBlur('patchcord-numero-parte-general')" onclick="mostrarPopupBusquedaAvanzada('patchcord-numero-parte-general')">
+                            <input type="text" id="patchcord-numero-parte-general" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="${placeholders.patchcord}" required oninput="onVolumetriaInputConCategoria('patchcord-numero-parte-general', '${categoria}')" onkeydown="onVolumetriaKeydown(event, 'patchcord-numero-parte-general')" onfocus="onVolumetriaFocus('patchcord-numero-parte-general')" onblur="onVolumetriaBlur('patchcord-numero-parte-general')" onclick="mostrarPopupBusquedaAvanzadaConCategoria('patchcord-numero-parte-general', '${categoria}')">
                             <div id="suggestions_patchcord-numero-parte-general" class="autocomplete-suggestions"></div>
                         </div>
                         <div id="extra-productos-patchcord"></div>
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-3">Faceplate <button type="button" onclick="agregarProductoExtra('faceplate')" class="ml-2 text-blue-500 hover:text-blue-400">+</button></label>
+                        <label class="block text-sm font-medium text-gray-300 mb-3">Faceplate <button type="button" onclick="agregarProductoExtraConCategoria('faceplate', '${categoria}')" class="ml-2 text-blue-500 hover:text-blue-400">+</button></label>
                         <div class="autocomplete-container">
-                            <input type="text" id="faceplate-numero-parte-general" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="NK2FHDEI" required oninput="onVolumetriaInput('faceplate-numero-parte-general')" onkeydown="onVolumetriaKeydown(event, 'faceplate-numero-parte-general')" onfocus="onVolumetriaFocus('faceplate-numero-parte-general')" onblur="onVolumetriaBlur('faceplate-numero-parte-general')" onclick="mostrarPopupBusquedaAvanzada('faceplate-numero-parte-general')">
+                            <input type="text" id="faceplate-numero-parte-general" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="${placeholders.faceplate}" required oninput="onVolumetriaInputConCategoria('faceplate-numero-parte-general', '${categoria}')" onkeydown="onVolumetriaKeydown(event, 'faceplate-numero-parte-general')" onfocus="onVolumetriaFocus('faceplate-numero-parte-general')" onblur="onVolumetriaBlur('faceplate-numero-parte-general')" onclick="mostrarPopupBusquedaAvanzadaConCategoria('faceplate-numero-parte-general', '${categoria}')">
                             <div id="suggestions_faceplate-numero-parte-general" class="autocomplete-suggestions"></div>
                         </div>
                         <div id="extra-productos-faceplate"></div>
@@ -1962,9 +1987,91 @@ function getFormularioNodosHTML(isModal = true) {
     `;
 }
 
-// NUEVA FUNCIÓN: Mostrar formulario específico de nodos en volumetría general
+// NUEVA FUNCIÓN: Mostrar selector de categoría antes del formulario de nodos
 function mostrarFormularioNodosEnGeneral() {
-    console.log('🌐 Mostrando formulario específico de nodos de red en volumetría general (dentro del modal)');
+    console.log('🌐 Mostrando selector de categoría para nodos de red');
+    
+    const modal = document.getElementById('component-questionnaire-modal');
+    const titleElement = modal.querySelector('#modal-title');
+    const contentElement = modal.querySelector('#modal-content');
+    
+    if (!modal || !titleElement || !contentElement) {
+        console.error('❌ Elementos del modal no encontrados para mostrar selector de categoría.');
+        return;
+    }
+
+    titleElement.textContent = 'Seleccionar Categoría - Nodos de Red';
+    
+    const categorySelectorHTML = `
+        <div class="space-y-6">
+            <div class="text-center">
+                <div class="bg-blue-500/20 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-medium text-white mb-2">Selecciona una Categoría</h3>
+                <p class="text-gray-400">Esta selección filtrará los productos disponibles en el formulario</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button onclick="seleccionarCategoriaYMostrarFormulario('CAT5E')" 
+                        class="categoria-card bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-500/30 hover:border-green-400 rounded-xl p-6 text-center transition-all duration-200 hover:scale-105">
+                    <div class="bg-green-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                        <span class="text-white font-bold text-sm">5E</span>
+                    </div>
+                    <h4 class="text-white font-medium mb-1">Categoría 5E</h4>
+                    <p class="text-gray-400 text-sm">Cables y componentes Cat 5E</p>
+                </button>
+                
+                <button onclick="seleccionarCategoriaYMostrarFormulario('CAT6')" 
+                        class="categoria-card bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/30 hover:border-blue-400 rounded-xl p-6 text-center transition-all duration-200 hover:scale-105">
+                    <div class="bg-blue-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                        <span class="text-white font-bold text-sm">6</span>
+                    </div>
+                    <h4 class="text-white font-medium mb-1">Categoría 6</h4>
+                    <p class="text-gray-400 text-sm">Cables y componentes Cat 6</p>
+                </button>
+                
+                <button onclick="seleccionarCategoriaYMostrarFormulario('CAT6A')" 
+                        class="categoria-card bg-gradient-to-br from-purple-500/20 to-purple-600/20 border border-purple-500/30 hover:border-purple-400 rounded-xl p-6 text-center transition-all duration-200 hover:scale-105">
+                    <div class="bg-purple-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                        <span class="text-white font-bold text-xs">6A</span>
+                    </div>
+                    <h4 class="text-white font-medium mb-1">Categoría 6A</h4>
+                    <p class="text-gray-400 text-sm">Cables y componentes Cat 6A</p>
+                </button>
+            </div>
+            
+            <div class="flex justify-center pt-4">
+                <button type="button" onclick="cerrarCuestionario(); regresarAVolumetriaGeneral();" 
+                        class="bg-gray-700 hover:bg-gray-600 text-white px-8 py-3 text-lg font-medium rounded-lg border border-gray-600 transition duration-200">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    `;
+    
+    contentElement.innerHTML = categorySelectorHTML;
+    modal.classList.remove('hidden');
+    
+    console.log('✅ Selector de categoría mostrado');
+}
+
+// NUEVA FUNCIÓN: Seleccionar categoría y mostrar formulario específico
+function seleccionarCategoriaYMostrarFormulario(categoria) {
+    console.log('📂 Categoría seleccionada:', categoria);
+    
+    // Guardar la categoría seleccionada globalmente
+    window.categoriaSeleccionadaNodos = categoria;
+    
+    // Mostrar el formulario de nodos con la categoría filtrada
+    mostrarFormularioNodosConCategoria(categoria);
+}
+
+// FUNCIÓN MODIFICADA: Mostrar formulario de nodos con categoría específica
+function mostrarFormularioNodosConCategoria(categoria) {
+    console.log('🌐 Mostrando formulario de nodos para categoría:', categoria);
     
     const modal = document.getElementById('component-questionnaire-modal');
     const titleElement = modal.querySelector('#modal-title');
@@ -1975,12 +2082,11 @@ function mostrarFormularioNodosEnGeneral() {
         return;
     }
 
-    titleElement.textContent = 'Formulario Nodos de Red';
+    titleElement.textContent = `Formulario Nodos de Red - ${categoria}`;
     
-    const formHTML = getFormularioNodosHTML(true);
+    const formHTML = getFormularioNodosHTML(true, categoria);
     
     contentElement.innerHTML = formHTML;
-    modal.classList.remove('hidden'); // Show the modal
     
     // Configurar eventos del formulario
     document.getElementById('form-nodos-general').addEventListener('submit', function(e) {
@@ -1988,7 +2094,7 @@ function mostrarFormularioNodosEnGeneral() {
         procesarFormularioNodosGeneral();
     });
     
-    console.log('✅ Formulario específico de nodos mostrado en volumetría general (dentro del modal)');
+    console.log('✅ Formulario específico de nodos mostrado para categoría:', categoria);
 }
 
 // Función para procesar el formulario de nodos en volumetría general
@@ -2088,6 +2194,25 @@ function agregarProductoExtra(tipo) {
     newRow.innerHTML = `
         <div class="autocomplete-container flex-grow">
             <input type="text" id="${tipo}-numero-parte-extra-${index}" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="Número de parte" oninput="onVolumetriaInput('${tipo}-numero-parte-extra-${index}')" onclick="mostrarPopupBusquedaAvanzada('${tipo}-numero-parte-extra-${index}')">
+            <div id="suggestions_${tipo}-numero-parte-extra-${index}" class="autocomplete-suggestions"></div>
+        </div>
+        <input type="number" id="${tipo}-cantidad-extra-${index}" class="w-24 px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="Cant." min="1">
+        <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-400">-</button>
+    `;
+    
+    container.appendChild(newRow);
+}
+
+// Función para agregar productos extra con filtro de categoría
+function agregarProductoExtraConCategoria(tipo, categoria) {
+    const container = document.getElementById(`extra-productos-${tipo}`);
+    const index = container.children.length;
+    
+    const newRow = document.createElement('div');
+    newRow.className = 'flex items-center space-x-2 mt-2';
+    newRow.innerHTML = `
+        <div class="autocomplete-container flex-grow">
+            <input type="text" id="${tipo}-numero-parte-extra-${index}" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="Número de parte ${categoria}" oninput="onVolumetriaInputConCategoria('${tipo}-numero-parte-extra-${index}', '${categoria}')" onclick="mostrarPopupBusquedaAvanzadaConCategoria('${tipo}-numero-parte-extra-${index}', '${categoria}')">
             <div id="suggestions_${tipo}-numero-parte-extra-${index}" class="autocomplete-suggestions"></div>
         </div>
         <input type="number" id="${tipo}-cantidad-extra-${index}" class="w-24 px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all duration-200" placeholder="Cant." min="1">
@@ -9591,6 +9716,252 @@ function selectVolumetriaProduct(fieldId, noParte, descripcion, precio) {
     const input = document.getElementById(fieldId);
     input.style.borderColor = '#10B981';
     input.title = `Producto: ${descripcion} - $${precio.toFixed(2)} USD`;
+}
+
+// ============================= //
+// FUNCIONES CON FILTRO DE CATEGORÍA PARA NODOS DE RED //
+// ============================= //
+
+// Función de input para campos de volumetría con filtro de categoría
+function onVolumetriaInputConCategoria(fieldId, categoria) {
+    const inputValue = document.getElementById(fieldId).value;
+    console.log(`=== Input event on ${fieldId} con categoría ${categoria}: "${inputValue}" ===`);
+    
+    // Limpiar timeout anterior si existe
+    if (searchTimeouts[fieldId]) {
+        clearTimeout(searchTimeouts[fieldId]);
+    }
+    
+    // Configurar nuevo timeout (debounce de 300ms)
+    searchTimeouts[fieldId] = setTimeout(async () => {
+        console.log(`🚀 Debounce timeout triggered for ${fieldId} con categoría ${categoria}`);
+        
+        const suggestionsContainer = document.getElementById(`suggestions_${fieldId}`);
+        
+        if (inputValue.trim().length < 1) {
+            console.log('📝 Input empty, hiding suggestions');
+            suggestionsContainer.style.display = 'none';
+            return;
+        }
+        
+        try {
+            const productos = await getVolumetriaProductosConCategoria(inputValue.trim(), categoria);
+            
+            if (productos.length > 0) {
+                suggestionsContainer.innerHTML = productos.map((producto, index) => `
+                    <div class="autocomplete-suggestion" data-index="${index}" onclick="selectVolumetriaProduct('${fieldId}', '${producto.noParte}', '${producto.descripcion.replace(/'/g, "\\'")}', ${producto.precio})" style="padding: 1rem; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.1); transition: all 0.2s ease; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">
+                        <div style="font-weight: 600; color: #007AFF; font-size: 0.9rem;">${producto.noParte}</div>
+                        <div style="font-size: 0.8rem; color: rgba(255,255,255,0.7); margin-top: 0.25rem; line-height: 1.3;">${producto.descripcion}</div>
+                        <div style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 0.25rem;">$${producto.precio.toFixed(2)}</div>
+                    </div>
+                `).join('');
+                suggestionsContainer.style.display = 'block';
+                
+                setTimeout(() => {
+                    suggestionsContainer.style.display = 'none';
+                }, 2000);
+            } else {
+                suggestionsContainer.innerHTML = `
+                    <div class="autocomplete-suggestion text-center py-3" style="color: #fc8181;">
+                        No se encontraron productos de ${categoria} para "${inputValue}"
+                    </div>
+                `;
+                suggestionsContainer.style.display = 'block';
+                
+                setTimeout(() => {
+                    suggestionsContainer.style.display = 'none';
+                }, 2000);
+            }
+        } catch (error) {
+            console.error('💥 Error in input event:', error);
+            suggestionsContainer.innerHTML = `
+                <div class="autocomplete-suggestion text-center py-3" style="color: #fc8181;">
+                    Error al buscar productos: ${error.message}
+                </div>
+            `;
+            suggestionsContainer.style.display = 'block';
+            setTimeout(() => {
+                suggestionsContainer.style.display = 'none';
+            }, 3000);
+        }
+    }, 300);
+}
+
+// Función para mostrar popup de búsqueda avanzada con filtro de categoría
+function mostrarPopupBusquedaAvanzadaConCategoria(fieldId, categoria) {
+    console.log(`🔍 Abriendo búsqueda avanzada para: ${fieldId} con categoría ${categoria}`);
+    
+    // Cerrar popup existente si hay uno
+    cerrarPopupBusquedaActual();
+    
+    // Crear elementos del popup
+    const overlay = document.createElement('div');
+    overlay.id = 'search-popup-overlay';
+    overlay.className = 'search-popup-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        backdrop-filter: blur(5px);
+    `;
+    
+    const popup = document.createElement('div');
+    popup.className = 'search-popup';
+    popup.style.cssText = `
+        background: var(--apple-background-secondary);
+        border-radius: 12px;
+        padding: 2rem;
+        width: 90%;
+        max-width: 800px;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    `;
+    
+    popup.innerHTML = `
+        <div class="popup-header mb-6">
+            <h3 class="text-xl font-bold text-white mb-2">Búsqueda de Productos - ${categoria}</h3>
+            <p class="text-gray-400">Busca y selecciona productos de la categoría ${categoria}</p>
+        </div>
+        
+        <div class="search-input-container mb-4">
+            <input type="text" id="popup-search-input" placeholder="Escribe número de parte o descripción..." 
+                   class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+        </div>
+        
+        <div id="popup-results-container" class="results-container" style="max-height: 400px; overflow-y: auto;">
+            <div class="text-center py-8 text-gray-400">
+                Escribe para buscar productos de ${categoria}...
+            </div>
+        </div>
+        
+        <div class="popup-footer mt-6 flex justify-end space-x-3">
+            <button onclick="cerrarPopupBusquedaActual()" class="px-6 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors">
+                Cancelar
+            </button>
+        </div>
+    `;
+    
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+    
+    // Variables globales
+    currentSearchPopup = overlay;
+    currentFieldId = fieldId;
+    
+    // Configurar eventos
+    const searchInput = document.getElementById('popup-search-input');
+    const resultsContainer = document.getElementById('popup-results-container');
+    
+    let searchTimeout;
+    searchInput.addEventListener('input', async (e) => {
+        const query = e.target.value.trim();
+        
+        if (searchTimeout) clearTimeout(searchTimeout);
+        
+        if (query.length < 1) {
+            resultsContainer.innerHTML = `
+                <div class="text-center py-8 text-gray-400">
+                    Escribe para buscar productos de ${categoria}...
+                </div>
+            `;
+            return;
+        }
+        
+        resultsContainer.innerHTML = `
+            <div class="text-center py-8 text-gray-400">
+                <div class="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                Buscando productos de ${categoria}...
+            </div>
+        `;
+        
+        searchTimeout = setTimeout(async () => {
+            try {
+                const productos = await getVolumetriaProductosConCategoria(query, categoria);
+                
+                if (productos.length > 0) {
+                    resultsContainer.innerHTML = productos.map(producto => `
+                        <div class="product-result p-4 border-b border-gray-600 hover:bg-gray-700 cursor-pointer transition-colors"
+                             onclick="seleccionarProductoDelPopup('${producto.noParte}', '${producto.descripcion.replace(/'/g, "\\'")}', ${producto.precio})">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <div class="font-semibold text-blue-400 text-lg">${producto.noParte}</div>
+                                    <div class="text-gray-300 mt-1">${producto.descripcion}</div>
+                                    <div class="text-sm text-gray-400 mt-1">Categoría: ${categoria}</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-xl font-bold text-green-400">$${producto.precio.toFixed(2)}</div>
+                                    <div class="text-sm text-gray-400">USD</div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    resultsContainer.innerHTML = `
+                        <div class="text-center py-8 text-yellow-400">
+                            No se encontraron productos de ${categoria} para "${query}"
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error buscando productos:', error);
+                resultsContainer.innerHTML = `
+                    <div class="text-center py-8 text-red-400">
+                        Error al buscar productos: ${error.message}
+                    </div>
+                `;
+            }
+        }, 300);
+    });
+    
+    // Enfocar input
+    setTimeout(() => searchInput.focus(), 100);
+    
+    // Cerrar al hacer clic en overlay
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            cerrarPopupBusquedaActual();
+        }
+    });
+}
+
+// Función para buscar productos con filtro de categoría
+async function getVolumetriaProductosConCategoria(query, categoria) {
+    console.log(`🔍 Buscando productos de ${categoria} con query: "${query}"`);
+    
+    try {
+        const response = await fetch('/app/api/buscar-productos-catalogo/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            },
+            body: JSON.stringify({ 
+                query: query,
+                categoria: categoria // Agregar filtro de categoría
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log(`✅ Productos encontrados de ${categoria}:`, data.productos?.length || 0);
+        
+        return data.productos || [];
+    } catch (error) {
+        console.error('💥 Error fetching productos con categoría:', error);
+        throw error;
+    }
 }
 
 // ============================= //
