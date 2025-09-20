@@ -6550,15 +6550,11 @@ def cambiar_estado_oportunidad(request, oportunidad_id):
 @require_http_methods(["POST"])
 def agregar_comentario_oportunidad(request, oportunidad_id):
     """
-    API para agregar comentarios a una oportunidad
+    API para agregar comentarios con archivos a una oportunidad
     """
     try:
-        import json
-        data = json.loads(request.body)
-        contenido = data.get('contenido', '').strip()
-        
-        if not contenido:
-            return JsonResponse({'error': 'Contenido del comentario requerido'}, status=400)
+        # Obtener contenido del comentario
+        contenido = request.POST.get('contenido', '').strip()
         
         # Obtener la oportunidad
         oportunidad = get_object_or_404(TodoItem, id=oportunidad_id)
@@ -6567,19 +6563,69 @@ def agregar_comentario_oportunidad(request, oportunidad_id):
         if not is_supervisor(request.user) and oportunidad.usuario != request.user:
             return JsonResponse({'error': 'No tienes permisos para comentar en esta oportunidad'}, status=403)
         
-        # Crear comentario
+        # Verificar que hay contenido o archivos
+        archivos_subidos = []
+        archivos_keys = [key for key in request.FILES.keys() if key.startswith('archivo_')]
+        
+        if not contenido and not archivos_keys:
+            return JsonResponse({'error': 'Debe proporcionar contenido o archivos'}, status=400)
+        
+        # Crear comentario (puede estar vacío si solo hay archivos)
         comentario = OportunidadComentario.objects.create(
             oportunidad=oportunidad,
             usuario=request.user,
-            contenido=contenido
+            contenido=contenido or "Archivo adjunto"
         )
         
+        # Procesar archivos adjuntos
+        for key in archivos_keys:
+            archivo = request.FILES[key]
+            
+            # Determinar tipo de archivo
+            content_type = archivo.content_type.lower()
+            if content_type.startswith('image/'):
+                tipo_archivo = 'imagen'
+            elif content_type in ['application/pdf']:
+                tipo_archivo = 'documento'
+            elif content_type in ['application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']:
+                tipo_archivo = 'documento'
+            elif content_type in ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv']:
+                tipo_archivo = 'documento'
+            else:
+                tipo_archivo = 'otro'
+            
+            # Crear registro de archivo
+            archivo_obj = OportunidadArchivo.objects.create(
+                oportunidad=oportunidad,
+                usuario=request.user,
+                archivo=archivo,
+                nombre_original=archivo.name,
+                tipo=tipo_archivo,
+                tamaño=archivo.size,
+                descripcion=f"Adjuntado en comentario #{comentario.id}"
+            )
+            
+            archivos_subidos.append({
+                'id': archivo_obj.id,
+                'nombre': archivo_obj.nombre_original,
+                'tipo': archivo_obj.tipo,
+                'tamaño': archivo_obj.tamaño,
+                'url': archivo_obj.archivo.url if archivo_obj.archivo else None
+            })
+        
         # Crear actividad en el timeline
+        descripcion_actividad = contenido[:200] + ('...' if len(contenido) > 200 else '')
+        if archivos_subidos:
+            if contenido:
+                descripcion_actividad += f" ({len(archivos_subidos)} archivo{'s' if len(archivos_subidos) > 1 else ''} adjunto{'s' if len(archivos_subidos) > 1 else ''})"
+            else:
+                descripcion_actividad = f"Subió {len(archivos_subidos)} archivo{'s' if len(archivos_subidos) > 1 else ''}"
+        
         OportunidadActividad.objects.create(
             oportunidad=oportunidad,
             tipo='comentario',
-            titulo='Nuevo Comentario',
-            descripcion=contenido[:200] + ('...' if len(contenido) > 200 else ''),
+            titulo='Nuevo Comentario' + (' con archivos' if archivos_subidos else ''),
+            descripcion=descripcion_actividad,
             usuario=request.user
         )
         
@@ -6589,11 +6635,15 @@ def agregar_comentario_oportunidad(request, oportunidad_id):
                 'id': comentario.id,
                 'contenido': comentario.contenido,
                 'usuario': request.user.get_full_name() or request.user.username,
-                'fecha': comentario.fecha_creacion.strftime('%d/%m/%Y %H:%M')
+                'fecha': comentario.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+                'archivos': archivos_subidos
             }
         })
         
     except Exception as e:
+        import traceback
+        print(f"Error en agregar_comentario_oportunidad: {str(e)}")
+        print(traceback.format_exc())
         return JsonResponse({'error': str(e)}, status=500)
 
 

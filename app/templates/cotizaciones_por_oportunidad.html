@@ -754,6 +754,103 @@
     .no-items-message-simple .no-items-text {
         font-size: 0.9rem;
     }
+
+    /* DRAG & DROP STYLES */
+    .drop-zone {
+        border: 2px dashed var(--apple-separator);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        background: var(--apple-background-secondary);
+        margin-bottom: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: none; /* Oculto por defecto */
+    }
+
+    .drop-zone.show {
+        display: block;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+        border-color: var(--apple-blue);
+        background: var(--apple-blue-light);
+    }
+
+    .drop-zone-content {
+        pointer-events: none;
+    }
+
+    .drop-zone-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .drop-zone-text {
+        font-size: 1rem;
+        color: var(--apple-label-primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .drop-zone-formats {
+        font-size: 0.8rem;
+        color: var(--apple-label-secondary);
+    }
+
+    .attached-files {
+        margin-bottom: 1rem;
+    }
+
+    .attached-file {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--apple-background-secondary);
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        border: 1px solid var(--apple-separator);
+    }
+
+    .attached-file-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .attached-file-icon {
+        font-size: 1.2rem;
+    }
+
+    .attached-file-name {
+        font-size: 0.9rem;
+        color: var(--apple-label-primary);
+    }
+
+    .attached-file-size {
+        font-size: 0.8rem;
+        color: var(--apple-label-secondary);
+    }
+
+    .attached-file-remove {
+        background: var(--apple-red);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        font-size: 0.7rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .file-counter {
+        font-size: 0.8rem;
+        color: var(--apple-label-secondary);
+        margin-left: 0.5rem;
+    }
 </style>
 
 <div class="crm-container">
@@ -935,7 +1032,7 @@
             
             <div class="timeline-content">
                 <!-- NUEVO COMENTARIO -->
-                <div class="new-comment">
+                <div class="new-comment" id="commentSection">
                     <div class="comment-header">
                         <div class="comment-avatar">
                             <div class="avatar-circle">{{ user.username|first|upper }}</div>
@@ -945,13 +1042,27 @@
                             <span class="comment-time">Ahora</span>
                         </div>
                     </div>
+                    
+                    <!-- DRAG & DROP ZONE -->
+                    <div class="drop-zone" id="dropZone">
+                        <div class="drop-zone-content">
+                            <div class="drop-zone-icon">📁</div>
+                            <div class="drop-zone-text">Arrastra archivos aquí o haz clic para seleccionar</div>
+                            <div class="drop-zone-formats">PDF, Word, Excel, CSV, Imágenes</div>
+                        </div>
+                        <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.gif,.webp" style="display: none;">
+                    </div>
+                    
+                    <!-- ARCHIVOS ADJUNTOS -->
+                    <div class="attached-files" id="attachedFiles"></div>
+                    
                     <textarea class="comment-input" id="nuevoComentario" placeholder="Escribe un comentario sobre esta oportunidad..."></textarea>
                     <div class="comment-actions">
                         <div class="comment-actions-left">
-                            <button class="action-button-small" title="Adjuntar archivo">📎</button>
-                            <button class="action-button-small" title="Adjuntar imagen">📷</button>
+                            <button class="action-button-small" id="attachFileBtn" title="Adjuntar archivo">📎</button>
+                            <span class="file-counter" id="fileCounter">0 archivos</span>
                         </div>
-                        <button class="apple-button apple-button-small" onclick="agregarComentario()" id="btnComentar" disabled>
+                        <button class="apple-button apple-button-small" id="btnComentar" disabled>
                             💬 Comentar
                         </button>
                     </div>
@@ -1027,14 +1138,182 @@
           });
     }
 
-    // Gestión de comentarios
-    function agregarComentario() {
+    // Variables globales para archivos
+    let attachedFiles = [];
+    
+    // Inicialización de comentarios y drag & drop
+    function initCommentSystem() {
+        const commentInput = document.getElementById('nuevoComentario');
+        const btnComentar = document.getElementById('btnComentar');
+        const attachFileBtn = document.getElementById('attachFileBtn');
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const commentSection = document.getElementById('commentSection');
+        
+        // Habilitar botón cuando hay texto
+        commentInput.addEventListener('input', function() {
+            const hasText = this.value.trim().length > 0;
+            const hasFiles = attachedFiles.length > 0;
+            btnComentar.disabled = !(hasText || hasFiles);
+            btnComentar.style.opacity = btnComentar.disabled ? '0.6' : '1';
+        });
+        
+        // Botón adjuntar archivo
+        attachFileBtn.addEventListener('click', function() {
+            dropZone.classList.toggle('show');
+        });
+        
+        // Click en drop zone abre selector de archivos
+        dropZone.addEventListener('click', function() {
+            fileInput.click();
+        });
+        
+        // Manejar selección de archivos
+        fileInput.addEventListener('change', function(e) {
+            handleFiles(e.target.files);
+        });
+        
+        // Drag & Drop eventos
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+        
+        dropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+        });
+        
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        
+        // Botón comentar
+        btnComentar.addEventListener('click', agregarComentario);
+        
+        updateFileCounter();
+    }
+    
+    // Manejar archivos seleccionados/arrastrados
+    function handleFiles(files) {
+        Array.from(files).forEach(file => {
+            // Validar tipo de archivo
+            const allowedTypes = [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'text/csv',
+                'image/png',
+                'image/jpeg',
+                'image/jpg',
+                'image/gif',
+                'image/webp'
+            ];
+            
+            if (!allowedTypes.includes(file.type)) {
+                alert(`Tipo de archivo no permitido: ${file.name}`);
+                return;
+            }
+            
+            // Validar tamaño (máximo 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert(`Archivo muy grande (máximo 10MB): ${file.name}`);
+                return;
+            }
+            
+            // Agregar archivo a la lista
+            attachedFiles.push(file);
+        });
+        
+        renderAttachedFiles();
+        updateFileCounter();
+        updateCommentButton();
+        
+        // Ocultar drop zone después de seleccionar archivos
+        document.getElementById('dropZone').classList.remove('show');
+    }
+    
+    // Renderizar archivos adjuntos
+    function renderAttachedFiles() {
+        const container = document.getElementById('attachedFiles');
+        container.innerHTML = '';
+        
+        attachedFiles.forEach((file, index) => {
+            const fileElement = document.createElement('div');
+            fileElement.className = 'attached-file';
+            
+            const icon = getFileIcon(file.type);
+            const size = formatFileSize(file.size);
+            
+            fileElement.innerHTML = `
+                <div class="attached-file-info">
+                    <div class="attached-file-icon">${icon}</div>
+                    <div>
+                        <div class="attached-file-name">${file.name}</div>
+                        <div class="attached-file-size">${size}</div>
+                    </div>
+                </div>
+                <button class="attached-file-remove" onclick="removeFile(${index})">×</button>
+            `;
+            
+            container.appendChild(fileElement);
+        });
+    }
+    
+    // Remover archivo
+    function removeFile(index) {
+        attachedFiles.splice(index, 1);
+        renderAttachedFiles();
+        updateFileCounter();
+        updateCommentButton();
+    }
+    
+    // Obtener icono por tipo de archivo
+    function getFileIcon(type) {
+        if (type.includes('pdf')) return '📄';
+        if (type.includes('word')) return '📝';
+        if (type.includes('excel') || type.includes('csv')) return '📊';
+        if (type.includes('image')) return '🖼️';
+        return '📎';
+    }
+    
+    // Formatear tamaño de archivo
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    // Actualizar contador de archivos
+    function updateFileCounter() {
+        const counter = document.getElementById('fileCounter');
+        counter.textContent = `${attachedFiles.length} archivo${attachedFiles.length !== 1 ? 's' : ''}`;
+    }
+    
+    // Actualizar estado del botón comentar
+    function updateCommentButton() {
+        const commentInput = document.getElementById('nuevoComentario');
+        const btnComentar = document.getElementById('btnComentar');
+        const hasText = commentInput.value.trim().length > 0;
+        const hasFiles = attachedFiles.length > 0;
+        btnComentar.disabled = !(hasText || hasFiles);
+        btnComentar.style.opacity = btnComentar.disabled ? '0.6' : '1';
+    }
+    
+    // Función principal para agregar comentario
+    async function agregarComentario() {
         const comentario = document.getElementById('nuevoComentario').value.trim();
         const btnComentar = document.getElementById('btnComentar');
         
-        // Verificar que hay contenido
-        if (!comentario) {
-            return; // Silenciosamente no hacer nada si está vacío
+        // Verificar que hay contenido o archivos
+        if (!comentario && attachedFiles.length === 0) {
+            return;
         }
         
         // Deshabilitar botón mientras se procesa
@@ -1042,52 +1321,51 @@
         btnComentar.style.opacity = '0.6';
         btnComentar.innerHTML = '⏳ Enviando...';
         
-        // Guardar comentario en el servidor
-        const oportunidadId = OPORTUNIDAD_ID;
-        const isSuper = "{{ user.is_superuser|yesno:"true,false" }}";
-        console.log('🎯 DEBUG: Es superusuario:', isSuper);
-        console.log('🎯 DEBUG: oportunidadId sin formato:', oportunidadId);
-        console.log('🎯 DEBUG: URL final:', `/app/api/agregar-comentario-oportunidad/${oportunidadId}/`);
-        console.log('🎯 DEBUG: Contenido:', comentario);
-        console.log('🎯 DEBUG: CSRF Token:', getCookie('csrftoken'));
-        
-        fetch(`/app/api/agregar-comentario-oportunidad/${oportunidadId}/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({
-                contenido: comentario
-            })
-        }).then(response => {
-            console.log('Response status:', response.status);
-            console.log('Response headers:', response.headers);
+        try {
+            // Crear FormData para enviar archivos y texto
+            const formData = new FormData();
+            formData.append('contenido', comentario);
+            
+            // Agregar archivos
+            attachedFiles.forEach((file, index) => {
+                formData.append(`archivo_${index}`, file);
+            });
+            
+            const response = await fetch(`/app/api/agregar-comentario-oportunidad/${OPORTUNIDAD_ID}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: formData
+            });
+            
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            return response.json();
-        })
-          .then(data => {
-              if (data.success) {
-                  // Recargar el timeline completo para incluir el nuevo comentario
-                  loadTimeline();
-                  
-                  // Limpiar el input
-                  document.getElementById('nuevoComentario').value = '';
-              } else {
-                  console.error('Error al guardar comentario:', data.error);
-              }
-          })
-          .catch(error => {
-              console.error('Error de red:', error);
-          })
-          .finally(() => {
-              // Restaurar botón al estado deshabilitado inicial
-              btnComentar.disabled = true;
-              btnComentar.style.opacity = '0.6';
-              btnComentar.innerHTML = '💬 Comentar';
-          });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Limpiar el input y archivos
+                document.getElementById('nuevoComentario').value = '';
+                attachedFiles = [];
+                renderAttachedFiles();
+                updateFileCounter();
+                
+                // Recargar timeline
+                await loadTimeline();
+            } else {
+                alert('Error al guardar comentario: ' + (data.error || 'Error desconocido'));
+            }
+            
+        } catch (error) {
+            console.error('Error al enviar comentario:', error);
+            alert('Error al enviar comentario. Por favor, intenta de nuevo.');
+        } finally {
+            // Restaurar botón
+            updateCommentButton();
+            btnComentar.innerHTML = '💬 Comentar';
+        }
     }
 
     function renderTimelineItem(activity) {
@@ -1259,6 +1537,9 @@
 
     // Inicializar componentes
     document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar sistema de comentarios
+        initCommentSystem();
+        
         // Cargar el timeline al cargar la página
         loadTimeline();
     });
