@@ -971,6 +971,9 @@
 </div>
 
 <script>
+    // Variable global con el ID de la oportunidad (sin formato de Django)
+    const OPORTUNIDAD_ID = parseInt("{{ oportunidad.id }}".replace(/,/g, ''));
+    
     // Control de estados en header
     function toggleEstadoDropdownHeader() {
         const dropdown = document.getElementById('estadoDropdownHeader');
@@ -996,7 +999,7 @@
         dropdown.style.display = 'none';
         arrow.style.transform = 'rotate(0deg)';
         
-        const oportunidadId = "{{ oportunidad.id }}";
+        const oportunidadId = OPORTUNIDAD_ID;
         fetch(`/app/api/cambiar-estado-oportunidad/${oportunidadId}/`, {
             method: 'POST',
             headers: {
@@ -1040,11 +1043,13 @@
         btnComentar.innerHTML = '⏳ Enviando...';
         
         // Guardar comentario en el servidor
-        const oportunidadId = "{{ oportunidad.id }}";
+        const oportunidadId = OPORTUNIDAD_ID;
         const isSuper = "{{ user.is_superuser|yesno:"true,false" }}";
-        console.log('Es superusuario:', isSuper);
-        console.log('Enviando comentario a:', `/app/api/agregar-comentario-oportunidad/${oportunidadId}/`);
-        console.log('Contenido:', comentario);
+        console.log('🎯 DEBUG: Es superusuario:', isSuper);
+        console.log('🎯 DEBUG: oportunidadId sin formato:', oportunidadId);
+        console.log('🎯 DEBUG: URL final:', `/app/api/agregar-comentario-oportunidad/${oportunidadId}/`);
+        console.log('🎯 DEBUG: Contenido:', comentario);
+        console.log('🎯 DEBUG: CSRF Token:', getCookie('csrftoken'));
         
         fetch(`/app/api/agregar-comentario-oportunidad/${oportunidadId}/`, {
             method: 'POST',
@@ -1154,7 +1159,7 @@
     async function loadTimeline() {
         const timelineItemsContainer = document.getElementById('timelineItems');
         const loadingMessage = document.getElementById('loadingTimelineMessage');
-        const oportunidadId = "{{ oportunidad.id }}";
+        const oportunidadId = OPORTUNIDAD_ID;
 
         if (loadingMessage) {
             loadingMessage.style.display = 'block';
