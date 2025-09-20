@@ -996,7 +996,7 @@
         dropdown.style.display = 'none';
         arrow.style.transform = 'rotate(0deg)';
         
-        const oportunidadId = {{ oportunidad.id|unlocalized }};
+        const oportunidadId = "{{ oportunidad.id }}";
         fetch(`/app/api/cambiar-estado-oportunidad/${oportunidadId}/`, {
             method: 'POST',
             headers: {
@@ -1040,7 +1040,7 @@
         btnComentar.innerHTML = '⏳ Enviando...';
         
         // Guardar comentario en el servidor
-        const oportunidadId = {{ oportunidad.id|unlocalized }};
+        const oportunidadId = "{{ oportunidad.id }}";
         const isSuper = "{{ user.is_superuser|yesno:"true,false" }}";
         console.log('Es superusuario:', isSuper);
         console.log('Enviando comentario a:', `/app/api/agregar-comentario-oportunidad/${oportunidadId}/`);
@@ -1154,7 +1154,7 @@
     async function loadTimeline() {
         const timelineItemsContainer = document.getElementById('timelineItems');
         const loadingMessage = document.getElementById('loadingTimelineMessage');
-        const oportunidadId = {{ oportunidad.id|unlocalized }};
+        const oportunidadId = "{{ oportunidad.id }}";
 
         if (loadingMessage) {
             loadingMessage.style.display = 'block';
