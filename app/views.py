@@ -6742,13 +6742,21 @@ def timeline_oportunidad(request, oportunidad_id):
                         item_data['comentario_id'] = comentario.id
                         item_data['puede_editar'] = comentario.usuario == request.user or is_supervisor(request.user)
                         
-                        # Buscar archivos asociados a este comentario (por tiempo y usuario)
+                        # Buscar archivos asociados a este comentario específico
+                        # Usar la descripción del archivo que contiene el ID del comentario
                         archivos_asociados = OportunidadArchivo.objects.filter(
                             oportunidad=oportunidad,
-                            usuario=comentario.usuario,
-                            fecha_subida__gte=comentario.fecha_creacion - timedelta(minutes=5),
-                            fecha_subida__lte=comentario.fecha_creacion + timedelta(minutes=5)
+                            descripcion__contains=f"comentario #{comentario.id}"
                         )
+                        
+                        # Si no encuentra por descripción, buscar por tiempo y usuario como fallback
+                        if not archivos_asociados.exists():
+                            archivos_asociados = OportunidadArchivo.objects.filter(
+                                oportunidad=oportunidad,
+                                usuario=comentario.usuario,
+                                fecha_subida__gte=comentario.fecha_creacion - timedelta(seconds=30),
+                                fecha_subida__lte=comentario.fecha_creacion + timedelta(seconds=30)
+                            )
                         
                         if archivos_asociados.exists():
                             item_data['archivos'] = []
