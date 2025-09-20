@@ -1682,10 +1682,12 @@
     
     // Renderizar archivos adjuntos
     function renderAttachedFiles() {
+        console.log('🖼️ renderAttachedFiles llamado, archivos actuales:', attachedFiles.length);
         const container = document.getElementById('attachedFiles');
         container.innerHTML = '';
         
         attachedFiles.forEach((file, index) => {
+            console.log(`📎 Renderizando archivo ${index}: ${file.name}`);
             const fileElement = document.createElement('div');
             fileElement.className = 'attached-file';
             
@@ -1745,6 +1747,9 @@
         const btnComentar = document.getElementById('btnComentar');
         const hasText = commentInput.value.trim().length > 0;
         const hasFiles = attachedFiles.length > 0;
+        
+        console.log('🔄 updateCommentButton: texto=', hasText, ', archivos=', hasFiles, ', total archivos:', attachedFiles.length);
+        
         btnComentar.disabled = !(hasText || hasFiles);
         btnComentar.style.opacity = btnComentar.disabled ? '0.6' : '1';
     }
@@ -1754,11 +1759,15 @@
     
     // Función principal para agregar comentario
     async function agregarComentario() {
+        console.log('📤 agregarComentario iniciado - archivos actuales:', attachedFiles.length);
+        attachedFiles.forEach((file, i) => console.log(`  ${i}: ${file.name}`));
+        
         const comentario = document.getElementById('nuevoComentario').value.trim();
         const btnComentar = document.getElementById('btnComentar');
         
         // Verificar que hay contenido o archivos
         if (!comentario && attachedFiles.length === 0) {
+            console.log('⚠️ No hay contenido ni archivos, saliendo...');
             return;
         }
         
@@ -1802,8 +1811,18 @@
                 // Limpiar el input y archivos
                 document.getElementById('nuevoComentario').value = '';
                 attachedFiles = [];
+                console.log('🧹 Archivos limpiados, array ahora tiene:', attachedFiles.length, 'elementos');
+                
+                // Limpiar visual y contadores
                 renderAttachedFiles();
                 updateFileCounter();
+                
+                // Verificar que el contenedor esté realmente vacío
+                const container = document.getElementById('attachedFiles');
+                if (container) {
+                    container.innerHTML = '';
+                    console.log('🗑️ Contenedor attachedFiles limpiado manualmente');
+                }
                 
                 // Recargar timeline
                 await loadTimeline();
