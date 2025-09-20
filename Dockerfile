@@ -33,8 +33,8 @@ COPY . .
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Crea el directorio para archivos estáticos
-RUN mkdir -p staticfiles
+# Crea los directorios para archivos estáticos y media
+RUN mkdir -p staticfiles media
 
 # Expone el puerto en el que Gunicorn se ejecutará
 EXPOSE 8000

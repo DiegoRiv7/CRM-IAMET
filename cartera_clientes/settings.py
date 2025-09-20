@@ -87,7 +87,7 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     CSRF_COOKIE_HTTPONLY = False  # Necesario para que JavaScript pueda acceder al token CSRF
     # Configuración adicional para cross-site requests
-    X_FRAME_OPTIONS = 'SAMEORIGIN'  # Permite iframes del mismo origen
+    X_FRAME_OPTIONS = 'ALLOWALL'  # Permite iframes para vista previa de archivos
 else:
     # Configuración para desarrollo local (HTTP)
     SESSION_COOKIE_SAMESITE = 'Lax'
@@ -206,6 +206,11 @@ STATICFILES_DIRS = [
 # Media files (user uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Configuración de MEDIA para producción
+if not DEBUG:
+    # En producción, usar la URL completa si es necesario
+    MEDIA_URL = '/media/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

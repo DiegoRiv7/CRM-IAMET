@@ -1749,6 +1749,9 @@
         btnComentar.style.opacity = btnComentar.disabled ? '0.6' : '1';
     }
     
+    // Variable para prevenir múltiples submissions
+    let isSubmitting = false;
+    
     // Función principal para agregar comentario
     async function agregarComentario() {
         const comentario = document.getElementById('nuevoComentario').value.trim();
@@ -1759,7 +1762,14 @@
             return;
         }
         
+        // Prevenir múltiples submissions
+        if (isSubmitting) {
+            console.log('⚠️ Ya hay una submission en progreso, ignorando...');
+            return;
+        }
+        
         // Deshabilitar botón mientras se procesa
+        isSubmitting = true;
         btnComentar.disabled = true;
         btnComentar.style.opacity = '0.6';
         btnComentar.innerHTML = '⏳ Enviando...';
@@ -1805,7 +1815,8 @@
             console.error('Error al enviar comentario:', error);
             alert('Error al enviar comentario. Por favor, intenta de nuevo.');
         } finally {
-            // Restaurar botón
+            // Restaurar botón y resetear flag
+            isSubmitting = false;
             updateCommentButton();
             btnComentar.innerHTML = '💬 Comentar';
         }
