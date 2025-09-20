@@ -1427,6 +1427,13 @@
                 icon = '💬';
                 activityClass = 'comentario-icon';
                 const usuario = activity.usuario || 'Usuario desconocido';
+                console.log('📝 DEBUG comentario:', {
+                    id: activity.id,
+                    usuario: activity.usuario,
+                    contenido: activity.contenido,
+                    descripcion: activity.descripcion
+                });
+                
                 avatarHtml = `
                     <div class="comment-author">
                         <div class="avatar-circle-small">${usuario.charAt(0).toUpperCase()}</div>

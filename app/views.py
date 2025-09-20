@@ -6621,13 +6621,15 @@ def agregar_comentario_oportunidad(request, oportunidad_id):
             else:
                 descripcion_actividad = f"Subió {len(archivos_subidos)} archivo{'s' if len(archivos_subidos) > 1 else ''}"
         
-        OportunidadActividad.objects.create(
+        print(f"🔥 Creando actividad - Usuario: {request.user}, Usuario ID: {request.user.id}, Nombre: {request.user.get_full_name()}")
+        actividad_creada = OportunidadActividad.objects.create(
             oportunidad=oportunidad,
             tipo='comentario',
             titulo='Nuevo Comentario' + (' con archivos' if archivos_subidos else ''),
             descripcion=descripcion_actividad,
             usuario=request.user
         )
+        print(f"💬 Actividad creada: ID={actividad_creada.id}, Usuario={actividad_creada.usuario}, Descripcion='{actividad_creada.descripcion}'")
         
         return JsonResponse({
             'success': True,
@@ -6652,6 +6654,8 @@ def timeline_oportunidad(request, oportunidad_id):
     """
     API para obtener el timeline completo de una oportunidad
     """
+    from datetime import timedelta
+    
     oportunidad = get_object_or_404(TodoItem, id=oportunidad_id)
     
     # Verificar permisos: supervisores ven todo, usuarios solo sus propias oportunidades
@@ -6665,12 +6669,23 @@ def timeline_oportunidad(request, oportunidad_id):
         
         timeline_data = []
         for actividad in actividades:
+            # Debugging: imprimir información de la actividad
+            print(f"🔍 Procesando actividad {actividad.id}: tipo={actividad.tipo}, usuario={actividad.usuario}, descripcion={actividad.descripcion[:50] if actividad.descripcion else 'None'}...")
+            
+            # Obtener información del usuario
+            usuario_nombre = 'Sistema'
+            if actividad.usuario:
+                usuario_nombre = actividad.usuario.get_full_name() or actividad.usuario.username
+                print(f"👤 Usuario encontrado: {usuario_nombre}")
+            else:
+                print(f"⚠️ Usuario es None para actividad {actividad.id}")
+            
             item_data = {
                 'id': actividad.id,
                 'tipo': actividad.tipo,
                 'titulo': actividad.titulo,
                 'descripcion': actividad.descripcion,
-                'usuario': actividad.usuario.get_full_name() if actividad.usuario else 'Sistema',
+                'usuario': usuario_nombre,
                 'fecha': actividad.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
                 'icono': dict(OportunidadActividad.TIPO_ACTIVIDAD_CHOICES).get(actividad.tipo, '⚙️')
             }
@@ -6681,17 +6696,31 @@ def timeline_oportunidad(request, oportunidad_id):
                 item_data['estado_nuevo'] = actividad.estado_nuevo
                 print(f"📊 Timeline cambio_estado: {actividad.id}, anterior: {actividad.estado_anterior}, nuevo: {actividad.estado_nuevo}")
             elif actividad.tipo == 'comentario':
-                # Para comentarios, intentar obtener el contenido del comentario
+                # Para comentarios, buscar el contenido real del comentario
                 try:
+                    # Buscar comentario por actividad relacionada
                     comentario = OportunidadComentario.objects.filter(
                         oportunidad=oportunidad,
-                        usuario=actividad.usuario,
-                        fecha_creacion__gte=actividad.fecha_creacion
-                    ).first()
+                        fecha_creacion__gte=actividad.fecha_creacion - timedelta(seconds=10),
+                        fecha_creacion__lte=actividad.fecha_creacion + timedelta(seconds=10)
+                    ).order_by('-fecha_creacion').first()
+                    
                     if comentario:
                         item_data['contenido'] = comentario.contenido
-                except:
-                    pass
+                        # Actualizar usuario con el del comentario si está disponible
+                        if comentario.usuario:
+                            usuario_comentario = comentario.usuario.get_full_name() or comentario.usuario.username
+                            item_data['usuario'] = usuario_comentario
+                            print(f"💬 Comentario encontrado: contenido='{comentario.contenido[:50]}...', usuario={usuario_comentario}")
+                        else:
+                            print(f"💬 Comentario encontrado pero sin usuario: contenido='{comentario.contenido[:50]}...'")
+                    else:
+                        print(f"❌ No se encontró comentario para actividad {actividad.id}")
+                        # Usar la descripción como fallback
+                        item_data['contenido'] = actividad.descripcion
+                except Exception as e:
+                    print(f"❌ Error buscando comentario para actividad {actividad.id}: {e}")
+                    item_data['contenido'] = actividad.descripcion
             
             timeline_data.append(item_data)
         
