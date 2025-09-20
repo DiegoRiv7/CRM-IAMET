@@ -1369,9 +1369,15 @@
     }
 
     function renderTimelineItem(activity) {
+        // Validar que activity existe y tiene las propiedades básicas
+        if (!activity || !activity.tipo) {
+            console.error('Activity inválida:', activity);
+            return '';
+        }
+        
         let icon = '';
-        let title = activity.titulo;
-        let content = activity.descripcion;
+        let title = activity.titulo || 'Sin título';
+        let content = activity.descripcion || 'Sin descripción';
         let linkHtml = '';
         let avatarHtml = '';
         let activityClass = '';
@@ -1380,25 +1386,28 @@
             case 'creacion':
                 icon = '🆕';
                 activityClass = 'creacion-icon';
-                content = `Oportunidad creada por <strong>${activity.usuario}</strong><br><span class="activity-meta">${activity.descripcion}</span>`;
+                content = `Oportunidad creada por <strong>${activity.usuario || 'Usuario desconocido'}</strong><br><span class="activity-meta">${activity.descripcion || ''}</span>`;
                 break;
             case 'cambio_estado':
                 icon = '🔄';
                 activityClass = 'cambio-estado-icon';
-                content = `Estado cambiado de <strong>${activity.estado_anterior.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</strong> a <strong>${activity.estado_nuevo.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</strong>`;
+                const estadoAnterior = activity.estado_anterior ? activity.estado_anterior.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Sin definir';
+                const estadoNuevo = activity.estado_nuevo ? activity.estado_nuevo.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Sin definir';
+                content = `Estado cambiado de <strong>${estadoAnterior}</strong> a <strong>${estadoNuevo}</strong>`;
                 break;
             case 'comentario':
                 icon = '💬';
                 activityClass = 'comentario-icon';
+                const usuario = activity.usuario || 'Usuario desconocido';
                 avatarHtml = `
                     <div class="comment-author">
-                        <div class="avatar-circle-small">${activity.usuario.charAt(0).toUpperCase()}</div>
-                        <strong>${activity.usuario}</strong>
+                        <div class="avatar-circle-small">${usuario.charAt(0).toUpperCase()}</div>
+                        <strong>${usuario}</strong>
                     </div>
                 `;
                 content = `
                     ${avatarHtml}
-                    <div class="comment-content">${activity.contenido || activity.descripcion}</div>
+                    <div class="comment-content">${activity.contenido || activity.descripcion || 'Sin contenido'}</div>
                 `;
                 break;
             case 'cotizacion':
@@ -1448,9 +1457,12 @@
             const response = await fetch(`/app/api/timeline-oportunidad/${oportunidadId}/`);
             const data = await response.json();
 
-            if (data.success && data.timeline.length > 0) {
+            if (data.success && data.timeline && Array.isArray(data.timeline) && data.timeline.length > 0) {
                 data.timeline.forEach(activity => {
-                    timelineItemsContainer.insertAdjacentHTML('beforeend', renderTimelineItem(activity));
+                    const renderedItem = renderTimelineItem(activity);
+                    if (renderedItem) {
+                        timelineItemsContainer.insertAdjacentHTML('beforeend', renderedItem);
+                    }
                 });
             } else {
                 timelineItemsContainer.innerHTML = `

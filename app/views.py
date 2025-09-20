@@ -6652,26 +6652,47 @@ def timeline_oportunidad(request, oportunidad_id):
     """
     API para obtener el timeline completo de una oportunidad
     """
-    if not request.user.is_superuser:
-        return JsonResponse({'error': 'Acceso denegado'}, status=403)
+    oportunidad = get_object_or_404(TodoItem, id=oportunidad_id)
+    
+    # Verificar permisos: supervisores ven todo, usuarios solo sus propias oportunidades
+    if not is_supervisor(request.user) and oportunidad.usuario != request.user:
+        return JsonResponse({'error': 'No tienes permisos para ver este timeline'}, status=403)
     
     try:
-        oportunidad = get_object_or_404(TodoItem, id=oportunidad_id)
         
         # Obtener todas las actividades
         actividades = oportunidad.actividades_crm.all().order_by('-fecha_creacion')
         
         timeline_data = []
         for actividad in actividades:
-            timeline_data.append({
+            item_data = {
                 'id': actividad.id,
                 'tipo': actividad.tipo,
                 'titulo': actividad.titulo,
                 'descripcion': actividad.descripcion,
-                'usuario': actividad.usuario.get_full_name() or actividad.usuario.username,
+                'usuario': actividad.usuario.get_full_name() if actividad.usuario else 'Sistema',
                 'fecha': actividad.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
                 'icono': dict(OportunidadActividad.TIPO_ACTIVIDAD_CHOICES).get(actividad.tipo, '⚙️')
-            })
+            }
+            
+            # Agregar campos específicos según el tipo de actividad
+            if actividad.tipo == 'cambio_estado':
+                item_data['estado_anterior'] = actividad.estado_anterior
+                item_data['estado_nuevo'] = actividad.estado_nuevo
+            elif actividad.tipo == 'comentario':
+                # Para comentarios, intentar obtener el contenido del comentario
+                try:
+                    comentario = OportunidadComentario.objects.filter(
+                        oportunidad=oportunidad,
+                        usuario=actividad.usuario,
+                        fecha_creacion__gte=actividad.fecha_creacion
+                    ).first()
+                    if comentario:
+                        item_data['contenido'] = comentario.contenido
+                except:
+                    pass
+            
+            timeline_data.append(item_data)
         
         return JsonResponse({
             'success': True,
