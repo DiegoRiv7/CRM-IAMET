@@ -996,7 +996,7 @@
         dropdown.style.display = 'none';
         arrow.style.transform = 'rotate(0deg)';
         
-        const oportunidadId = "{{ oportunidad.id }}";
+        const oportunidadId = {{ oportunidad.id|unlocalized }};
         fetch(`/app/api/cambiar-estado-oportunidad/${oportunidadId}/`, {
             method: 'POST',
             headers: {
@@ -1040,7 +1040,7 @@
         btnComentar.innerHTML = '⏳ Enviando...';
         
         // Guardar comentario en el servidor
-        const oportunidadId = {{ oportunidad.id }};
+        const oportunidadId = {{ oportunidad.id|unlocalized }};
         const isSuper = "{{ user.is_superuser|yesno:"true,false" }}";
         console.log('Es superusuario:', isSuper);
         console.log('Enviando comentario a:', `/app/api/agregar-comentario-oportunidad/${oportunidadId}/`);
@@ -1066,7 +1066,7 @@
           .then(data => {
               if (data.success) {
                   // Recargar el timeline completo para incluir el nuevo comentario
-                  await loadTimeline();
+                  loadTimeline();
                   
                   // Limpiar el input
                   document.getElementById('nuevoComentario').value = '';
@@ -1154,7 +1154,7 @@
     async function loadTimeline() {
         const timelineItemsContainer = document.getElementById('timelineItems');
         const loadingMessage = document.getElementById('loadingTimelineMessage');
-        const oportunidadId = {{ oportunidad.id }};
+        const oportunidadId = {{ oportunidad.id|unlocalized }};
 
         if (loadingMessage) {
             loadingMessage.style.display = 'block';
