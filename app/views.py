@@ -6663,6 +6663,8 @@ def timeline_oportunidad(request, oportunidad_id):
         return JsonResponse({'error': 'No tienes permisos para ver este timeline'}, status=403)
     
     try:
+        # Limpiar actividades huérfanas antes de generar el timeline
+        limpiar_actividades_huerfanas(oportunidad)
         
         # Obtener todas las actividades
         actividades = oportunidad.actividades_crm.all().order_by('-fecha_creacion')
@@ -6737,18 +6739,15 @@ def timeline_oportunidad(request, oportunidad_id):
                             print(f"💬 Comentario encontrado pero sin usuario: contenido='{comentario.contenido[:50]}...'")
                     else:
                         print(f"❌ No se encontró comentario para actividad {actividad.id} - usuario: {actividad.usuario}, fecha: {actividad.fecha_creacion}")
-                        # Usar la descripción como fallback
-                        item_data['contenido'] = actividad.descripcion
-                        item_data['puede_editar'] = False
-                        
-                        # Debug: mostrar comentarios disponibles
-                        comentarios_debug = OportunidadComentario.objects.filter(oportunidad=oportunidad).values('id', 'fecha_creacion', 'usuario__username', 'contenido')[:5]
-                        print(f"🔍 Comentarios disponibles para depuración: {list(comentarios_debug)}")
+                        # Si no se encuentra comentario, saltar esta actividad para evitar huérfanas
+                        print(f"⏭️ Saltando actividad huérfana ID={actividad.id}")
+                        continue
                         
                 except Exception as e:
                     print(f"❌ Error buscando comentario para actividad {actividad.id}: {e}")
-                    item_data['contenido'] = actividad.descripcion
-                    item_data['puede_editar'] = False
+                    # Si hay error, saltar esta actividad
+                    print(f"⏭️ Saltando actividad con error ID={actividad.id}")
+                    continue
             
             timeline_data.append(item_data)
         
@@ -6824,22 +6823,34 @@ def eliminar_comentario_oportunidad(request, comentario_id):
         
         print(f"🗑️ Eliminando comentario ID={comentario_id}, usuario={usuario_comentario}, fecha={fecha_comentario}")
         
-        # Buscar y eliminar la actividad relacionada
+        # Buscar y eliminar TODAS las actividades que podrían estar apuntando a este comentario
         try:
-            # Buscar actividad relacionada con el comentario
-            actividades_relacionadas = OportunidadActividad.objects.filter(
+            # Estrategia más amplia: buscar todas las actividades de comentario que podrían estar relacionadas
+            actividades_candidatas = OportunidadActividad.objects.filter(
                 oportunidad=oportunidad,
-                tipo='comentario',
-                usuario=usuario_comentario,
-                fecha_creacion__gte=fecha_comentario - timedelta(minutes=5),
-                fecha_creacion__lte=fecha_comentario + timedelta(minutes=5)
+                tipo='comentario'
             )
             
             actividades_eliminadas = 0
-            for actividad in actividades_relacionadas:
-                print(f"🗑️ Eliminando actividad relacionada ID={actividad.id}")
-                actividad.delete()
-                actividades_eliminadas += 1
+            for actividad in actividades_candidatas:
+                # Verificar si esta actividad apunta al comentario que vamos a eliminar
+                # usando la misma lógica que en el timeline
+                deberia_eliminar = False
+                
+                # Verificar por rango de tiempo
+                diff_tiempo = abs((actividad.fecha_creacion - fecha_comentario).total_seconds())
+                if diff_tiempo <= 300:  # 5 minutos
+                    deberia_eliminar = True
+                
+                # Verificar por usuario y descripción similar
+                if (actividad.usuario == usuario_comentario and 
+                    comentario.contenido in actividad.descripcion):
+                    deberia_eliminar = True
+                
+                if deberia_eliminar:
+                    print(f"🗑️ Eliminando actividad relacionada ID={actividad.id}, fecha={actividad.fecha_creacion}, diff={diff_tiempo}s")
+                    actividad.delete()
+                    actividades_eliminadas += 1
             
             print(f"✅ Eliminadas {actividades_eliminadas} actividades relacionadas")
             
@@ -6860,3 +6871,51 @@ def eliminar_comentario_oportunidad(request, comentario_id):
     except Exception as e:
         print(f"❌ Error eliminando comentario: {e}")
         return JsonResponse({'error': str(e)}, status=500)
+
+
+def limpiar_actividades_huerfanas(oportunidad):
+    """
+    Función para limpiar actividades de comentario que ya no tienen comentario asociado
+    """
+    try:
+        actividades_comentario = OportunidadActividad.objects.filter(
+            oportunidad=oportunidad,
+            tipo='comentario'
+        )
+        
+        comentarios_existentes = OportunidadComentario.objects.filter(
+            oportunidad=oportunidad
+        )
+        
+        actividades_huerfanas = []
+        
+        for actividad in actividades_comentario:
+            # Buscar si existe un comentario para esta actividad
+            comentario_encontrado = False
+            
+            for comentario in comentarios_existentes:
+                # Verificar por rango de tiempo
+                diff_tiempo = abs((actividad.fecha_creacion - comentario.fecha_creacion).total_seconds())
+                if (diff_tiempo <= 300 and  # 5 minutos
+                    actividad.usuario == comentario.usuario):
+                    comentario_encontrado = True
+                    break
+                
+                # Verificar por contenido en descripción
+                if (actividad.usuario == comentario.usuario and 
+                    comentario.contenido in actividad.descripcion):
+                    comentario_encontrado = True
+                    break
+            
+            if not comentario_encontrado:
+                actividades_huerfanas.append(actividad)
+        
+        # Eliminar actividades huérfanas
+        if actividades_huerfanas:
+            print(f"🧹 Limpiando {len(actividades_huerfanas)} actividades huérfanas")
+            for actividad in actividades_huerfanas:
+                print(f"🗑️ Eliminando actividad huérfana ID={actividad.id}")
+                actividad.delete()
+        
+    except Exception as e:
+        print(f"⚠️ Error limpiando actividades huérfanas: {e}")
