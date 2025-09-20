@@ -40,6 +40,8 @@ urlpatterns = [
     path("api/cambiar-estado-oportunidad/<int:oportunidad_id>/", views.cambiar_estado_oportunidad, name="cambiar_estado_oportunidad"),
     path("api/agregar-comentario-oportunidad/<int:oportunidad_id>/", views.agregar_comentario_oportunidad, name="agregar_comentario_oportunidad"),
     path("api/timeline-oportunidad/<int:oportunidad_id>/", views.timeline_oportunidad, name="timeline_oportunidad"),
+    path("api/editar-comentario-oportunidad/<int:comentario_id>/", views.editar_comentario_oportunidad, name="editar_comentario_oportunidad"),
+    path("api/eliminar-comentario-oportunidad/<int:comentario_id>/", views.eliminar_comentario_oportunidad, name="eliminar_comentario_oportunidad"),
 
     # Rutas de autenticación (registro, login, logout)
     path("register/", views.register, name="register"),

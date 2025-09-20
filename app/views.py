@@ -6707,10 +6707,13 @@ def timeline_oportunidad(request, oportunidad_id):
                     
                     if comentario:
                         item_data['contenido'] = comentario.contenido
+                        item_data['comentario_id'] = comentario.id
+                        item_data['puede_editar'] = comentario.usuario == request.user or is_supervisor(request.user)
                         # Actualizar usuario con el del comentario si está disponible
                         if comentario.usuario:
                             usuario_comentario = comentario.usuario.get_full_name() or comentario.usuario.username
                             item_data['usuario'] = usuario_comentario
+                            item_data['usuario_id'] = comentario.usuario.id
                             print(f"💬 Comentario encontrado: contenido='{comentario.contenido[:50]}...', usuario={usuario_comentario}")
                         else:
                             print(f"💬 Comentario encontrado pero sin usuario: contenido='{comentario.contenido[:50]}...'")
@@ -6718,15 +6721,88 @@ def timeline_oportunidad(request, oportunidad_id):
                         print(f"❌ No se encontró comentario para actividad {actividad.id}")
                         # Usar la descripción como fallback
                         item_data['contenido'] = actividad.descripcion
+                        item_data['puede_editar'] = False
                 except Exception as e:
                     print(f"❌ Error buscando comentario para actividad {actividad.id}: {e}")
                     item_data['contenido'] = actividad.descripcion
+                    item_data['puede_editar'] = False
             
             timeline_data.append(item_data)
         
         return JsonResponse({
             'success': True,
             'timeline': timeline_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@csrf_exempt
+def editar_comentario_oportunidad(request, comentario_id):
+    """
+    API para editar un comentario específico de una oportunidad
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        # Obtener el comentario
+        comentario = get_object_or_404(OportunidadComentario, id=comentario_id)
+        
+        # Verificar permisos: solo el autor del comentario o supervisores pueden editarlo
+        if comentario.usuario != request.user and not is_supervisor(request.user):
+            return JsonResponse({'error': 'No tienes permisos para editar este comentario'}, status=403)
+        
+        # Obtener el nuevo contenido
+        nuevo_contenido = request.POST.get('contenido', '').strip()
+        
+        if not nuevo_contenido:
+            return JsonResponse({'error': 'El contenido del comentario no puede estar vacío'}, status=400)
+        
+        # Actualizar el comentario
+        comentario.contenido = nuevo_contenido
+        comentario.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Comentario actualizado exitosamente',
+            'nuevo_contenido': nuevo_contenido,
+            'fecha_actualizacion': comentario.fecha_actualizacion.strftime('%d/%m/%Y %H:%M')
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@csrf_exempt  
+def eliminar_comentario_oportunidad(request, comentario_id):
+    """
+    API para eliminar un comentario específico de una oportunidad
+    """
+    if request.method != 'DELETE':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        # Obtener el comentario
+        comentario = get_object_or_404(OportunidadComentario, id=comentario_id)
+        
+        # Verificar permisos: solo el autor del comentario o supervisores pueden eliminarlo
+        if comentario.usuario != request.user and not is_supervisor(request.user):
+            return JsonResponse({'error': 'No tienes permisos para eliminar este comentario'}, status=403)
+        
+        # Guardar información antes de eliminar
+        oportunidad_id = comentario.oportunidad.id
+        
+        # Eliminar el comentario
+        comentario.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Comentario eliminado exitosamente',
+            'oportunidad_id': oportunidad_id
         })
         
     except Exception as e:

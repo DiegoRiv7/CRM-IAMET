@@ -504,6 +504,118 @@
         border-left: 3px solid var(--apple-purple);
         font-style: italic;
         line-height: 1.4;
+        position: relative;
+    }
+
+    .comment-actions-inline {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        display: flex;
+        gap: 0.25rem;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    .comment-content:hover .comment-actions-inline {
+        opacity: 1;
+    }
+
+    .comment-action-btn {
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        border: none;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--apple-label-secondary);
+    }
+
+    .comment-action-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: var(--apple-label);
+        transform: scale(1.1);
+    }
+
+    .comment-action-btn.edit:hover {
+        background: var(--apple-orange);
+        color: white;
+    }
+
+    .comment-action-btn.delete:hover {
+        background: var(--apple-red);
+        color: white;
+    }
+
+    .comment-edit-form {
+        display: none;
+        margin-top: 0.5rem;
+    }
+
+    .comment-edit-input {
+        width: 100%;
+        background: var(--apple-background);
+        border: 1px solid var(--apple-separator);
+        border-radius: 6px;
+        padding: 0.5rem;
+        color: var(--apple-label);
+        font-size: 0.9rem;
+        resize: vertical;
+        min-height: 60px;
+        margin-bottom: 0.5rem;
+        font-family: var(--apple-font-family);
+    }
+
+    .comment-edit-input:focus {
+        outline: none;
+        border-color: var(--apple-blue);
+        box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+    }
+
+    .comment-edit-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+    }
+
+    .comment-edit-btn {
+        padding: 0.25rem 0.75rem;
+        border-radius: 6px;
+        border: none;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-weight: 500;
+    }
+
+    .comment-edit-save {
+        background: var(--apple-blue);
+        color: white;
+    }
+
+    .comment-edit-save:hover {
+        filter: brightness(1.1);
+    }
+
+    .comment-edit-cancel {
+        background: var(--apple-separator);
+        color: var(--apple-label);
+    }
+
+    .comment-edit-cancel:hover {
+        background: var(--apple-background-tertiary);
+    }
+
+    .comment-updated-indicator {
+        font-size: 0.7rem;
+        color: var(--apple-label-secondary);
+        font-style: normal;
+        margin-top: 0.25rem;
     }
 
     /* BOTONES */
@@ -1427,11 +1539,15 @@
                 icon = '💬';
                 activityClass = 'comentario-icon';
                 const usuario = activity.usuario || 'Usuario desconocido';
+                const comentarioId = activity.comentario_id;
+                const puedeEditar = activity.puede_editar;
+                
                 console.log('📝 DEBUG comentario:', {
                     id: activity.id,
+                    comentario_id: comentarioId,
                     usuario: activity.usuario,
                     contenido: activity.contenido,
-                    descripcion: activity.descripcion
+                    puede_editar: puedeEditar
                 });
                 
                 avatarHtml = `
@@ -1440,9 +1556,38 @@
                         <strong>${usuario}</strong>
                     </div>
                 `;
+                
+                // Botones de acción solo para comentarios que se pueden editar
+                const actionsHtml = puedeEditar && comentarioId ? `
+                    <div class="comment-actions-inline">
+                        <button class="comment-action-btn edit" onclick="editarComentario(${comentarioId})" title="Editar comentario">
+                            ✏️
+                        </button>
+                        <button class="comment-action-btn delete" onclick="eliminarComentario(${comentarioId}, '${usuario}')" title="Eliminar comentario">
+                            🗑️
+                        </button>
+                    </div>
+                ` : '';
+                
                 content = `
                     ${avatarHtml}
-                    <div class="comment-content">${activity.contenido || activity.descripcion || 'Sin contenido'}</div>
+                    <div class="comment-content" id="comment-${comentarioId}">
+                        ${actionsHtml}
+                        <div class="comment-text" id="comment-text-${comentarioId}">
+                            ${activity.contenido || activity.descripcion || 'Sin contenido'}
+                        </div>
+                        <div class="comment-edit-form" id="comment-edit-${comentarioId}">
+                            <textarea class="comment-edit-input" id="comment-input-${comentarioId}">${activity.contenido || activity.descripcion || ''}</textarea>
+                            <div class="comment-edit-actions">
+                                <button class="comment-edit-btn comment-edit-save" onclick="guardarEdicionComentario(${comentarioId})">
+                                    💾 Guardar
+                                </button>
+                                <button class="comment-edit-btn comment-edit-cancel" onclick="cancelarEdicionComentario(${comentarioId})">
+                                    ❌ Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 `;
                 break;
             case 'cotizacion':
@@ -1583,6 +1728,122 @@
             }
         }
         return cookieValue;
+    }
+
+    // Funciones para editar comentarios
+    function editarComentario(comentarioId) {
+        const commentText = document.getElementById(`comment-text-${comentarioId}`);
+        const commentEdit = document.getElementById(`comment-edit-${comentarioId}`);
+        
+        if (commentText && commentEdit) {
+            // Ocultar texto y mostrar formulario de edición
+            commentText.style.display = 'none';
+            commentEdit.style.display = 'block';
+            
+            // Enfocar el textarea
+            const textarea = document.getElementById(`comment-input-${comentarioId}`);
+            if (textarea) {
+                textarea.focus();
+                // Colocar cursor al final
+                textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+            }
+        }
+    }
+    
+    function cancelarEdicionComentario(comentarioId) {
+        const commentText = document.getElementById(`comment-text-${comentarioId}`);
+        const commentEdit = document.getElementById(`comment-edit-${comentarioId}`);
+        
+        if (commentText && commentEdit) {
+            // Mostrar texto y ocultar formulario de edición
+            commentText.style.display = 'block';
+            commentEdit.style.display = 'none';
+            
+            // Restaurar texto original (opcional, ya que se recarga el timeline después)
+            // No es necesario porque no cambiamos el contenido hasta guardar
+        }
+    }
+    
+    async function guardarEdicionComentario(comentarioId) {
+        const textarea = document.getElementById(`comment-input-${comentarioId}`);
+        const saveBtn = document.querySelector(`#comment-edit-${comentarioId} .comment-edit-save`);
+        
+        if (!textarea || !saveBtn) return;
+        
+        const nuevoContenido = textarea.value.trim();
+        
+        if (!nuevoContenido) {
+            alert('El comentario no puede estar vacío');
+            return;
+        }
+        
+        // Deshabilitar botón mientras se procesa
+        const originalText = saveBtn.innerHTML;
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '⏳ Guardando...';
+        
+        try {
+            const formData = new FormData();
+            formData.append('contenido', nuevoContenido);
+            
+            const response = await fetch(`/app/api/editar-comentario-oportunidad/${comentarioId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Recargar timeline para mostrar cambios
+                await loadTimeline();
+            } else {
+                alert('Error al editar comentario: ' + (data.error || 'Error desconocido'));
+            }
+            
+        } catch (error) {
+            console.error('Error al editar comentario:', error);
+            alert('Error al editar comentario. Por favor, intenta de nuevo.');
+        } finally {
+            // Restaurar botón
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalText;
+        }
+    }
+    
+    async function eliminarComentario(comentarioId, usuario) {
+        // Confirmación más informativa
+        const confirmacion = confirm(
+            `¿Estás seguro de que quieres eliminar este comentario de ${usuario}?\n\n` +
+            `Esta acción no se puede deshacer.`
+        );
+        
+        if (!confirmacion) return;
+        
+        try {
+            const response = await fetch(`/app/api/eliminar-comentario-oportunidad/${comentarioId}/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Recargar timeline para mostrar cambios
+                await loadTimeline();
+            } else {
+                alert('Error al eliminar comentario: ' + (data.error || 'Error desconocido'));
+            }
+            
+        } catch (error) {
+            console.error('Error al eliminar comentario:', error);
+            alert('Error al eliminar comentario. Por favor, intenta de nuevo.');
+        }
     }
 
     // Inicializar componentes
