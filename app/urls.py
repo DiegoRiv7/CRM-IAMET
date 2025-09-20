@@ -43,6 +43,7 @@ urlpatterns = [
     path("api/editar-comentario-oportunidad/<int:comentario_id>/", views.editar_comentario_oportunidad, name="editar_comentario_oportunidad"),
     path("api/eliminar-comentario-oportunidad/<int:comentario_id>/", views.eliminar_comentario_oportunidad, name="eliminar_comentario_oportunidad"),
     path("api/descargar-archivo-oportunidad/<int:archivo_id>/", views.descargar_archivo_oportunidad, name="descargar_archivo_oportunidad"),
+    path("api/vista-previa-archivo-oportunidad/<int:archivo_id>/", views.vista_previa_archivo_oportunidad, name="vista_previa_archivo_oportunidad"),
 
     # Rutas de autenticación (registro, login, logout)
     path("register/", views.register, name="register"),

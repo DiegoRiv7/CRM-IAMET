@@ -723,6 +723,209 @@
         gap: 0.25rem;
     }
 
+    /* MODAL DE VISTA PREVIA ESTILO APPLE */
+    .preview-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        z-index: 10000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .preview-modal.show {
+        display: flex;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .preview-container {
+        background: var(--apple-background-secondary);
+        border-radius: 16px;
+        border: 1px solid var(--apple-separator);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        max-width: 90vw;
+        max-height: 90vh;
+        overflow: hidden;
+        animation: slideIn 0.3s ease-out;
+        position: relative;
+    }
+
+    @keyframes slideIn {
+        from { 
+            opacity: 0;
+            transform: scale(0.9) translateY(20px);
+        }
+        to { 
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .preview-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--apple-separator);
+        background: var(--apple-background-secondary);
+    }
+
+    .preview-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--apple-label);
+        margin: 0;
+        max-width: 400px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .preview-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .preview-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        border: none;
+        background: var(--apple-background-tertiary);
+        color: var(--apple-label);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+
+    .preview-btn:hover {
+        background: var(--apple-blue);
+        color: white;
+        transform: scale(1.05);
+    }
+
+    .preview-btn.close:hover {
+        background: var(--apple-red);
+        color: white;
+    }
+
+    .preview-content {
+        padding: 0;
+        text-align: center;
+        background: var(--apple-background);
+        position: relative;
+        min-height: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .preview-image {
+        max-width: 100%;
+        max-height: 70vh;
+        object-fit: contain;
+        border-radius: 0 0 16px 16px;
+    }
+
+    .preview-pdf {
+        width: 80vw;
+        height: 70vh;
+        border: none;
+        border-radius: 0 0 16px 16px;
+        background: white;
+    }
+
+    .preview-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        padding: 3rem;
+        color: var(--apple-label-secondary);
+    }
+
+    .preview-placeholder-icon {
+        font-size: 4rem;
+        opacity: 0.5;
+    }
+
+    .preview-placeholder-text {
+        font-size: 1.1rem;
+        font-weight: 500;
+        text-align: center;
+        max-width: 300px;
+    }
+
+    .preview-placeholder-info {
+        background: var(--apple-background-tertiary);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+        text-align: left;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    .preview-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        padding: 3rem;
+        color: var(--apple-label-secondary);
+    }
+
+    .preview-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--apple-separator);
+        border-top: 3px solid var(--apple-blue);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+        .preview-container {
+            max-width: 95vw;
+            max-height: 95vh;
+            margin: 1rem;
+        }
+        
+        .preview-header {
+            padding: 0.75rem 1rem;
+        }
+        
+        .preview-title {
+            font-size: 1rem;
+            max-width: 200px;
+        }
+        
+        .preview-pdf {
+            width: 90vw;
+            height: 60vh;
+        }
+    }
+
     /* BOTONES */
     .apple-button {
         background: var(--apple-blue);
@@ -1298,6 +1501,29 @@
     </div>
 </div>
 
+<!-- MODAL DE VISTA PREVIA -->
+<div class="preview-modal" id="previewModal">
+    <div class="preview-container">
+        <div class="preview-header">
+            <h3 class="preview-title" id="previewTitle">Vista Previa</h3>
+            <div class="preview-actions">
+                <button class="preview-btn" id="previewDownload" title="Descargar archivo">
+                    ⬇️
+                </button>
+                <button class="preview-btn close" onclick="cerrarVistaPrevia()" title="Cerrar">
+                    ✕
+                </button>
+            </div>
+        </div>
+        <div class="preview-content" id="previewContent">
+            <div class="preview-loading">
+                <div class="preview-spinner"></div>
+                <div>Cargando vista previa...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     // Variable global con el ID de la oportunidad (sin formato de Django)
     const OPORTUNIDAD_ID = parseInt("{{ oportunidad.id }}".replace(/,/g, ''));
@@ -1686,7 +1912,7 @@
                                     ${getAttachmentIcon(archivo.tipo)}
                                 </div>
                                 <div class="attachment-info">
-                                    <div class="attachment-name" title="${archivo.nombre}">
+                                    <div class="attachment-name" title="${archivo.nombre}" onclick="mostrarVistaPrevia(${archivo.id}, '${archivo.nombre}')" style="cursor: pointer; color: var(--apple-blue);">
                                         ${archivo.nombre}
                                     </div>
                                     <div class="attachment-meta">
@@ -1998,6 +2224,109 @@
         }
     }
 
+    // Variables globales para el modal de vista previa
+    let currentPreviewFileId = null;
+
+    // Función para mostrar vista previa
+    async function mostrarVistaPrevia(archivoId, nombreArchivo) {
+        console.log(`🔍 Mostrando vista previa para archivo ${archivoId}: ${nombreArchivo}`);
+        
+        currentPreviewFileId = archivoId;
+        const modal = document.getElementById('previewModal');
+        const title = document.getElementById('previewTitle');
+        const content = document.getElementById('previewContent');
+        const downloadBtn = document.getElementById('previewDownload');
+        
+        // Configurar título y botón de descarga
+        title.textContent = nombreArchivo;
+        downloadBtn.onclick = () => descargarArchivo(archivoId);
+        
+        // Mostrar modal con loading
+        content.innerHTML = `
+            <div class="preview-loading">
+                <div class="preview-spinner"></div>
+                <div>Cargando vista previa...</div>
+            </div>
+        `;
+        modal.classList.add('show');
+        
+        try {
+            // Intentar cargar la vista previa
+            const previewUrl = `/app/api/vista-previa-archivo-oportunidad/${archivoId}/`;
+            const response = await fetch(previewUrl);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const contentType = response.headers.get('content-type');
+            
+            if (contentType && contentType.startsWith('image/')) {
+                // Es una imagen
+                content.innerHTML = `
+                    <img src="${previewUrl}" alt="${nombreArchivo}" class="preview-image" onload="console.log('🖼️ Imagen cargada')">
+                `;
+            } else if (contentType && contentType === 'application/pdf') {
+                // Es un PDF
+                content.innerHTML = `
+                    <iframe src="${previewUrl}" class="preview-pdf" title="Vista previa de ${nombreArchivo}"></iframe>
+                `;
+            } else if (contentType && contentType.startsWith('application/json')) {
+                // No hay vista previa disponible, mostrar placeholder
+                const data = await response.json();
+                content.innerHTML = `
+                    <div class="preview-placeholder">
+                        <div class="preview-placeholder-icon">${getAttachmentIcon(data.content_type.split('/')[0])}</div>
+                        <div class="preview-placeholder-text">${data.mensaje}</div>
+                        <div class="preview-placeholder-info">
+                            <strong>📄 Archivo:</strong> ${data.nombre}<br>
+                            <strong>📊 Tamaño:</strong> ${data.tamaño}<br>
+                            <strong>🏷️ Tipo:</strong> ${data.content_type}
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Tipo no reconocido
+                content.innerHTML = `
+                    <div class="preview-placeholder">
+                        <div class="preview-placeholder-icon">📎</div>
+                        <div class="preview-placeholder-text">Vista previa no disponible para este tipo de archivo</div>
+                        <div class="preview-placeholder-info">
+                            <strong>📄 Archivo:</strong> ${nombreArchivo}<br>
+                            <strong>🏷️ Tipo:</strong> ${contentType || 'Desconocido'}
+                        </div>
+                    </div>
+                `;
+            }
+            
+        } catch (error) {
+            console.error('❌ Error cargando vista previa:', error);
+            content.innerHTML = `
+                <div class="preview-placeholder">
+                    <div class="preview-placeholder-icon">❌</div>
+                    <div class="preview-placeholder-text">Error al cargar la vista previa</div>
+                    <div class="preview-placeholder-info">
+                        ${error.message}
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    // Función para cerrar vista previa
+    function cerrarVistaPrevia() {
+        const modal = document.getElementById('previewModal');
+        modal.classList.remove('show');
+        currentPreviewFileId = null;
+        
+        // Limpiar contenido después de la animación
+        setTimeout(() => {
+            if (!modal.classList.contains('show')) {
+                document.getElementById('previewContent').innerHTML = '';
+            }
+        }, 300);
+    }
+
     // Función para descargar archivos
     function descargarArchivo(archivoId) {
         const url = `/app/api/descargar-archivo-oportunidad/${archivoId}/`;
@@ -2012,6 +2341,20 @@
         link.click();
         document.body.removeChild(link);
     }
+
+    // Control de teclado para el modal
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && document.getElementById('previewModal').classList.contains('show')) {
+            cerrarVistaPrevia();
+        }
+    });
+
+    // Cerrar modal al hacer click en el fondo
+    document.getElementById('previewModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            cerrarVistaPrevia();
+        }
+    });
 
     // Inicializar componentes
     document.addEventListener('DOMContentLoaded', function() {
