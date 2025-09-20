@@ -6698,12 +6698,30 @@ def timeline_oportunidad(request, oportunidad_id):
             elif actividad.tipo == 'comentario':
                 # Para comentarios, buscar el contenido real del comentario
                 try:
-                    # Buscar comentario por actividad relacionada
-                    comentario = OportunidadComentario.objects.filter(
+                    # Buscar comentario con un rango de tiempo más amplio y múltiples estrategias
+                    comentario = None
+                    
+                    # Estrategia 1: Buscar por rango de tiempo (original)
+                    comentarios_candidatos = OportunidadComentario.objects.filter(
                         oportunidad=oportunidad,
-                        fecha_creacion__gte=actividad.fecha_creacion - timedelta(seconds=10),
-                        fecha_creacion__lte=actividad.fecha_creacion + timedelta(seconds=10)
-                    ).order_by('-fecha_creacion').first()
+                        fecha_creacion__gte=actividad.fecha_creacion - timedelta(minutes=1),
+                        fecha_creacion__lte=actividad.fecha_creacion + timedelta(minutes=1)
+                    ).order_by('-fecha_creacion')
+                    
+                    if comentarios_candidatos.exists():
+                        comentario = comentarios_candidatos.first()
+                    else:
+                        # Estrategia 2: Buscar por usuario y fecha cercana
+                        comentarios_por_usuario = OportunidadComentario.objects.filter(
+                            oportunidad=oportunidad,
+                            usuario=actividad.usuario
+                        ).order_by('-fecha_creacion')
+                        
+                        for c in comentarios_por_usuario:
+                            diff = abs((c.fecha_creacion - actividad.fecha_creacion).total_seconds())
+                            if diff <= 300:  # 5 minutos
+                                comentario = c
+                                break
                     
                     if comentario:
                         item_data['contenido'] = comentario.contenido
@@ -6714,14 +6732,19 @@ def timeline_oportunidad(request, oportunidad_id):
                             usuario_comentario = comentario.usuario.get_full_name() or comentario.usuario.username
                             item_data['usuario'] = usuario_comentario
                             item_data['usuario_id'] = comentario.usuario.id
-                            print(f"💬 Comentario encontrado: contenido='{comentario.contenido[:50]}...', usuario={usuario_comentario}")
+                            print(f"💬 Comentario encontrado: ID={comentario.id}, contenido='{comentario.contenido[:50]}...', usuario={usuario_comentario}")
                         else:
                             print(f"💬 Comentario encontrado pero sin usuario: contenido='{comentario.contenido[:50]}...'")
                     else:
-                        print(f"❌ No se encontró comentario para actividad {actividad.id}")
+                        print(f"❌ No se encontró comentario para actividad {actividad.id} - usuario: {actividad.usuario}, fecha: {actividad.fecha_creacion}")
                         # Usar la descripción como fallback
                         item_data['contenido'] = actividad.descripcion
                         item_data['puede_editar'] = False
+                        
+                        # Debug: mostrar comentarios disponibles
+                        comentarios_debug = OportunidadComentario.objects.filter(oportunidad=oportunidad).values('id', 'fecha_creacion', 'usuario__username', 'contenido')[:5]
+                        print(f"🔍 Comentarios disponibles para depuración: {list(comentarios_debug)}")
+                        
                 except Exception as e:
                     print(f"❌ Error buscando comentario para actividad {actividad.id}: {e}")
                     item_data['contenido'] = actividad.descripcion
@@ -6795,9 +6818,38 @@ def eliminar_comentario_oportunidad(request, comentario_id):
         
         # Guardar información antes de eliminar
         oportunidad_id = comentario.oportunidad.id
+        oportunidad = comentario.oportunidad
+        usuario_comentario = comentario.usuario
+        fecha_comentario = comentario.fecha_creacion
+        
+        print(f"🗑️ Eliminando comentario ID={comentario_id}, usuario={usuario_comentario}, fecha={fecha_comentario}")
+        
+        # Buscar y eliminar la actividad relacionada
+        try:
+            # Buscar actividad relacionada con el comentario
+            actividades_relacionadas = OportunidadActividad.objects.filter(
+                oportunidad=oportunidad,
+                tipo='comentario',
+                usuario=usuario_comentario,
+                fecha_creacion__gte=fecha_comentario - timedelta(minutes=5),
+                fecha_creacion__lte=fecha_comentario + timedelta(minutes=5)
+            )
+            
+            actividades_eliminadas = 0
+            for actividad in actividades_relacionadas:
+                print(f"🗑️ Eliminando actividad relacionada ID={actividad.id}")
+                actividad.delete()
+                actividades_eliminadas += 1
+            
+            print(f"✅ Eliminadas {actividades_eliminadas} actividades relacionadas")
+            
+        except Exception as e:
+            print(f"⚠️ Error eliminando actividades relacionadas: {e}")
+            # No fallar si no se pueden eliminar las actividades, el comentario sí se debe eliminar
         
         # Eliminar el comentario
         comentario.delete()
+        print(f"✅ Comentario ID={comentario_id} eliminado exitosamente")
         
         return JsonResponse({
             'success': True,
@@ -6806,4 +6858,5 @@ def eliminar_comentario_oportunidad(request, comentario_id):
         })
         
     except Exception as e:
+        print(f"❌ Error eliminando comentario: {e}")
         return JsonResponse({'error': str(e)}, status=500)
