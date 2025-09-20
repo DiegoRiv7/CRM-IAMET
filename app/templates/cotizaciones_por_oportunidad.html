@@ -618,6 +618,111 @@
         margin-top: 0.25rem;
     }
 
+    /* ARCHIVOS ADJUNTOS EN COMENTARIOS */
+    .comment-attachments {
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--apple-separator);
+    }
+
+    .attachment-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--apple-background);
+        border: 1px solid var(--apple-separator);
+        border-radius: 6px;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .attachment-item:hover {
+        border-color: var(--apple-blue);
+        background: var(--apple-background-secondary);
+    }
+
+    .attachment-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+        background: var(--apple-background-tertiary);
+        color: var(--apple-label);
+    }
+
+    .attachment-icon.imagen {
+        background: linear-gradient(135deg, #FF6B6B, #FF8E8E);
+        color: white;
+    }
+
+    .attachment-icon.documento {
+        background: linear-gradient(135deg, var(--apple-blue), #4A9EFF);
+        color: white;
+    }
+
+    .attachment-icon.otro {
+        background: linear-gradient(135deg, var(--apple-gray), #A8A8A8);
+        color: white;
+    }
+
+    .attachment-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .attachment-name {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--apple-label);
+        margin-bottom: 0.25rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .attachment-meta {
+        font-size: 0.75rem;
+        color: var(--apple-label-secondary);
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .attachment-download {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        border: none;
+        background: var(--apple-blue);
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+
+    .attachment-download:hover {
+        filter: brightness(1.1);
+        transform: scale(1.05);
+    }
+
+    .attachments-header {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--apple-label-secondary);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
     /* BOTONES */
     .apple-button {
         background: var(--apple-blue);
@@ -1569,12 +1674,41 @@
                     </div>
                 ` : '';
                 
+                // Renderizar archivos adjuntos si existen
+                const attachmentsHtml = activity.archivos && activity.archivos.length > 0 ? `
+                    <div class="comment-attachments">
+                        <div class="attachments-header">
+                            📎 ${activity.archivos.length} archivo${activity.archivos.length > 1 ? 's' : ''} adjunto${activity.archivos.length > 1 ? 's' : ''}
+                        </div>
+                        ${activity.archivos.map(archivo => `
+                            <div class="attachment-item">
+                                <div class="attachment-icon ${archivo.tipo}">
+                                    ${getAttachmentIcon(archivo.tipo)}
+                                </div>
+                                <div class="attachment-info">
+                                    <div class="attachment-name" title="${archivo.nombre}">
+                                        ${archivo.nombre}
+                                    </div>
+                                    <div class="attachment-meta">
+                                        <span>${archivo.tamaño}</span>
+                                        <span>${archivo.fecha}</span>
+                                    </div>
+                                </div>
+                                <button class="attachment-download" onclick="descargarArchivo(${archivo.id})" title="Descargar archivo">
+                                    ⬇️
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : '';
+
                 content = `
                     ${avatarHtml}
                     <div class="comment-content" id="comment-${comentarioId}">
                         ${actionsHtml}
                         <div class="comment-text" id="comment-text-${comentarioId}">
                             ${activity.contenido || activity.descripcion || 'Sin contenido'}
+                            ${attachmentsHtml}
                         </div>
                         <div class="comment-edit-form" id="comment-edit-${comentarioId}">
                             <textarea class="comment-edit-input" id="comment-input-${comentarioId}">${activity.contenido || activity.descripcion || ''}</textarea>
@@ -1844,6 +1978,39 @@
             console.error('Error al eliminar comentario:', error);
             alert('Error al eliminar comentario. Por favor, intenta de nuevo.');
         }
+    }
+
+    // Función para obtener icono de archivo según tipo
+    function getAttachmentIcon(tipo) {
+        switch(tipo) {
+            case 'imagen':
+                return '🖼️';
+            case 'documento':
+                return '📄';
+            case 'cotizacion':
+                return '📋';
+            case 'contrato':
+                return '📝';
+            case 'presentacion':
+                return '📊';
+            default:
+                return '📎';
+        }
+    }
+
+    // Función para descargar archivos
+    function descargarArchivo(archivoId) {
+        const url = `/app/api/descargar-archivo-oportunidad/${archivoId}/`;
+        
+        // Crear un elemento <a> temporal para la descarga
+        const link = document.createElement('a');
+        link.href = url;
+        link.style.display = 'none';
+        
+        // Agregar al DOM, hacer click y remover
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     // Inicializar componentes

@@ -6578,8 +6578,10 @@ def agregar_comentario_oportunidad(request, oportunidad_id):
         )
         
         # Procesar archivos adjuntos
+        print(f"📁 Procesando {len(archivos_keys)} archivos: {archivos_keys}")
         for key in archivos_keys:
             archivo = request.FILES[key]
+            print(f"📄 Procesando archivo: {archivo.name}, tamaño: {archivo.size}, tipo: {archivo.content_type}")
             
             # Determinar tipo de archivo
             content_type = archivo.content_type.lower()
@@ -6594,24 +6596,34 @@ def agregar_comentario_oportunidad(request, oportunidad_id):
             else:
                 tipo_archivo = 'otro'
             
-            # Crear registro de archivo
-            archivo_obj = OportunidadArchivo.objects.create(
-                oportunidad=oportunidad,
-                usuario=request.user,
-                archivo=archivo,
-                nombre_original=archivo.name,
-                tipo=tipo_archivo,
-                tamaño=archivo.size,
-                descripcion=f"Adjuntado en comentario #{comentario.id}"
-            )
+            print(f"📋 Tipo determinado: {tipo_archivo}")
             
-            archivos_subidos.append({
-                'id': archivo_obj.id,
-                'nombre': archivo_obj.nombre_original,
-                'tipo': archivo_obj.tipo,
-                'tamaño': archivo_obj.tamaño,
-                'url': archivo_obj.archivo.url if archivo_obj.archivo else None
-            })
+            try:
+                # Crear registro de archivo
+                archivo_obj = OportunidadArchivo.objects.create(
+                    oportunidad=oportunidad,
+                    usuario=request.user,
+                    archivo=archivo,
+                    nombre_original=archivo.name,
+                    tipo=tipo_archivo,
+                    tamaño=archivo.size,
+                    descripcion=f"Adjuntado en comentario #{comentario.id}"
+                )
+                
+                print(f"✅ Archivo guardado exitosamente: ID={archivo_obj.id}, URL={archivo_obj.archivo.url}")
+                
+                archivos_subidos.append({
+                    'id': archivo_obj.id,
+                    'nombre': archivo_obj.nombre_original,
+                    'tipo': archivo_obj.tipo,
+                    'tamaño': archivo_obj.tamaño,
+                    'url': archivo_obj.archivo.url if archivo_obj.archivo else None
+                })
+                
+            except Exception as e:
+                print(f"❌ Error guardando archivo {archivo.name}: {e}")
+                import traceback
+                print(traceback.format_exc())
         
         # Crear actividad en el timeline
         descripcion_actividad = contenido[:200] + ('...' if len(contenido) > 200 else '')
@@ -6729,6 +6741,28 @@ def timeline_oportunidad(request, oportunidad_id):
                         item_data['contenido'] = comentario.contenido
                         item_data['comentario_id'] = comentario.id
                         item_data['puede_editar'] = comentario.usuario == request.user or is_supervisor(request.user)
+                        
+                        # Buscar archivos asociados a este comentario (por tiempo y usuario)
+                        archivos_asociados = OportunidadArchivo.objects.filter(
+                            oportunidad=oportunidad,
+                            usuario=comentario.usuario,
+                            fecha_subida__gte=comentario.fecha_creacion - timedelta(minutes=5),
+                            fecha_subida__lte=comentario.fecha_creacion + timedelta(minutes=5)
+                        )
+                        
+                        if archivos_asociados.exists():
+                            item_data['archivos'] = []
+                            for archivo in archivos_asociados:
+                                item_data['archivos'].append({
+                                    'id': archivo.id,
+                                    'nombre': archivo.nombre_original,
+                                    'tipo': archivo.tipo,
+                                    'tamaño': archivo.tamaño_legible,
+                                    'fecha': archivo.fecha_subida.strftime('%d/%m/%Y %H:%M'),
+                                    'url': archivo.archivo.url if archivo.archivo else None
+                                })
+                            print(f"📎 {len(archivos_asociados)} archivos encontrados para comentario {comentario.id}")
+                        
                         # Actualizar usuario con el del comentario si está disponible
                         if comentario.usuario:
                             usuario_comentario = comentario.usuario.get_full_name() or comentario.usuario.username
@@ -6919,3 +6953,52 @@ def limpiar_actividades_huerfanas(oportunidad):
         
     except Exception as e:
         print(f"⚠️ Error limpiando actividades huérfanas: {e}")
+
+
+@login_required
+def descargar_archivo_oportunidad(request, archivo_id):
+    """
+    Vista para descargar archivos adjuntos de oportunidades
+    """
+    try:
+        archivo = get_object_or_404(OportunidadArchivo, id=archivo_id)
+        
+        # Verificar permisos: supervisores ven todo, usuarios solo archivos de sus oportunidades
+        if not is_supervisor(request.user) and archivo.oportunidad.usuario != request.user:
+            return JsonResponse({'error': 'No tienes permisos para descargar este archivo'}, status=403)
+        
+        # Verificar que el archivo existe
+        if not archivo.archivo:
+            return JsonResponse({'error': 'Archivo no encontrado'}, status=404)
+        
+        # Importar las clases necesarias para la respuesta
+        from django.http import HttpResponse, Http404
+        from django.utils.encoding import smart_str
+        import os
+        import mimetypes
+        
+        # Obtener la ruta del archivo
+        file_path = archivo.archivo.path
+        
+        if not os.path.exists(file_path):
+            raise Http404("El archivo no existe en el servidor")
+        
+        # Determinar el tipo MIME
+        content_type, _ = mimetypes.guess_type(file_path)
+        if content_type is None:
+            content_type = 'application/octet-stream'
+        
+        # Leer el archivo
+        with open(file_path, 'rb') as f:
+            response = HttpResponse(f.read(), content_type=content_type)
+        
+        # Configurar headers para descarga
+        filename = smart_str(archivo.nombre_original)
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        response['Content-Length'] = os.path.getsize(file_path)
+        
+        return response
+        
+    except Exception as e:
+        print(f"❌ Error descargando archivo: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
