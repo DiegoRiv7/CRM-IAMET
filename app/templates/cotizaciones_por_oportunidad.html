@@ -1369,11 +1369,15 @@
     }
 
     function renderTimelineItem(activity) {
+        console.log('🎯 renderTimelineItem llamado con:', activity);
+        
         // Validar que activity existe y tiene las propiedades básicas
         if (!activity || !activity.tipo) {
-            console.error('Activity inválida:', activity);
+            console.error('❌ Activity inválida:', activity);
             return '';
         }
+        
+        console.log('✅ Activity válida, tipo:', activity.tipo);
         
         let icon = '';
         let title = activity.titulo || 'Sin título';
@@ -1391,9 +1395,33 @@
             case 'cambio_estado':
                 icon = '🔄';
                 activityClass = 'cambio-estado-icon';
-                const estadoAnterior = activity.estado_anterior ? activity.estado_anterior.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Sin definir';
-                const estadoNuevo = activity.estado_nuevo ? activity.estado_nuevo.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Sin definir';
-                content = `Estado cambiado de <strong>${estadoAnterior}</strong> a <strong>${estadoNuevo}</strong>`;
+                console.log('🔍 DEBUG cambio_estado:', JSON.stringify(activity, null, 2));
+                
+                try {
+                    let estadoAnterior = 'Sin definir';
+                    let estadoNuevo = 'Sin definir';
+                    
+                    if (activity.estado_anterior) {
+                        if (typeof activity.estado_anterior === 'string') {
+                            estadoAnterior = activity.estado_anterior.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        } else {
+                            estadoAnterior = String(activity.estado_anterior);
+                        }
+                    }
+                    
+                    if (activity.estado_nuevo) {
+                        if (typeof activity.estado_nuevo === 'string') {
+                            estadoNuevo = activity.estado_nuevo.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        } else {
+                            estadoNuevo = String(activity.estado_nuevo);
+                        }
+                    }
+                    
+                    content = `Estado cambiado de <strong>${estadoAnterior}</strong> a <strong>${estadoNuevo}</strong>`;
+                } catch (error) {
+                    console.error('❌ Error procesando cambio_estado:', error, activity);
+                    content = `Error al mostrar cambio de estado: ${activity.descripcion || 'Sin descripción'}`;
+                }
                 break;
             case 'comentario':
                 icon = '💬';
@@ -1456,8 +1484,11 @@
         try {
             const response = await fetch(`/app/api/timeline-oportunidad/${oportunidadId}/`);
             const data = await response.json();
+            
+            console.log('📡 Datos recibidos del servidor:', data);
 
             if (data.success && data.timeline && Array.isArray(data.timeline) && data.timeline.length > 0) {
+                console.log('📊 Timeline válido con', data.timeline.length, 'elementos');
                 data.timeline.forEach(activity => {
                     const renderedItem = renderTimelineItem(activity);
                     if (renderedItem) {

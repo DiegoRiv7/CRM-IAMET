@@ -6498,10 +6498,8 @@ def api_buscar_contactos(request):
 @require_http_methods(["POST"])
 def cambiar_estado_oportunidad(request, oportunidad_id):
     """
-    API para cambiar el estado CRM de una oportunidad (solo superusuarios)
+    API para cambiar el estado CRM de una oportunidad
     """
-    if not request.user.is_superuser:
-        return JsonResponse({'error': 'Acceso denegado'}, status=403)
     
     try:
         import json
@@ -6526,7 +6524,7 @@ def cambiar_estado_oportunidad(request, oportunidad_id):
         oportunidad.save()
         
         # Crear actividad en el timeline
-        OportunidadActividad.objects.create(
+        actividad = OportunidadActividad.objects.create(
             oportunidad=oportunidad,
             tipo='cambio_estado',
             titulo='Cambio de Estado',
@@ -6535,6 +6533,8 @@ def cambiar_estado_oportunidad(request, oportunidad_id):
             estado_anterior=estado_anterior,
             estado_nuevo=estado
         )
+        
+        print(f"🔄 Actividad creada: {actividad.id}, estado_anterior: {actividad.estado_anterior}, estado_nuevo: {actividad.estado_nuevo}")
         
         return JsonResponse({
             'success': True,
@@ -6679,6 +6679,7 @@ def timeline_oportunidad(request, oportunidad_id):
             if actividad.tipo == 'cambio_estado':
                 item_data['estado_anterior'] = actividad.estado_anterior
                 item_data['estado_nuevo'] = actividad.estado_nuevo
+                print(f"📊 Timeline cambio_estado: {actividad.id}, anterior: {actividad.estado_anterior}, nuevo: {actividad.estado_nuevo}")
             elif actividad.tipo == 'comentario':
                 # Para comentarios, intentar obtener el contenido del comentario
                 try:
