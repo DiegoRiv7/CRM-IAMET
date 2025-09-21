@@ -6898,21 +6898,33 @@ def eliminar_comentario_oportunidad(request, comentario_id):
             actividades_eliminadas = 0
             for actividad in actividades_candidatas:
                 # Verificar si esta actividad apunta al comentario que vamos a eliminar
-                # usando la misma lógica que en el timeline
+                # usando el nuevo sistema de IDs
                 deberia_eliminar = False
                 
-                # Verificar por rango de tiempo
-                diff_tiempo = abs((actividad.fecha_creacion - fecha_comentario).total_seconds())
-                if diff_tiempo <= 300:  # 5 minutos
-                    deberia_eliminar = True
-                
-                # Verificar por usuario y descripción similar
-                if (actividad.usuario == usuario_comentario and 
-                    comentario.contenido in actividad.descripcion):
-                    deberia_eliminar = True
+                # Estrategia 1: Buscar por ID directo en la descripción (nuevo sistema)
+                import re
+                match = re.search(r'\[COMENTARIO_ID:(\d+)\]', actividad.descripcion or '')
+                if match:
+                    comentario_referenciado = int(match.group(1))
+                    if comentario_referenciado == comentario_id:
+                        deberia_eliminar = True
+                        print(f"🎯 Actividad {actividad.id} apunta al comentario que se va a eliminar: {comentario_id}")
+                else:
+                    # Estrategia 2: Fallback para actividades del sistema viejo
+                    # Verificar por rango de tiempo
+                    diff_tiempo = abs((actividad.fecha_creacion - fecha_comentario).total_seconds())
+                    if diff_tiempo <= 300:  # 5 minutos
+                        deberia_eliminar = True
+                        print(f"⏱️ Actividad {actividad.id} encontrada por tiempo: diff={diff_tiempo}s")
+                    
+                    # Verificar por usuario y descripción similar
+                    if (actividad.usuario == usuario_comentario and 
+                        comentario.contenido in actividad.descripcion):
+                        deberia_eliminar = True
+                        print(f"📝 Actividad {actividad.id} encontrada por contenido")
                 
                 if deberia_eliminar:
-                    print(f"🗑️ Eliminando actividad relacionada ID={actividad.id}, fecha={actividad.fecha_creacion}, diff={diff_tiempo}s")
+                    print(f"🗑️ Eliminando actividad relacionada ID={actividad.id}")
                     actividad.delete()
                     actividades_eliminadas += 1
             
@@ -6954,22 +6966,36 @@ def limpiar_actividades_huerfanas(oportunidad):
         actividades_huerfanas = []
         
         for actividad in actividades_comentario:
-            # Buscar si existe un comentario para esta actividad
+            # Buscar si existe un comentario para esta actividad usando el nuevo sistema de IDs
             comentario_encontrado = False
             
-            for comentario in comentarios_existentes:
-                # Verificar por rango de tiempo
-                diff_tiempo = abs((actividad.fecha_creacion - comentario.fecha_creacion).total_seconds())
-                if (diff_tiempo <= 300 and  # 5 minutos
-                    actividad.usuario == comentario.usuario):
+            # Estrategia 1: Buscar por ID directo en la descripción (nuevo sistema)
+            import re
+            match = re.search(r'\[COMENTARIO_ID:(\d+)\]', actividad.descripcion or '')
+            if match:
+                comentario_id = int(match.group(1))
+                if comentarios_existentes.filter(id=comentario_id).exists():
                     comentario_encontrado = True
-                    break
-                
-                # Verificar por contenido en descripción
-                if (actividad.usuario == comentario.usuario and 
-                    comentario.contenido in actividad.descripcion):
-                    comentario_encontrado = True
-                    break
+                    print(f"✅ Actividad {actividad.id} tiene comentario válido: {comentario_id}")
+                else:
+                    print(f"❌ Actividad {actividad.id} referencia comentario inexistente: {comentario_id}")
+            else:
+                # Estrategia 2: Fallback para actividades del sistema viejo (por tiempo y usuario)
+                for comentario in comentarios_existentes:
+                    # Verificar por rango de tiempo
+                    diff_tiempo = abs((actividad.fecha_creacion - comentario.fecha_creacion).total_seconds())
+                    if (diff_tiempo <= 300 and  # 5 minutos
+                        actividad.usuario == comentario.usuario):
+                        comentario_encontrado = True
+                        print(f"✅ Actividad {actividad.id} encontrada por tiempo: comentario {comentario.id}")
+                        break
+                    
+                    # Verificar por contenido en descripción
+                    if (actividad.usuario == comentario.usuario and 
+                        comentario.contenido in actividad.descripcion):
+                        comentario_encontrado = True
+                        print(f"✅ Actividad {actividad.id} encontrada por contenido: comentario {comentario.id}")
+                        break
             
             if not comentario_encontrado:
                 actividades_huerfanas.append(actividad)
