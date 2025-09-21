@@ -430,6 +430,7 @@
         box-shadow: none;
         order: 2; /* Default order */
         background: var(--apple-background-tertiary);
+        position: relative;
     }
 
     /* Bubble alignment */
@@ -520,12 +521,12 @@
     
     .comment-actions-inline {
         position: absolute;
-        top: 0.5rem;
-        right: 0.5rem;
+        top: 4px;
+        right: 8px;
         display: flex;
-        gap: 0.25rem;
+        gap: 4px;
         opacity: 0;
-        transition: opacity 0.2s ease;
+        transition: opacity 0.2s ease-in-out;
     }
 
     .timeline-content-item:hover .comment-actions-inline {
@@ -533,39 +534,33 @@
     }
 
     .comment-action-btn {
-        width: 24px;
-        height: 24px;
-        border-radius: 4px;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
         border: none;
-        font-size: 0.75rem;
+        font-size: 0.9rem;
         cursor: pointer;
-        transition: all 0.2s ease;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(0, 0, 0, 0.2);
-        color: var(--apple-label-secondary);
-    }
-    .timeline-item.align-right .comment-action-btn {
-        background: rgba(255, 255, 255, 0.2);
-    }
-
-    .comment-action-btn:hover {
-        background: rgba(0, 0, 0, 0.4);
+        background: rgba(0,0,0,0.2);
         color: var(--apple-label);
+        transition: all 0.2s ease;
+    }
+    .comment-action-btn:hover {
+        background: rgba(0,0,0,0.4);
         transform: scale(1.1);
     }
     
-    .comment-action-btn.edit:hover { background: var(--apple-orange); color: white; }
-    .comment-action-btn.delete:hover { background: var(--apple-red); color: white; }
-
-    .comment-edit-form { display: none; margin-top: 0.5rem; }
+    .comment-edit-form {
+        margin-top: 0.5rem;
+    }
     .comment-edit-input {
         width: 100%;
         background: var(--apple-background);
         border: 1px solid var(--apple-separator);
-        border-radius: 6px;
-        padding: 0.5rem;
+        border-radius: 12px;
+        padding: 0.75rem;
         color: var(--apple-label);
         font-size: 0.9rem;
         resize: vertical;
@@ -576,23 +571,24 @@
     .comment-edit-input:focus {
         outline: none;
         border-color: var(--apple-blue);
-        box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+        box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2);
     }
-    .comment-edit-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+    .comment-edit-actions {
+        display: flex; 
+        gap: 0.5rem; 
+        justify-content: flex-end;
+    }
     .comment-edit-btn {
-        padding: 0.25rem 0.75rem;
-        border-radius: 6px;
+        padding: 0.4rem 1rem;
+        border-radius: 8px;
         border: none;
         font-size: 0.8rem;
         cursor: pointer;
         transition: all 0.2s ease;
         font-weight: 500;
     }
-    .comment-edit-save { background: var(--apple-blue); color: white; }
-    .comment-edit-save:hover { filter: brightness(1.1); }
-    .comment-edit-cancel { background: var(--apple-separator); color: var(--apple-label); }
-    .comment-edit-cancel:hover { background: var(--apple-background-tertiary); }
-    .comment-updated-indicator { font-size: 0.7rem; color: var(--apple-label-secondary); font-style: normal; margin-top: 0.25rem; }
+    .comment-edit-btn.save { background: var(--apple-blue); color: white; }
+    .comment-edit-btn.cancel { background: var(--apple-separator); color: var(--apple-label); }
 
     /* ARCHIVOS ADJUNTOS EN COMENTARIOS */
     .comment-attachments { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--apple-separator); }
@@ -654,70 +650,6 @@
     }
     .attachment-download:hover { filter: brightness(1.1); transform: scale(1.05); }
     .attachments-header { font-size: 0.8rem; font-weight: 600; color: var(--apple-label-secondary); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.25rem; }
-
-    /* MODAL DE VISTA PREVIA ESTILO APPLE */
-    .preview-modal {
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(29, 29, 31, 0.8);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        z-index: 10000;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        animation: fadeIn 0.3s ease-out;
-    }
-    .preview-modal.show { display: flex; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    .preview-container {
-        background: var(--apple-background-secondary);
-        border-radius: 16px;
-        border: 1px solid var(--apple-separator);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-        max-width: 90vw;
-        max-height: 90vh;
-        overflow: hidden;
-        animation: slideIn 0.3s ease-out;
-        position: relative;
-    }
-    @keyframes slideIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-    .preview-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid var(--apple-separator);
-        background: var(--apple-background-secondary);
-    }
-    .preview-title { font-size: 1.1rem; font-weight: 600; color: var(--apple-label); margin: 0; max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .preview-actions { display: flex; gap: 0.5rem; }
-    .preview-btn {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        border: none;
-        background: var(--apple-background-tertiary);
-        color: var(--apple-label);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1rem;
-    }
-    .preview-btn:hover { background: var(--apple-blue); color: white; transform: scale(1.05); }
-    .preview-btn.close:hover { background: var(--apple-red); color: white; }
-    .preview-content { padding: 0; text-align: center; background: var(--apple-background); position: relative; min-height: 300px; display: flex; align-items: center; justify-content: center; }
-    .preview-image { max-width: 100%; max-height: 70vh; object-fit: contain; }
-    .preview-pdf { width: 80vw; height: 70vh; border: none; background: white; }
-    .preview-placeholder { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 3rem; color: var(--apple-label-secondary); }
-    .preview-placeholder-icon { font-size: 4rem; opacity: 0.5; }
-    .preview-placeholder-text { font-size: 1.1rem; font-weight: 500; text-align: center; max-width: 300px; }
-    .preview-placeholder-info { background: var(--apple-background-tertiary); border-radius: 8px; padding: 1rem; margin-top: 1rem; text-align: left; font-size: 0.9rem; line-height: 1.4; }
-    .preview-loading { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 3rem; color: var(--apple-label-secondary); }
-    .preview-spinner { width: 40px; height: 40px; border: 3px solid var(--apple-separator); border-top: 3px solid var(--apple-blue); border-radius: 50%; animation: spin 1s linear infinite; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
     /* BOTONES */
     .apple-button {
@@ -1491,6 +1423,7 @@
         let linkHtml = '';
         let activityClass = '';
         let alignmentClass = 'align-left'; // Default to left alignment
+        let actionsHtml = '';
 
         switch (activity.tipo) {
             case 'creacion':
@@ -1515,9 +1448,16 @@
                 icon = '💬';
                 activityClass = 'comentario-icon';
                 const usuario = activity.usuario || 'Usuario desconocido';
+                const comentarioId = activity.comentario_id;
                 
                 if (activity.puede_editar) {
                     alignmentClass = 'align-right';
+                    actionsHtml = `
+                        <div class="comment-actions-inline">
+                            <button class="comment-action-btn" onclick="editarComentario(${comentarioId})" title="Editar">✏️</button>
+                            <button class="comment-action-btn" onclick="eliminarComentario(${comentarioId}, '${usuario}')" title="Eliminar">🗑️</button>
+                        </div>
+                    `;
                 }
                 
                 title = `<strong>${usuario}</strong> comentó:`;
@@ -1537,7 +1477,22 @@
                     </div>
                 ` : '';
 
-                content = `<div class="comment-content"><div class="comment-text">${activity.contenido || activity.descripcion || ''}</div></div>${attachmentsHtml}`;
+                content = `
+                    <div class="comment-content" id="comment-content-${comentarioId}">
+                        ${actionsHtml}
+                        <div class="comment-text" id="comment-text-${comentarioId}">
+                            ${activity.contenido || activity.descripcion || ''}
+                        </div>
+                        <div class="comment-edit-form" id="comment-edit-form-${comentarioId}" style="display: none;">
+                            <textarea class="comment-edit-input">${activity.contenido || ''}</textarea>
+                            <div class="comment-edit-actions">
+                                <button class="comment-edit-btn cancel" onclick="cancelarEdicionComentario(${comentarioId})">Cancelar</button>
+                                <button class="comment-edit-btn save" onclick="guardarEdicionComentario(${comentarioId})">Guardar</button>
+                            </div>
+                        </div>
+                    </div>
+                    ${attachmentsHtml}
+                `;
                 break;
             case 'cotizacion':
                 icon = '📄';
@@ -1662,6 +1617,11 @@
         }
     }
 
+    // Función para descargar archivos
+    function descargarArchivo(archivoId) {
+        window.open(`/app/api/descargar-archivo-oportunidad/${archivoId}/`, '_blank');
+    }
+
     // Función para eliminar volumetrías
     function eliminarVolumetria(volumetriaId, titulo) {
         if (confirm(`¿Estás seguro de que quieres eliminar la volumetría "${titulo}"?`)) {
@@ -1723,87 +1683,70 @@
 
     // Funciones para editar comentarios
     function editarComentario(comentarioId) {
-        const commentText = document.getElementById(`comment-text-${comentarioId}`);
-        const commentEdit = document.getElementById(`comment-edit-${comentarioId}`);
-        
-        if (commentText && commentEdit) {
-            commentText.style.display = 'none';
-            commentEdit.style.display = 'block';
-            const textarea = document.getElementById(`comment-input-${comentarioId}`);
-            if (textarea) {
-                textarea.focus();
-                textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-            }
+        const textElement = document.getElementById(`comment-text-${comentarioId}`);
+        const editForm = document.getElementById(`comment-edit-form-${comentarioId}`);
+        if (textElement && editForm) {
+            textElement.style.display = 'none';
+            editForm.style.display = 'block';
+            editForm.querySelector('textarea').focus();
         }
     }
-    
+
     function cancelarEdicionComentario(comentarioId) {
-        const commentText = document.getElementById(`comment-text-${comentarioId}`);
-        const commentEdit = document.getElementById(`comment-edit-${comentarioId}`);
-        if (commentText && commentEdit) {
-            commentText.style.display = 'block';
-            commentEdit.style.display = 'none';
+        const textElement = document.getElementById(`comment-text-${comentarioId}`);
+        const editForm = document.getElementById(`comment-edit-form-${comentarioId}`);
+        if (textElement && editForm) {
+            textElement.style.display = 'block';
+            editForm.style.display = 'none';
         }
     }
-    
+
     async function guardarEdicionComentario(comentarioId) {
-        const textarea = document.getElementById(`comment-input-${comentarioId}`);
-        const saveBtn = document.querySelector(`#comment-edit-${comentarioId} .comment-edit-save`);
-        if (!textarea || !saveBtn) return;
-        const nuevoContenido = textarea.value.trim();
-        if (!nuevoContenido) {
-            alert('El comentario no puede estar vacío');
+        const editForm = document.getElementById(`comment-edit-form-${comentarioId}`);
+        const newContent = editForm.querySelector('textarea').value.trim();
+        if (!newContent) {
+            alert('El comentario no puede estar vacío.');
             return;
         }
-        const originalText = saveBtn.innerHTML;
-        saveBtn.disabled = true;
-        saveBtn.innerHTML = '⏳ Guardando...';
-        
         try {
-            const formData = new FormData();
-            formData.append('contenido', nuevoContenido);
             const response = await fetch(`/app/api/editar-comentario-oportunidad/${comentarioId}/`, {
                 method: 'POST',
                 headers: {
+                    'Content-Type': 'application/json',
                     'X-CSRFToken': getCookie('csrftoken')
                 },
-                body: formData
+                body: JSON.stringify({ contenido: newContent })
             });
             const data = await response.json();
             if (data.success) {
                 await loadTimeline();
             } else {
-                alert('Error al editar comentario: ' + (data.error || 'Error desconocido'));
+                alert('Error al guardar el comentario: ' + data.error);
             }
         } catch (error) {
-            console.error('Error al editar comentario:', error);
-            alert('Error al editar comentario. Por favor, intenta de nuevo.');
-        } finally {
-            saveBtn.disabled = false;
-            saveBtn.innerHTML = originalText;
+            console.error('Error al guardar:', error);
+            alert('Ocurrió un error de red al guardar el comentario.');
         }
     }
-    
+
     async function eliminarComentario(comentarioId, usuario) {
-        const confirmacion = confirm(`¿Estás seguro de que quieres eliminar este comentario de ${usuario}?\n\nEsta acción no se puede deshacer.`);
-        if (!confirmacion) return;
+        if (!confirm(`¿Estás seguro de que quieres eliminar este comentario de ${usuario}?`)) return;
         try {
             const response = await fetch(`/app/api/eliminar-comentario-oportunidad/${comentarioId}/`, {
                 method: 'DELETE',
                 headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
-                    'Content-Type': 'application/json'
+                    'X-CSRFToken': getCookie('csrftoken')
                 }
             });
             const data = await response.json();
             if (data.success) {
                 await loadTimeline();
             } else {
-                alert('Error al eliminar comentario: ' + (data.error || 'Error desconocido'));
+                alert('Error al eliminar el comentario: ' + data.error);
             }
         } catch (error) {
-            console.error('Error al eliminar comentario:', error);
-            alert('Error al eliminar comentario. Por favor, intenta de nuevo.');
+            console.error('Error al eliminar:', error);
+            alert('Ocurrió un error de red al eliminar el comentario.');
         }
     }
 
@@ -1817,27 +1760,6 @@
             case 'presentacion': return '📊';
             default: return '📎';
         }
-    }
-
-    // Función para descargar archivos
-    function descargarArchivo(archivoId) {
-        window.open(`/app/api/descargar-archivo-oportunidad/${archivoId}/`, '_blank');
-    }
-
-    // Función para obtener cookie (CSRF token)
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
     }
 
     // Función para mostrar mensaje de proyecto
@@ -1938,7 +1860,7 @@
     });
 </script>
 
-{% else %} 
+{% else %}
 <!-- VISTA NORMAL PARA USUARIOS NO SUPERUSUARIOS -->
 <div style="padding: 2rem; text-align: center;">
     <h2 style="color: var(--apple-label); margin-bottom: 1rem;">{{ oportunidad.oportunidad }}</h2>
