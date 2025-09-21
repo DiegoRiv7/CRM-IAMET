@@ -1955,7 +1955,11 @@
         document.getElementById('confirmCancelBtn').addEventListener('click', () => {
             if (resolveConfirm) resolveConfirm(false);
             hideConfirm();
-        });
+        // Ocultar el dock en esta página para más espacio
+        const dockMenu = document.getElementById('floating-menu');
+        if (dockMenu) {
+            dockMenu.style.display = 'none';
+        }
     });
 </script>
 
