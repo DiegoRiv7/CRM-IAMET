@@ -1783,6 +1783,7 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             print(f"DEBUG: Título auto-llenado: {initial_data['titulo']}")
 
         form = CotizacionForm(initial=initial_data, user=request.user)
+        from django.urls import reverse
         form_action_url = reverse('crear_cotizacion_with_id', args=[cliente_id]) if cliente_id else reverse('crear_cotizacion')
         print(f"DEBUG: crear_cotizacion_view - Generated form_action_url: {form_action_url}")
 
