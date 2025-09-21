@@ -441,23 +441,26 @@
         color: white;
     }
     .timeline-content-item {
-        width: 75%; /* Ancho fijo para todas las burbujas */
+        width: 75%;
         border-radius: 20px;
         padding: 0.75rem 1.25rem;
-        border: none;
-        box-shadow: none;
-        order: 2; /* Default order */
-        background: var(--apple-background-tertiary);
+        order: 2;
         position: relative;
-        transition: background 0.2s ease;
+        
+        /* Efecto Glassmorphism */
+        background: rgba(58, 58, 60, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
     }
     .timeline-content-item.editable:not(.editing):hover {
-        background: #444;
+        background: rgba(70, 70, 72, 0.8);
         cursor: pointer;
     }
     .timeline-content-item.editing {
-        background: var(--apple-background);
-        border: 1px solid var(--apple-separator);
+        /* Borde más pronunciado al editar */
+        border: 1px solid rgba(255, 255, 255, 0.3);
     }
 
     /* Bubble alignment */
@@ -469,23 +472,6 @@
     }
     .timeline-item.align-right .timeline-content-item {
         order: 1;
-        background: var(--apple-blue);
-        color: white;
-    }
-    .timeline-item.align-right .timeline-title-item,
-    .timeline-item.align-right .timeline-text,
-    .timeline-item.align-right .timeline-time,
-    .timeline-item.align-right .activity-meta,
-    .timeline-item.align-right strong {
-        color: white;
-    }
-    .timeline-item.align-right .comment-author,
-    .timeline-item.align-right .timeline-title-item {
-        color: rgba(255,255,255,0.8);
-    }
-    .timeline-item.align-right .activity-link {
-        color: rgba(255,255,255,0.9);
-        text-decoration: underline;
     }
 
     /* Hide icon for comments to make it cleaner */
