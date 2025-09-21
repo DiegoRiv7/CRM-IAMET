@@ -1821,6 +1821,12 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                 addDragHandlesToExistingRows();
             }, 500);
         });
+
+        // Activar modo cotizaciones para ocultar dock
+        document.addEventListener('DOMContentLoaded', function() {
+            document.body.classList.add('cotizaciones-mode');
+            console.log('✅ Clase cotizaciones-mode agregada al body - dock oculto');
+        });
     </script>
     <!-- Loading Modal -->
     <div id="loading-modal" class="fixed inset-0 bg-gray-900 bg-opacity-85 flex items-center justify-center z-50 hidden backdrop-blur-sm">
@@ -1938,6 +1944,18 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
         #toggle-comments-btn:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Ocultar dock en modo cotizaciones */
+        body.cotizaciones-mode .macos-dock,
+        body.cotizaciones-mode #dock-left,
+        body.cotizaciones-mode #dock-right,
+        body.cotizaciones-mode #dock-top,
+        body.cotizaciones-mode #dock-bottom {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
         }
     </style>
 
