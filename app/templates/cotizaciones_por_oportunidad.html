@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load app_filters %}
 
 <script>
     // FIX: Pre-define la variable 'designBtn' para prevenir un error fatal en el script de dock.html,
@@ -1159,7 +1160,7 @@
                             </a>
                             <div class="cotizacion-meta">
                                 <span class="cotizacion-monto-simple">${{ cotizacion.total|floatformat:2 }}</span>
-                                <span class="cotizacion-fecha-simple">{{ cotizacion.fecha_creacion|date:"d/m/Y" }}</span>
+                                <span class="cotizacion-fecha-simple">{{ cotizacion.fecha_creacion|tijuana_time:"d/m/Y" }}</span>
                             </div>
                         </div>
                         <div class="cotizacion-acciones-simple">
@@ -2163,7 +2164,7 @@
         <div style="background: var(--apple-background-secondary); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <div style="font-weight: 500; color: var(--apple-label);">{{ cotizacion.titulo }}</div>
-                <div style="font-size: 0.9rem; color: var(--apple-label-secondary);">${{ cotizacion.total|floatformat:2 }} • {{ cotizacion.fecha_creacion|date:"d/m/Y" }}</div>
+                <div style="font-size: 0.9rem; color: var(--apple-label-secondary);">${{ cotizacion.total|floatformat:2 }} • {{ cotizacion.fecha_creacion|tijuana_time:"d/m/Y" }}</div>
             </div>
             <div style="display: flex; gap: 0.5rem;">
                 <a href="{% url 'view_cotizacion_pdf' cotizacion.id %}" target="_blank" class="apple-button apple-button-small">Ver</a>

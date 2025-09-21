@@ -3845,7 +3845,7 @@ Proyecto automatizado desde Nethive para volumetría: {project_name}
 Cliente: {cliente_nombre}
 Oportunidad: {oportunidad_nombre}
 Elaborado por: {data.get('elaborado_por', request.user.get_full_name() or request.user.username)}
-Fecha: {data.get('fecha', datetime.now().strftime('%d/%m/%Y'))}
+Fecha: {data.get('fecha', convert_to_tijuana_time(datetime.now()).strftime('%d/%m/%Y'))}
 
 Categoría: {data.get('categoria', 'CAT6')}
 Cantidad de nodos: {data.get('cantidad_nodos', 1)}
@@ -3912,7 +3912,7 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
                 'usuario_final': data.get('usuario_final', ''),
                 'oportunidad_nombre': oportunidad_nombre,
                 'elaborado_por': data.get('elaborado_por', request.user.get_full_name() or request.user.username),
-                'fecha': data.get('fecha', datetime.now().strftime('%d/%m/%Y')),
+                'fecha': data.get('fecha', convert_to_tijuana_time(datetime.now()).strftime('%d/%m/%Y')),
                 'categoria': data.get('categoria', 'CAT6'),
                 'color': data.get('color', 'Azul'),
                 'cantidad_nodos': cantidad_nodos,
@@ -3927,7 +3927,7 @@ Este proyecto contiene la documentación técnica y volumetría del proyecto.
                 'items': data.get('items', [])
             },
             'logo_base64': get_logo_base64(),
-            'current_date': datetime.now().strftime('%d/%m/%Y')
+            'current_date': convert_to_tijuana_time(datetime.now()).strftime('%d/%m/%Y')
         }
         
         # Renderizar template HTML
@@ -4356,7 +4356,7 @@ def crear_cotizacion_desde_volumetria(request):
 Cotización: {cotizacion.nombre_cotizacion}
 Total: ${float(total_cotizacion):.2f} USD
 Generada por: {request.user.get_full_name() or request.user.username}
-Fecha: {timezone.now().strftime('%d/%m/%Y %H:%M')}
+Fecha: {convert_to_tijuana_time(timezone.now()).strftime('%d/%m/%Y %H:%M')}
 
 Volumetría origen: {data.get('volumetria_nombre', 'N/A')}
 
@@ -4672,8 +4672,8 @@ def upload_status_api(request):
             'attempts': upload.attempts,
             'max_attempts': upload.max_attempts,
             'error_message': upload.error_message,
-            'created_at': upload.created_at.strftime('%d/%m/%Y %H:%M'),
-            'completed_at': upload.completed_at.strftime('%d/%m/%Y %H:%M') if upload.completed_at else None,
+            'created_at': convert_to_tijuana_time(upload.created_at).strftime('%d/%m/%Y %H:%M'),
+            'completed_at': convert_to_tijuana_time(upload.completed_at).strftime('%d/%m/%Y %H:%M') if upload.completed_at else None,
         })
     
     return JsonResponse({'uploads': uploads_data})
@@ -4728,7 +4728,7 @@ def spotlight_search_api(request):
             'title': cotizacion.nombre_cotizacion or f'Cotización #{cotizacion.id}',
             'subtitle': f'{cotizacion.cliente.nombre_empresa} • ${cotizacion.total:.2f} {cotizacion.moneda}',
             'description': f'Creada por {cotizacion.created_by.get_full_name() or cotizacion.created_by.username if cotizacion.created_by else "Usuario desconocido"}',
-            'date': cotizacion.fecha_creacion.strftime('%d/%m/%Y'),
+            'date': convert_to_tijuana_time(cotizacion.fecha_creacion).strftime('%d/%m/%Y'),
             'icon': 'document',
             'url': cotizacion_url,
             'priority': 1 if is_exact_match else 2,  # Para ordenamiento
@@ -4757,7 +4757,7 @@ def spotlight_search_api(request):
             'title': oportunidad.oportunidad,
             'subtitle': f'{oportunidad.cliente.nombre_empresa if oportunidad.cliente else "Sin cliente"} • ${oportunidad.monto:.2f}',
             'description': f'Probabilidad: {oportunidad.probabilidad_cierre}% • {oportunidad.get_area_display()}',
-            'date': oportunidad.fecha_creacion.strftime('%d/%m/%Y'),
+            'date': convert_to_tijuana_time(oportunidad.fecha_creacion).strftime('%d/%m/%Y'),
             'icon': 'star',
             'url': f'/app/cliente/{oportunidad.cliente.id if oportunidad.cliente else 0}/crear-cotizacion/?oportunidad_id={oportunidad.id}',
             'priority': 3,  # Oportunidades tienen menor prioridad
@@ -5787,7 +5787,7 @@ Cotización: {cotizacion.nombre_cotizacion}
 Total: ${float(cotizacion.total):.2f} {cotizacion.moneda}
 Productos: {cotizacion.detalles.count()} artículos
 Generada por: {cotizacion.created_by.get_full_name() or cotizacion.created_by.username}
-Fecha: {cotizacion.fecha_creacion.strftime('%d/%m/%Y %H:%M')}
+Fecha: {convert_to_tijuana_time(cotizacion.fecha_creacion).strftime('%d/%m/%Y %H:%M')}
 
 ⚡ Generada automáticamente desde el sistema Nethive
             """.strip()

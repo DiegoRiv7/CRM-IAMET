@@ -3,8 +3,34 @@
 from django import template
 from decimal import Decimal, InvalidOperation
 import locale
+from django.utils import timezone
+from zoneinfo import ZoneInfo
 
 register = template.Library()
+
+
+@register.filter
+def tijuana_time(value, format_string='d/m/Y H:i'):
+    """
+    Convierte una fecha UTC a tiempo de Tijuana y la formatea.
+    Uso: {{ fecha|tijuana_time:"d/m/Y" }}
+    """
+    if not value:
+        return ""
+    
+    try:
+        # Convertir a zona horaria de Tijuana
+        tijuana_tz = ZoneInfo('America/Tijuana')
+        if value.tzinfo is None:
+            # Si no tiene timezone info, asumir UTC
+            value = timezone.make_aware(value, timezone.utc)
+        tijuana_datetime = value.astimezone(tijuana_tz)
+        
+        # Formatear usando el formato de Django
+        from django.template.defaultfilters import date
+        return date(tijuana_datetime, format_string)
+    except Exception:
+        return value
 
 @register.filter
 def format_currency_es(value):
