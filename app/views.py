@@ -6625,13 +6625,16 @@ def agregar_comentario_oportunidad(request, oportunidad_id):
                 import traceback
                 print(traceback.format_exc())
         
-        # Crear actividad en el timeline
+        # Crear actividad en el timeline con referencia al comentario
         descripcion_actividad = contenido[:200] + ('...' if len(contenido) > 200 else '')
         if archivos_subidos:
             if contenido:
                 descripcion_actividad += f" ({len(archivos_subidos)} archivo{'s' if len(archivos_subidos) > 1 else ''} adjunto{'s' if len(archivos_subidos) > 1 else ''})"
             else:
                 descripcion_actividad = f"Subió {len(archivos_subidos)} archivo{'s' if len(archivos_subidos) > 1 else ''}"
+        
+        # Agregar referencia al comentario en la descripción para linking directo
+        descripcion_actividad += f" [COMENTARIO_ID:{comentario.id}]"
         
         print(f"🔥 Creando actividad - Usuario: {request.user}, Usuario ID: {request.user.id}, Nombre: {request.user.get_full_name()}")
         actividad_creada = OportunidadActividad.objects.create(
@@ -6712,20 +6715,34 @@ def timeline_oportunidad(request, oportunidad_id):
             elif actividad.tipo == 'comentario':
                 # Para comentarios, buscar el contenido real del comentario
                 try:
-                    # Buscar comentario con un rango de tiempo más amplio y múltiples estrategias
+                    # Nueva estrategia: buscar por ID directo en la descripción
                     comentario = None
                     
-                    # Estrategia 1: Buscar por rango de tiempo (original)
-                    comentarios_candidatos = OportunidadComentario.objects.filter(
-                        oportunidad=oportunidad,
-                        fecha_creacion__gte=actividad.fecha_creacion - timedelta(minutes=1),
-                        fecha_creacion__lte=actividad.fecha_creacion + timedelta(minutes=1)
-                    ).order_by('-fecha_creacion')
+                    # Estrategia 1: Buscar por ID directo en la descripción
+                    import re
+                    match = re.search(r'\[COMENTARIO_ID:(\d+)\]', actividad.descripcion or '')
+                    if match:
+                        comentario_id = int(match.group(1))
+                        try:
+                            comentario = OportunidadComentario.objects.get(id=comentario_id)
+                            print(f"🎯 Comentario encontrado por ID directo: {comentario_id}")
+                        except OportunidadComentario.DoesNotExist:
+                            print(f"❌ Comentario con ID {comentario_id} no existe")
                     
-                    if comentarios_candidatos.exists():
-                        comentario = comentarios_candidatos.first()
-                    else:
-                        # Estrategia 2: Buscar por usuario y fecha cercana
+                    # Estrategia 2 (fallback): Buscar por rango de tiempo
+                    if not comentario:
+                        comentarios_candidatos = OportunidadComentario.objects.filter(
+                            oportunidad=oportunidad,
+                            fecha_creacion__gte=actividad.fecha_creacion - timedelta(minutes=1),
+                            fecha_creacion__lte=actividad.fecha_creacion + timedelta(minutes=1)
+                        ).order_by('-fecha_creacion')
+                        
+                        if comentarios_candidatos.exists():
+                            comentario = comentarios_candidatos.first()
+                            print(f"⏱️ Comentario encontrado por tiempo: {comentario.id}")
+                    
+                    # Estrategia 3 (último recurso): Buscar por usuario y fecha cercana
+                    if not comentario:
                         comentarios_por_usuario = OportunidadComentario.objects.filter(
                             oportunidad=oportunidad,
                             usuario=actividad.usuario
@@ -6735,11 +6752,16 @@ def timeline_oportunidad(request, oportunidad_id):
                             diff = abs((c.fecha_creacion - actividad.fecha_creacion).total_seconds())
                             if diff <= 300:  # 5 minutos
                                 comentario = c
+                                print(f"👤 Comentario encontrado por usuario: {comentario.id}")
                                 break
                     
                     if comentario:
                         item_data['contenido'] = comentario.contenido
                         item_data['comentario_id'] = comentario.id
+                        
+                        # Limpiar la descripción para mostrar solo el contenido real (sin el ID)
+                        descripcion_limpia = re.sub(r' \[COMENTARIO_ID:\d+\]', '', actividad.descripcion or '')
+                        item_data['descripcion'] = descripcion_limpia
                         item_data['puede_editar'] = comentario.usuario == request.user or is_supervisor(request.user)
                         
                         # Buscar archivos asociados a este comentario específico
