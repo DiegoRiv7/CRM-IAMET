@@ -2,8 +2,9 @@
 {% load static %}
 
 <script>
-    // Neutraliza el script del dock para evitar errores y asegurar que no se muestre.
-    window.initDesignPanel = function() {};
+    // FIX: Pre-define la variable 'designBtn' para prevenir un error fatal en el script de dock.html,
+    // que estaba bloqueando la ejecución de todo el JavaScript de la página.
+    const designBtn = document.createElement('div');
 </script>
 
 <style>
