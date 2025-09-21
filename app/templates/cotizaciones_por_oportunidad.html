@@ -420,7 +420,7 @@
     .timeline-item {
         display: flex;
         gap: 0.75rem;
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem; /* Reduced margin */
         position: relative;
         align-items: flex-end;
     }
@@ -454,12 +454,12 @@
         border: 1px solid rgba(255, 255, 255, 0.1);
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
     }
-    .timeline-content-item.editable:not(.editing):hover {
+    .timeline-content-item.editable:not(.editing):hover,
+    .timeline-content-item.replyable:hover {
         background: rgba(70, 70, 72, 0.8);
         cursor: pointer;
     }
     .timeline-content-item.editing {
-        /* Borde más pronunciado al editar */
         border: 1px solid rgba(255, 255, 255, 0.3);
     }
 
@@ -505,9 +505,6 @@
         color: var(--apple-label-secondary);
         margin-left: 1rem;
         flex-shrink: 0;
-    }
-    .timeline-item.align-right .timeline-time {
-        color: rgba(255,255,255,0.7);
     }
 
     .timeline-text {
@@ -586,6 +583,18 @@
     .comment-edit-btn.save { background: var(--apple-blue); color: white; }
     .comment-edit-btn.cancel { background: var(--apple-separator); color: var(--apple-label); }
     .comment-edit-btn.delete { background: var(--apple-red); color: white; margin-right: auto; } /* Push to the left */
+
+    /* Reply UI */
+    .reply-ui-container {
+        padding-left: 40px; /* Align with bubble */
+        margin-top: 4px;
+        height: 30px;
+    }
+    .timeline-item.align-right .reply-ui-container {
+        padding-left: 0;
+        padding-right: 40px;
+        text-align: right;
+    }
 
     /* ARCHIVOS ADJUNTOS EN COMENTARIOS */
     .comment-attachments { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--apple-separator); }
@@ -1527,7 +1536,7 @@
                 } else {
                     // For other users' comments, allow replying
                     editableClass = 'replyable';
-                    clickHandler = `onclick="showReplyUI(event, ${comentarioId}, '${usuario}')"`;
+                    clickHandler = `onclick="showReplyUI(event, ${activity.id}, '${usuario}')"`;
                 }
                 
                 title = `<strong>${usuario}</strong> comentó:`;
@@ -1732,6 +1741,10 @@
                 openMenuBtn.classList.remove('open');
             }
         }
+        // Cerrar UI de respuesta
+        if (currentlyReplying && !currentlyReplying.contains(e.target)) {
+            closeReplyUI();
+        }
     });
 
     // Función para obtener CSRF token
@@ -1877,6 +1890,8 @@
         const replyButton = document.createElement('button');
         replyButton.className = 'apple-button apple-button-small';
         replyButton.innerHTML = `↩️ Responder a ${username}`;
+        replyButton.style.background = 'var(--apple-background-tertiary)';
+        replyButton.style.color = 'var(--apple-label)';
         replyButton.onclick = (e) => {
             e.stopPropagation();
             replyToComment(username);
