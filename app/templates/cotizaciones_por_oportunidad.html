@@ -1,6 +1,11 @@
 {% extends 'base.html' %}
 {% load static %}
 
+<script>
+    // Neutraliza el script del dock para evitar errores y asegurar que no se muestre.
+    window.initDesignPanel = function() {};
+</script>
+
 <style>
     /* Ocultar el sistema de dock y edición en esta página para maximizar espacio */
     .macos-dock,
