@@ -1,6 +1,13 @@
 {% extends 'base.html' %}
 {% load static %}
 
+<style>
+    /* Ocultar el dock específicamente en esta página para maximizar espacio */
+    #floating-menu {
+        display: none !important;
+    }
+</style>
+
 {% block title %}{{ oportunidad.oportunidad }}{% endblock %}
 
 {% block content %}
@@ -1520,6 +1527,10 @@
                 if (activity.usuario_id && activity.usuario_id === CURRENT_USER_ID) {
                     editableClass = 'editable';
                     clickHandler = `onclick="editarComentario(event, ${comentarioId})"`;
+                } else {
+                    // For other users' comments, allow replying
+                    editableClass = 'replyable';
+                    clickHandler = `onclick="showReplyUI(event, ${comentarioId}, '${usuario}')"`;
                 }
                 
                 title = `<strong>${usuario}</strong> comentó:`;
@@ -1590,6 +1601,7 @@
                         ${linkHtml}
                     </div>
                 </div>
+                <div class="reply-ui-container" id="reply-ui-container-${activity.id}"></div>
             </div>
         `;
     }
@@ -1741,8 +1753,9 @@
         return cookieValue;
     }
 
-    // Funciones para editar comentarios
+    // Funciones para editar/responder comentarios
     let currentlyEditing = null;
+    let currentlyReplying = null;
     let resolveConfirm;
 
     function showConfirm(message) {
@@ -1766,6 +1779,7 @@
 
     function editarComentario(event, comentarioId) {
         event.stopPropagation();
+        if (currentlyReplying) closeReplyUI();
         if (currentlyEditing) {
             cancelarEdicionComentario(null, currentlyEditing);
         }
@@ -1853,6 +1867,40 @@
             console.error('Error al eliminar:', error);
             alert('Ocurrió un error de red al eliminar el comentario.');
         }
+    }
+
+    function showReplyUI(event, activityId, username) {
+        event.stopPropagation();
+        if (currentlyEditing) cancelarEdicionComentario(null, currentlyEditing);
+        closeReplyUI(); // Close any existing reply UI
+
+        const container = document.getElementById(`reply-ui-container-${activityId}`);
+        if (!container) return;
+
+        const replyButton = document.createElement('button');
+        replyButton.className = 'apple-button apple-button-small';
+        replyButton.innerHTML = `↩️ Responder a ${username}`;
+        replyButton.onclick = (e) => {
+            e.stopPropagation();
+            replyToComment(username);
+            closeReplyUI();
+        };
+
+        container.appendChild(replyButton);
+        currentlyReplying = container;
+    }
+
+    function closeReplyUI() {
+        if (currentlyReplying) {
+            currentlyReplying.innerHTML = '';
+            currentlyReplying = null;
+        }
+    }
+
+    function replyToComment(username) {
+        const commentInput = document.getElementById('nuevoComentario');
+        commentInput.value = `@${username} `;
+        commentInput.focus();
     }
 
     // Función para obtener icono de archivo según tipo
