@@ -35,6 +35,7 @@
         padding: 0;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+        overflow: hidden; /* Evita el scroll de la página completa */
     }
 
     /* iPad-like Layout */
@@ -225,29 +226,54 @@
     .timeline-header {
         background: transparent;
         border-bottom: 1px solid var(--apple-separator);
-        padding: 1.5rem 2rem;
+        padding: 1rem 1.5rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 1rem;
     }
     
     .timeline-title {
         font-size: 1.25rem;
         font-weight: 600;
         color: var(--apple-label);
+        flex-shrink: 0;
     }
     
-    .timeline-stats {
+    .timeline-search {
+        position: relative;
         display: flex;
         align-items: center;
+        width: 100%;
+        max-width: 350px;
     }
 
-    .timeline-count {
-        font-size: 0.85rem;
+    .timeline-search .search-icon {
+        position: absolute;
+        left: 12px;
+        width: 16px;
+        height: 16px;
         color: var(--apple-label-secondary);
+        pointer-events: none;
+    }
+
+    #timelineSearch {
         background: var(--apple-background-tertiary);
-        padding: 0.25rem 0.5rem;
-        border-radius: 12px;
+        border: 1px solid var(--apple-separator);
+        border-radius: 10px;
+        padding: 0.5rem 1rem 0.5rem 2.25rem; /* Left padding for icon */
+        color: var(--apple-label);
+        font-family: var(--apple-font-family);
+        font-size: 0.9rem;
+        width: 100%;
+        transition: all 0.2s ease;
+    }
+
+    #timelineSearch:focus {
+        outline: none;
+        border-color: var(--apple-blue);
+        background: var(--apple-background-secondary);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
     }
 
     .timeline-content {
@@ -263,101 +289,115 @@
         background: var(--apple-background-secondary);
         border-radius: 0 0 20px 20px;
         margin-bottom: 0;
+        transition: all 0.2s ease-in-out;
     }
-    .new-comment:hover {
-        box-shadow: none;
+    .new-comment.dragover {
+        border-color: var(--apple-blue) !important;
+        box-shadow: 0 0 15px rgba(10, 132, 255, 0.3);
+        transform: scale(1.01);
     }
     
     .comment-header {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 0.75rem;
-    }
-
-    .comment-avatar {
-        flex-shrink: 0;
-    }
-
-    .avatar-circle {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: var(--apple-blue);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        font-size: 0.9rem;
-    }
-    
-    .comment-user-info {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .comment-username {
-        font-weight: 500;
-        color: var(--apple-label);
-        font-size: 0.9rem;
-    }
-
-    .comment-time {
-        font-size: 0.8rem;
-        color: var(--apple-label-secondary);
+        display: none; /* No longer needed in this layout */
     }
 
     .comment-input {
         width: 100%;
         background: var(--apple-background-tertiary);
         border: 1px solid var(--apple-separator);
-        border-radius: 12px;
-        padding: 0.75rem 1rem;
-        min-height: 80px;
+        border-radius: 18px;
+        padding: 0.5rem 1rem;
+        height: 36px;
+        box-sizing: border-box;
         color: var(--apple-label);
         font-size: 0.9rem;
         resize: vertical;
-        margin-bottom: 0.75rem;
         font-family: var(--apple-font-family);
+        transition: all 0.2s ease;
     }
     
     .comment-input:focus {
         outline: none;
         border-color: var(--apple-blue);
-        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
     }
     
-    .comment-actions {
-        display: flex;
-        justify-content: space-between;
+    .comment-actions-container {
+        display: flex; 
+        gap: 0.75rem; 
         align-items: center;
     }
 
-    .comment-actions-left {
-        display: flex;
-        gap: 0.5rem;
+    .plus-button-container {
+        position: relative;
     }
-    
+
     .action-button-small {
-        width: 32px;
-        height: 32px;
-        border-radius: 6px;
-        border: 1px solid var(--apple-separator);
-        background: var(--apple-background-tertiary);
-        color: var(--apple-label);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        background: transparent;
+        color: var(--apple-blue);
         cursor: pointer;
         transition: all 0.2s ease;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.9rem;
+        font-size: 1.5rem;
+        flex-shrink: 0;
     }
 
     .action-button-small:hover {
-        border-color: var(--apple-blue);
-        background: var(--apple-background-secondary);
+        background: var(--apple-background-tertiary);
     }
+
+    #openMenuBtn.open {
+        transform: rotate(45deg);
+    }
+
+    .comment-menu {
+        position: absolute;
+        bottom: calc(100% + 10px);
+        left: 0;
+        background: #48484A;
+        border-radius: 12px;
+        padding: 0.5rem;
+        display: flex;
+        gap: 0.75rem;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.2s ease-out;
+        pointer-events: none;
+    }
+
+    .comment-menu.open {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+
+    .menu-option-btn {
+        background: none;
+        border: none;
+        color: var(--apple-label-secondary);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.3rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 8px;
+        transition: background 0.2s ease;
+        font-family: var(--apple-font-family);
+        font-size: 0.7rem;
+        width: 60px;
+    }
+    .menu-option-btn:hover {
+        color: var(--apple-label);
+        background: rgba(255,255,255,0.1);
+    }
+    .menu-icon { font-size: 1.5rem; }
 
     .timeline-item {
         display: flex;
@@ -392,9 +432,6 @@
         background: var(--apple-background-tertiary);
         flex: 0 0 auto;
     }
-    .timeline-content-item:hover {
-        box-shadow: none;
-    }
 
     /* Bubble alignment */
     .timeline-item.align-right {
@@ -420,14 +457,10 @@
     .timeline-item.align-right .timeline-title-item {
         color: rgba(255,255,255,0.8);
     }
-    .timeline-item.align-right .comment-content {
-        border-color: transparent;
-    }
     .timeline-item.align-right .activity-link {
         color: rgba(255,255,255,0.9);
         text-decoration: underline;
     }
-
 
     /* Hide icon for comments to make it cleaner */
     .timeline-item[data-tipo="comentario"] .timeline-icon {
@@ -465,7 +498,6 @@
         color: rgba(255,255,255,0.7);
     }
 
-
     .timeline-text {
         color: var(--apple-label);
         font-size: 0.9rem;
@@ -495,36 +527,13 @@
     .volumetria-link:hover { text-decoration: underline; }
 
     /* COMENTARIOS EN TIMELINE */
-    .comment-author {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .avatar-circle-small {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background: var(--apple-purple);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        font-size: 0.7rem;
-        flex-shrink: 0;
-    }
-
     .comment-content {
-        background: var(--apple-background-tertiary);
-        border-radius: 8px;
-        padding: 0.75rem;
-        margin-top: 0.5rem;
-        border-left: 3px solid var(--apple-purple);
-        font-style: italic;
-        line-height: 1.4;
-        position: relative;
+        background: transparent;
+        border-radius: 0;
+        padding: 0;
+        margin-top: 0;
+        border-left: none;
+        font-style: normal;
     }
     
     .comment-actions-inline {
@@ -537,7 +546,7 @@
         transition: opacity 0.2s ease;
     }
 
-    .comment-content:hover .comment-actions-inline {
+    .timeline-content-item:hover .comment-actions-inline {
         opacity: 1;
     }
 
@@ -552,12 +561,15 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(0, 0, 0, 0.05);
+        background: rgba(0, 0, 0, 0.2);
         color: var(--apple-label-secondary);
+    }
+    .timeline-item.align-right .comment-action-btn {
+        background: rgba(255, 255, 255, 0.2);
     }
 
     .comment-action-btn:hover {
-        background: rgba(0, 0, 0, 0.1);
+        background: rgba(0, 0, 0, 0.4);
         color: var(--apple-label);
         transform: scale(1.1);
     }
@@ -602,12 +614,13 @@
 
     /* ARCHIVOS ADJUNTOS EN COMENTARIOS */
     .comment-attachments { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--apple-separator); }
+    .timeline-item.align-right .comment-attachments { border-top-color: rgba(255,255,255,0.3); }
     .attachment-item {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        background: var(--apple-background-tertiary);
-        border: 1px solid var(--apple-separator);
+        background: rgba(0,0,0,0.1);
+        border: 1px solid transparent;
         border-radius: 8px;
         padding: 0.5rem;
         margin-bottom: 0.5rem;
@@ -639,7 +652,9 @@
         overflow: hidden;
         text-overflow: ellipsis;
     }
+    .timeline-item.align-right .attachment-name { color: white; }
     .attachment-meta { font-size: 0.75rem; color: var(--apple-label-secondary); display: flex; gap: 0.5rem; }
+    .timeline-item.align-right .attachment-meta { color: rgba(255,255,255,0.7); }
     .attachment-download {
         width: 32px;
         height: 32px;
@@ -714,23 +729,11 @@
     .preview-content { padding: 0; text-align: center; background: var(--apple-background); position: relative; min-height: 300px; display: flex; align-items: center; justify-content: center; }
     .preview-image { max-width: 100%; max-height: 70vh; object-fit: contain; }
     .preview-pdf { width: 80vw; height: 70vh; border: none; background: white; }
-    .preview-placeholder { display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1rem;
-        padding: 3rem;
-        color: var(--apple-label-secondary);
-    }
+    .preview-placeholder { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 3rem; color: var(--apple-label-secondary); }
     .preview-placeholder-icon { font-size: 4rem; opacity: 0.5; }
     .preview-placeholder-text { font-size: 1.1rem; font-weight: 500; text-align: center; max-width: 300px; }
     .preview-placeholder-info { background: var(--apple-background-tertiary); border-radius: 8px; padding: 1rem; margin-top: 1rem; text-align: left; font-size: 0.9rem; line-height: 1.4; }
-    .preview-loading { display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1rem;
-        padding: 3rem;
-        color: var(--apple-label-secondary);
-    }
+    .preview-loading { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 3rem; color: var(--apple-label-secondary); }
     .preview-spinner { width: 40px; height: 40px; border: 3px solid var(--apple-separator); border-top: 3px solid var(--apple-blue); border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
@@ -744,8 +747,11 @@
         text-decoration: none;
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 0.5rem;
         border: 1px solid transparent;
+        height: 36px;
+        box-sizing: border-box;
     }
     .apple-button:hover { transform: translateY(-1px); }
     .apple-button { background: var(--apple-blue); color: white; }
@@ -868,24 +874,8 @@
     .no-items-message-simple .no-items-text { font-size: 1rem; }
 
     /* DRAG & DROP STYLES */
-    .drop-zone {
-        border: 2px dashed var(--apple-separator);
-        border-radius: 12px;
-        padding: 2rem;
-        text-align: center;
-        background: var(--apple-background);
-        margin-bottom: 1rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: none; /* Oculto por defecto */
-    }
-    .drop-zone.show { display: block; }
-    .drop-zone:hover, .drop-zone.dragover { border-color: var(--apple-blue); background: var(--apple-background-secondary); }
-    .drop-zone-content { pointer-events: none; }
-    .drop-zone-icon { font-size: 2rem; margin-bottom: 0.5rem; }
-    .drop-zone-text { font-size: 1rem; color: var(--apple-label); margin-bottom: 0.25rem; }
-    .drop-zone-formats { font-size: 0.8rem; color: var(--apple-label-secondary); }
-    .attached-files { margin-bottom: 1rem; }
+    .drop-zone { display: none; }
+    .attached-files { margin-top: 0.75rem; }
     .attached-file {
         display: flex;
         align-items: center;
@@ -1165,8 +1155,9 @@
         <div class="crm-timeline-panel">
             <div class="timeline-header">
                 <div class="timeline-title">Timeline de Actividades</div>
-                <div class="timeline-stats">
-                    <span class="timeline-count">{{ cotizaciones.count|add:volumetrias.count }} actividades</span>
+                <div class="timeline-search">
+                    <svg class="search-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <input type="text" id="timelineSearch" placeholder="Buscar en timeline...">
                 </div>
             </div>
             
@@ -1174,45 +1165,35 @@
                 <!-- TIMELINE ITEMS -->
                 <div id="timelineItems">
                     <!-- Contenido cargado dinámicamente por JavaScript -->
-                    <div class="no-items-message-simple" id="loadingTimelineMessage">
-                        <div class="no-items-icon">⏳</div>
-                        <div class="no-items-text">Cargando actividades del timeline...</div>
-                    </div>
                 </div>
             </div>
             <!-- NUEVO COMENTARIO -->
             <div class="new-comment" id="commentSection">
-                <div class="comment-header">
-                    <div class="comment-avatar">
-                        <div class="avatar-circle">{{ user.username|first|upper }}</div>
-                    </div>
-                    <div class="comment-user-info">
-                        <span class="comment-username">{{ user.get_full_name|default:user.username }}</span>
-                        <span class="comment-time">Ahora</span>
-                    </div>
-                </div>
+                <input type="file" id="fileInput" multiple style="display: none;">
                 
-                <!-- DRAG & DROP ZONE -->
-                <div class="drop-zone" id="dropZone">
-                    <div class="drop-zone-content">
-                        <div class="drop-zone-icon">📁</div>
-                        <div class="drop-zone-text">Arrastra archivos aquí o haz clic para seleccionar</div>
-                        <div class="drop-zone-formats">PDF, Word, Excel, CSV, Imágenes</div>
-                    </div>
-                    <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.gif,.webp" style="display: none;">
-                </div>
+                <div class="attached-files" id="attachedFiles" style="display: none;"></div>
                 
-                <!-- ARCHIVOS ADJUNTOS -->
-                <div class="attached-files" id="attachedFiles"></div>
-                
-                <textarea class="comment-input" id="nuevoComentario" placeholder="Escribe un comentario sobre esta oportunidad..."></textarea>
-                <div class="comment-actions">
-                    <div class="comment-actions-left">
-                        <button class="action-button-small" id="attachFileBtn" title="Adjuntar archivo">📎</button>
-                        <span class="file-counter" id="fileCounter">0 archivos</span>
+                <div class="comment-actions-container">
+                    <div class="plus-button-container">
+                        <button class="action-button-small" id="openMenuBtn" title="Adjuntar">+</button>
+                        <div class="comment-menu" id="commentMenu">
+                            <button class="menu-option-btn" id="activityBtn">
+                                <span class="menu-icon">⚡️</span>
+                                <span class="menu-text">Actividad</span>
+                            </button>
+                            <button class="menu-option-btn" id="fileBtn">
+                                <span class="menu-icon">📄</span>
+                                <span class="menu-text">Archivo</span>
+                            </button>
+                            <button class="menu-option-btn" id="photoBtn">
+                                <span class="menu-icon">📸</span>
+                                <span class="menu-text">Foto</span>
+                            </button>
+                        </div>
                     </div>
-                    <button class="apple-button apple-button-small" id="btnComentar" disabled>
-                        💬 Comentar
+                    <textarea class="comment-input" id="nuevoComentario" placeholder="Escribe un comentario..." rows="1"></textarea>
+                    <button class="apple-button" id="btnComentar" disabled>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                     </button>
                 </div>
             </div>
@@ -1318,64 +1299,87 @@
     function initCommentSystem() {
         const commentInput = document.getElementById('nuevoComentario');
         const btnComentar = document.getElementById('btnComentar');
-        const attachFileBtn = document.getElementById('attachFileBtn');
         const fileInput = document.getElementById('fileInput');
-        const dropZone = document.getElementById('dropZone');
         const commentSection = document.getElementById('commentSection');
-        
-        // Habilitar botón cuando hay texto
+        const openMenuBtn = document.getElementById('openMenuBtn');
+        const commentMenu = document.getElementById('commentMenu');
+        const activityBtn = document.getElementById('activityBtn');
+        const fileBtn = document.getElementById('fileBtn');
+        const photoBtn = document.getElementById('photoBtn');
+
+        // Auto-resize textarea
         commentInput.addEventListener('input', function() {
-            const hasText = this.value.trim().length > 0;
+            this.style.height = '36px';
+            const scrollHeight = this.scrollHeight;
+            this.style.height = scrollHeight + 'px';
+        });
+
+        // Habilitar botón cuando hay texto o archivos
+        const updateButtonState = () => {
+            const hasText = commentInput.value.trim().length > 0;
             const hasFiles = attachedFiles.length > 0;
             btnComentar.disabled = !(hasText || hasFiles);
-            btnComentar.style.opacity = btnComentar.disabled ? '0.6' : '1';
-        });
+            btnComentar.style.opacity = btnComentar.disabled ? '0.5' : '1';
+            btnComentar.style.cursor = btnComentar.disabled ? 'not-allowed' : 'pointer';
+        };
+        commentInput.addEventListener('input', updateButtonState);
         
-        // Botón adjuntar archivo
-        attachFileBtn.addEventListener('click', function() {
-            dropZone.classList.toggle('show');
+        // Menu de opciones
+        openMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openMenuBtn.classList.toggle('open');
+            commentMenu.classList.toggle('open');
         });
-        
-        // Click en drop zone abre selector de archivos
-        dropZone.addEventListener('click', function() {
+
+        activityBtn.addEventListener('click', () => {
+            alert('Función de agregar actividad próximamente disponible.');
+            commentMenu.classList.remove('open');
+            openMenuBtn.classList.remove('open');
+        });
+
+        fileBtn.addEventListener('click', () => {
+            fileInput.accept = ".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.gif,.webp";
             fileInput.click();
+            commentMenu.classList.remove('open');
+            openMenuBtn.classList.remove('open');
         });
-        
+
+        photoBtn.addEventListener('click', () => {
+            fileInput.accept = "image/*";
+            fileInput.click();
+            commentMenu.classList.remove('open');
+            openMenuBtn.classList.remove('open');
+        });
+
         // Manejar selección de archivos
-        fileInput.addEventListener('change', function(e) {
-            handleFiles(e.target.files);
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+        
+        // Drag & Drop en toda la sección de comentarios
+        commentSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            commentSection.classList.add('dragover');
         });
         
-        // Drag & Drop eventos
-        dropZone.addEventListener('dragover', function(e) {
+        commentSection.addEventListener('dragleave', (e) => {
             e.preventDefault();
-            this.classList.add('dragover');
+            commentSection.classList.remove('dragover');
         });
         
-        dropZone.addEventListener('dragleave', function(e) {
+        commentSection.addEventListener('drop', (e) => {
             e.preventDefault();
-            this.classList.remove('dragover');
-        });
-        
-        dropZone.addEventListener('drop', function(e) {
-            e.preventDefault();
-            this.classList.remove('dragover');
+            commentSection.classList.remove('dragover');
             handleFiles(e.dataTransfer.files);
         });
         
         // Botón comentar
         btnComentar.addEventListener('click', agregarComentario);
         
-        updateFileCounter();
+        updateButtonState();
     }
     
     // Manejar archivos seleccionados/arrastrados
     function handleFiles(files) {
-        console.log('📂 handleFiles llamado con', files.length, 'archivos');
-        console.log('📂 Estado actual attachedFiles:', attachedFiles.length, 'archivos');
         Array.from(files).forEach(file => {
-            console.log('📄 Procesando archivo:', file.name);
-            // Validar tipo de archivo
             const allowedTypes = [
                 'application/pdf',
                 'application/msword',
@@ -1395,33 +1399,24 @@
                 return;
             }
             
-            // Validar tamaño (máximo 10MB)
             if (file.size > 10 * 1024 * 1024) {
                 alert(`Archivo muy grande (máximo 10MB): ${file.name}`);
                 return;
             }
             
-            // Agregar archivo a la lista
-            console.log('➕ Agregando archivo:', file.name, 'Total después del push será:', attachedFiles.length + 1);
             attachedFiles.push(file);
         });
         
         renderAttachedFiles();
-        updateFileCounter();
-        updateCommentButton();
-        
-        // Ocultar drop zone después de seleccionar archivos
-        document.getElementById('dropZone').classList.remove('show');
+        document.getElementById('btnComentar').disabled = false;
     }
     
     // Renderizar archivos adjuntos
     function renderAttachedFiles() {
-        console.log('🖼️ renderAttachedFiles llamado, archivos actuales:', attachedFiles.length);
         const container = document.getElementById('attachedFiles');
         container.innerHTML = '';
         
         attachedFiles.forEach((file, index) => {
-            console.log(`📎 Renderizando archivo ${index}: ${file.name}`);
             const fileElement = document.createElement('div');
             fileElement.className = 'attached-file';
             
@@ -1441,14 +1436,14 @@
             
             container.appendChild(fileElement);
         });
+        container.style.display = attachedFiles.length > 0 ? 'block' : 'none';
     }
     
     // Remover archivo
     function removeFile(index) {
         attachedFiles.splice(index, 1);
         renderAttachedFiles();
-        updateFileCounter();
-        updateCommentButton();
+        document.getElementById('btnComentar').disabled = attachedFiles.length === 0 && document.getElementById('nuevoComentario').value.trim().length === 0;
     }
     
     // Obtener icono por tipo de archivo
@@ -1469,60 +1464,24 @@
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
     
-    // Actualizar contador de archivos
-    function updateFileCounter() {
-        const counter = document.getElementById('fileCounter');
-        counter.textContent = `${attachedFiles.length} archivo${attachedFiles.length !== 1 ? 's' : ''}`;
-    }
-    
-    // Actualizar estado del botón comentar
-    function updateCommentButton() {
-        const commentInput = document.getElementById('nuevoComentario');
-        const btnComentar = document.getElementById('btnComentar');
-        const hasText = commentInput.value.trim().length > 0;
-        const hasFiles = attachedFiles.length > 0;
-        
-        console.log('🔄 updateCommentButton: texto=', hasText, ', archivos=', hasFiles, ', total archivos:', attachedFiles.length);
-        
-        btnComentar.disabled = !(hasText || hasFiles);
-        btnComentar.style.opacity = btnComentar.disabled ? '0.6' : '1';
-    }
-    
     // Variable para prevenir múltiples submissions
     let isSubmitting = false;
     
     // Función principal para agregar comentario
     async function agregarComentario() {
-        console.log('📤 agregarComentario iniciado - archivos actuales:', attachedFiles.length);
-        attachedFiles.forEach((file, i) => console.log(`  ${i}: ${file.name}`));
-        
         const comentario = document.getElementById('nuevoComentario').value.trim();
         const btnComentar = document.getElementById('btnComentar');
         
-        // Verificar que hay contenido o archivos
-        if (!comentario && attachedFiles.length === 0) {
-            console.log('⚠️ No hay contenido ni archivos, saliendo...');
-            return;
-        }
+        if (!comentario && attachedFiles.length === 0) return;
+        if (isSubmitting) return;
         
-        // Prevenir múltiples submissions
-        if (isSubmitting) {
-            console.log('⚠️ Ya hay una submission en progreso, ignorando...');
-            return;
-        }
-        
-        // Deshabilitar botón mientras se procesa
         isSubmitting = true;
         btnComentar.disabled = true;
-        btnComentar.style.opacity = '0.6';
-        btnComentar.innerHTML = '⏳ Enviando...';
+        btnComentar.innerHTML = '⏳';
         
         try {
-            // Crear FormData para enviar archivos y texto
             const formData = new FormData();
             formData.append('contenido', comentario);
-            
-            // Agregar archivos
             attachedFiles.forEach((file, index) => {
                 formData.append(`archivo_${index}`, file);
             });
@@ -1535,30 +1494,12 @@
                 body: formData
             });
             
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
             const data = await response.json();
             
             if (data.success) {
-                // Limpiar el input y archivos
                 document.getElementById('nuevoComentario').value = '';
                 attachedFiles = [];
-                console.log('🧹 Archivos limpiados, array ahora tiene:', attachedFiles.length, 'elementos');
-                
-                // Limpiar visual y contadores
                 renderAttachedFiles();
-                updateFileCounter();
-                
-                // Verificar que el contenedor esté realmente vacío
-                const container = document.getElementById('attachedFiles');
-                if (container) {
-                    container.innerHTML = '';
-                    console.log('🗑️ Contenedor attachedFiles limpiado manualmente');
-                }
-                
-                // Recargar timeline
                 await loadTimeline();
             } else {
                 alert('Error al guardar comentario: ' + (data.error || 'Error desconocido'));
@@ -1568,10 +1509,10 @@
             console.error('Error al enviar comentario:', error);
             alert('Error al enviar comentario. Por favor, intenta de nuevo.');
         } finally {
-            // Restaurar botón y resetear flag
             isSubmitting = false;
-            updateCommentButton();
-            btnComentar.innerHTML = '💬 Comentar';
+            btnComentar.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
+            document.getElementById('nuevoComentario').style.height = 'auto';
+            document.getElementById('btnComentar').disabled = true;
         }
     }
 
@@ -1626,7 +1567,7 @@
                             <div class="attachment-item">
                                 <div class="attachment-icon ${archivo.tipo}">${getAttachmentIcon(archivo.tipo)}</div>
                                 <div class="attachment-info">
-                                    <a href="#" onclick="mostrarVistaPrevia(${archivo.id}, '${archivo.nombre.replace(/'/g, "\'")}')" class="attachment-name" title="${archivo.nombre}">${archivo.nombre}</a>
+                                    <a href="#" onclick="mostrarVistaPrevia(${archivo.id}, '${archivo.nombre.replace(/'/g, "'")}')" class="attachment-name" title="${archivo.nombre}">${archivo.nombre}</a>
                                     <div class="attachment-meta"><span>${archivo.tamaño}</span> • <span>${archivo.fecha}</span></div>
                                 </div>
                                 <button class="attachment-download" onclick="descargarArchivo(${archivo.id})" title="Descargar archivo">⬇️</button>
@@ -1635,7 +1576,7 @@
                     </div>
                 ` : '';
 
-                content = `${activity.contenido || activity.descripcion || ''}${attachmentsHtml}`;
+                content = `<div class="comment-content"><div class="comment-text">${activity.contenido || activity.descripcion || ''}</div></div>${attachmentsHtml}`;
                 break;
             case 'cotizacion':
                 icon = '📄';
@@ -1675,24 +1616,65 @@
         `;
     }
 
+    function initTimelineSearch() {
+        const searchInput = document.getElementById('timelineSearch');
+        if (!searchInput) return;
+
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            const timelineItems = document.querySelectorAll('#timelineItems .timeline-item');
+            let visibleCount = 0;
+
+            timelineItems.forEach(item => {
+                const itemText = item.textContent.toLowerCase();
+                if (itemText.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            let noResultsMessage = document.getElementById('noSearchResultsMessage');
+            if (visibleCount === 0 && searchTerm.length > 0) {
+                if (!noResultsMessage) {
+                    const container = document.getElementById('timelineItems');
+                    noResultsMessage = document.createElement('div');
+                    noResultsMessage.id = 'noSearchResultsMessage';
+                    noResultsMessage.className = 'no-items-message-simple';
+                    container.appendChild(noResultsMessage);
+                }
+                noResultsMessage.innerHTML = `<div class="no-items-icon">🧐</div><div class="no-items-text">No se encontraron resultados para "<strong>${this.value}</strong>"</div>`;
+                noResultsMessage.style.display = 'block';
+            } else {
+                if (noResultsMessage) {
+                    noResultsMessage.style.display = 'none';
+                }
+            }
+        });
+    }
+
     async function loadTimeline() {
         const timelineItemsContainer = document.getElementById('timelineItems');
-        const loadingMessage = document.getElementById('loadingTimelineMessage');
-        const oportunidadId = OPORTUNIDAD_ID;
+        // Eliminar mensaje de no resultados anterior si existe
+        const noResultsMessage = document.getElementById('noSearchResultsMessage');
+        if(noResultsMessage) noResultsMessage.remove();
 
-        if (loadingMessage) {
-            loadingMessage.style.display = 'block';
-        }
-        timelineItemsContainer.innerHTML = ''; // Clear existing content
+        // Mostrar mensaje de carga
+        timelineItemsContainer.innerHTML = `
+            <div class="no-items-message-simple" id="loadingTimelineMessage">
+                <div class="no-items-icon">⏳</div>
+                <div class="no-items-text">Cargando actividades del timeline...</div>
+            </div>
+        `;
 
         try {
             const response = await fetch(`/app/api/timeline-oportunidad/${oportunidadId}/`);
             const data = await response.json();
             
-            console.log('📡 Datos recibidos del servidor:', data);
+            timelineItemsContainer.innerHTML = ''; // Limpiar antes de agregar
 
             if (data.success && data.timeline && Array.isArray(data.timeline) && data.timeline.length > 0) {
-                console.log('📊 Timeline válido con', data.timeline.length, 'elementos');
                 data.timeline.forEach(activity => {
                     const renderedItem = renderTimelineItem(activity);
                     if (renderedItem) {
@@ -1715,22 +1697,8 @@
                     <div class="no-items-text">Error al cargar el timeline. Intenta recargar la página.</div>
                 </div>
             `;
-        } finally {
-            if (loadingMessage) {
-                loadingMessage.style.display = 'none';
-            }
-            actualizarContadorActividades();
         }
     }
-
-    function actualizarContadorActividades() {
-        const contador = document.querySelector('.timeline-count');
-        if (contador) {
-            const items = document.querySelectorAll('#timelineItems .timeline-item').length;
-            contador.textContent = `${items} actividades`;
-        }
-    }
-
 
     // Función para eliminar volumetrías
     function eliminarVolumetria(volumetriaId, titulo) {
@@ -1764,6 +1732,15 @@
                 if (arrow) arrow.style.transform = 'rotate(0deg)';
             }
         }
+        // Cerrar menu de comentario
+        if (!e.target.closest('.plus-button-container')) {
+            const commentMenu = document.getElementById('commentMenu');
+            const openMenuBtn = document.getElementById('openMenuBtn');
+            if (commentMenu && commentMenu.classList.contains('open')) {
+                commentMenu.classList.remove('open');
+                openMenuBtn.classList.remove('open');
+            }
+        }
     });
 
     // Función para obtener CSRF token
@@ -1788,15 +1765,11 @@
         const commentEdit = document.getElementById(`comment-edit-${comentarioId}`);
         
         if (commentText && commentEdit) {
-            // Ocultar texto y mostrar formulario de edición
             commentText.style.display = 'none';
             commentEdit.style.display = 'block';
-            
-            // Enfocar el textarea
             const textarea = document.getElementById(`comment-input-${comentarioId}`);
             if (textarea) {
                 textarea.focus();
-                // Colocar cursor al final
                 textarea.setSelectionRange(textarea.value.length, textarea.value.length);
             }
         }
@@ -1805,31 +1778,21 @@
     function cancelarEdicionComentario(comentarioId) {
         const commentText = document.getElementById(`comment-text-${comentarioId}`);
         const commentEdit = document.getElementById(`comment-edit-${comentarioId}`);
-        
         if (commentText && commentEdit) {
-            // Mostrar texto y ocultar formulario de edición
             commentText.style.display = 'block';
             commentEdit.style.display = 'none';
-            
-            // Restaurar texto original (opcional, ya que se recarga el timeline después)
-            // No es necesario porque no cambiamos el contenido hasta guardar
         }
     }
     
     async function guardarEdicionComentario(comentarioId) {
         const textarea = document.getElementById(`comment-input-${comentarioId}`);
         const saveBtn = document.querySelector(`#comment-edit-${comentarioId} .comment-edit-save`);
-        
         if (!textarea || !saveBtn) return;
-        
         const nuevoContenido = textarea.value.trim();
-        
         if (!nuevoContenido) {
             alert('El comentario no puede estar vacío');
             return;
         }
-        
-        // Deshabilitar botón mientras se procesa
         const originalText = saveBtn.innerHTML;
         saveBtn.disabled = true;
         saveBtn.innerHTML = '⏳ Guardando...';
@@ -1837,7 +1800,6 @@
         try {
             const formData = new FormData();
             formData.append('contenido', nuevoContenido);
-            
             const response = await fetch(`/app/api/editar-comentario-oportunidad/${comentarioId}/`, {
                 method: 'POST',
                 headers: {
@@ -1845,35 +1807,24 @@
                 },
                 body: formData
             });
-            
             const data = await response.json();
-            
             if (data.success) {
-                // Recargar timeline para mostrar cambios
                 await loadTimeline();
             } else {
                 alert('Error al editar comentario: ' + (data.error || 'Error desconocido'));
             }
-            
         } catch (error) {
             console.error('Error al editar comentario:', error);
             alert('Error al editar comentario. Por favor, intenta de nuevo.');
         } finally {
-            // Restaurar botón
             saveBtn.disabled = false;
             saveBtn.innerHTML = originalText;
         }
     }
     
     async function eliminarComentario(comentarioId, usuario) {
-        // Confirmación más informativa
-        const confirmacion = confirm(
-            `¿Estás seguro de que quieres eliminar este comentario de ${usuario}?\n\n` +
-            `Esta acción no se puede deshacer.`
-        );
-        
+        const confirmacion = confirm(`¿Estás seguro de que quieres eliminar este comentario de ${usuario}?\n\nEsta acción no se puede deshacer.`);
         if (!confirmacion) return;
-        
         try {
             const response = await fetch(`/app/api/eliminar-comentario-oportunidad/${comentarioId}/`, {
                 method: 'DELETE',
@@ -1882,16 +1833,12 @@
                     'Content-Type': 'application/json'
                 }
             });
-            
             const data = await response.json();
-            
             if (data.success) {
-                // Recargar timeline para mostrar cambios
                 await loadTimeline();
             } else {
                 alert('Error al eliminar comentario: ' + (data.error || 'Error desconocido'));
             }
-            
         } catch (error) {
             console.error('Error al eliminar comentario:', error);
             alert('Error al eliminar comentario. Por favor, intenta de nuevo.');
@@ -1901,18 +1848,12 @@
     // Función para obtener icono de archivo según tipo
     function getAttachmentIcon(tipo) {
         switch(tipo) {
-            case 'imagen':
-                return '🖼️';
-            case 'documento':
-                return '📄';
-            case 'cotizacion':
-                return '📋';
-            case 'contrato':
-                return '📝';
-            case 'presentacion':
-                return '📊';
-            default:
-                return '📎';
+            case 'imagen': return '🖼️';
+            case 'documento': return '📄';
+            case 'cotizacion': return '📋';
+            case 'contrato': return '📝';
+            case 'presentacion': return '📊';
+            default: return '📎';
         }
     }
 
@@ -1921,87 +1862,33 @@
 
     // Función para mostrar vista previa
     async function mostrarVistaPrevia(archivoId, nombreArchivo) {
-        console.log(`🔍 Mostrando vista previa para archivo ${archivoId}: ${nombreArchivo}`);
-        
         currentPreviewFileId = archivoId;
         const modal = document.getElementById('previewModal');
         const title = document.getElementById('previewTitle');
         const content = document.getElementById('previewContent');
         const downloadBtn = document.getElementById('previewDownload');
-        
-        // Configurar título y botón de descarga
         title.textContent = nombreArchivo;
         downloadBtn.onclick = () => descargarArchivo(archivoId);
-        
-        // Mostrar modal con loading
-        content.innerHTML = `
-            <div class="preview-loading">
-                <div class="preview-spinner"></div>
-                <div>Cargando vista previa...</div>
-            </div>
-        `;
+        content.innerHTML = `<div class="preview-loading"><div class="preview-spinner"></div><div>Cargando vista previa...</div></div>`;
         modal.classList.add('show');
         
         try {
-            // Intentar cargar la vista previa
             const previewUrl = `/app/api/vista-previa-archivo-oportunidad/${archivoId}/`;
             const response = await fetch(previewUrl);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const contentType = response.headers.get('content-type');
             
             if (contentType && contentType.startsWith('image/')) {
-                // Es una imagen
-                content.innerHTML = `
-                    <img src="${previewUrl}" alt="${nombreArchivo}" class="preview-image" onload="console.log('🖼️ Imagen cargada')">
-                `;
+                content.innerHTML = `<img src="${previewUrl}" alt="${nombreArchivo}" class="preview-image">`;
             } else if (contentType && contentType === 'application/pdf') {
-                // Es un PDF
-                content.innerHTML = `
-                    <iframe src="${previewUrl}" class="preview-pdf" title="Vista previa de ${nombreArchivo}"></iframe>
-                `;
-            } else if (contentType && contentType.startsWith('application/json')) {
-                // No hay vista previa disponible, mostrar placeholder
-                const data = await response.json();
-                content.innerHTML = `
-                    <div class="preview-placeholder">
-                        <div class="preview-placeholder-icon">${getAttachmentIcon(data.content_type.split('/')[0])}</div>
-                        <div class="preview-placeholder-text">${data.mensaje}</div>
-                        <div class="preview-placeholder-info">
-                            <strong>📄 Archivo:</strong> ${data.nombre}<br>
-                            <strong>📊 Tamaño:</strong> ${data.tamaño}<br>
-                            <strong>🏷️ Tipo:</strong> ${data.content_type}
-                        </div>
-                    </div>
-                `;
+                content.innerHTML = `<iframe src="${previewUrl}" class="preview-pdf" title="Vista previa de ${nombreArchivo}"></iframe>`;
             } else {
-                // Tipo no reconocido
-                content.innerHTML = `
-                    <div class="preview-placeholder">
-                        <div class="preview-placeholder-icon">📎</div>
-                        <div class="preview-placeholder-text">Vista previa no disponible para este tipo de archivo</div>
-                        <div class="preview-placeholder-info">
-                            <strong>📄 Archivo:</strong> ${nombreArchivo}<br>
-                            <strong>🏷️ Tipo:</strong> ${contentType || 'Desconocido'}
-                        </div>
-                    </div>
-                `;
+                const data = await response.json();
+                content.innerHTML = `<div class="preview-placeholder"><div class="preview-placeholder-icon">${getAttachmentIcon(data.content_type.split('/')[0])}</div><div class="preview-placeholder-text">${data.mensaje}</div></div>`;
             }
-            
         } catch (error) {
             console.error('❌ Error cargando vista previa:', error);
-            content.innerHTML = `
-                <div class="preview-placeholder">
-                    <div class="preview-placeholder-icon">❌</div>
-                    <div class="preview-placeholder-text">Error al cargar la vista previa</div>
-                    <div class="preview-placeholder-info">
-                        ${error.message}
-                    </div>
-                </div>
-            `;
+            content.innerHTML = `<div class="preview-placeholder"><div class="preview-placeholder-icon">❌</div><div class="preview-placeholder-text">Error al cargar la vista previa</div></div>`;
         }
     }
 
@@ -2009,43 +1896,21 @@
     function cerrarVistaPrevia() {
         const modal = document.getElementById('previewModal');
         modal.classList.remove('show');
-        currentPreviewFileId = null;
-        
-        // Limpiar contenido después de la animación
-        setTimeout(() => {
-            if (!modal.classList.contains('show')) {
-                document.getElementById('previewContent').innerHTML = '';
-            }
-        }, 300);
     }
 
     // Función para descargar archivos
     function descargarArchivo(archivoId) {
-        const url = `/app/api/descargar-archivo-oportunidad/${archivoId}/`;
-        
-        // Crear un elemento <a> temporal para la descarga
-        const link = document.createElement('a');
-        link.href = url;
-        link.style.display = 'none';
-        
-        // Agregar al DOM, hacer click y remover
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        window.open(`/app/api/descargar-archivo-oportunidad/${archivoId}/`, '_blank');
     }
 
     // Control de teclado para el modal
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && document.getElementById('previewModal').classList.contains('show')) {
-            cerrarVistaPrevia();
-        }
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') cerrarVistaPrevia();
     });
 
     // Cerrar modal al hacer click en el fondo
     document.getElementById('previewModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            cerrarVistaPrevia();
-        }
+        if (e.target === this) cerrarVistaPrevia();
     });
 
     // Función para obtener cookie (CSRF token)
@@ -2076,65 +1941,31 @@
 
     // Función para alternar modo de edición
     function toggleEditMode() {
-        if (!isEditing) {
-            startEdit();
-        } else {
-            cancelEdit();
-        }
+        isEditing ? cancelEdit() : startEdit();
     }
 
     // Iniciar edición
     function startEdit() {
         isEditing = true;
         document.body.classList.add('editing-opportunity');
-        
-        // Guardar valores originales
         originalValues = {};
         document.querySelectorAll('.view-mode[data-field]').forEach(el => {
-            const field = el.getAttribute('data-field');
-            originalValues[field] = el.textContent.trim();
+            originalValues[el.getAttribute('data-field')] = el.textContent.trim();
         });
-
-        // Cargar clientes para el select
         loadClientesForEdit();
-        
-        console.log('📝 Modo edición activado');
     }
 
     // Cancelar edición
     function cancelEdit() {
         isEditing = false;
         document.body.classList.remove('editing-opportunity');
-        
-        // Restaurar valores originales
-        for (const [field, value] of Object.entries(originalValues)) {
-            const editElement = document.querySelector(`.edit-mode[data-field="${field}"]`);
-            if (editElement) {
-                if (editElement.tagName === 'SELECT') {
-                    // Para selects, encontrar la opción por texto
-                    for (let option of editElement.options) {
-                        if (option.text === value || option.value === value) {
-                            editElement.value = option.value;
-                            break;
-                        }
-                    }
-                } else {
-                    editElement.value = value.replace('$', '').replace('%', '');
-                }
-            }
-        }
-        
-        console.log('❌ Edición cancelada');
     }
 
     // Guardar cambios
     async function saveOpportunity() {
         const formData = new FormData();
-        
-        // Recopilar datos de los campos de edición
         document.querySelectorAll('.edit-mode[data-field]').forEach(el => {
-            const field = el.getAttribute('data-field');
-            formData.append(field, el.value);
+            formData.append(el.getAttribute('data-field'), el.value);
         });
 
         try {
@@ -2145,34 +1976,19 @@
                     'X-CSRFToken': getCookie('csrftoken')
                 }
             });
-
             const data = await response.json();
-            
             if (data.success) {
-                console.log('✅ Oportunidad actualizada');
-                
-                // Actualizar valores en la vista
                 for (const [field, newValue] of Object.entries(data.updated_values)) {
                     const viewElement = document.querySelector(`.view-mode[data-field="${field}"]`);
-                    if (viewElement) {
-                        viewElement.textContent = newValue;
-                    }
+                    if (viewElement) viewElement.textContent = newValue;
                 }
-                
-                // Salir del modo edición
                 isEditing = false;
                 document.body.classList.remove('editing-opportunity');
-                
-                // Mostrar mensaje de éxito
                 showNotification('Información de la oportunidad actualizada correctamente', 'success');
-                
             } else {
-                console.error('❌ Error al actualizar:', data.error);
                 showNotification('Error al actualizar la información: ' + data.error, 'error');
             }
-            
         } catch (error) {
-            console.error('❌ Error de red:', error);
             showNotification('Error de conexión al guardar los cambios', 'error');
         }
     }
@@ -2182,10 +1998,8 @@
         try {
             const response = await fetch('/app/api/clientes/');
             const clientes = await response.json();
-            
             const clienteSelect = document.querySelector('.edit-mode[data-field="cliente"]');
             clienteSelect.innerHTML = '<option value="">Seleccionar cliente</option>';
-            
             clientes.forEach(cliente => {
                 const option = document.createElement('option');
                 option.value = cliente.id;
@@ -2195,7 +2009,6 @@
                 }
                 clienteSelect.appendChild(option);
             });
-            
         } catch (error) {
             console.error('Error cargando clientes:', error);
         }
@@ -2203,21 +2016,18 @@
 
     // Función para mostrar notificaciones
     function showNotification(message, type = 'info') {
-        // Por ahora usar alert, después se puede mejorar con un toast
         alert(message);
     }
 
     // Inicializar componentes
     document.addEventListener('DOMContentLoaded', function() {
-        // Inicializar sistema de comentarios
         initCommentSystem();
-        
-        // Cargar el timeline al cargar la página
+        initTimelineSearch();
         loadTimeline();
     });
 </script>
 
-{% else %}
+{% else %} 
 <!-- VISTA NORMAL PARA USUARIOS NO SUPERUSUARIOS -->
 <div style="padding: 2rem; text-align: center;">
     <h2 style="color: var(--apple-label); margin-bottom: 1rem;">{{ oportunidad.oportunidad }}</h2>
