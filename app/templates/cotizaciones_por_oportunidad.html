@@ -1075,7 +1075,7 @@
                     </div>
                     <div class="info-item">
                         <div class="info-label">Vendedor</div>
-                        <div class="info-value" style="color: var(--apple-label-tertiary);">{{ oportunidad.usuario.get_full_name|default:oportunidad.usuario.username }} (No editable)</div>
+                        <div class="info-value" style="color: var(--apple-label-tertiary);">{{ oportunidad.usuario.get_full_name|default:oportunidad.usuario.username }}</div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">Área</div>
@@ -2200,6 +2200,7 @@
         font-size: 0.8rem;
     }
 </style>
+{% endif %}
 
 <script>
 // Activar modo cotizaciones para ocultar dock
@@ -2213,5 +2214,4 @@ window.addEventListener('beforeunload', function() {
     document.body.classList.remove('cotizaciones-mode');
 });
 </script>
-{% endif %}
 {% endblock %}
