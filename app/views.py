@@ -1744,11 +1744,9 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             # sino, al PDF directo como antes
             oportunidad_para_redirect = form.cleaned_data.get('oportunidad')
             if oportunidad_para_redirect:
-                # Crear URL que descarga PDF y luego redirige a cotizaciones por oportunidad
-                from django.urls import reverse
-                redirect_url = reverse('download_and_redirect_cotizacion', 
-                                     args=[cotizacion.id, oportunidad_para_redirect.id])
-                return redirect(f"{redirect_url}?refresh_timeline=true")
+                # Redirigir directamente a cotizaciones por oportunidad 
+                # (el comentario se creará automáticamente cuando se cargue la página)
+                return redirect('cotizaciones_por_oportunidad', oportunidad_id=oportunidad_para_redirect.id)
             else:
                 # Flujo original para cotizaciones sin oportunidad
                 return redirect('generate_cotizacion_pdf', cotizacion_id=cotizacion.id)
@@ -2599,6 +2597,60 @@ def cotizaciones_por_oportunidad_view(request, oportunidad_id):
         # Usuarios normales solo ven lo suyo
         cotizaciones = Cotizacion.objects.filter(oportunidad=oportunidad, created_by=request.user).order_by('-fecha_creacion')
         volumetrias = Volumetria.objects.filter(oportunidad=oportunidad, created_by=request.user).order_by('-fecha_creacion')
+    
+    # Detectar cotizaciones nuevas y crear comentarios automáticos
+    if cotizaciones.exists():
+        try:
+            from app.models import OportunidadComentario, OportunidadActividad
+            import re
+            
+            # Obtener todas las actividades de comentarios de esta oportunidad
+            actividades_comentarios = OportunidadActividad.objects.filter(
+                oportunidad=oportunidad,
+                tipo='comentario'
+            )
+            
+            # Extraer IDs de cotizaciones que ya tienen comentarios
+            cotizaciones_con_comentario = set()
+            for actividad in actividades_comentarios:
+                if 'Nueva cotización creada:' in actividad.descripcion or 'Nueva Cotización' in actividad.titulo:
+                    # Buscar referencias a cotizaciones en la descripción
+                    if 'Cotización #' in actividad.descripcion:
+                        match = re.search(r'Cotización #(\d+)', actividad.descripcion)
+                        if match:
+                            cotizaciones_con_comentario.add(int(match.group(1)))
+            
+            # Crear comentarios para cotizaciones sin comentario
+            for cotizacion in cotizaciones:
+                if cotizacion.id not in cotizaciones_con_comentario:
+                    try:
+                        # Crear comentario automático
+                        contenido_comentario = f"📋 Nueva cotización creada: {cotizacion.titulo or cotizacion.nombre_cotizacion or f'Cotización #{cotizacion.id}'}"
+                        
+                        comentario_auto = OportunidadComentario.objects.create(
+                            oportunidad=oportunidad,
+                            usuario=cotizacion.created_by,  # Usuario que creó la cotización
+                            contenido=contenido_comentario
+                        )
+                        
+                        # Crear actividad en el timeline
+                        descripcion_actividad = f"{contenido_comentario} [COMENTARIO_ID:{comentario_auto.id}]"
+                        
+                        OportunidadActividad.objects.create(
+                            oportunidad=oportunidad,
+                            tipo='comentario',
+                            titulo='Nueva Cotización',
+                            descripcion=descripcion_actividad,
+                            usuario=cotizacion.created_by
+                        )
+                        
+                        print(f"✅ Comentario automático creado para cotización {cotizacion.id}")
+                        
+                    except Exception as e:
+                        print(f"❌ Error creando comentario automático para cotización {cotizacion.id}: {e}")
+                        
+        except Exception as e:
+            print(f"❌ Error en detección de cotizaciones nuevas: {e}")
     
     context = {
         'oportunidad': oportunidad,
@@ -4122,34 +4174,7 @@ def crear_cotizacion_desde_volumetria(request):
         cotizacion.total = (cotizacion.subtotal + cotizacion.iva_amount).quantize(Decimal('0.01'))
         cotizacion.save()
         
-        # Crear comentario automático en la oportunidad si existe
-        if oportunidad:
-            try:
-                # Crear comentario informativo
-                contenido_comentario = f"📋 Nueva cotización creada: {cotizacion.titulo or cotizacion.nombre_cotizacion or f'Cotización #{cotizacion.id}'}"
-                
-                comentario_auto = OportunidadComentario.objects.create(
-                    oportunidad=oportunidad,
-                    usuario=request.user,
-                    contenido=contenido_comentario
-                )
-                
-                # Crear actividad en el timeline
-                descripcion_actividad = f"{contenido_comentario} [COMENTARIO_ID:{comentario_auto.id}]"
-                
-                OportunidadActividad.objects.create(
-                    oportunidad=oportunidad,
-                    tipo='comentario',
-                    titulo='Nueva Cotización',
-                    descripcion=descripcion_actividad,
-                    usuario=request.user
-                )
-                
-                print(f"✅ Comentario automático creado para cotización {cotizacion.id} en oportunidad {oportunidad.id}")
-                
-            except Exception as e:
-                print(f"❌ Error creando comentario automático: {e}")
-        
+        # El comentario automático se creará cuando se visite la página de cotizaciones por oportunidad
         from django.urls import reverse
         pdf_url = request.build_absolute_uri(reverse('generate_cotizacion_pdf', args=[cotizacion.id]))
         bitrix_comentario = False
