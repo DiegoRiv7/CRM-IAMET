@@ -253,20 +253,19 @@
     .timeline-content {
         flex: 1;
         overflow-y: auto;
-        padding: 1.5rem 2rem;
+        padding: 1.5rem;
     }
 
-    /* Timeline Items & New Comment */
+    /* iMessage-style Timeline */
     .new-comment {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--apple-separator);
         background: var(--apple-background-secondary);
-        border-radius: 16px;
-        padding: 1.5rem;
-        border: 1px solid var(--apple-separator);
-        transition: box-shadow 0.2s ease;
-        margin-bottom: 1.5rem;
+        border-radius: 0 0 20px 20px;
+        margin-bottom: 0;
     }
     .new-comment:hover {
-        box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+        box-shadow: none;
     }
     
     .comment-header {
@@ -362,57 +361,84 @@
 
     .timeline-item {
         display: flex;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
         position: relative;
+        align-items: flex-end;
     }
-
     .timeline-item::before {
-        content: '';
-        position: absolute;
-        left: 23px; /* Adjust to center with new icon size */
-        top: 48px;
-        bottom: -15px;
-        width: 2px;
-        background: var(--apple-separator);
+        display: none; /* Remove vertical line */
     }
-    
-    .timeline-item:last-child::before {
-        display: none;
-    }
-
     .timeline-icon {
-        width: 48px;
-        height: 48px;
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+        order: 1; /* Default order */
+        align-self: flex-start;
         border-radius: 50%;
-        background: var(--apple-blue);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.2rem;
         flex-shrink: 0;
-        z-index: 1;
-        position: relative;
         color: white;
     }
-    
     .timeline-content-item {
-        flex: 1;
-        background: var(--apple-background-secondary);
-        border-radius: 16px;
-        padding: 1.5rem;
-        border: 1px solid var(--apple-separator);
-        transition: box-shadow 0.2s ease;
+        max-width: 75%;
+        border-radius: 20px;
+        padding: 0.75rem 1.25rem;
+        border: none;
+        box-shadow: none;
+        order: 2; /* Default order */
+        background: var(--apple-background-tertiary);
+        flex: 0 0 auto;
     }
     .timeline-content-item:hover {
-        box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+        box-shadow: none;
+    }
+
+    /* Bubble alignment */
+    .timeline-item.align-right {
+        justify-content: flex-end;
+    }
+    .timeline-item.align-right .timeline-icon {
+        order: 2;
+    }
+    .timeline-item.align-right .timeline-content-item {
+        order: 1;
+        background: var(--apple-blue);
+        color: white;
+    }
+    /* Adjust text colors inside blue bubble */
+    .timeline-item.align-right .timeline-title-item,
+    .timeline-item.align-right .timeline-text,
+    .timeline-item.align-right .timeline-time,
+    .timeline-item.align-right .activity-meta,
+    .timeline-item.align-right strong {
+        color: white;
+    }
+    .timeline-item.align-right .comment-author,
+    .timeline-item.align-right .timeline-title-item {
+        color: rgba(255,255,255,0.8);
+    }
+    .timeline-item.align-right .comment-content {
+        border-color: transparent;
+    }
+    .timeline-item.align-right .activity-link {
+        color: rgba(255,255,255,0.9);
+        text-decoration: underline;
+    }
+
+
+    /* Hide icon for comments to make it cleaner */
+    .timeline-item[data-tipo="comentario"] .timeline-icon {
+        display: none;
     }
 
     /* Iconos específicos por tipo de actividad */
-    .cotizacion-icon { background: var(--apple-blue); }
+    .cotizacion-icon { background: var(--apple-purple); }
     .volumetria-icon { background: var(--apple-orange); }
     .creacion-icon { background: var(--apple-green); }
-    .comentario-icon { background: var(--apple-purple); }
+    .comentario-icon { background: var(--apple-blue); }
     .cambio-estado-icon { background: var(--apple-yellow); color: var(--apple-label); }
     .sistema-icon { background: var(--apple-gray); }
 
@@ -420,24 +446,31 @@
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.25rem;
     }
 
     .timeline-title-item {
         font-weight: 600;
-        color: var(--apple-label);
-        font-size: 0.9rem;
+        color: var(--apple-label-secondary);
+        font-size: 0.8rem;
     }
 
     .timeline-time {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         color: var(--apple-label-secondary);
+        margin-left: 1rem;
+        flex-shrink: 0;
     }
+    .timeline-item.align-right .timeline-time {
+        color: rgba(255,255,255,0.7);
+    }
+
 
     .timeline-text {
         color: var(--apple-label);
         font-size: 0.9rem;
         line-height: 1.5;
+        word-wrap: break-word;
     }
     
     .activity-meta {
@@ -681,11 +714,23 @@
     .preview-content { padding: 0; text-align: center; background: var(--apple-background); position: relative; min-height: 300px; display: flex; align-items: center; justify-content: center; }
     .preview-image { max-width: 100%; max-height: 70vh; object-fit: contain; }
     .preview-pdf { width: 80vw; height: 70vh; border: none; background: white; }
-    .preview-placeholder { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 3rem; color: var(--apple-label-secondary); }
+    .preview-placeholder { display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        padding: 3rem;
+        color: var(--apple-label-secondary);
+    }
     .preview-placeholder-icon { font-size: 4rem; opacity: 0.5; }
     .preview-placeholder-text { font-size: 1.1rem; font-weight: 500; text-align: center; max-width: 300px; }
     .preview-placeholder-info { background: var(--apple-background-tertiary); border-radius: 8px; padding: 1rem; margin-top: 1rem; text-align: left; font-size: 0.9rem; line-height: 1.4; }
-    .preview-loading { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 3rem; color: var(--apple-label-secondary); }
+    .preview-loading { display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        padding: 3rem;
+        color: var(--apple-label-secondary);
+    }
     .preview-spinner { width: 40px; height: 40px; border: 3px solid var(--apple-separator); border-top: 3px solid var(--apple-blue); border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
@@ -978,7 +1023,7 @@
                     <div class="info-item">
                         <div class="info-label">Contacto</div>
                         <div class="info-value view-mode" data-field="contacto">{{ oportunidad.contacto|default:"Sin contacto" }}</div>
-                        <input type="text" class="info-edit edit-mode" data-field="contacto" value="{{ oportunidad.contacto|default:"" }}" style="display: none;" placeholder="Nombre del contacto">
+                        <input type="text" class="info-edit edit-mode" data-field="contacto" value="{{ oportunidad.contacto|default:'' }}" style="display: none;" placeholder="Nombre del contacto">
                     </div>
                     <div class="info-item">
                         <div class="info-label">Vendedor</div>
@@ -1126,43 +1171,6 @@
             </div>
             
             <div class="timeline-content">
-                <!-- NUEVO COMENTARIO -->
-                <div class="new-comment" id="commentSection">
-                    <div class="comment-header">
-                        <div class="comment-avatar">
-                            <div class="avatar-circle">{{ user.username|first|upper }}</div>
-                        </div>
-                        <div class="comment-user-info">
-                            <span class="comment-username">{{ user.get_full_name|default:user.username }}</span>
-                            <span class="comment-time">Ahora</span>
-                        </div>
-                    </div>
-                    
-                    <!-- DRAG & DROP ZONE -->
-                    <div class="drop-zone" id="dropZone">
-                        <div class="drop-zone-content">
-                            <div class="drop-zone-icon">📁</div>
-                            <div class="drop-zone-text">Arrastra archivos aquí o haz clic para seleccionar</div>
-                            <div class="drop-zone-formats">PDF, Word, Excel, CSV, Imágenes</div>
-                        </div>
-                        <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.gif,.webp" style="display: none;">
-                    </div>
-                    
-                    <!-- ARCHIVOS ADJUNTOS -->
-                    <div class="attached-files" id="attachedFiles"></div>
-                    
-                    <textarea class="comment-input" id="nuevoComentario" placeholder="Escribe un comentario sobre esta oportunidad..."></textarea>
-                    <div class="comment-actions">
-                        <div class="comment-actions-left">
-                            <button class="action-button-small" id="attachFileBtn" title="Adjuntar archivo">📎</button>
-                            <span class="file-counter" id="fileCounter">0 archivos</span>
-                        </div>
-                        <button class="apple-button apple-button-small" id="btnComentar" disabled>
-                            💬 Comentar
-                        </button>
-                    </div>
-                </div>
-
                 <!-- TIMELINE ITEMS -->
                 <div id="timelineItems">
                     <!-- Contenido cargado dinámicamente por JavaScript -->
@@ -1170,6 +1178,42 @@
                         <div class="no-items-icon">⏳</div>
                         <div class="no-items-text">Cargando actividades del timeline...</div>
                     </div>
+                </div>
+            </div>
+            <!-- NUEVO COMENTARIO -->
+            <div class="new-comment" id="commentSection">
+                <div class="comment-header">
+                    <div class="comment-avatar">
+                        <div class="avatar-circle">{{ user.username|first|upper }}</div>
+                    </div>
+                    <div class="comment-user-info">
+                        <span class="comment-username">{{ user.get_full_name|default:user.username }}</span>
+                        <span class="comment-time">Ahora</span>
+                    </div>
+                </div>
+                
+                <!-- DRAG & DROP ZONE -->
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-content">
+                        <div class="drop-zone-icon">📁</div>
+                        <div class="drop-zone-text">Arrastra archivos aquí o haz clic para seleccionar</div>
+                        <div class="drop-zone-formats">PDF, Word, Excel, CSV, Imágenes</div>
+                    </div>
+                    <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.gif,.webp" style="display: none;">
+                </div>
+                
+                <!-- ARCHIVOS ADJUNTOS -->
+                <div class="attached-files" id="attachedFiles"></div>
+                
+                <textarea class="comment-input" id="nuevoComentario" placeholder="Escribe un comentario sobre esta oportunidad..."></textarea>
+                <div class="comment-actions">
+                    <div class="comment-actions-left">
+                        <button class="action-button-small" id="attachFileBtn" title="Adjuntar archivo">📎</button>
+                        <span class="file-counter" id="fileCounter">0 archivos</span>
+                    </div>
+                    <button class="apple-button apple-button-small" id="btnComentar" disabled>
+                        💬 Comentar
+                    </button>
                 </div>
             </div>
         </div>
@@ -1534,160 +1578,88 @@
     function renderTimelineItem(activity) {
         console.log('🎯 renderTimelineItem llamado con:', activity);
         
-        // Validar que activity existe y tiene las propiedades básicas
         if (!activity || !activity.tipo) {
             console.error('❌ Activity inválida:', activity);
             return '';
         }
         
-        console.log('✅ Activity válida, tipo:', activity.tipo);
-        
         let icon = '';
-        let title = activity.titulo || 'Sin título';
+        let title = activity.titulo || '';
         let content = activity.descripcion || 'Sin descripción';
         let linkHtml = '';
-        let avatarHtml = '';
         let activityClass = '';
+        let alignmentClass = 'align-left'; // Default to left alignment
 
         switch (activity.tipo) {
             case 'creacion':
-                icon = '🆕';
+                icon = '🎉';
                 activityClass = 'creacion-icon';
-                content = `Oportunidad creada por <strong>${activity.usuario || 'Usuario desconocido'}</strong><br><span class="activity-meta">${activity.descripcion || ''}</span>`;
+                title = 'Oportunidad Creada';
+                content = `Creada por <strong>${activity.usuario || 'Usuario desconocido'}</strong>. <span class="activity-meta">${activity.descripcion || ''}</span>`;
                 break;
             case 'cambio_estado':
                 icon = '🔄';
                 activityClass = 'cambio-estado-icon';
-                console.log('🔍 DEBUG cambio_estado:', JSON.stringify(activity, null, 2));
-                
+                title = 'Cambio de Estado';
                 try {
-                    let estadoAnterior = 'Sin definir';
-                    let estadoNuevo = 'Sin definir';
-                    
-                    if (activity.estado_anterior) {
-                        if (typeof activity.estado_anterior === 'string') {
-                            estadoAnterior = activity.estado_anterior.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-                        } else {
-                            estadoAnterior = String(activity.estado_anterior);
-                        }
-                    }
-                    
-                    if (activity.estado_nuevo) {
-                        if (typeof activity.estado_nuevo === 'string') {
-                            estadoNuevo = activity.estado_nuevo.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-                        } else {
-                            estadoNuevo = String(activity.estado_nuevo);
-                        }
-                    }
-                    
-                    content = `Estado cambiado de <strong>${estadoAnterior}</strong> a <strong>${estadoNuevo}</strong>`;
+                    let estadoAnterior = activity.estado_anterior ? activity.estado_anterior.replace(/_/g, ' ') : 'un estado anterior';
+                    let estadoNuevo = activity.estado_nuevo ? activity.estado_nuevo.replace(/_/g, ' ') : 'un nuevo estado';
+                    content = `<strong>${activity.usuario}</strong> cambió el estado de <em>${estadoAnterior}</em> a <strong>${estadoNuevo}</strong>.`;
                 } catch (error) {
-                    console.error('❌ Error procesando cambio_estado:', error, activity);
-                    content = `Error al mostrar cambio de estado: ${activity.descripcion || 'Sin descripción'}`;
+                    content = `Error al mostrar cambio de estado: ${activity.descripcion || ''}`;
                 }
                 break;
             case 'comentario':
                 icon = '💬';
                 activityClass = 'comentario-icon';
                 const usuario = activity.usuario || 'Usuario desconocido';
-                const comentarioId = activity.comentario_id;
-                const puedeEditar = activity.puede_editar;
                 
-                console.log('📝 DEBUG comentario:', {
-                    id: activity.id,
-                    comentario_id: comentarioId,
-                    usuario: activity.usuario,
-                    contenido: activity.contenido,
-                    puede_editar: puedeEditar
-                });
+                if (activity.puede_editar) {
+                    alignmentClass = 'align-right';
+                }
                 
-                avatarHtml = `
-                    <div class="comment-author">
-                        <div class="avatar-circle-small">${usuario.charAt(0).toUpperCase()}</div>
-                        <strong>${usuario}</strong>
-                    </div>
-                `;
+                title = `<strong>${usuario}</strong> comentó:`;
                 
-                // Botones de acción solo para comentarios que se pueden editar
-                const actionsHtml = puedeEditar && comentarioId ? `
-                    <div class="comment-actions-inline">
-                        <button class="comment-action-btn edit" onclick="editarComentario(${comentarioId})" title="Editar comentario">
-                            ✏️
-                        </button>
-                        <button class="comment-action-btn delete" onclick="eliminarComentario(${comentarioId}, '${usuario}')" title="Eliminar comentario">
-                            🗑️
-                        </button>
-                    </div>
-                ` : '';
-                
-                // Renderizar archivos adjuntos si existen
                 const attachmentsHtml = activity.archivos && activity.archivos.length > 0 ? `
                     <div class="comment-attachments">
-                        <div class="attachments-header">
-                            📎 ${activity.archivos.length} archivo${activity.archivos.length > 1 ? 's' : ''} adjunto${activity.archivos.length > 1 ? 's' : ''}
-                        </div>
                         ${activity.archivos.map(archivo => `
                             <div class="attachment-item">
-                                <div class="attachment-icon ${archivo.tipo}">
-                                    ${getAttachmentIcon(archivo.tipo)}
-                                </div>
+                                <div class="attachment-icon ${archivo.tipo}">${getAttachmentIcon(archivo.tipo)}</div>
                                 <div class="attachment-info">
-                                    <a href="/app/api/vista-previa-archivo-oportunidad/${archivo.id}/" target="_blank" class="attachment-name" title="${archivo.nombre}" style="cursor: pointer; color: var(--apple-blue); text-decoration: none;">
-                                        ${archivo.nombre}
-                                    </a>
-                                    <div class="attachment-meta">
-                                        <span>${archivo.tamaño}</span>
-                                        <span>${archivo.fecha}</span>
-                                    </div>
+                                    <a href="#" onclick="mostrarVistaPrevia(${archivo.id}, '${archivo.nombre.replace(/'/g, "\'")}')" class="attachment-name" title="${archivo.nombre}">${archivo.nombre}</a>
+                                    <div class="attachment-meta"><span>${archivo.tamaño}</span> • <span>${archivo.fecha}</span></div>
                                 </div>
-                                <button class="attachment-download" onclick="descargarArchivo(${archivo.id})" title="Descargar archivo">
-                                    ⬇️
-                                </button>
+                                <button class="attachment-download" onclick="descargarArchivo(${archivo.id})" title="Descargar archivo">⬇️</button>
                             </div>
                         `).join('')}
                     </div>
                 ` : '';
 
-                content = `
-                    ${avatarHtml}
-                    <div class="comment-content" id="comment-${comentarioId}">
-                        ${actionsHtml}
-                        <div class="comment-text" id="comment-text-${comentarioId}">
-                            ${activity.contenido || activity.descripcion || 'Sin contenido'}
-                            ${attachmentsHtml}
-                        </div>
-                        <div class="comment-edit-form" id="comment-edit-${comentarioId}">
-                            <textarea class="comment-edit-input" id="comment-input-${comentarioId}">${activity.contenido || activity.descripcion || ''}</textarea>
-                            <div class="comment-edit-actions">
-                                <button class="comment-edit-btn comment-edit-save" onclick="guardarEdicionComentario(${comentarioId})">
-                                    💾 Guardar
-                                </button>
-                                <button class="comment-edit-btn comment-edit-cancel" onclick="cancelarEdicionComentario(${comentarioId})">
-                                    ❌ Cancelar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                content = `${activity.contenido || activity.descripcion || ''}${attachmentsHtml}`;
                 break;
             case 'cotizacion':
                 icon = '📄';
                 activityClass = 'cotizacion-icon';
+                title = 'Nueva Cotización';
+                content = `<strong>${activity.usuario}</strong> creó la cotización <em>${activity.titulo}</em>.`;
                 linkHtml = `<div class="activity-actions"><a href="${activity.url}" target="_blank" class="activity-link cotizacion-link">Ver cotización →</a></div>`;
                 break;
             case 'volumetria':
                 icon = '📊';
                 activityClass = 'volumetria-icon';
+                title = 'Nueva Volumetría';
+                content = `<strong>${activity.usuario}</strong> creó la volumetría <em>${activity.titulo}</em>.`;
                 linkHtml = `<div class="activity-actions"><a href="${activity.url}" target="_blank" class="activity-link volumetria-link">Ver volumetría →</a></div>`;
                 break;
             default:
                 icon = '⚙️';
                 activityClass = 'sistema-icon';
+                title = 'Actividad del Sistema';
                 break;
         }
 
         return `
-            <div class="timeline-item" data-tipo="${activity.tipo}">
+            <div class="timeline-item ${alignmentClass}" data-tipo="${activity.tipo}">
                 <div class="timeline-icon ${activityClass}">${icon}</div>
                 <div class="timeline-content-item">
                     <div class="timeline-header-item">
