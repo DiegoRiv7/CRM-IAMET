@@ -2408,6 +2408,19 @@
         
         // Cargar el timeline al cargar la página
         loadTimeline();
+        
+        // Verificar si necesitamos refrescar timeline por nueva cotización
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('refresh_timeline') === 'true') {
+            console.log('📋 Refrescando timeline por nueva cotización...');
+            // Recargar timeline después de un breve delay para asegurar que el comentario está creado
+            setTimeout(() => {
+                loadTimeline();
+            }, 500);
+            
+            // Limpiar el parámetro de la URL sin recargar la página
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
     });
 </script>
 

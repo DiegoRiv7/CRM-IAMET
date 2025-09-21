@@ -1745,9 +1745,10 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             oportunidad_para_redirect = form.cleaned_data.get('oportunidad')
             if oportunidad_para_redirect:
                 # Crear URL que descarga PDF y luego redirige a cotizaciones por oportunidad
-                return redirect('download_and_redirect_cotizacion', 
-                              cotizacion_id=cotizacion.id, 
-                              oportunidad_id=oportunidad_para_redirect.id)
+                from django.urls import reverse
+                redirect_url = reverse('download_and_redirect_cotizacion', 
+                                     args=[cotizacion.id, oportunidad_para_redirect.id])
+                return redirect(f"{redirect_url}?refresh_timeline=true")
             else:
                 # Flujo original para cotizaciones sin oportunidad
                 return redirect('generate_cotizacion_pdf', cotizacion_id=cotizacion.id)
@@ -1920,11 +1921,15 @@ def download_and_redirect_cotizacion(request, cotizacion_id, oportunidad_id):
     pdf_download_url = reverse('generate_cotizacion_pdf', args=[cotizacion_id])
     redirect_url = reverse('cotizaciones_por_oportunidad', args=[oportunidad_id])
     
+    # Verificar si necesitamos refrescar el timeline
+    refresh_timeline = request.GET.get('refresh_timeline', 'false')
+    
     context = {
         'cotizacion': cotizacion,
         'oportunidad': oportunidad,
         'pdf_download_url': pdf_download_url,
-        'redirect_url': redirect_url
+        'redirect_url': redirect_url,
+        'refresh_timeline': refresh_timeline
     }
     
     return render(request, 'download_and_redirect.html', context)
