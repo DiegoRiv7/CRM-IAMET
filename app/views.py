@@ -19,16 +19,20 @@ from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from decimal import Decimal
 import decimal
-import pytz
 from django.utils.html import json_script
 import json
+from zoneinfo import ZoneInfo
 
 
 def convert_to_tijuana_time(utc_datetime):
     """Convierte una fecha UTC a tiempo de Tijuana"""
     try:
-        tijuana_tz = pytz.timezone('America/Tijuana')
-        return timezone.localtime(utc_datetime, tijuana_tz)
+        # Usar zoneinfo que es parte de la biblioteca estándar de Python
+        tijuana_tz = ZoneInfo('America/Tijuana')
+        if utc_datetime.tzinfo is None:
+            # Si no tiene timezone info, asumir UTC
+            utc_datetime = timezone.make_aware(utc_datetime, timezone.utc)
+        return utc_datetime.astimezone(tijuana_tz)
     except Exception:
         return utc_datetime
 from django.urls import reverse
@@ -6937,18 +6941,18 @@ def timeline_oportunidad(request, oportunidad_id):
         return JsonResponse({'error': 'No tienes permisos para ver este timeline'}, status=403)
     
     try:
-        print(f"DEBUG: Iniciando timeline para oportunidad {oportunidad_id}")
-        
-        # Temporalmente deshabilitado para debugging
-        # limpiar_actividades_huerfanas(oportunidad)
+        # Limpiar actividades huérfanas antes de generar el timeline
+        try:
+            limpiar_actividades_huerfanas(oportunidad)
+        except Exception as e:
+            print(f"Error limpiando actividades huérfanas: {e}")
+            # Continuar sin limpiar si hay error
         
         # Obtener todas las actividades
         actividades = oportunidad.actividades_crm.all().order_by('-fecha_creacion')
-        print(f"DEBUG: Se encontraron {len(actividades)} actividades")
         
         timeline_data = []
         for actividad in actividades:
-            print(f"DEBUG: Procesando actividad {actividad.id} tipo {actividad.tipo}")
             # Obtener información del usuario
             usuario_nombre = 'Sistema'
             if actividad.usuario:
@@ -6974,7 +6978,6 @@ def timeline_oportunidad(request, oportunidad_id):
                 item_data['estado_anterior'] = actividad.estado_anterior
                 item_data['estado_nuevo'] = actividad.estado_nuevo
             elif actividad.tipo == 'comentario':
-                print(f"DEBUG: Procesando comentario para actividad {actividad.id}")
                 # Para comentarios, buscar el contenido real del comentario
                 try:
                     # Nueva estrategia: buscar por ID directo en la descripción
@@ -7053,25 +7056,21 @@ def timeline_oportunidad(request, oportunidad_id):
                             item_data['usuario'] = usuario_comentario
                             item_data['usuario_id'] = comentario.usuario.id
                     else:
-                        print(f"DEBUG: No se encontró comentario para actividad {actividad.id}")
                         # Si no se encuentra comentario, saltar esta actividad para evitar huérfanas
                         continue
                         
                 except Exception as e:
-                    print(f"DEBUG: Error procesando comentario para actividad {actividad.id}: {e}")
                     # Si hay error, saltar esta actividad
                     continue
             
             timeline_data.append(item_data)
         
-        print(f"DEBUG: Timeline generado exitosamente con {len(timeline_data)} items")
         return JsonResponse({
             'success': True,
             'timeline': timeline_data
         })
         
     except Exception as e:
-        print(f"DEBUG: Error general en timeline: {e}")
         import traceback
         traceback.print_exc()
         return JsonResponse({'error': str(e)}, status=500)
