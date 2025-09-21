@@ -451,7 +451,7 @@
     }
     .timeline-item.align-right .timeline-content-item {
         order: 1;
-        /* El color de fondo ahora es el gris por defecto, sin texto blanco */
+        /* background y color son gris por defecto */
     }
 
     /* Hide icon for comments to make it cleaner */
@@ -1164,8 +1164,8 @@
 </div>
 
 <script>
-    // Variable global con el ID de la oportunidad (sin formato de Django)
     const OPORTUNIDAD_ID = parseInt("{{ oportunidad.id }}".replace(/,/g, ''));
+    const OPPORTUNITY_OWNER_ID = {{ oportunidad.usuario.id }};
     
     // Control de estados en header
     function toggleEstadoDropdownHeader() {
@@ -1468,9 +1468,13 @@
         let content = activity.descripcion || 'Sin descripción';
         let linkHtml = '';
         let activityClass = '';
-        let alignmentClass = 'align-left'; // Default to left alignment
+        let alignmentClass = 'align-left';
         let editableClass = '';
         let clickHandler = '';
+
+        if (activity.usuario_id && activity.usuario_id === OPPORTUNITY_OWNER_ID) {
+            alignmentClass = 'align-right';
+        }
 
         switch (activity.tipo) {
             case 'creacion':
@@ -1498,7 +1502,6 @@
                 const comentarioId = activity.comentario_id;
                 
                 if (activity.puede_editar) {
-                    alignmentClass = 'align-right';
                     editableClass = 'editable';
                     clickHandler = `onclick="editarComentario(event, ${comentarioId})"`;
                 }
