@@ -1656,6 +1656,7 @@
 
     async function loadTimeline() {
         const timelineItemsContainer = document.getElementById('timelineItems');
+        const oportunidadId = OPORTUNIDAD_ID; // FIX: Re-added missing variable
         // Eliminar mensaje de no resultados anterior si existe
         const noResultsMessage = document.getElementById('noSearchResultsMessage');
         if(noResultsMessage) noResultsMessage.remove();
