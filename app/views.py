@@ -6928,23 +6928,23 @@ def timeline_oportunidad(request, oportunidad_id):
     
     try:
         # Limpiar actividades huérfanas antes de generar el timeline
-        limpiar_actividades_huerfanas(oportunidad)
+        try:
+            limpiar_actividades_huerfanas(oportunidad)
+        except Exception as e:
+            print(f"Error limpiando actividades huérfanas: {e}")
+            # Continuar sin limpiar si hay error
         
         # Obtener todas las actividades
         actividades = oportunidad.actividades_crm.all().order_by('-fecha_creacion')
         
         timeline_data = []
         for actividad in actividades:
-            # Debugging: imprimir información de la actividad
-            print(f"🔍 Procesando actividad {actividad.id}: tipo={actividad.tipo}, usuario={actividad.usuario}, descripcion={actividad.descripcion[:50] if actividad.descripcion else 'None'}...")
-            
             # Obtener información del usuario
             usuario_nombre = 'Sistema'
             if actividad.usuario:
                 usuario_nombre = actividad.usuario.get_full_name() or actividad.usuario.username
-                print(f"👤 Usuario encontrado: {usuario_nombre}")
             else:
-                print(f"⚠️ Usuario es None para actividad {actividad.id}")
+                usuario_nombre = 'Sistema'
             
             # Convertir fecha a zona horaria de Tijuana (Pacific Time)
             import pytz
@@ -6965,7 +6965,6 @@ def timeline_oportunidad(request, oportunidad_id):
             if actividad.tipo == 'cambio_estado':
                 item_data['estado_anterior'] = actividad.estado_anterior
                 item_data['estado_nuevo'] = actividad.estado_nuevo
-                print(f"📊 Timeline cambio_estado: {actividad.id}, anterior: {actividad.estado_anterior}, nuevo: {actividad.estado_nuevo}")
             elif actividad.tipo == 'comentario':
                 # Para comentarios, buscar el contenido real del comentario
                 try:
@@ -6979,9 +6978,8 @@ def timeline_oportunidad(request, oportunidad_id):
                         comentario_id = int(match.group(1))
                         try:
                             comentario = OportunidadComentario.objects.get(id=comentario_id)
-                            print(f"🎯 Comentario encontrado por ID directo: {comentario_id}")
                         except OportunidadComentario.DoesNotExist:
-                            print(f"❌ Comentario con ID {comentario_id} no existe")
+                            comentario = None
                     
                     # Estrategia 2 (fallback): Buscar por rango de tiempo
                     if not comentario:
@@ -6993,10 +6991,9 @@ def timeline_oportunidad(request, oportunidad_id):
                         
                         if comentarios_candidatos.exists():
                             comentario = comentarios_candidatos.first()
-                            print(f"⏱️ Comentario encontrado por tiempo: {comentario.id}")
                     
                     # Estrategia 3 (último recurso): Buscar por usuario y fecha cercana
-                    if not comentario:
+                    if not comentario and actividad.usuario:
                         comentarios_por_usuario = OportunidadComentario.objects.filter(
                             oportunidad=oportunidad,
                             usuario=actividad.usuario
@@ -7006,7 +7003,6 @@ def timeline_oportunidad(request, oportunidad_id):
                             diff = abs((c.fecha_creacion - actividad.fecha_creacion).total_seconds())
                             if diff <= 300:  # 5 minutos
                                 comentario = c
-                                print(f"👤 Comentario encontrado por usuario: {comentario.id}")
                                 break
                     
                     if comentario:
@@ -7025,11 +7021,7 @@ def timeline_oportunidad(request, oportunidad_id):
                             descripcion__contains=f"Adjuntado en comentario #{comentario.id}"
                         )
                         
-                        # Agregar debugging para ver qué archivos encuentra
-                        print(f"📎 Buscando archivos para comentario {comentario.id}: encontrados {archivos_asociados.count()}")
-                        if archivos_asociados.exists():
-                            for archivo in archivos_asociados:
-                                print(f"  📄 Archivo encontrado: {archivo.nombre_original} - {archivo.descripcion}")
+                        # Buscar archivos asociados específicamente por descripción
                         
                         # Si no encuentra por descripción exacta, NO usar fallback para evitar contaminación cruzada
                         # (El fallback por tiempo era lo que causaba que todos los archivos aparecieran en todos los comentarios)
@@ -7045,26 +7037,18 @@ def timeline_oportunidad(request, oportunidad_id):
                                     'fecha': archivo.fecha_subida.strftime('%d/%m/%Y %H:%M'),
                                     'url': archivo.archivo.url if archivo.archivo else None
                                 })
-                            print(f"📎 {len(archivos_asociados)} archivos encontrados para comentario {comentario.id}")
                         
                         # Actualizar usuario con el del comentario si está disponible
                         if comentario.usuario:
                             usuario_comentario = comentario.usuario.get_full_name() or comentario.usuario.username
                             item_data['usuario'] = usuario_comentario
                             item_data['usuario_id'] = comentario.usuario.id
-                            print(f"💬 Comentario encontrado: ID={comentario.id}, contenido='{comentario.contenido[:50]}...', usuario={usuario_comentario}")
-                        else:
-                            print(f"💬 Comentario encontrado pero sin usuario: contenido='{comentario.contenido[:50]}...'")
                     else:
-                        print(f"❌ No se encontró comentario para actividad {actividad.id} - usuario: {actividad.usuario}, fecha: {actividad.fecha_creacion}")
                         # Si no se encuentra comentario, saltar esta actividad para evitar huérfanas
-                        print(f"⏭️ Saltando actividad huérfana ID={actividad.id}")
                         continue
                         
                 except Exception as e:
-                    print(f"❌ Error buscando comentario para actividad {actividad.id}: {e}")
                     # Si hay error, saltar esta actividad
-                    print(f"⏭️ Saltando actividad con error ID={actividad.id}")
                     continue
             
             timeline_data.append(item_data)
