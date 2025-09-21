@@ -6,6 +6,47 @@
     // FIX: Pre-define la variable 'designBtn' para prevenir un error fatal en el script de dock.html,
     // que estaba bloqueando la ejecución de todo el JavaScript de la página.
     const designBtn = document.createElement('div');
+    
+    // PRIORITY: Activar modo cotizaciones INMEDIATAMENTE para evitar flash del dock
+    (function() {
+        // Crear el estilo para ocultar el dock inmediatamente
+        const style = document.createElement('style');
+        style.textContent = `
+            body.cotizaciones-mode .macos-dock,
+            body.cotizaciones-mode #dock-left,
+            body.cotizaciones-mode #dock-right,
+            body.cotizaciones-mode #dock-top,
+            body.cotizaciones-mode #dock-bottom {
+                display: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Aplicar la clase cotizaciones-mode inmediatamente
+        function activarModoCotizaciones() {
+            if (document.body) {
+                document.body.classList.add('cotizaciones-mode');
+                console.log('🚀 Clase cotizaciones-mode aplicada TEMPRANO');
+            }
+        }
+        
+        // Intentar aplicar inmediatamente
+        activarModoCotizaciones();
+        
+        // Si no hay body todavía, aplicar tan pronto como esté disponible
+        if (!document.body) {
+            const observer = new MutationObserver(function() {
+                if (document.body) {
+                    activarModoCotizaciones();
+                    observer.disconnect();
+                }
+            });
+            observer.observe(document.documentElement, { childList: true });
+        }
+    })();
 </script>
 
 <style>
@@ -2211,14 +2252,37 @@
 {% endif %}
 
 <script>
-// Activar modo cotizaciones para ocultar dock
-document.addEventListener('DOMContentLoaded', function() {
-    document.body.classList.add('cotizaciones-mode');
-    console.log('✅ Clase cotizaciones-mode agregada al body - dock oculto');
-});
+// Activar modo cotizaciones INMEDIATAMENTE para ocultar dock
+(function() {
+    // Aplicar la clase tan pronto como sea posible
+    function activarModoCotizaciones() {
+        document.body.classList.add('cotizaciones-mode');
+        console.log('✅ Clase cotizaciones-mode agregada al body - dock oculto');
+    }
+    
+    // Aplicar inmediatamente si es posible
+    if (document.body) {
+        activarModoCotizaciones();
+    } else {
+        // Si no existe el body aún, esperar al DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', activarModoCotizaciones);
+    }
+    
+    // También aplicar cuando la página se muestre (para manejar navegación hacia atrás)
+    window.addEventListener('pageshow', function() {
+        activarModoCotizaciones();
+    });
+    
+    // Aplicar cuando la página se hace visible nuevamente
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            activarModoCotizaciones();
+        }
+    });
+})();
 
-// Remover clase al salir de la página
-window.addEventListener('beforeunload', function() {
+// Remover clase solo cuando realmente navegamos fuera (no en el beforeunload)
+window.addEventListener('pagehide', function() {
     document.body.classList.remove('cotizaciones-mode');
 });
 </script>
