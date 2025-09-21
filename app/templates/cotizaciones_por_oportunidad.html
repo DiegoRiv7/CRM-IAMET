@@ -958,6 +958,18 @@
         color: white;
     }
 
+    .apple-button-proyecto {
+        background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+        color: white;
+        transition: all 0.2s ease;
+    }
+
+    .apple-button-proyecto:hover {
+        background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+    }
+
     .apple-button-small {
         padding: 0.4rem 0.8rem;
         font-size: 0.8rem;
@@ -1315,6 +1327,7 @@
         <div class="crm-actions">
             <a href="{% url 'todos' %}" class="apple-button apple-button-secondary">← Volver</a>
             <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="apple-button">+ Nueva Cotización</a>
+            <a href="#" class="apple-button apple-button-proyecto" onclick="mostrarMensajeProyecto()">🏗️ Crear Proyecto</a>
             {% if is_engineer %}
             <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="apple-button apple-button-volumetria">📊 Nueva Volumetría</a>
             {% endif %}
@@ -2401,6 +2414,12 @@
         }
     });
 
+    // Función para mostrar mensaje de proyecto
+    function mostrarMensajeProyecto() {
+        alert('Función de Crear Proyecto próximamente disponible');
+        return false;
+    }
+
     // Inicializar componentes
     document.addEventListener('DOMContentLoaded', function() {
         // Inicializar sistema de comentarios
@@ -2408,19 +2427,6 @@
         
         // Cargar el timeline al cargar la página
         loadTimeline();
-        
-        // Verificar si necesitamos refrescar timeline por nueva cotización
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('refresh_timeline') === 'true') {
-            console.log('📋 Refrescando timeline por nueva cotización...');
-            // Recargar timeline después de un breve delay para asegurar que el comentario está creado
-            setTimeout(() => {
-                loadTimeline();
-            }, 500);
-            
-            // Limpiar el parámetro de la URL sin recargar la página
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
     });
 </script>
 
@@ -2435,6 +2441,7 @@
     <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
         <a href="{% url 'todos' %}" class="apple-button apple-button-secondary">← Volver</a>
         <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="apple-button">+ Nueva Cotización</a>
+        <a href="#" class="apple-button apple-button-proyecto" onclick="mostrarMensajeProyecto()">🏗️ Crear Proyecto</a>
         {% if is_engineer %}
         <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="apple-button">📊 Nueva Volumetría</a>
         {% endif %}
