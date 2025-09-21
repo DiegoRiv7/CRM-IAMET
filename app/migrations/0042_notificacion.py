@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('app', '0032_alter_todoitem_mes_cierre'),
+        ('app', '0041_oportunidadestado_todoitem_estado_crm_and_more'),
     ]
 
     operations = [
