@@ -2602,28 +2602,58 @@ def cotizaciones_por_oportunidad_view(request, oportunidad_id):
             from app.models import OportunidadComentario, OportunidadActividad
             import re
             
+            # LIMPIEZA ÚNICA: Eliminar comentarios duplicados de cotizaciones (ejecutar solo una vez)
+            # Buscar comentarios de cotización sin el patrón [COT_ID:X] (comentarios antiguos)
+            comentarios_sin_patron = OportunidadComentario.objects.filter(
+                oportunidad=oportunidad,
+                contenido__contains='📋 Nueva cotización creada:'
+            ).exclude(contenido__contains='[COT_ID:')
+            
+            if comentarios_sin_patron.exists():
+                print(f"🧹 Limpiando {comentarios_sin_patron.count()} comentarios duplicados antiguos...")
+                
+                # También eliminar las actividades asociadas
+                for comentario in comentarios_sin_patron:
+                    OportunidadActividad.objects.filter(
+                        oportunidad=oportunidad,
+                        descripcion__contains=f'[COMENTARIO_ID:{comentario.id}]'
+                    ).delete()
+                
+                comentarios_sin_patron.delete()
+                print("✅ Comentarios duplicados eliminados")
+            
             # Obtener todas las actividades de comentarios de esta oportunidad
             actividades_comentarios = OportunidadActividad.objects.filter(
                 oportunidad=oportunidad,
                 tipo='comentario'
             )
             
-            # Extraer IDs de cotizaciones que ya tienen comentarios
+            # Obtener IDs de cotizaciones que ya tienen comentarios automáticos
+            # Usamos un patrón único en el contenido del comentario para identificarlos
             cotizaciones_con_comentario = set()
-            for actividad in actividades_comentarios:
-                if 'Nueva cotización creada:' in actividad.descripcion or 'Nueva Cotización' in actividad.titulo:
-                    # Buscar referencias a cotizaciones en la descripción
-                    if 'Cotización #' in actividad.descripcion:
-                        match = re.search(r'Cotización #(\d+)', actividad.descripcion)
-                        if match:
-                            cotizaciones_con_comentario.add(int(match.group(1)))
+            
+            # Buscar comentarios que contengan el patrón específico de cotización automática
+            comentarios_auto = OportunidadComentario.objects.filter(
+                oportunidad=oportunidad,
+                contenido__contains='📋 Nueva cotización creada:'
+            )
+            
+            for comentario in comentarios_auto:
+                # Extraer ID de cotización del patrón [COT_ID:X] que agregaremos
+                match = re.search(r'\[COT_ID:(\d+)\]', comentario.contenido)
+                if match:
+                    cotizaciones_con_comentario.add(int(match.group(1)))
+                
+            print(f"🔍 Cotizaciones con comentarios automáticos: {cotizaciones_con_comentario}")
+            print(f"📊 Cotizaciones actuales en BD: {[c.id for c in cotizaciones]}")
             
             # Crear comentarios para cotizaciones sin comentario
             for cotizacion in cotizaciones:
                 if cotizacion.id not in cotizaciones_con_comentario:
                     try:
-                        # Crear comentario automático
-                        contenido_comentario = f"📋 Nueva cotización creada: {cotizacion.titulo or cotizacion.nombre_cotizacion or f'Cotización #{cotizacion.id}'}"
+                        # Crear comentario automático con identificador único de la cotización
+                        cot_title = cotizacion.titulo or cotizacion.nombre_cotizacion or f'Cotización #{cotizacion.id}'
+                        contenido_comentario = f"📋 Nueva cotización creada: {cot_title} [COT_ID:{cotizacion.id}]"
                         
                         comentario_auto = OportunidadComentario.objects.create(
                             oportunidad=oportunidad,
@@ -2631,18 +2661,18 @@ def cotizaciones_por_oportunidad_view(request, oportunidad_id):
                             contenido=contenido_comentario
                         )
                         
-                        # Crear actividad en el timeline
-                        descripcion_actividad = f"{contenido_comentario} [COMENTARIO_ID:{comentario_auto.id}]"
+                        # Crear actividad en el timeline (sin el [COT_ID:X] para que no se vea en el frontend)
+                        descripcion_actividad_limpia = f"📋 Nueva cotización creada: {cot_title} [COMENTARIO_ID:{comentario_auto.id}]"
                         
                         OportunidadActividad.objects.create(
                             oportunidad=oportunidad,
                             tipo='comentario',
                             titulo='Nueva Cotización',
-                            descripcion=descripcion_actividad,
+                            descripcion=descripcion_actividad_limpia,
                             usuario=cotizacion.created_by
                         )
                         
-                        print(f"✅ Comentario automático creado para cotización {cotizacion.id}")
+                        print(f"✅ Comentario automático creado para cotización {cotizacion.id} - {cot_title}")
                         
                     except Exception as e:
                         print(f"❌ Error creando comentario automático para cotización {cotizacion.id}: {e}")
