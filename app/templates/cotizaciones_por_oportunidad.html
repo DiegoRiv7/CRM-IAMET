@@ -1641,7 +1641,10 @@
     
     // Manejar archivos seleccionados/arrastrados
     function handleFiles(files) {
+        console.log('📂 handleFiles llamado con', files.length, 'archivos');
+        console.log('📂 Estado actual attachedFiles:', attachedFiles.length, 'archivos');
         Array.from(files).forEach(file => {
+            console.log('📄 Procesando archivo:', file.name);
             // Validar tipo de archivo
             const allowedTypes = [
                 'application/pdf',
@@ -1669,6 +1672,7 @@
             }
             
             // Agregar archivo a la lista
+            console.log('➕ Agregando archivo:', file.name, 'Total después del push será:', attachedFiles.length + 1);
             attachedFiles.push(file);
         });
         
