@@ -1647,7 +1647,7 @@ def crear_cotizacion_view(request, cliente_id=None, oportunidad_id=None):
             # Los títulos ya se procesaron en orden combinado arriba
             print(f"DEBUG: Todos los elementos (productos y títulos) fueron guardados en orden correcto")
             
-
+            from django.urls import reverse
             pdf_url = reverse('generate_cotizacion_pdf', args=[cotizacion.id])
             print(f"DEBUG: PDF URL generated: {pdf_url}")
 
@@ -1864,6 +1864,7 @@ def editar_cotizacion_view(request, cotizacion_id):
             })
 
     # URL del formulario apunta siempre a crear_cotizacion estándar para reutilizar la lógica
+    from django.urls import reverse
     form_action_url = reverse('crear_cotizacion')
 
     # Datos iniciales para el formulario
@@ -2548,6 +2549,7 @@ def cotizaciones_view(request):
         else:
             cotizaciones_qs = Cotizacion.objects.filter(cliente=cliente, created_by=request.user)
         
+        from django.urls import reverse
         cotizaciones_list = [
             {
                 'id': c.id,
@@ -2795,6 +2797,7 @@ def incrementa_view(request):
     ]
 
     # Add view and download URLs to dummy data
+    from django.urls import reverse
     for quote in all_incrementa_quotes:
         quote['view_url'] = reverse('view_incrementa_pdf', args=[quote['id']])
         quote['download_url'] = reverse('download_incrementa_pdf', args=[quote['id']])
@@ -4147,6 +4150,7 @@ def crear_cotizacion_desde_volumetria(request):
             except Exception as e:
                 print(f"❌ Error creando comentario automático: {e}")
         
+        from django.urls import reverse
         pdf_url = request.build_absolute_uri(reverse('generate_cotizacion_pdf', args=[cotizacion.id]))
         bitrix_comentario = False
         
