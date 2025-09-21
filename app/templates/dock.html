@@ -44,6 +44,34 @@
         pointer-events: none !important;
     }
 
+    /* Ocultar dock completamente en cotizaciones por oportunidad */
+    body.cotizaciones-mode .macos-dock,
+    body.cotizaciones-mode #dock-left,
+    body.cotizaciones-mode #dock-right,
+    body.cotizaciones-mode #dock-top,
+    body.cotizaciones-mode #dock-bottom {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    body.cotizaciones-mode .dock-activation-zone,
+    body.cotizaciones-mode .dock-zone-left,
+    body.cotizaciones-mode .dock-zone-right,
+    body.cotizaciones-mode .dock-zone-bottom,
+    body.cotizaciones-mode .dock-zone-top {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+    body.cotizaciones-mode .position-controls {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
     /* Zona de activación del dock para mejor UX */
     .dock-activation-zone {
         position: fixed;
