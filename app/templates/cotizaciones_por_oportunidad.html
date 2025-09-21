@@ -451,7 +451,23 @@
     }
     .timeline-item.align-right .timeline-content-item {
         order: 1;
-        /* background y color son gris por defecto */
+        background: var(--apple-blue);
+        color: white;
+    }
+    .timeline-item.align-right .timeline-title-item,
+    .timeline-item.align-right .timeline-text,
+    .timeline-item.align-right .timeline-time,
+    .timeline-item.align-right .activity-meta,
+    .timeline-item.align-right strong {
+        color: white;
+    }
+    .timeline-item.align-right .comment-author,
+    .timeline-item.align-right .timeline-title-item {
+        color: rgba(255,255,255,0.8);
+    }
+    .timeline-item.align-right .activity-link {
+        color: rgba(255,255,255,0.9);
+        text-decoration: underline;
     }
 
     /* Hide icon for comments to make it cleaner */
@@ -1955,6 +1971,8 @@
         document.getElementById('confirmCancelBtn').addEventListener('click', () => {
             if (resolveConfirm) resolveConfirm(false);
             hideConfirm();
+        });
+
         // Ocultar el dock en esta página para más espacio
         const dockMenu = document.getElementById('floating-menu');
         if (dockMenu) {
