@@ -6946,13 +6946,18 @@ def timeline_oportunidad(request, oportunidad_id):
             else:
                 print(f"⚠️ Usuario es None para actividad {actividad.id}")
             
+            # Convertir fecha a zona horaria de Tijuana (Pacific Time)
+            import pytz
+            tijuana_tz = pytz.timezone('America/Tijuana')
+            fecha_tijuana = timezone.localtime(actividad.fecha_creacion, tijuana_tz)
+            
             item_data = {
                 'id': actividad.id,
                 'tipo': actividad.tipo,
                 'titulo': actividad.titulo,
                 'descripcion': actividad.descripcion,
                 'usuario': usuario_nombre,
-                'fecha': actividad.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+                'fecha': fecha_tijuana.strftime('%d/%m/%Y %H:%M'),
                 'icono': dict(OportunidadActividad.TIPO_ACTIVIDAD_CHOICES).get(actividad.tipo, '⚙️')
             }
             

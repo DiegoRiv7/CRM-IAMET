@@ -338,8 +338,10 @@
         transition: all 0.2s ease-in-out;
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
-    .new-comment.dragover {
-        border-color: var(--apple-blue) !important;
+    .crm-timeline-panel.dragover {
+        border: 2px dashed var(--apple-blue);
+        background: rgba(10, 132, 255, 0.1);
+        border-radius: 12px;
         box-shadow: 0 0 15px rgba(10, 132, 255, 0.3);
         transform: scale(1.01);
     }
@@ -1413,20 +1415,25 @@
         // Manejar selección de archivos
         fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
         
-        // Drag & Drop en toda la sección de comentarios
-        commentSection.addEventListener('dragover', (e) => {
+        // Drag & Drop en todo el cuadro del timeline
+        const timelinePanel = document.querySelector('.crm-timeline-panel');
+        
+        timelinePanel.addEventListener('dragover', (e) => {
             e.preventDefault();
-            commentSection.classList.add('dragover');
+            timelinePanel.classList.add('dragover');
         });
         
-        commentSection.addEventListener('dragleave', (e) => {
+        timelinePanel.addEventListener('dragleave', (e) => {
             e.preventDefault();
-            commentSection.classList.remove('dragover');
+            // Solo quitar la clase si realmente salimos del panel
+            if (!timelinePanel.contains(e.relatedTarget)) {
+                timelinePanel.classList.remove('dragover');
+            }
         });
         
-        commentSection.addEventListener('drop', (e) => {
+        timelinePanel.addEventListener('drop', (e) => {
             e.preventDefault();
-            commentSection.classList.remove('dragover');
+            timelinePanel.classList.remove('dragover');
             handleFiles(e.dataTransfer.files);
         });
         
