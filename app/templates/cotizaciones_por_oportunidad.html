@@ -2,9 +2,14 @@
 {% load static %}
 
 <style>
-    /* Ocultar el dock específicamente en esta página para maximizar espacio */
-    #floating-menu {
+    /* Ocultar el sistema de dock y edición en esta página para maximizar espacio */
+    .macos-dock,
+    #design-panel,
+    #position-controls,
+    .dock-activation-zone {
         display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
     }
 </style>
 
