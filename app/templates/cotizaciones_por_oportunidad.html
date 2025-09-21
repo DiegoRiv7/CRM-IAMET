@@ -1183,28 +1183,7 @@
     </div>
 </div>
 
-<!-- MODAL DE VISTA PREVIA -->
-<div class="preview-modal" id="previewModal">
-    <div class="preview-container">
-        <div class="preview-header">
-            <h3 class="preview-title" id="previewTitle">Vista Previa</h3>
-            <div class="preview-actions">
-                <button class="preview-btn" id="previewDownload" title="Descargar archivo">
-                    ⬇️
-                </button>
-                <button class="preview-btn close" onclick="cerrarVistaPrevia()" title="Cerrar">
-                    ✕
-                </button>
-            </div>
-        </div>
-        <div class="preview-content" id="previewContent">
-            <div class="preview-loading">
-                <div class="preview-spinner"></div>
-                <div>Cargando vista previa...</div>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Modal de vista previa eliminado -->
 
 <script>
     // Variable global con el ID de la oportunidad (sin formato de Django)
@@ -1549,7 +1528,7 @@
                             <div class="attachment-item">
                                 <div class="attachment-icon ${archivo.tipo}">${getAttachmentIcon(archivo.tipo)}</div>
                                 <div class="attachment-info">
-                                    <a href="#" onclick="mostrarVistaPrevia(${archivo.id}, '${archivo.nombre.replace(/'/g, "'")}')" class="attachment-name" title="${archivo.nombre}">${archivo.nombre}</a>
+                                    <a href="/app/api/vista-previa-archivo-oportunidad/${archivo.id}/" target="_blank" rel="noopener noreferrer" class="attachment-name" title="${archivo.nombre}">${archivo.nombre}</a>
                                     <div class="attachment-meta"><span>${archivo.tamaño}</span> • <span>${archivo.fecha}</span></div>
                                 </div>
                                 <button class="attachment-download" onclick="descargarArchivo(${archivo.id})" title="Descargar archivo">⬇️</button>
@@ -1840,61 +1819,10 @@
         }
     }
 
-    // Variables globales para el modal de vista previa
-    let currentPreviewFileId = null;
-
-    // Función para mostrar vista previa
-    async function mostrarVistaPrevia(archivoId, nombreArchivo) {
-        currentPreviewFileId = archivoId;
-        const modal = document.getElementById('previewModal');
-        const title = document.getElementById('previewTitle');
-        const content = document.getElementById('previewContent');
-        const downloadBtn = document.getElementById('previewDownload');
-        title.textContent = nombreArchivo;
-        downloadBtn.onclick = () => descargarArchivo(archivoId);
-        content.innerHTML = `<div class="preview-loading"><div class="preview-spinner"></div><div>Cargando vista previa...</div></div>`;
-        modal.classList.add('show');
-        
-        try {
-            const previewUrl = `/app/api/vista-previa-archivo-oportunidad/${archivoId}/`;
-            const response = await fetch(previewUrl);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const contentType = response.headers.get('content-type');
-            
-            if (contentType && contentType.startsWith('image/')) {
-                content.innerHTML = `<img src="${previewUrl}" alt="${nombreArchivo}" class="preview-image">`;
-            } else if (contentType && contentType === 'application/pdf') {
-                content.innerHTML = `<iframe src="${previewUrl}" class="preview-pdf" title="Vista previa de ${nombreArchivo}"></iframe>`;
-            } else {
-                const data = await response.json();
-                content.innerHTML = `<div class="preview-placeholder"><div class="preview-placeholder-icon">${getAttachmentIcon(data.content_type.split('/')[0])}</div><div class="preview-placeholder-text">${data.mensaje}</div></div>`;
-            }
-        } catch (error) {
-            console.error('❌ Error cargando vista previa:', error);
-            content.innerHTML = `<div class="preview-placeholder"><div class="preview-placeholder-icon">❌</div><div class="preview-placeholder-text">Error al cargar la vista previa</div></div>`;
-        }
-    }
-
-    // Función para cerrar vista previa
-    function cerrarVistaPrevia() {
-        const modal = document.getElementById('previewModal');
-        modal.classList.remove('show');
-    }
-
     // Función para descargar archivos
     function descargarArchivo(archivoId) {
         window.open(`/app/api/descargar-archivo-oportunidad/${archivoId}/`, '_blank');
     }
-
-    // Control de teclado para el modal
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') cerrarVistaPrevia();
-    });
-
-    // Cerrar modal al hacer click en el fondo
-    document.getElementById('previewModal').addEventListener('click', function(e) {
-        if (e.target === this) cerrarVistaPrevia();
-    });
 
     // Función para obtener cookie (CSRF token)
     function getCookie(name) {
