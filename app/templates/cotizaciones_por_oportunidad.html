@@ -1166,6 +1166,7 @@
 <script>
     const OPORTUNIDAD_ID = parseInt("{{ oportunidad.id }}".replace(/,/g, ''));
     const OPPORTUNITY_OWNER_ID = {{ oportunidad.usuario.id }};
+    const CURRENT_USER_ID = {{ user.id }};
     
     // Control de estados en header
     function toggleEstadoDropdownHeader() {
@@ -1456,10 +1457,7 @@
     }
 
     function renderTimelineItem(activity) {
-        console.log('🎯 renderTimelineItem llamado con:', activity);
-        
         if (!activity || !activity.tipo) {
-            console.error('❌ Activity inválida:', activity);
             return '';
         }
         
@@ -1472,6 +1470,7 @@
         let editableClass = '';
         let clickHandler = '';
 
+        // ALIGNMENT: Align right if the activity user is the opportunity owner
         if (activity.usuario_id && activity.usuario_id === OPPORTUNITY_OWNER_ID) {
             alignmentClass = 'align-right';
         }
@@ -1501,7 +1500,8 @@
                 const usuario = activity.usuario || 'Usuario desconocido';
                 const comentarioId = activity.comentario_id;
                 
-                if (activity.puede_editar) {
+                // PERMISSIONS: A comment is editable only if the author is the current user
+                if (activity.usuario_id && activity.usuario_id === CURRENT_USER_ID) {
                     editableClass = 'editable';
                     clickHandler = `onclick="editarComentario(event, ${comentarioId})"`;
                 }
