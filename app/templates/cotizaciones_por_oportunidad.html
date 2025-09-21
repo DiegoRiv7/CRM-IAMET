@@ -1665,11 +1665,11 @@
         }
         currentlyEditing = comentarioId;
 
-        const contentItem = document.querySelector(`#timeline-item-${comentarioId} .timeline-content-item`);
-        const textElement = document.getElementById(`comment-text-${comentarioId}`);
         const editForm = document.getElementById(`comment-edit-form-${comentarioId}`);
+        const contentItem = editForm.closest('.timeline-content-item');
+        const textElement = document.getElementById(`comment-text-${comentarioId}`);
         
-        if (textElement && editForm) {
+        if (textElement && editForm && contentItem) {
             contentItem.classList.add('editing');
             textElement.style.display = 'none';
             editForm.style.display = 'block';
@@ -1684,10 +1684,10 @@
         if(event) event.stopPropagation();
         currentlyEditing = null;
 
-        const contentItem = document.querySelector(`#timeline-item-${comentarioId} .timeline-content-item`);
-        const textElement = document.getElementById(`comment-text-${comentarioId}`);
         const editForm = document.getElementById(`comment-edit-form-${comentarioId}`);
-        if (textElement && editForm) {
+        const contentItem = editForm.closest('.timeline-content-item');
+        const textElement = document.getElementById(`comment-text-${comentarioId}`);
+        if (textElement && editForm && contentItem) {
             contentItem.classList.remove('editing');
             textElement.style.display = 'block';
             editForm.style.display = 'none';
