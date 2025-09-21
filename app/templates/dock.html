@@ -838,6 +838,204 @@
     .light-theme .position-arrow.active svg {
         color: white;
     }
+
+    /* Estilos para notificaciones */
+    .notification-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: #FF453A;
+        color: white;
+        border-radius: 50%;
+        min-width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+        border: 2px solid rgba(29, 29, 31, 0.9);
+        z-index: 10;
+        transform: scale(0);
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        pointer-events: none;
+    }
+
+    .notification-badge.show {
+        transform: scale(1);
+        animation: notificationPulse 2s infinite;
+    }
+
+    @keyframes notificationPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    /* Modal de notificaciones */
+    .notifications-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(10px);
+        z-index: 2000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .notifications-modal.show {
+        opacity: 1;
+    }
+
+    .notifications-content {
+        background: rgba(29, 29, 31, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 2rem;
+        max-width: 500px;
+        width: 90%;
+        max-height: 70vh;
+        overflow-y: auto;
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .notifications-modal.show .notifications-content {
+        transform: scale(1);
+    }
+
+    .notifications-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .notifications-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #EBEBF5;
+        margin: 0;
+    }
+
+    .close-notifications {
+        background: none;
+        border: none;
+        color: #8E8E93;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .close-notifications:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #EBEBF5;
+    }
+
+    .notification-item {
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        background: rgba(58, 58, 60, 0.8);
+        border-radius: 12px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+    .notification-item:hover {
+        border-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-1px);
+    }
+
+    .notification-item.unread {
+        border-left: 3px solid #007AFF;
+        background: rgba(0, 122, 255, 0.1);
+    }
+
+    .notification-item.unread::before {
+        content: '';
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        width: 8px;
+        height: 8px;
+        background: #007AFF;
+        border-radius: 50%;
+    }
+
+    .notification-sender {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #007AFF;
+        margin-bottom: 0.25rem;
+    }
+
+    .notification-title {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #EBEBF5;
+        margin-bottom: 0.5rem;
+    }
+
+    .notification-message {
+        font-size: 0.85rem;
+        color: #8E8E93;
+        line-height: 1.4;
+        margin-bottom: 0.5rem;
+    }
+
+    .notification-time {
+        font-size: 0.75rem;
+        color: #8E8E93;
+        text-align: right;
+    }
+
+    .no-notifications {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #8E8E93;
+    }
+
+    .no-notifications-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .mark-all-read {
+        background: #007AFF;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .mark-all-read:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
+    }
+
+    .mark-all-read:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
 </style>
 
 <!-- Dock Left -->
@@ -929,6 +1127,15 @@
         <span class="tooltip">Diseño</span>
     </div>
     
+    <!-- Icono de Notificaciones -->
+    <a href="#" class="dock-item" id="notifications-btn">
+        <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        <span class="notification-badge" id="notification-badge">0</span>
+        <span class="tooltip">Notificaciones</span>
+    </a>
+
     {% if user.is_superuser %}
     <a href="#" class="dock-item" id="assistant-btn">
         <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
@@ -1031,6 +1238,15 @@
         <span class="tooltip">Diseño</span>
     </div>
     
+    <!-- Icono de Notificaciones -->
+    <a href="#" class="dock-item" id="notifications-btn-right">
+        <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        <span class="notification-badge" id="notification-badge-right">0</span>
+        <span class="tooltip">Notificaciones</span>
+    </a>
+
     {% if user.is_superuser %}
     <a href="#" class="dock-item" id="assistant-btn-right">
         <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
@@ -1131,6 +1347,15 @@
         <span class="tooltip">Diseño</span>
     </div>
     
+    <!-- Icono de Notificaciones -->
+    <a href="#" class="dock-item" id="notifications-btn-top">
+        <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        <span class="notification-badge" id="notification-badge-top">0</span>
+        <span class="tooltip">Notificaciones</span>
+    </a>
+
     {% if user.is_superuser %}
     <a href="#" class="dock-item" id="assistant-btn-top">
         <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
@@ -1231,6 +1456,15 @@
         <span class="tooltip">Diseño</span>
     </div>
     
+    <!-- Icono de Notificaciones -->
+    <a href="#" class="dock-item" id="notifications-btn-bottom">
+        <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        <span class="notification-badge" id="notification-badge-bottom">0</span>
+        <span class="tooltip">Notificaciones</span>
+    </a>
+
     {% if user.is_superuser %}
     <a href="#" class="dock-item" id="assistant-btn-bottom">
         <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
@@ -1242,6 +1476,22 @@
         <span class="tooltip">Cerrar Sesión</span>
     </a>
 </nav>
+
+<!-- Modal de Notificaciones -->
+<div class="notifications-modal" id="notificationsModal">
+    <div class="notifications-content">
+        <div class="notifications-header">
+            <h3 class="notifications-title">Notificaciones</h3>
+            <button class="close-notifications" id="closeNotifications">×</button>
+        </div>
+        <div id="notificationsList">
+            <!-- Las notificaciones se cargarán aquí dinámicamente -->
+        </div>
+        <div style="margin-top: 1rem; display: flex; justify-content: flex-end;">
+            <button class="mark-all-read" id="markAllReadBtn">Marcar todas como leídas</button>
+        </div>
+    </div>
+</div>
 
 <!-- Design Panel -->
 <div class="design-panel" id="design-panel">
@@ -1864,5 +2114,213 @@ window.addEventListener('error', function(e) {
     
     // Initialize with a small delay to avoid conflicts with external scripts
     setTimeout(initDesignPanel, 100);
+})();
+
+// ==========================================
+// SISTEMA DE NOTIFICACIONES
+// ==========================================
+(function() {
+    let notificationsCount = 0;
+    let isLoadingNotifications = false;
+    
+    // Función para obtener las notificaciones del usuario
+    async function loadNotifications() {
+        if (isLoadingNotifications) return;
+        isLoadingNotifications = true;
+        
+        try {
+            const response = await fetch('/app/api/obtener-notificaciones/');
+            const data = await response.json();
+            
+            if (data.success) {
+                updateNotificationBadges(data.unread_count);
+                renderNotifications(data.notifications);
+                notificationsCount = data.unread_count;
+            }
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+        } finally {
+            isLoadingNotifications = false;
+        }
+    }
+    
+    // Función para actualizar los badges de notificaciones en todos los docks
+    function updateNotificationBadges(count) {
+        const badges = [
+            'notification-badge',
+            'notification-badge-right', 
+            'notification-badge-top',
+            'notification-badge-bottom'
+        ];
+        
+        badges.forEach(badgeId => {
+            const badge = document.getElementById(badgeId);
+            if (badge) {
+                badge.textContent = count;
+                if (count > 0) {
+                    badge.classList.add('show');
+                } else {
+                    badge.classList.remove('show');
+                }
+            }
+        });
+    }
+    
+    // Función para renderizar las notificaciones en el modal
+    function renderNotifications(notifications) {
+        const container = document.getElementById('notificationsList');
+        if (!container) return;
+        
+        if (!notifications || notifications.length === 0) {
+            container.innerHTML = `
+                <div class="no-notifications">
+                    <div class="no-notifications-icon">📬</div>
+                    <div>No tienes notificaciones</div>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = notifications.map(notification => `
+            <div class="notification-item ${notification.leida ? '' : 'unread'}" 
+                 data-id="${notification.id}" 
+                 onclick="openNotification(${notification.id}, '${notification.url}')">
+                <div class="notification-sender">${notification.remitente || 'Sistema'}</div>
+                <div class="notification-title">${notification.titulo}</div>
+                <div class="notification-message">${notification.mensaje}</div>
+                <div class="notification-time">${notification.fecha}</div>
+            </div>
+        `).join('');
+    }
+    
+    // Función para abrir una notificación
+    window.openNotification = async function(notificationId, url) {
+        try {
+            // Marcar como leída
+            await fetch(`/app/api/marcar-notificacion-leida/${notificationId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+            
+            // Cerrar modal
+            closeNotificationsModal();
+            
+            // Ir a la URL
+            if (url && url !== '/app/todos/') {
+                window.location.href = url;
+            }
+            
+            // Recargar notificaciones para actualizar contador
+            setTimeout(loadNotifications, 500);
+            
+        } catch (error) {
+            console.error('Error opening notification:', error);
+        }
+    }
+    
+    // Función para marcar todas como leídas
+    async function markAllAsRead() {
+        try {
+            const response = await fetch('/app/api/marcar-todas-notificaciones-leidas/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                loadNotifications(); // Recargar notificaciones
+            }
+        } catch (error) {
+            console.error('Error marking all as read:', error);
+        }
+    }
+    
+    // Función para abrir el modal de notificaciones
+    function openNotificationsModal() {
+        const modal = document.getElementById('notificationsModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+            loadNotifications(); // Cargar notificaciones al abrir
+        }
+    }
+    
+    // Función para cerrar el modal de notificaciones
+    function closeNotificationsModal() {
+        const modal = document.getElementById('notificationsModal');
+        if (modal) {
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+    }
+    
+    // Función para obtener CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Event listeners para los botones de notificaciones
+    document.addEventListener('DOMContentLoaded', function() {
+        // Botones de notificaciones en diferentes docks
+        const notificationButtons = [
+            'notifications-btn',
+            'notifications-btn-right',
+            'notifications-btn-top',
+            'notifications-btn-bottom'
+        ];
+        
+        notificationButtons.forEach(buttonId => {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    openNotificationsModal();
+                });
+            }
+        });
+        
+        // Botón para cerrar modal
+        const closeBtn = document.getElementById('closeNotifications');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeNotificationsModal);
+        }
+        
+        // Botón para marcar todas como leídas
+        const markAllBtn = document.getElementById('markAllReadBtn');
+        if (markAllBtn) {
+            markAllBtn.addEventListener('click', markAllAsRead);
+        }
+        
+        // Cerrar modal al hacer click fuera
+        const modal = document.getElementById('notificationsModal');
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeNotificationsModal();
+                }
+            });
+        }
+        
+        // Cargar notificaciones al iniciar
+        loadNotifications();
+        
+        // Verificar notificaciones cada 30 segundos
+        setInterval(loadNotifications, 30000);
+    });
 })();
 </script>

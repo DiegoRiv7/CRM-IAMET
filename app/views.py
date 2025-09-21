@@ -8,7 +8,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.models import User
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion
 from . import views_exportar
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
 from django.db.models import Sum, Count, F, Q, Case, When, Value
@@ -6847,6 +6847,54 @@ def agregar_comentario_oportunidad(request, oportunidad_id):
         )
         print(f"💬 Actividad creada: ID={actividad_creada.id}, Usuario={actividad_creada.usuario}, Descripcion='{actividad_creada.descripcion}'")
         
+        # ======================================
+        # CREAR NOTIFICACIONES AUTOMÁTICAMENTE
+        # ======================================
+        
+        # 1. Detectar menciones @usuario en el comentario
+        if contenido:
+            detectar_menciones_en_comentario(contenido, request.user, oportunidad, comentario)
+        
+        # 2. Notificar al dueño de la oportunidad (si no es el mismo que comenta)
+        if oportunidad.usuario != request.user:
+            mensaje_notif = f'{request.user.get_full_name() or request.user.username} comentó en tu oportunidad "{oportunidad.oportunidad}"'
+            if contenido:
+                mensaje_notif += f': {contenido[:100]}...' if len(contenido) > 100 else f': {contenido}'
+            else:
+                mensaje_notif += ' y adjuntó archivos'
+                
+            crear_notificacion(
+                usuario_destinatario=oportunidad.usuario,
+                tipo='comentario_oportunidad',
+                titulo='Nuevo comentario en tu oportunidad',
+                mensaje=mensaje_notif,
+                oportunidad=oportunidad,
+                comentario=comentario,
+                usuario_remitente=request.user
+            )
+        
+        # 3. Notificar a otros usuarios que han comentado en esta oportunidad (excepto el autor actual y el dueño)
+        otros_comentaristas = User.objects.filter(
+            oportunidad_comentarios__oportunidad=oportunidad
+        ).exclude(
+            id__in=[request.user.id, oportunidad.usuario.id]
+        ).distinct()
+        
+        for usuario in otros_comentaristas:
+            mensaje_notif = f'{request.user.get_full_name() or request.user.username} también comentó en la oportunidad "{oportunidad.oportunidad}"'
+            if contenido:
+                mensaje_notif += f': {contenido[:100]}...' if len(contenido) > 100 else f': {contenido}'
+            
+            crear_notificacion(
+                usuario_destinatario=usuario,
+                tipo='comentario_oportunidad',
+                titulo='Nuevo comentario en oportunidad que sigues',
+                mensaje=mensaje_notif,
+                oportunidad=oportunidad,
+                comentario=comentario,
+                usuario_remitente=request.user
+            )
+        
         return JsonResponse({
             'success': True,
             'comentario': {
@@ -7308,3 +7356,171 @@ def vista_previa_archivo_oportunidad(request, archivo_id):
     except Exception as e:
         print(f"❌ Error en vista previa de archivo: {e}")
         return HttpResponse(f'Error al abrir archivo: {str(e)}', status=500)
+
+
+# ==========================================
+# APIs DE NOTIFICACIONES
+# ==========================================
+
+@login_required
+def obtener_notificaciones_api(request):
+    """
+    API para obtener las notificaciones del usuario actual
+    """
+    try:
+        user = request.user
+        
+        # Obtener notificaciones del usuario (últimas 50)
+        notificaciones = Notificacion.objects.filter(
+            usuario_destinatario=user
+        ).select_related(
+            'usuario_remitente', 'oportunidad', 'comentario'
+        ).order_by('-fecha_creacion')[:50]
+        
+        # Contar notificaciones no leídas
+        unread_count = Notificacion.objects.filter(
+            usuario_destinatario=user,
+            leida=False
+        ).count()
+        
+        # Serializar notificaciones
+        notifications_data = []
+        for notif in notificaciones:
+            notifications_data.append({
+                'id': notif.id,
+                'titulo': notif.titulo,
+                'mensaje': notif.mensaje,
+                'tipo': notif.tipo,
+                'leida': notif.leida,
+                'fecha': notif.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+                'remitente': notif.usuario_remitente.get_full_name() if notif.usuario_remitente else 'Sistema',
+                'url': notif.get_url(),
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'notifications': notifications_data,
+            'unread_count': unread_count
+        })
+        
+    except Exception as e:
+        print(f"❌ Error obteniendo notificaciones: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Error al obtener notificaciones'
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def marcar_notificacion_leida_api(request, notificacion_id):
+    """
+    API para marcar una notificación específica como leída
+    """
+    try:
+        notificacion = get_object_or_404(
+            Notificacion, 
+            id=notificacion_id, 
+            usuario_destinatario=request.user
+        )
+        
+        notificacion.marcar_como_leida()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Notificación marcada como leída'
+        })
+        
+    except Exception as e:
+        print(f"❌ Error marcando notificación como leída: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Error al marcar notificación como leída'
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def marcar_todas_notificaciones_leidas_api(request):
+    """
+    API para marcar todas las notificaciones del usuario como leídas
+    """
+    try:
+        # Marcar todas las notificaciones no leídas del usuario
+        notificaciones_no_leidas = Notificacion.objects.filter(
+            usuario_destinatario=request.user,
+            leida=False
+        )
+        
+        count = notificaciones_no_leidas.update(
+            leida=True,
+            fecha_lectura=timezone.now()
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'{count} notificaciones marcadas como leídas'
+        })
+        
+    except Exception as e:
+        print(f"❌ Error marcando todas las notificaciones como leídas: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Error al marcar notificaciones como leídas'
+        }, status=500)
+
+
+def crear_notificacion(usuario_destinatario, tipo, titulo, mensaje, oportunidad=None, comentario=None, usuario_remitente=None):
+    """
+    Función auxiliar para crear notificaciones
+    """
+    try:
+        # No crear notificación si el remitente y destinatario son el mismo
+        if usuario_remitente and usuario_destinatario == usuario_remitente:
+            return None
+            
+        notificacion = Notificacion.objects.create(
+            usuario_destinatario=usuario_destinatario,
+            usuario_remitente=usuario_remitente,
+            tipo=tipo,
+            titulo=titulo,
+            mensaje=mensaje,
+            oportunidad=oportunidad,
+            comentario=comentario
+        )
+        
+        print(f"✅ Notificación creada: {titulo} para {usuario_destinatario.username}")
+        return notificacion
+        
+    except Exception as e:
+        print(f"❌ Error creando notificación: {e}")
+        return None
+
+
+def detectar_menciones_en_comentario(contenido, usuario_remitente, oportunidad, comentario=None):
+    """
+    Detecta menciones @usuario en un comentario y crea notificaciones
+    """
+    import re
+    
+    # Buscar menciones en el formato @usuario
+    menciones = re.findall(r'@(\w+)', contenido)
+    
+    for username in menciones:
+        try:
+            usuario_mencionado = User.objects.get(username=username)
+            
+            # Crear notificación de mención
+            crear_notificacion(
+                usuario_destinatario=usuario_mencionado,
+                tipo='mencion',
+                titulo='Te han mencionado en un comentario',
+                mensaje=f'{usuario_remitente.get_full_name() or usuario_remitente.username} te mencionó en la oportunidad "{oportunidad.oportunidad}": {contenido[:100]}...',
+                oportunidad=oportunidad,
+                comentario=comentario,
+                usuario_remitente=usuario_remitente
+            )
+            
+        except User.DoesNotExist:
+            # Usuario mencionado no existe, ignorar
+            pass

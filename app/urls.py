@@ -205,5 +205,12 @@ urlpatterns = [
     # ===============================================
     path('api/spotlight-search/', views.spotlight_search_api, name='spotlight_search_api'),
     
+    # ===============================================
+    # APIs DE NOTIFICACIONES
+    # ===============================================
+    path('api/obtener-notificaciones/', views.obtener_notificaciones_api, name='obtener_notificaciones_api'),
+    path('api/marcar-notificacion-leida/<int:notificacion_id>/', views.marcar_notificacion_leida_api, name='marcar_notificacion_leida_api'),
+    path('api/marcar-todas-notificaciones-leidas/', views.marcar_todas_notificaciones_leidas_api, name='marcar_todas_notificaciones_leidas_api'),
+    
     path('koti-bot-html/', TemplateView.as_view(template_name='nethive_bot.html'), name='koti_bot_html'),
 ]

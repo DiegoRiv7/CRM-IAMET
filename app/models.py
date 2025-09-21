@@ -1291,3 +1291,92 @@ class OportunidadArchivo(models.Model):
                 return f"{self.tamaño:.1f} {unit}"
             self.tamaño /= 1024.0
         return f"{self.tamaño:.1f} TB"
+
+
+class Notificacion(models.Model):
+    """
+    Modelo para el sistema de notificaciones de usuarios
+    """
+    TIPO_CHOICES = [
+        ('mencion', 'Mención en comentario'),
+        ('respuesta', 'Respuesta a comentario'),
+        ('comentario_oportunidad', 'Nuevo comentario en oportunidad'),
+        ('sistema', 'Notificación del sistema'),
+    ]
+    
+    usuario_destinatario = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='notificaciones_recibidas',
+        verbose_name="Usuario Destinatario"
+    )
+    usuario_remitente = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='notificaciones_enviadas',
+        verbose_name="Usuario Remitente",
+        null=True,
+        blank=True
+    )
+    tipo = models.CharField(
+        max_length=25,
+        choices=TIPO_CHOICES,
+        verbose_name="Tipo de Notificación"
+    )
+    titulo = models.CharField(
+        max_length=200,
+        verbose_name="Título de la Notificación"
+    )
+    mensaje = models.TextField(
+        verbose_name="Mensaje de la Notificación"
+    )
+    oportunidad = models.ForeignKey(
+        'TodoItem',
+        on_delete=models.CASCADE,
+        related_name='notificaciones',
+        verbose_name="Oportunidad Relacionada",
+        null=True,
+        blank=True
+    )
+    comentario = models.ForeignKey(
+        'ComentarioOportunidad',
+        on_delete=models.CASCADE,
+        related_name='notificaciones',
+        verbose_name="Comentario Relacionado",
+        null=True,
+        blank=True
+    )
+    leida = models.BooleanField(
+        default=False,
+        verbose_name="Notificación Leída"
+    )
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de Creación"
+    )
+    fecha_lectura = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Lectura"
+    )
+    
+    class Meta:
+        verbose_name = "Notificación"
+        verbose_name_plural = "Notificaciones"
+        ordering = ['-fecha_creacion']
+    
+    def __str__(self):
+        return f"{self.titulo} - {self.usuario_destinatario.username}"
+    
+    def marcar_como_leida(self):
+        """Marca la notificación como leída"""
+        if not self.leida:
+            self.leida = True
+            self.fecha_lectura = timezone.now()
+            self.save()
+    
+    def get_url(self):
+        """Obtiene la URL a la que debe dirigirse la notificación"""
+        if self.oportunidad:
+            return f"/app/cotizaciones/oportunidad/{self.oportunidad.id}/"
+        return "/app/todos/"
