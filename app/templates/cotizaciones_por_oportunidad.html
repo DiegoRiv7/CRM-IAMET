@@ -4,6 +4,7 @@
 {% block title %}{{ oportunidad.oportunidad }}{% endblock %}
 
 {% block content %}
+{% csrf_token %}
 {% if user.is_superuser %}
 <!-- CRM AVANZADO SOLO PARA SUPERUSUARIOS -->
 <style>
@@ -970,6 +971,66 @@
         box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
     }
 
+    /* Botón de edición */
+    .edit-opportunity-btn {
+        background: none;
+        border: none;
+        color: var(--apple-label-secondary);
+        cursor: pointer;
+        padding: 0.3rem;
+        border-radius: 6px;
+        margin-left: 0.5rem;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .edit-opportunity-btn:hover {
+        background: var(--apple-fill-tertiary);
+        color: var(--apple-blue);
+        transform: scale(1.1);
+    }
+
+    /* Campos de edición */
+    .info-edit {
+        background: var(--apple-background);
+        border: 2px solid var(--apple-separator);
+        border-radius: 8px;
+        padding: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--apple-label);
+        width: 100%;
+        transition: border-color 0.2s ease;
+    }
+
+    .info-edit:focus {
+        outline: none;
+        border-color: var(--apple-blue);
+        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+    }
+
+    .edit-mode {
+        display: none !important;
+    }
+
+    .view-mode {
+        display: block;
+    }
+
+    /* Cuando está en modo edición */
+    body.editing-opportunity .edit-mode {
+        display: block !important;
+    }
+
+    body.editing-opportunity .view-mode {
+        display: none !important;
+    }
+
+    body.editing-opportunity .edit-actions {
+        display: flex !important;
+    }
+
     .apple-button-small {
         padding: 0.4rem 0.8rem;
         font-size: 0.8rem;
@@ -1340,39 +1401,84 @@
         <div class="crm-info-panel">
             <!-- INFORMACIÓN BÁSICA -->
             <div class="info-section">
-                <div class="section-title">Información de la Oportunidad</div>
-                <div class="info-grid">
+                <div class="section-title">
+                    Información de la Oportunidad
+                    <button class="edit-opportunity-btn" onclick="toggleEditMode()" title="Editar información">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="info-grid" id="opportunity-info">
                     <div class="info-item">
                         <div class="info-label">Cliente</div>
-                        <div class="info-value">{{ oportunidad.cliente.nombre_empresa|default:"Sin cliente" }}</div>
+                        <div class="info-value view-mode" data-field="cliente">{{ oportunidad.cliente.nombre_empresa|default:"Sin cliente" }}</div>
+                        <select class="info-edit edit-mode" data-field="cliente" style="display: none;">
+                            <option value="">Seleccionar cliente</option>
+                            <!-- Se llenará dinámicamente -->
+                        </select>
                     </div>
                     <div class="info-item">
                         <div class="info-label">Contacto</div>
-                        <div class="info-value">{{ oportunidad.contacto|default:"Sin contacto" }}</div>
+                        <div class="info-value view-mode" data-field="contacto">{{ oportunidad.contacto|default:"Sin contacto" }}</div>
+                        <input type="text" class="info-edit edit-mode" data-field="contacto" value="{{ oportunidad.contacto|default:"" }}" style="display: none;" placeholder="Nombre del contacto">
                     </div>
                     <div class="info-item">
                         <div class="info-label">Vendedor</div>
-                        <div class="info-value">{{ oportunidad.usuario.get_full_name|default:oportunidad.usuario.username }}</div>
+                        <div class="info-value" style="color: var(--apple-label-tertiary);">{{ oportunidad.usuario.get_full_name|default:oportunidad.usuario.username }} (No editable)</div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">Área</div>
-                        <div class="info-value">{{ oportunidad.get_area_display }}</div>
+                        <div class="info-value view-mode" data-field="area">{{ oportunidad.get_area_display }}</div>
+                        <select class="info-edit edit-mode" data-field="area" style="display: none;">
+                            <option value="bajanet" {% if oportunidad.area == 'bajanet' %}selected{% endif %}>Bajanet</option>
+                            <option value="iamet" {% if oportunidad.area == 'iamet' %}selected{% endif %}>Iamet</option>
+                        </select>
                     </div>
                     <div class="info-item">
                         <div class="info-label">Producto</div>
-                        <div class="info-value">{{ oportunidad.get_producto_display }}</div>
+                        <div class="info-value view-mode" data-field="producto">{{ oportunidad.get_producto_display }}</div>
+                        <select class="info-edit edit-mode" data-field="producto" style="display: none;">
+                            <option value="networking" {% if oportunidad.producto == 'networking' %}selected{% endif %}>Networking</option>
+                            <option value="colaboracion" {% if oportunidad.producto == 'colaboracion' %}selected{% endif %}>Colaboración</option>
+                            <option value="seguridad" {% if oportunidad.producto == 'seguridad' %}selected{% endif %}>Seguridad</option>
+                            <option value="datacenter" {% if oportunidad.producto == 'datacenter' %}selected{% endif %}>Datacenter</option>
+                        </select>
                     </div>
                     <div class="info-item">
                         <div class="info-label">Monto</div>
-                        <div class="info-value" style="color: var(--apple-green); font-weight: 600;">${{ oportunidad.monto }}</div>
+                        <div class="info-value view-mode" data-field="monto" style="color: var(--apple-green); font-weight: 600;">${{ oportunidad.monto }}</div>
+                        <input type="number" class="info-edit edit-mode" data-field="monto" value="{{ oportunidad.monto }}" style="display: none;" placeholder="0" step="0.01">
                     </div>
                     <div class="info-item">
                         <div class="info-label">Probabilidad</div>
-                        <div class="info-value">{{ oportunidad.probabilidad_cierre }}%</div>
+                        <div class="info-value view-mode" data-field="probabilidad">{{ oportunidad.probabilidad_cierre }}%</div>
+                        <input type="number" class="info-edit edit-mode" data-field="probabilidad" value="{{ oportunidad.probabilidad_cierre }}" style="display: none;" placeholder="0" min="0" max="100">
                     </div>
                     <div class="info-item">
                         <div class="info-label">Mes Cierre</div>
-                        <div class="info-value">{{ oportunidad.get_mes_cierre_display }}</div>
+                        <div class="info-value view-mode" data-field="mes_cierre">{{ oportunidad.get_mes_cierre_display }}</div>
+                        <select class="info-edit edit-mode" data-field="mes_cierre" style="display: none;">
+                            <option value="enero" {% if oportunidad.mes_cierre == 'enero' %}selected{% endif %}>Enero</option>
+                            <option value="febrero" {% if oportunidad.mes_cierre == 'febrero' %}selected{% endif %}>Febrero</option>
+                            <option value="marzo" {% if oportunidad.mes_cierre == 'marzo' %}selected{% endif %}>Marzo</option>
+                            <option value="abril" {% if oportunidad.mes_cierre == 'abril' %}selected{% endif %}>Abril</option>
+                            <option value="mayo" {% if oportunidad.mes_cierre == 'mayo' %}selected{% endif %}>Mayo</option>
+                            <option value="junio" {% if oportunidad.mes_cierre == 'junio' %}selected{% endif %}>Junio</option>
+                            <option value="julio" {% if oportunidad.mes_cierre == 'julio' %}selected{% endif %}>Julio</option>
+                            <option value="agosto" {% if oportunidad.mes_cierre == 'agosto' %}selected{% endif %}>Agosto</option>
+                            <option value="septiembre" {% if oportunidad.mes_cierre == 'septiembre' %}selected{% endif %}>Septiembre</option>
+                            <option value="octubre" {% if oportunidad.mes_cierre == 'octubre' %}selected{% endif %}>Octubre</option>
+                            <option value="noviembre" {% if oportunidad.mes_cierre == 'noviembre' %}selected{% endif %}>Noviembre</option>
+                            <option value="diciembre" {% if oportunidad.mes_cierre == 'diciembre' %}selected{% endif %}>Diciembre</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Botones de edición -->
+                    <div class="edit-actions edit-mode" style="display: none; grid-column: 1 / -1; margin-top: 1rem; gap: 0.5rem; justify-content: flex-end;">
+                        <button class="apple-button apple-button-secondary apple-button-small" onclick="cancelEdit()">Cancelar</button>
+                        <button class="apple-button apple-button-small" onclick="saveOpportunity()">Guardar</button>
                     </div>
                 </div>
             </div>
@@ -2414,10 +2520,163 @@
         }
     });
 
+    // Función para obtener cookie (CSRF token)
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
     // Función para mostrar mensaje de proyecto
     function mostrarMensajeProyecto() {
         alert('Función de Crear Proyecto próximamente disponible');
         return false;
+    }
+
+    // Variables globales para edición
+    let originalValues = {};
+    let isEditing = false;
+
+    // Función para alternar modo de edición
+    function toggleEditMode() {
+        if (!isEditing) {
+            startEdit();
+        } else {
+            cancelEdit();
+        }
+    }
+
+    // Iniciar edición
+    function startEdit() {
+        isEditing = true;
+        document.body.classList.add('editing-opportunity');
+        
+        // Guardar valores originales
+        originalValues = {};
+        document.querySelectorAll('.view-mode[data-field]').forEach(el => {
+            const field = el.getAttribute('data-field');
+            originalValues[field] = el.textContent.trim();
+        });
+
+        // Cargar clientes para el select
+        loadClientesForEdit();
+        
+        console.log('📝 Modo edición activado');
+    }
+
+    // Cancelar edición
+    function cancelEdit() {
+        isEditing = false;
+        document.body.classList.remove('editing-opportunity');
+        
+        // Restaurar valores originales
+        for (const [field, value] of Object.entries(originalValues)) {
+            const editElement = document.querySelector(`.edit-mode[data-field="${field}"]`);
+            if (editElement) {
+                if (editElement.tagName === 'SELECT') {
+                    // Para selects, encontrar la opción por texto
+                    for (let option of editElement.options) {
+                        if (option.text === value || option.value === value) {
+                            editElement.value = option.value;
+                            break;
+                        }
+                    }
+                } else {
+                    editElement.value = value.replace('$', '').replace('%', '');
+                }
+            }
+        }
+        
+        console.log('❌ Edición cancelada');
+    }
+
+    // Guardar cambios
+    async function saveOpportunity() {
+        const formData = new FormData();
+        
+        // Recopilar datos de los campos de edición
+        document.querySelectorAll('.edit-mode[data-field]').forEach(el => {
+            const field = el.getAttribute('data-field');
+            formData.append(field, el.value);
+        });
+
+        try {
+            const response = await fetch(`/app/api/editar-oportunidad/{{ oportunidad.id }}/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                console.log('✅ Oportunidad actualizada');
+                
+                // Actualizar valores en la vista
+                for (const [field, newValue] of Object.entries(data.updated_values)) {
+                    const viewElement = document.querySelector(`.view-mode[data-field="${field}"]`);
+                    if (viewElement) {
+                        viewElement.textContent = newValue;
+                    }
+                }
+                
+                // Salir del modo edición
+                isEditing = false;
+                document.body.classList.remove('editing-opportunity');
+                
+                // Mostrar mensaje de éxito
+                showNotification('Información de la oportunidad actualizada correctamente', 'success');
+                
+            } else {
+                console.error('❌ Error al actualizar:', data.error);
+                showNotification('Error al actualizar la información: ' + data.error, 'error');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error de red:', error);
+            showNotification('Error de conexión al guardar los cambios', 'error');
+        }
+    }
+
+    // Cargar clientes para el select
+    async function loadClientesForEdit() {
+        try {
+            const response = await fetch('/app/api/clientes/');
+            const clientes = await response.json();
+            
+            const clienteSelect = document.querySelector('.edit-mode[data-field="cliente"]');
+            clienteSelect.innerHTML = '<option value="">Seleccionar cliente</option>';
+            
+            clientes.forEach(cliente => {
+                const option = document.createElement('option');
+                option.value = cliente.id;
+                option.textContent = cliente.nombre_empresa;
+                if (cliente.nombre_empresa === originalValues.cliente) {
+                    option.selected = true;
+                }
+                clienteSelect.appendChild(option);
+            });
+            
+        } catch (error) {
+            console.error('Error cargando clientes:', error);
+        }
+    }
+
+    // Función para mostrar notificaciones
+    function showNotification(message, type = 'info') {
+        // Por ahora usar alert, después se puede mejorar con un toast
+        alert(message);
     }
 
     // Inicializar componentes

@@ -2663,6 +2663,101 @@ def cotizaciones_por_oportunidad_view(request, oportunidad_id):
     return render(request, 'cotizaciones_por_oportunidad.html', context)
 
 @login_required
+@require_http_methods(["POST"])
+def editar_oportunidad_api(request, oportunidad_id):
+    """
+    API para editar información de una oportunidad
+    """
+    try:
+        oportunidad = get_object_or_404(TodoItem, pk=oportunidad_id)
+        
+        # Verificar permisos - supervisores pueden editar todo, usuarios solo sus oportunidades
+        if not is_supervisor(request.user) and oportunidad.usuario != request.user:
+            return JsonResponse({'success': False, 'error': 'No tienes permisos para editar esta oportunidad'})
+        
+        updated_values = {}
+        
+        # Actualizar cliente
+        if 'cliente' in request.POST and request.POST['cliente']:
+            try:
+                cliente = Cliente.objects.get(id=request.POST['cliente'])
+                oportunidad.cliente = cliente
+                updated_values['cliente'] = cliente.nombre_empresa
+            except Cliente.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Cliente no encontrado'})
+        
+        # Actualizar contacto
+        if 'contacto' in request.POST:
+            oportunidad.contacto = request.POST['contacto'].strip()
+            updated_values['contacto'] = oportunidad.contacto or "Sin contacto"
+        
+        # Actualizar área
+        if 'area' in request.POST and request.POST['area']:
+            oportunidad.area = request.POST['area']
+            updated_values['area'] = oportunidad.get_area_display()
+        
+        # Actualizar producto
+        if 'producto' in request.POST and request.POST['producto']:
+            oportunidad.producto = request.POST['producto']
+            updated_values['producto'] = oportunidad.get_producto_display()
+        
+        # Actualizar monto
+        if 'monto' in request.POST:
+            try:
+                monto = float(request.POST['monto'])
+                oportunidad.monto = monto
+                updated_values['monto'] = f"${monto:,.2f}"
+            except (ValueError, TypeError):
+                return JsonResponse({'success': False, 'error': 'Monto inválido'})
+        
+        # Actualizar probabilidad
+        if 'probabilidad' in request.POST:
+            try:
+                probabilidad = int(request.POST['probabilidad'])
+                if 0 <= probabilidad <= 100:
+                    oportunidad.probabilidad_cierre = probabilidad
+                    updated_values['probabilidad'] = f"{probabilidad}%"
+                else:
+                    return JsonResponse({'success': False, 'error': 'Probabilidad debe estar entre 0 y 100'})
+            except (ValueError, TypeError):
+                return JsonResponse({'success': False, 'error': 'Probabilidad inválida'})
+        
+        # Actualizar mes de cierre
+        if 'mes_cierre' in request.POST and request.POST['mes_cierre']:
+            oportunidad.mes_cierre = request.POST['mes_cierre']
+            updated_values['mes_cierre'] = oportunidad.get_mes_cierre_display()
+        
+        oportunidad.save()
+        
+        return JsonResponse({
+            'success': True, 
+            'message': 'Oportunidad actualizada correctamente',
+            'updated_values': updated_values
+        })
+        
+    except Exception as e:
+        print(f"Error editando oportunidad: {e}")
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@login_required
+def clientes_api(request):
+    """
+    API para obtener lista de clientes
+    """
+    try:
+        clientes = Cliente.objects.all().order_by('nombre_empresa')
+        clientes_data = [
+            {
+                'id': cliente.id,
+                'nombre_empresa': cliente.nombre_empresa
+            }
+            for cliente in clientes
+        ]
+        return JsonResponse(clientes_data, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
 def cotizaciones_por_cliente_view(request, cliente_id):
     user = request.user
     is_supervisor = user.groups.filter(name='Supervisores').exists()
