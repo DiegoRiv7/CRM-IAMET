@@ -19,8 +19,18 @@ from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from decimal import Decimal
 import decimal
+import pytz
 from django.utils.html import json_script
 import json
+
+
+def convert_to_tijuana_time(utc_datetime):
+    """Convierte una fecha UTC a tiempo de Tijuana"""
+    try:
+        tijuana_tz = pytz.timezone('America/Tijuana')
+        return timezone.localtime(utc_datetime, tijuana_tz)
+    except Exception:
+        return utc_datetime
 from django.urls import reverse
 from django.utils import timezone
 from datetime import datetime
@@ -6730,7 +6740,7 @@ def cambiar_estado_oportunidad(request, oportunidad_id):
             'titulo': 'Cambio de Estado',
             'descripcion': f'Estado cambiado de "{estado_anterior}" a "{estado}"',
             'usuario': usuario_nombre,
-            'fecha': actividad.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+            'fecha': convert_to_tijuana_time(actividad.fecha_creacion).strftime('%d/%m/%Y %H:%M'),
             'icono': '🔄 Cambio de Estado',
             'estado_anterior': estado_anterior,
             'estado_nuevo': estado
@@ -6901,7 +6911,7 @@ def agregar_comentario_oportunidad(request, oportunidad_id):
                 'id': comentario.id,
                 'contenido': comentario.contenido,
                 'usuario': request.user.get_full_name() or request.user.username,
-                'fecha': comentario.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+                'fecha': convert_to_tijuana_time(comentario.fecha_creacion).strftime('%d/%m/%Y %H:%M'),
                 'archivos': archivos_subidos
             }
         })
@@ -6947,13 +6957,7 @@ def timeline_oportunidad(request, oportunidad_id):
                 usuario_nombre = 'Sistema'
             
             # Convertir fecha a zona horaria de Tijuana (Pacific Time)
-            try:
-                import pytz
-                tijuana_tz = pytz.timezone('America/Tijuana')
-                fecha_tijuana = timezone.localtime(actividad.fecha_creacion, tijuana_tz)
-            except Exception as e:
-                print(f"DEBUG: Error en timezone: {e}")
-                fecha_tijuana = actividad.fecha_creacion
+            fecha_tijuana = convert_to_tijuana_time(actividad.fecha_creacion)
             
             item_data = {
                 'id': actividad.id,
@@ -7039,7 +7043,7 @@ def timeline_oportunidad(request, oportunidad_id):
                                     'nombre': archivo.nombre_original,
                                     'tipo': archivo.tipo,
                                     'tamaño': archivo.tamaño_legible,
-                                    'fecha': archivo.fecha_subida.strftime('%d/%m/%Y %H:%M'),
+                                    'fecha': convert_to_tijuana_time(archivo.fecha_subida).strftime('%d/%m/%Y %H:%M'),
                                     'url': archivo.archivo.url if archivo.archivo else None
                                 })
                         
@@ -7104,7 +7108,7 @@ def editar_comentario_oportunidad(request, comentario_id):
             'success': True,
             'message': 'Comentario actualizado exitosamente',
             'nuevo_contenido': nuevo_contenido,
-            'fecha_actualizacion': comentario.fecha_actualizacion.strftime('%d/%m/%Y %H:%M')
+            'fecha_actualizacion': convert_to_tijuana_time(comentario.fecha_actualizacion).strftime('%d/%m/%Y %H:%M')
         })
         
     except Exception as e:
@@ -7392,7 +7396,7 @@ def obtener_notificaciones_api(request):
                 'mensaje': notif.mensaje,
                 'tipo': notif.tipo,
                 'leida': notif.leida,
-                'fecha': notif.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+                'fecha': convert_to_tijuana_time(notif.fecha_creacion).strftime('%d/%m/%Y %H:%M'),
                 'remitente': notif.usuario_remitente.get_full_name() if notif.usuario_remitente else 'Sistema',
                 'url': notif.get_url(),
             })
