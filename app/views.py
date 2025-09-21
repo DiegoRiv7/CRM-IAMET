@@ -4113,6 +4113,34 @@ def crear_cotizacion_desde_volumetria(request):
         cotizacion.total = (cotizacion.subtotal + cotizacion.iva_amount).quantize(Decimal('0.01'))
         cotizacion.save()
         
+        # Crear comentario automático en la oportunidad si existe
+        if oportunidad:
+            try:
+                # Crear comentario informativo
+                contenido_comentario = f"📋 Nueva cotización creada: {cotizacion.titulo or cotizacion.nombre_cotizacion or f'Cotización #{cotizacion.id}'}"
+                
+                comentario_auto = OportunidadComentario.objects.create(
+                    oportunidad=oportunidad,
+                    usuario=request.user,
+                    contenido=contenido_comentario
+                )
+                
+                # Crear actividad en el timeline
+                descripcion_actividad = f"{contenido_comentario} [COMENTARIO_ID:{comentario_auto.id}]"
+                
+                OportunidadActividad.objects.create(
+                    oportunidad=oportunidad,
+                    tipo='comentario',
+                    titulo='Nueva Cotización',
+                    descripcion=descripcion_actividad,
+                    usuario=request.user
+                )
+                
+                print(f"✅ Comentario automático creado para cotización {cotizacion.id} en oportunidad {oportunidad.id}")
+                
+            except Exception as e:
+                print(f"❌ Error creando comentario automático: {e}")
+        
         pdf_url = request.build_absolute_uri(reverse('generate_cotizacion_pdf', args=[cotizacion.id]))
         bitrix_comentario = False
         
@@ -6536,10 +6564,25 @@ def cambiar_estado_oportunidad(request, oportunidad_id):
         
         print(f"🔄 Actividad creada: {actividad.id}, estado_anterior: {actividad.estado_anterior}, estado_nuevo: {actividad.estado_nuevo}")
         
+        # Preparar datos del timeline item para el frontend
+        usuario_nombre = request.user.get_full_name() or request.user.username
+        timeline_item = {
+            'id': actividad.id,
+            'tipo': 'cambio_estado',
+            'titulo': 'Cambio de Estado',
+            'descripcion': f'Estado cambiado de "{estado_anterior}" a "{estado}"',
+            'usuario': usuario_nombre,
+            'fecha': actividad.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+            'icono': '🔄 Cambio de Estado',
+            'estado_anterior': estado_anterior,
+            'estado_nuevo': estado
+        }
+        
         return JsonResponse({
             'success': True,
             'nuevo_estado': estado,
-            'message': f'Estado actualizado a {estado}'
+            'message': f'Estado actualizado a {estado}',
+            'timeline_item': timeline_item
         })
         
     except Exception as e:

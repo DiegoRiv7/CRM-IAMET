@@ -1566,8 +1566,19 @@
         }).then(response => response.json())
           .then(data => {
               if (data.success) {
-                  // Silenciosamente guardado - no mostrar ningún mensaje
                   console.log('Estado actualizado exitosamente');
+                  
+                  // Agregar item al timeline en tiempo real
+                  if (data.timeline_item) {
+                      const timelineContainer = document.getElementById('timelineItems');
+                      const newItemHtml = renderTimelineItem(data.timeline_item);
+                      
+                      if (newItemHtml && timelineContainer) {
+                          // Agregar al inicio del timeline (más reciente primero)
+                          timelineContainer.insertAdjacentHTML('afterbegin', newItemHtml);
+                          console.log('📊 Item agregado al timeline en tiempo real');
+                      }
+                  }
               } else {
                   console.error('Error al cambiar estado:', data.error);
                   // Revertir cambio visual si falló
