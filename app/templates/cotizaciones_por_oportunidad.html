@@ -419,11 +419,28 @@
 
     .timeline-item {
         display: flex;
-        gap: 0.75rem;
-        margin-bottom: 0.5rem; /* Reduced margin */
+        flex-direction: column; /* Changed for reply UI */
+        gap: 4px; /* Space between bubble and reply button */
+        margin-bottom: 1rem;
         position: relative;
+        align-items: flex-start; /* Default alignment */
+    }
+
+    .timeline-item.align-right {
         align-items: flex-end;
     }
+
+    .timeline-item-inner {
+        width: 100%;
+        display: flex;
+        align-items: flex-end;
+        gap: 0.75rem;
+    }
+
+    .timeline-item.align-right .timeline-item-inner {
+        justify-content: flex-end;
+    }
+
     .timeline-item::before {
         display: none; /* Remove vertical line */
     }
@@ -447,16 +464,18 @@
         order: 2;
         position: relative;
         
-        /* Efecto Glassmorphism */
-        background: rgba(58, 58, 60, 0.7);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
+        /* Efecto Glassmorphism (Green Tint) */
+        background: linear-gradient(135deg, rgba(48, 209, 88, 0.15) 0%, rgba(48, 209, 88, 0.05) 100%),
+                    rgba(58, 58, 60, 0.7);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
     }
     .timeline-content-item.editable:not(.editing):hover,
-    .timeline-content-item.replyable:hover {
-        background: rgba(70, 70, 72, 0.8);
+    .timeline-content-item.replyable:not(.replying):hover {
+        background: linear-gradient(135deg, rgba(48, 209, 88, 0.2) 0%, rgba(48, 209, 88, 0.1) 100%),
+                    rgba(70, 70, 72, 0.8);
         cursor: pointer;
     }
     .timeline-content-item.editing {
@@ -464,14 +483,19 @@
     }
 
     /* Bubble alignment */
-    .timeline-item.align-right {
-        justify-content: flex-end;
-    }
-    .timeline-item.align-right .timeline-icon {
+    .timeline-item.align-right .timeline-item-inner .timeline-icon {
         order: 2;
     }
-    .timeline-item.align-right .timeline-content-item {
+    .timeline-item.align-right .timeline-item-inner .timeline-content-item {
         order: 1;
+        /* Efecto Glassmorphism (Blue Tint) */
+        background: linear-gradient(135deg, rgba(10, 132, 255, 0.2) 0%, rgba(10, 132, 255, 0.05) 100%),
+                    rgba(58, 58, 60, 0.7);
+    }
+    .timeline-item.align-right .timeline-content-item.editable:not(.editing):hover,
+    .timeline-item.align-right .timeline-content-item.replyable:not(.replying):hover {
+        background: linear-gradient(135deg, rgba(10, 132, 255, 0.25) 0%, rgba(10, 132, 255, 0.1) 100%),
+                    rgba(70, 70, 72, 0.8);
     }
 
     /* Hide icon for comments to make it cleaner */
@@ -545,7 +569,7 @@
         font-style: normal;
     }
     
-    .comment-edit-form {
+    .comment-edit-form, .comment-reply-form {
         margin-top: 0.5rem;
     }
     .comment-edit-input {
@@ -566,12 +590,13 @@
         border-color: var(--apple-blue);
         box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2);
     }
-    .comment-edit-actions {
+    .comment-edit-actions, .comment-reply-actions {
         display: flex; 
         gap: 0.5rem; 
         justify-content: flex-end;
+        padding-top: 0.5rem;
     }
-    .comment-edit-btn {
+    .comment-edit-btn, .comment-reply-btn {
         padding: 0.4rem 1rem;
         border-radius: 8px;
         border: none;
@@ -580,8 +605,8 @@
         transition: all 0.2s ease;
         font-weight: 500;
     }
-    .comment-edit-btn.save { background: var(--apple-blue); color: white; }
-    .comment-edit-btn.cancel { background: var(--apple-separator); color: var(--apple-label); }
+    .comment-edit-btn.save, .comment-reply-btn.reply { background: var(--apple-blue); color: white; }
+    .comment-edit-btn.cancel, .comment-reply-btn.cancel { background: var(--apple-separator); color: var(--apple-label); }
     .comment-edit-btn.delete { background: var(--apple-red); color: white; margin-right: auto; } /* Push to the left */
 
     /* Reply UI */
@@ -597,7 +622,7 @@
     }
 
     /* ARCHIVOS ADJUNTOS EN COMENTARIOS */
-    .comment-attachments { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--apple-separator); }
+    .comment-attachments { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.15); }
     .timeline-item.align-right .comment-attachments { border-top-color: rgba(255,255,255,0.3); }
     .attachment-item {
         display: flex;
@@ -1596,15 +1621,17 @@
 
         return `
             <div class="timeline-item ${alignmentClass}" data-tipo="${activity.tipo}" id="timeline-item-${activity.id}">
-                <div class="timeline-icon ${activityClass}">${icon}</div>
-                <div class="timeline-content-item ${editableClass}" ${clickHandler}>
-                    <div class="timeline-header-item">
-                        <div class="timeline-title-item">${title}</div>
-                        <div class="timeline-time">${activity.fecha}</div>
-                    </div>
-                    <div class="timeline-text">
-                        ${content}
-                        ${linkHtml}
+                <div class="timeline-item-inner">
+                    <div class="timeline-icon ${activityClass}">${icon}</div>
+                    <div class="timeline-content-item ${editableClass}" ${clickHandler}>
+                        <div class="timeline-header-item">
+                            <div class="timeline-title-item">${title}</div>
+                            <div class="timeline-time">${activity.fecha}</div>
+                        </div>
+                        <div class="timeline-text">
+                            ${content}
+                            ${linkHtml}
+                        </div>
                     </div>
                 </div>
                 <div class="reply-ui-container" id="reply-ui-container-${activity.id}"></div>
@@ -1888,10 +1915,8 @@
         if (!container) return;
 
         const replyButton = document.createElement('button');
-        replyButton.className = 'apple-button apple-button-small';
-        replyButton.innerHTML = `↩️ Responder a ${username}`;
-        replyButton.style.background = 'var(--apple-background-tertiary)';
-        replyButton.style.color = 'var(--apple-label)';
+        replyButton.className = 'comment-reply-btn reply'; // Re-using styles
+        replyButton.innerHTML = `Responder`;
         replyButton.onclick = (e) => {
             e.stopPropagation();
             replyToComment(username);
