@@ -1027,18 +1027,29 @@
                         <div class="info-label">Área</div>
                         <div class="info-value view-mode" data-field="area">{{ oportunidad.get_area_display }}</div>
                         <select class="info-edit edit-mode" data-field="area" style="display: none;">
-                            <option value="bajanet" {% if oportunidad.area == 'bajanet' %}selected{% endif %}>Bajanet</option>
-                            <option value="iamet" {% if oportunidad.area == 'iamet' %}selected{% endif %}>Iamet</option>
+                            <option value="SISTEMAS" {% if oportunidad.area == 'SISTEMAS' %}selected{% endif %}>Sistemas</option>
+                            <option value="Recursos Humanos" {% if oportunidad.area == 'Recursos Humanos' %}selected{% endif %}>Recursos Humanos</option>
+                            <option value="Compras" {% if oportunidad.area == 'Compras' %}selected{% endif %}>Compras</option>
+                            <option value="Seguridad" {% if oportunidad.area == 'Seguridad' %}selected{% endif %}>Seguridad</option>
+                            <option value="Mantenimiento" {% if oportunidad.area == 'Mantenimiento' %}selected{% endif %}>Mantenimiento</option>
+                            <option value="Almacén" {% if oportunidad.area == 'Almacén' %}selected{% endif %}>Almacén</option>
                         </select>
                     </div>
                     <div class="info-item">
                         <div class="info-label">Producto</div>
                         <div class="info-value view-mode" data-field="producto">{{ oportunidad.get_producto_display }}</div>
                         <select class="info-edit edit-mode" data-field="producto" style="display: none;">
-                            <option value="networking" {% if oportunidad.producto == 'networking' %}selected{% endif %}>Networking</option>
-                            <option value="colaboracion" {% if oportunidad.producto == 'colaboracion' %}selected{% endif %}>Colaboración</option>
-                            <option value="seguridad" {% if oportunidad.producto == 'seguridad' %}selected{% endif %}>Seguridad</option>
-                            <option value="datacenter" {% if oportunidad.producto == 'datacenter' %}selected{% endif %}>Datacenter</option>
+                            <option value="ZEBRA" {% if oportunidad.producto == 'ZEBRA' %}selected{% endif %}>ZEBRA</option>
+                            <option value="PANDUIT" {% if oportunidad.producto == 'PANDUIT' %}selected{% endif %}>PANDUIT</option>
+                            <option value="APC" {% if oportunidad.producto == 'APC' %}selected{% endif %}>APC</option>
+                            <option value="AVIGILION" {% if oportunidad.producto == 'AVIGILION' %}selected{% endif %}>AVIGILION</option>
+                            <option value="GENETEC" {% if oportunidad.producto == 'GENETEC' %}selected{% endif %}>GENETEC</option>
+                            <option value="AXIS" {% if oportunidad.producto == 'AXIS' %}selected{% endif %}>AXIS</option>
+                            <option value="SOFTWARE" {% if oportunidad.producto == 'SOFTWARE' %}selected{% endif %}>SOFTWARE</option>
+                            <option value="RUNRATE" {% if oportunidad.producto == 'RUNRATE' %}selected{% endif %}>RUNRATE</option>
+                            <option value="PÓLIZA" {% if oportunidad.producto == 'PÓLIZA' %}selected{% endif %}>PÓLIZA</option>
+                            <option value="CISCO" {% if oportunidad.producto == 'CISCO' %}selected{% endif %}>CISCO</option>
+                            <option value="SERVICIO" {% if oportunidad.producto == 'SERVICIO' %}selected{% endif %}>Servicio</option>
                         </select>
                     </div>
                     <div class="info-item">
