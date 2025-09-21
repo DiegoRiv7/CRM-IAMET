@@ -1703,13 +1703,15 @@
             return;
         }
         try {
+            const formData = new FormData();
+            formData.append('contenido', newContent);
+
             const response = await fetch(`/app/api/editar-comentario-oportunidad/${comentarioId}/`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-CSRFToken': getCookie('csrftoken')
                 },
-                body: JSON.stringify({ contenido: newContent })
+                body: formData
             });
             const data = await response.json();
             if (data.success) {
