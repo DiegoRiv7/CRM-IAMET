@@ -431,6 +431,15 @@
         order: 2; /* Default order */
         background: var(--apple-background-tertiary);
         position: relative;
+        transition: background 0.2s ease;
+    }
+    .timeline-content-item.editable:not(.editing):hover {
+        background: #444;
+        cursor: pointer;
+    }
+    .timeline-content-item.editing {
+        background: var(--apple-background);
+        border: 1px solid var(--apple-separator);
     }
 
     /* Bubble alignment */
@@ -519,39 +528,6 @@
         font-style: normal;
     }
     
-    .comment-actions-inline {
-        position: absolute;
-        top: 4px;
-        right: 8px;
-        display: flex;
-        gap: 4px;
-        opacity: 0;
-        transition: opacity 0.2s ease-in-out;
-    }
-
-    .timeline-content-item:hover .comment-actions-inline {
-        opacity: 1;
-    }
-
-    .comment-action-btn {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        border: none;
-        font-size: 0.9rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(0,0,0,0.2);
-        color: var(--apple-label);
-        transition: all 0.2s ease;
-    }
-    .comment-action-btn:hover {
-        background: rgba(0,0,0,0.4);
-        transform: scale(1.1);
-    }
-    
     .comment-edit-form {
         margin-top: 0.5rem;
     }
@@ -589,6 +565,7 @@
     }
     .comment-edit-btn.save { background: var(--apple-blue); color: white; }
     .comment-edit-btn.cancel { background: var(--apple-separator); color: var(--apple-label); }
+    .comment-edit-btn.delete { background: var(--apple-red); color: white; margin-right: auto; } /* Push to the left */
 
     /* ARCHIVOS ADJUNTOS EN COMENTARIOS */
     .comment-attachments { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--apple-separator); }
@@ -1423,7 +1400,8 @@
         let linkHtml = '';
         let activityClass = '';
         let alignmentClass = 'align-left'; // Default to left alignment
-        let actionsHtml = '';
+        let editableClass = '';
+        let clickHandler = '';
 
         switch (activity.tipo) {
             case 'creacion':
@@ -1452,12 +1430,8 @@
                 
                 if (activity.puede_editar) {
                     alignmentClass = 'align-right';
-                    actionsHtml = `
-                        <div class="comment-actions-inline">
-                            <button class="comment-action-btn" onclick="editarComentario(${comentarioId})" title="Editar">✏️</button>
-                            <button class="comment-action-btn" onclick="eliminarComentario(${comentarioId}, '${usuario}')" title="Eliminar">🗑️</button>
-                        </div>
-                    `;
+                    editableClass = 'editable';
+                    clickHandler = `onclick="editarComentario(event, ${comentarioId})"`;
                 }
                 
                 title = `<strong>${usuario}</strong> comentó:`;
@@ -1479,15 +1453,15 @@
 
                 content = `
                     <div class="comment-content" id="comment-content-${comentarioId}">
-                        ${actionsHtml}
                         <div class="comment-text" id="comment-text-${comentarioId}">
                             ${activity.contenido || activity.descripcion || ''}
                         </div>
                         <div class="comment-edit-form" id="comment-edit-form-${comentarioId}" style="display: none;">
                             <textarea class="comment-edit-input">${activity.contenido || ''}</textarea>
                             <div class="comment-edit-actions">
-                                <button class="comment-edit-btn cancel" onclick="cancelarEdicionComentario(${comentarioId})">Cancelar</button>
-                                <button class="comment-edit-btn save" onclick="guardarEdicionComentario(${comentarioId})">Guardar</button>
+                                <button class="comment-edit-btn delete" onclick="eliminarComentario(event, ${comentarioId}, '${usuario}')">Eliminar</button>
+                                <button class="comment-edit-btn cancel" onclick="cancelarEdicionComentario(event, ${comentarioId})">Cancelar</button>
+                                <button class="comment-edit-btn save" onclick="guardarEdicionComentario(event, ${comentarioId})">Guardar</button>
                             </div>
                         </div>
                     </div>
@@ -1516,9 +1490,9 @@
         }
 
         return `
-            <div class="timeline-item ${alignmentClass}" data-tipo="${activity.tipo}">
+            <div class="timeline-item ${alignmentClass}" data-tipo="${activity.tipo}" id="timeline-item-${activity.id}">
                 <div class="timeline-icon ${activityClass}">${icon}</div>
-                <div class="timeline-content-item">
+                <div class="timeline-content-item ${editableClass}" ${clickHandler}>
                     <div class="timeline-header-item">
                         <div class="timeline-title-item">${title}</div>
                         <div class="timeline-time">${activity.fecha}</div>
@@ -1682,26 +1656,46 @@
     }
 
     // Funciones para editar comentarios
-    function editarComentario(comentarioId) {
+    let currentlyEditing = null;
+
+    function editarComentario(event, comentarioId) {
+        event.stopPropagation();
+        if (currentlyEditing) {
+            cancelarEdicionComentario(null, currentlyEditing);
+        }
+        currentlyEditing = comentarioId;
+
+        const contentItem = document.querySelector(`#timeline-item-${comentarioId} .timeline-content-item`);
         const textElement = document.getElementById(`comment-text-${comentarioId}`);
         const editForm = document.getElementById(`comment-edit-form-${comentarioId}`);
+        
         if (textElement && editForm) {
+            contentItem.classList.add('editing');
             textElement.style.display = 'none';
             editForm.style.display = 'block';
-            editForm.querySelector('textarea').focus();
+            const textarea = editForm.querySelector('textarea');
+            textarea.focus();
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
         }
     }
 
-    function cancelarEdicionComentario(comentarioId) {
+    function cancelarEdicionComentario(event, comentarioId) {
+        if(event) event.stopPropagation();
+        currentlyEditing = null;
+
+        const contentItem = document.querySelector(`#timeline-item-${comentarioId} .timeline-content-item`);
         const textElement = document.getElementById(`comment-text-${comentarioId}`);
         const editForm = document.getElementById(`comment-edit-form-${comentarioId}`);
         if (textElement && editForm) {
+            contentItem.classList.remove('editing');
             textElement.style.display = 'block';
             editForm.style.display = 'none';
         }
     }
 
-    async function guardarEdicionComentario(comentarioId) {
+    async function guardarEdicionComentario(event, comentarioId) {
+        event.stopPropagation();
         const editForm = document.getElementById(`comment-edit-form-${comentarioId}`);
         const newContent = editForm.querySelector('textarea').value.trim();
         if (!newContent) {
@@ -1729,7 +1723,8 @@
         }
     }
 
-    async function eliminarComentario(comentarioId, usuario) {
+    async function eliminarComentario(event, comentarioId, usuario) {
+        event.stopPropagation();
         if (!confirm(`¿Estás seguro de que quieres eliminar este comentario de ${usuario}?`)) return;
         try {
             const response = await fetch(`/app/api/eliminar-comentario-oportunidad/${comentarioId}/`, {
