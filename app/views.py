@@ -7070,14 +7070,15 @@ def vista_previa_archivo_oportunidad(request, archivo_id):
         
         # Verificar permisos: supervisores ven todo, usuarios solo archivos de sus oportunidades
         if not is_supervisor(request.user) and archivo.oportunidad.usuario != request.user:
-            return JsonResponse({'error': 'No tienes permisos para ver este archivo'}, status=403)
+            return HttpResponse('No tienes permisos para ver este archivo', status=403)
         
         # Verificar que el archivo existe
         if not archivo.archivo:
-            return JsonResponse({'error': 'Archivo no encontrado'}, status=404)
+            return HttpResponse('Archivo no encontrado', status=404)
         
         # Importar las clases necesarias para la respuesta
         from django.http import HttpResponse, Http404
+        from django.utils.encoding import smart_str
         import os
         import mimetypes
         
@@ -7092,28 +7093,17 @@ def vista_previa_archivo_oportunidad(request, archivo_id):
         if content_type is None:
             content_type = 'application/octet-stream'
         
-        # Para imágenes y PDFs, mostrar inline
-        # Para otros tipos, retornar información para mostrar placeholder
-        if content_type.startswith('image/') or content_type == 'application/pdf':
-            # Leer el archivo
-            with open(file_path, 'rb') as f:
-                response = HttpResponse(f.read(), content_type=content_type)
-            
-            # Configurar headers para vista inline
-            response['Content-Disposition'] = 'inline'
-            response['Content-Length'] = os.path.getsize(file_path)
-            
-            return response
-        else:
-            # Para otros tipos de archivo, devolver información JSON
-            return JsonResponse({
-                'tipo': 'no_preview',
-                'nombre': archivo.nombre_original,
-                'tamaño': archivo.tamaño_legible,
-                'content_type': content_type,
-                'mensaje': 'Vista previa no disponible para este tipo de archivo'
-            })
+        # Servir el archivo inline siempre (para vista previa en nueva pestaña)
+        with open(file_path, 'rb') as f:
+            response = HttpResponse(f.read(), content_type=content_type)
+        
+        # Configurar headers para vista inline (no descarga)
+        filename = smart_str(archivo.nombre_original)
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        response['Content-Length'] = os.path.getsize(file_path)
+        
+        return response
         
     except Exception as e:
         print(f"❌ Error en vista previa de archivo: {e}")
-        return JsonResponse({'error': str(e)}, status=500)
+        return HttpResponse(f'Error al abrir archivo: {str(e)}', status=500)

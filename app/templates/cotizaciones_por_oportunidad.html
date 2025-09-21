@@ -1946,9 +1946,9 @@
                                     ${getAttachmentIcon(archivo.tipo)}
                                 </div>
                                 <div class="attachment-info">
-                                    <div class="attachment-name" title="${archivo.nombre}" onclick="mostrarVistaPrevia(${archivo.id}, '${archivo.nombre}')" style="cursor: pointer; color: var(--apple-blue);">
+                                    <a href="/app/api/vista-previa-archivo-oportunidad/${archivo.id}/" target="_blank" class="attachment-name" title="${archivo.nombre}" style="cursor: pointer; color: var(--apple-blue); text-decoration: none;">
                                         ${archivo.nombre}
-                                    </div>
+                                    </a>
                                     <div class="attachment-meta">
                                         <span>${archivo.tamaño}</span>
                                         <span>${archivo.fecha}</span>
