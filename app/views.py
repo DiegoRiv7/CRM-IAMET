@@ -6768,17 +6768,17 @@ def timeline_oportunidad(request, oportunidad_id):
                         # Usar la descripción del archivo que contiene el ID del comentario
                         archivos_asociados = OportunidadArchivo.objects.filter(
                             oportunidad=oportunidad,
-                            descripcion__contains=f"comentario #{comentario.id}"
+                            descripcion__contains=f"Adjuntado en comentario #{comentario.id}"
                         )
                         
-                        # Si no encuentra por descripción, buscar por tiempo y usuario como fallback
-                        if not archivos_asociados.exists():
-                            archivos_asociados = OportunidadArchivo.objects.filter(
-                                oportunidad=oportunidad,
-                                usuario=comentario.usuario,
-                                fecha_subida__gte=comentario.fecha_creacion - timedelta(seconds=30),
-                                fecha_subida__lte=comentario.fecha_creacion + timedelta(seconds=30)
-                            )
+                        # Agregar debugging para ver qué archivos encuentra
+                        print(f"📎 Buscando archivos para comentario {comentario.id}: encontrados {archivos_asociados.count()}")
+                        if archivos_asociados.exists():
+                            for archivo in archivos_asociados:
+                                print(f"  📄 Archivo encontrado: {archivo.nombre_original} - {archivo.descripcion}")
+                        
+                        # Si no encuentra por descripción exacta, NO usar fallback para evitar contaminación cruzada
+                        # (El fallback por tiempo era lo que causaba que todos los archivos aparecieran en todos los comentarios)
                         
                         if archivos_asociados.exists():
                             item_data['archivos'] = []
