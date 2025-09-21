@@ -1645,6 +1645,9 @@ window.addEventListener('error', function(e) {
             document.getElementById('design-btn-bottom')
         ].filter(btn => btn); // Remove null elements
         
+        // Define designBtn for backward compatibility
+        const designBtn = designButtons[0] || null;
+        
         // Check if essential elements exist
         if (!designPanel || !themeToggle || !nightShiftToggle || !nightShiftFilter || !positionToggle || !positionControls || !editModeExit || allDocks.length === 0) {
             originalConsole.warn('Some design panel elements not found, retrying in 500ms...');
@@ -1836,31 +1839,33 @@ window.addEventListener('error', function(e) {
         });
 
         // Long press on design button to enter edit mode
-        let longPressTimer;
-        designBtn.addEventListener('mousedown', function(e) {
-            longPressTimer = setTimeout(() => {
-                enterEditMode();
-            }, 1000); // 1 second long press
-        });
+        if (designBtn) {
+            let longPressTimer;
+            designBtn.addEventListener('mousedown', function(e) {
+                longPressTimer = setTimeout(() => {
+                    enterEditMode();
+                }, 1000); // 1 second long press
+            });
 
-        designBtn.addEventListener('mouseup', function() {
-            clearTimeout(longPressTimer);
-        });
+            designBtn.addEventListener('mouseup', function() {
+                clearTimeout(longPressTimer);
+            });
 
-        designBtn.addEventListener('mouseleave', function() {
-            clearTimeout(longPressTimer);
-        });
+            designBtn.addEventListener('mouseleave', function() {
+                clearTimeout(longPressTimer);
+            });
 
-        // Touch events for mobile
-        designBtn.addEventListener('touchstart', function(e) {
-            longPressTimer = setTimeout(() => {
-                enterEditMode();
-            }, 1000);
-        });
+            // Touch events for mobile
+            designBtn.addEventListener('touchstart', function(e) {
+                longPressTimer = setTimeout(() => {
+                    enterEditMode();
+                }, 1000);
+            });
 
-        designBtn.addEventListener('touchend', function() {
-            clearTimeout(longPressTimer);
-        });
+            designBtn.addEventListener('touchend', function() {
+                clearTimeout(longPressTimer);
+            });
+        }
 
         // Exit edit mode
         editModeExit.addEventListener('click', function() {

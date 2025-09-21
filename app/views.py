@@ -6875,7 +6875,7 @@ def agregar_comentario_oportunidad(request, oportunidad_id):
         
         # 3. Notificar a otros usuarios que han comentado en esta oportunidad (excepto el autor actual y el dueño)
         otros_comentaristas = User.objects.filter(
-            oportunidad_comentarios__oportunidad=oportunidad
+            oportunidadcomentario__oportunidad=oportunidad
         ).exclude(
             id__in=[request.user.id, oportunidad.usuario.id]
         ).distinct()
