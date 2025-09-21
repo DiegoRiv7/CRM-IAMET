@@ -1339,7 +1339,7 @@ class Notificacion(models.Model):
         blank=True
     )
     comentario = models.ForeignKey(
-        'ComentarioOportunidad',
+        'OportunidadComentario',
         on_delete=models.CASCADE,
         related_name='notificaciones',
         verbose_name="Comentario Relacionado",
