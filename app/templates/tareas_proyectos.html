@@ -587,7 +587,7 @@
 
     .table-row {
         display: grid !important;
-        grid-template-columns: 50px 1fr 160px 140px 120px 140px 110px !important;
+        grid-template-columns: 1fr 180px 140px 120px 160px 110px !important;
         align-items: center;
         padding: 0;
         border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
@@ -1067,7 +1067,7 @@
         }
 
         .table-row {
-            grid-template-columns: 30px 1fr 100px 80px 80px 100px 80px;
+            grid-template-columns: 1fr 120px 100px 80px 120px 80px;
             font-size: 0.8rem;
         }
 
@@ -1155,14 +1155,11 @@
         <div class="projects-table-container" id="table-view" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.3); overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 8px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.4); margin: 2rem 0;"">
             <div class="table-header">
                 <div class="table-row header-row">
-                    <div class="table-cell checkbox-cell">
-                        <input type="checkbox" id="select-all-projects">
-                    </div>
-                    <div class="table-cell name-cell">Nombre</div>
-                    <div class="table-cell members-cell">Ver los miembros</div>
-                    <div class="table-cell activity-cell">Activo</div>
-                    <div class="table-cell performance-cell">Performance</div>
-                    <div class="table-cell role-cell">Rol</div>
+                    <div class="table-cell name-cell">Nombre del Proyecto</div>
+                    <div class="table-cell members-cell">Miembros</div>
+                    <div class="table-cell activity-cell">Fecha de Creación</div>
+                    <div class="table-cell performance-cell">Avance</div>
+                    <div class="table-cell role-cell">Tu Rol</div>
                     <div class="table-cell privacy-cell">Privacidad</div>
                 </div>
             </div>
@@ -1416,97 +1413,34 @@ function mostrarProyectosTabla(proyectos) {
     
     tableBody.innerHTML = '';
     
-    // Datos de ejemplo con mejor presentación
-    const proyectosEjemplo = [
-        {
-            id: 1380,
-            nombre: 'RFQ-20250428-11 CONTROL DE ACCESO TORNIQUETE',
-            miembros: [
-                { inicial: 'DR', nombre: 'Diego Rivera', color: '#007AFF' },
-                { inicial: 'JG', nombre: 'Juan García', color: '#30D158' },
-                { inicial: 'MP', nombre: 'María Pérez', color: '#AF52DE' },
-                { inicial: 'AL', nombre: 'Ana López', color: '#FF9500' }
-            ],
-            miembros_count: 7,
-            fecha_actividad: '21 de Sep, 8:01',
-            progreso: 63,
-            rol: 'Miembro del proyecto',
-            privacidad: 'publico'
-        },
-        {
-            id: 2056,
-            nombre: 'CRM NetHive - Sistema de Gestión',
-            miembros: [
-                { inicial: 'LM', nombre: 'Luis Martínez', color: '#5AC8FA' },
-                { inicial: 'CS', nombre: 'Carmen Silva', color: '#FF2D92' }
-            ],
-            miembros_count: 2,
-            fecha_actividad: '19 de Sep, 3:12',
-            progreso: 100,
-            rol: 'Jefe de proyectos',
-            privacidad: 'privado'
-        },
-        {
-            id: 774,
-            nombre: 'Telvista 34630 CH - Sistema Avigilon',
-            miembros: [
-                { inicial: 'RH', nombre: 'Roberto Hernández', color: '#FF3B30' },
-                { inicial: 'SF', nombre: 'Sandra Flores', color: '#34C759' },
-                { inicial: 'MR', nombre: 'Miguel Ruiz', color: '#007AFF' },
-                { inicial: 'LC', nombre: 'Laura Castillo', color: '#AF52DE' }
-            ],
-            miembros_count: 6,
-            fecha_actividad: '10 de Sep, 0:59',
-            progreso: 45,
-            rol: 'Miembro del proyecto',
-            privacidad: 'privado'
-        },
-        {
-            id: 1560,
-            nombre: '8700053503 - Equipos ZEBRA PIMS',
-            miembros: [
-                { inicial: 'DR', nombre: 'Diego Rivera', color: '#007AFF' },
-                { inicial: 'AB', nombre: 'Ana Beltrán', color: '#30D158' },
-                { inicial: 'CF', nombre: 'Carlos Fuentes', color: '#FF9500' }
-            ],
-            miembros_count: 4,
-            fecha_actividad: '3 de Sep, 1:20',
-            progreso: 85,
-            rol: 'Jefe de proyectos',
-            privacidad: 'publico'
-        },
-        {
-            id: 1130,
-            nombre: 'PO 4201027104 - Instalación Access Point',
-            miembros: [
-                { inicial: 'JM', nombre: 'José Morales', color: '#5AC8FA' },
-                { inicial: 'TR', nombre: 'Teresa Ramírez', color: '#AF52DE' },
-                { inicial: 'DL', nombre: 'David López', color: '#FF2D92' }
-            ],
-            miembros_count: 5,
-            fecha_actividad: '25 de Ago, 23:41',
-            progreso: 92,
-            rol: 'Miembro del proyecto',
-            privacidad: 'privado'
-        }
-    ];
-    
-    proyectosEjemplo.forEach(proyecto => {
+    allProjects.forEach(proyecto => {
         const row = document.createElement('div');
         row.className = 'table-row';
         
-        // Generar avatares de miembros con colores personalizados
-        const avatarsHtml = proyecto.miembros.slice(0, 4).map(miembro => 
-            `<div class="member-avatar" title="${miembro.nombre}" style="background: ${miembro.color || '#007AFF'}">${miembro.inicial}</div>`
-        ).join('');
+        // Generar avatares de miembros (empezar por creador)
+        const miembrosOrdenados = [proyecto.creador, ...proyecto.miembros.filter(m => m.id !== proyecto.creador.id)];
+        const avatarsHtml = miembrosOrdenados.slice(0, 4).map((miembro, index) => {
+            const colors = ['#007AFF', '#30D158', '#AF52DE', '#FF9500', '#FF3B30', '#5AC8FA'];
+            const color = colors[index % colors.length];
+            const title = index === 0 ? `${miembro.nombre} (Creador)` : miembro.nombre;
+            return `<div class="member-avatar" title="${title}" style="background: ${color}">${miembro.iniciales}</div>`;
+        }).join('');
         
-        const memberCountHtml = proyecto.miembros_count > 4 ? 
-            `<span class="member-count">+${proyecto.miembros_count - 4}</span>` : '';
+        const memberCountHtml = proyecto.miembros.length > 4 ? 
+            `<span class="member-count">+${proyecto.miembros.length - 4}</span>` : '';
+        
+        // Determinar el color del rol según el tipo
+        let rolClass = 'no-miembro';
+        let rolColor = '#8E8E93';
+        if (proyecto.mi_rol === 'Jefe de proyecto') {
+            rolClass = 'jefe';
+            rolColor = '#30D158';
+        } else if (proyecto.mi_rol === 'Miembro') {
+            rolClass = 'miembro';
+            rolColor = '#007AFF';
+        }
         
         row.innerHTML = `
-            <div class="table-cell checkbox-cell">
-                <input type="checkbox" data-project-id="${proyecto.id}">
-            </div>
             <div class="table-cell name-cell" onclick="abrirProyecto(${proyecto.id})">
                 ${proyecto.nombre}
             </div>
@@ -1515,17 +1449,17 @@ function mostrarProyectosTabla(proyectos) {
                 ${memberCountHtml}
             </div>
             <div class="table-cell activity-cell">
-                <span class="activity-date">${proyecto.fecha_actividad}</span>
+                <span class="activity-date">${proyecto.fecha_creacion}</span>
             </div>
             <div class="table-cell performance-cell">
                 <div class="performance-bar">
-                    <div class="performance-fill" style="width: ${proyecto.progreso}%"></div>
+                    <div class="performance-fill" style="width: ${proyecto.avance}%"></div>
                 </div>
-                <span class="performance-text">${proyecto.progreso}%</span>
+                <span class="performance-text">${proyecto.avance}%</span>
             </div>
             <div class="table-cell role-cell">
-                <span class="role-badge ${proyecto.rol === 'Jefe de proyectos' ? 'jefe' : 'miembro'}">
-                    ${proyecto.rol === 'Jefe de proyectos' ? 'Jefe de proyectos' : 'Miembro del proyecto'}
+                <span class="role-badge ${rolClass}" style="color: ${rolColor}; border-color: ${rolColor};">
+                    ${proyecto.mi_rol}
                 </span>
             </div>
             <div class="table-cell privacy-cell">

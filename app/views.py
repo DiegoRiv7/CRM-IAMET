@@ -296,62 +296,106 @@ def api_proyectos(request):
     per_page = int(request.GET.get('per_page', 30))
     search = request.GET.get('search', '').strip()
     
-    # Datos de ejemplo más completos
+    # Datos de ejemplo más completos con información real
+    usuario_actual_id = request.user.id
+    
     proyectos_ejemplo = [
         {
             'id': 1380,
             'nombre': 'RFQ-20250428-11 CONTROL DE ACCESO TORNIQUETE',
             'descripcion': 'Sistema de control de acceso con torniquetes inteligentes',
-            'progreso': 63,
-            'fecha_limite': '2025-02-15',
-            'miembros_count': 7,
-            'fecha_actividad': '21 de Sep, 8:01',
-            'rol': 'Miembro del proyecto',
-            'privacidad': 'publico'
+            'avance': 63,
+            'fecha_creacion': '15 de Ago, 2024',
+            'creador': {
+                'id': 1,
+                'nombre': 'Diego Rivera',
+                'iniciales': 'DR'
+            },
+            'miembros': [
+                {'id': 1, 'nombre': 'Diego Rivera', 'iniciales': 'DR'},
+                {'id': 2, 'nombre': 'Juan García', 'iniciales': 'JG'},
+                {'id': 3, 'nombre': 'María Pérez', 'iniciales': 'MP'},
+                {'id': 4, 'nombre': 'Ana López', 'iniciales': 'AL'}
+            ],
+            'privacidad': 'publico',
+            'mi_rol': 'Jefe de proyecto' if usuario_actual_id == 1 else ('Miembro' if usuario_actual_id in [2, 3, 4] else 'No te has unido al proyecto')
         },
         {
             'id': 2056,
             'nombre': 'CRM NetHive - Sistema de Gestión',
             'descripcion': 'Desarrollo del sistema CRM personalizado',
-            'progreso': 100,
-            'fecha_limite': '2025-01-30',
-            'miembros_count': 2,
-            'fecha_actividad': '19 de Sep, 3:12',
-            'rol': 'Jefe de proyectos',
-            'privacidad': 'privado'
+            'avance': 100,
+            'fecha_creacion': '10 de Jul, 2024',
+            'creador': {
+                'id': 2,
+                'nombre': 'Juan García',
+                'iniciales': 'JG'
+            },
+            'miembros': [
+                {'id': 2, 'nombre': 'Juan García', 'iniciales': 'JG'},
+                {'id': 5, 'nombre': 'Luis Martínez', 'iniciales': 'LM'}
+            ],
+            'privacidad': 'privado',
+            'mi_rol': 'Jefe de proyecto' if usuario_actual_id == 2 else ('Miembro' if usuario_actual_id == 5 else 'No te has unido al proyecto')
         },
         {
             'id': 774,
             'nombre': 'Telvista 34630 CH - Sistema Avigilon',
             'descripcion': 'Implementación de sistema de videovigilancia',
-            'progreso': 45,
-            'fecha_limite': '2025-03-10',
-            'miembros_count': 6,
-            'fecha_actividad': '10 de Sep, 0:59',
-            'rol': 'Miembro del proyecto',
-            'privacidad': 'privado'
+            'avance': 45,
+            'fecha_creacion': '5 de Sep, 2024',
+            'creador': {
+                'id': 3,
+                'nombre': 'María Pérez',
+                'iniciales': 'MP'
+            },
+            'miembros': [
+                {'id': 3, 'nombre': 'María Pérez', 'iniciales': 'MP'},
+                {'id': 1, 'nombre': 'Diego Rivera', 'iniciales': 'DR'},
+                {'id': 4, 'nombre': 'Ana López', 'iniciales': 'AL'},
+                {'id': 6, 'nombre': 'Carlos Ruiz', 'iniciales': 'CR'}
+            ],
+            'privacidad': 'privado',
+            'mi_rol': 'Jefe de proyecto' if usuario_actual_id == 3 else ('Miembro' if usuario_actual_id in [1, 4, 6] else 'No te has unido al proyecto')
         },
         {
             'id': 1560,
             'nombre': '8700053503 - Equipos ZEBRA PIMS',
             'descripcion': 'Instalación y configuración de equipos ZEBRA',
-            'progreso': 85,
-            'fecha_limite': '2025-02-28',
-            'miembros_count': 4,
-            'fecha_actividad': '3 de Sep, 1:20',
-            'rol': 'Jefe de proyectos',
-            'privacidad': 'publico'
+            'avance': 85,
+            'fecha_creacion': '20 de Ago, 2024',
+            'creador': {
+                'id': 1,
+                'nombre': 'Diego Rivera',
+                'iniciales': 'DR'
+            },
+            'miembros': [
+                {'id': 1, 'nombre': 'Diego Rivera', 'iniciales': 'DR'},
+                {'id': 7, 'nombre': 'Ana Beltrán', 'iniciales': 'AB'},
+                {'id': 8, 'nombre': 'Carlos Fuentes', 'iniciales': 'CF'}
+            ],
+            'privacidad': 'publico',
+            'mi_rol': 'Jefe de proyecto' if usuario_actual_id == 1 else ('Miembro' if usuario_actual_id in [7, 8] else 'No te has unido al proyecto')
         },
         {
             'id': 1130,
             'nombre': 'PO 4201027104 - Instalación Access Point',
             'descripcion': 'Instalación de puntos de acceso inalámbricos',
-            'progreso': 92,
-            'fecha_limite': '2025-01-20',
-            'miembros_count': 5,
-            'fecha_actividad': '25 de Ago, 23:41',
-            'rol': 'Miembro del proyecto',
-            'privacidad': 'privado'
+            'avance': 92,
+            'fecha_creacion': '1 de Sep, 2024',
+            'creador': {
+                'id': 4,
+                'nombre': 'Ana López',
+                'iniciales': 'AL'
+            },
+            'miembros': [
+                {'id': 4, 'nombre': 'Ana López', 'iniciales': 'AL'},
+                {'id': 9, 'nombre': 'José Morales', 'iniciales': 'JM'},
+                {'id': 10, 'nombre': 'Teresa Ramírez', 'iniciales': 'TR'},
+                {'id': 11, 'nombre': 'David López', 'iniciales': 'DL'}
+            ],
+            'privacidad': 'privado',
+            'mi_rol': 'Jefe de proyecto' if usuario_actual_id == 4 else ('Miembro' if usuario_actual_id in [9, 10, 11] else 'No te has unido al proyecto')
         }
     ]
     
