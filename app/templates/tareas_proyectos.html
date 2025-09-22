@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% csrf_token %}
 
 {% block content %}
 <style>
@@ -806,6 +807,7 @@
         </div>
         
         <form class="modal-form" id="form-crear-proyecto">
+            {% csrf_token %}
             <div class="form-group">
                 <label for="proyecto-nombre" class="form-label">Nombre del Proyecto</label>
                 <input type="text" id="proyecto-nombre" class="form-input" placeholder="Ingresa el nombre del proyecto" required>
@@ -1397,6 +1399,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 console.log('Enviando datos del proyecto:', formData);
                 
+                console.log('🔍 CSRF Token encontrado:', document.querySelector('[name=csrfmiddlewaretoken]')?.value || 'NO ENCONTRADO');
+                
                 const response = await fetch('/app/api/crear-proyecto/', {
                     method: 'POST',
                     headers: {
@@ -1406,7 +1410,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify(formData)
                 });
                 
-                const result = await response.json();
+                console.log('🔍 Response status:', response.status, response.statusText);
+                
+                let result;
+                try {
+                    result = await response.json();
+                    console.log('🔍 Response JSON:', result);
+                } catch (jsonError) {
+                    console.error('❌ Error parsing JSON:', jsonError);
+                    const responseText = await response.text();
+                    console.log('🔍 Response text:', responseText);
+                    throw new Error(`Error de servidor: ${response.status} - No se pudo procesar la respuesta`);
+                }
                 
                 if (response.ok && result.success) {
                     console.log('✅ Proyecto creado exitosamente:', result.proyecto);

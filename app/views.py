@@ -7,6 +7,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion
 from . import views_exportar
@@ -492,8 +493,10 @@ def api_buscar_usuarios(request):
     """
     API para buscar usuarios para agregar como miembros del proyecto
     """
-    if not request.user.is_superuser:
-        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    print(f"🔍 api_buscar_usuarios - Usuario: {request.user.username}, Autenticado: {request.user.is_authenticated}")
+    
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Usuario no autenticado'}, status=401)
     
     search_query = request.GET.get('q', '').strip()
     
@@ -550,8 +553,10 @@ def api_crear_proyecto(request):
     """
     API para crear un nuevo proyecto con miembros y enviar notificaciones
     """
-    if not request.user.is_superuser:
-        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    print(f"🔍 Usuario: {request.user.username}, Autenticado: {request.user.is_authenticated}, Superusuario: {request.user.is_superuser}")
+    
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Usuario no autenticado'}, status=401)
     
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
