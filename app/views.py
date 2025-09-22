@@ -443,6 +443,66 @@ def api_estadisticas_tareas_proyectos(request):
         **estadisticas
     })
 
+@login_required
+def api_buscar_usuarios(request):
+    """
+    API para buscar usuarios para agregar como miembros del proyecto
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    search_query = request.GET.get('q', '').strip()
+    
+    if len(search_query) < 2:
+        return JsonResponse({
+            'success': True,
+            'usuarios': []
+        })
+    
+    from django.contrib.auth.models import User
+    
+    # Buscar usuarios por nombre, apellido o username
+    usuarios = User.objects.filter(
+        models.Q(first_name__icontains=search_query) |
+        models.Q(last_name__icontains=search_query) |
+        models.Q(username__icontains=search_query)
+    ).exclude(id=request.user.id)[:10]  # Excluir usuario actual y limitar a 10
+    
+    usuarios_data = []
+    for usuario in usuarios:
+        # Generar iniciales
+        if usuario.first_name and usuario.last_name:
+            iniciales = f"{usuario.first_name[0]}{usuario.last_name[0]}".upper()
+            nombre_completo = f"{usuario.first_name} {usuario.last_name}"
+        elif usuario.first_name:
+            iniciales = usuario.first_name[0].upper()
+            nombre_completo = usuario.first_name
+        else:
+            iniciales = usuario.username[0].upper() if usuario.username else "?"
+            nombre_completo = usuario.username
+        
+        # Determinar rol/cargo
+        if usuario.is_superuser:
+            rol = "Administrador"
+        elif hasattr(usuario, 'groups') and usuario.groups.filter(name='Supervisores').exists():
+            rol = "Supervisor"
+        else:
+            rol = "Usuario"
+        
+        usuarios_data.append({
+            'id': usuario.id,
+            'nombre': nombre_completo,
+            'username': usuario.username,
+            'iniciales': iniciales,
+            'rol': rol,
+            'email': usuario.email or ''
+        })
+    
+    return JsonResponse({
+        'success': True,
+        'usuarios': usuarios_data
+    })
+
 
 @login_required
 def dashboard(request):

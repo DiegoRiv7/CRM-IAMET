@@ -24,6 +24,7 @@ urlpatterns = [
     path("api/proyectos/", views.api_proyectos, name="api_proyectos"),
     path("api/tareas/", views.api_tareas, name="api_tareas"),
     path("api/estadisticas-tareas-proyectos/", views.api_estadisticas_tareas_proyectos, name="api_estadisticas_tareas_proyectos"),
+    path("api/buscar-usuarios/", views.api_buscar_usuarios, name="api_buscar_usuarios"),
 
     # Ruta para la lista de todas las oportunidades de venta (o las del usuario)
     path("todos/", views.todos, name="todos"),

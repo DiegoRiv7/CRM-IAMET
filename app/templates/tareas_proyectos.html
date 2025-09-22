@@ -587,7 +587,7 @@
 
     .table-row {
         display: grid !important;
-        grid-template-columns: 50px 80px 1fr 160px 140px 120px 140px 110px !important;
+        grid-template-columns: 50px 1fr 160px 140px 120px 140px 110px !important;
         align-items: center;
         padding: 0;
         border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
@@ -1067,7 +1067,7 @@
         }
 
         .table-row {
-            grid-template-columns: 30px 50px 1fr 100px 80px 80px 100px 80px;
+            grid-template-columns: 30px 1fr 100px 80px 80px 100px 80px;
             font-size: 0.8rem;
         }
 
@@ -1123,8 +1123,8 @@
                         <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
-                        <input type="text" id="search-proyectos" placeholder="Mi + buscar" class="search-input">
-                        <button class="search-clear" onclick="limpiarBusqueda()" style="display: none;">
+                        <input type="text" id="search-proyectos" placeholder="Buscar en todos los proyectos..." class="search-input">
+                        <button class="search-clear" id="clear-search" style="display: none;">
                             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                             </svg>
@@ -1135,7 +1135,6 @@
             
             <div class="toolbar-right">
                 <div class="view-options">
-                    <span class="view-label">Marcar todo como leído</span>
                     <div class="view-toggles">
                         <button class="view-toggle active" data-view="table">
                             <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
@@ -1159,7 +1158,6 @@
                     <div class="table-cell checkbox-cell">
                         <input type="checkbox" id="select-all-projects">
                     </div>
-                    <div class="table-cell id-cell">ID</div>
                     <div class="table-cell name-cell">Nombre</div>
                     <div class="table-cell members-cell">Ver los miembros</div>
                     <div class="table-cell activity-cell">Activo</div>
@@ -1273,19 +1271,12 @@
                 <textarea id="proyecto-descripcion" class="form-textarea" placeholder="Describe brevemente el proyecto" rows="3"></textarea>
             </div>
             
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="proyecto-fecha-limite" class="form-label">Fecha Límite</label>
-                    <input type="date" id="proyecto-fecha-limite" class="form-input">
-                </div>
-                
-                <div class="form-group">
-                    <label for="proyecto-privacidad" class="form-label">Privacidad</label>
-                    <select id="proyecto-privacidad" class="form-select">
-                        <option value="publico">Público</option>
-                        <option value="privado">Privado</option>
-                    </select>
-                </div>
+            <div class="form-group">
+                <label for="proyecto-privacidad" class="form-label">Privacidad</label>
+                <select id="proyecto-privacidad" class="form-select">
+                    <option value="publico">Público</option>
+                    <option value="privado">Privado</option>
+                </select>
             </div>
             
             <div class="form-group">
@@ -1516,7 +1507,6 @@ function mostrarProyectosTabla(proyectos) {
             <div class="table-cell checkbox-cell">
                 <input type="checkbox" data-project-id="${proyecto.id}">
             </div>
-            <div class="table-cell id-cell">${proyecto.id}</div>
             <div class="table-cell name-cell" onclick="abrirProyecto(${proyecto.id})">
                 ${proyecto.nombre}
             </div>
@@ -1733,55 +1723,74 @@ function limpiarFormularioProyecto() {
 let selectedMembers = [];
 
 async function cargarUsuariosDisponibles() {
-    // Simulamos usuarios disponibles por ahora
-    const usuariosEjemplo = [
-        { id: 1, nombre: 'Diego Rivera', rol: 'Administrador', iniciales: 'DR' },
-        { id: 2, nombre: 'Juan García', rol: 'Desarrollador', iniciales: 'JG' },
-        { id: 3, nombre: 'María Pérez', rol: 'Diseñadora', iniciales: 'MP' },
-        { id: 4, nombre: 'Ana López', rol: 'Project Manager', iniciales: 'AL' },
-        { id: 5, nombre: 'Luis Martínez', rol: 'Ingeniero', iniciales: 'LM' }
-    ];
-    
-    window.availableUsers = usuariosEjemplo;
+    // Ya no necesitamos precargar usuarios, se buscarán dinámicamente
+    window.availableUsers = [];
 }
 
 // Manejador de búsqueda de miembros
 document.addEventListener('DOMContentLoaded', function() {
     const searchMembers = document.getElementById('search-members');
     const membersDropdown = document.getElementById('members-dropdown');
+    let searchTimeout;
     
     if (searchMembers) {
         searchMembers.addEventListener('input', function(e) {
-            const query = e.target.value.toLowerCase();
+            const query = e.target.value.trim();
             
-            if (query.length > 0) {
-                mostrarOpcionesMiembros(query);
+            // Limpiar timeout anterior
+            clearTimeout(searchTimeout);
+            
+            if (query.length >= 2) {
+                // Debounce para evitar demasiadas consultas
+                searchTimeout = setTimeout(() => {
+                    buscarUsuarios(query);
+                }, 300);
             } else {
                 membersDropdown.style.display = 'none';
             }
         });
         
         searchMembers.addEventListener('focus', function() {
-            if (this.value.length > 0) {
-                mostrarOpcionesMiembros(this.value.toLowerCase());
+            if (this.value.trim().length >= 2) {
+                buscarUsuarios(this.value.trim());
+            }
+        });
+        
+        // Ocultar dropdown al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (!searchMembers.contains(e.target) && !membersDropdown.contains(e.target)) {
+                membersDropdown.style.display = 'none';
             }
         });
     }
 });
 
-function mostrarOpcionesMiembros(query) {
+async function buscarUsuarios(query) {
+    try {
+        const response = await fetch(`/app/api/buscar-usuarios/?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarOpcionesMiembros(data.usuarios);
+        } else {
+            console.error('Error buscando usuarios:', data.error);
+        }
+    } catch (error) {
+        console.error('Error en búsqueda de usuarios:', error);
+    }
+}
+
+function mostrarOpcionesMiembros(usuarios) {
     const dropdown = document.getElementById('members-dropdown');
     
-    if (!window.availableUsers) return;
-    
-    const filteredUsers = window.availableUsers.filter(user => 
-        user.nombre.toLowerCase().includes(query) &&
+    // Filtrar usuarios ya seleccionados
+    const usuariosDisponibles = usuarios.filter(user => 
         !selectedMembers.find(selected => selected.id === user.id)
     );
     
-    if (filteredUsers.length > 0) {
-        dropdown.innerHTML = filteredUsers.map(user => `
-            <div class="member-option" onclick="agregarMiembro(${user.id})">
+    if (usuariosDisponibles.length > 0) {
+        dropdown.innerHTML = usuariosDisponibles.map(user => `
+            <div class="member-option" onclick="agregarMiembro(${user.id}, '${user.nombre}', '${user.iniciales}', '${user.rol}')">
                 <div class="member-option-avatar">${user.iniciales}</div>
                 <div class="member-option-info">
                     <div class="member-option-name">${user.nombre}</div>
@@ -1790,14 +1799,25 @@ function mostrarOpcionesMiembros(query) {
             </div>
         `).join('');
         dropdown.style.display = 'block';
+    } else if (usuarios.length === 0) {
+        dropdown.innerHTML = '<div class="member-option" style="cursor: default; opacity: 0.7;">No se encontraron usuarios</div>';
+        dropdown.style.display = 'block';
     } else {
-        dropdown.style.display = 'none';
+        dropdown.innerHTML = '<div class="member-option" style="cursor: default; opacity: 0.7;">Todos los usuarios ya están agregados</div>';
+        dropdown.style.display = 'block';
     }
 }
 
-function agregarMiembro(userId) {
-    const user = window.availableUsers.find(u => u.id === userId);
-    if (user && !selectedMembers.find(selected => selected.id === userId)) {
+function agregarMiembro(userId, nombre, iniciales, rol) {
+    // Verificar que el usuario no esté ya seleccionado
+    if (!selectedMembers.find(selected => selected.id === userId)) {
+        const user = {
+            id: userId,
+            nombre: nombre,
+            iniciales: iniciales,
+            rol: rol
+        };
+        
         selectedMembers.push(user);
         actualizarMiembrosSeleccionados();
         document.getElementById('search-members').value = '';
@@ -1839,13 +1859,22 @@ async function crearNuevoProyecto() {
     const formData = {
         nombre: document.getElementById('proyecto-nombre').value,
         descripcion: document.getElementById('proyecto-descripcion').value,
-        fecha_limite: document.getElementById('proyecto-fecha-limite').value,
         privacidad: document.getElementById('proyecto-privacidad').value,
         miembros: selectedMembers.map(m => m.id)
     };
     
+    // Validar campos requeridos
+    if (!formData.nombre.trim()) {
+        alert('❌ El nombre del proyecto es requerido');
+        return;
+    }
+    
     // Por ahora, simular creación exitosa
-    alert(`✅ Proyecto "${formData.nombre}" creado exitosamente!\nMiembros: ${selectedMembers.map(m => m.nombre).join(', ')}`);
+    const miembrosTexto = selectedMembers.length > 0 
+        ? `\nMiembros: ${selectedMembers.map(m => m.nombre).join(', ')}`
+        : '\nSin miembros asignados';
+    
+    alert(`✅ Proyecto "${formData.nombre}" creado exitosamente!${miembrosTexto}`);
     cerrarModalCrearProyecto();
     cargarProyectos(); // Recargar la lista
 }
@@ -1863,32 +1892,40 @@ function verTarea(id) {
     alert(`🚧 Ver tarea ${id} - En desarrollo`);
 }
 
-// Funciones de búsqueda y filtrado
-function limpiarBusqueda() {
-    const searchInput = document.getElementById('search-proyectos');
-    const clearBtn = document.querySelector('.search-clear');
-    
-    searchInput.value = '';
-    clearBtn.style.display = 'none';
-    cargarProyectos(); // Recargar todos los proyectos
-}
+// Funciones de búsqueda y filtrado - implementadas arriba con debounce
 
-// Manejar búsqueda en tiempo real
+// Manejar búsqueda con debounce
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('search-proyectos');
-    const clearBtn = document.querySelector('.search-clear');
+    const clearBtn = document.getElementById('clear-search');
+    let searchTimeout;
+    let currentSearchQuery = '';
     
     if (searchInput) {
         searchInput.addEventListener('input', function(e) {
-            const query = e.target.value;
+            const query = e.target.value.trim();
+            
+            // Mostrar/ocultar botón de limpiar
             if (query.length > 0) {
                 clearBtn.style.display = 'block';
-                // Aquí implementarías la búsqueda en tiempo real
-                buscarProyectos(query);
             } else {
                 clearBtn.style.display = 'none';
-                cargarProyectos();
             }
+            
+            // Debounce para evitar búsquedas excesivas
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentSearchQuery = query;
+                buscarProyectos(query);
+            }, 500); // Esperar 500ms
+        });
+        
+        // Manejar botón de limpiar
+        clearBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            clearBtn.style.display = 'none';
+            currentSearchQuery = '';
+            buscarProyectos('');
         });
     }
 });
