@@ -776,11 +776,10 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="proyecto-prioridad" class="form-label">Prioridad</label>
-                    <select id="proyecto-prioridad" class="form-select" required>
-                        <option value="baja">Baja</option>
-                        <option value="media" selected>Media</option>
-                        <option value="alta">Alta</option>
+                    <label for="proyecto-tipo" class="form-label">Tipo</label>
+                    <select id="proyecto-tipo" class="form-select" required>
+                        <option value="runrate">Runrate</option>
+                        <option value="ingenieria">Ingeniería</option>
                     </select>
                 </div>
             </div>
@@ -1310,7 +1309,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     nombre: document.getElementById('proyecto-nombre').value,
                     descripcion: document.getElementById('proyecto-descripcion').value,
                     privacidad: document.getElementById('proyecto-privacidad').value,
-                    prioridad: document.getElementById('proyecto-prioridad').value,
+                    tipo: document.getElementById('proyecto-tipo').value,
                     miembros: selectedMembers.map(m => m.id),
                     temp_id: Date.now() // ID temporal para testing
                 };
