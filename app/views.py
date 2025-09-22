@@ -742,7 +742,7 @@ def api_comentarios_proyecto(request, proyecto_id):
             if request.user != proyecto.creado_por and request.user not in proyecto.miembros.all():
                 return JsonResponse({'error': 'Sin permisos'}, status=403)
         
-        comentarios = ProyectoComentario.objects.filter(proyecto=proyecto).order_by('fecha_creacion')
+        comentarios = ProyectoComentario.objects.filter(proyecto=proyecto).order_by('-fecha_creacion')
         
         comentarios_data = []
         for comentario in comentarios:
