@@ -183,7 +183,7 @@
         -webkit-backdrop-filter: blur(25px);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 22px;
-        padding: 2px;
+        padding: 4px;
         height: 44px;
         box-shadow: 
             0 8px 32px rgba(0, 0, 0, 0.2),
@@ -233,15 +233,15 @@
 
     .tab-slider {
         position: absolute;
-        top: 2px;
-        left: 2px;
-        height: calc(100% - 4px);
-        width: calc(50% - 2px);
+        top: 4px;
+        left: 4px;
+        height: calc(100% - 8px);
+        width: calc(50% - 4px);
         background: rgba(255, 255, 255, 0.12);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 20px;
+        border-radius: 18px;
         box-shadow: 
             0 2px 8px rgba(0, 0, 0, 0.1),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -253,7 +253,7 @@
         transform: translateZ(0);
     }
     .tab-selector[data-active="tareas"] .tab-slider {
-        transform: translateX(calc(100% + 2px)) translateZ(0);
+        transform: translateX(calc(100% + 4px)) translateZ(0);
     }
 
     /* Table Styles */
@@ -1031,16 +1031,18 @@ function agregarMiembro(usuario) {
     selectedMembers.push(usuario);
     actualizarMiembrosSeleccionados();
     
-    // Limpiar búsqueda y mantener el campo enfocado
+    // Ocultar inmediatamente el menú desplegable para ver el miembro agregado
+    const searchResults = document.getElementById('user-search-results');
+    if (searchResults) {
+        searchResults.classList.remove('active');
+    }
+    
+    // Limpiar el campo de búsqueda
     const searchInput = document.getElementById('proyecto-miembros');
     if (searchInput) {
         searchInput.value = '';
-        // Actualizar la lista para remover el usuario recién agregado
-        setTimeout(() => {
-            if (document.activeElement === searchInput) {
-                mostrarTodosLosUsuarios();
-            }
-        }, 100);
+        // Opcional: mantener el foco para agregar más miembros fácilmente
+        searchInput.focus();
     }
 }
 
