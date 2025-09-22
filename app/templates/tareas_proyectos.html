@@ -394,6 +394,532 @@
         color: var(--apple-label-secondary);
     }
 
+    /* Barra de herramientas de proyectos */
+    .projects-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: var(--apple-background-secondary);
+        border-radius: 12px;
+        border: 1px solid var(--apple-separator);
+    }
+
+    .toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .search-container {
+        position: relative;
+    }
+
+    .search-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .search-input {
+        background: var(--apple-background);
+        border: 1px solid var(--apple-separator);
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem 0.5rem 2.5rem;
+        font-size: 0.9rem;
+        color: var(--apple-label);
+        width: 250px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--apple-blue);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.1);
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 0.75rem;
+        color: var(--apple-label-secondary);
+        z-index: 1;
+    }
+
+    .search-clear {
+        position: absolute;
+        right: 0.5rem;
+        background: none;
+        border: none;
+        color: var(--apple-label-secondary);
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 4px;
+        transition: background-color 0.2s ease;
+    }
+
+    .search-clear:hover {
+        background: var(--apple-separator);
+    }
+
+    .view-options {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .view-label {
+        font-size: 0.9rem;
+        color: var(--apple-label-secondary);
+        font-weight: 500;
+    }
+
+    .view-toggles {
+        display: flex;
+        background: var(--apple-background);
+        border-radius: 6px;
+        padding: 2px;
+        border: 1px solid var(--apple-separator);
+    }
+
+    .view-toggle {
+        background: transparent;
+        border: none;
+        padding: 0.5rem;
+        color: var(--apple-label-secondary);
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .view-toggle:hover {
+        color: var(--apple-label);
+    }
+
+    .view-toggle.active {
+        background: var(--apple-blue);
+        color: white;
+    }
+
+    /* Tabla de proyectos estilo Bitrix24 */
+    .projects-table-container {
+        background: var(--apple-background-secondary);
+        border-radius: 12px;
+        border: 1px solid var(--apple-separator);
+        overflow: hidden;
+    }
+
+    .table-header {
+        background: var(--apple-background);
+        border-bottom: 1px solid var(--apple-separator);
+    }
+
+    .table-row {
+        display: grid;
+        grid-template-columns: 40px 60px 1fr 150px 120px 100px 120px 100px;
+        align-items: center;
+        padding: 0;
+        border-bottom: 1px solid var(--apple-separator);
+        transition: background-color 0.2s ease;
+    }
+
+    .table-row:hover:not(.header-row) {
+        background: rgba(10, 132, 255, 0.05);
+    }
+
+    .header-row {
+        font-weight: 600;
+        color: var(--apple-label);
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .table-cell {
+        padding: 0.75rem 0.5rem;
+        display: flex;
+        align-items: center;
+        font-size: 0.9rem;
+    }
+
+    .checkbox-cell {
+        justify-content: center;
+    }
+
+    .id-cell {
+        color: var(--apple-label-secondary);
+        font-family: 'SF Mono', 'Monaco', monospace;
+    }
+
+    .name-cell {
+        font-weight: 500;
+        color: var(--apple-blue);
+        cursor: pointer;
+        transition: color 0.2s ease;
+    }
+
+    .name-cell:hover {
+        color: var(--apple-blue-hover);
+        text-decoration: underline;
+    }
+
+    .members-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .member-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--apple-blue), var(--apple-purple));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.7rem;
+        font-weight: 600;
+        margin-right: -8px;
+        border: 2px solid var(--apple-background-secondary);
+        position: relative;
+    }
+
+    .member-count {
+        background: var(--apple-label-secondary);
+        color: white;
+        border-radius: 12px;
+        padding: 0.125rem 0.5rem;
+        font-size: 0.75rem;
+        margin-left: 0.5rem;
+    }
+
+    .activity-date {
+        color: var(--apple-label-secondary);
+        font-size: 0.85rem;
+    }
+
+    .performance-bar {
+        width: 60px;
+        height: 6px;
+        background: var(--apple-separator);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-right: 0.5rem;
+    }
+
+    .performance-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--apple-green), var(--apple-blue));
+        border-radius: 3px;
+        transition: width 0.3s ease;
+    }
+
+    .performance-text {
+        font-size: 0.8rem;
+        color: var(--apple-label-secondary);
+        min-width: 35px;
+    }
+
+    .role-badge {
+        background: var(--apple-blue);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .role-badge.jefe {
+        background: var(--apple-green);
+    }
+
+    .role-badge.miembro {
+        background: var(--apple-purple);
+    }
+
+    .privacy-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+
+    .privacy-badge.publico {
+        background: rgba(48, 209, 88, 0.1);
+        color: var(--apple-green);
+    }
+
+    .privacy-badge.privado {
+        background: rgba(255, 149, 0, 0.1);
+        color: var(--apple-orange);
+    }
+
+    /* Modal para crear proyecto */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.show {
+        opacity: 1;
+    }
+
+    .modal-container {
+        background: var(--apple-background);
+        border-radius: 16px;
+        border: 1px solid var(--apple-separator);
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
+        width: 90%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+        transform: scale(0.9) translateY(20px);
+        transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.show .modal-container {
+        transform: scale(1) translateY(0);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--apple-separator);
+    }
+
+    .modal-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--apple-label);
+        margin: 0;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        color: var(--apple-label-secondary);
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 6px;
+        transition: background-color 0.2s ease;
+    }
+
+    .modal-close:hover {
+        background: var(--apple-separator);
+        color: var(--apple-label);
+    }
+
+    .modal-form {
+        padding: 1.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 500;
+        color: var(--apple-label);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .form-input, .form-select, .form-textarea {
+        width: 100%;
+        background: var(--apple-background-secondary);
+        border: 1px solid var(--apple-separator);
+        border-radius: 8px;
+        padding: 0.75rem;
+        font-size: 0.95rem;
+        color: var(--apple-label);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        font-family: inherit;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+        outline: none;
+        border-color: var(--apple-blue);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.1);
+    }
+
+    .form-textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+
+    .members-selector {
+        position: relative;
+    }
+
+    .selected-members {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+        min-height: 40px;
+        padding: 0.5rem;
+        border: 1px solid var(--apple-separator);
+        border-radius: 8px;
+        background: var(--apple-background-secondary);
+    }
+
+    .selected-member {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--apple-blue);
+        color: white;
+        padding: 0.375rem 0.75rem;
+        border-radius: 16px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .remove-member {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 0;
+        margin-left: 0.25rem;
+        opacity: 0.8;
+        transition: opacity 0.2s ease;
+    }
+
+    .remove-member:hover {
+        opacity: 1;
+    }
+
+    .members-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--apple-background);
+        border: 1px solid var(--apple-separator);
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 10;
+        margin-top: 0.25rem;
+    }
+
+    .member-option {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+
+    .member-option:hover {
+        background: var(--apple-separator);
+    }
+
+    .member-option-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--apple-blue), var(--apple-purple));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .member-option-info {
+        flex: 1;
+    }
+
+    .member-option-name {
+        font-weight: 500;
+        color: var(--apple-label);
+        font-size: 0.9rem;
+    }
+
+    .member-option-role {
+        font-size: 0.8rem;
+        color: var(--apple-label-secondary);
+    }
+
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--apple-separator);
+    }
+
+    .btn-secondary {
+        background: var(--apple-background-secondary);
+        color: var(--apple-label);
+        border: 1px solid var(--apple-separator);
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+        background: var(--apple-separator);
+        transform: translateY(-1px);
+    }
+
+    .btn-primary {
+        background: var(--apple-blue);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover {
+        background: var(--apple-blue-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 8px 24px rgba(10, 132, 255, 0.3);
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
         .tareas-container {
@@ -411,6 +937,38 @@
 
         .feature-card {
             padding: 1.5rem;
+        }
+
+        .projects-toolbar {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: stretch;
+        }
+
+        .toolbar-left, .toolbar-right {
+            justify-content: space-between;
+        }
+
+        .search-input {
+            width: 100%;
+        }
+
+        .table-row {
+            grid-template-columns: 30px 50px 1fr 100px 80px 80px 100px 80px;
+            font-size: 0.8rem;
+        }
+
+        .table-cell {
+            padding: 0.5rem 0.25rem;
+        }
+
+        .modal-container {
+            width: 95%;
+            margin: 1rem;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
         }
     }
 </style>
@@ -459,17 +1017,74 @@
 
     <!-- Contenido de Proyectos -->
     <div class="tab-content active" id="proyectos-content">
-        <div class="section-header">
-            <h2 class="section-title">Proyectos</h2>
-            <button class="create-btn" onclick="crearProyecto()">
-                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                </svg>
-                Crear Proyecto
-            </button>
+        <!-- Barra de herramientas de proyectos -->
+        <div class="projects-toolbar">
+            <div class="toolbar-left">
+                <button class="create-btn" onclick="abrirModalCrearProyecto()">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                    Crear
+                </button>
+                
+                <div class="search-container">
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <input type="text" id="search-proyectos" placeholder="Mi + buscar" class="search-input">
+                        <button class="search-clear" onclick="limpiarBusqueda()" style="display: none;">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="toolbar-right">
+                <div class="view-options">
+                    <span class="view-label">Marcar todo como leído</span>
+                    <div class="view-toggles">
+                        <button class="view-toggle active" data-view="table">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M3 3h18v18H3V3zm2 2v2h14V5H5zm0 4v2h14V9H5zm0 4v2h14v-2H5zm0 4v2h14v-2H5z"/>
+                            </svg>
+                        </button>
+                        <button class="view-toggle" data-view="cards">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm8-2h8v8h-8v-8zm2 2v4h4v-4h-4z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="items-grid" id="proyectos-grid">
+        <!-- Tabla de proyectos estilo Bitrix24 -->
+        <div class="projects-table-container" id="table-view">
+            <div class="table-header">
+                <div class="table-row header-row">
+                    <div class="table-cell checkbox-cell">
+                        <input type="checkbox" id="select-all-projects">
+                    </div>
+                    <div class="table-cell id-cell">ID</div>
+                    <div class="table-cell name-cell">Nombre</div>
+                    <div class="table-cell members-cell">Ver los miembros</div>
+                    <div class="table-cell activity-cell">Activo</div>
+                    <div class="table-cell performance-cell">Performance</div>
+                    <div class="table-cell role-cell">Rol</div>
+                    <div class="table-cell privacy-cell">Privacidad</div>
+                </div>
+            </div>
+            
+            <div class="table-body" id="projects-table-body">
+                <!-- Los proyectos se cargarán aquí dinámicamente -->
+            </div>
+        </div>
+
+        <!-- Vista de cards (oculta por defecto) -->
+        <div class="items-grid" id="card-view" style="display: none;">
             <!-- Los proyectos se cargarán aquí dinámicamente -->
         </div>
 
@@ -480,7 +1095,7 @@
             <p class="empty-description">
                 Crea tu primer proyecto para organizar tareas y colaborar con tu equipo de manera efectiva.
             </p>
-            <button class="create-btn" onclick="crearProyecto()">
+            <button class="create-btn" onclick="abrirModalCrearProyecto()">
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                 </svg>
@@ -528,6 +1143,65 @@
         <p class="construction-text">
             Esta funcionalidad está siendo desarrollada. Próximamente podrás gestionar todas tus tareas y proyectos desde aquí con una interfaz intuitiva y herramientas avanzadas de colaboración.
         </p>
+    </div>
+</div>
+
+<!-- Modal para crear proyecto -->
+<div class="modal-overlay" id="modal-crear-proyecto" style="display: none;">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 class="modal-title">Crear Nuevo Proyecto</h3>
+            <button class="modal-close" onclick="cerrarModalCrearProyecto()">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <form class="modal-form" id="form-crear-proyecto">
+            <div class="form-group">
+                <label for="proyecto-nombre" class="form-label">Nombre del Proyecto</label>
+                <input type="text" id="proyecto-nombre" class="form-input" placeholder="Ingresa el nombre del proyecto" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="proyecto-descripcion" class="form-label">Descripción</label>
+                <textarea id="proyecto-descripcion" class="form-textarea" placeholder="Describe brevemente el proyecto" rows="3"></textarea>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="proyecto-fecha-limite" class="form-label">Fecha Límite</label>
+                    <input type="date" id="proyecto-fecha-limite" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label for="proyecto-privacidad" class="form-label">Privacidad</label>
+                    <select id="proyecto-privacidad" class="form-select">
+                        <option value="publico">Público</option>
+                        <option value="privado">Privado</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="proyecto-miembros" class="form-label">Miembros del Equipo</label>
+                <div class="members-selector">
+                    <input type="text" id="search-members" class="form-input" placeholder="Buscar usuarios...">
+                    <div class="selected-members" id="selected-members">
+                        <!-- Miembros seleccionados aparecerán aquí -->
+                    </div>
+                    <div class="members-dropdown" id="members-dropdown" style="display: none;">
+                        <!-- Lista de usuarios disponibles -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" onclick="cerrarModalCrearProyecto()">Cancelar</button>
+                <button type="submit" class="btn-primary">Crear Proyecto</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -604,15 +1278,135 @@ async function cargarTareas() {
 }
 
 function mostrarProyectos(proyectos) {
-    const grid = document.getElementById('proyectos-grid');
+    const currentView = document.querySelector('.view-toggle.active').dataset.view;
     const emptyState = document.getElementById('proyectos-empty');
     
-    grid.innerHTML = '';
     emptyState.style.display = 'none';
+    
+    if (currentView === 'table') {
+        mostrarProyectosTabla(proyectos);
+    } else {
+        mostrarProyectosCards(proyectos);
+    }
+}
+
+function mostrarProyectosTabla(proyectos) {
+    const tableBody = document.getElementById('projects-table-body');
+    const tableView = document.getElementById('table-view');
+    const cardView = document.getElementById('card-view');
+    
+    tableView.style.display = 'block';
+    cardView.style.display = 'none';
+    
+    tableBody.innerHTML = '';
+    
+    // Agregar datos de ejemplo más realistas
+    const proyectosEjemplo = [
+        {
+            id: 1380,
+            nombre: 'RFQ-20250428-11 CONTROL DE ACCESO TORNIQUETE',
+            miembros: [
+                { inicial: 'DR', nombre: 'Diego Rivera' },
+                { inicial: 'JG', nombre: 'Juan García' },
+                { inicial: 'MP', nombre: 'María Pérez' },
+                { inicial: 'AL', nombre: 'Ana López' }
+            ],
+            miembros_count: 7,
+            fecha_actividad: '21 de Septiembre, 8:01',
+            progreso: 63,
+            rol: 'Miembro del proyecto',
+            privacidad: 'publico'
+        },
+        {
+            id: 2056,
+            nombre: 'CRM NetHive',
+            miembros: [
+                { inicial: 'LM', nombre: 'Luis Martínez' },
+                { inicial: 'CS', nombre: 'Carmen Silva' }
+            ],
+            miembros_count: 2,
+            fecha_actividad: '19 de Septiembre, 3:12',
+            progreso: 100,
+            rol: 'Jefe de proyectos',
+            privacidad: 'privado'
+        },
+        {
+            id: 774,
+            nombre: 'Telvista 34630 CH Implementacion de Sistema Avigilon',
+            miembros: [
+                { inicial: 'RH', nombre: 'Roberto Hernández' },
+                { inicial: 'SF', nombre: 'Sandra Flores' },
+                { inicial: 'MR', nombre: 'Miguel Ruiz' }
+            ],
+            miembros_count: 6,
+            fecha_actividad: '10 de Septiembre, 0:59',
+            progreso: 0,
+            rol: 'Miembro del proyecto',
+            privacidad: 'privado'
+        }
+    ];
+    
+    proyectosEjemplo.forEach(proyecto => {
+        const row = document.createElement('div');
+        row.className = 'table-row';
+        
+        // Generar avatares de miembros
+        const avatarsHtml = proyecto.miembros.slice(0, 4).map(miembro => 
+            `<div class="member-avatar" title="${miembro.nombre}">${miembro.inicial}</div>`
+        ).join('');
+        
+        const memberCountHtml = proyecto.miembros_count > 4 ? 
+            `<span class="member-count">+${proyecto.miembros_count - 4}</span>` : '';
+        
+        row.innerHTML = `
+            <div class="table-cell checkbox-cell">
+                <input type="checkbox" data-project-id="${proyecto.id}">
+            </div>
+            <div class="table-cell id-cell">${proyecto.id}</div>
+            <div class="table-cell name-cell" onclick="abrirProyecto(${proyecto.id})">
+                ${proyecto.nombre}
+            </div>
+            <div class="table-cell members-cell">
+                ${avatarsHtml}
+                ${memberCountHtml}
+            </div>
+            <div class="table-cell activity-cell">
+                <span class="activity-date">${proyecto.fecha_actividad}</span>
+            </div>
+            <div class="table-cell performance-cell">
+                <div class="performance-bar">
+                    <div class="performance-fill" style="width: ${proyecto.progreso}%"></div>
+                </div>
+                <span class="performance-text">${proyecto.progreso}%</span>
+            </div>
+            <div class="table-cell role-cell">
+                <span class="role-badge ${proyecto.rol === 'Jefe de proyectos' ? 'jefe' : 'miembro'}">
+                    ${proyecto.rol === 'Jefe de proyectos' ? 'Jefe de proyectos' : 'Miembro del proyecto'}
+                </span>
+            </div>
+            <div class="table-cell privacy-cell">
+                <span class="privacy-badge ${proyecto.privacidad}">
+                    ${proyecto.privacidad === 'publico' ? 'Público' : 'Privado'}
+                </span>
+            </div>
+        `;
+        
+        tableBody.appendChild(row);
+    });
+}
+
+function mostrarProyectosCards(proyectos) {
+    const cardView = document.getElementById('card-view');
+    const tableView = document.getElementById('table-view');
+    
+    tableView.style.display = 'none';
+    cardView.style.display = 'grid';
+    
+    cardView.innerHTML = '';
     
     proyectos.forEach(proyecto => {
         const card = crearCardProyecto(proyecto);
-        grid.appendChild(card);
+        cardView.appendChild(card);
     });
 }
 
@@ -708,23 +1502,215 @@ async function actualizarEstadisticas() {
     }
 }
 
-// Funciones de creación
-function crearProyecto() {
-    // Por ahora, mostrar alerta
-    alert('🚧 Funcionalidad de crear proyectos en desarrollo. Próximamente disponible con formulario modal avanzado.');
+// Funciones de creación y modal
+function abrirModalCrearProyecto() {
+    const modal = document.getElementById('modal-crear-proyecto');
+    modal.style.display = 'flex';
+    setTimeout(() => modal.classList.add('show'), 10);
+    
+    // Cargar usuarios disponibles
+    cargarUsuariosDisponibles();
+}
+
+function cerrarModalCrearProyecto() {
+    const modal = document.getElementById('modal-crear-proyecto');
+    modal.classList.remove('show');
+    setTimeout(() => {
+        modal.style.display = 'none';
+        limpiarFormularioProyecto();
+    }, 300);
+}
+
+function limpiarFormularioProyecto() {
+    document.getElementById('form-crear-proyecto').reset();
+    document.getElementById('selected-members').innerHTML = '';
+    document.getElementById('members-dropdown').style.display = 'none';
+    selectedMembers = [];
+}
+
+let selectedMembers = [];
+
+async function cargarUsuariosDisponibles() {
+    // Simulamos usuarios disponibles por ahora
+    const usuariosEjemplo = [
+        { id: 1, nombre: 'Diego Rivera', rol: 'Administrador', iniciales: 'DR' },
+        { id: 2, nombre: 'Juan García', rol: 'Desarrollador', iniciales: 'JG' },
+        { id: 3, nombre: 'María Pérez', rol: 'Diseñadora', iniciales: 'MP' },
+        { id: 4, nombre: 'Ana López', rol: 'Project Manager', iniciales: 'AL' },
+        { id: 5, nombre: 'Luis Martínez', rol: 'Ingeniero', iniciales: 'LM' }
+    ];
+    
+    window.availableUsers = usuariosEjemplo;
+}
+
+// Manejador de búsqueda de miembros
+document.addEventListener('DOMContentLoaded', function() {
+    const searchMembers = document.getElementById('search-members');
+    const membersDropdown = document.getElementById('members-dropdown');
+    
+    if (searchMembers) {
+        searchMembers.addEventListener('input', function(e) {
+            const query = e.target.value.toLowerCase();
+            
+            if (query.length > 0) {
+                mostrarOpcionesMiembros(query);
+            } else {
+                membersDropdown.style.display = 'none';
+            }
+        });
+        
+        searchMembers.addEventListener('focus', function() {
+            if (this.value.length > 0) {
+                mostrarOpcionesMiembros(this.value.toLowerCase());
+            }
+        });
+    }
+});
+
+function mostrarOpcionesMiembros(query) {
+    const dropdown = document.getElementById('members-dropdown');
+    
+    if (!window.availableUsers) return;
+    
+    const filteredUsers = window.availableUsers.filter(user => 
+        user.nombre.toLowerCase().includes(query) &&
+        !selectedMembers.find(selected => selected.id === user.id)
+    );
+    
+    if (filteredUsers.length > 0) {
+        dropdown.innerHTML = filteredUsers.map(user => `
+            <div class="member-option" onclick="agregarMiembro(${user.id})">
+                <div class="member-option-avatar">${user.iniciales}</div>
+                <div class="member-option-info">
+                    <div class="member-option-name">${user.nombre}</div>
+                    <div class="member-option-role">${user.rol}</div>
+                </div>
+            </div>
+        `).join('');
+        dropdown.style.display = 'block';
+    } else {
+        dropdown.style.display = 'none';
+    }
+}
+
+function agregarMiembro(userId) {
+    const user = window.availableUsers.find(u => u.id === userId);
+    if (user && !selectedMembers.find(selected => selected.id === userId)) {
+        selectedMembers.push(user);
+        actualizarMiembrosSeleccionados();
+        document.getElementById('search-members').value = '';
+        document.getElementById('members-dropdown').style.display = 'none';
+    }
+}
+
+function removerMiembro(userId) {
+    selectedMembers = selectedMembers.filter(member => member.id !== userId);
+    actualizarMiembrosSeleccionados();
+}
+
+function actualizarMiembrosSeleccionados() {
+    const container = document.getElementById('selected-members');
+    container.innerHTML = selectedMembers.map(member => `
+        <div class="selected-member">
+            ${member.nombre}
+            <button type="button" class="remove-member" onclick="removerMiembro(${member.id})">
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+    `).join('');
+}
+
+// Manejar envío del formulario de crear proyecto
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('form-crear-proyecto');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            crearNuevoProyecto();
+        });
+    }
+});
+
+async function crearNuevoProyecto() {
+    const formData = {
+        nombre: document.getElementById('proyecto-nombre').value,
+        descripcion: document.getElementById('proyecto-descripcion').value,
+        fecha_limite: document.getElementById('proyecto-fecha-limite').value,
+        privacidad: document.getElementById('proyecto-privacidad').value,
+        miembros: selectedMembers.map(m => m.id)
+    };
+    
+    // Por ahora, simular creación exitosa
+    alert(`✅ Proyecto "${formData.nombre}" creado exitosamente!\nMiembros: ${selectedMembers.map(m => m.nombre).join(', ')}`);
+    cerrarModalCrearProyecto();
+    cargarProyectos(); // Recargar la lista
+}
+
+// Funciones de navegación
+function abrirProyecto(id) {
+    alert(`🚧 Abrir proyecto ${id} - Próximamente se implementará la vista detallada del proyecto`);
 }
 
 function crearTarea() {
-    // Por ahora, mostrar alerta  
     alert('🚧 Funcionalidad de crear tareas en desarrollo. Próximamente disponible con formulario modal avanzado.');
-}
-
-function verProyecto(id) {
-    alert(`🚧 Ver proyecto ${id} - En desarrollo`);
 }
 
 function verTarea(id) {
     alert(`🚧 Ver tarea ${id} - En desarrollo`);
 }
+
+// Funciones de búsqueda y filtrado
+function limpiarBusqueda() {
+    const searchInput = document.getElementById('search-proyectos');
+    const clearBtn = document.querySelector('.search-clear');
+    
+    searchInput.value = '';
+    clearBtn.style.display = 'none';
+    cargarProyectos(); // Recargar todos los proyectos
+}
+
+// Manejar búsqueda en tiempo real
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search-proyectos');
+    const clearBtn = document.querySelector('.search-clear');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const query = e.target.value;
+            if (query.length > 0) {
+                clearBtn.style.display = 'block';
+                // Aquí implementarías la búsqueda en tiempo real
+                buscarProyectos(query);
+            } else {
+                clearBtn.style.display = 'none';
+                cargarProyectos();
+            }
+        });
+    }
+});
+
+function buscarProyectos(query) {
+    // Por ahora, simular búsqueda
+    console.log('Buscando proyectos:', query);
+    // Aquí implementarías la lógica de búsqueda real
+}
+
+// Manejar cambio de vista (tabla/cards)
+document.addEventListener('DOMContentLoaded', function() {
+    const viewToggles = document.querySelectorAll('.view-toggle');
+    
+    viewToggles.forEach(toggle => {
+        toggle.addEventListener('click', function() {
+            // Actualizar botones activos
+            viewToggles.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Recargar proyectos con la nueva vista
+            cargarProyectos();
+        });
+    });
+});
 </script>
 {% endblock %}
