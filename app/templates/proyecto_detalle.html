@@ -807,6 +807,62 @@
     }
 </style>
 
+    /* Search Widget */
+    .search-widget-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    .search-icon-container {
+        width: 44px; height: 44px; border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .search-icon-container:hover { background: rgba(255, 255, 255, 0.15); transform: scale(1.05); }
+    
+    .search-input {
+        position: absolute;
+        right: 22px;
+        width: 0;
+        height: 44px;
+        padding: 0;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 22px;
+        color: transparent;
+        font-size: 1rem;
+        opacity: 0;
+        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        pointer-events: none;
+        outline: none;
+    }
+    .search-input::placeholder {
+        color: transparent;
+        transition: color 0.2s ease 0.2s;
+    }
+
+    .search-widget-container.expanded .search-input {
+        width: 280px;
+        opacity: 1;
+        pointer-events: auto;
+        padding: 0 20px;
+        color: var(--apple-label);
+    }
+    .search-widget-container.expanded .search-input::placeholder {
+        color: var(--apple-label-secondary);
+    }
+
+    .search-widget-container.expanded .search-icon-container {
+        transform: translateX(-320px);
+    }
+</style>
+
 <div class="proyecto-container">
     <div class="content-block">
         <!-- Header -->
@@ -943,12 +999,40 @@
 
             <!-- Tareas Tab -->
             <div class="tab-content" id="tareas-content">
-                <div class="empty-state">
-                    <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1">
-                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-                    </svg>
-                    <h3>Gestión de Tareas</h3>
-                    <p>Aquí podrás crear y gestionar las tareas del proyecto.</p>
+                <div class="tasks-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <button class="btn-nuevo-comentario" id="btnCrearTarea" style="background: var(--apple-green); border-color: rgba(48, 209, 88, 0.3);">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Crear Tarea
+                    </button>
+                    <div class="search-widget-container" id="search-widget-tareas">
+                        <input type="text" id="searchTareas" placeholder="Buscar tareas..." class="search-input" value="">
+                        <div class="search-icon-container" id="search-icon-tareas">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tasks-table-container" style="background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); overflow: hidden;">
+                    <table class="tasks-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: rgba(255, 255, 255, 0.08);">
+                                <th style="padding: 1rem; text-align: left; color: var(--apple-label-secondary); font-size: 0.85rem; text-transform: uppercase; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Nombre</th>
+                                <th style="padding: 1rem; text-align: left; color: var(--apple-label-secondary); font-size: 0.85rem; text-transform: uppercase; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Fecha Inicial</th>
+                                <th style="padding: 1rem; text-align: left; color: var(--apple-label-secondary); font-size: 0.85rem; text-transform: uppercase; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Fecha Límite</th>
+                                <th style="padding: 1rem; text-align: left; color: var(--apple-label-secondary); font-size: 0.85rem; text-transform: uppercase; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Creado Por</th>
+                                <th style="padding: 1rem; text-align: left; color: var(--apple-label-secondary); font-size: 0.85rem; text-transform: uppercase; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Responsable</th>
+                                <th style="padding: 1rem; text-align: left; color: var(--apple-label-secondary); font-size: 0.85rem; text-transform: uppercase; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Proyecto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Las tareas se cargarán aquí dinámicamente -->
+                            <tr>
+                                <td colspan="6" style="padding: 2rem; text-align: center; color: var(--apple-label-secondary);">No hay tareas para este proyecto.</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -1586,10 +1670,53 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Mostrar sugerencias de usuarios (placeholder)
+    // Mostrar sugerencias de usuarios (placeholder)
 function mostrarSugerenciasUsuarios(input) {
     // Aquí se implementaría el autocompletado de usuarios
     console.log('Mostrar sugerencias de usuarios');
 }
-</script>
-{% endblock %}
+
+// Animated Search Widget Logic for Tasks
+document.addEventListener('DOMContentLoaded', function() {
+    const searchWidgetTareas = document.getElementById('search-widget-tareas');
+    const searchIconTareas = document.getElementById('search-icon-tareas');
+    const searchInputTareas = document.getElementById('searchTareas');
+
+    function performTaskSearch() {
+        const searchValue = searchInputTareas.value.trim();
+        console.log('Searching for tasks:', searchValue);
+        // Aquí se implementaría la lógica de búsqueda de tareas, por ejemplo, recargar la tabla con resultados filtrados
+        // Para una implementación completa, necesitarías una API o una función de filtrado de datos en el frontend.
+    }
+
+    if (searchIconTareas && searchWidgetTareas && searchInputTareas) {
+        searchIconTareas.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isExpanded = searchWidgetTareas.classList.contains('expanded');
+
+            if (isExpanded) {
+                performTaskSearch();
+            } else {
+                searchWidgetTareas.classList.add('expanded');
+                searchInputTareas.focus();
+                const end = searchInputTareas.value.length;
+                searchInputTareas.setSelectionRange(end, end);
+            }
+        });
+
+        searchInputTareas.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                performTaskSearch();
+            }
+        });
+    }
+
+    // Close on ANY outside click for task search
+    document.addEventListener('click', (e) => {
+        if (searchWidgetTareas && !searchWidgetTareas.contains(e.target)) {
+            searchWidgetTareas.classList.remove('expanded');
+        }
+    });
+});
+</script>{% endblock %}
