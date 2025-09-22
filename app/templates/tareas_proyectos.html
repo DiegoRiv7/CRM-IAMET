@@ -1025,6 +1025,17 @@ function mostrarPopupExito(mensaje) {
     }
 }
 
+// Función para mostrar popup de "Abriendo proyecto"
+function mostrarPopupAbriendo(nombreProyecto) {
+    const popup = document.getElementById('popup-exito');
+    const mensajeElement = document.getElementById('popup-mensaje');
+    
+    if (popup && mensajeElement) {
+        mensajeElement.textContent = `Abriendo proyecto "${nombreProyecto}"...`;
+        popup.classList.add('active');
+    }
+}
+
 function abrirProyecto(id) { 
     // Redirigir a la vista detallada del proyecto
     window.location.href = `/app/proyecto/${id}/`; 
@@ -1433,10 +1444,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     mostrarPopupExito(mensajeExito);
                     cerrarModalCrearProyecto();
                     
-                    // Recargar la lista de proyectos para mostrar el nuevo
+                    // Abrir automáticamente el proyecto recién creado
                     setTimeout(() => {
-                        cargarProyectos(1);
-                    }, 1000);
+                        mostrarPopupAbriendo(result.proyecto.nombre);
+                        console.log(`🚀 Abriendo proyecto ID: ${result.proyecto.id}`);
+                        
+                        // Redirigir después de mostrar el mensaje de "Abriendo"
+                        setTimeout(() => {
+                            window.location.href = `/app/proyecto/${result.proyecto.id}/`;
+                        }, 800);
+                    }, 1200); // 1.2 segundos para que el usuario vea el mensaje de éxito
                 } else {
                     console.error('❌ Error del servidor:', result.error);
                     alert(`Error: ${result.error || 'No se pudo crear el proyecto'}`);

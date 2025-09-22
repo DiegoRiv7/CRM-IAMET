@@ -552,9 +552,9 @@ def api_buscar_usuarios(request):
     if search_query and len(search_query) >= 2:
         # Buscar usuarios por nombre, apellido o username
         usuarios = User.objects.filter(
-            models.Q(first_name__icontains=search_query) |
-            models.Q(last_name__icontains=search_query) |
-            models.Q(username__icontains=search_query)
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(username__icontains=search_query)
         ).exclude(id=request.user.id)[:10]  # Excluir usuario actual y limitar a 10
     else:
         # Si no hay query, devolver todos los usuarios (para mostrar lista completa)
@@ -686,38 +686,47 @@ def proyecto_detalle(request, proyecto_id):
     """
     Vista para el detalle individual de un proyecto
     """
-    if not request.user.is_superuser:
-        return redirect('home')
-    
-    # Por ahora, devolver datos de ejemplo hasta que se implemente la base de datos
-    proyecto_ejemplo = {
-        'id': proyecto_id,
-        'nombre': f'Proyecto {proyecto_id}',
-        'descripcion': 'Descripción del proyecto',
-        'tipo': 'runrate',
-        'privacidad': 'publico',
-        'fecha_creacion': '2024-09-22',
-        'creado_por': request.user,
-        'miembros': [
-            {'id': request.user.id, 'nombre': request.user.get_full_name() or request.user.username, 'iniciales': 'DR'}
-        ],
-        'comentarios': [
-            {
-                'id': 1,
-                'texto': 'Este es el comentario inicial del proyecto',
-                'fecha': '2024-09-22',
-                'autor': request.user.get_full_name() or request.user.username
-            }
-        ]
-    }
-    
-    context = {
-        'proyecto': proyecto_ejemplo,
-        'user': request.user,
-        'page_title': f'Proyecto: {proyecto_ejemplo["nombre"]}'
-    }
-    
-    return render(request, 'proyecto_detalle.html', context)
+    try:
+        # Obtener el proyecto real de la base de datos
+        proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+        
+        # Verificar permisos - cualquier usuario autenticado puede ver proyectos públicos
+        # Solo miembros o creador pueden ver proyectos privados
+        if proyecto.privacidad == 'privado':
+            if request.user != proyecto.creado_por and request.user not in proyecto.miembros.all():
+                return redirect('tareas_proyectos')
+        
+        # Crear datos del proyecto para el template
+        proyecto_data = {
+            'id': proyecto.id,
+            'nombre': proyecto.nombre,
+            'descripcion': proyecto.descripcion,
+            'tipo': proyecto.tipo,
+            'privacidad': proyecto.privacidad,
+            'fecha_creacion': proyecto.fecha_creacion.strftime('%d de %b, %Y'),
+            'creado_por': proyecto.creado_por,
+            'miembros': proyecto.get_miembros_display(),
+            'mi_rol': proyecto.get_rol_usuario(request.user),
+            'comentarios': [
+                {
+                    'id': 1,
+                    'texto': proyecto.descripcion or 'Este proyecto fue creado recientemente.',
+                    'fecha': proyecto.fecha_creacion.strftime('%d de %b, %Y'),
+                    'autor': proyecto.creado_por.get_full_name() or proyecto.creado_por.username
+                }
+            ]
+        }
+        
+        context = {
+            'proyecto': proyecto_data,
+            'user': request.user,
+            'page_title': f'Proyecto: {proyecto.nombre}'
+        }
+        
+        return render(request, 'proyecto_detalle.html', context)
+        
+    except Proyecto.DoesNotExist:
+        return redirect('tareas_proyectos')
 
 
 @login_required
