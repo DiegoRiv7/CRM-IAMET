@@ -983,25 +983,31 @@ async function buscarUsuarios(query) {
     return resultados.slice(0, 5); // Limitar a 5 resultados
 }
 
+function mostrarTodosLosUsuarios() {
+    // Filtrar usuarios ya seleccionados
+    const usuariosDisponibles = usuariosEjemplo.filter(usuario => 
+        !selectedMembers.find(m => m.id === usuario.id)
+    );
+    mostrarResultadosBusqueda(usuariosDisponibles);
+}
+
 function mostrarResultadosBusqueda(usuarios) {
     const resultsContainer = document.getElementById('user-search-results');
     if (!resultsContainer) return;
     
     if (usuarios.length === 0) {
-        resultsContainer.classList.remove('active');
+        resultsContainer.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--apple-label-secondary); font-size: 0.9rem;">No hay usuarios disponibles</div>';
+        resultsContainer.classList.add('active');
         return;
     }
     
     resultsContainer.innerHTML = '';
     usuarios.forEach((usuario, index) => {
-        // No mostrar usuarios ya seleccionados
-        if (selectedMembers.find(m => m.id === usuario.id)) return;
-        
         const item = document.createElement('div');
         item.className = 'user-search-item';
         item.onclick = () => agregarMiembro(usuario);
         
-        const avatarColor = getAvatarColor(index);
+        const avatarColor = getAvatarColor(usuario.id - 1); // Usar ID para color consistente
         item.innerHTML = `
             <div class="user-avatar" style="background-color: ${avatarColor};">
                 ${usuario.iniciales}
@@ -1025,17 +1031,34 @@ function agregarMiembro(usuario) {
     selectedMembers.push(usuario);
     actualizarMiembrosSeleccionados();
     
-    // Limpiar búsqueda
+    // Limpiar búsqueda y mantener el campo enfocado
     const searchInput = document.getElementById('proyecto-miembros');
     if (searchInput) {
         searchInput.value = '';
+        // Actualizar la lista para remover el usuario recién agregado
+        setTimeout(() => {
+            if (document.activeElement === searchInput) {
+                mostrarTodosLosUsuarios();
+            }
+        }, 100);
     }
-    document.getElementById('user-search-results').classList.remove('active');
 }
 
 function eliminarMiembro(usuarioId) {
     selectedMembers = selectedMembers.filter(m => m.id !== usuarioId);
     actualizarMiembrosSeleccionados();
+    
+    // Si el campo de búsqueda está enfocado, actualizar la lista
+    const searchInput = document.getElementById('proyecto-miembros');
+    const searchResults = document.getElementById('user-search-results');
+    if (searchInput && searchResults && searchResults.classList.contains('active')) {
+        const query = searchInput.value.trim();
+        if (query.length === 0) {
+            mostrarTodosLosUsuarios();
+        } else {
+            buscarUsuarios(query).then(mostrarResultadosBusqueda);
+        }
+    }
 }
 
 function actualizarMiembrosSeleccionados() {
@@ -1043,11 +1066,11 @@ function actualizarMiembrosSeleccionados() {
     if (!container) return;
     
     container.innerHTML = '';
-    selectedMembers.forEach((miembro, index) => {
+    selectedMembers.forEach((miembro) => {
         const memberElement = document.createElement('div');
         memberElement.className = 'selected-member';
         
-        const avatarColor = getAvatarColor(index);
+        const avatarColor = getAvatarColor(miembro.id - 1); // Usar ID para color consistente
         memberElement.innerHTML = `
             <div class="selected-member-avatar" style="background-color: ${avatarColor};">
                 ${miembro.iniciales}
@@ -1121,35 +1144,57 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- User Search Functionality ---
     const userSearchInput = document.getElementById('proyecto-miembros');
     if (userSearchInput) {
+        // Al hacer clic en el campo, mostrar todos los usuarios disponibles
+        userSearchInput.addEventListener('click', (e) => {
+            e.stopPropagation();
+            mostrarTodosLosUsuarios();
+        });
+        
+        userSearchInput.addEventListener('focus', (e) => {
+            e.stopPropagation();
+            const query = userSearchInput.value.trim();
+            if (query.length === 0) {
+                mostrarTodosLosUsuarios();
+            } else {
+                buscarUsuarios(query).then(mostrarResultadosBusqueda);
+            }
+        });
+        
         userSearchInput.addEventListener('input', (e) => {
             clearTimeout(searchTimeout);
             const query = e.target.value.trim();
             
-            if (query.length < 2) {
-                document.getElementById('user-search-results').classList.remove('active');
+            if (query.length === 0) {
+                mostrarTodosLosUsuarios();
                 return;
             }
             
             searchTimeout = setTimeout(async () => {
                 const usuarios = await buscarUsuarios(query);
                 mostrarResultadosBusqueda(usuarios);
-            }, 300);
+            }, 200);
         });
         
-        userSearchInput.addEventListener('blur', () => {
+        userSearchInput.addEventListener('blur', (e) => {
             // Delay para permitir click en resultados
             setTimeout(() => {
-                document.getElementById('user-search-results').classList.remove('active');
+                const searchResults = document.getElementById('user-search-results');
+                if (searchResults && !searchResults.matches(':hover')) {
+                    searchResults.classList.remove('active');
+                }
             }, 150);
         });
-        
-        userSearchInput.addEventListener('focus', () => {
-            const query = userSearchInput.value.trim();
-            if (query.length >= 2) {
-                buscarUsuarios(query).then(mostrarResultadosBusqueda);
-            }
-        });
     }
+
+    // Cerrar dropdown al hacer clic fuera
+    document.addEventListener('click', (e) => {
+        const searchContainer = document.querySelector('.user-search-container');
+        const searchResults = document.getElementById('user-search-results');
+        
+        if (searchContainer && !searchContainer.contains(e.target) && searchResults) {
+            searchResults.classList.remove('active');
+        }
+    });
 
     // --- Modal Handling ---
     const modalOverlay = document.getElementById('modal-crear-proyecto');
