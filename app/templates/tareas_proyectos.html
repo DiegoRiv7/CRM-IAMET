@@ -3,6 +3,13 @@
 
 {% block content %}
 <style>
+    /* Override base.html container styles for a full-width page */
+    .main-content.container {
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
     /* Apple-inspired design para tareas y proyectos */
     :root {
         --apple-background-secondary: rgba(255, 255, 255, 0.05);
