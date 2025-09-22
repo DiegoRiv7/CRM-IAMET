@@ -317,45 +317,45 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchIcon = document.getElementById('search-icon');
     const searchInput = document.getElementById('searchOportunidad');
 
+    function performSearch() {
+        const searchValue = searchInput.value.trim();
+        const url = new URL(window.location);
+        if (searchValue === '') {
+            url.searchParams.delete('search');
+            url.searchParams.delete('page');
+        } else {
+            url.searchParams.set('search', searchValue);
+            url.searchParams.delete('page');
+        }
+        window.location.href = url.toString();
+    }
+
     if (searchIcon && searchWidget && searchInput) {
         searchIcon.addEventListener('click', (e) => {
             e.stopPropagation();
             const isExpanded = searchWidget.classList.contains('expanded');
 
             if (isExpanded) {
-                searchWidget.classList.remove('expanded');
+                performSearch();
             } else {
                 searchWidget.classList.add('expanded');
                 searchInput.focus();
-                // Move cursor to the end of the text
                 const end = searchInput.value.length;
                 searchInput.setSelectionRange(end, end);
             }
         });
 
-        // Search on Enter key press
         searchInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                const searchValue = this.value.trim();
-                const url = new URL(window.location);
-                
-                if (searchValue === '') {
-                    url.searchParams.delete('search');
-                    url.searchParams.delete('page');
-                }
-                else {
-                    url.searchParams.set('search', searchValue);
-                    url.searchParams.delete('page');
-                }
-                window.location.href = url.toString();
+                performSearch();
             }
         });
     }
 
-    // Close on outside click ONLY if input is empty
+    // Close on ANY outside click
     document.addEventListener('click', (e) => {
-        if (searchWidget && !searchWidget.contains(e.target) && searchInput.value.trim() === '') {
+        if (searchWidget && !searchWidget.contains(e.target)) {
             searchWidget.classList.remove('expanded');
         }
     });
