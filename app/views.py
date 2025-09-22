@@ -631,6 +631,14 @@ def api_crear_proyecto(request):
             creado_por=request.user
         )
         
+        # Crear comentario inicial con la descripción del proyecto (si existe)
+        if descripcion.strip():
+            ProyectoComentario.objects.create(
+                proyecto=proyecto,
+                usuario=request.user,
+                contenido=f"📝 Proyecto creado: {descripcion}"
+            )
+        
         # Agregar miembros al proyecto y enviar notificaciones
         from django.contrib.auth.models import User
         miembros_notificados = []
@@ -706,15 +714,7 @@ def proyecto_detalle(request, proyecto_id):
             'fecha_creacion': proyecto.fecha_creacion.strftime('%d de %b, %Y'),
             'creado_por': proyecto.creado_por,
             'miembros': proyecto.get_miembros_display(),
-            'mi_rol': proyecto.get_rol_usuario(request.user),
-            'comentarios': [
-                {
-                    'id': 1,
-                    'texto': proyecto.descripcion or 'Este proyecto fue creado recientemente.',
-                    'fecha': proyecto.fecha_creacion.strftime('%d de %b, %Y'),
-                    'autor': proyecto.creado_por.get_full_name() or proyecto.creado_por.username
-                }
-            ]
+            'mi_rol': proyecto.get_rol_usuario(request.user)
         }
         
         context = {
@@ -790,11 +790,14 @@ def api_agregar_comentario_proyecto(request, proyecto_id):
     """
     API para agregar un comentario a un proyecto
     """
+    print(f"🔍 api_agregar_comentario_proyecto - Usuario: {request.user.username}, Proyecto ID: {proyecto_id}")
+    
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
     
     try:
         proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+        print(f"✅ Proyecto encontrado: {proyecto.nombre}")
         
         # Verificar permisos
         if proyecto.privacidad == 'privado':

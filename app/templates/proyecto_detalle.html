@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% csrf_token %}
 
 {% block content %}
 <style>
@@ -721,7 +722,7 @@
                             id="comentarioInput" 
                             placeholder="Escribe un comentario... Usa @usuario para mencionar"
                             rows="3"
-                            maxlength="2000">{{ proyecto.descripcion }}</textarea>
+                            maxlength="2000"></textarea>
                         <div class="comentario-form-actions">
                             <span class="contador-caracteres" id="contadorCaracteres">2000</span>
                             <button class="btn-cancelar" id="btnCancelar">Cancelar</button>
@@ -798,6 +799,22 @@ const PROYECTO_ID = {{ proyecto.id }};
 const CURRENT_USER_ID = {{ user.id }};
 let attachedFiles = [];
 let isSubmitting = false;
+
+// Función para obtener cookies
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     // Tab functionality
@@ -1126,7 +1143,7 @@ async function enviarComentario() {
         const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/comentarios/agregar/`, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken')
             },
             body: formData
         });
@@ -1164,7 +1181,7 @@ async function eliminarComentario(comentarioId) {
         const response = await fetch(`/app/api/comentario-proyecto/${comentarioId}/eliminar/`, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken')
             }
         });
         
