@@ -16,6 +16,9 @@ urlpatterns = [
     # Dashboard principal
     path("dashboard/", views.dashboard, name="dashboard"),
     path("dashboard/mes-actual/", views.oportunidades_mes_actual, name="oportunidades_mes_actual"),
+    
+    # Tareas y Proyectos (solo superusuarios)
+    path("tareas-proyectos/", views.tareas_proyectos, name="tareas_proyectos"),
 
     # Ruta para la lista de todas las oportunidades de venta (o las del usuario)
     path("todos/", views.todos, name="todos"),

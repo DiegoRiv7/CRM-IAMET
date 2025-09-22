@@ -265,6 +265,24 @@ def bienvenida(request):
     }
     return render(request, 'bienvenida.html', context)
 
+
+@login_required
+def tareas_proyectos(request):
+    """
+    Vista para la sección de Tareas y Proyectos (solo superusuarios)
+    """
+    # Verificar que el usuario sea superusuario
+    if not request.user.is_superuser:
+        return redirect('home')
+    
+    context = {
+        'user': request.user,
+        'page_title': 'Tareas y Proyectos'
+    }
+    
+    return render(request, 'tareas_proyectos.html', context)
+
+
 @login_required
 def dashboard(request):
     # Determinar si el usuario es un supervisor
