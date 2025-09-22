@@ -114,7 +114,7 @@
     }
 
     .search-widget-container.expanded .search-icon-container {
-        transform: translateX(-290px);
+        transform: translateX(-320px);
     }
 
     /* Buttons */
@@ -167,6 +167,34 @@
         border-radius: 3px;
     }
     .probability-bar-fill { height: 100%; border-radius: 3px; }
+
+    /* Pagination Styles */
+    .pagination-btn {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--apple-label);
+        padding: 8px 16px;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.9rem;
+        transition: background-color 0.2s ease;
+    }
+    .pagination-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    .pagination-btn.disabled {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--apple-label-secondary);
+        cursor: not-allowed;
+    }
+    .pagination-info {
+        background: var(--apple-blue);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
 
 </style>
 
@@ -241,7 +269,42 @@
         
         {% if page_obj.has_other_pages %}
         <div class="mt-6 flex items-center justify-between">
-            <!-- Pagination controls remain the same -->
+            <div class="text-sm text-gray-400">
+                Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }}
+                {% if search_query %}
+                <span class="ml-2 px-2 py-1 bg-blue-600 text-white text-xs rounded">
+                    Buscando: "{{ search_query }}"
+                </span>
+                {% endif %}
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                {% if page_obj.has_previous %}
+                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}" 
+                   class="pagination-btn">
+                    ← Anterior
+                </a>
+                {% else %}
+                <span class="pagination-btn disabled">
+                    ← Anterior
+                </span>
+                {% endif %}
+                
+                <span class="pagination-info">
+                    {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                </span>
+                
+                {% if page_obj.has_next %}
+                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}" 
+                   class="pagination-btn">
+                    Siguiente →
+                </a>
+                {% else %}
+                <span class="pagination-btn disabled">
+                    Siguiente →
+                </span>
+                {% endif %}
+            </div>
         </div>
         {% endif %}
     </div>
@@ -283,11 +346,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    document.addEventListener('click', (e) => {
-        if (searchWidget && !searchWidget.contains(e.target)) {
-            searchWidget.classList.remove('expanded');
-        }
-    });
+
 });
 </script>
 {% endblock %}

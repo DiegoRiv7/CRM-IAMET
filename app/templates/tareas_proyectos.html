@@ -130,27 +130,75 @@
         transform: translateX(-320px); /* Final user adjustment for separation */
     }
 
-    /* Header Buttons & Liquid Glass Tabs (Reverted to simpler style) */
+    /* Header Buttons & Liquid Glass Tabs */
     .create-btn {
-        background: var(--apple-blue); color: white; border: none; border-radius: 22px;
-        padding: 0 24px; height: 44px; font-weight: 600; font-size: 1rem;
-        cursor: pointer; transition: all 0.25s ease; display: flex;
-        align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        background: rgba(10, 132, 255, 0.8);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(10, 132, 255, 0.3);
+        border-radius: 22px;
+        padding: 0 24px;
+        height: 44px;
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        box-shadow: 
+            0 8px 32px rgba(10, 132, 255, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     }
-    .create-btn:hover { filter: brightness(1.1); transform: scale(1.02); }
+    .create-btn:hover {
+        background: rgba(10, 132, 255, 0.9);
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 
+            0 12px 40px rgba(10, 132, 255, 0.35),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        border-color: rgba(10, 132, 255, 0.4);
+    }
+    .create-btn:active {
+        transform: translateY(0) scale(0.98);
+        box-shadow: 
+            0 4px 16px rgba(10, 132, 255, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
     
     .tab-selector {
-        position: relative; /* Needed for the slider */
-        display: flex; background: rgba(255, 255, 255, 0.1); border-radius: 22px;
-        padding: 4px; height: 44px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        position: relative;
+        display: flex;
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 22px;
+        padding: 4px;
+        height: 44px;
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
     }
     .tab-option {
-        background: transparent; border: none; padding: 0 1.25rem; /* Reverted padding */
+        background: transparent;
+        border: none;
+        padding: 0 1.25rem;
         color: var(--apple-label-secondary);
-        font-weight: 500; font-size: 0.95rem; cursor: pointer; border-radius: 18px; 
-        transition: color 0.3s ease; z-index: 2; /* Ensure text is above slider */
+        font-weight: 500;
+        font-size: 0.95rem;
+        cursor: pointer;
+        border-radius: 18px;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        z-index: 2;
+        position: relative;
     }
-    .tab-option.active { color: #000; font-weight: 600; }
+    .tab-option.active {
+        color: rgba(0, 0, 0, 0.9);
+        font-weight: 600;
+        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+    }
 
     .tab-slider {
         position: absolute;
@@ -158,8 +206,15 @@
         left: 4px;
         height: calc(100% - 8px);
         width: calc(50% - 4px);
-        background: rgba(255, 255, 255, 0.9); /* Reverted to simpler background */
+        background: rgba(255, 255, 255, 0.35);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
         border-radius: 18px;
+        box-shadow: 
+            0 4px 16px rgba(0, 0, 0, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.4),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.05);
         transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         z-index: 1;
     }
@@ -226,6 +281,43 @@
     .privacy-badge.privado { background: rgba(255, 149, 0, 0.15); color: var(--apple-orange); border: 1px solid rgba(255, 149, 0, 0.3); }
 
     .tab-content { display: none; } .tab-content.active { display: block; animation: fadeIn 0.5s; } @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* Pagination Styles */
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 2rem;
+    }
+    .pagination-btn {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--apple-label);
+        padding: 8px 16px;
+        border: none;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.9rem;
+        transition: background-color 0.2s ease;
+        cursor: pointer;
+    }
+    .pagination-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    .pagination-btn:disabled {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--apple-label-secondary);
+        cursor: not-allowed;
+    }
+    .pagination-info {
+        background: var(--apple-blue);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
 </style>
 
 <div class="tareas-container">
@@ -265,9 +357,71 @@
                 </div>
                 <div class="table-body" id="projects-table-body"></div>
             </div>
+
+            <!-- Pagination Controls -->
+            <div class="pagination-container" id="pagination-container">
+                <button class="pagination-btn" id="prev-page" onclick="cambiarPagina(-1)">← Anterior</button>
+                <span class="pagination-info" id="pagination-info">Página 1 de 1</span>
+                <button class="pagination-btn" id="next-page" onclick="cambiarPagina(1)">Siguiente →</button>
+            </div>
         </div>
 
         <div class="tab-content" id="tareas-content"></div>
+    </div>
+</div>
+
+<!-- Modal para crear proyecto -->
+<div class="modal-overlay" id="modal-crear-proyecto">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Crear Nuevo Proyecto</h2>
+            <button class="modal-close" onclick="cerrarModalCrearProyecto()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <form class="modal-form" id="form-crear-proyecto">
+            <div class="form-group">
+                <label for="proyecto-nombre" class="form-label">Nombre del Proyecto</label>
+                <input type="text" id="proyecto-nombre" class="form-input" placeholder="Ingresa el nombre del proyecto" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="proyecto-descripcion" class="form-label">Descripción</label>
+                <textarea id="proyecto-descripcion" class="form-textarea" placeholder="Describe el proyecto..." rows="4"></textarea>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="proyecto-privacidad" class="form-label">Privacidad</label>
+                    <select id="proyecto-privacidad" class="form-select" required>
+                        <option value="publico">Público</option>
+                        <option value="privado">Privado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="proyecto-prioridad" class="form-label">Prioridad</label>
+                    <select id="proyecto-prioridad" class="form-select" required>
+                        <option value="baja">Baja</option>
+                        <option value="media" selected>Media</option>
+                        <option value="alta">Alta</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="proyecto-miembros" class="form-label">Miembros del Equipo</label>
+                <input type="text" id="proyecto-miembros" class="form-input" placeholder="Buscar y agregar miembros...">
+                <div id="miembros-seleccionados" class="miembros-container" style="margin-top: 0.5rem;"></div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="cerrarModalCrearProyecto()">Cancelar</button>
+                <button type="submit" class="btn-primary">Crear Proyecto</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -276,36 +430,68 @@
 let currentPage = 1;
 const itemsPerPage = 30;
 let totalProjects = 0;
-let allProjects = [];
 
 // --- CORE DATA FUNCTIONS ---
 async function cargarProyectos(page = 1, search = '') {
     console.log(`Cargando proyectos... Página: ${page}, Búsqueda: "${search}"`);
+    currentPage = page;
+    const searchInput = document.getElementById('search-proyectos');
+    const query = searchInput ? searchInput.value.trim() : '';
+
     // Dummy data for UI demonstration
     const dummyData = {
-        success: true, total: 5,
+        success: true, total: 95, // Example: 95 total projects
         proyectos: [
-            { id: 1, nombre: 'Diseño de Landing Page para Cliente X', miembros: [{id: 1, nombre: 'Diego', iniciales: 'DR'}, {id: 3, nombre: 'Carlos', iniciales: 'C'}], fecha_creacion: '2024-07-22', avance: 75, mi_rol: 'Jefe de proyecto', privacidad: 'publico' },
-            { id: 2, nombre: 'Desarrollo API de Pagos', miembros: [{id: 1, nombre: 'Diego', iniciales: 'DR'}, {id: 2, nombre: 'Ana', iniciales: 'A'}, {id: 4, nombre: 'Beatriz', iniciales: 'B'}, {id: 5, nombre: 'Elena', iniciales: 'E'}, {id: 6, nombre: 'Frank', iniciales: 'F'}], fecha_creacion: '2024-07-20', avance: 40, mi_rol: 'Miembro', privacidad: 'privado' },
-            { id: 3, nombre: 'Migración de Servidores a AWS', miembros: [{id: 2, nombre: 'Ana', iniciales: 'A'}], fecha_creacion: '2024-07-18', avance: 95, mi_rol: 'Miembro', privacidad: 'privado' },
-            { id: 4, nombre: 'Campaña de Marketing Digital Q3', miembros: [{id: 3, nombre: 'Carlos', iniciales: 'C'}, {id: 4, nombre: 'Beatriz', iniciales: 'B'}], fecha_creacion: '2024-07-15', avance: 20, mi_rol: 'Jefe de proyecto', privacidad: 'publico' },
+            { id: 1, nombre: `Proyecto Página ${page}`, miembros: [{id: 1, nombre: 'Diego', iniciales: 'DR'}], fecha_creacion: '2024-07-22', avance: 75, mi_rol: 'Jefe de proyecto', privacidad: 'publico' },
+            // ... more dummy projects for the current page
         ]
     };
+
     if (dummyData.success) {
-        allProjects = dummyData.proyectos || [];
         totalProjects = dummyData.total || 0;
-        currentPage = page;
-        if (allProjects.length > 0) { mostrarProyectosTabla(allProjects); } 
-        else { mostrarEstadoVacio('proyectos'); }
-    } else { mostrarEstadoVacio('proyectos'); }
+        mostrarProyectosTabla(dummyData.proyectos || []);
+    } else {
+        mostrarEstadoVacio('proyectos');
+    }
+    actualizarPaginacion(); // Update pagination controls
 }
 
+// --- PAGINATION LOGIC ---
+function cambiarPagina(direccion) {
+    const totalPages = Math.ceil(totalProjects / itemsPerPage);
+    const nuevaPagina = currentPage + direccion;
+
+    if (nuevaPagina >= 1 && nuevaPagina <= totalPages) {
+        cargarProyectos(nuevaPagina);
+    }
+}
+
+function actualizarPaginacion() {
+    const paginationContainer = document.getElementById('pagination-container');
+    if (!paginationContainer) return;
+
+    const totalPages = Math.ceil(totalProjects / itemsPerPage);
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
+    const pageInfo = document.getElementById('pagination-info');
+
+    if (totalPages <= 1) {
+        paginationContainer.style.display = 'none';
+        return;
+    }
+
+    paginationContainer.style.display = 'flex';
+    if(pageInfo) pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
+    if(prevBtn) prevBtn.disabled = currentPage <= 1;
+    if(nextBtn) nextBtn.disabled = currentPage >= totalPages;
+}
+
+// --- Other functions from before ---
 async function cargarTareas() {
     console.log("Cargando tareas...");
     mostrarEstadoVacio('tareas');
 }
 
-// --- UI RENDERING FUNCTIONS ---
 function mostrarProyectosTabla(proyectos) {
     const tableBody = document.getElementById('projects-table-body');
     if (!tableBody) return;
@@ -314,30 +500,22 @@ function mostrarProyectosTabla(proyectos) {
     proyectos.forEach(proyecto => {
         const row = document.createElement('div');
         row.className = 'table-row';
-
-        // --- Avatars Logic ---
         const maxVisibleAvatars = 3;
         const visibleMembers = proyecto.miembros.slice(0, maxVisibleAvatars);
         const hiddenMembersCount = proyecto.miembros.length - maxVisibleAvatars;
         const avatarColors = ['#0A84FF', '#30D158', '#AF52DE', '#FF9500', '#FF3B30'];
-
         const avatarsHtml = visibleMembers.map((miembro, index) => {
             const color = avatarColors[index % avatarColors.length];
             return `<div class="member-avatar" title="${miembro.nombre}" style="background-color: ${color};">${miembro.iniciales}</div>`;
         }).join('');
         const extraCountHtml = hiddenMembersCount > 0 ? `<div class="member-count">+${hiddenMembersCount}</div>` : '';
-
-        // --- Other cell data ---
         let rolClass = proyecto.mi_rol === 'Jefe de proyecto' ? 'jefe' : 'miembro';
-        
         row.innerHTML = `
             <div class="table-cell name-cell" onclick="abrirProyecto(${proyecto.id})">${proyecto.nombre}</div>
             <div class="table-cell members-cell">${avatarsHtml}${extraCountHtml}</div>
             <div class="table-cell activity-cell">${proyecto.fecha_creacion}</div>
             <div class="table-cell performance-cell">
-                <div class="performance-bar">
-                    <div class="performance-fill" style="width: ${proyecto.avance}%;"></div>
-                </div>
+                <div class="performance-bar"><div class="performance-fill" style="width: ${proyecto.avance}%;"></div></div>
                 <span class="performance-text">${proyecto.avance}%</span>
             </div>
             <div class="table-cell role-cell"><span class="role-badge ${rolClass}">${proyecto.mi_rol}</span></div>
@@ -354,7 +532,6 @@ function mostrarEstadoVacio(tipo) {
     }
 }
 
-// --- MODAL & ACTION FUNCTIONS ---
 function abrirModalCrearProyecto() { alert("Abrir modal para crear proyecto (funcionalidad a implementar)."); }
 function abrirProyecto(id) { alert(`Navegar al detalle del proyecto ${id} (funcionalidad a implementar).`); }
 
@@ -388,25 +565,18 @@ document.addEventListener('DOMContentLoaded', function() {
     tabOptions.forEach(option => {
         option.addEventListener('click', () => {
             const tabName = option.dataset.tab;
-
-            // Update slider position
-            if (tabSelector) {
-                tabSelector.dataset.active = tabName;
-            }
-
+            if (tabSelector) { tabSelector.dataset.active = tabName; }
             tabOptions.forEach(tab => tab.classList.remove('active'));
             option.classList.add('active');
-            
             tabContents.forEach(content => content.classList.remove('active'));
             const activeContent = document.getElementById(`${tabName}-content`);
             if (activeContent) activeContent.classList.add('active');
-            
-            if (tabName === 'proyectos') { cargarProyectos(); } else { cargarTareas(); }
+            if (tabName === 'proyectos') { cargarProyectos(1); } else { cargarTareas(); }
         });
     });
 
     // Initial data load
-    cargarProyectos();
+    cargarProyectos(1);
 });
 </script>
 {% endblock %}
