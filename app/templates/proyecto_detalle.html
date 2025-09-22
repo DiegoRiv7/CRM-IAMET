@@ -1462,15 +1462,15 @@ async function guardarEdicion(comentarioId) {
     saveBtn.textContent = 'Guardando...';
     
     try {
+        const formData = new FormData();
+        formData.append('contenido', nuevoContenido);
+        
         const response = await fetch(`/app/api/comentario-proyecto/${comentarioId}/editar/`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
                 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken')
             },
-            body: JSON.stringify({
-                contenido: nuevoContenido
-            })
+            body: formData
         });
         
         const data = await response.json();
@@ -1479,7 +1479,7 @@ async function guardarEdicion(comentarioId) {
             // Actualizar contenido en la interfaz
             const contentDiv = document.getElementById(`content-${comentarioId}`);
             if (contentDiv) {
-                contentDiv.textContent = nuevoContenido;
+                contentDiv.innerHTML = data.contenido || nuevoContenido;
                 
                 // Actualizar indicador de editado en la fecha
                 const feedItem = contentDiv.closest('.feed-item');
