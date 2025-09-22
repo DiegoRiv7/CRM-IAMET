@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto
 from . import views_exportar
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
 from django.db.models import Sum, Count, F, Q, Case, When, Value
@@ -572,24 +572,33 @@ def api_crear_proyecto(request):
         
         descripcion = data.get('descripcion', '').strip()
         privacidad = data.get('privacidad', 'publico')
-        prioridad = data.get('prioridad', 'media')
+        tipo = data.get('tipo', 'runrate')
         miembros_ids = data.get('miembros', [])
         
-        # Por ahora simularemos la creación del proyecto
-        # En el futuro aquí se creará el modelo real de Proyecto
-        proyecto_id = data.get('temp_id', 1)  # ID temporal para testing
+        # Crear el proyecto real en la base de datos
+        proyecto = Proyecto.objects.create(
+            nombre=nombre,
+            descripcion=descripcion,
+            tipo=tipo,
+            privacidad=privacidad,
+            creado_por=request.user
+        )
         
-        # Enviar notificaciones a todos los miembros agregados
+        # Agregar miembros al proyecto y enviar notificaciones
         from django.contrib.auth.models import User
         miembros_notificados = []
         
         for miembro_id in miembros_ids:
             try:
                 usuario = User.objects.get(id=miembro_id)
+                # Agregar como miembro del proyecto
+                proyecto.miembros.add(usuario)
+                
+                # Enviar notificación
                 notificacion = notificar_miembro_agregado_proyecto(
                     usuario_agregado=usuario,
                     proyecto_nombre=nombre,
-                    proyecto_id=proyecto_id,
+                    proyecto_id=proyecto.id,
                     usuario_que_agrega=request.user
                 )
                 if notificacion:
@@ -607,13 +616,14 @@ def api_crear_proyecto(request):
             'success': True,
             'mensaje': 'Proyecto creado exitosamente',
             'proyecto': {
-                'id': proyecto_id,
-                'nombre': nombre,
-                'descripcion': descripcion,
-                'privacidad': privacidad,
-                'prioridad': prioridad,
+                'id': proyecto.id,
+                'nombre': proyecto.nombre,
+                'descripcion': proyecto.descripcion,
+                'privacidad': proyecto.privacidad,
+                'tipo': proyecto.tipo,
                 'miembros_notificados': miembros_notificados,
-                'creado_por': request.user.get_full_name() or request.user.username
+                'creado_por': request.user.get_full_name() or request.user.username,
+                'fecha_creacion': proyecto.fecha_creacion.strftime('%Y-%m-%d')
             }
         })
         

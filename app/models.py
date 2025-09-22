@@ -1396,3 +1396,95 @@ class Notificacion(models.Model):
         elif self.oportunidad:
             return f"/app/cotizaciones/oportunidad/{self.oportunidad.id}/"
         return "/app/todos/"
+
+
+class Proyecto(models.Model):
+    """Modelo para los proyectos del sistema"""
+    
+    TIPOS_CHOICES = [
+        ('runrate', 'Runrate'),
+        ('ingenieria', 'Ingeniería'),
+    ]
+    
+    PRIVACIDAD_CHOICES = [
+        ('publico', 'Público'),
+        ('privado', 'Privado'),
+    ]
+    
+    nombre = models.CharField(
+        max_length=255,
+        verbose_name="Nombre del Proyecto"
+    )
+    descripcion = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Descripción"
+    )
+    tipo = models.CharField(
+        max_length=20,
+        choices=TIPOS_CHOICES,
+        default='runrate',
+        verbose_name="Tipo de Proyecto"
+    )
+    privacidad = models.CharField(
+        max_length=20,
+        choices=PRIVACIDAD_CHOICES,
+        default='publico',
+        verbose_name="Privacidad"
+    )
+    creado_por = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='proyectos_creados',
+        verbose_name="Creado por"
+    )
+    miembros = models.ManyToManyField(
+        User,
+        related_name='proyectos_participando',
+        blank=True,
+        verbose_name="Miembros del Proyecto"
+    )
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de Creación"
+    )
+    fecha_actualizacion = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Actualización"
+    )
+    
+    class Meta:
+        verbose_name = "Proyecto"
+        verbose_name_plural = "Proyectos"
+        ordering = ['-fecha_creacion']
+    
+    def __str__(self):
+        return self.nombre
+    
+    def get_miembros_display(self):
+        """Obtiene una representación de los miembros para mostrar"""
+        miembros_list = []
+        for miembro in self.miembros.all()[:3]:  # Máximo 3 para mostrar
+            iniciales = ''.join([palabra[0].upper() for palabra in (miembro.get_full_name() or miembro.username).split()[:2]])
+            miembros_list.append({
+                'id': miembro.id,
+                'nombre': miembro.get_full_name() or miembro.username,
+                'iniciales': iniciales
+            })
+        return miembros_list
+    
+    def get_avance_porcentaje(self):
+        """Calcula el porcentaje de avance del proyecto"""
+        # Por ahora devolver un valor aleatorio entre 0-100
+        # En el futuro se calculará basado en tareas completadas
+        import random
+        return random.randint(20, 95)
+    
+    def get_rol_usuario(self, usuario):
+        """Obtiene el rol del usuario en el proyecto"""
+        if self.creado_por == usuario:
+            return "Jefe de proyecto"
+        elif usuario in self.miembros.all():
+            return "Miembro"
+        else:
+            return "No te has unido al proyecto"
