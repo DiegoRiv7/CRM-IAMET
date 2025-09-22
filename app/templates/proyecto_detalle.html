@@ -1352,10 +1352,157 @@ async function enviarComentario() {
     }
 }
 
+// Variables para edición
+let comentarioEnEdicion = null;
+let contenidoOriginal = '';
+
 // Editar comentario
 function editarComentario(comentarioId) {
-    // Implementar edición inline
-    console.log('Editar comentario:', comentarioId);
+    // Si hay otro comentario en edición, cancelarlo
+    if (comentarioEnEdicion && comentarioEnEdicion !== comentarioId) {
+        cancelarEdicion();
+    }
+    
+    const contentDiv = document.getElementById(`content-${comentarioId}`);
+    if (!contentDiv || comentarioEnEdicion === comentarioId) return;
+    
+    // Guardar contenido original
+    contenidoOriginal = contentDiv.textContent.trim();
+    comentarioEnEdicion = comentarioId;
+    
+    // Crear textarea para edición
+    const textarea = document.createElement('textarea');
+    textarea.className = 'edit-textarea';
+    textarea.value = contenidoOriginal;
+    textarea.id = `edit-textarea-${comentarioId}`;
+    
+    // Crear botones de acción
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'edit-actions';
+    actionsDiv.innerHTML = `
+        <button class="btn-edit-action btn-edit-cancel" onclick="cancelarEdicion()">Cancelar</button>
+        <button class="btn-edit-action btn-edit-save" onclick="guardarEdicion(${comentarioId})" disabled>Guardar</button>
+    `;
+    
+    // Crear contenedor de edición
+    const editContainer = document.createElement('div');
+    editContainer.className = 'edit-mode';
+    editContainer.id = `edit-container-${comentarioId}`;
+    editContainer.appendChild(textarea);
+    editContainer.appendChild(actionsDiv);
+    
+    // Reemplazar contenido
+    contentDiv.style.display = 'none';
+    contentDiv.parentNode.insertBefore(editContainer, contentDiv.nextSibling);
+    
+    // Enfocar textarea y posicionar cursor al final
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    
+    // Auto-resize y control de botones
+    textarea.addEventListener('input', function() {
+        // Auto-resize
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+        
+        // Habilitar/deshabilitar botón guardar
+        const saveBtn = actionsDiv.querySelector('.btn-edit-save');
+        const hasChanges = this.value.trim() !== contenidoOriginal && this.value.trim().length > 0;
+        saveBtn.disabled = !hasChanges;
+    });
+    
+    // Manejar teclas Escape y Ctrl+Enter
+    textarea.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            cancelarEdicion();
+        } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            const saveBtn = actionsDiv.querySelector('.btn-edit-save');
+            if (!saveBtn.disabled) {
+                guardarEdicion(comentarioId);
+            }
+        }
+    });
+}
+
+// Cancelar edición
+function cancelarEdicion() {
+    if (!comentarioEnEdicion) return;
+    
+    const editContainer = document.getElementById(`edit-container-${comentarioEnEdicion}`);
+    const contentDiv = document.getElementById(`content-${comentarioEnEdicion}`);
+    
+    if (editContainer) {
+        editContainer.remove();
+    }
+    
+    if (contentDiv) {
+        contentDiv.style.display = 'block';
+    }
+    
+    comentarioEnEdicion = null;
+    contenidoOriginal = '';
+}
+
+// Guardar edición
+async function guardarEdicion(comentarioId) {
+    const textarea = document.getElementById(`edit-textarea-${comentarioId}`);
+    const saveBtn = document.querySelector('.btn-edit-save');
+    
+    if (!textarea || !saveBtn) return;
+    
+    const nuevoContenido = textarea.value.trim();
+    if (!nuevoContenido || nuevoContenido === contenidoOriginal) {
+        cancelarEdicion();
+        return;
+    }
+    
+    // Deshabilitar botón y mostrar loading
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Guardando...';
+    
+    try {
+        const response = await fetch(`/app/api/comentario-proyecto/${comentarioId}/editar/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                contenido: nuevoContenido
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Actualizar contenido en la interfaz
+            const contentDiv = document.getElementById(`content-${comentarioId}`);
+            if (contentDiv) {
+                contentDiv.textContent = nuevoContenido;
+                
+                // Actualizar indicador de editado en la fecha
+                const feedItem = contentDiv.closest('.feed-item');
+                const dateElement = feedItem.querySelector('.feed-date');
+                if (dateElement && data.fecha_edicion) {
+                    const currentDate = dateElement.textContent.split(' • ')[0];
+                    dateElement.textContent = `${currentDate} • Editado ${data.fecha_edicion}`;
+                }
+            }
+            
+            cancelarEdicion();
+        } else {
+            alert('Error: ' + (data.error || 'No se pudo guardar la edición'));
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Guardar';
+        }
+        
+    } catch (error) {
+        console.error('Error guardando edición:', error);
+        alert('Error de conexión. Intenta nuevamente.');
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Guardar';
+    }
 }
 
 // Variables para eliminación
