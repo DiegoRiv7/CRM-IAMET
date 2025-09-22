@@ -19,6 +19,11 @@ urlpatterns = [
     
     # Tareas y Proyectos (solo superusuarios)
     path("tareas-proyectos/", views.tareas_proyectos, name="tareas_proyectos"),
+    
+    # APIs para Tareas y Proyectos
+    path("api/proyectos/", views.api_proyectos, name="api_proyectos"),
+    path("api/tareas/", views.api_tareas, name="api_tareas"),
+    path("api/estadisticas-tareas-proyectos/", views.api_estadisticas_tareas_proyectos, name="api_estadisticas_tareas_proyectos"),
 
     # Ruta para la lista de todas las oportunidades de venta (o las del usuario)
     path("todos/", views.todos, name="todos"),

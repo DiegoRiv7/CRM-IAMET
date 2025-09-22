@@ -32,12 +32,231 @@
         font-weight: 400;
     }
 
-    /* Cards principales */
-    .cards-grid {
+    /* Selector de pestañas liquid glass */
+    .tab-selector-container {
+        display: flex;
+        justify-content: center;
+        margin: 2rem 0;
+        padding: 0 1rem;
+    }
+
+    .tab-selector {
+        position: relative;
+        display: flex;
+        background: rgba(28, 28, 30, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 4px;
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .tab-option {
+        position: relative;
+        background: transparent;
+        border: none;
+        padding: 0.75rem 2rem;
+        color: var(--apple-label-secondary);
+        font-weight: 500;
+        font-size: 0.95rem;
+        cursor: pointer;
+        border-radius: 12px;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        z-index: 2;
+        min-width: 120px;
+        text-align: center;
+    }
+
+    .tab-option:hover {
+        color: var(--apple-label);
+    }
+
+    .tab-option.active {
+        color: white;
+    }
+
+    .tab-slider {
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        width: calc(50% - 4px);
+        height: calc(100% - 8px);
+        background: linear-gradient(135deg, 
+            rgba(10, 132, 255, 0.8) 0%, 
+            rgba(48, 209, 88, 0.6) 50%, 
+            rgba(175, 82, 222, 0.8) 100%);
+        border-radius: 12px;
+        transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        box-shadow: 
+            0 4px 16px rgba(10, 132, 255, 0.3),
+            0 2px 8px rgba(0, 0, 0, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        z-index: 1;
+    }
+
+    .tab-selector[data-active="tareas"] .tab-slider {
+        transform: translateX(100%);
+        background: linear-gradient(135deg, 
+            rgba(175, 82, 222, 0.8) 0%, 
+            rgba(255, 149, 0, 0.6) 50%, 
+            rgba(255, 45, 85, 0.8) 100%);
+        box-shadow: 
+            0 4px 16px rgba(175, 82, 222, 0.3),
+            0 2px 8px rgba(0, 0, 0, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    /* Contenido de pestañas */
+    .tab-content {
+        display: none;
+        animation: fadeIn 0.5s ease-in-out;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Sección de proyectos */
+    .projects-section {
+        margin-bottom: 2rem;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--apple-label);
+    }
+
+    .create-btn {
+        background: linear-gradient(135deg, var(--apple-blue), var(--apple-purple));
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .create-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 24px rgba(10, 132, 255, 0.3);
+    }
+
+    /* Cards de proyectos/tareas */
+    .items-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-        gap: 2rem;
-        margin-bottom: 3rem;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .item-card {
+        background: var(--apple-background-secondary);
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid var(--apple-separator);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .item-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+        border-color: var(--apple-blue);
+    }
+
+    .item-header {
+        display: flex;
+        justify-content: between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .item-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--apple-label);
+        margin-bottom: 0.25rem;
+    }
+
+    .item-description {
+        color: var(--apple-label-secondary);
+        font-size: 0.9rem;
+        line-height: 1.4;
+        margin-bottom: 1rem;
+    }
+
+    .item-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+        color: var(--apple-label-secondary);
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 4px;
+        background: var(--apple-separator);
+        border-radius: 2px;
+        margin: 0.75rem 0;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--apple-blue), var(--apple-green));
+        border-radius: 2px;
+        transition: width 0.3s ease;
+    }
+
+    /* Estado vacío */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--apple-label-secondary);
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.6;
+    }
+
+    .empty-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--apple-label);
+    }
+
+    .empty-description {
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
     }
 
     .feature-card {
@@ -203,80 +422,102 @@
         <p class="page-subtitle">Gestión centralizada de tareas y proyectos del equipo</p>
     </div>
 
+    <!-- Selector de pestañas liquid glass -->
+    <div class="tab-selector-container">
+        <div class="tab-selector" data-active="proyectos">
+            <div class="tab-slider"></div>
+            <button class="tab-option active" data-tab="proyectos">
+                📁 Proyectos
+            </button>
+            <button class="tab-option" data-tab="tareas">
+                ✅ Tareas
+            </button>
+        </div>
+    </div>
+
     <!-- Estadísticas rápidas -->
     <div class="stats-section">
         <div class="stats-grid">
             <div class="stat-item">
-                <span class="stat-number">0</span>
+                <span class="stat-number" id="proyectos-activos">0</span>
                 <span class="stat-label">Proyectos Activos</span>
             </div>
             <div class="stat-item">
-                <span class="stat-number">0</span>
+                <span class="stat-number" id="tareas-pendientes">0</span>
                 <span class="stat-label">Tareas Pendientes</span>
             </div>
             <div class="stat-item">
-                <span class="stat-number">0</span>
+                <span class="stat-number" id="tareas-completadas">0</span>
                 <span class="stat-label">Tareas Completadas</span>
             </div>
             <div class="stat-item">
-                <span class="stat-number">0%</span>
+                <span class="stat-number" id="progreso-general">0%</span>
                 <span class="stat-label">Progreso General</span>
             </div>
         </div>
     </div>
 
-    <!-- Cards de funcionalidades -->
-    <div class="cards-grid">
-        <div class="feature-card">
-            <div class="card-icon">
-                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+    <!-- Contenido de Proyectos -->
+    <div class="tab-content active" id="proyectos-content">
+        <div class="section-header">
+            <h2 class="section-title">Proyectos</h2>
+            <button class="create-btn" onclick="crearProyecto()">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                 </svg>
-            </div>
-            <h3 class="card-title">Proyectos</h3>
-            <p class="card-description">
-                Crea y gestiona proyectos con múltiples tareas, asigna responsables y realiza seguimiento del progreso.
-            </p>
-            <a href="#" class="card-button">Gestionar Proyectos</a>
+                Crear Proyecto
+            </button>
         </div>
 
-        <div class="feature-card">
-            <div class="card-icon">
-                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-                </svg>
-            </div>
-            <h3 class="card-title">Tareas</h3>
-            <p class="card-description">
-                Administra tareas individuales, establece prioridades, fechas límite y realiza seguimiento de completitud.
-            </p>
-            <a href="#" class="card-button">Ver Tareas</a>
+        <div class="items-grid" id="proyectos-grid">
+            <!-- Los proyectos se cargarán aquí dinámicamente -->
         </div>
 
-        <div class="feature-card">
-            <div class="card-icon">
-                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                </svg>
-            </div>
-            <h3 class="card-title">Equipo</h3>
-            <p class="card-description">
-                Visualiza la carga de trabajo del equipo, asigna tareas y colabora de manera eficiente.
+        <!-- Estado vacío para proyectos -->
+        <div class="empty-state" id="proyectos-empty" style="display: none;">
+            <div class="empty-icon">📁</div>
+            <h3 class="empty-title">No hay proyectos aún</h3>
+            <p class="empty-description">
+                Crea tu primer proyecto para organizar tareas y colaborar con tu equipo de manera efectiva.
             </p>
-            <a href="#" class="card-button">Ver Equipo</a>
+            <button class="create-btn" onclick="crearProyecto()">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Crear Primer Proyecto
+            </button>
+        </div>
+    </div>
+
+    <!-- Contenido de Tareas -->
+    <div class="tab-content" id="tareas-content">
+        <div class="section-header">
+            <h2 class="section-title">Tareas</h2>
+            <button class="create-btn" onclick="crearTarea()">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Nueva Tarea
+            </button>
         </div>
 
-        <div class="feature-card">
-            <div class="card-icon">
-                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                </svg>
-            </div>
-            <h3 class="card-title">Reportes</h3>
-            <p class="card-description">
-                Genera reportes de productividad, tiempos de entrega y análisis de performance del equipo.
+        <div class="items-grid" id="tareas-grid">
+            <!-- Las tareas se cargarán aquí dinámicamente -->
+        </div>
+
+        <!-- Estado vacío para tareas -->
+        <div class="empty-state" id="tareas-empty" style="display: none;">
+            <div class="empty-icon">✅</div>
+            <h3 class="empty-title">No hay tareas pendientes</h3>
+            <p class="empty-description">
+                Crea nuevas tareas para organizar tu trabajo y mantener un seguimiento efectivo de tus actividades.
             </p>
-            <a href="#" class="card-button">Ver Reportes</a>
+            <button class="create-btn" onclick="crearTarea()">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Crear Primera Tarea
+            </button>
         </div>
     </div>
 
@@ -289,4 +530,201 @@
         </p>
     </div>
 </div>
+
+<script>
+// Sistema de pestañas liquid glass
+document.addEventListener('DOMContentLoaded', function() {
+    const tabSelector = document.querySelector('.tab-selector');
+    const tabOptions = document.querySelectorAll('.tab-option');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    // Manejar clicks en pestañas
+    tabOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            const tabName = option.dataset.tab;
+            
+            // Actualizar pestañas activas
+            tabOptions.forEach(tab => tab.classList.remove('active'));
+            option.classList.add('active');
+            
+            // Actualizar selector deslizante
+            tabSelector.dataset.active = tabName;
+            
+            // Cambiar contenido
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabName}-content`).classList.add('active');
+            
+            // Cargar datos correspondientes
+            if (tabName === 'proyectos') {
+                cargarProyectos();
+            } else {
+                cargarTareas();
+            }
+        });
+    });
+
+    // Cargar datos iniciales
+    cargarProyectos();
+    actualizarEstadisticas();
+});
+
+// Funciones de carga de datos
+async function cargarProyectos() {
+    try {
+        const response = await fetch('/app/api/proyectos/');
+        const data = await response.json();
+        
+        if (data.success && data.proyectos.length > 0) {
+            mostrarProyectos(data.proyectos);
+        } else {
+            mostrarEstadoVacio('proyectos');
+        }
+    } catch (error) {
+        console.error('Error cargando proyectos:', error);
+        mostrarEstadoVacio('proyectos');
+    }
+}
+
+async function cargarTareas() {
+    try {
+        const response = await fetch('/app/api/tareas/');
+        const data = await response.json();
+        
+        if (data.success && data.tareas.length > 0) {
+            mostrarTareas(data.tareas);
+        } else {
+            mostrarEstadoVacio('tareas');
+        }
+    } catch (error) {
+        console.error('Error cargando tareas:', error);
+        mostrarEstadoVacio('tareas');
+    }
+}
+
+function mostrarProyectos(proyectos) {
+    const grid = document.getElementById('proyectos-grid');
+    const emptyState = document.getElementById('proyectos-empty');
+    
+    grid.innerHTML = '';
+    emptyState.style.display = 'none';
+    
+    proyectos.forEach(proyecto => {
+        const card = crearCardProyecto(proyecto);
+        grid.appendChild(card);
+    });
+}
+
+function mostrarTareas(tareas) {
+    const grid = document.getElementById('tareas-grid');
+    const emptyState = document.getElementById('tareas-empty');
+    
+    grid.innerHTML = '';
+    emptyState.style.display = 'none';
+    
+    tareas.forEach(tarea => {
+        const card = crearCardTarea(tarea);
+        grid.appendChild(card);
+    });
+}
+
+function mostrarEstadoVacio(tipo) {
+    const grid = document.getElementById(`${tipo}-grid`);
+    const emptyState = document.getElementById(`${tipo}-empty`);
+    
+    grid.innerHTML = '';
+    emptyState.style.display = 'block';
+}
+
+function crearCardProyecto(proyecto) {
+    const card = document.createElement('div');
+    card.className = 'item-card';
+    card.innerHTML = `
+        <div class="item-header">
+            <div>
+                <h3 class="item-title">${proyecto.nombre}</h3>
+                <p class="item-description">${proyecto.descripcion || 'Sin descripción'}</p>
+            </div>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: ${proyecto.progreso}%"></div>
+        </div>
+        <div class="item-meta">
+            <span>📅 ${proyecto.fecha_limite || 'Sin fecha límite'}</span>
+            <span>👥 ${proyecto.miembros_count} miembros</span>
+            <span>${proyecto.progreso}% completado</span>
+        </div>
+    `;
+    
+    card.addEventListener('click', () => verProyecto(proyecto.id));
+    return card;
+}
+
+function crearCardTarea(tarea) {
+    const card = document.createElement('div');
+    card.className = 'item-card';
+    
+    const prioridadColor = {
+        'alta': '#FF2D55',
+        'media': '#FF9500', 
+        'baja': '#30D158'
+    };
+    
+    card.innerHTML = `
+        <div class="item-header">
+            <div>
+                <h3 class="item-title">${tarea.titulo}</h3>
+                <p class="item-description">${tarea.descripcion || 'Sin descripción'}</p>
+            </div>
+            <div style="width: 12px; height: 12px; background: ${prioridadColor[tarea.prioridad] || '#8E8E93'}; border-radius: 50%; margin-top: 0.25rem;"></div>
+        </div>
+        <div class="item-meta">
+            <span>📅 ${tarea.fecha_limite || 'Sin fecha límite'}</span>
+            <span>👤 ${tarea.asignado_a || 'Sin asignar'}</span>
+            <span style="color: ${prioridadColor[tarea.prioridad] || '#8E8E93'}">
+                ${tarea.prioridad || 'media'} prioridad
+            </span>
+        </div>
+    `;
+    
+    card.addEventListener('click', () => verTarea(tarea.id));
+    return card;
+}
+
+async function actualizarEstadisticas() {
+    try {
+        const response = await fetch('/app/api/estadisticas-tareas-proyectos/');
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('proyectos-activos').textContent = data.proyectos_activos;
+            document.getElementById('tareas-pendientes').textContent = data.tareas_pendientes;
+            document.getElementById('tareas-completadas').textContent = data.tareas_completadas;
+            document.getElementById('progreso-general').textContent = data.progreso_general + '%';
+        }
+    } catch (error) {
+        console.error('Error actualizando estadísticas:', error);
+    }
+}
+
+// Funciones de creación
+function crearProyecto() {
+    // Por ahora, mostrar alerta
+    alert('🚧 Funcionalidad de crear proyectos en desarrollo. Próximamente disponible con formulario modal avanzado.');
+}
+
+function crearTarea() {
+    // Por ahora, mostrar alerta  
+    alert('🚧 Funcionalidad de crear tareas en desarrollo. Próximamente disponible con formulario modal avanzado.');
+}
+
+function verProyecto(id) {
+    alert(`🚧 Ver proyecto ${id} - En desarrollo`);
+}
+
+function verTarea(id) {
+    alert(`🚧 Ver tarea ${id} - En desarrollo`);
+}
+</script>
 {% endblock %}

@@ -284,6 +284,104 @@ def tareas_proyectos(request):
 
 
 @login_required
+def api_proyectos(request):
+    """
+    API para obtener proyectos (placeholder por ahora)
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    # Por ahora, devolver datos de ejemplo
+    proyectos_ejemplo = [
+        {
+            'id': 1,
+            'nombre': 'Proyecto CRM Avanzado',
+            'descripcion': 'Implementación de nuevas funcionalidades en el sistema CRM',
+            'progreso': 75,
+            'fecha_limite': '2025-02-15',
+            'miembros_count': 4
+        },
+        {
+            'id': 2, 
+            'nombre': 'Migración Base de Datos',
+            'descripcion': 'Actualización y optimización de la base de datos principal',
+            'progreso': 45,
+            'fecha_limite': '2025-01-30',
+            'miembros_count': 2
+        }
+    ]
+    
+    return JsonResponse({
+        'success': True,
+        'proyectos': proyectos_ejemplo
+    })
+
+
+@login_required
+def api_tareas(request):
+    """
+    API para obtener tareas (placeholder por ahora)
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    # Por ahora, devolver datos de ejemplo
+    tareas_ejemplo = [
+        {
+            'id': 1,
+            'titulo': 'Diseñar interfaz de notificaciones',
+            'descripcion': 'Crear mockups y prototipos para el sistema de notificaciones',
+            'prioridad': 'alta',
+            'fecha_limite': '2025-01-25',
+            'asignado_a': 'Rivera'
+        },
+        {
+            'id': 2,
+            'titulo': 'Optimizar consultas SQL',
+            'descripcion': 'Revisar y optimizar las consultas más lentas del sistema',
+            'prioridad': 'media',
+            'fecha_limite': '2025-02-01',
+            'asignado_a': 'Desarrollo'
+        },
+        {
+            'id': 3,
+            'titulo': 'Documentar API endpoints',
+            'descripcion': 'Crear documentación completa de todos los endpoints de la API',
+            'prioridad': 'baja',
+            'fecha_limite': '2025-02-10',
+            'asignado_a': 'Technical Writer'
+        }
+    ]
+    
+    return JsonResponse({
+        'success': True,
+        'tareas': tareas_ejemplo
+    })
+
+
+@login_required  
+def api_estadisticas_tareas_proyectos(request):
+    """
+    API para obtener estadísticas de tareas y proyectos
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    # Por ahora, devolver estadísticas de ejemplo
+    estadisticas = {
+        'proyectos_activos': 2,
+        'tareas_pendientes': 3,
+        'tareas_completadas': 12,
+        'progreso_general': 68
+    }
+    
+    return JsonResponse({
+        'success': True,
+        **estadisticas
+    })
+
+
+@login_required
 def dashboard(request):
     # Determinar si el usuario es un supervisor
     if is_supervisor(request.user):
