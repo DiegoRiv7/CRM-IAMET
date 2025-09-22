@@ -1034,6 +1034,80 @@
                 </div>
             </div>
 
+            <!-- Modal de confirmación para eliminar comentario -->
+            <div class="delete-modal" id="deleteModal">
+                <div class="delete-modal-content">
+                    <div class="delete-modal-icon">
+                        <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                        </svg>
+                    </div>
+                    <h3 class="delete-modal-title">Eliminar comentario</h3>
+                    <p class="delete-modal-message">¿Estás seguro de que quieres eliminar este comentario? Esta acción no se puede deshacer.</p>
+                    <div class="delete-modal-actions">
+                        <button class="btn-delete-cancel" onclick="cerrarModalEliminar()">Cancelar</button>
+                        <button class="btn-delete-confirm" id="btnConfirmDelete">Eliminar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal para Crear Tarea -->
+            <div class="modal-overlay" id="createTaskModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Crear Nueva Tarea</h3>
+                        <button class="modal-close" onclick="closeCreateTaskModal()">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <form id="createTaskForm">
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="taskTitle" style="display: block; color: var(--apple-label-secondary); margin-bottom: 0.5rem; font-size: 0.9rem;">Título de la Tarea</label>
+                            <input type="text" id="taskTitle" name="taskTitle" class="form-control" placeholder="Ej: Implementar funcionalidad X" required
+                                style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.05); color: var(--apple-label); font-family: var(--apple-font-family); font-size: 0.9rem;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="taskDescription" style="display: block; color: var(--apple-label-secondary); margin-bottom: 0.5rem; font-size: 0.9rem;">Descripción</label>
+                            <textarea id="taskDescription" name="taskDescription" class="form-control" placeholder="Detalles de la tarea..." rows="4"
+                                style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.05); color: var(--apple-label); font-family: var(--apple-font-family); font-size: 0.9rem; resize: vertical;"></textarea>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="taskResponsible" style="display: block; color: var(--apple-label-secondary); margin-bottom: 0.5rem; font-size: 0.9rem;">Responsable</label>
+                            <select id="taskResponsible" name="taskResponsible" class="form-control"
+                                style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.05); color: var(--apple-label); font-family: var(--apple-font-family); font-size: 0.9rem;">
+                                <!-- Opciones de usuarios se cargarán aquí -->
+                                <option value="">Seleccionar responsable</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="taskParticipants" style="display: block; color: var(--apple-label-secondary); margin-bottom: 0.5rem; font-size: 0.9rem;">Participantes</label>
+                            <select id="taskParticipants" name="taskParticipants" class="form-control" multiple
+                                style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.05); color: var(--apple-label); font-family: var(--apple-font-family); font-size: 0.9rem;">
+                                <!-- Opciones de usuarios se cargarán aquí -->
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="taskObservers" style="display: block; color: var(--apple-label-secondary); margin-bottom: 0.5rem; font-size: 0.9rem;">Observadores</label>
+                            <select id="taskObservers" name="taskObservers" class="form-control" multiple
+                                style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.05); color: var(--apple-label); font-family: var(--apple-font-family); font-size: 0.9rem;">
+                                <!-- Opciones de usuarios se cargarán aquí -->
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="taskDueDate" style="display: block; color: var(--apple-label-secondary); margin-bottom: 0.5rem; font-size: 0.9rem;">Fecha Límite</label>
+                            <input type="datetime-local" id="taskDueDate" name="taskDueDate" class="form-control" required
+                                style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.05); color: var(--apple-label); font-family: var(--apple-font-family); font-size: 0.9rem;">
+                        </div>
+                        <div class="form-actions" style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+                            <button type="button" class="btn-cancelar" onclick="closeCreateTaskModal()">Cancelar</button>
+                            <button type="submit" class="btn-enviar" style="background: var(--apple-blue); border-color: rgba(10, 132, 255, 0.3);">Crear Tarea</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <!-- Carpetas Tab -->
             <div class="tab-content" id="carpetas-content">
                 <div class="empty-state">
@@ -1716,5 +1790,119 @@ document.addEventListener('DOMContentLoaded', function() {
             searchWidgetTareas.classList.remove('expanded');
         }
     });
+});
+
+// Funciones para el modal de Crear Tarea
+function openCreateTaskModal() {
+    const modal = document.getElementById('createTaskModal');
+    modal.classList.add('active');
+    populateUserDropdowns();
+}
+
+function closeCreateTaskModal() {
+    const modal = document.getElementById('createTaskModal');
+    modal.classList.remove('active');
+    document.getElementById('createTaskForm').reset(); // Limpiar formulario
+}
+
+async function populateUserDropdowns() {
+    const responsibleSelect = document.getElementById('taskResponsible');
+    const participantsSelect = document.getElementById('taskParticipants');
+    const observersSelect = document.getElementById('taskObservers');
+
+    // Clear previous options
+    responsibleSelect.innerHTML = '<option value="">Seleccionar responsable</option>';
+    participantsSelect.innerHTML = '';
+    observersSelect.innerHTML = '';
+
+    try {
+        // Placeholder for fetching users. Replace with actual API call.
+        // const response = await fetch('/app/api/users/');
+        // const users = await response.json();
+        
+        const users = [
+            { id: 1, name: "Usuario Uno" },
+            { id: 2, name: "Usuario Dos" },
+            { id: 3, name: "Usuario Tres" },
+            { id: 4, name: "Usuario Cuatro" },
+        ]; // Mock data
+
+        users.forEach(user => {
+            const optionResp = document.createElement('option');
+            optionResp.value = user.id;
+            optionResp.textContent = user.name;
+            responsibleSelect.appendChild(optionResp);
+
+            const optionPart = document.createElement('option');
+            optionPart.value = user.id;
+            optionPart.textContent = user.name;
+            participantsSelect.appendChild(optionPart);
+
+            const optionObs = document.createElement('option');
+            optionObs.value = user.id;
+            optionObs.textContent = user.name;
+            observersSelect.appendChild(optionObs);
+        });
+    } catch (error) {
+        console.error('Error loading users:', error);
+    }
+}
+
+// Event listener para el botón Crear Tarea
+document.addEventListener('DOMContentLoaded', function() {
+    const btnCrearTarea = document.getElementById('btnCrearTarea');
+    if (btnCrearTarea) {
+        btnCrearTarea.addEventListener('click', openCreateTaskModal);
+    }
+
+    // Manejar el envío del formulario de Crear Tarea
+    const createTaskForm = document.getElementById('createTaskForm');
+    if (createTaskForm) {
+        createTaskForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const taskData = {
+                title: formData.get('taskTitle'),
+                description: formData.get('taskDescription'),
+                responsible: formData.get('taskResponsible'),
+                participants: Array.from(formData.getAll('taskParticipants')),
+                observers: Array.from(formData.getAll('taskObservers')),
+                dueDate: formData.get('taskDueDate'),
+                projectId: PROYECTO_ID // Asumiendo que PROYECTO_ID está definido globalmente
+            };
+
+            console.log('Task data to be sent:', taskData);
+
+            // Placeholder for API call to save task
+            // try {
+            //     const response = await fetch('/app/api/tasks/create/', {
+            //         method: 'POST',
+            //         headers: {
+            //             'Content-Type': 'application/json',
+            //             'X-CSRFToken': getCookie('csrftoken')
+            //         },
+            //         body: JSON.stringify(taskData)
+            //     });
+            //     const result = await response.json();
+            //     if (result.success) {
+            //         alert('Tarea creada exitosamente!');
+            //         closeCreateTaskModal();
+            //         // Aquí se debería recargar la tabla de tareas o añadir la nueva tarea dinámicamente
+            //         // y luego abrir el contenido de la tarea (result.taskId)
+            //     } else {
+            //         alert('Error al crear la tarea: ' + (result.error || 'Error desconocido'));
+            //     }
+            // } catch (error) {
+            //     console.error('Error submitting task:', error);
+            //     alert('Error de conexión al crear la tarea.');
+            // }
+
+            alert('Tarea simulada creada. Revisa la consola para ver los datos.');
+            closeCreateTaskModal();
+            // Simular apertura de contenido de tarea
+            console.log('Simulando apertura de contenido de tarea para:', taskData.title);
+        });
+    }
 });
 </script>{% endblock %}
