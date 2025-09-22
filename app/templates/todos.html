@@ -327,10 +327,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // IMPORTANT: Keep original search functionality (debounce + page reload)
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
+        // IMPORTANT: Search on Enter key press, not on input
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Stop default form submission
                 const searchValue = this.value.trim();
                 const url = new URL(window.location);
                 
@@ -342,7 +342,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     url.searchParams.delete('page');
                 }
                 window.location.href = url.toString();
-            }, 500);
+            }
         });
     }
 
