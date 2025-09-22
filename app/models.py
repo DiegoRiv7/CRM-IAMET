@@ -1301,6 +1301,7 @@ class Notificacion(models.Model):
         ('mencion', 'Mención en comentario'),
         ('respuesta', 'Respuesta a comentario'),
         ('comentario_oportunidad', 'Nuevo comentario en oportunidad'),
+        ('proyecto_agregado', 'Agregado a proyecto'),
         ('sistema', 'Notificación del sistema'),
     ]
     
@@ -1346,6 +1347,17 @@ class Notificacion(models.Model):
         null=True,
         blank=True
     )
+    proyecto_id = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="ID del Proyecto"
+    )
+    proyecto_nombre = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        verbose_name="Nombre del Proyecto"
+    )
     leida = models.BooleanField(
         default=False,
         verbose_name="Notificación Leída"
@@ -1377,6 +1389,10 @@ class Notificacion(models.Model):
     
     def get_url(self):
         """Obtiene la URL a la que debe dirigirse la notificación"""
-        if self.oportunidad:
+        if self.tipo == 'proyecto_agregado' and self.proyecto_id:
+            # Por ahora redirigir a la sección de tareas y proyectos
+            # En el futuro se podría dirigir al detalle del proyecto específico
+            return "/app/tareas-proyectos/"
+        elif self.oportunidad:
             return f"/app/cotizaciones/oportunidad/{self.oportunidad.id}/"
         return "/app/todos/"

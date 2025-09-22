@@ -951,41 +951,104 @@ function abrirProyecto(id) {
 // --- USER SEARCH & MEMBERS FUNCTIONALITY ---
 let selectedMembers = [];
 let searchTimeout;
-
-// Datos de ejemplo de usuarios
-const usuariosEjemplo = [
-    { id: 1, nombre: 'Diego Rivera', email: 'diego@empresa.com', iniciales: 'DR' },
-    { id: 2, nombre: 'Ana García', email: 'ana@empresa.com', iniciales: 'AG' },
-    { id: 3, nombre: 'Carlos López', email: 'carlos@empresa.com', iniciales: 'CL' },
-    { id: 4, nombre: 'Beatriz Martínez', email: 'beatriz@empresa.com', iniciales: 'BM' },
-    { id: 5, nombre: 'Elena Rodríguez', email: 'elena@empresa.com', iniciales: 'ER' },
-    { id: 6, nombre: 'Frank Morales', email: 'frank@empresa.com', iniciales: 'FM' },
-    { id: 7, nombre: 'Isabel Sánchez', email: 'isabel@empresa.com', iniciales: 'IS' },
-    { id: 8, nombre: 'Jorge Ramírez', email: 'jorge@empresa.com', iniciales: 'JR' }
-];
+let allUsers = []; // Cache de todos los usuarios
 
 function getAvatarColor(index) {
     const colors = ['#0A84FF', '#30D158', '#AF52DE', '#FF9500', '#FF3B30', '#5AC8FA', '#FF2D92', '#32D74B'];
     return colors[index % colors.length];
 }
 
-async function buscarUsuarios(query) {
-    // Simular búsqueda en la base de datos
-    if (!query || query.length < 2) {
-        return [];
+function generateInitials(nombre) {
+    // Generar iniciales del nombre
+    const words = nombre.trim().split(' ');
+    if (words.length >= 2) {
+        return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+    } else {
+        return words[0].substring(0, 2).toUpperCase();
     }
-    
-    const resultados = usuariosEjemplo.filter(usuario => 
-        usuario.nombre.toLowerCase().includes(query.toLowerCase()) ||
-        usuario.email.toLowerCase().includes(query.toLowerCase())
-    );
-    
-    return resultados.slice(0, 5); // Limitar a 5 resultados
 }
 
-function mostrarTodosLosUsuarios() {
+async function cargarTodosLosUsuarios() {
+    try {
+        const response = await fetch('/app/api/buscar-usuarios/', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.usuarios) {
+                // Procesar usuarios para agregar iniciales si no las tienen
+                allUsers = data.usuarios.map(usuario => ({
+                    ...usuario,
+                    iniciales: usuario.iniciales || generateInitials(usuario.nombre || usuario.first_name + ' ' + usuario.last_name),
+                    nombre: usuario.nombre || usuario.first_name + ' ' + usuario.last_name,
+                    email: usuario.email || usuario.username
+                }));
+                return allUsers;
+            }
+        }
+        
+        console.warn('No se pudieron cargar los usuarios, usando datos por defecto');
+        return [];
+    } catch (error) {
+        console.error('Error al cargar usuarios:', error);
+        return [];
+    }
+}
+
+async function buscarUsuarios(query) {
+    try {
+        if (!query || query.length < 2) {
+            return [];
+        }
+        
+        const response = await fetch(`/app/api/buscar-usuarios/?q=${encodeURIComponent(query)}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.usuarios) {
+                // Procesar usuarios para agregar iniciales si no las tienen
+                const usuarios = data.usuarios.map(usuario => ({
+                    ...usuario,
+                    iniciales: usuario.iniciales || generateInitials(usuario.nombre || usuario.first_name + ' ' + usuario.last_name),
+                    nombre: usuario.nombre || usuario.first_name + ' ' + usuario.last_name,
+                    email: usuario.email || usuario.username
+                }));
+                return usuarios.slice(0, 8); // Limitar a 8 resultados
+            }
+        }
+        
+        console.warn('Error en la búsqueda, filtrando del cache local');
+        // Fallback: filtrar del cache local
+        return allUsers.filter(usuario => 
+            usuario.nombre.toLowerCase().includes(query.toLowerCase()) ||
+            usuario.email.toLowerCase().includes(query.toLowerCase())
+        ).slice(0, 8);
+        
+    } catch (error) {
+        console.error('Error al buscar usuarios:', error);
+        return [];
+    }
+}
+
+async function mostrarTodosLosUsuarios() {
+    // Si no tenemos usuarios cargados, cargarlos primero
+    if (allUsers.length === 0) {
+        await cargarTodosLosUsuarios();
+    }
+    
     // Filtrar usuarios ya seleccionados
-    const usuariosDisponibles = usuariosEjemplo.filter(usuario => 
+    const usuariosDisponibles = allUsers.filter(usuario => 
         !selectedMembers.find(m => m.id === usuario.id)
     );
     mostrarResultadosBusqueda(usuariosDisponibles);
@@ -1046,7 +1109,7 @@ function agregarMiembro(usuario) {
     }
 }
 
-function eliminarMiembro(usuarioId) {
+async function eliminarMiembro(usuarioId) {
     selectedMembers = selectedMembers.filter(m => m.id !== usuarioId);
     actualizarMiembrosSeleccionados();
     
@@ -1056,9 +1119,10 @@ function eliminarMiembro(usuarioId) {
     if (searchInput && searchResults && searchResults.classList.contains('active')) {
         const query = searchInput.value.trim();
         if (query.length === 0) {
-            mostrarTodosLosUsuarios();
+            await mostrarTodosLosUsuarios();
         } else {
-            buscarUsuarios(query).then(mostrarResultadosBusqueda);
+            const usuarios = await buscarUsuarios(query);
+            mostrarResultadosBusqueda(usuarios);
         }
     }
 }
@@ -1083,6 +1147,25 @@ function actualizarMiembrosSeleccionados() {
         
         container.appendChild(memberElement);
     });
+}
+
+// Función para recargar usuarios cuando se crean nuevos
+async function recargarUsuarios() {
+    allUsers = [];
+    await cargarTodosLosUsuarios();
+    
+    // Si el campo de búsqueda está activo, actualizar la lista
+    const searchInput = document.getElementById('proyecto-miembros');
+    const searchResults = document.getElementById('user-search-results');
+    if (searchInput && searchResults && searchResults.classList.contains('active')) {
+        const query = searchInput.value.trim();
+        if (query.length === 0) {
+            await mostrarTodosLosUsuarios();
+        } else {
+            const usuarios = await buscarUsuarios(query);
+            mostrarResultadosBusqueda(usuarios);
+        }
+    }
 }
 
 // --- DOMContentLoaded ---
@@ -1147,18 +1230,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const userSearchInput = document.getElementById('proyecto-miembros');
     if (userSearchInput) {
         // Al hacer clic en el campo, mostrar todos los usuarios disponibles
-        userSearchInput.addEventListener('click', (e) => {
+        userSearchInput.addEventListener('click', async (e) => {
             e.stopPropagation();
-            mostrarTodosLosUsuarios();
+            await mostrarTodosLosUsuarios();
         });
         
-        userSearchInput.addEventListener('focus', (e) => {
+        userSearchInput.addEventListener('focus', async (e) => {
             e.stopPropagation();
             const query = userSearchInput.value.trim();
             if (query.length === 0) {
-                mostrarTodosLosUsuarios();
+                await mostrarTodosLosUsuarios();
             } else {
-                buscarUsuarios(query).then(mostrarResultadosBusqueda);
+                const usuarios = await buscarUsuarios(query);
+                mostrarResultadosBusqueda(usuarios);
             }
         });
         
@@ -1211,23 +1295,64 @@ document.addEventListener('DOMContentLoaded', function() {
     // Form submission
     const formCrearProyecto = document.getElementById('form-crear-proyecto');
     if (formCrearProyecto) {
-        formCrearProyecto.addEventListener('submit', (e) => {
+        formCrearProyecto.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const formData = {
-                nombre: document.getElementById('proyecto-nombre').value,
-                descripcion: document.getElementById('proyecto-descripcion').value,
-                privacidad: document.getElementById('proyecto-privacidad').value,
-                prioridad: document.getElementById('proyecto-prioridad').value,
-                miembros: selectedMembers.map(m => m.id)
-            };
+            const submitBtn = formCrearProyecto.querySelector('.btn-primary');
+            const originalText = submitBtn.textContent;
             
-            console.log('Datos del nuevo proyecto:', formData);
-            console.log('Miembros seleccionados:', selectedMembers);
-            
-            // Aquí se enviarían los datos al backend
-            alert('Proyecto creado exitosamente (funcionalidad a implementar)');
-            cerrarModalCrearProyecto();
+            try {
+                // Deshabilitar botón y mostrar estado de carga
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Creando...';
+                
+                const formData = {
+                    nombre: document.getElementById('proyecto-nombre').value,
+                    descripcion: document.getElementById('proyecto-descripcion').value,
+                    privacidad: document.getElementById('proyecto-privacidad').value,
+                    prioridad: document.getElementById('proyecto-prioridad').value,
+                    miembros: selectedMembers.map(m => m.id),
+                    temp_id: Date.now() // ID temporal para testing
+                };
+                
+                console.log('Enviando datos del proyecto:', formData);
+                
+                const response = await fetch('/app/api/crear-proyecto/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    console.log('✅ Proyecto creado exitosamente:', result.proyecto);
+                    
+                    // Mostrar mensaje de éxito
+                    const miembrosCount = result.proyecto.miembros_notificados?.length || 0;
+                    const mensajeExito = `Proyecto "${result.proyecto.nombre}" creado exitosamente.${miembrosCount > 0 ? ` Se han enviado notificaciones a ${miembrosCount} miembro(s).` : ''}`;
+                    
+                    alert(mensajeExito);
+                    cerrarModalCrearProyecto();
+                    
+                    // Opcional: recargar la lista de proyectos
+                    // cargarProyectos(1);
+                } else {
+                    console.error('❌ Error del servidor:', result.error);
+                    alert(`Error: ${result.error || 'No se pudo crear el proyecto'}`);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error creando proyecto:', error);
+                alert('Error de conexión. Por favor intenta nuevamente.');
+            } finally {
+                // Restaurar botón
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
         });
     }
 
@@ -1243,6 +1368,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial data load
     cargarProyectos(1);
+    
+    // Cargar usuarios al inicializar
+    cargarTodosLosUsuarios();
 });
 </script>
 {% endblock %}

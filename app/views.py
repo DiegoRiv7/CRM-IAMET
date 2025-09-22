@@ -497,20 +497,18 @@ def api_buscar_usuarios(request):
     
     search_query = request.GET.get('q', '').strip()
     
-    if len(search_query) < 2:
-        return JsonResponse({
-            'success': True,
-            'usuarios': []
-        })
-    
     from django.contrib.auth.models import User
     
-    # Buscar usuarios por nombre, apellido o username
-    usuarios = User.objects.filter(
-        models.Q(first_name__icontains=search_query) |
-        models.Q(last_name__icontains=search_query) |
-        models.Q(username__icontains=search_query)
-    ).exclude(id=request.user.id)[:10]  # Excluir usuario actual y limitar a 10
+    if search_query and len(search_query) >= 2:
+        # Buscar usuarios por nombre, apellido o username
+        usuarios = User.objects.filter(
+            models.Q(first_name__icontains=search_query) |
+            models.Q(last_name__icontains=search_query) |
+            models.Q(username__icontains=search_query)
+        ).exclude(id=request.user.id)[:10]  # Excluir usuario actual y limitar a 10
+    else:
+        # Si no hay query, devolver todos los usuarios (para mostrar lista completa)
+        usuarios = User.objects.exclude(id=request.user.id).order_by('first_name', 'last_name', 'username')[:15]
     
     usuarios_data = []
     for usuario in usuarios:
@@ -546,6 +544,79 @@ def api_buscar_usuarios(request):
         'success': True,
         'usuarios': usuarios_data
     })
+
+@login_required
+def api_crear_proyecto(request):
+    """
+    API para crear un nuevo proyecto con miembros y enviar notificaciones
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        import json
+        data = json.loads(request.body)
+        
+        # Validar datos requeridos
+        nombre = data.get('nombre', '').strip()
+        if not nombre:
+            return JsonResponse({'error': 'El nombre del proyecto es requerido'}, status=400)
+        
+        descripcion = data.get('descripcion', '').strip()
+        privacidad = data.get('privacidad', 'publico')
+        prioridad = data.get('prioridad', 'media')
+        miembros_ids = data.get('miembros', [])
+        
+        # Por ahora simularemos la creación del proyecto
+        # En el futuro aquí se creará el modelo real de Proyecto
+        proyecto_id = data.get('temp_id', 1)  # ID temporal para testing
+        
+        # Enviar notificaciones a todos los miembros agregados
+        from django.contrib.auth.models import User
+        miembros_notificados = []
+        
+        for miembro_id in miembros_ids:
+            try:
+                usuario = User.objects.get(id=miembro_id)
+                notificacion = notificar_miembro_agregado_proyecto(
+                    usuario_agregado=usuario,
+                    proyecto_nombre=nombre,
+                    proyecto_id=proyecto_id,
+                    usuario_que_agrega=request.user
+                )
+                if notificacion:
+                    miembros_notificados.append({
+                        'id': usuario.id,
+                        'nombre': usuario.get_full_name() or usuario.username,
+                        'notificado': True
+                    })
+            except User.DoesNotExist:
+                continue
+        
+        print(f"✅ Proyecto '{nombre}' creado. Notificaciones enviadas a {len(miembros_notificados)} miembros.")
+        
+        return JsonResponse({
+            'success': True,
+            'mensaje': 'Proyecto creado exitosamente',
+            'proyecto': {
+                'id': proyecto_id,
+                'nombre': nombre,
+                'descripcion': descripcion,
+                'privacidad': privacidad,
+                'prioridad': prioridad,
+                'miembros_notificados': miembros_notificados,
+                'creado_por': request.user.get_full_name() or request.user.username
+            }
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Datos JSON inválidos'}, status=400)
+    except Exception as e:
+        print(f"❌ Error creando proyecto: {e}")
+        return JsonResponse({'error': 'Error interno del servidor'}, status=500)
 
 
 @login_required
@@ -7756,7 +7827,7 @@ def marcar_todas_notificaciones_leidas_api(request):
         }, status=500)
 
 
-def crear_notificacion(usuario_destinatario, tipo, titulo, mensaje, oportunidad=None, comentario=None, usuario_remitente=None):
+def crear_notificacion(usuario_destinatario, tipo, titulo, mensaje, oportunidad=None, comentario=None, usuario_remitente=None, proyecto_id=None, proyecto_nombre=None):
     """
     Función auxiliar para crear notificaciones
     """
@@ -7772,7 +7843,9 @@ def crear_notificacion(usuario_destinatario, tipo, titulo, mensaje, oportunidad=
             titulo=titulo,
             mensaje=mensaje,
             oportunidad=oportunidad,
-            comentario=comentario
+            comentario=comentario,
+            proyecto_id=proyecto_id,
+            proyecto_nombre=proyecto_nombre
         )
         
         print(f"✅ Notificación creada: {titulo} para {usuario_destinatario.username}")
@@ -7781,6 +7854,23 @@ def crear_notificacion(usuario_destinatario, tipo, titulo, mensaje, oportunidad=
     except Exception as e:
         print(f"❌ Error creando notificación: {e}")
         return None
+
+def notificar_miembro_agregado_proyecto(usuario_agregado, proyecto_nombre, proyecto_id, usuario_que_agrega):
+    """
+    Función específica para notificar cuando se agrega un usuario a un proyecto
+    """
+    titulo = f"Te han agregado al proyecto: {proyecto_nombre}"
+    mensaje = f"{usuario_que_agrega.get_full_name() or usuario_que_agrega.username} te ha agregado como miembro del proyecto '{proyecto_nombre}'. Ahora puedes colaborar en este proyecto."
+    
+    return crear_notificacion(
+        usuario_destinatario=usuario_agregado,
+        tipo='proyecto_agregado',
+        titulo=titulo,
+        mensaje=mensaje,
+        usuario_remitente=usuario_que_agrega,
+        proyecto_id=proyecto_id,
+        proyecto_nombre=proyecto_nombre
+    )
 
 
 def detectar_menciones_en_comentario(contenido, usuario_remitente, oportunidad, comentario=None):
