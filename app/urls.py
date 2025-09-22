@@ -19,6 +19,7 @@ urlpatterns = [
     
     # Tareas y Proyectos (solo superusuarios)
     path("tareas-proyectos/", views.tareas_proyectos, name="tareas_proyectos"),
+    path("proyecto/<int:proyecto_id>/", views.proyecto_detalle, name="proyecto_detalle"),
     
     # APIs para Tareas y Proyectos
     path("api/proyectos/", views.api_proyectos, name="api_proyectos"),

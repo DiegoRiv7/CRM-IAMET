@@ -1,0 +1,404 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* This page intentionally overrides the base container for a full-width layout */
+    .main-content.container {
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Fix for gray bar at bottom */
+    body {
+        background: #000 !important;
+    }
+
+    /* Centered, proportional content block */
+    .content-block {
+        width: 95%;
+        max-width: 1600px;
+        margin: 2rem auto;
+    }
+
+    /* Apple-inspired design */
+    :root {
+        --apple-background-secondary: rgba(255, 255, 255, 0.05);
+        --apple-separator: rgba(255, 255, 255, 0.15);
+        --apple-blue: #0A84FF;
+        --apple-green: #30D158;
+        --apple-purple: #AF52DE;
+        --apple-orange: #FF9500;
+        --apple-red: #FF3B30;
+        --apple-label: #F2F2F7;
+        --apple-label-secondary: #EBEBF599;
+        --apple-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+    }
+
+    .proyecto-container {
+        padding: 0;
+        background: #000;
+        min-height: 100vh;
+        font-family: var(--apple-font-family);
+    }
+
+    /* Header */
+    .proyecto-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding: 0;
+    }
+
+    .proyecto-title {
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: var(--apple-label);
+        letter-spacing: -0.5px;
+    }
+
+    .header-controls {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .btn-back {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        padding: 0.75rem 1.5rem;
+        color: var(--apple-label);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .btn-back:hover {
+        background: rgba(255, 255, 255, 0.15);
+        transform: translateY(-1px);
+        color: var(--apple-label);
+        text-decoration: none;
+    }
+
+    /* Tabs Navigation */
+    .proyecto-tabs {
+        display: flex;
+        background: rgba(28, 28, 30, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 16px;
+        border: 1px solid var(--apple-separator);
+        overflow: hidden;
+        margin-bottom: 2rem;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    }
+
+    .tab-button {
+        flex: 1;
+        background: transparent;
+        border: none;
+        padding: 1rem 1.5rem;
+        color: var(--apple-label-secondary);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    .tab-button:hover {
+        color: var(--apple-label);
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .tab-button.active {
+        color: var(--apple-blue);
+        background: rgba(10, 132, 255, 0.1);
+    }
+    .tab-button.active::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--apple-blue);
+    }
+
+    /* Content Container */
+    .proyecto-content {
+        background: rgba(28, 28, 30, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 16px;
+        border: 1px solid var(--apple-separator);
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+        min-height: 600px;
+    }
+
+    .tab-content {
+        padding: 2rem;
+        display: none;
+    }
+    .tab-content.active {
+        display: block;
+        animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Feed Styles */
+    .feed-item {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .feed-author {
+        font-weight: 600;
+        color: var(--apple-blue);
+        margin-bottom: 0.5rem;
+    }
+    .feed-date {
+        font-size: 0.875rem;
+        color: var(--apple-label-secondary);
+        margin-bottom: 1rem;
+    }
+    .feed-content {
+        color: var(--apple-label);
+        line-height: 1.6;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--apple-label-secondary);
+    }
+    .empty-state svg {
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    /* Modal Styles - Reutilizar del archivo anterior */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .modal-content {
+        background: rgba(28, 28, 30, 0.85);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 20px;
+        padding: 2rem;
+        width: 90%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 
+            0 20px 60px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transform: scale(0.9) translateY(20px);
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    .modal-overlay.active .modal-content {
+        transform: scale(1) translateY(0);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--apple-label);
+        margin: 0;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        color: var(--apple-label-secondary);
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+    .modal-close:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--apple-label);
+    }
+</style>
+
+<div class="proyecto-container">
+    <div class="content-block">
+        <!-- Header -->
+        <div class="proyecto-header">
+            <div>
+                <h1 class="proyecto-title">{{ proyecto.nombre }}</h1>
+                <p style="color: var(--apple-label-secondary); margin: 0.5rem 0 0 0;">
+                    {{ proyecto.tipo|title }} • {{ proyecto.privacidad|title }} • 
+                    Creado el {{ proyecto.fecha_creacion }}
+                </p>
+            </div>
+            <div class="header-controls">
+                <a href="/app/tareas-proyectos/" class="btn-back">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                    Volver
+                </a>
+            </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="proyecto-tabs">
+            <button class="tab-button active" data-tab="feed">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+                Feed
+            </button>
+            <button class="tab-button" data-tab="tareas">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+                Tareas
+            </button>
+            <button class="tab-button" data-tab="carpetas">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                </svg>
+                Carpetas
+            </button>
+            <button class="tab-button" data-tab="configuracion">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                Configuración
+            </button>
+        </div>
+
+        <!-- Content -->
+        <div class="proyecto-content">
+            <!-- Feed Tab -->
+            <div class="tab-content active" id="feed-content">
+                {% for comentario in proyecto.comentarios %}
+                <div class="feed-item">
+                    <div class="feed-author">{{ comentario.autor }}</div>
+                    <div class="feed-date">{{ comentario.fecha }}</div>
+                    <div class="feed-content">{{ comentario.texto }}</div>
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1">
+                        <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    <h3>No hay comentarios aún</h3>
+                    <p>Los comentarios y actualizaciones del proyecto aparecerán aquí.</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Tareas Tab -->
+            <div class="tab-content" id="tareas-content">
+                <div class="empty-state">
+                    <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1">
+                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                    <h3>Gestión de Tareas</h3>
+                    <p>Aquí podrás crear y gestionar las tareas del proyecto.</p>
+                </div>
+            </div>
+
+            <!-- Carpetas Tab -->
+            <div class="tab-content" id="carpetas-content">
+                <div class="empty-state">
+                    <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1">
+                        <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                    </svg>
+                    <h3>Carpetas y Archivos</h3>
+                    <p>Organiza y almacena los documentos del proyecto.</p>
+                </div>
+            </div>
+
+            <!-- Configuración Tab -->
+            <div class="tab-content" id="configuracion-content">
+                <div class="empty-state">
+                    <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1">
+                        <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <h3>Configuración del Proyecto</h3>
+                    <p>Ajustes y configuración avanzada del proyecto.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tab functionality
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const tabName = button.dataset.tab;
+            
+            // Remove active class from all tabs
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Add active class to clicked tab
+            button.classList.add('active');
+            const activeContent = document.getElementById(`${tabName}-content`);
+            if (activeContent) {
+                activeContent.classList.add('active');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

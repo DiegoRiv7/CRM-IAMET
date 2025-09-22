@@ -620,6 +620,45 @@ def api_crear_proyecto(request):
 
 
 @login_required
+def proyecto_detalle(request, proyecto_id):
+    """
+    Vista para el detalle individual de un proyecto
+    """
+    if not request.user.is_superuser:
+        return redirect('home')
+    
+    # Por ahora, devolver datos de ejemplo hasta que se implemente la base de datos
+    proyecto_ejemplo = {
+        'id': proyecto_id,
+        'nombre': f'Proyecto {proyecto_id}',
+        'descripcion': 'Descripción del proyecto',
+        'tipo': 'runrate',
+        'privacidad': 'publico',
+        'fecha_creacion': '2024-09-22',
+        'creado_por': request.user,
+        'miembros': [
+            {'id': request.user.id, 'nombre': request.user.get_full_name() or request.user.username, 'iniciales': 'DR'}
+        ],
+        'comentarios': [
+            {
+                'id': 1,
+                'texto': 'Este es el comentario inicial del proyecto',
+                'fecha': '2024-09-22',
+                'autor': request.user.get_full_name() or request.user.username
+            }
+        ]
+    }
+    
+    context = {
+        'proyecto': proyecto_ejemplo,
+        'user': request.user,
+        'page_title': f'Proyecto: {proyecto_ejemplo["nombre"]}'
+    }
+    
+    return render(request, 'proyecto_detalle.html', context)
+
+
+@login_required
 def dashboard(request):
     # Determinar si el usuario es un supervisor
     if is_supervisor(request.user):
