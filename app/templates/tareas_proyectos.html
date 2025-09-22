@@ -10,6 +10,11 @@
         padding: 0 !important;
     }
 
+    /* Fix for gray bar at bottom */
+    body {
+        background: #000 !important;
+    }
+
     /* Centered, proportional content block */
     .content-block {
         width: 95%;
@@ -122,10 +127,10 @@
     }
 
     .search-widget-container.expanded .search-icon-container {
-        transform: translateX(-290px); /* Final user adjustment */
+        transform: translateX(-320px); /* Final user adjustment for separation */
     }
 
-    /* Header Buttons */
+    /* Header Buttons & Liquid Glass Tabs */
     .create-btn {
         background: var(--apple-blue); color: white; border: none; border-radius: 22px;
         padding: 0 24px; height: 44px; font-weight: 600; font-size: 1rem;
@@ -133,15 +138,33 @@
         align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
     .create-btn:hover { filter: brightness(1.1); transform: scale(1.02); }
+    
     .tab-selector {
+        position: relative; /* Needed for the slider */
         display: flex; background: rgba(255, 255, 255, 0.1); border-radius: 22px;
         padding: 4px; height: 44px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
     .tab-option {
         background: transparent; border: none; padding: 0 1.25rem; color: var(--apple-label-secondary);
-        font-weight: 500; font-size: 0.95rem; cursor: pointer; border-radius: 18px; transition: all 0.3s ease;
+        font-weight: 500; font-size: 0.95rem; cursor: pointer; border-radius: 18px; 
+        transition: color 0.3s ease; z-index: 2; /* Ensure text is above slider */
     }
-    .tab-option.active { background: rgba(255, 255, 255, 0.9); color: #000; font-weight: 600; }
+    .tab-option.active { color: #000; font-weight: 600; }
+
+    .tab-slider {
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        height: calc(100% - 8px);
+        width: calc(50% - 4px); /* Assuming 2 tabs */
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 18px;
+        transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        z-index: 1;
+    }
+    .tab-selector[data-active="tareas"] .tab-slider {
+        transform: translateX(100%);
+    }
 
     /* Table Styles */
     .table-header { border-bottom: 1px solid var(--apple-separator); }
@@ -219,7 +242,8 @@
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M12 5v14m-7-7h14"/></svg>
                     Crear
                 </button>
-                <div class="tab-selector">
+                <div class="tab-selector" data-active="proyectos">
+                    <div class="tab-slider"></div>
                     <button class="tab-option active" data-tab="proyectos">📁 Proyectos</button>
                     <button class="tab-option" data-tab="tareas">✅ Tareas</button>
                 </div>
@@ -356,17 +380,26 @@ document.addEventListener('DOMContentLoaded', function() {
         if (searchWidget && !searchWidget.contains(e.target)) { searchWidget.classList.remove('expanded'); }
     });
 
-    // Tab Selector Logic
+    // Tab Selector Logic with Slider Animation
+    const tabSelector = document.querySelector('.tab-selector');
     const tabOptions = document.querySelectorAll('.tab-option');
     const tabContents = document.querySelectorAll('.tab-content');
     tabOptions.forEach(option => {
         option.addEventListener('click', () => {
             const tabName = option.dataset.tab;
+
+            // Update slider position
+            if (tabSelector) {
+                tabSelector.dataset.active = tabName;
+            }
+
             tabOptions.forEach(tab => tab.classList.remove('active'));
             option.classList.add('active');
+            
             tabContents.forEach(content => content.classList.remove('active'));
             const activeContent = document.getElementById(`${tabName}-content`);
             if (activeContent) activeContent.classList.add('active');
+            
             if (tabName === 'proyectos') { cargarProyectos(); } else { cargarTareas(); }
         });
     });
