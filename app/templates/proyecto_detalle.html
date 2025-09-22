@@ -267,6 +267,375 @@
         background: rgba(255, 255, 255, 0.1);
         color: var(--apple-label);
     }
+
+    /* Feed Styles */
+    .nuevo-comentario-modal {
+        margin-bottom: 1.5rem;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 1rem;
+    }
+
+    .modal-comentario-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .btn-nuevo-comentario {
+        background: rgba(10, 132, 255, 0.8);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(10, 132, 255, 0.3);
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        color: white;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+    }
+    .btn-nuevo-comentario:hover {
+        background: rgba(10, 132, 255, 0.9);
+        transform: translateY(-1px);
+    }
+
+    .comentario-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-adjuntar, .btn-mencion {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        padding: 0.5rem;
+        color: var(--apple-label-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .btn-adjuntar:hover, .btn-mencion:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: var(--apple-label);
+    }
+
+    .comentario-form {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .archivos-adjuntos {
+        margin-bottom: 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .archivo-adjunto {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        color: var(--apple-label-secondary);
+    }
+
+    .archivo-remove {
+        background: none;
+        border: none;
+        color: var(--apple-red);
+        cursor: pointer;
+        padding: 0;
+        margin-left: 0.25rem;
+    }
+
+    #comentarioInput {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        padding: 0.75rem;
+        color: var(--apple-label);
+        font-family: var(--apple-font-family);
+        font-size: 0.9rem;
+        line-height: 1.5;
+        resize: vertical;
+        min-height: 80px;
+        max-height: 200px;
+    }
+    #comentarioInput:focus {
+        outline: none;
+        border-color: var(--apple-blue);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
+    }
+    #comentarioInput::placeholder {
+        color: var(--apple-label-secondary);
+    }
+
+    .comentario-form-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+        gap: 1rem;
+    }
+
+    .contador-caracteres {
+        font-size: 0.8rem;
+        color: var(--apple-label-secondary);
+        flex: 1;
+    }
+
+    .btn-cancelar, .btn-enviar {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        color: var(--apple-label);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.85rem;
+    }
+
+    .btn-enviar {
+        background: rgba(48, 209, 88, 0.8);
+        border-color: rgba(48, 209, 88, 0.3);
+        color: white;
+    }
+    .btn-enviar:hover:not(:disabled) {
+        background: rgba(48, 209, 88, 0.9);
+        transform: translateY(-1px);
+    }
+    .btn-enviar:disabled {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+        color: var(--apple-label-secondary);
+        cursor: not-allowed;
+    }
+
+    .btn-cancelar:hover {
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Feed Container */
+    .feed-container {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    .feed-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 2rem;
+        color: var(--apple-label-secondary);
+        font-size: 0.9rem;
+    }
+    .feed-loading svg {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .feed-empty {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: var(--apple-label-secondary);
+    }
+    .feed-empty svg {
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    .feed-empty h3 {
+        margin: 0 0 0.5rem 0;
+        color: var(--apple-label);
+        font-size: 1.1rem;
+    }
+    .feed-empty p {
+        margin: 0;
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    /* Feed Items */
+    .feed-item {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        position: relative;
+        transition: all 0.2s ease;
+    }
+    .feed-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .feed-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+    }
+
+    .feed-user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .feed-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--apple-blue);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.8rem;
+        flex-shrink: 0;
+    }
+
+    .feed-user-details h4 {
+        margin: 0;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--apple-label);
+    }
+
+    .feed-user-details .feed-date {
+        margin: 0.15rem 0 0 0;
+        font-size: 0.75rem;
+        color: var(--apple-label-secondary);
+    }
+
+    .feed-item-actions {
+        display: flex;
+        gap: 0.25rem;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+    .feed-item:hover .feed-item-actions {
+        opacity: 1;
+    }
+
+    .btn-action {
+        background: none;
+        border: none;
+        color: var(--apple-label-secondary);
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .btn-action:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--apple-label);
+    }
+
+    .feed-content {
+        color: var(--apple-label);
+        line-height: 1.6;
+        font-size: 0.9rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .feed-content:last-child {
+        margin-bottom: 0;
+    }
+
+    .mencion {
+        background: rgba(10, 132, 255, 0.2);
+        color: var(--apple-blue);
+        padding: 0.1rem 0.3rem;
+        border-radius: 4px;
+        font-weight: 500;
+    }
+
+    /* Archivos adjuntos en comentarios */
+    .comment-attachments {
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .attachment-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s ease;
+    }
+    .attachment-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .attachment-icon {
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .attachment-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .attachment-name {
+        font-weight: 500;
+        color: var(--apple-label);
+        margin-bottom: 0.2rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .attachment-meta {
+        font-size: 0.75rem;
+        color: var(--apple-label-secondary);
+    }
+
+    .attachment-download {
+        background: rgba(10, 132, 255, 0.2);
+        border: 1px solid rgba(10, 132, 255, 0.3);
+        border-radius: 6px;
+        padding: 0.5rem;
+        color: var(--apple-blue);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .attachment-download:hover {
+        background: rgba(10, 132, 255, 0.3);
+    }
 </style>
 
 <div class="proyecto-container">
@@ -323,21 +692,67 @@
         <div class="proyecto-content">
             <!-- Feed Tab -->
             <div class="tab-content active" id="feed-content">
-                {% for comentario in proyecto.comentarios %}
-                <div class="feed-item">
-                    <div class="feed-author">{{ comentario.autor }}</div>
-                    <div class="feed-date">{{ comentario.fecha }}</div>
-                    <div class="feed-content">{{ comentario.texto }}</div>
+                <!-- Modal para nuevo comentario -->
+                <div class="nuevo-comentario-modal" id="nuevoComentarioModal">
+                    <div class="modal-comentario-header">
+                        <button class="btn-nuevo-comentario" id="btnNuevoComentario">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Agregar comentario
+                        </button>
+                        <div class="comentario-actions" id="comentarioActions" style="display: none;">
+                            <button class="btn-adjuntar" id="btnAdjuntar" title="Adjuntar archivos">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49"/>
+                                </svg>
+                            </button>
+                            <button class="btn-mencion" id="btnMencion" title="Mencionar usuario">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="comentario-form" id="comentarioForm" style="display: none;">
+                        <div class="archivos-adjuntos" id="archivosAdjuntos"></div>
+                        <textarea 
+                            id="comentarioInput" 
+                            placeholder="Escribe un comentario... Usa @usuario para mencionar"
+                            rows="3"
+                            maxlength="2000">{{ proyecto.descripcion }}</textarea>
+                        <div class="comentario-form-actions">
+                            <span class="contador-caracteres" id="contadorCaracteres">2000</span>
+                            <button class="btn-cancelar" id="btnCancelar">Cancelar</button>
+                            <button class="btn-enviar" id="btnEnviar" disabled>Enviar</button>
+                        </div>
+                    </div>
+                    
+                    <input type="file" id="fileInput" multiple style="display: none;" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar">
                 </div>
-                {% empty %}
-                <div class="empty-state">
-                    <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1">
-                        <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                    </svg>
-                    <h3>No hay comentarios aún</h3>
-                    <p>Los comentarios y actualizaciones del proyecto aparecerán aquí.</p>
+                
+                <!-- Feed de comentarios -->
+                <div class="feed-container" id="feedContainer">
+                    <div class="feed-loading" id="feedLoading">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                        </svg>
+                        Cargando comentarios...
+                    </div>
+                    
+                    <div class="feed-items" id="feedItems">
+                        <!-- Los comentarios se cargarán dinámicamente -->
+                    </div>
+                    
+                    <div class="feed-empty" id="feedEmpty" style="display: none;">
+                        <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1">
+                            <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                        </svg>
+                        <h3>¡Sé el primero en comentar!</h3>
+                        <p>Comparte actualizaciones, archivos o menciona a tus compañeros de equipo.</p>
+                    </div>
                 </div>
-                {% endfor %}
             </div>
 
             <!-- Tareas Tab -->
@@ -378,6 +793,12 @@
 </div>
 
 <script>
+// Variables globales
+const PROYECTO_ID = {{ proyecto.id }};
+const CURRENT_USER_ID = {{ user.id }};
+let attachedFiles = [];
+let isSubmitting = false;
+
 document.addEventListener('DOMContentLoaded', function() {
     // Tab functionality
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -397,8 +818,374 @@ document.addEventListener('DOMContentLoaded', function() {
             if (activeContent) {
                 activeContent.classList.add('active');
             }
+            
+            // Cargar comentarios cuando se activa el feed
+            if (tabName === 'feed') {
+                cargarComentarios();
+            }
         });
     });
+    
+    // Inicializar sistema de comentarios
+    initFeedSystem();
+    
+    // Cargar comentarios inicialmente
+    cargarComentarios();
 });
+
+// Inicializar sistema de feed
+function initFeedSystem() {
+    const btnNuevoComentario = document.getElementById('btnNuevoComentario');
+    const comentarioForm = document.getElementById('comentarioForm');
+    const comentarioActions = document.getElementById('comentarioActions');
+    const btnCancelar = document.getElementById('btnCancelar');
+    const btnEnviar = document.getElementById('btnEnviar');
+    const comentarioInput = document.getElementById('comentarioInput');
+    const btnAdjuntar = document.getElementById('btnAdjuntar');
+    const btnMencion = document.getElementById('btnMencion');
+    const fileInput = document.getElementById('fileInput');
+    const contadorCaracteres = document.getElementById('contadorCaracteres');
+
+    // Mostrar/ocultar formulario
+    btnNuevoComentario.addEventListener('click', () => {
+        comentarioForm.style.display = 'block';
+        comentarioActions.style.display = 'flex';
+        btnNuevoComentario.style.display = 'none';
+        comentarioInput.focus();
+    });
+
+    btnCancelar.addEventListener('click', () => {
+        cerrarFormularioComentario();
+    });
+
+    // Adjuntar archivos
+    btnAdjuntar.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+    });
+
+    // Mencionar usuario
+    btnMencion.addEventListener('click', () => {
+        const input = comentarioInput;
+        const cursorPos = input.selectionStart;
+        const textBefore = input.value.substring(0, cursorPos);
+        const textAfter = input.value.substring(cursorPos);
+        
+        input.value = textBefore + '@' + textAfter;
+        input.setSelectionRange(cursorPos + 1, cursorPos + 1);
+        input.focus();
+        
+        // Aquí se podría implementar un autocompletado de usuarios
+        mostrarSugerenciasUsuarios(input);
+    });
+
+    // Contador de caracteres
+    comentarioInput.addEventListener('input', () => {
+        const remaining = 2000 - comentarioInput.value.length;
+        contadorCaracteres.textContent = remaining;
+        contadorCaracteres.style.color = remaining < 100 ? 'var(--apple-red)' : 'var(--apple-label-secondary)';
+        
+        // Habilitar/deshabilitar botón enviar
+        const hasContent = comentarioInput.value.trim().length > 0 || attachedFiles.length > 0;
+        btnEnviar.disabled = !hasContent || remaining < 0;
+    });
+
+    // Enviar comentario
+    btnEnviar.addEventListener('click', enviarComentario);
+
+    // Auto-resize textarea
+    comentarioInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+    });
+
+    // Drag & Drop
+    const feedContainer = document.getElementById('feed-content');
+    feedContainer.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        feedContainer.style.background = 'rgba(10, 132, 255, 0.1)';
+    });
+
+    feedContainer.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        feedContainer.style.background = '';
+    });
+
+    feedContainer.addEventListener('drop', (e) => {
+        e.preventDefault();
+        feedContainer.style.background = '';
+        handleFiles(e.dataTransfer.files);
+        
+        // Mostrar formulario si no está visible
+        if (comentarioForm.style.display === 'none') {
+            btnNuevoComentario.click();
+        }
+    });
+}
+
+// Cerrar formulario de comentario
+function cerrarFormularioComentario() {
+    const comentarioForm = document.getElementById('comentarioForm');
+    const comentarioActions = document.getElementById('comentarioActions');
+    const btnNuevoComentario = document.getElementById('btnNuevoComentario');
+    const comentarioInput = document.getElementById('comentarioInput');
+    
+    comentarioForm.style.display = 'none';
+    comentarioActions.style.display = 'none';
+    btnNuevoComentario.style.display = 'flex';
+    
+    // Limpiar formulario
+    comentarioInput.value = '';
+    attachedFiles = [];
+    actualizarArchivosAdjuntos();
+}
+
+// Manejar archivos
+function handleFiles(files) {
+    for (let file of files) {
+        if (attachedFiles.length >= 5) {
+            alert('Máximo 5 archivos por comentario');
+            break;
+        }
+        
+        if (file.size > 10 * 1024 * 1024) { // 10MB
+            alert(`El archivo ${file.name} es muy grande (máximo 10MB)`);
+            continue;
+        }
+        
+        attachedFiles.push(file);
+    }
+    
+    actualizarArchivosAdjuntos();
+    
+    // Habilitar botón enviar si hay archivos
+    const btnEnviar = document.getElementById('btnEnviar');
+    const comentarioInput = document.getElementById('comentarioInput');
+    const hasContent = comentarioInput.value.trim().length > 0 || attachedFiles.length > 0;
+    btnEnviar.disabled = !hasContent;
+}
+
+// Actualizar vista de archivos adjuntos
+function actualizarArchivosAdjuntos() {
+    const container = document.getElementById('archivosAdjuntos');
+    container.innerHTML = '';
+    
+    attachedFiles.forEach((file, index) => {
+        const div = document.createElement('div');
+        div.className = 'archivo-adjunto';
+        div.innerHTML = `
+            <span>📎 ${file.name}</span>
+            <button class="archivo-remove" onclick="removeFile(${index})">×</button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// Remover archivo
+function removeFile(index) {
+    attachedFiles.splice(index, 1);
+    actualizarArchivosAdjuntos();
+    
+    // Actualizar estado del botón enviar
+    const btnEnviar = document.getElementById('btnEnviar');
+    const comentarioInput = document.getElementById('comentarioInput');
+    const hasContent = comentarioInput.value.trim().length > 0 || attachedFiles.length > 0;
+    btnEnviar.disabled = !hasContent;
+}
+
+// Cargar comentarios
+async function cargarComentarios() {
+    const feedLoading = document.getElementById('feedLoading');
+    const feedItems = document.getElementById('feedItems');
+    const feedEmpty = document.getElementById('feedEmpty');
+    
+    try {
+        feedLoading.style.display = 'flex';
+        feedItems.style.display = 'none';
+        feedEmpty.style.display = 'none';
+        
+        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/comentarios/`);
+        const data = await response.json();
+        
+        feedLoading.style.display = 'none';
+        
+        if (data.success && data.comentarios.length > 0) {
+            feedItems.style.display = 'block';
+            renderizarComentarios(data.comentarios);
+        } else {
+            feedEmpty.style.display = 'block';
+        }
+        
+    } catch (error) {
+        console.error('Error cargando comentarios:', error);
+        feedLoading.style.display = 'none';
+        feedEmpty.style.display = 'block';
+    }
+}
+
+// Renderizar comentarios
+function renderizarComentarios(comentarios) {
+    const container = document.getElementById('feedItems');
+    container.innerHTML = '';
+    
+    comentarios.forEach(comentario => {
+        const div = document.createElement('div');
+        div.className = 'feed-item';
+        div.dataset.comentarioId = comentario.id;
+        
+        const archivosHtml = comentario.archivos.length > 0 ? `
+            <div class="comment-attachments">
+                ${comentario.archivos.map(archivo => `
+                    <div class="attachment-item">
+                        <div class="attachment-icon">${archivo.icono}</div>
+                        <div class="attachment-info">
+                            <div class="attachment-name">${archivo.nombre}</div>
+                            <div class="attachment-meta">${archivo.tamaño}</div>
+                        </div>
+                        <button class="attachment-download" onclick="window.open('${archivo.url}', '_blank')">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                            </svg>
+                        </button>
+                    </div>
+                `).join('')}
+            </div>
+        ` : '';
+        
+        const actionsHtml = comentario.puede_editar || comentario.puede_eliminar ? `
+            <div class="feed-item-actions">
+                ${comentario.puede_editar ? `
+                    <button class="btn-action" onclick="editarComentario(${comentario.id})" title="Editar">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                        </svg>
+                    </button>
+                ` : ''}
+                ${comentario.puede_eliminar ? `
+                    <button class="btn-action" onclick="eliminarComentario(${comentario.id})" title="Eliminar">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                    </button>
+                ` : ''}
+            </div>
+        ` : '';
+        
+        div.innerHTML = `
+            <div class="feed-item-header">
+                <div class="feed-user-info">
+                    <div class="feed-avatar" style="background: ${getAvatarColor(comentario.usuario.id)}">${comentario.usuario.iniciales}</div>
+                    <div class="feed-user-details">
+                        <h4>${comentario.usuario.nombre}</h4>
+                        <div class="feed-date">${comentario.fecha}${comentario.editado && comentario.fecha_edicion ? ` • Editado ${comentario.fecha_edicion}` : ''}</div>
+                    </div>
+                </div>
+                ${actionsHtml}
+            </div>
+            <div class="feed-content" id="content-${comentario.id}">
+                ${comentario.contenido}
+            </div>
+            ${archivosHtml}
+        `;
+        
+        container.appendChild(div);
+    });
+}
+
+// Obtener color del avatar
+function getAvatarColor(userId) {
+    const colors = ['#0A84FF', '#30D158', '#AF52DE', '#FF9500', '#FF3B30', '#FFD60A', '#64D2FF', '#BF5AF2'];
+    return colors[userId % colors.length];
+}
+
+// Enviar comentario
+async function enviarComentario() {
+    if (isSubmitting) return;
+    
+    const comentarioInput = document.getElementById('comentarioInput');
+    const btnEnviar = document.getElementById('btnEnviar');
+    const contenido = comentarioInput.value.trim();
+    
+    if (!contenido && attachedFiles.length === 0) return;
+    
+    isSubmitting = true;
+    btnEnviar.disabled = true;
+    btnEnviar.textContent = 'Enviando...';
+    
+    try {
+        const formData = new FormData();
+        formData.append('contenido', contenido);
+        
+        attachedFiles.forEach((file, index) => {
+            formData.append(`archivo_${index}`, file);
+        });
+        
+        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/comentarios/agregar/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            cerrarFormularioComentario();
+            cargarComentarios(); // Recargar comentarios
+        } else {
+            alert('Error: ' + (data.error || 'No se pudo enviar el comentario'));
+        }
+        
+    } catch (error) {
+        console.error('Error enviando comentario:', error);
+        alert('Error de conexión. Intenta nuevamente.');
+    } finally {
+        isSubmitting = false;
+        btnEnviar.disabled = false;
+        btnEnviar.textContent = 'Enviar';
+    }
+}
+
+// Editar comentario
+function editarComentario(comentarioId) {
+    // Implementar edición inline
+    console.log('Editar comentario:', comentarioId);
+}
+
+// Eliminar comentario
+async function eliminarComentario(comentarioId) {
+    if (!confirm('¿Estás seguro de eliminar este comentario?')) return;
+    
+    try {
+        const response = await fetch(`/app/api/comentario-proyecto/${comentarioId}/eliminar/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            cargarComentarios(); // Recargar comentarios
+        } else {
+            alert('Error eliminando comentario');
+        }
+        
+    } catch (error) {
+        console.error('Error eliminando comentario:', error);
+        alert('Error de conexión');
+    }
+}
+
+// Mostrar sugerencias de usuarios (placeholder)
+function mostrarSugerenciasUsuarios(input) {
+    // Aquí se implementaría el autocompletado de usuarios
+    console.log('Mostrar sugerencias de usuarios');
+}
 </script>
 {% endblock %}

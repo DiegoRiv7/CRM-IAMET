@@ -21,6 +21,12 @@ urlpatterns = [
     path("tareas-proyectos/", views.tareas_proyectos, name="tareas_proyectos"),
     path("proyecto/<int:proyecto_id>/", views.proyecto_detalle, name="proyecto_detalle"),
     
+    # APIs para comentarios de proyecto
+    path("api/proyecto/<int:proyecto_id>/comentarios/", views.api_comentarios_proyecto, name="api_comentarios_proyecto"),
+    path("api/proyecto/<int:proyecto_id>/comentarios/agregar/", views.api_agregar_comentario_proyecto, name="api_agregar_comentario_proyecto"),
+    path("api/comentario-proyecto/<int:comentario_id>/editar/", views.api_editar_comentario_proyecto, name="api_editar_comentario_proyecto"),
+    path("api/comentario-proyecto/<int:comentario_id>/eliminar/", views.api_eliminar_comentario_proyecto, name="api_eliminar_comentario_proyecto"),
+    
     # APIs para Tareas y Proyectos
     path("api/proyectos/", views.api_proyectos, name="api_proyectos"),
     path("api/tareas/", views.api_tareas, name="api_tareas"),

@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo
 from . import views_exportar
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
 from django.db.models import Sum, Count, F, Q, Case, When, Value
@@ -727,6 +727,206 @@ def proyecto_detalle(request, proyecto_id):
         
     except Proyecto.DoesNotExist:
         return redirect('tareas_proyectos')
+
+
+@login_required
+def api_comentarios_proyecto(request, proyecto_id):
+    """
+    API para obtener comentarios de un proyecto
+    """
+    try:
+        proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+        
+        # Verificar permisos
+        if proyecto.privacidad == 'privado':
+            if request.user != proyecto.creado_por and request.user not in proyecto.miembros.all():
+                return JsonResponse({'error': 'Sin permisos'}, status=403)
+        
+        comentarios = ProyectoComentario.objects.filter(proyecto=proyecto).order_by('fecha_creacion')
+        
+        comentarios_data = []
+        for comentario in comentarios:
+            archivos_data = []
+            for archivo in comentario.archivos.all():
+                archivos_data.append({
+                    'id': archivo.id,
+                    'nombre': archivo.nombre_original,
+                    'tamaño': archivo.get_tamaño_legible(),
+                    'icono': archivo.get_icono(),
+                    'url': archivo.archivo.url,
+                    'tipo': archivo.tipo_contenido
+                })
+            
+            comentarios_data.append({
+                'id': comentario.id,
+                'contenido': comentario.get_contenido_con_menciones(),
+                'contenido_raw': comentario.contenido,
+                'usuario': {
+                    'id': comentario.usuario.id,
+                    'nombre': comentario.usuario.get_full_name() or comentario.usuario.username,
+                    'username': comentario.usuario.username,
+                    'iniciales': ''.join([palabra[0].upper() for palabra in (comentario.usuario.get_full_name() or comentario.usuario.username).split()[:2]])
+                },
+                'fecha': comentario.fecha_creacion.strftime('%d de %b, %Y - %H:%M'),
+                'fecha_edicion': comentario.fecha_edicion.strftime('%d de %b, %Y - %H:%M') if comentario.fecha_edicion else None,
+                'editado': comentario.editado,
+                'archivos': archivos_data,
+                'puede_editar': comentario.usuario == request.user,
+                'puede_eliminar': comentario.usuario == request.user or proyecto.creado_por == request.user
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'comentarios': comentarios_data
+        })
+        
+    except Exception as e:
+        print(f"Error obteniendo comentarios: {e}")
+        return JsonResponse({'error': 'Error interno'}, status=500)
+
+
+@login_required
+def api_agregar_comentario_proyecto(request, proyecto_id):
+    """
+    API para agregar un comentario a un proyecto
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+        
+        # Verificar permisos
+        if proyecto.privacidad == 'privado':
+            if request.user != proyecto.creado_por and request.user not in proyecto.miembros.all():
+                return JsonResponse({'error': 'Sin permisos'}, status=403)
+        
+        contenido = request.POST.get('contenido', '').strip()
+        if not contenido:
+            return JsonResponse({'error': 'El comentario no puede estar vacío'}, status=400)
+        
+        # Crear el comentario
+        comentario = ProyectoComentario.objects.create(
+            proyecto=proyecto,
+            usuario=request.user,
+            contenido=contenido
+        )
+        
+        # Procesar archivos adjuntos
+        archivos_data = []
+        for key, file in request.FILES.items():
+            if key.startswith('archivo_'):
+                archivo = ProyectoArchivo.objects.create(
+                    comentario=comentario,
+                    archivo=file,
+                    nombre_original=file.name,
+                    tamaño=file.size,
+                    tipo_contenido=file.content_type or ''
+                )
+                archivos_data.append({
+                    'id': archivo.id,
+                    'nombre': archivo.nombre_original,
+                    'tamaño': archivo.get_tamaño_legible(),
+                    'icono': archivo.get_icono(),
+                    'url': archivo.archivo.url,
+                    'tipo': archivo.tipo_contenido
+                })
+        
+        # Enviar notificaciones a usuarios mencionados
+        usuarios_mencionados = comentario.extraer_menciones()
+        for usuario_mencionado in usuarios_mencionados:
+            if usuario_mencionado != request.user:  # No notificar al autor
+                crear_notificacion(
+                    usuario_destinatario=usuario_mencionado,
+                    tipo='proyecto_agregado',
+                    titulo=f"Te mencionaron en {proyecto.nombre}",
+                    mensaje=f"{request.user.get_full_name() or request.user.username} te mencionó en el proyecto '{proyecto.nombre}': {contenido[:100]}...",
+                    usuario_remitente=request.user,
+                    proyecto_id=proyecto.id,
+                    proyecto_nombre=proyecto.nombre
+                )
+        
+        return JsonResponse({
+            'success': True,
+            'comentario': {
+                'id': comentario.id,
+                'contenido': comentario.get_contenido_con_menciones(),
+                'contenido_raw': comentario.contenido,
+                'usuario': {
+                    'id': comentario.usuario.id,
+                    'nombre': comentario.usuario.get_full_name() or comentario.usuario.username,
+                    'username': comentario.usuario.username,
+                    'iniciales': ''.join([palabra[0].upper() for palabra in (comentario.usuario.get_full_name() or comentario.usuario.username).split()[:2]])
+                },
+                'fecha': comentario.fecha_creacion.strftime('%d de %b, %Y - %H:%M'),
+                'fecha_edicion': None,
+                'editado': False,
+                'archivos': archivos_data,
+                'puede_editar': True,
+                'puede_eliminar': True
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error agregando comentario: {e}")
+        return JsonResponse({'error': 'Error interno'}, status=500)
+
+
+@login_required
+def api_editar_comentario_proyecto(request, comentario_id):
+    """
+    API para editar un comentario de proyecto
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        comentario = get_object_or_404(ProyectoComentario, id=comentario_id)
+        
+        # Verificar permisos
+        if comentario.usuario != request.user:
+            return JsonResponse({'error': 'Sin permisos'}, status=403)
+        
+        contenido = request.POST.get('contenido', '').strip()
+        if not contenido:
+            return JsonResponse({'error': 'El comentario no puede estar vacío'}, status=400)
+        
+        comentario.contenido = contenido
+        comentario.save()
+        
+        return JsonResponse({
+            'success': True,
+            'contenido': comentario.get_contenido_con_menciones(),
+            'fecha_edicion': comentario.fecha_edicion.strftime('%d de %b, %Y - %H:%M')
+        })
+        
+    except Exception as e:
+        print(f"Error editando comentario: {e}")
+        return JsonResponse({'error': 'Error interno'}, status=500)
+
+
+@login_required
+def api_eliminar_comentario_proyecto(request, comentario_id):
+    """
+    API para eliminar un comentario de proyecto
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        comentario = get_object_or_404(ProyectoComentario, id=comentario_id)
+        
+        # Verificar permisos (autor del comentario o creador del proyecto)
+        if comentario.usuario != request.user and comentario.proyecto.creado_por != request.user:
+            return JsonResponse({'error': 'Sin permisos'}, status=403)
+        
+        comentario.delete()
+        
+        return JsonResponse({'success': True})
+        
+    except Exception as e:
+        print(f"Error eliminando comentario: {e}")
+        return JsonResponse({'error': 'Error interno'}, status=500)
 
 
 @login_required

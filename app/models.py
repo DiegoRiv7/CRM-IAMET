@@ -1488,3 +1488,160 @@ class Proyecto(models.Model):
             return "Miembro"
         else:
             return "No te has unido al proyecto"
+
+
+class ProyectoComentario(models.Model):
+    """Modelo para los comentarios del feed de un proyecto"""
+    
+    proyecto = models.ForeignKey(
+        Proyecto,
+        on_delete=models.CASCADE,
+        related_name='comentarios',
+        verbose_name="Proyecto"
+    )
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name="Usuario"
+    )
+    contenido = models.TextField(
+        verbose_name="Contenido"
+    )
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de Creación"
+    )
+    fecha_edicion = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Última Edición"
+    )
+    editado = models.BooleanField(
+        default=False,
+        verbose_name="Editado"
+    )
+    usuarios_mencionados = models.ManyToManyField(
+        User,
+        related_name='menciones_proyecto',
+        blank=True,
+        verbose_name="Usuarios Mencionados"
+    )
+    
+    class Meta:
+        verbose_name = "Comentario de Proyecto"
+        verbose_name_plural = "Comentarios de Proyecto"
+        ordering = ['fecha_creacion']
+    
+    def __str__(self):
+        return f"{self.usuario.username} - {self.proyecto.nombre} - {self.fecha_creacion.strftime('%Y-%m-%d %H:%M')}"
+    
+    def get_contenido_con_menciones(self):
+        """Convierte las menciones @usuario en enlaces"""
+        import re
+        contenido = self.contenido
+        
+        # Buscar patrones @usuario
+        def reemplazar_mencion(match):
+            username = match.group(1)
+            try:
+                usuario = User.objects.get(username=username)
+                return f'<span class="mencion" data-user-id="{usuario.id}">@{username}</span>'
+            except User.DoesNotExist:
+                return match.group(0)
+        
+        contenido = re.sub(r'@(\w+)', reemplazar_mencion, contenido)
+        return contenido
+    
+    def extraer_menciones(self):
+        """Extrae los usuarios mencionados del contenido"""
+        import re
+        menciones = re.findall(r'@(\w+)', self.contenido)
+        usuarios_mencionados = []
+        
+        for username in menciones:
+            try:
+                usuario = User.objects.get(username=username)
+                usuarios_mencionados.append(usuario)
+            except User.DoesNotExist:
+                continue
+        
+        return usuarios_mencionados
+    
+    def save(self, *args, **kwargs):
+        # Si se está editando (no es creación), marcar como editado
+        if self.pk:
+            self.editado = True
+            self.fecha_edicion = timezone.now()
+        
+        super().save(*args, **kwargs)
+        
+        # Después de guardar, actualizar menciones
+        usuarios_mencionados = self.extraer_menciones()
+        self.usuarios_mencionados.set(usuarios_mencionados)
+
+
+class ProyectoArchivo(models.Model):
+    """Modelo para archivos adjuntos en comentarios de proyecto"""
+    
+    comentario = models.ForeignKey(
+        ProyectoComentario,
+        on_delete=models.CASCADE,
+        related_name='archivos',
+        verbose_name="Comentario"
+    )
+    archivo = models.FileField(
+        upload_to='proyectos/archivos/%Y/%m/',
+        verbose_name="Archivo"
+    )
+    nombre_original = models.CharField(
+        max_length=255,
+        verbose_name="Nombre Original"
+    )
+    tamaño = models.PositiveIntegerField(
+        verbose_name="Tamaño en bytes"
+    )
+    tipo_contenido = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Tipo de Contenido"
+    )
+    fecha_subida = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de Subida"
+    )
+    
+    class Meta:
+        verbose_name = "Archivo de Proyecto"
+        verbose_name_plural = "Archivos de Proyecto"
+        ordering = ['fecha_subida']
+    
+    def __str__(self):
+        return f"{self.nombre_original} - {self.comentario.proyecto.nombre}"
+    
+    def get_icono(self):
+        """Devuelve el icono apropiado según el tipo de archivo"""
+        if self.tipo_contenido:
+            if self.tipo_contenido.startswith('image/'):
+                return '🖼️'
+            elif self.tipo_contenido.startswith('video/'):
+                return '🎥'
+            elif 'pdf' in self.tipo_contenido:
+                return '📄'
+            elif any(ext in self.tipo_contenido for ext in ['word', 'document']):
+                return '📝'
+            elif any(ext in self.tipo_contenido for ext in ['excel', 'spreadsheet']):
+                return '📊'
+            elif any(ext in self.tipo_contenido for ext in ['zip', 'rar', 'compressed']):
+                return '🗜️'
+        return '📁'
+    
+    def get_tamaño_legible(self):
+        """Convierte el tamaño en bytes a formato legible"""
+        if self.tamaño < 1024:
+            return f"{self.tamaño} B"
+        elif self.tamaño < 1024 * 1024:
+            return f"{self.tamaño / 1024:.1f} KB"
+        elif self.tamaño < 1024 * 1024 * 1024:
+            return f"{self.tamaño / (1024 * 1024):.1f} MB"
+        else:
+            return f"{self.tamaño / (1024 * 1024 * 1024):.1f} GB"
