@@ -130,26 +130,34 @@
         transform: translateX(-320px); /* Final user adjustment for separation */
     }
 
-    /* Header Buttons & Liquid Glass Tabs */
+    /* Header Buttons & Enhanced Liquid Glass Tabs */
+    .create-btn, .tab-selector {
+        box-shadow: 0 8px 24px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+        border: 1.5px solid;
+        border-image-slice: 1;
+        border-image-source: linear-gradient(to bottom right, rgba(255,255,255,0.5), rgba(255,255,255,0.1));
+    }
+
     .create-btn {
-        background: var(--apple-blue); color: white; border: none; border-radius: 22px;
+        background: var(--apple-blue); color: white; border-radius: 22px;
         padding: 0 24px; height: 44px; font-weight: 600; font-size: 1rem;
         cursor: pointer; transition: all 0.25s ease; display: flex;
-        align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        align-items: center; gap: 0.5rem; 
     }
     .create-btn:hover { filter: brightness(1.1); transform: scale(1.02); }
     
     .tab-selector {
         position: relative; /* Needed for the slider */
-        display: flex; background: rgba(255, 255, 255, 0.1); border-radius: 22px;
-        padding: 4px; height: 44px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        display: flex; background: rgba(255, 255, 255, 0.05); border-radius: 22px;
+        padding: 4px; height: 44px;
     }
     .tab-option {
-        background: transparent; border: none; padding: 0 1.25rem; color: var(--apple-label-secondary);
+        background: transparent; border: none; padding: 0 1.75rem; /* Wider tabs */
+        color: var(--apple-label-secondary);
         font-weight: 500; font-size: 0.95rem; cursor: pointer; border-radius: 18px; 
         transition: color 0.3s ease; z-index: 2; /* Ensure text is above slider */
     }
-    .tab-option.active { color: #000; font-weight: 600; }
+    .tab-option.active { color: #fff; font-weight: 600; text-shadow: 0 0 5px rgba(0,0,0,0.5); }
 
     .tab-slider {
         position: absolute;
@@ -157,10 +165,15 @@
         left: 4px;
         height: calc(100% - 8px);
         width: calc(50% - 4px); /* Assuming 2 tabs */
-        background: rgba(255, 255, 255, 0.9);
+        background: rgba(255, 255, 255, 0.15); /* More translucent */
         border-radius: 18px;
         transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         z-index: 1;
+        backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.2);
+        border: 1.5px solid;
+        border-image-slice: 1;
+        border-image-source: linear-gradient(to bottom right, rgba(255,255,255,0.6), rgba(255,255,255,0.2));
     }
     .tab-selector[data-active="tareas"] .tab-slider {
         transform: translateX(100%);
