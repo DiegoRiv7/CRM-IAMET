@@ -286,34 +286,97 @@ def tareas_proyectos(request):
 @login_required
 def api_proyectos(request):
     """
-    API para obtener proyectos (placeholder por ahora)
+    API para obtener proyectos con paginación
     """
     if not request.user.is_superuser:
         return JsonResponse({'error': 'Sin permisos'}, status=403)
     
-    # Por ahora, devolver datos de ejemplo
+    # Obtener parámetros de paginación
+    page = int(request.GET.get('page', 1))
+    per_page = int(request.GET.get('per_page', 30))
+    search = request.GET.get('search', '').strip()
+    
+    # Datos de ejemplo más completos
     proyectos_ejemplo = [
         {
-            'id': 1,
-            'nombre': 'Proyecto CRM Avanzado',
-            'descripcion': 'Implementación de nuevas funcionalidades en el sistema CRM',
-            'progreso': 75,
+            'id': 1380,
+            'nombre': 'RFQ-20250428-11 CONTROL DE ACCESO TORNIQUETE',
+            'descripcion': 'Sistema de control de acceso con torniquetes inteligentes',
+            'progreso': 63,
             'fecha_limite': '2025-02-15',
-            'miembros_count': 4
+            'miembros_count': 7,
+            'fecha_actividad': '21 de Sep, 8:01',
+            'rol': 'Miembro del proyecto',
+            'privacidad': 'publico'
         },
         {
-            'id': 2, 
-            'nombre': 'Migración Base de Datos',
-            'descripcion': 'Actualización y optimización de la base de datos principal',
-            'progreso': 45,
+            'id': 2056,
+            'nombre': 'CRM NetHive - Sistema de Gestión',
+            'descripcion': 'Desarrollo del sistema CRM personalizado',
+            'progreso': 100,
             'fecha_limite': '2025-01-30',
-            'miembros_count': 2
+            'miembros_count': 2,
+            'fecha_actividad': '19 de Sep, 3:12',
+            'rol': 'Jefe de proyectos',
+            'privacidad': 'privado'
+        },
+        {
+            'id': 774,
+            'nombre': 'Telvista 34630 CH - Sistema Avigilon',
+            'descripcion': 'Implementación de sistema de videovigilancia',
+            'progreso': 45,
+            'fecha_limite': '2025-03-10',
+            'miembros_count': 6,
+            'fecha_actividad': '10 de Sep, 0:59',
+            'rol': 'Miembro del proyecto',
+            'privacidad': 'privado'
+        },
+        {
+            'id': 1560,
+            'nombre': '8700053503 - Equipos ZEBRA PIMS',
+            'descripcion': 'Instalación y configuración de equipos ZEBRA',
+            'progreso': 85,
+            'fecha_limite': '2025-02-28',
+            'miembros_count': 4,
+            'fecha_actividad': '3 de Sep, 1:20',
+            'rol': 'Jefe de proyectos',
+            'privacidad': 'publico'
+        },
+        {
+            'id': 1130,
+            'nombre': 'PO 4201027104 - Instalación Access Point',
+            'descripcion': 'Instalación de puntos de acceso inalámbricos',
+            'progreso': 92,
+            'fecha_limite': '2025-01-20',
+            'miembros_count': 5,
+            'fecha_actividad': '25 de Ago, 23:41',
+            'rol': 'Miembro del proyecto',
+            'privacidad': 'privado'
         }
     ]
     
+    # Filtrar por búsqueda si se proporciona
+    if search:
+        proyectos_filtrados = [
+            p for p in proyectos_ejemplo 
+            if search.lower() in p['nombre'].lower() or search.lower() in p['descripcion'].lower()
+        ]
+    else:
+        proyectos_filtrados = proyectos_ejemplo
+    
+    # Simular paginación
+    total_proyectos = len(proyectos_filtrados)
+    start_index = (page - 1) * per_page
+    end_index = start_index + per_page
+    proyectos_pagina = proyectos_filtrados[start_index:end_index]
+    
     return JsonResponse({
         'success': True,
-        'proyectos': proyectos_ejemplo
+        'proyectos': proyectos_pagina,
+        'total': total_proyectos,
+        'page': page,
+        'per_page': per_page,
+        'total_pages': (total_proyectos + per_page - 1) // per_page
     })
 
 
