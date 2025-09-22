@@ -637,6 +637,174 @@
     .attachment-download:hover {
         background: rgba(10, 132, 255, 0.3);
     }
+
+    /* Estilos para edición de comentarios */
+    .edit-mode {
+        position: relative;
+    }
+    
+    .edit-textarea {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        padding: 0.75rem;
+        color: var(--apple-label);
+        font-family: var(--apple-font-family);
+        font-size: 0.9rem;
+        line-height: 1.5;
+        resize: vertical;
+        min-height: 80px;
+        max-height: 200px;
+    }
+    
+    .edit-textarea:focus {
+        outline: none;
+        border-color: var(--apple-blue);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
+    }
+    
+    .edit-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+    }
+    
+    .btn-edit-action {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        color: var(--apple-label);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.85rem;
+    }
+    
+    .btn-edit-save {
+        background: rgba(48, 209, 88, 0.8);
+        border-color: rgba(48, 209, 88, 0.3);
+        color: white;
+    }
+    
+    .btn-edit-save:hover:not(:disabled) {
+        background: rgba(48, 209, 88, 0.9);
+        transform: translateY(-1px);
+    }
+    
+    .btn-edit-save:disabled {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+        color: var(--apple-label-secondary);
+        cursor: not-allowed;
+    }
+    
+    .btn-edit-cancel:hover {
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Modal personalizado para confirmación de eliminación */
+    .delete-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1001;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    
+    .delete-modal.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .delete-modal-content {
+        background: rgba(28, 28, 30, 0.95);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 20px;
+        padding: 2rem;
+        width: 90%;
+        max-width: 400px;
+        text-align: center;
+        box-shadow: 
+            0 20px 60px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transform: scale(0.9) translateY(20px);
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    
+    .delete-modal.active .delete-modal-content {
+        transform: scale(1) translateY(0);
+    }
+    
+    .delete-modal-icon {
+        margin-bottom: 1rem;
+        color: var(--apple-red);
+    }
+    
+    .delete-modal-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--apple-label);
+        margin: 0 0 0.5rem 0;
+    }
+    
+    .delete-modal-message {
+        color: var(--apple-label-secondary);
+        margin: 0 0 2rem 0;
+        line-height: 1.5;
+    }
+    
+    .delete-modal-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+    
+    .btn-delete-confirm {
+        background: var(--apple-red);
+        border: 1px solid var(--apple-red);
+        border-radius: 10px;
+        padding: 0.75rem 1.5rem;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-delete-confirm:hover {
+        background: #d70015;
+        transform: translateY(-1px);
+    }
+    
+    .btn-delete-cancel {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        padding: 0.75rem 1.5rem;
+        color: var(--apple-label);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-delete-cancel:hover {
+        background: rgba(255, 255, 255, 0.15);
+    }
 </style>
 
 <div class="proyecto-container">
@@ -752,6 +920,23 @@
                         </svg>
                         <h3>¡Sé el primero en comentar!</h3>
                         <p>Comparte actualizaciones, archivos o menciona a tus compañeros de equipo.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal de confirmación para eliminar comentario -->
+            <div class="delete-modal" id="deleteModal">
+                <div class="delete-modal-content">
+                    <div class="delete-modal-icon">
+                        <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                        </svg>
+                    </div>
+                    <h3 class="delete-modal-title">Eliminar comentario</h3>
+                    <p class="delete-modal-message">¿Estás seguro de que quieres eliminar este comentario? Esta acción no se puede deshacer.</p>
+                    <div class="delete-modal-actions">
+                        <button class="btn-delete-cancel" onclick="cerrarModalEliminar()">Cancelar</button>
+                        <button class="btn-delete-confirm" id="btnConfirmDelete">Eliminar</button>
                     </div>
                 </div>
             </div>
@@ -1173,12 +1358,40 @@ function editarComentario(comentarioId) {
     console.log('Editar comentario:', comentarioId);
 }
 
+// Variables para eliminación
+let comentarioAEliminar = null;
+
 // Eliminar comentario
-async function eliminarComentario(comentarioId) {
-    if (!confirm('¿Estás seguro de eliminar este comentario?')) return;
+function eliminarComentario(comentarioId) {
+    comentarioAEliminar = comentarioId;
+    const modal = document.getElementById('deleteModal');
+    modal.classList.add('active');
+    
+    // Configurar botón de confirmación
+    const btnConfirm = document.getElementById('btnConfirmDelete');
+    btnConfirm.onclick = confirmarEliminacion;
+}
+
+// Cerrar modal de eliminación
+function cerrarModalEliminar() {
+    const modal = document.getElementById('deleteModal');
+    modal.classList.remove('active');
+    comentarioAEliminar = null;
+}
+
+// Confirmar eliminación
+async function confirmarEliminacion() {
+    if (!comentarioAEliminar) return;
+    
+    const btnConfirm = document.getElementById('btnConfirmDelete');
+    const originalText = btnConfirm.textContent;
+    
+    // Mostrar loading
+    btnConfirm.disabled = true;
+    btnConfirm.textContent = 'Eliminando...';
     
     try {
-        const response = await fetch(`/app/api/comentario-proyecto/${comentarioId}/eliminar/`, {
+        const response = await fetch(`/app/api/comentario-proyecto/${comentarioAEliminar}/eliminar/`, {
             method: 'POST',
             headers: {
                 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken')
@@ -1188,16 +1401,43 @@ async function eliminarComentario(comentarioId) {
         const data = await response.json();
         
         if (data.success) {
+            cerrarModalEliminar();
             cargarComentarios(); // Recargar comentarios
         } else {
-            alert('Error eliminando comentario');
+            alert('Error eliminando comentario: ' + (data.error || 'Error desconocido'));
         }
         
     } catch (error) {
         console.error('Error eliminando comentario:', error);
-        alert('Error de conexión');
+        alert('Error de conexión. Intenta nuevamente.');
+    } finally {
+        btnConfirm.disabled = false;
+        btnConfirm.textContent = originalText;
     }
 }
+
+// Cerrar modal al hacer clic fuera
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('deleteModal');
+    if (e.target === modal) {
+        cerrarModalEliminar();
+    }
+});
+
+// Cerrar modal con tecla Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('deleteModal');
+        if (modal.classList.contains('active')) {
+            cerrarModalEliminar();
+        }
+        
+        // También cancelar edición si está activa
+        if (comentarioEnEdicion) {
+            cancelarEdicion();
+        }
+    }
+});
 
 // Mostrar sugerencias de usuarios (placeholder)
 function mostrarSugerenciasUsuarios(input) {
