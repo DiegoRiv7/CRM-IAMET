@@ -855,19 +855,67 @@
 
     /* Enhanced Modal Styles for Liquid Glass */
     .modal-overlay {
-        background: rgba(0, 0, 0, 0.7); /* Darker overlay */
-        backdrop-filter: blur(20px); /* More blur */
-        -webkit-backdrop-filter: blur(20px);
+        background: rgba(0, 0, 0, 0.75); /* Even darker overlay */
+        backdrop-filter: blur(25px); /* More blur */
+        -webkit-backdrop-filter: blur(25px);
     }
 
     .modal-content {
-        background: rgba(28, 28, 30, 0.9); /* Slightly more opaque */
-        backdrop-filter: blur(40px); /* Even more blur for content */
-        -webkit-backdrop-filter: blur(40px);
-        border: 1px solid rgba(255, 255, 255, 0.2); /* Stronger border */
+        background: rgba(28, 28, 30, 0.95); /* More opaque */
+        backdrop-filter: blur(50px); /* Even more blur for content */
+        -webkit-backdrop-filter: blur(50px);
+        border: 1px solid rgba(255, 255, 255, 0.3); /* Stronger border */
         box-shadow: 
-            0 25px 50px rgba(0, 0, 0, 0.5),
-            inset 0 1px 0 rgba(255, 255, 255, 0.15); /* More pronounced shadow */
+            0 30px 60px rgba(0, 0, 0, 0.6),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2); /* More pronounced shadow */
+        transform: scale(0.95) translateY(10px); /* Slightly less initial transform */
+    }
+    .modal-overlay.active .modal-content {
+        transform: scale(1) translateY(0);
+    }
+
+    .form-input, .form-select {
+        background: rgba(255, 255, 255, 0.08); /* Lighter background for inputs */
+        border: 1px solid rgba(255, 255, 255, 0.3); /* Stronger border for inputs */
+        color: var(--apple-label);
+    }
+
+    .form-input:focus, .form-select:focus {
+        border-color: var(--apple-blue);
+        box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.3); /* More prominent focus ring */
+    }
+
+    .form-select[multiple] {
+        min-height: 120px;
+        background-image: none; /* Remove default arrow for multiple select */
+    }
+
+    /* Ensure buttons also have a consistent look */
+    .btn-enviar {
+        background: var(--apple-blue) !important;
+        border-color: var(--apple-blue) !important;
+        color: white !important;
+        font-weight: 600;
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+    }
+    .btn-enviar:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
+    }
+    .btn-cancelar {
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        color: var(--apple-label);
+        font-weight: 500;
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+    }
+    .btn-cancelar:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-1px);
     }
 
     /* Search Widget */
