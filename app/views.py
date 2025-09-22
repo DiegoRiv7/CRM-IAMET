@@ -297,8 +297,55 @@ def api_proyectos(request):
     per_page = int(request.GET.get('per_page', 30))
     search = request.GET.get('search', '').strip()
     
-    # Datos de ejemplo más completos con información real
-    usuario_actual_id = request.user.id
+    # Obtener proyectos reales de la base de datos
+    try:
+        proyectos_query = Proyecto.objects.all()
+        
+        # Filtrar por búsqueda si hay término
+        if search:
+            proyectos_query = proyectos_query.filter(
+                Q(nombre__icontains=search) | 
+                Q(descripcion__icontains=search)
+            )
+        
+        # Aplicar paginación
+        from django.core.paginator import Paginator
+        paginator = Paginator(proyectos_query, per_page)
+        proyectos_pagina = paginator.get_page(page)
+        
+        # Convertir a formato JSON
+        proyectos_data = []
+        for proyecto in proyectos_pagina:
+            proyectos_data.append({
+                'id': proyecto.id,
+                'nombre': proyecto.nombre,
+                'descripcion': proyecto.descripcion or '',
+                'avance': proyecto.get_avance_porcentaje(),
+                'fecha_creacion': proyecto.fecha_creacion.strftime('%d de %b, %Y'),
+                'creador': {
+                    'id': proyecto.creado_por.id,
+                    'nombre': proyecto.creado_por.get_full_name() or proyecto.creado_por.username,
+                    'iniciales': ''.join([palabra[0].upper() for palabra in (proyecto.creado_por.get_full_name() or proyecto.creado_por.username).split()[:2]])
+                },
+                'miembros': proyecto.get_miembros_display(),
+                'privacidad': proyecto.privacidad,
+                'tipo': proyecto.tipo,
+                'mi_rol': proyecto.get_rol_usuario(request.user)
+            })
+
+        return JsonResponse({
+            'success': True,
+            'proyectos': proyectos_data,
+            'total': paginator.count,
+            'page': page,
+            'per_page': per_page,
+            'total_pages': paginator.num_pages
+        })
+        
+    except Exception as e:
+        print(f"Error obteniendo proyectos: {e}")
+        # Fallback a datos de ejemplo si hay error
+        usuario_actual_id = request.user.id
     
     proyectos_ejemplo = [
         {
