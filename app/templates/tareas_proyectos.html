@@ -3,14 +3,21 @@
 
 {% block content %}
 <style>
-    /* Override base.html container styles for a full-width page */
+    /* This page intentionally overrides the base container for a full-width layout */
     .main-content.container {
         max-width: none !important;
         margin: 0 !important;
         padding: 0 !important;
     }
 
-    /* Apple-inspired design para tareas y proyectos */
+    /* Centered, proportional content block */
+    .content-block {
+        width: 95%;
+        max-width: 1600px;
+        margin: 2rem auto; /* Vertical spacing and horizontal centering */
+    }
+
+    /* Apple-inspired design */
     :root {
         --apple-background-secondary: rgba(255, 255, 255, 0.05);
         --apple-separator: rgba(255, 255, 255, 0.15);
@@ -25,19 +32,29 @@
     }
 
     .tareas-container {
-        padding: 0; /* REMOVED PADDING TO ELIMINATE FRAMES */
+        padding: 0;
         background: #000;
         min-height: 100vh;
         font-family: var(--apple-font-family);
     }
 
-    /* iPadOS Header */
+    /* Header and table are now inside .content-block */
     .ipados-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 2.5rem;
-        padding: 2rem 2rem 0 2rem; /* Added top padding */
+        margin-bottom: 2rem;
+        padding: 0;
+    }
+
+    .projects-table-container {
+        background: rgba(28, 28, 30, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 16px;
+        border: 1px solid var(--apple-separator);
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.25);
     }
 
     .page-title {
@@ -69,18 +86,19 @@
         z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
     .search-icon-container:hover { background: rgba(255, 255, 255, 0.15); transform: scale(1.05); }
+    
     .search-input {
         position: absolute;
-        right: 22px; /* Center of the icon */
+        right: 22px;
         width: 0;
         height: 44px;
-        padding: 0; /* No padding when collapsed */
+        padding: 0;
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(15px);
         -webkit-backdrop-filter: blur(15px);
         border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 22px;
-        color: transparent; /* Hide text when collapsed */
+        color: transparent;
         font-size: 1rem;
         opacity: 0;
         transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -89,25 +107,25 @@
     }
     .search-input::placeholder {
         color: transparent;
-        transition: color 0.2s ease 0.2s; /* Delay transition */
+        transition: color 0.2s ease 0.2s;
     }
 
     .search-widget-container.expanded .search-input {
         width: 280px;
         opacity: 1;
         pointer-events: auto;
-        padding: 0 20px; /* REMOVED left padding */
-        color: var(--apple-label); /* Show text on expand */
+        padding: 0 20px;
+        color: var(--apple-label);
     }
     .search-widget-container.expanded .search-input::placeholder {
         color: var(--apple-label-secondary);
     }
 
     .search-widget-container.expanded .search-icon-container {
-        transform: translateX(-280px); /* Move icon further left */
+        transform: translateX(-290px); /* Final user adjustment */
     }
 
-    /* Create Button */
+    /* Header Buttons */
     .create-btn {
         background: var(--apple-blue); color: white; border: none; border-radius: 22px;
         padding: 0 24px; height: 44px; font-weight: 600; font-size: 1rem;
@@ -125,22 +143,10 @@
     }
     .tab-option.active { background: rgba(255, 255, 255, 0.9); color: #000; font-weight: 600; }
 
-    /* Resized Floating Table */
-    .projects-table-container {
-        background: rgba(28, 28, 30, 0.7);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-radius: 16px; /* Restored rounded corners */
-        border: 1px solid var(--apple-separator);
-        overflow: hidden;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-        max-width: 1400px; /* Limit table width */
-        margin: 0 auto; /* Center the table */
-    }
+    /* Table Styles */
     .table-header { border-bottom: 1px solid var(--apple-separator); }
     .table-row {
         display: grid;
-        /* Adjusted column widths */
         grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
         align-items: center;
         border-bottom: 1px solid var(--apple-separator);
@@ -168,7 +174,7 @@
         display: flex; align-items: center; justify-content: center;
         color: white; font-size: 0.85rem; font-weight: 600;
         margin-left: -12px; /* Overlap */
-        border: 2px solid #2a2a2e; /* Slightly lighter than container for pop */
+        border: 2px solid #2a2a2e;
         box-shadow: 0 1px 2px rgba(0,0,0,0.3);
     }
     .member-avatar:first-child { margin-left: 0; }
@@ -199,43 +205,45 @@
 </style>
 
 <div class="tareas-container">
-    <div class="ipados-header">
-        <h1 class="page-title">Tareas y Proyectos</h1>
-        <div class="header-controls">
-            <div class="search-widget-container" id="search-widget">
-                <input type="text" id="search-proyectos" placeholder="Buscar proyecto..." class="search-input">
-                <div class="search-icon-container" id="search-icon">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+    <div class="content-block">
+        <div class="ipados-header">
+            <h1 class="page-title">Tareas y Proyectos</h1>
+            <div class="header-controls">
+                <div class="search-widget-container" id="search-widget">
+                    <input type="text" id="search-proyectos" placeholder="Buscar proyecto..." class="search-input">
+                    <div class="search-icon-container" id="search-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                </div>
+                <button class="create-btn" onclick="abrirModalCrearProyecto()">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M12 5v14m-7-7h14"/></svg>
+                    Crear
+                </button>
+                <div class="tab-selector">
+                    <button class="tab-option active" data-tab="proyectos">📁 Proyectos</button>
+                    <button class="tab-option" data-tab="tareas">✅ Tareas</button>
                 </div>
             </div>
-            <button class="create-btn" onclick="abrirModalCrearProyecto()">
-                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M12 5v14m-7-7h14"/></svg>
-                Crear
-            </button>
-            <div class="tab-selector">
-                <button class="tab-option active" data-tab="proyectos">📁 Proyectos</button>
-                <button class="tab-option" data-tab="tareas">✅ Tareas</button>
-            </div>
         </div>
-    </div>
 
-    <div class="tab-content active" id="proyectos-content">
-        <div class="projects-table-container" id="table-view">
-            <div class="table-header">
-                <div class="table-row header-row">
-                    <div class="table-cell">Nombre del Proyecto</div>
-                    <div class="table-cell">Miembros</div>
-                    <div class="table-cell">Fecha de Creación</div>
-                    <div class="table-cell">Avance</div>
-                    <div class="table-cell">Tu Rol</div>
-                    <div class="table-cell">Privacidad</div>
+        <div class="tab-content active" id="proyectos-content">
+            <div class="projects-table-container" id="table-view">
+                <div class="table-header">
+                    <div class="table-row header-row">
+                        <div class="table-cell">Nombre del Proyecto</div>
+                        <div class="table-cell">Miembros</div>
+                        <div class="table-cell">Fecha de Creación</div>
+                        <div class="table-cell">Avance</div>
+                        <div class="table-cell">Tu Rol</div>
+                        <div class="table-cell">Privacidad</div>
+                    </div>
                 </div>
+                <div class="table-body" id="projects-table-body"></div>
             </div>
-            <div class="table-body" id="projects-table-body"></div>
         </div>
-    </div>
 
-    <div class="tab-content" id="tareas-content"></div>
+        <div class="tab-content" id="tareas-content"></div>
+    </div>
 </div>
 
 <script>
