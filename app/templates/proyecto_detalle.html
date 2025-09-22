@@ -1215,14 +1215,107 @@
                 </div>
             </div>
 
+            <!-- Modal para Crear Tarea -->
+            <div class="modal-overlay" id="createTaskModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Crear Nueva Tarea</h3>
+                        <button class="modal-close" onclick="closeCreateTaskModal()">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <form id="createTaskForm">
+                        <div class="form-group">
+                            <label for="taskTitle" class="form-label">Título de la Tarea</label>
+                            <input type="text" id="taskTitle" name="taskTitle" class="form-input" placeholder="Ej: Implementar funcionalidad X" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="taskDescription" class="form-label">Descripción</label>
+                            <textarea id="taskDescription" name="taskDescription" class="form-input" placeholder="Detalles de la tarea..." rows="4"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="taskResponsible" class="form-label">Responsable</label>
+                            <select id="taskResponsible" name="taskResponsible" class="form-select">
+                                <!-- Opciones de usuarios se cargarán aquí -->
+                                <option value="">Seleccionar responsable</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="taskParticipants" class="form-label">Participantes</label>
+                            <select id="taskParticipants" name="taskParticipants" class="form-select" multiple>
+                                <!-- Opciones de usuarios se cargarán aquí -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="taskObservers" class="form-label">Observadores</label>
+                            <select id="taskObservers" name="taskObservers" class="form-select" multiple>
+                                <!-- Opciones de usuarios se cargarán aquí -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="taskDueDate" class="form-label">Fecha Límite</label>
+                            <input type="datetime-local" id="taskDueDate" name="taskDueDate" class="form-input" required>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn-cancelar" onclick="closeCreateTaskModal()">Cancelar</button>
+                            <button type="submit" class="btn-enviar" style="background: var(--apple-blue); border-color: rgba(10, 132, 255, 0.3);">Crear Tarea</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Modal para Crear Carpeta -->
+            <div class="modal-overlay" id="createFolderModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Crear Nueva Carpeta</h3>
+                        <button class="modal-close" onclick="closeCreateFolderModal()">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <form id="createFolderForm">
+                        <div class="form-group">
+                            <label for="folderName" class="form-label">Nombre de la Carpeta</label>
+                            <input type="text" id="folderName" name="folderName" class="form-input" placeholder="Ej: Documentos del Proyecto" required>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn-cancelar" onclick="closeCreateFolderModal()">Cancelar</button>
+                            <button type="submit" class="btn-enviar" style="background: var(--apple-blue); border-color: rgba(10, 132, 255, 0.3);">Crear Carpeta</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <!-- Carpetas Tab -->
             <div class="tab-content" id="carpetas-content">
-                <div class="empty-state">
-                    <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1">
-                        <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-                    </svg>
-                    <h3>Carpetas y Archivos</h3>
-                    <p>Organiza y almacena los documentos del proyecto.</p>
+                <div class="folders-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <button class="btn-nuevo-comentario" id="btnCrearCarpeta" style="background: var(--apple-blue); border-color: rgba(10, 132, 255, 0.3);">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Crear Carpeta
+                    </button>
+                    <div class="search-widget-container" id="search-widget-carpetas">
+                        <input type="text" id="searchCarpetas" placeholder="Buscar carpetas..." class="search-input" value="">
+                        <div class="search-icon-container" id="search-icon-carpetas">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="folders-container" id="foldersContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); min-height: 200px;">
+                    <!-- Las carpetas se cargarán aquí dinámicamente -->
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1">
+                            <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                        </svg>
+                        <h3>No hay carpetas creadas.</h3>
+                        <p>Crea tu primera carpeta para organizar los archivos del proyecto.</p>
+                    </div>
                 </div>
             </div>
 
