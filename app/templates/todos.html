@@ -316,28 +316,35 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchWidget = document.getElementById('search-widget');
     const searchIcon = document.getElementById('search-icon');
     const searchInput = document.getElementById('searchOportunidad');
-    let searchTimeout;
 
     if (searchIcon && searchWidget && searchInput) {
         searchIcon.addEventListener('click', (e) => {
             e.stopPropagation();
-            searchWidget.classList.toggle('expanded');
-            if (searchWidget.classList.contains('expanded')) {
+            const isExpanded = searchWidget.classList.contains('expanded');
+
+            if (isExpanded) {
+                searchWidget.classList.remove('expanded');
+            } else {
+                searchWidget.classList.add('expanded');
                 searchInput.focus();
+                // Move cursor to the end of the text
+                const end = searchInput.value.length;
+                searchInput.setSelectionRange(end, end);
             }
         });
 
-        // IMPORTANT: Search on Enter key press, not on input
+        // Search on Enter key press
         searchInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
-                e.preventDefault(); // Stop default form submission
+                e.preventDefault();
                 const searchValue = this.value.trim();
                 const url = new URL(window.location);
                 
                 if (searchValue === '') {
                     url.searchParams.delete('search');
                     url.searchParams.delete('page');
-                } else {
+                }
+                else {
                     url.searchParams.set('search', searchValue);
                     url.searchParams.delete('page');
                 }
@@ -346,7 +353,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-
+    // Close on outside click ONLY if input is empty
+    document.addEventListener('click', (e) => {
+        if (searchWidget && !searchWidget.contains(e.target) && searchInput.value.trim() === '') {
+            searchWidget.classList.remove('expanded');
+        }
+    });
 });
 </script>
 {% endblock %}

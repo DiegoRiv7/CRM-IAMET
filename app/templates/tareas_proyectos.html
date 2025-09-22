@@ -190,17 +190,20 @@
         font-size: 0.95rem;
         cursor: pointer;
         border-radius: 19px;
-        transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+        transition: color 0.3s ease, font-weight 0.3s ease;
         z-index: 2;
         position: relative;
         flex: 1;
         display: flex;
         align-items: center;
         justify-content: center;
+        will-change: color;
     }
     .tab-option.active {
         color: var(--apple-label);
         font-weight: 600;
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+        animation: lightGlow 0.4s ease-out;
     }
     .tab-option:not(.active) {
         color: rgba(255, 255, 255, 0.6);
@@ -208,6 +211,18 @@
     }
     .tab-option:not(.active):hover {
         color: rgba(255, 255, 255, 0.8);
+    }
+    
+    @keyframes lightGlow {
+        0% {
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+        }
+        50% {
+            text-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
+        }
+        100% {
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+        }
     }
 
     .tab-slider {
@@ -224,12 +239,15 @@
         box-shadow: 
             0 2px 8px rgba(0, 0, 0, 0.1),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
         z-index: 1;
         opacity: 0.8;
+        will-change: transform;
+        backface-visibility: hidden;
+        transform: translateZ(0);
     }
     .tab-selector[data-active="tareas"] .tab-slider {
-        transform: translateX(calc(100% + 3px));
+        transform: translateX(calc(100% + 3px)) translateZ(0);
     }
 
     /* Table Styles */
@@ -541,8 +559,8 @@
                 </button>
                 <div class="tab-selector" data-active="proyectos">
                     <div class="tab-slider"></div>
-                    <button class="tab-option active" data-tab="proyectos">📁 Proyectos</button>
-                    <button class="tab-option" data-tab="tareas">✅ Tareas</button>
+                    <button class="tab-option active" data-tab="proyectos">Proyectos</button>
+                    <button class="tab-option" data-tab="tareas">Tareas</button>
                 </div>
             </div>
         </div>
