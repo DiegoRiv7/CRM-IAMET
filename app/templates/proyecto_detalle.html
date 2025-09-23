@@ -219,21 +219,24 @@
     }
 
     .modal-content {
-        background: rgba(28, 28, 30, 0.85);
-        backdrop-filter: blur(30px);
-        -webkit-backdrop-filter: blur(30px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 20px;
-        padding: 2rem;
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(40px) saturate(1.8);
+        -webkit-backdrop-filter: blur(40px) saturate(1.8);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 24px;
+        padding: 2.5rem;
         width: 90%;
-        max-width: 500px;
+        max-width: 520px;
         max-height: 90vh;
         overflow-y: auto;
+        position: relative;
         box-shadow: 
-            0 20px 60px rgba(0, 0, 0, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        transform: scale(0.9) translateY(20px);
-        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            0 25px 80px rgba(0, 0, 0, 0.25),
+            0 8px 32px rgba(0, 0, 0, 0.12),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15),
+            inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+        transform: scale(0.92) translateY(30px);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
     .modal-overlay.active .modal-content {
         transform: scale(1) translateY(0);
@@ -243,16 +246,31 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 2rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        position: relative;
+    }
+    .modal-header::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     }
 
     .modal-title {
-        font-size: 1.5rem;
-        font-weight: 700;
+        font-size: 1.6rem;
+        font-weight: 600;
         color: var(--apple-label);
         margin: 0;
+        letter-spacing: -0.01em;
+        background: linear-gradient(135deg, var(--apple-label), rgba(255, 255, 255, 0.8));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
 
     .modal-close {
@@ -477,17 +495,26 @@
 
     /* Feed Items */
     .feed-item {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 1.25rem;
-        margin-bottom: 1rem;
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
         position: relative;
-        transition: all 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.12),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
     .feed-item:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 
+            0 12px 40px rgba(0, 0, 0, 0.18),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15);
     }
 
     .feed-item-header {
@@ -808,15 +835,18 @@
 
     /* Form Styles */
     .form-group {
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem;
+        position: relative;
     }
 
     .form-label {
         display: block;
-        color: var(--apple-label-secondary);
-        margin-bottom: 0.5rem;
-        font-size: 0.9rem;
+        color: var(--apple-label);
+        margin-bottom: 0.75rem;
+        font-size: 0.95rem;
         font-weight: 500;
+        letter-spacing: -0.005em;
+        opacity: 0.9;
     }
 
     .form-input, .form-select {
@@ -839,7 +869,9 @@
 
     textarea.form-input {
         resize: vertical;
-        min-height: 80px;
+        min-height: 100px;
+        font-family: inherit;
+        line-height: 1.5;
     }
 
     .form-select[multiple] {
@@ -850,7 +882,19 @@
         display: flex;
         justify-content: flex-end;
         gap: 1rem;
-        margin-top: 1.5rem;
+        margin-top: 2.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        position: relative;
+    }
+    .form-actions::before {
+        content: '';
+        position: absolute;
+        top: -1px;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     }
 
     /* Enhanced Modal Styles for Liquid Glass */
@@ -875,14 +919,30 @@
     }
 
     .form-input, .form-select {
-        background: rgba(255, 255, 255, 0.08); /* Lighter background for inputs */
-        border: 1px solid rgba(255, 255, 255, 0.3); /* Stronger border for inputs */
+        width: 100%;
+        padding: 1rem 1.25rem;
+        border-radius: 12px;
+        border: 1.5px solid rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.08);
         color: var(--apple-label);
+        font-size: 1rem;
+        font-weight: 400;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        box-sizing: border-box;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        position: relative;
     }
 
     .form-input:focus, .form-select:focus {
+        outline: none;
         border-color: var(--apple-blue);
-        box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.3); /* More prominent focus ring */
+        background: rgba(255, 255, 255, 0.12);
+        box-shadow: 
+            0 0 0 4px rgba(10, 132, 255, 0.15),
+            0 8px 25px rgba(10, 132, 255, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transform: translateY(-1px);
     }
 
     .form-select[multiple] {
@@ -892,30 +952,95 @@
 
     /* Ensure buttons also have a consistent look */
     .btn-enviar {
-        background: var(--apple-blue) !important;
-        border-color: var(--apple-blue) !important;
+        background: linear-gradient(135deg, var(--apple-blue), #4A90E2) !important;
+        border: 1.5px solid rgba(10, 132, 255, 0.3) !important;
         color: white !important;
         font-weight: 600;
-        padding: 0.75rem 1.5rem;
-        border-radius: 10px;
-        transition: all 0.2s ease;
+        padding: 0.875rem 1.75rem;
+        border-radius: 12px;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        box-shadow: 
+            0 4px 20px rgba(10, 132, 255, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        position: relative;
+        overflow: hidden;
     }
     .btn-enviar:hover {
-        filter: brightness(1.1);
+        background: linear-gradient(135deg, #4A90E2, var(--apple-blue)) !important;
         transform: translateY(-1px);
+        box-shadow: 
+            0 8px 30px rgba(10, 132, 255, 0.35),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
     }
     .btn-cancelar {
-        background: rgba(255, 255, 255, 0.15);
-        border: 1px solid rgba(255, 255, 255, 0.25);
-        color: var(--apple-label);
+        background: rgba(255, 255, 255, 0.08);
+        border: 1.5px solid rgba(255, 255, 255, 0.15);
+        color: var(--apple-label-secondary);
         font-weight: 500;
-        padding: 0.75rem 1.5rem;
-        border-radius: 10px;
-        transition: all 0.2s ease;
+        padding: 0.875rem 1.75rem;
+        border-radius: 12px;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        cursor: pointer;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        position: relative;
     }
     .btn-cancelar:hover {
-        background: rgba(255, 255, 255, 0.25);
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.25);
+        color: var(--apple-label);
         transform: translateY(-1px);
+    }
+
+    /* Widget-like enhancements for Apple-style UX */
+    .form-input::placeholder, .form-select option[value=""] {
+        color: var(--apple-label-tertiary);
+        font-style: italic;
+        opacity: 0.7;
+    }
+    
+    .form-group:focus-within .form-label {
+        color: var(--apple-blue);
+        opacity: 1;
+        transform: translateY(-1px);
+        transition: all 0.2s ease;
+    }
+    
+    .form-input:not(:placeholder-shown) + .form-label,
+    .form-select:valid + .form-label {
+        color: var(--apple-label);
+        opacity: 1;
+    }
+    
+    /* Subtle animation for modal entrance */
+    .modal-overlay.active {
+        animation: modalFadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    @keyframes modalFadeIn {
+        0% {
+            opacity: 0;
+            backdrop-filter: blur(0px);
+        }
+        100% {
+            opacity: 1;
+            backdrop-filter: blur(20px);
+        }
+    }
+    
+    /* Enhanced select styling for better widget feel */
+    .form-select {
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 1.2rem;
+        padding-right: 3rem;
+    }
+    
+    .form-select:focus {
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230a84ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
     }
 
     /* Search Widget */
@@ -1161,57 +1286,6 @@
                         <button class="btn-delete-cancel" onclick="cerrarModalEliminar()">Cancelar</button>
                         <button class="btn-delete-confirm" id="btnConfirmDelete">Eliminar</button>
                     </div>
-                </div>
-            </div>
-
-            <!-- Modal para Crear Tarea -->
-            <div class="modal-overlay" id="createTaskModal">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3 class="modal-title">Crear Nueva Tarea</h3>
-                        <button class="modal-close" onclick="closeCreateTaskModal()">
-                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <form id="createTaskForm">
-                        <div class="form-group">
-                            <label for="taskTitle" class="form-label">Título de la Tarea</label>
-                            <input type="text" id="taskTitle" name="taskTitle" class="form-input" placeholder="Ej: Implementar funcionalidad X" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="taskDescription" class="form-label">Descripción</label>
-                            <textarea id="taskDescription" name="taskDescription" class="form-input" placeholder="Detalles de la tarea..." rows="4"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="taskResponsible" class="form-label">Responsable</label>
-                            <select id="taskResponsible" name="taskResponsible" class="form-select">
-                                <!-- Opciones de usuarios se cargarán aquí -->
-                                <option value="">Seleccionar responsable</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="taskParticipants" class="form-label">Participantes</label>
-                            <select id="taskParticipants" name="taskParticipants" class="form-select" multiple>
-                                <!-- Opciones de usuarios se cargarán aquí -->
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="taskObservers" class="form-label">Observadores</label>
-                            <select id="taskObservers" name="taskObservers" class="form-select" multiple>
-                                <!-- Opciones de usuarios se cargarán aquí -->
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="taskDueDate" class="form-label">Fecha Límite</label>
-                            <input type="datetime-local" id="taskDueDate" name="taskDueDate" class="form-input" required>
-                        </div>
-                        <div class="form-actions">
-                            <button type="button" class="btn-cancelar" onclick="closeCreateTaskModal()">Cancelar</button>
-                            <button type="submit" class="btn-enviar" style="background: var(--apple-blue); border-color: rgba(10, 132, 255, 0.3);">Crear Tarea</button>
-                        </div>
-                    </form>
                 </div>
             </div>
 
