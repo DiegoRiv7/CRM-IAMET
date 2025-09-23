@@ -2331,6 +2331,7 @@
 <script>
 // Variables globales
 const PROYECTO_ID = {{ proyecto.id }};
+const PROYECTO_NOMBRE = "{{ proyecto.nombre|escapejs }}";
 const CURRENT_USER_ID = {{ user.id }};
 let attachedFiles = [];
 let isSubmitting = false;
@@ -3362,16 +3363,18 @@ function switchAssignmentTab(tabName) {
 function resetPowerTaskForm() {
     // Limpiar título
     const titleInput = document.getElementById('taskTitle');
-    titleInput.value = '';
+    if (titleInput) titleInput.value = '';
     
     // Limpiar editor
     const editor = document.querySelector('.task-rich-editor');
-    editor.innerHTML = '';
+    if (editor) editor.innerHTML = '';
     
     // Limpiar input de fecha
     const dateInput = document.getElementById('taskDueDate');
-    dateInput.value = '';
-    dateInput.removeAttribute('data-datetime');
+    if (dateInput) {
+        dateInput.value = '';
+        dateInput.removeAttribute('data-datetime');
+    }
     
     // Limpiar checkboxes
     document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
@@ -3601,15 +3604,12 @@ async function submitPowerTaskForm() {
     const originalText = submitBtn.textContent;
     
     // Validar datos básicos
-    if (!taskData.title || taskData.title === 'Nueva tarea') {
+    if (!taskData.title || taskData.title === 'Nueva tarea' || taskData.title.trim() === '') {
         alert('Por favor ingresa un título para la tarea');
         return;
     }
     
-    if (!taskData.content.trim()) {
-        alert('Por favor agrega una descripción para la tarea');
-        return;
-    }
+    // La descripción es opcional si hay título
     
     // Mostrar estado de carga
     submitBtn.textContent = 'Creando tarea...';
@@ -3621,7 +3621,8 @@ async function submitPowerTaskForm() {
         const formData = new FormData();
         formData.append('titulo', taskData.title);
         formData.append('descripcion', taskData.content);
-        formData.append('proyecto_id', {{ proyecto.id }});
+        formData.append('proyecto_id', PROYECTO_ID);
+        formData.append('proyecto_nombre', PROYECTO_NOMBRE);
         
         if (taskData.responsible) {
             formData.append('responsable_id', taskData.responsible);
@@ -3639,6 +3640,8 @@ async function submitPowerTaskForm() {
         formData.append('participantes', JSON.stringify(taskData.participants));
         formData.append('observadores', JSON.stringify(taskData.observers));
         formData.append('opciones', JSON.stringify(taskData.options));
+        formData.append('enviar_notificaciones', true); // Siempre enviar notificaciones
+        formData.append('fecha_creacion', new Date().toISOString());
         
         // Agregar CSRF token
         formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
@@ -3662,10 +3665,8 @@ async function submitPowerTaskForm() {
                 // Mostrar notificación de éxito
                 showSuccessNotification(`Tarea "${taskData.title}" creada exitosamente`);
                 
-                // Recargar la lista de tareas si existe
-                if (typeof cargarTareas === 'function') {
-                    cargarTareas();
-                }
+                // Recargar la lista de tareas
+                cargarTareasDelProyecto();
             }, 1000);
             
         } else {
@@ -3721,6 +3722,7 @@ function collectPowerTaskData() {
     const dueDateInput = document.getElementById('taskDueDate');
     const highPriorityCheckbox = document.getElementById('highPriority');
     
+    
     // Recopilar usuarios seleccionados
     const responsible = Array.from(document.querySelectorAll('#selectedResponsible .user-pill')).map(pill => 
         parseInt(pill.getAttribute('data-user-id'))
@@ -3742,13 +3744,13 @@ function collectPowerTaskData() {
     };
     
     return {
-        title: titleInput.value.trim() || 'Nueva tarea',
-        content: editor.innerHTML || '',
+        title: titleInput ? titleInput.value.trim() || 'Nueva tarea' : 'Nueva tarea',
+        content: editor ? editor.innerHTML || '' : '',
         responsible: responsible,
         participants: participants,
         observers: observers,
-        dueDate: dueDateInput.getAttribute('data-datetime') || dueDateInput.value,
-        highPriority: highPriorityCheckbox.checked,
+        dueDate: dueDateInput ? (dueDateInput.getAttribute('data-datetime') || dueDateInput.value) : '',
+        highPriority: highPriorityCheckbox ? highPriorityCheckbox.checked : false,
         options: options
     };
 }
@@ -3809,12 +3811,89 @@ async function populateUserDropdowns() {
     }
 }
 
+// Función para cargar tareas del proyecto
+async function cargarTareasDelProyecto() {
+    try {
+        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/tareas/`);
+        const data = await response.json();
+        
+        if (data.success && data.tareas) {
+            const tbody = document.querySelector('.tasks-table tbody');
+            
+            if (data.tareas.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="padding: 2rem; text-align: center; color: var(--apple-label-secondary);">
+                            No hay tareas para este proyecto.
+                        </td>
+                    </tr>
+                `;
+            } else {
+                tbody.innerHTML = data.tareas.map(tarea => `
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); cursor: pointer;" 
+                        onclick="abrirDetallesTarea(${tarea.id})" 
+                        onmouseover="this.style.background='rgba(255, 255, 255, 0.05)'" 
+                        onmouseout="this.style.background='transparent'">
+                        <td style="padding: 1rem; color: var(--apple-label); font-weight: 500;">
+                            ${tarea.titulo}
+                            ${tarea.alta_prioridad ? '<span style="color: #ffaa00; margin-left: 0.5rem;">★</span>' : ''}
+                        </td>
+                        <td style="padding: 1rem; color: var(--apple-label-secondary);">
+                            ${formatearFecha(tarea.fecha_creacion)}
+                        </td>
+                        <td style="padding: 1rem; color: var(--apple-label-secondary);">
+                            ${tarea.fecha_limite ? formatearFecha(tarea.fecha_limite) : '-'}
+                        </td>
+                        <td style="padding: 1rem; color: var(--apple-label-secondary);">
+                            ${tarea.creado_por}
+                        </td>
+                        <td style="padding: 1rem; color: var(--apple-label-secondary);">
+                            ${tarea.responsable || '-'}
+                        </td>
+                        <td style="padding: 1rem; color: var(--apple-label-secondary);">
+                            ${PROYECTO_NOMBRE}
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Error cargando tareas:', error);
+    }
+}
+
+// Función para formatear fechas
+function formatearFecha(fechaStr) {
+    if (!fechaStr) return '-';
+    
+    const fecha = new Date(fechaStr);
+    const opciones = { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    };
+    
+    return fecha.toLocaleDateString('es-ES', opciones);
+}
+
+// Función para abrir detalles de tarea
+function abrirDetallesTarea(tareaId) {
+    // Por ahora mostrar un alert, luego implementar modal detallado
+    alert(`Abriendo detalles de tarea ID: ${tareaId}`);
+    // TODO: Implementar modal detallado similar al de proyectos
+}
+
 // Event listener para el botón Crear Tarea
 document.addEventListener('DOMContentLoaded', function() {
     const btnCrearTarea = document.getElementById('btnCrearTarea');
     if (btnCrearTarea) {
         btnCrearTarea.addEventListener('click', openCreateTaskModal);
     }
+    
+    // Cargar tareas al cargar la página
+    cargarTareasDelProyecto();
 
     // Manejar el envío del formulario de Crear Tarea
     const createTaskForm = document.getElementById('createTaskForm');
