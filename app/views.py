@@ -472,11 +472,16 @@ def api_proyectos(request):
     })
 
 
+# Variable temporal para almacenar tareas creadas durante la sesión
+# En un entorno real, esto se almacenaría en la base de datos
+tareas_temporales = []
+
 @login_required
 def api_tareas(request):
     """
     API para obtener y crear tareas
     """
+    global tareas_temporales
     if not request.user.is_superuser:
         return JsonResponse({'error': 'Sin permisos'}, status=403)
     
@@ -488,30 +493,41 @@ def api_tareas(request):
             try:
                 from .models import Proyecto
                 proyecto = Proyecto.objects.get(id=proyecto_id)
-                # Por ahora devolver datos de ejemplo hasta que tengamos el modelo migrado
-                tareas_ejemplo = [
-                    {
-                        'id': 1,
-                        'titulo': 'Diseñar interfaz de notificaciones',
-                        'descripcion': 'Crear mockups y prototipos para el sistema de notificaciones',
-                        'prioridad': 'alta',
-                        'fecha_limite': '2025-01-25',
-                        'asignado_a': 'Rivera',
-                        'proyecto': proyecto.nombre
-                    },
-                    {
-                        'id': 2,
-                        'titulo': 'Optimizar consultas SQL',
-                        'descripcion': 'Revisar y optimizar las consultas más lentas del sistema',
-                        'prioridad': 'media',
-                        'fecha_limite': '2025-02-01',
-                        'asignado_a': 'Desarrollo',
-                        'proyecto': proyecto.nombre
-                    }
+                
+                # Filtrar tareas temporales por proyecto
+                tareas_del_proyecto = [
+                    tarea for tarea in tareas_temporales 
+                    if str(tarea.get('proyecto_id')) == str(proyecto_id)
                 ]
+                
+                # Agregar datos de ejemplo solo si no hay tareas creadas
+                if not tareas_del_proyecto:
+                    tareas_del_proyecto = [
+                        {
+                            'id': 1,
+                            'titulo': 'Diseñar interfaz de notificaciones',
+                            'descripcion': 'Crear mockups y prototipos para el sistema de notificaciones',
+                            'prioridad': 'alta',
+                            'fecha_limite': '2025-01-25',
+                            'fecha_creacion': '2025-01-20',
+                            'creado_por': 'Rivera',
+                            'proyecto': proyecto.nombre
+                        },
+                        {
+                            'id': 2,
+                            'titulo': 'Optimizar consultas SQL',
+                            'descripcion': 'Revisar y optimizar las consultas más lentas del sistema',
+                            'prioridad': 'media',
+                            'fecha_limite': '2025-02-01',
+                            'fecha_creacion': '2025-01-20',
+                            'creado_por': 'Desarrollo',
+                            'proyecto': proyecto.nombre
+                        }
+                    ]
+                
                 return JsonResponse({
                     'success': True,
-                    'tareas': tareas_ejemplo
+                    'tareas': tareas_del_proyecto
                 })
             except:
                 return JsonResponse({'error': 'Proyecto no encontrado'}, status=404)
@@ -579,18 +595,24 @@ def api_tareas(request):
             except Proyecto.DoesNotExist:
                 return JsonResponse({'error': 'Proyecto no encontrado'}, status=404)
             
-            # Por ahora, simular la creación de la tarea
+            # Crear la tarea y agregarla a la lista temporal
+            nuevo_id = len(tareas_temporales) + 1000  # ID único
             nueva_tarea = {
-                'id': 999,  # ID temporal
+                'id': nuevo_id,
                 'titulo': titulo,
                 'descripcion': descripcion,
                 'proyecto': proyecto.nombre,
+                'proyecto_id': proyecto_id,
                 'prioridad': prioridad,
-                'fecha_creacion': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'fecha_creacion': datetime.now().strftime('%Y-%m-%d'),
                 'fecha_limite': fecha_limite,
                 'creado_por': request.user.username,
+                'responsable': request.user.username,
                 'estado': 'pendiente'
             }
+            
+            # Agregar a la lista temporal
+            tareas_temporales.append(nueva_tarea)
             
             # Aquí se crearían las notificaciones para participantes y observadores
             # Por ahora simular que se envían las notificaciones
