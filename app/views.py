@@ -579,7 +579,7 @@ def api_tareas(request):
             alta_prioridad = request.POST.get('alta_prioridad', 'false').lower() == 'true'
             prioridad = 'alta' if alta_prioridad else 'media'
             fecha_limite = request.POST.get('fecha_limite')
-            asignado_a_id = request.POST.get('asignado_a')
+            responsable_id = request.POST.get('responsable_id')
             participantes_json = request.POST.get('participantes', '[]')
             observadores_json = request.POST.get('observadores', '[]')
             
@@ -595,6 +595,15 @@ def api_tareas(request):
             except Proyecto.DoesNotExist:
                 return JsonResponse({'error': 'Proyecto no encontrado'}, status=404)
             
+            # Obtener el nombre del responsable
+            responsable_nombre = request.user.username  # Por defecto el creador
+            if responsable_id:
+                try:
+                    responsable_user = User.objects.get(id=responsable_id)
+                    responsable_nombre = responsable_user.username
+                except User.DoesNotExist:
+                    pass  # Mantener el valor por defecto
+            
             # Crear la tarea y agregarla a la lista temporal
             nuevo_id = len(tareas_temporales) + 1000  # ID único
             nueva_tarea = {
@@ -607,7 +616,9 @@ def api_tareas(request):
                 'fecha_creacion': datetime.now().strftime('%Y-%m-%d'),
                 'fecha_limite': fecha_limite,
                 'creado_por': request.user.username,
-                'responsable': request.user.username,
+                'creado_por_id': request.user.id,
+                'responsable': responsable_nombre,
+                'responsable_id': responsable_id or request.user.id,
                 'estado': 'pendiente'
             }
             
@@ -626,6 +637,145 @@ def api_tareas(request):
         except Exception as e:
             return JsonResponse({
                 'error': f'Error al crear la tarea: {str(e)}'
+            }, status=500)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_actualizar_estado_tarea(request):
+    """
+    API para actualizar el estado de una tarea
+    """
+    global tareas_temporales
+    
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            tarea_id = request.POST.get('tarea_id')
+            nuevo_estado = request.POST.get('nuevo_estado')
+            
+            # Validaciones básicas
+            if not tarea_id:
+                return JsonResponse({'error': 'ID de tarea requerido'}, status=400)
+            
+            if not nuevo_estado:
+                return JsonResponse({'error': 'Nuevo estado requerido'}, status=400)
+            
+            estados_validos = ['pendiente', 'en_progreso', 'completada', 'cancelada']
+            if nuevo_estado not in estados_validos:
+                return JsonResponse({'error': 'Estado no válido'}, status=400)
+            
+            # Buscar la tarea en la lista temporal
+            tarea_encontrada = None
+            for i, tarea in enumerate(tareas_temporales):
+                if str(tarea['id']) == str(tarea_id):
+                    tarea_encontrada = tarea
+                    break
+            
+            if not tarea_encontrada:
+                return JsonResponse({'error': 'Tarea no encontrada'}, status=404)
+            
+            # Verificar permisos: solo el responsable puede cambiar estados
+            if tarea_encontrada['responsable_id'] != request.user.id:
+                return JsonResponse({'error': 'Solo el responsable puede cambiar el estado de la tarea'}, status=403)
+            
+            # Actualizar el estado
+            tarea_encontrada['estado'] = nuevo_estado
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Estado actualizado exitosamente',
+                'tarea': tarea_encontrada
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'error': f'Error al actualizar estado: {str(e)}'
+            }, status=500)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def api_actualizar_tarea(request):
+    """
+    API para actualizar una tarea completa (solo creadores)
+    """
+    global tareas_temporales
+    
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            from datetime import datetime
+            from django.contrib.auth.models import User
+            from .models import Proyecto
+            
+            # Obtener datos del request
+            tarea_id = request.POST.get('tarea_id')
+            titulo = request.POST.get('titulo', '').strip()
+            descripcion = request.POST.get('descripcion', '').strip()
+            proyecto_id = request.POST.get('proyecto_id')
+            alta_prioridad = request.POST.get('alta_prioridad', 'false').lower() == 'true'
+            prioridad = 'alta' if alta_prioridad else 'media'
+            fecha_limite = request.POST.get('fecha_limite')
+            responsable_id = request.POST.get('responsable_id')
+            participantes_json = request.POST.get('participantes', '[]')
+            observadores_json = request.POST.get('observadores', '[]')
+            
+            # Validaciones básicas
+            if not tarea_id:
+                return JsonResponse({'error': 'ID de tarea requerido'}, status=400)
+            
+            if not titulo:
+                return JsonResponse({'error': 'El título es requerido'}, status=400)
+            
+            # Buscar la tarea en la lista temporal
+            tarea_encontrada = None
+            for i, tarea in enumerate(tareas_temporales):
+                if str(tarea['id']) == str(tarea_id):
+                    tarea_encontrada = tarea
+                    break
+            
+            if not tarea_encontrada:
+                return JsonResponse({'error': 'Tarea no encontrada'}, status=404)
+            
+            # Verificar permisos: solo el creador puede editar
+            if tarea_encontrada['creado_por_id'] != request.user.id:
+                return JsonResponse({'error': 'Solo el creador puede editar la tarea'}, status=403)
+            
+            # Obtener el nombre del responsable
+            responsable_nombre = tarea_encontrada['responsable']  # Mantener actual por defecto
+            if responsable_id:
+                try:
+                    responsable_user = User.objects.get(id=responsable_id)
+                    responsable_nombre = responsable_user.username
+                except User.DoesNotExist:
+                    pass  # Mantener el valor actual
+            
+            # Actualizar los campos de la tarea
+            tarea_encontrada.update({
+                'titulo': titulo,
+                'descripcion': descripcion,
+                'prioridad': prioridad,
+                'fecha_limite': fecha_limite,
+                'responsable': responsable_nombre,
+                'responsable_id': responsable_id or tarea_encontrada['responsable_id'],
+            })
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Tarea actualizada exitosamente',
+                'tarea': tarea_encontrada
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'error': f'Error al actualizar la tarea: {str(e)}'
             }, status=500)
     
     return JsonResponse({'error': 'Método no permitido'}, status=405)

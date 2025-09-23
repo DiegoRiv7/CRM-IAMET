@@ -2988,7 +2988,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Funciones para el modal de Crear Tarea
-function openCreateTaskModal() {
+function openCreateTaskModal(tareaParaEditar = null) {
     const modal = document.getElementById('createTaskModal');
     modal.classList.add('active');
     
@@ -2998,6 +2998,11 @@ function openCreateTaskModal() {
     // Inicializar el editor avanzado
     initializePowerTaskEditor();
     loadUsersForAssignments();
+    
+    // Si hay una tarea para editar, pre-poblar los campos
+    if (tareaParaEditar) {
+        populateEditForm(tareaParaEditar);
+    }
     
     // Cerrar modal al hacer clic fuera
     modal.addEventListener('click', function(e) {
@@ -3022,11 +3027,54 @@ function openCreateTaskModal() {
     });
 }
 
+// Función para poblar el formulario con datos de tarea existente
+function populateEditForm(tarea) {
+    // Actualizar título del modal
+    const titleInput = document.getElementById('taskTitle');
+    if (titleInput) {
+        titleInput.value = tarea.titulo;
+    }
+    
+    // Actualizar contenido del editor
+    const editor = document.querySelector('.task-rich-editor');
+    if (editor) {
+        editor.innerHTML = tarea.descripcion || '';
+    }
+    
+    // Actualizar prioridad
+    const highPriorityCheckbox = document.getElementById('highPriority');
+    if (highPriorityCheckbox) {
+        highPriorityCheckbox.checked = tarea.prioridad === 'alta';
+    }
+    
+    // Actualizar fecha límite
+    const dueDateInput = document.getElementById('taskDueDate');
+    if (dueDateInput && tarea.fecha_limite) {
+        dueDateInput.value = tarea.fecha_limite;
+    }
+    
+    // Cambiar texto del botón de submit
+    const submitBtn = document.querySelector('.footer-action.primary');
+    if (submitBtn) {
+        submitBtn.textContent = 'Actualizar tarea';
+        submitBtn.setAttribute('onclick', `updateExistingTask(${tarea.id})`);
+    }
+    
+    // Agregar ID de tarea para edición
+    const form = document.getElementById('powerTaskForm');
+    if (form) {
+        form.setAttribute('data-editing-task-id', tarea.id);
+    }
+}
+
 function closeCreateTaskModal() {
     const modal = document.getElementById('createTaskModal');
     
     // Restaurar scroll del body
     document.body.style.overflow = '';
+    
+    // Resetear formulario para próximo uso
+    resetTaskForm();
     
     setTimeout(() => {
         modal.classList.remove('active');
@@ -3048,6 +3096,109 @@ function initializePowerTaskEditor() {
     setTimeout(() => {
         initializeCustomDatePicker();
     }, 100);
+}
+
+// Función para resetear el formulario al modo creación
+function resetTaskForm() {
+    // Restaurar texto del botón
+    const submitBtn = document.querySelector('.footer-action.primary');
+    if (submitBtn) {
+        submitBtn.textContent = 'Crear tarea';
+        submitBtn.setAttribute('onclick', 'submitPowerTaskForm()');
+    }
+    
+    // Remover ID de edición
+    const form = document.getElementById('powerTaskForm');
+    if (form) {
+        form.removeAttribute('data-editing-task-id');
+    }
+}
+
+// Función para actualizar tarea existente
+async function updateExistingTask(tareaId) {
+    const taskData = collectPowerTaskData();
+    const submitBtn = document.querySelector('.footer-action.primary');
+    const originalText = submitBtn.textContent;
+    
+    // Validar datos básicos
+    if (!taskData.title || taskData.title === 'Nueva tarea' || taskData.title.trim() === '') {
+        alert('Por favor ingresa un título para la tarea');
+        return;
+    }
+    
+    // Mostrar estado de carga
+    submitBtn.textContent = 'Actualizando...';
+    submitBtn.disabled = true;
+    submitBtn.style.background = 'rgba(10, 132, 255, 0.6)';
+    
+    try {
+        // Preparar datos para API (similar a submitPowerTaskForm pero con ID)
+        const formData = new FormData();
+        formData.append('tarea_id', tareaId);
+        formData.append('titulo', taskData.title);
+        formData.append('descripcion', taskData.content);
+        formData.append('proyecto_id', PROYECTO_ID);
+        
+        if (taskData.responsible) {
+            formData.append('responsable_id', taskData.responsible);
+        }
+        
+        if (taskData.dueDate) {
+            formData.append('fecha_limite', taskData.dueDate);
+        }
+        
+        formData.append('alta_prioridad', taskData.highPriority);
+        formData.append('participantes', JSON.stringify(taskData.participants));
+        formData.append('observadores', JSON.stringify(taskData.observers));
+        
+        // Agregar CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+        if (csrfToken) {
+            formData.append('csrfmiddlewaretoken', csrfToken);
+        }
+        
+        // Enviar a la API de actualización
+        const response = await fetch('/app/api/tareas/actualizar/', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            // Éxito
+            submitBtn.textContent = '✓ Actualizada';
+            submitBtn.style.background = 'linear-gradient(135deg, #28a745, #34ce57)';
+            
+            setTimeout(() => {
+                closeCreateTaskModal();
+                
+                // Mostrar notificación de éxito
+                showSuccessNotification(`Tarea "${taskData.title}" actualizada exitosamente`);
+                
+                // Recargar la lista de tareas
+                cargarTareasDelProyecto();
+            }, 1000);
+            
+        } else {
+            throw new Error(result.error || 'Error al actualizar la tarea');
+        }
+        
+    } catch (error) {
+        console.error('Error al actualizar tarea:', error);
+        
+        // Mostrar error
+        submitBtn.textContent = '❌ Error';
+        submitBtn.style.background = 'linear-gradient(135deg, #dc3545, #e55565)';
+        
+        setTimeout(() => {
+            submitBtn.textContent = originalText;
+            submitBtn.style.background = '';
+            submitBtn.disabled = false;
+        }, 2000);
+        
+        alert('Error al actualizar la tarea: ' + error.message);
+    }
 }
 
 function initializeCustomDatePicker() {
@@ -3926,6 +4077,9 @@ async function abrirDetallesTarea(tareaId) {
                 document.getElementById('taskDetailParticipants').innerHTML = '<span style="color: var(--apple-label-tertiary);">No hay participantes asignados</span>';
                 document.getElementById('taskDetailObservers').innerHTML = '<span style="color: var(--apple-label-tertiary);">No hay observadores asignados</span>';
                 
+                // Configurar botones según permisos
+                configurarBotonesSegunPermisos(tarea);
+                
                 // Abrir el modal
                 const modal = document.getElementById('taskDetailModal');
                 modal.classList.add('active');
@@ -3948,15 +4102,201 @@ function closeTaskDetailModal() {
     document.body.style.overflow = '';
 }
 
-// Funciones placeholder para las acciones del modal
-function editTask() {
-    alert('Función de editar tarea en desarrollo');
-    // TODO: Implementar edición de tarea
+// Función para configurar botones según permisos del usuario
+function configurarBotonesSegunPermisos(tarea) {
+    const footer = document.querySelector('.task-detail-footer');
+    const esCreador = tarea.creado_por_id == CURRENT_USER_ID;
+    const esResponsable = tarea.responsable_id == CURRENT_USER_ID;
+    const estado = tarea.estado || 'pendiente';
+    
+    // Limpiar botones existentes
+    footer.innerHTML = '';
+    
+    if (esCreador) {
+        // Botones para el creador de la tarea
+        footer.innerHTML = `
+            <button class="btn-task-action secondary" onclick="editTask(${tarea.id})">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                </svg>
+                Editar
+            </button>
+            <button class="btn-task-action danger" onclick="deleteTask(${tarea.id})">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3,6 5,6 21,6"/>
+                    <path d="m19,6v14a2,2 0 0 1-2,2H7a2,2 0 0 1-2-2V6m3,0V4a2,2 0 0 1 2-2h4a2,2 0 0 1 2,2v2"/>
+                </svg>
+                Eliminar
+            </button>
+        `;
+    } else if (esResponsable) {
+        // Botones para el responsable de la tarea
+        if (estado === 'pendiente') {
+            footer.innerHTML = `
+                <button class="btn-task-action secondary" onclick="createSubtask(${tarea.id})">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Crear Subtarea
+                </button>
+                <button class="btn-task-action primary" onclick="startTask(${tarea.id})">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5,3 19,12 5,21"/>
+                    </svg>
+                    Iniciar Tarea
+                </button>
+            `;
+        } else if (estado === 'en_progreso') {
+            footer.innerHTML = `
+                <button class="btn-task-action secondary" onclick="createSubtask(${tarea.id})">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Crear Subtarea
+                </button>
+                <button class="btn-task-action success" onclick="completeTask(${tarea.id})">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20,6 9,17 4,12"/>
+                    </svg>
+                    Terminar Tarea
+                </button>
+            `;
+        } else if (estado === 'completada') {
+            footer.innerHTML = `
+                <button class="btn-task-action secondary" onclick="createSubtask(${tarea.id})">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Crear Subtarea
+                </button>
+                <span class="task-completed-label">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20,6 9,17 4,12"/>
+                    </svg>
+                    Tarea Completada
+                </span>
+            `;
+        }
+    } else {
+        // Usuario sin permisos especiales (solo visualización)
+        footer.innerHTML = `
+            <span class="task-view-only-label">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                Solo lectura
+            </span>
+        `;
+    }
 }
 
-function markTaskComplete() {
-    alert('Función de marcar completada en desarrollo');
-    // TODO: Implementar cambio de estado de tarea
+// Funciones para las acciones del creador
+async function editTask(tareaId) {
+    try {
+        // Obtener datos de la tarea
+        const response = await fetch(`/app/api/tareas/?proyecto_id=${PROYECTO_ID}`);
+        const data = await response.json();
+        
+        if (data.success && data.tareas) {
+            const tarea = data.tareas.find(t => t.id == tareaId);
+            
+            if (tarea) {
+                // Cerrar modal de detalles
+                closeTaskDetailModal();
+                
+                // Abrir modal de creación en modo edición
+                openCreateTaskModal(tarea);
+            } else {
+                alert('No se encontró la tarea para editar');
+            }
+        }
+    } catch (error) {
+        console.error('Error al obtener datos para editar:', error);
+        alert('Error al cargar los datos de la tarea para editar');
+    }
+}
+
+function deleteTask(tareaId) {
+    if (confirm('¿Estás seguro de que quieres eliminar esta tarea? Esta acción no se puede deshacer.')) {
+        alert('Función de eliminar tarea en desarrollo. ID: ' + tareaId);
+        // TODO: Implementar eliminación de tarea
+    }
+}
+
+// Funciones para las acciones del responsable
+function startTask(tareaId) {
+    if (confirm('¿Quieres iniciar esta tarea?')) {
+        // TODO: Cambiar estado a 'en_progreso'
+        alert('Tarea iniciada. ID: ' + tareaId);
+        updateTaskStatus(tareaId, 'en_progreso');
+    }
+}
+
+function completeTask(tareaId) {
+    if (confirm('¿Estás seguro de que quieres marcar esta tarea como completada?')) {
+        // TODO: Cambiar estado a 'completada'
+        alert('Tarea completada. ID: ' + tareaId);
+        updateTaskStatus(tareaId, 'completada');
+    }
+}
+
+function createSubtask(tareaId) {
+    alert('Función de crear subtarea en desarrollo. Tarea padre ID: ' + tareaId);
+    // TODO: Abrir modal de creación de subtarea
+}
+
+// Función auxiliar para actualizar estado de tarea
+async function updateTaskStatus(tareaId, nuevoEstado) {
+    try {
+        const formData = new FormData();
+        formData.append('tarea_id', tareaId);
+        formData.append('nuevo_estado', nuevoEstado);
+        
+        // Agregar CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+        if (csrfToken) {
+            formData.append('csrfmiddlewaretoken', csrfToken);
+        }
+
+        const response = await fetch('/app/api/tareas/actualizar-estado/', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            // Actualizar la interfaz
+            const statusBadge = document.getElementById('taskDetailStatus');
+            const estadoTexto = {
+                'pendiente': 'Pendiente',
+                'en_progreso': 'En Progreso', 
+                'completada': 'Completada',
+                'cancelada': 'Cancelada'
+            };
+            statusBadge.textContent = estadoTexto[nuevoEstado] || nuevoEstado;
+            
+            // Reconfigurar botones
+            const tareaActualizada = {...result.tarea};
+            configurarBotonesSegunPermisos(tareaActualizada);
+            
+            // Recargar tabla de tareas
+            cargarTareasDelProyecto();
+            
+            // Mostrar notificación de éxito
+            showSuccessNotification(`Estado de tarea actualizado a: ${estadoTexto[nuevoEstado]}`);
+        } else {
+            throw new Error(result.error || 'Error al actualizar el estado');
+        }
+
+    } catch (error) {
+        console.error('Error actualizando estado:', error);
+        alert('Error al actualizar el estado de la tarea: ' + error.message);
+    }
 }
 
 // Event listener para el botón Crear Tarea
@@ -4802,6 +5142,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .btn-task-action.primary:hover {
     background: linear-gradient(135deg, #0051d5, #0056b3);
+}
+
+.btn-task-action.danger {
+    background: linear-gradient(135deg, #ff3b30, #d70015);
+    color: white;
+    border: 1px solid rgba(255, 59, 48, 0.3);
+}
+
+.btn-task-action.danger:hover {
+    background: linear-gradient(135deg, #d70015, #bf0012);
+}
+
+.btn-task-action.success {
+    background: linear-gradient(135deg, #34c759, #28a745);
+    color: white;
+    border: 1px solid rgba(52, 199, 89, 0.3);
+}
+
+.btn-task-action.success:hover {
+    background: linear-gradient(135deg, #28a745, #20963b);
+}
+
+.task-completed-label, .task-view-only-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    color: var(--apple-label-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.task-completed-label {
+    color: #34c759;
+    border-color: rgba(52, 199, 89, 0.3);
+    background: rgba(52, 199, 89, 0.1);
 }
 </style>
 

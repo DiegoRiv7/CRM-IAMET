@@ -30,6 +30,8 @@ urlpatterns = [
     # APIs para Tareas y Proyectos
     path("api/proyectos/", views.api_proyectos, name="api_proyectos"),
     path("api/tareas/", views.api_tareas, name="api_tareas"),
+    path("api/tareas/actualizar-estado/", views.api_actualizar_estado_tarea, name="api_actualizar_estado_tarea"),
+    path("api/tareas/actualizar/", views.api_actualizar_tarea, name="api_actualizar_tarea"),
     path("api/estadisticas-tareas-proyectos/", views.api_estadisticas_tareas_proyectos, name="api_estadisticas_tareas_proyectos"),
     path("api/buscar-usuarios/", views.api_buscar_usuarios, name="api_buscar_usuarios"),
     path("api/crear-proyecto/", views.api_crear_proyecto, name="api_crear_proyecto"),
