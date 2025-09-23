@@ -4369,8 +4369,49 @@ function shareTask() {
     alert('Función de compartir tarea en desarrollo');
 }
 
+// Función para editar descripción de tarea
 function editTaskDescription() {
-    alert('Función de editar descripción en desarrollo');
+    const descContent = document.getElementById('taskDetailDescription');
+    const descEdit = document.getElementById('taskDescriptionEdit');
+    const textarea = document.getElementById('taskDescriptionTextarea');
+    
+    // Obtener texto actual sin HTML
+    const currentText = descContent.textContent || descContent.innerText || '';
+    
+    // Rellenar textarea y mostrar editor
+    textarea.value = currentText.replace('Sin descripción', '');
+    descContent.style.display = 'none';
+    descEdit.style.display = 'block';
+    textarea.focus();
+}
+
+// Cancelar edición de descripción
+function cancelDescriptionEdit() {
+    const descContent = document.getElementById('taskDetailDescription');
+    const descEdit = document.getElementById('taskDescriptionEdit');
+    
+    descContent.style.display = 'block';
+    descEdit.style.display = 'none';
+}
+
+// Guardar edición de descripción
+function saveDescriptionEdit() {
+    const textarea = document.getElementById('taskDescriptionTextarea');
+    const descContent = document.getElementById('taskDetailDescription');
+    const descEdit = document.getElementById('taskDescriptionEdit');
+    const newDescription = textarea.value.trim();
+    
+    if (newDescription) {
+        descContent.innerHTML = `<p>${newDescription}</p>`;
+    } else {
+        descContent.innerHTML = '<p style="color: var(--apple-label-secondary); font-style: italic;">Sin descripción</p>';
+    }
+    
+    descContent.style.display = 'block';
+    descEdit.style.display = 'none';
+    
+    // TODO: Enviar actualización al backend
+    console.log('Guardando nueva descripción:', newDescription);
 }
 
 function addParticipant() {
@@ -4383,6 +4424,133 @@ function addTaskLabel() {
 
 function attachFile() {
     alert('Función de adjuntar archivo en desarrollo');
+}
+
+// Funciones para botones de acción de tareas
+function iniciarTarea() {
+    // TODO: Cambiar estado de tarea a "en_progreso"
+    console.log('Iniciando tarea');
+    alert('Función iniciar tarea en desarrollo');
+}
+
+function terminarTarea() {
+    // TODO: Cambiar estado de tarea a "completada"
+    console.log('Terminando tarea');
+    alert('Función terminar tarea en desarrollo');
+}
+
+function crearSubTarea() {
+    // TODO: Abrir modal para crear sub-tarea
+    console.log('Creando sub-tarea');
+    alert('Función crear sub-tarea en desarrollo');
+}
+
+// Función para cargar comentarios de tarea usando el sistema del feed
+function cargarComentariosTarea(tareaId) {
+    const taskFeedLoading = document.getElementById('taskFeedLoading');
+    const taskFeedItems = document.getElementById('taskFeedItems');
+    const taskFeedEmpty = document.getElementById('taskFeedEmpty');
+    
+    // Mostrar loading
+    taskFeedLoading.style.display = 'flex';
+    taskFeedItems.innerHTML = '';
+    taskFeedEmpty.style.display = 'none';
+    
+    // Simular carga de comentarios - en el futuro esto será una llamada API real
+    setTimeout(() => {
+        taskFeedLoading.style.display = 'none';
+        
+        // Por ahora mostrar estado vacío
+        taskFeedEmpty.style.display = 'block';
+        
+        // Configurar el sistema de comentarios para tareas
+        configurarSistemaComentariosTarea(tareaId);
+    }, 500);
+}
+
+// Configurar el sistema de comentarios específico para tareas
+function configurarSistemaComentariosTarea(tareaId) {
+    const taskBtnNuevoComentario = document.getElementById('taskBtnNuevoComentario');
+    const taskComentarioActions = document.getElementById('taskComentarioActions');
+    const taskComentarioForm = document.getElementById('taskComentarioForm');
+    const taskComentarioInput = document.getElementById('taskComentarioInput');
+    const taskContadorCaracteres = document.getElementById('taskContadorCaracteres');
+    const taskBtnCancelar = document.getElementById('taskBtnCancelar');
+    const taskBtnEnviar = document.getElementById('taskBtnEnviar');
+    const taskBtnAdjuntar = document.getElementById('taskBtnAdjuntar');
+    const taskFileInput = document.getElementById('taskFileInput');
+    
+    // Configurar eventos similares al feed principal
+    taskBtnNuevoComentario.addEventListener('click', function() {
+        taskComentarioActions.style.display = 'flex';
+        taskComentarioForm.style.display = 'block';
+        taskComentarioInput.focus();
+        this.style.display = 'none';
+    });
+    
+    taskBtnCancelar.addEventListener('click', function() {
+        taskComentarioForm.style.display = 'none';
+        taskComentarioActions.style.display = 'none';
+        taskBtnNuevoComentario.style.display = 'flex';
+        taskComentarioInput.value = '';
+        taskContadorCaracteres.textContent = '2000';
+        taskBtnEnviar.disabled = true;
+    });
+    
+    taskComentarioInput.addEventListener('input', function() {
+        const caracteresRestantes = 2000 - this.value.length;
+        taskContadorCaracteres.textContent = caracteresRestantes;
+        taskBtnEnviar.disabled = this.value.trim().length === 0;
+    });
+    
+    taskBtnAdjuntar.addEventListener('click', function() {
+        taskFileInput.click();
+    });
+    
+    taskBtnEnviar.addEventListener('click', function() {
+        enviarComentarioTarea(tareaId);
+    });
+}
+
+// Función para enviar comentario de tarea
+function enviarComentarioTarea(tareaId) {
+    const taskComentarioInput = document.getElementById('taskComentarioInput');
+    const comentario = taskComentarioInput.value.trim();
+    
+    if (!comentario) {
+        alert('Por favor escribe un comentario');
+        return;
+    }
+    
+    // TODO: Enviar comentario al backend
+    console.log('Enviando comentario para tarea:', tareaId, 'Comentario:', comentario);
+    
+    // Simular respuesta exitosa
+    const taskFeedItems = document.getElementById('taskFeedItems');
+    const taskFeedEmpty = document.getElementById('taskFeedEmpty');
+    
+    // Ocultar estado vacío
+    taskFeedEmpty.style.display = 'none';
+    
+    // Crear elemento de comentario usando el mismo estilo del feed
+    const nuevoComentario = document.createElement('div');
+    nuevoComentario.className = 'feed-item';
+    nuevoComentario.innerHTML = `
+        <div class="feed-author">Tú</div>
+        <div class="feed-date">Hace unos segundos</div>
+        <div class="feed-content">${comentario}</div>
+    `;
+    
+    // Insertar al inicio
+    taskFeedItems.insertBefore(nuevoComentario, taskFeedItems.firstChild);
+    
+    // Limpiar formulario
+    taskComentarioInput.value = '';
+    document.getElementById('taskContadorCaracteres').textContent = '2000';
+    document.getElementById('taskBtnEnviar').disabled = true;
+    document.getElementById('taskComentarioForm').style.display = 'none';
+    document.getElementById('taskComentarioActions').style.display = 'none';
+    document.getElementById('taskBtnNuevoComentario').style.display = 'flex';
 }
 
 function cargarEtiquetasTarea(tarea) {
@@ -5044,56 +5212,106 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="task-description-content" id="taskDetailDescription">
                         <p>Descripción detallada de la tarea...</p>
                     </div>
+                    <div class="task-description-edit" id="taskDescriptionEdit" style="display: none;">
+                        <textarea id="taskDescriptionTextarea" class="description-editor"></textarea>
+                        <div class="description-edit-actions">
+                            <button class="btn-cancel-edit" onclick="cancelDescriptionEdit()">Cancelar</button>
+                            <button class="btn-save-edit" onclick="saveDescriptionEdit()">Guardar</button>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Comentarios -->
+                <!-- Sistema de Comentarios Integrado del Feed -->
                 <div class="task-comments-area">
                     <div class="comments-header">
                         <h3 class="section-title">Actividad y Comentarios</h3>
-                        <div class="comments-filter">
-                            <button class="filter-btn active" data-filter="all">Todos</button>
-                            <button class="filter-btn" data-filter="comments">Comentarios</button>
-                            <button class="filter-btn" data-filter="activity">Actividad</button>
+                        <div class="task-action-buttons">
+                            <button class="action-btn start-task-btn" onclick="iniciarTarea()" id="startTaskBtn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="5,3 19,12 5,21"/>
+                                </svg>
+                                Iniciar Tarea
+                            </button>
+                            <button class="action-btn complete-task-btn" onclick="terminarTarea()" id="completeTaskBtn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                    <polyline points="22,4 12,14.01 9,11.01"/>
+                                </svg>
+                                Terminar Tarea
+                            </button>
+                            <button class="action-btn subtask-btn" onclick="crearSubTarea()" id="subtaskBtn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                                Crear Sub-tarea
+                            </button>
                         </div>
                     </div>
                     
-                    <!-- Nuevo Comentario -->
-                    <div class="new-comment-section">
-                        <div class="user-avatar">
-                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxwYXRoIGQ9Im0yMCAyMS0yLTItMS4yLTEuMiIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPGNpcmNsZSBjeD0iMTIiIGN5PSI4IiByPSI1IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiLz4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxNiIgcj0iNCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIi8+Cjwvc3ZnPgo8L3N2Zz4=" alt="Usuario" />
-                        </div>
-                        <div class="comment-input-area">
-                            <textarea 
-                                class="new-comment-input" 
-                                id="newTaskComment" 
-                                placeholder="Escribe un comentario..."
-                                rows="3"
-                            ></textarea>
-                            <div class="comment-actions">
-                                <div class="comment-tools">
-                                    <button class="tool-btn" title="Adjuntar archivo">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49"/>
+                    <!-- Reusando el sistema de comentarios del feed -->
+                    <div class="task-feed-container">
+                        <!-- Modal para nuevo comentario -->
+                        <div class="nuevo-comentario-modal task-comment-modal" id="taskNuevoComentarioModal">
+                            <div class="modal-comentario-header">
+                                <button class="btn-nuevo-comentario" id="taskBtnNuevoComentario">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                        <path d="M12 4v16m8-8H4"/>
+                                    </svg>
+                                    Agregar comentario
+                                </button>
+                                <div class="comentario-actions" id="taskComentarioActions" style="display: none;">
+                                    <button class="btn-adjuntar" id="taskBtnAdjuntar" title="Adjuntar archivos">
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49"/>
                                         </svg>
                                     </button>
-                                    <button class="tool-btn" title="Mencionar usuario">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                                            <circle cx="9" cy="7" r="4"/>
-                                            <path d="m22 21-3-3m0 0A6 6 0 1 1 8 8a6 6 0 0 1 11 11Z"/>
+                                    <button class="btn-mencion" id="taskBtnMencion" title="Mencionar usuario">
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                            <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                         </svg>
                                     </button>
                                 </div>
-                                <button class="submit-comment-btn" onclick="submitTaskComment()">
-                                    Comentar
-                                </button>
+                            </div>
+                            
+                            <div class="comentario-form" id="taskComentarioForm" style="display: none;">
+                                <div class="archivos-adjuntos" id="taskArchivosAdjuntos"></div>
+                                <textarea 
+                                    id="taskComentarioInput" 
+                                    placeholder="Escribe un comentario... Usa @usuario para mencionar"
+                                    rows="3"
+                                    maxlength="2000"></textarea>
+                                <div class="comentario-form-actions">
+                                    <span class="contador-caracteres" id="taskContadorCaracteres">2000</span>
+                                    <button class="btn-cancelar" id="taskBtnCancelar">Cancelar</button>
+                                    <button class="btn-enviar" id="taskBtnEnviar" disabled>Enviar</button>
+                                </div>
+                            </div>
+                            
+                            <input type="file" id="taskFileInput" multiple style="display: none;" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar">
+                        </div>
+                        
+                        <!-- Feed de comentarios -->
+                        <div class="feed-container" id="taskFeedContainer">
+                            <div class="feed-loading" id="taskFeedLoading" style="display: none;">
+                                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                                </svg>
+                                Cargando comentarios...
+                            </div>
+                            
+                            <div class="feed-items" id="taskFeedItems">
+                                <!-- Los comentarios se cargarán dinámicamente -->
+                            </div>
+                            
+                            <div class="feed-empty" id="taskFeedEmpty" style="display: none;">
+                                <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1">
+                                    <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                                </svg>
+                                <h3>¡Sé el primero en comentar!</h3>
+                                <p>Comparte actualizaciones o menciona a tus compañeros de equipo.</p>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Lista de Comentarios y Actividad -->
-                    <div class="comments-timeline" id="taskCommentsTimeline">
-                        <!-- Los comentarios se cargarán aquí -->
                     </div>
                 </div>
             </div>
@@ -5477,6 +5695,149 @@ document.addEventListener('DOMContentLoaded', function() {
     background: rgba(10, 132, 255, 0.15);
     border-color: rgba(10, 132, 255, 0.3);
     color: var(--apple-blue);
+}
+
+/* Estilos para botones de acción de tareas */
+.task-action-buttons {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    padding: 0.75rem 1.25rem;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.start-task-btn {
+    background: linear-gradient(135deg, var(--apple-green), #28CD41);
+    border: 1px solid rgba(48, 209, 88, 0.3);
+    color: white;
+    box-shadow: 0 4px 20px rgba(48, 209, 88, 0.25);
+}
+
+.start-task-btn:hover {
+    background: linear-gradient(135deg, #28CD41, var(--apple-green));
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(48, 209, 88, 0.35);
+}
+
+.complete-task-btn {
+    background: linear-gradient(135deg, var(--apple-blue), #4A90E2);
+    border: 1px solid rgba(10, 132, 255, 0.3);
+    color: white;
+    box-shadow: 0 4px 20px rgba(10, 132, 255, 0.25);
+}
+
+.complete-task-btn:hover {
+    background: linear-gradient(135deg, #4A90E2, var(--apple-blue));
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(10, 132, 255, 0.35);
+}
+
+.subtask-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--apple-label);
+}
+
+.subtask-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--apple-label);
+    transform: translateY(-1px);
+}
+
+/* Estilos para edición de descripción */
+.task-description-edit {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.description-editor {
+    width: 100%;
+    min-height: 120px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 1rem;
+    color: var(--apple-label);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    resize: vertical;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.description-editor:focus {
+    border-color: var(--apple-blue);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+}
+
+.description-edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.btn-cancel-edit,
+.btn-save-edit {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-cancel-edit {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--apple-label-secondary);
+}
+
+.btn-cancel-edit:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--apple-label);
+}
+
+.btn-save-edit {
+    background: linear-gradient(135deg, var(--apple-blue), #4A90E2);
+    border: 1px solid rgba(10, 132, 255, 0.3);
+    color: white;
+    box-shadow: 0 4px 20px rgba(10, 132, 255, 0.25);
+}
+
+.btn-save-edit:hover {
+    background: linear-gradient(135deg, #4A90E2, var(--apple-blue));
+    transform: translateY(-1px);
+    box-shadow: 0 6px 25px rgba(10, 132, 255, 0.3);
+}
+
+/* Estilos para el sistema de comentarios de tareas */
+.task-feed-container {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.task-comment-modal .modal-comentario-header {
+    margin-bottom: 1rem;
 }
 
 /* Nuevo Comentario */
