@@ -1362,6 +1362,17 @@
             opacity: 0;
         }
     }
+    
+    @keyframes calendarSlideIn {
+        0% {
+            opacity: 0;
+            transform: translateY(-10px) scale(0.95);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
 
     /* ==========================================
        POWER TASK MODAL - EDITOR AVANZADO
@@ -1416,13 +1427,52 @@
         transform: scale(1) translateY(0);
     }
     
-    /* Header del Modal */
+    /* Header Simplificado */
     .power-task-header {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    .task-header-content {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
-        padding: 2rem 2rem 1.5rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        align-items: center;
+    }
+    
+    .priority-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+    
+    .priority-toggle:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .priority-toggle input[type="checkbox"] {
+        display: none;
+    }
+    
+    .priority-icon {
+        width: 20px;
+        height: 20px;
+        color: var(--apple-label-secondary);
+        transition: all 0.2s ease;
+    }
+    
+    .priority-toggle input[type="checkbox"]:checked + .priority-icon {
+        color: #ffaa00;
+        transform: scale(1.1);
+    }
+    
+    .priority-label {
+        font-size: 0.95rem;
+        color: var(--apple-label);
+        font-weight: 500;
     }
     
     .task-header-left {
@@ -1755,6 +1805,88 @@
         border-color: var(--apple-blue);
         background: rgba(255, 255, 255, 0.08);
         box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+    }
+    
+    /* Custom Date Picker */
+    .custom-date-picker {
+        position: relative;
+        width: 100%;
+    }
+    
+    .date-input {
+        width: 100%;
+        padding: 0.75rem 3rem 0.75rem 1rem;
+        border: 1.5px solid rgba(255, 255, 255, 0.15);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--apple-label);
+        font-size: 0.95rem;
+        outline: none;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    
+    .date-input:focus, .date-input:hover {
+        border-color: var(--apple-blue);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+    }
+    
+    .date-icon {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--apple-label-secondary);
+        pointer-events: none;
+        transition: color 0.2s ease;
+    }
+    
+    .custom-date-picker:hover .date-icon {
+        color: var(--apple-blue);
+    }
+    
+    /* Creator Info */
+    .creator-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid rgba(255, 255, 255, 0.15);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .creator-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+    
+    .creator-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .default-avatar {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, var(--apple-blue), #4A90E2);
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .creator-name {
+        color: var(--apple-label);
+        font-size: 0.95rem;
+        font-weight: 500;
     }
     
     /* Options Section */
@@ -2913,21 +3045,252 @@ function initializePowerTaskEditor() {
         });
     });
     
-    // Inicializar toggle de opciones
-    const optionsToggle = document.querySelector('.options-toggle');
-    if (optionsToggle) {
-        optionsToggle.addEventListener('click', function() {
-            const content = document.querySelector('.options-content');
-            content.classList.toggle('expanded');
-            
-            const svg = this.querySelector('svg');
-            if (content.classList.contains('expanded')) {
-                svg.style.transform = 'rotate(180deg)';
-            } else {
-                svg.style.transform = 'rotate(0deg)';
+    // Inicializar custom date picker
+    initializeCustomDatePicker();
+}
+
+function initializeCustomDatePicker() {
+    const dateInput = document.getElementById('taskDueDate');
+    const datePicker = document.querySelector('.custom-date-picker');
+    
+    if (!dateInput || !datePicker) return;
+    
+    dateInput.addEventListener('click', function() {
+        showCustomCalendar(this);
+    });
+    
+    dateInput.addEventListener('focus', function() {
+        showCustomCalendar(this);
+    });
+}
+
+function showCustomCalendar(inputElement) {
+    // Remover calendario anterior si existe
+    const existingCalendar = document.querySelector('.custom-calendar');
+    if (existingCalendar) {
+        existingCalendar.remove();
+    }
+    
+    const calendar = document.createElement('div');
+    calendar.className = 'custom-calendar';
+    calendar.style.cssText = `
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: rgba(18, 18, 20, 0.95);
+        backdrop-filter: blur(30px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        padding: 1rem;
+        z-index: 1001;
+        margin-top: 0.5rem;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        animation: calendarSlideIn 0.3s ease-out;
+    `;
+    
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    // Header del calendario
+    const header = document.createElement('div');
+    header.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding: 0 0.5rem;
+    `;
+    
+    const monthYear = document.createElement('h3');
+    monthYear.style.cssText = `
+        color: var(--apple-label);
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0;
+    `;
+    monthYear.textContent = now.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+    
+    const prevBtn = createCalendarNavButton('‹', -1);
+    const nextBtn = createCalendarNavButton('›', 1);
+    
+    header.appendChild(prevBtn);
+    header.appendChild(monthYear);
+    header.appendChild(nextBtn);
+    
+    // Grid de días
+    const daysGrid = document.createElement('div');
+    daysGrid.style.cssText = `
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 0.25rem;
+        margin-bottom: 1rem;
+    `;
+    
+    // Nombres de días
+    const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    dayNames.forEach(day => {
+        const dayHeader = document.createElement('div');
+        dayHeader.style.cssText = `
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--apple-label-secondary);
+            padding: 0.5rem 0;
+            font-weight: 500;
+        `;
+        dayHeader.textContent = day;
+        daysGrid.appendChild(dayHeader);
+    });
+    
+    // Días del mes
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    
+    // Espacios vacíos al inicio
+    for (let i = 0; i < firstDay; i++) {
+        const emptyDay = document.createElement('div');
+        daysGrid.appendChild(emptyDay);
+    }
+    
+    // Días del mes
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayButton = document.createElement('button');
+        dayButton.style.cssText = `
+            aspect-ratio: 1;
+            border: none;
+            background: transparent;
+            color: var(--apple-label);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+        
+        if (day === now.getDate()) {
+            dayButton.style.background = 'var(--apple-blue)';
+            dayButton.style.color = 'white';
+        }
+        
+        dayButton.textContent = day;
+        
+        dayButton.addEventListener('mouseenter', function() {
+            if (this.style.background !== 'var(--apple-blue)') {
+                this.style.background = 'rgba(255, 255, 255, 0.1)';
             }
         });
+        
+        dayButton.addEventListener('mouseleave', function() {
+            if (day !== now.getDate()) {
+                this.style.background = 'transparent';
+            }
+        });
+        
+        dayButton.addEventListener('click', function() {
+            selectDate(currentYear, currentMonth, day, inputElement);
+            calendar.remove();
+        });
+        
+        daysGrid.appendChild(dayButton);
     }
+    
+    // Sección de tiempo
+    const timeSection = document.createElement('div');
+    timeSection.style.cssText = `
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding-top: 1rem;
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    `;
+    
+    const timeLabel = document.createElement('span');
+    timeLabel.style.cssText = `
+        color: var(--apple-label-secondary);
+        font-size: 0.9rem;
+    `;
+    timeLabel.textContent = 'Hora:';
+    
+    const timeInput = document.createElement('input');
+    timeInput.type = 'time';
+    timeInput.style.cssText = `
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        padding: 0.5rem;
+        color: var(--apple-label);
+        font-size: 0.9rem;
+        flex: 1;
+    `;
+    timeInput.value = '09:00';
+    
+    timeSection.appendChild(timeLabel);
+    timeSection.appendChild(timeInput);
+    
+    calendar.appendChild(header);
+    calendar.appendChild(daysGrid);
+    calendar.appendChild(timeSection);
+    
+    inputElement.parentNode.style.position = 'relative';
+    inputElement.parentNode.appendChild(calendar);
+    
+    // Cerrar al hacer clic fuera
+    setTimeout(() => {
+        document.addEventListener('click', function closeCalendar(e) {
+            if (!calendar.contains(e.target) && e.target !== inputElement) {
+                calendar.remove();
+                document.removeEventListener('click', closeCalendar);
+            }
+        });
+    }, 100);
+}
+
+function createCalendarNavButton(text, direction) {
+    const btn = document.createElement('button');
+    btn.style.cssText = `
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--apple-label);
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        transition: all 0.2s ease;
+    `;
+    btn.textContent = text;
+    
+    btn.addEventListener('mouseenter', function() {
+        this.style.background = 'rgba(255, 255, 255, 0.2)';
+    });
+    
+    btn.addEventListener('mouseleave', function() {
+        this.style.background = 'rgba(255, 255, 255, 0.1)';
+    });
+    
+    return btn;
+}
+
+function selectDate(year, month, day, inputElement) {
+    const timeInput = document.querySelector('.custom-calendar input[type="time"]');
+    const time = timeInput ? timeInput.value : '09:00';
+    
+    const selectedDate = new Date(year, month, day);
+    const formattedDate = selectedDate.toLocaleDateString('es-ES', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+    });
+    
+    inputElement.value = `${formattedDate} a las ${time}`;
+    inputElement.setAttribute('data-datetime', `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${time}`);
 }
 
 function executeFormatCommand(command) {
@@ -2977,17 +3340,14 @@ function switchAssignmentTab(tabName) {
 }
 
 function resetPowerTaskForm() {
-    // Limpiar título
-    const titleInput = document.querySelector('.task-title-input');
-    titleInput.textContent = 'Nueva tarea';
-    
     // Limpiar editor
     const editor = document.querySelector('.task-rich-editor');
     editor.innerHTML = '';
     
-    // Limpiar inputs
-    document.getElementById('taskDueDate').value = '';
-    document.querySelector('input[placeholder="ej: 2 horas"]').value = '';
+    // Limpiar input de fecha
+    const dateInput = document.getElementById('taskDueDate');
+    dateInput.value = '';
+    dateInput.removeAttribute('data-datetime');
     
     // Limpiar checkboxes
     document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
@@ -3023,6 +3383,12 @@ function setupUserSearchInputs() {
     const searchInputs = document.querySelectorAll('.user-search-input');
     
     searchInputs.forEach(input => {
+        // Mostrar todos los usuarios al enfocar
+        input.addEventListener('focus', function() {
+            const containerId = this.id.replace('Search', '');
+            showUserSuggestions('', containerId, this, true); // true = mostrar todos
+        });
+        
         input.addEventListener('input', function() {
             const query = this.value.toLowerCase();
             const containerId = this.id.replace('Search', '');
@@ -3045,22 +3411,32 @@ function setupUserSearchInputs() {
                 }
             }
         });
+        
+        // Ocultar sugerencias al perder foco (con delay para permitir clics)
+        input.addEventListener('blur', function() {
+            setTimeout(() => {
+                const suggestions = document.querySelector('.user-suggestions');
+                if (suggestions) suggestions.remove();
+            }, 200);
+        });
     });
 }
 
-function showUserSuggestions(query, containerId, inputElement) {
+function showUserSuggestions(query, containerId, inputElement, showAll = false) {
     // Remover sugerencias anteriores
     const existingSuggestions = document.querySelector('.user-suggestions');
     if (existingSuggestions) {
         existingSuggestions.remove();
     }
     
-    if (query.length < 2) return;
+    if (!showAll && query.length < 2) return;
     
-    const matchedUsers = window.availableUsers.filter(user => 
-        user.username.toLowerCase().includes(query) || 
-        `${user.first_name} ${user.last_name}`.toLowerCase().includes(query)
-    ).slice(0, 5); // Mostrar máximo 5 sugerencias
+    const matchedUsers = showAll 
+        ? window.availableUsers.slice(0, 8) // Mostrar primeros 8 usuarios cuando showAll=true
+        : window.availableUsers.filter(user => 
+            user.username.toLowerCase().includes(query) || 
+            `${user.first_name} ${user.last_name}`.toLowerCase().includes(query)
+          ).slice(0, 5); // Mostrar máximo 5 sugerencias cuando se busca
     
     if (matchedUsers.length > 0) {
         const suggestionsDiv = document.createElement('div');
@@ -3089,10 +3465,59 @@ function showUserSuggestions(query, containerId, inputElement) {
                 color: var(--apple-label);
                 border-bottom: 1px solid rgba(255, 255, 255, 0.05);
                 transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
             `;
             
             const displayName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
-            suggestionItem.textContent = displayName;
+            
+            // Crear avatar
+            const avatar = document.createElement('div');
+            avatar.className = 'suggestion-avatar';
+            avatar.style.cssText = `
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, var(--apple-blue), #4A90E2);
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 600;
+                font-size: 0.8rem;
+                flex-shrink: 0;
+            `;
+            avatar.textContent = (user.first_name?.[0] || user.username?.[0] || '?').toUpperCase();
+            
+            // Crear información del usuario
+            const userInfo = document.createElement('div');
+            userInfo.style.cssText = `
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+            `;
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.style.cssText = `
+                font-weight: 500;
+                font-size: 0.9rem;
+            `;
+            nameSpan.textContent = displayName;
+            
+            const usernameSpan = document.createElement('span');
+            usernameSpan.style.cssText = `
+                font-size: 0.8rem;
+                color: var(--apple-label-secondary);
+                opacity: 0.8;
+            `;
+            usernameSpan.textContent = '@' + user.username;
+            
+            userInfo.appendChild(nameSpan);
+            userInfo.appendChild(usernameSpan);
+            
+            suggestionItem.appendChild(avatar);
+            suggestionItem.appendChild(userInfo);
             
             suggestionItem.addEventListener('mouseenter', function() {
                 this.style.background = 'rgba(255, 255, 255, 0.08)';
@@ -3267,10 +3692,8 @@ function showSuccessNotification(message) {
 }
 
 function collectPowerTaskData() {
-    const titleInput = document.querySelector('.task-title-input');
     const editor = document.querySelector('.task-rich-editor');
     const dueDateInput = document.getElementById('taskDueDate');
-    const estimatedTimeInput = document.querySelector('input[placeholder="ej: 2 horas"]');
     const highPriorityCheckbox = document.getElementById('highPriority');
     
     // Recopilar usuarios seleccionados
@@ -3294,13 +3717,12 @@ function collectPowerTaskData() {
     };
     
     return {
-        title: titleInput.textContent.trim() || 'Nueva tarea',
+        title: editor.textContent.substring(0, 50).trim() || 'Nueva tarea', // Usar las primeras palabras como título
         content: editor.innerHTML || '',
         responsible: responsible,
         participants: participants,
         observers: observers,
-        dueDate: dueDateInput.value,
-        estimatedTime: estimatedTimeInput.value,
+        dueDate: dueDateInput.getAttribute('data-datetime') || dueDateInput.value,
         highPriority: highPriorityCheckbox.checked,
         options: options
     };
@@ -3757,31 +4179,20 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- Formulario Potente de Tareas con Editor Avanzado -->
 <div class="power-task-modal-overlay" id="createTaskModal">
     <div class="power-task-container">
-        <!-- Header del Modal -->
+        <!-- Header Simplificado -->
         <div class="power-task-header">
-            <div class="task-header-left">
-                <h1 class="task-title-input" contenteditable="true" data-placeholder="Introduce el nombre de la tarea">Nueva tarea</h1>
-                <div class="task-metadata">
-                    <div class="task-flow-selector">
-                        <span>Seleccionar un flujo</span>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="6,9 12,15 18,9"/>
-                        </svg>
-                    </div>
-                    <div class="task-priority">
-                        <label>
-                            <input type="checkbox" id="highPriority">
-                            <span class="priority-label">Alta prioridad</span>
-                        </label>
+            <div class="task-header-content">
+                <div class="task-priority">
+                    <label class="priority-toggle">
+                        <input type="checkbox" id="highPriority">
                         <div class="priority-icon">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                             </svg>
                         </div>
-                    </div>
+                        <span class="priority-label">Alta prioridad</span>
+                    </label>
                 </div>
-            </div>
-            <div class="task-header-right">
                 <button class="power-close-btn" onclick="closeCreateTaskModal()" type="button">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="m18 6-12 12M6 6l12 12"/>
@@ -3901,45 +4312,31 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="task-timing-section">
             <div class="timing-item">
                 <label>Fecha límite</label>
-                <input type="datetime-local" id="taskDueDate" class="timing-input">
+                <div class="custom-date-picker">
+                    <input type="text" id="taskDueDate" class="date-input" placeholder="Selecciona fecha y hora" readonly>
+                    <svg class="date-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/>
+                        <line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                </div>
             </div>
             <div class="timing-item">
-                <label>Tiempo estimado</label>
-                <input type="text" placeholder="ej: 2 horas" class="timing-input">
+                <label>Creado por</label>
+                <div class="creator-info">
+                    <div class="creator-avatar">
+                        {% if user.userprofile.avatar %}
+                            <img src="{{ user.userprofile.avatar.url }}" alt="{{ user.get_full_name }}">
+                        {% else %}
+                            <div class="default-avatar">{{ user.first_name.0|default:user.username.0|upper }}</div>
+                        {% endif %}
+                    </div>
+                    <span class="creator-name">{{ user.get_full_name|default:user.username }}</span>
+                </div>
             </div>
         </div>
 
-        <!-- Opciones Adicionales -->
-        <div class="task-options-section">
-            <div class="options-header">
-                <button type="button" class="options-toggle">
-                    <span>Más opciones</span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="6,9 12,15 18,9"/>
-                    </svg>
-                </button>
-            </div>
-            <div class="options-content">
-                <div class="option-item">
-                    <label>
-                        <input type="checkbox">
-                        <span>Requiere aprobación</span>
-                    </label>
-                </div>
-                <div class="option-item">
-                    <label>
-                        <input type="checkbox">
-                        <span>Tarea recurrente</span>
-                    </label>
-                </div>
-                <div class="option-item">
-                    <label>
-                        <input type="checkbox">
-                        <span>Enviar notificaciones</span>
-                    </label>
-                </div>
-            </div>
-        </div>
 
         <!-- Footer con Acciones -->
         <div class="power-task-footer">
@@ -3949,11 +4346,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
             </div>
             <div class="footer-right">
-                <button type="button" class="footer-action secondary">
-                    Guardar como plantilla
-                </button>
-                <button type="submit" class="footer-action primary" form="powerTaskForm">
-                    Agregar tarea (⌘+Enter)
+                <button type="button" class="footer-action primary" onclick="submitPowerTaskForm()">
+                    Crear tarea
                 </button>
             </div>
         </div>
