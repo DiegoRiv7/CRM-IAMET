@@ -1336,9 +1336,549 @@
             opacity: 1;
         }
         100% {
-            transform: scale(0.95) translateY(20px);
+            transform: scale(0.9) translateY(40px);
+            opacity: 0.8;
+        }
+    }
+    
+    @keyframes slideInRight {
+        0% {
+            transform: translateX(100%);
             opacity: 0;
         }
+        100% {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOutRight {
+        0% {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        100% {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+
+    /* ==========================================
+       POWER TASK MODAL - EDITOR AVANZADO
+       ========================================== */
+    
+    .power-task-modal-overlay {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        pointer-events: none;
+        isolation: isolate;
+    }
+    
+    .power-task-modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: all;
+    }
+    
+    .power-task-container {
+        background: rgba(18, 18, 20, 0.95);
+        backdrop-filter: blur(50px) saturate(1.8);
+        -webkit-backdrop-filter: blur(50px) saturate(1.8);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        width: 95%;
+        max-width: 900px;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: relative;
+        box-shadow: 
+            0 32px 120px rgba(0, 0, 0, 0.6),
+            0 16px 60px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transform: scale(0.92) translateY(40px);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    .power-task-modal-overlay.active .power-task-container {
+        transform: scale(1) translateY(0);
+    }
+    
+    /* Header del Modal */
+    .power-task-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 2rem 2rem 1.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    .task-header-left {
+        flex: 1;
+    }
+    
+    .task-title-input {
+        font-size: 2rem;
+        font-weight: 600;
+        color: var(--apple-label);
+        background: transparent;
+        border: none;
+        outline: none;
+        margin: 0 0 1rem 0;
+        padding: 0.5rem 0;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        min-height: 2.5rem;
+        line-height: 1.2;
+        position: relative;
+        width: 100%;
+    }
+    
+    .task-title-input:empty::before {
+        content: attr(data-placeholder);
+        color: rgba(255, 255, 255, 0.4);
+        font-style: italic;
+        pointer-events: none;
+    }
+    
+    .task-title-input:focus {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 0.5rem;
+        border-radius: 8px;
+    }
+    
+    .task-metadata {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .task-flow-selector {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--apple-label-secondary);
+        font-size: 0.9rem;
+        cursor: pointer;
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+    
+    .task-flow-selector:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--apple-label);
+    }
+    
+    .task-priority {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .task-priority label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        font-size: 0.9rem;
+        color: var(--apple-label-secondary);
+    }
+    
+    .task-priority input[type="checkbox"] {
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border: 1.5px solid rgba(255, 255, 255, 0.3);
+        border-radius: 4px;
+        background: transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+    
+    .task-priority input[type="checkbox"]:checked {
+        background: #ff9500;
+        border-color: #ff9500;
+    }
+    
+    .task-priority input[type="checkbox"]:checked::after {
+        content: '✓';
+        color: white;
+        font-size: 12px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+    
+    .power-close-btn {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 10px;
+        padding: 0.75rem;
+        color: var(--apple-label-secondary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .power-close-btn:hover {
+        background: rgba(255, 59, 48, 0.2);
+        border-color: rgba(255, 59, 48, 0.4);
+        color: #ff3b30;
+    }
+    
+    /* Toolbar de Formato */
+    .rich-editor-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem 2rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.02);
+        flex-wrap: wrap;
+    }
+    
+    .toolbar-group {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .toolbar-btn {
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 6px;
+        padding: 0.5rem;
+        color: var(--apple-label-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .toolbar-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.15);
+        color: var(--apple-label);
+    }
+    
+    .toolbar-btn.active {
+        background: var(--apple-blue);
+        border-color: var(--apple-blue);
+        color: white;
+    }
+    
+    .toolbar-separator {
+        width: 1px;
+        height: 1.5rem;
+        background: rgba(255, 255, 255, 0.15);
+        margin: 0 0.5rem;
+    }
+    
+    /* Editor Principal */
+    .task-rich-editor {
+        min-height: 200px;
+        padding: 2rem;
+        color: var(--apple-label);
+        font-size: 1rem;
+        line-height: 1.6;
+        outline: none;
+        border: none;
+        background: transparent;
+        font-family: inherit;
+        position: relative;
+    }
+    
+    .task-rich-editor:empty::before {
+        content: attr(data-placeholder);
+        color: rgba(255, 255, 255, 0.4);
+        font-style: italic;
+        pointer-events: none;
+    }
+    
+    .task-rich-editor:focus {
+        background: rgba(255, 255, 255, 0.02);
+    }
+    
+    /* Sección de Asignaciones */
+    .task-assignments-section {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    .assignment-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .assignment-tab {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        color: var(--apple-label-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+    }
+    
+    .assignment-tab.active {
+        background: var(--apple-blue);
+        border-color: var(--apple-blue);
+        color: white;
+    }
+    
+    .assignment-tab:hover:not(.active) {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--apple-label);
+    }
+    
+    .assignment-panel {
+        display: none;
+    }
+    
+    .assignment-panel.active {
+        display: block;
+    }
+    
+    .user-search-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid rgba(255, 255, 255, 0.15);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--apple-label);
+        font-size: 0.95rem;
+        outline: none;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(10px);
+    }
+    
+    .user-search-input:focus {
+        border-color: var(--apple-blue);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+    }
+    
+    .selected-users {
+        margin-top: 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .user-pill {
+        background: rgba(10, 132, 255, 0.2);
+        border: 1px solid rgba(10, 132, 255, 0.3);
+        border-radius: 20px;
+        padding: 0.4rem 0.8rem;
+        color: var(--apple-blue);
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .user-pill-remove {
+        background: none;
+        border: none;
+        color: var(--apple-blue);
+        cursor: pointer;
+        padding: 0;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+    
+    .user-pill-remove:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Timing Section */
+    .task-timing-section {
+        display: flex;
+        gap: 2rem;
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        flex-wrap: wrap;
+    }
+    
+    .timing-item {
+        flex: 1;
+        min-width: 200px;
+    }
+    
+    .timing-item label {
+        display: block;
+        color: var(--apple-label-secondary);
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .timing-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid rgba(255, 255, 255, 0.15);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--apple-label);
+        font-size: 0.95rem;
+        outline: none;
+        transition: all 0.2s ease;
+    }
+    
+    .timing-input:focus {
+        border-color: var(--apple-blue);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+    }
+    
+    /* Options Section */
+    .task-options-section {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    .options-toggle {
+        background: transparent;
+        border: none;
+        color: var(--apple-label-secondary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+    
+    .options-toggle:hover {
+        color: var(--apple-label);
+    }
+    
+    .options-content {
+        margin-top: 1rem;
+        display: none;
+        gap: 1rem;
+        flex-direction: column;
+    }
+    
+    .options-content.expanded {
+        display: flex;
+    }
+    
+    .option-item label {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+        color: var(--apple-label-secondary);
+        font-size: 0.9rem;
+    }
+    
+    .option-item input[type="checkbox"] {
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border: 1.5px solid rgba(255, 255, 255, 0.3);
+        border-radius: 4px;
+        background: transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+    
+    .option-item input[type="checkbox"]:checked {
+        background: var(--apple-blue);
+        border-color: var(--apple-blue);
+    }
+    
+    .option-item input[type="checkbox"]:checked::after {
+        content: '✓';
+        color: white;
+        font-size: 12px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+    
+    /* Footer */
+    .power-task-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem 2rem;
+        background: rgba(255, 255, 255, 0.02);
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .footer-left, .footer-right {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .footer-action {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        backdrop-filter: blur(10px);
+        white-space: nowrap;
+    }
+    
+    .footer-action.secondary {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: var(--apple-label-secondary);
+    }
+    
+    .footer-action.secondary:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: var(--apple-label);
+        transform: translateY(-1px);
+    }
+    
+    .footer-action.primary {
+        background: linear-gradient(135deg, var(--apple-blue), #4A90E2);
+        border: 1px solid rgba(10, 132, 255, 0.3);
+        color: white;
+        box-shadow: 0 4px 20px rgba(10, 132, 255, 0.25);
+    }
+    
+    .footer-action.primary:hover {
+        background: linear-gradient(135deg, #4A90E2, var(--apple-blue));
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(10, 132, 255, 0.35);
     }
 
     /* Search Widget */
@@ -2317,15 +2857,10 @@ document.addEventListener('DOMContentLoaded', function() {
 function openCreateTaskModal() {
     const modal = document.getElementById('createTaskModal');
     modal.classList.add('active');
-    populateUserDropdowns();
     
-    // Agregar animación suave de entrada
-    setTimeout(() => {
-        const container = modal.querySelector('.apple-modal-container');
-        if (container) {
-            container.style.animation = 'modalSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-        }
-    }, 10);
+    // Inicializar el editor avanzado
+    initializePowerTaskEditor();
+    loadUsersForAssignments();
     
     // Cerrar modal al hacer clic fuera
     modal.addEventListener('click', function(e) {
@@ -2340,25 +2875,435 @@ function openCreateTaskModal() {
             closeCreateTaskModal();
         }
     });
+    
+    // Atajos de teclado
+    document.addEventListener('keydown', function(e) {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && modal.classList.contains('active')) {
+            e.preventDefault();
+            submitPowerTaskForm();
+        }
+    });
 }
 
 function closeCreateTaskModal() {
     const modal = document.getElementById('createTaskModal');
-    const container = modal.querySelector('.apple-modal-container');
-    
-    // Animación de salida
-    if (container) {
-        container.style.animation = 'modalSlideOut 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-    }
     
     setTimeout(() => {
         modal.classList.remove('active');
-        document.getElementById('createTaskForm').reset();
-        // Resetear animación
-        if (container) {
-            container.style.animation = '';
-        }
+        resetPowerTaskForm();
     }, 300);
+}
+
+function initializePowerTaskEditor() {
+    // Inicializar toolbar de formato
+    const toolbarButtons = document.querySelectorAll('.toolbar-btn');
+    toolbarButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const command = this.getAttribute('data-command');
+            executeFormatCommand(command);
+        });
+    });
+    
+    // Inicializar tabs de asignaciones
+    const assignmentTabs = document.querySelectorAll('.assignment-tab');
+    assignmentTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            switchAssignmentTab(this.getAttribute('data-tab'));
+        });
+    });
+    
+    // Inicializar toggle de opciones
+    const optionsToggle = document.querySelector('.options-toggle');
+    if (optionsToggle) {
+        optionsToggle.addEventListener('click', function() {
+            const content = document.querySelector('.options-content');
+            content.classList.toggle('expanded');
+            
+            const svg = this.querySelector('svg');
+            if (content.classList.contains('expanded')) {
+                svg.style.transform = 'rotate(180deg)';
+            } else {
+                svg.style.transform = 'rotate(0deg)';
+            }
+        });
+    }
+}
+
+function executeFormatCommand(command) {
+    const editor = document.querySelector('.task-rich-editor');
+    editor.focus();
+    
+    if (command === 'createLink') {
+        const url = prompt('Ingresa la URL:');
+        if (url) {
+            document.execCommand('createLink', false, url);
+        }
+    } else if (command === 'insertTable') {
+        const table = '<table border="1" style="border-collapse: collapse; width: 100%;"><tr><td>Celda 1</td><td>Celda 2</td></tr><tr><td>Celda 3</td><td>Celda 4</td></tr></table>';
+        document.execCommand('insertHTML', false, table);
+    } else {
+        document.execCommand(command, false, null);
+    }
+    
+    // Actualizar estado visual del botón
+    updateToolbarButtonState();
+}
+
+function updateToolbarButtonState() {
+    const buttons = document.querySelectorAll('.toolbar-btn');
+    buttons.forEach(btn => {
+        const command = btn.getAttribute('data-command');
+        if (document.queryCommandState(command)) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
+
+function switchAssignmentTab(tabName) {
+    // Cambiar tab activo
+    document.querySelectorAll('.assignment-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    
+    // Cambiar panel activo
+    document.querySelectorAll('.assignment-panel').forEach(panel => {
+        panel.classList.remove('active');
+    });
+    document.getElementById(`${tabName}-panel`).classList.add('active');
+}
+
+function resetPowerTaskForm() {
+    // Limpiar título
+    const titleInput = document.querySelector('.task-title-input');
+    titleInput.textContent = 'Nueva tarea';
+    
+    // Limpiar editor
+    const editor = document.querySelector('.task-rich-editor');
+    editor.innerHTML = '';
+    
+    // Limpiar inputs
+    document.getElementById('taskDueDate').value = '';
+    document.querySelector('input[placeholder="ej: 2 horas"]').value = '';
+    
+    // Limpiar checkboxes
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    
+    // Limpiar usuarios seleccionados
+    document.querySelectorAll('.selected-users').forEach(container => {
+        container.innerHTML = '';
+    });
+    
+    // Resetear tabs
+    switchAssignmentTab('responsible');
+}
+
+async function loadUsersForAssignments() {
+    try {
+        const response = await fetch('/app/api/buscar-usuarios/?q=');
+        const data = await response.json();
+
+        if (data.success && data.usuarios && data.usuarios.length > 0) {
+            window.availableUsers = data.usuarios;
+            setupUserSearchInputs();
+        } else {
+            console.log('No se encontraron usuarios disponibles');
+            window.availableUsers = [];
+        }
+    } catch (error) {
+        console.error('Error cargando usuarios:', error);
+        window.availableUsers = [];
+    }
+}
+
+function setupUserSearchInputs() {
+    const searchInputs = document.querySelectorAll('.user-search-input');
+    
+    searchInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            const containerId = this.id.replace('Search', '');
+            showUserSuggestions(query, containerId, this);
+        });
+        
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const query = this.value.toLowerCase();
+                const matchedUser = window.availableUsers.find(user => 
+                    user.username.toLowerCase().includes(query) || 
+                    `${user.first_name} ${user.last_name}`.toLowerCase().includes(query)
+                );
+                
+                if (matchedUser) {
+                    const containerId = this.id.replace('Search', '');
+                    addUserToSelection(matchedUser, containerId);
+                    this.value = '';
+                }
+            }
+        });
+    });
+}
+
+function showUserSuggestions(query, containerId, inputElement) {
+    // Remover sugerencias anteriores
+    const existingSuggestions = document.querySelector('.user-suggestions');
+    if (existingSuggestions) {
+        existingSuggestions.remove();
+    }
+    
+    if (query.length < 2) return;
+    
+    const matchedUsers = window.availableUsers.filter(user => 
+        user.username.toLowerCase().includes(query) || 
+        `${user.first_name} ${user.last_name}`.toLowerCase().includes(query)
+    ).slice(0, 5); // Mostrar máximo 5 sugerencias
+    
+    if (matchedUsers.length > 0) {
+        const suggestionsDiv = document.createElement('div');
+        suggestionsDiv.className = 'user-suggestions';
+        suggestionsDiv.style.cssText = `
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(28, 28, 30, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            margin-top: 0.5rem;
+        `;
+        
+        matchedUsers.forEach(user => {
+            const suggestionItem = document.createElement('div');
+            suggestionItem.className = 'user-suggestion-item';
+            suggestionItem.style.cssText = `
+                padding: 0.75rem 1rem;
+                cursor: pointer;
+                color: var(--apple-label);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                transition: all 0.2s ease;
+            `;
+            
+            const displayName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
+            suggestionItem.textContent = displayName;
+            
+            suggestionItem.addEventListener('mouseenter', function() {
+                this.style.background = 'rgba(255, 255, 255, 0.08)';
+            });
+            
+            suggestionItem.addEventListener('mouseleave', function() {
+                this.style.background = 'transparent';
+            });
+            
+            suggestionItem.addEventListener('click', function() {
+                addUserToSelection(user, containerId);
+                inputElement.value = '';
+                suggestionsDiv.remove();
+            });
+            
+            suggestionsDiv.appendChild(suggestionItem);
+        });
+        
+        inputElement.parentNode.style.position = 'relative';
+        inputElement.parentNode.appendChild(suggestionsDiv);
+    }
+}
+
+function addUserToSelection(user, containerId) {
+    const container = document.getElementById(`selected${containerId.charAt(0).toUpperCase() + containerId.slice(1)}`);
+    
+    // Verificar si el usuario ya está seleccionado
+    const existingPill = container.querySelector(`[data-user-id="${user.id}"]`);
+    if (existingPill) return;
+    
+    const displayName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
+    
+    const userPill = document.createElement('div');
+    userPill.className = 'user-pill';
+    userPill.setAttribute('data-user-id', user.id);
+    userPill.innerHTML = `
+        <span>${displayName}</span>
+        <button class="user-pill-remove" onclick="removeUserFromSelection(${user.id}, '${containerId}')">
+            ×
+        </button>
+    `;
+    
+    container.appendChild(userPill);
+}
+
+function removeUserFromSelection(userId, containerId) {
+    const container = document.getElementById(`selected${containerId.charAt(0).toUpperCase() + containerId.slice(1)}`);
+    const pill = container.querySelector(`[data-user-id="${userId}"]`);
+    if (pill) {
+        pill.remove();
+    }
+}
+
+async function submitPowerTaskForm() {
+    const taskData = collectPowerTaskData();
+    const submitBtn = document.querySelector('.footer-action.primary');
+    const originalText = submitBtn.textContent;
+    
+    // Validar datos básicos
+    if (!taskData.title || taskData.title === 'Nueva tarea') {
+        alert('Por favor ingresa un título para la tarea');
+        return;
+    }
+    
+    if (!taskData.content.trim()) {
+        alert('Por favor agrega una descripción para la tarea');
+        return;
+    }
+    
+    // Mostrar estado de carga
+    submitBtn.textContent = 'Creando tarea...';
+    submitBtn.disabled = true;
+    submitBtn.style.background = 'rgba(10, 132, 255, 0.6)';
+    
+    try {
+        // Preparar datos para API
+        const formData = new FormData();
+        formData.append('titulo', taskData.title);
+        formData.append('descripcion', taskData.content);
+        formData.append('proyecto_id', {{ proyecto.id }});
+        
+        if (taskData.responsible) {
+            formData.append('responsable_id', taskData.responsible);
+        }
+        
+        if (taskData.dueDate) {
+            formData.append('fecha_limite', taskData.dueDate);
+        }
+        
+        if (taskData.estimatedTime) {
+            formData.append('tiempo_estimado', taskData.estimatedTime);
+        }
+        
+        formData.append('alta_prioridad', taskData.highPriority);
+        formData.append('participantes', JSON.stringify(taskData.participants));
+        formData.append('observadores', JSON.stringify(taskData.observers));
+        formData.append('opciones', JSON.stringify(taskData.options));
+        
+        // Agregar CSRF token
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        
+        // Enviar a la API
+        const response = await fetch('/app/api/tareas/', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            // Éxito
+            submitBtn.textContent = '✓ Tarea Creada';
+            submitBtn.style.background = 'linear-gradient(135deg, #28a745, #34ce57)';
+            
+            setTimeout(() => {
+                closeCreateTaskModal();
+                
+                // Mostrar notificación de éxito
+                showSuccessNotification(`Tarea "${taskData.title}" creada exitosamente`);
+                
+                // Recargar la lista de tareas si existe
+                if (typeof cargarTareas === 'function') {
+                    cargarTareas();
+                }
+            }, 1000);
+            
+        } else {
+            throw new Error(result.error || 'Error al crear la tarea');
+        }
+        
+    } catch (error) {
+        console.error('Error al crear tarea:', error);
+        
+        // Mostrar error
+        submitBtn.textContent = '❌ Error';
+        submitBtn.style.background = 'linear-gradient(135deg, #dc3545, #e55565)';
+        
+        setTimeout(() => {
+            submitBtn.textContent = originalText;
+            submitBtn.style.background = '';
+            submitBtn.disabled = false;
+        }, 2000);
+        
+        alert('Error al crear la tarea: ' + error.message);
+    }
+}
+
+function showSuccessNotification(message) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(40, 167, 69, 0.95);
+        backdrop-filter: blur(20px);
+        color: white;
+        padding: 16px 24px;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        z-index: 100000;
+        font-weight: 500;
+        animation: slideInRight 0.3s ease-out;
+    `;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.3s ease-in forwards';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+function collectPowerTaskData() {
+    const titleInput = document.querySelector('.task-title-input');
+    const editor = document.querySelector('.task-rich-editor');
+    const dueDateInput = document.getElementById('taskDueDate');
+    const estimatedTimeInput = document.querySelector('input[placeholder="ej: 2 horas"]');
+    const highPriorityCheckbox = document.getElementById('highPriority');
+    
+    // Recopilar usuarios seleccionados
+    const responsible = Array.from(document.querySelectorAll('#selectedResponsible .user-pill')).map(pill => 
+        parseInt(pill.getAttribute('data-user-id'))
+    )[0] || null; // Solo uno para responsable
+    
+    const participants = Array.from(document.querySelectorAll('#selectedParticipants .user-pill')).map(pill => 
+        parseInt(pill.getAttribute('data-user-id'))
+    );
+    
+    const observers = Array.from(document.querySelectorAll('#selectedObservers .user-pill')).map(pill => 
+        parseInt(pill.getAttribute('data-user-id'))
+    );
+    
+    // Recopilar opciones
+    const options = {
+        requiresApproval: document.querySelector('.option-item input[type="checkbox"]')?.checked || false,
+        isRecurring: document.querySelectorAll('.option-item input[type="checkbox"]')[1]?.checked || false,
+        sendNotifications: document.querySelectorAll('.option-item input[type="checkbox"]')[2]?.checked || false
+    };
+    
+    return {
+        title: titleInput.textContent.trim() || 'Nueva tarea',
+        content: editor.innerHTML || '',
+        responsible: responsible,
+        participants: participants,
+        observers: observers,
+        dueDate: dueDateInput.value,
+        estimatedTime: estimatedTimeInput.value,
+        highPriority: highPriorityCheckbox.checked,
+        options: options
+    };
 }
 
 async function populateUserDropdowns() {
@@ -2809,83 +3754,212 @@ document.addEventListener('DOMContentLoaded', function() {
 
 </script>
 
-<!-- Nuevo Modal Liquid Glass para Crear Tarea (Posición Global) -->
-<div class="apple-modal-overlay" id="createTaskModal">
-    <div class="apple-modal-container">
-        <div class="apple-modal-header">
-            <h2 class="apple-modal-title">Crear Nueva Tarea</h2>
-            <button class="apple-close-btn" onclick="closeCreateTaskModal()" type="button">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="m18 6-12 12M6 6l12 12"/>
-                </svg>
-            </button>
+<!-- Formulario Potente de Tareas con Editor Avanzado -->
+<div class="power-task-modal-overlay" id="createTaskModal">
+    <div class="power-task-container">
+        <!-- Header del Modal -->
+        <div class="power-task-header">
+            <div class="task-header-left">
+                <h1 class="task-title-input" contenteditable="true" data-placeholder="Introduce el nombre de la tarea">Nueva tarea</h1>
+                <div class="task-metadata">
+                    <div class="task-flow-selector">
+                        <span>Seleccionar un flujo</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6,9 12,15 18,9"/>
+                        </svg>
+                    </div>
+                    <div class="task-priority">
+                        <label>
+                            <input type="checkbox" id="highPriority">
+                            <span class="priority-label">Alta prioridad</span>
+                        </label>
+                        <div class="priority-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="task-header-right">
+                <button class="power-close-btn" onclick="closeCreateTaskModal()" type="button">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m18 6-12 12M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
         </div>
-        
-        <form id="createTaskForm" class="apple-form">
-            <div class="apple-input-group">
-                <label class="apple-label">Título de la Tarea</label>
-                <input 
-                    type="text" 
-                    id="taskTitle" 
-                    name="taskTitle" 
-                    class="apple-input" 
-                    placeholder="Ej: Implementar funcionalidad X" 
-                    required
-                >
+
+        <!-- Toolbar de Formato -->
+        <div class="rich-editor-toolbar">
+            <div class="toolbar-group">
+                <button type="button" class="toolbar-btn" data-command="bold" title="Negrita">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>
+                        <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>
+                    </svg>
+                </button>
+                <button type="button" class="toolbar-btn" data-command="italic" title="Cursiva">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="4" x2="10" y2="4"/>
+                        <line x1="14" y1="20" x2="5" y2="20"/>
+                        <line x1="15" y1="4" x2="9" y2="20"/>
+                    </svg>
+                </button>
+                <button type="button" class="toolbar-btn" data-command="underline" title="Subrayado">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"/>
+                        <line x1="4" y1="21" x2="20" y2="21"/>
+                    </svg>
+                </button>
             </div>
             
-            <div class="apple-input-group">
-                <label class="apple-label">Descripción</label>
-                <textarea 
-                    id="taskDescription" 
-                    name="taskDescription" 
-                    class="apple-input apple-textarea" 
-                    placeholder="Detalles de la tarea..."
-                    rows="4"
-                ></textarea>
+            <div class="toolbar-separator"></div>
+            
+            <div class="toolbar-group">
+                <button type="button" class="toolbar-btn" data-command="insertUnorderedList" title="Lista con viñetas">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="8" y1="6" x2="21" y2="6"/>
+                        <line x1="8" y1="12" x2="21" y2="12"/>
+                        <line x1="8" y1="18" x2="21" y2="18"/>
+                        <line x1="3" y1="6" x2="3.01" y2="6"/>
+                        <line x1="3" y1="12" x2="3.01" y2="12"/>
+                        <line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                </button>
+                <button type="button" class="toolbar-btn" data-command="insertOrderedList" title="Lista numerada">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="10" y1="6" x2="21" y2="6"/>
+                        <line x1="10" y1="12" x2="21" y2="12"/>
+                        <line x1="10" y1="18" x2="21" y2="18"/>
+                        <path d="M4 6h1v4"/>
+                        <path d="M4 10h2"/>
+                        <path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="toolbar-separator"></div>
+
+            <div class="toolbar-group">
+                <button type="button" class="toolbar-btn" data-command="createLink" title="Agregar enlace">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m15 7 4 4-4 4"/>
+                        <path d="M10 7 6 11l4 4"/>
+                        <circle cx="12" cy="12" r="1"/>
+                    </svg>
+                </button>
+                <button type="button" class="toolbar-btn" data-command="insertTable" title="Insertar tabla">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                        <line x1="9" y1="3" x2="9" y2="21"/>
+                        <line x1="15" y1="3" x2="15" y2="21"/>
+                        <line x1="3" y1="9" x2="21" y2="9"/>
+                        <line x1="3" y1="15" x2="21" y2="15"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Editor Principal -->
+        <div class="task-rich-editor" contenteditable="true" data-placeholder="Describe los detalles de la tarea, objetivos, requisitos...">
+        </div>
+
+        <!-- Sección de Asignaciones -->
+        <div class="task-assignments-section">
+            <div class="assignment-tabs">
+                <button class="assignment-tab active" data-tab="responsible">Responsable</button>
+                <button class="assignment-tab" data-tab="participants">Participantes</button>
+                <button class="assignment-tab" data-tab="observers">Observadores</button>
             </div>
             
-            <div class="apple-input-group">
-                <label class="apple-label">Responsable</label>
-                <select id="taskResponsible" name="taskResponsible" class="apple-select">
-                    <option value="">Seleccionar responsable</option>
-                </select>
+            <div class="assignment-content">
+                <div class="assignment-panel active" id="responsible-panel">
+                    <div class="user-selector">
+                        <input type="text" class="user-search-input" placeholder="Buscar responsable..." id="responsibleSearch">
+                        <div class="selected-users" id="selectedResponsible"></div>
+                    </div>
+                </div>
+                
+                <div class="assignment-panel" id="participants-panel">
+                    <div class="user-selector">
+                        <input type="text" class="user-search-input" placeholder="Buscar participantes..." id="participantsSearch">
+                        <div class="selected-users" id="selectedParticipants"></div>
+                    </div>
+                </div>
+                
+                <div class="assignment-panel" id="observers-panel">
+                    <div class="user-selector">
+                        <input type="text" class="user-search-input" placeholder="Buscar observadores..." id="observersSearch">
+                        <div class="selected-users" id="selectedObservers"></div>
+                    </div>
+                </div>
             </div>
-            
-            <div class="apple-input-group">
-                <label class="apple-label">Participantes</label>
-                <select id="taskParticipants" name="taskParticipants" class="apple-select apple-multi" multiple>
-                    <!-- Se llenarán desde JS -->
-                </select>
+        </div>
+
+        <!-- Configuración de Tiempo -->
+        <div class="task-timing-section">
+            <div class="timing-item">
+                <label>Fecha límite</label>
+                <input type="datetime-local" id="taskDueDate" class="timing-input">
             </div>
-            
-            <div class="apple-input-group">
-                <label class="apple-label">Observadores</label>
-                <select id="taskObservers" name="taskObservers" class="apple-select apple-multi" multiple>
-                    <!-- Se llenarán desde JS -->
-                </select>
+            <div class="timing-item">
+                <label>Tiempo estimado</label>
+                <input type="text" placeholder="ej: 2 horas" class="timing-input">
             </div>
-            
-            <div class="apple-input-group">
-                <label class="apple-label">Fecha Límite</label>
-                <input 
-                    type="datetime-local" 
-                    id="taskDueDate" 
-                    name="taskDueDate" 
-                    class="apple-input" 
-                    required
-                >
+        </div>
+
+        <!-- Opciones Adicionales -->
+        <div class="task-options-section">
+            <div class="options-header">
+                <button type="button" class="options-toggle">
+                    <span>Más opciones</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6,9 12,15 18,9"/>
+                    </svg>
+                </button>
             </div>
-            
-            <div class="apple-form-actions">
-                <button type="button" class="apple-btn apple-btn-secondary" onclick="closeCreateTaskModal()">
+            <div class="options-content">
+                <div class="option-item">
+                    <label>
+                        <input type="checkbox">
+                        <span>Requiere aprobación</span>
+                    </label>
+                </div>
+                <div class="option-item">
+                    <label>
+                        <input type="checkbox">
+                        <span>Tarea recurrente</span>
+                    </label>
+                </div>
+                <div class="option-item">
+                    <label>
+                        <input type="checkbox">
+                        <span>Enviar notificaciones</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer con Acciones -->
+        <div class="power-task-footer">
+            <div class="footer-left">
+                <button type="button" class="footer-action secondary" onclick="closeCreateTaskModal()">
                     Cancelar
                 </button>
-                <button type="submit" class="apple-btn apple-btn-primary">
-                    Crear Tarea
+            </div>
+            <div class="footer-right">
+                <button type="button" class="footer-action secondary">
+                    Guardar como plantilla
+                </button>
+                <button type="submit" class="footer-action primary" form="powerTaskForm">
+                    Agregar tarea (⌘+Enter)
                 </button>
             </div>
-        </form>
+        </div>
+
+        <!-- Form oculto para datos -->
+        <form id="powerTaskForm" style="display: none;"></form>
     </div>
 </div>
 
