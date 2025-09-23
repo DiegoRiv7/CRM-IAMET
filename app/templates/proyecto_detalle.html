@@ -1411,8 +1411,8 @@
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 16px;
         width: 95%;
-        max-width: 900px;
-        max-height: 90vh;
+        max-width: 700px;
+        max-height: 80vh;
         overflow-y: auto;
         position: relative;
         box-shadow: 
@@ -1437,6 +1437,35 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 1.5rem;
+    }
+    
+    .task-name-input {
+        flex: 1;
+        max-width: 300px;
+    }
+    
+    .task-title-field {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--apple-label);
+        font-size: 0.95rem;
+        font-weight: 500;
+        outline: none;
+        transition: all 0.2s ease;
+    }
+    
+    .task-title-field:focus {
+        border-color: var(--apple-blue);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+    }
+    
+    .task-title-field::placeholder {
+        color: var(--apple-label-secondary);
     }
     
     .priority-toggle {
@@ -1595,53 +1624,6 @@
     }
     
     /* Toolbar de Formato */
-    .rich-editor-toolbar {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 1rem 2rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        background: rgba(255, 255, 255, 0.02);
-        flex-wrap: wrap;
-    }
-    
-    .toolbar-group {
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-    }
-    
-    .toolbar-btn {
-        background: transparent;
-        border: 1px solid transparent;
-        border-radius: 6px;
-        padding: 0.5rem;
-        color: var(--apple-label-secondary);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .toolbar-btn:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 255, 255, 0.15);
-        color: var(--apple-label);
-    }
-    
-    .toolbar-btn.active {
-        background: var(--apple-blue);
-        border-color: var(--apple-blue);
-        color: white;
-    }
-    
-    .toolbar-separator {
-        width: 1px;
-        height: 1.5rem;
-        background: rgba(255, 255, 255, 0.15);
-        margin: 0 0.5rem;
-    }
     
     /* Editor Principal */
     .task-rich-editor {
@@ -3027,15 +3009,6 @@ function closeCreateTaskModal() {
 }
 
 function initializePowerTaskEditor() {
-    // Inicializar toolbar de formato
-    const toolbarButtons = document.querySelectorAll('.toolbar-btn');
-    toolbarButtons.forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const command = this.getAttribute('data-command');
-            executeFormatCommand(command);
-        });
-    });
     
     // Inicializar tabs de asignaciones
     const assignmentTabs = document.querySelectorAll('.assignment-tab');
@@ -3340,6 +3313,10 @@ function switchAssignmentTab(tabName) {
 }
 
 function resetPowerTaskForm() {
+    // Limpiar título
+    const titleInput = document.getElementById('taskTitle');
+    titleInput.value = '';
+    
     // Limpiar editor
     const editor = document.querySelector('.task-rich-editor');
     editor.innerHTML = '';
@@ -3692,6 +3669,7 @@ function showSuccessNotification(message) {
 }
 
 function collectPowerTaskData() {
+    const titleInput = document.getElementById('taskTitle');
     const editor = document.querySelector('.task-rich-editor');
     const dueDateInput = document.getElementById('taskDueDate');
     const highPriorityCheckbox = document.getElementById('highPriority');
@@ -3717,7 +3695,7 @@ function collectPowerTaskData() {
     };
     
     return {
-        title: editor.textContent.substring(0, 50).trim() || 'Nueva tarea', // Usar las primeras palabras como título
+        title: titleInput.value.trim() || 'Nueva tarea',
         content: editor.innerHTML || '',
         responsible: responsible,
         participants: participants,
@@ -4193,6 +4171,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         <span class="priority-label">Alta prioridad</span>
                     </label>
                 </div>
+                <div class="task-name-input">
+                    <input type="text" id="taskTitle" placeholder="Nombre de la tarea" class="task-title-field">
+                </div>
                 <button class="power-close-btn" onclick="closeCreateTaskModal()" type="button">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="m18 6-12 12M6 6l12 12"/>
@@ -4201,76 +4182,6 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         </div>
 
-        <!-- Toolbar de Formato -->
-        <div class="rich-editor-toolbar">
-            <div class="toolbar-group">
-                <button type="button" class="toolbar-btn" data-command="bold" title="Negrita">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>
-                        <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>
-                    </svg>
-                </button>
-                <button type="button" class="toolbar-btn" data-command="italic" title="Cursiva">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="19" y1="4" x2="10" y2="4"/>
-                        <line x1="14" y1="20" x2="5" y2="20"/>
-                        <line x1="15" y1="4" x2="9" y2="20"/>
-                    </svg>
-                </button>
-                <button type="button" class="toolbar-btn" data-command="underline" title="Subrayado">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"/>
-                        <line x1="4" y1="21" x2="20" y2="21"/>
-                    </svg>
-                </button>
-            </div>
-            
-            <div class="toolbar-separator"></div>
-            
-            <div class="toolbar-group">
-                <button type="button" class="toolbar-btn" data-command="insertUnorderedList" title="Lista con viñetas">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="8" y1="6" x2="21" y2="6"/>
-                        <line x1="8" y1="12" x2="21" y2="12"/>
-                        <line x1="8" y1="18" x2="21" y2="18"/>
-                        <line x1="3" y1="6" x2="3.01" y2="6"/>
-                        <line x1="3" y1="12" x2="3.01" y2="12"/>
-                        <line x1="3" y1="18" x2="3.01" y2="18"/>
-                    </svg>
-                </button>
-                <button type="button" class="toolbar-btn" data-command="insertOrderedList" title="Lista numerada">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="10" y1="6" x2="21" y2="6"/>
-                        <line x1="10" y1="12" x2="21" y2="12"/>
-                        <line x1="10" y1="18" x2="21" y2="18"/>
-                        <path d="M4 6h1v4"/>
-                        <path d="M4 10h2"/>
-                        <path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>
-                    </svg>
-                </button>
-            </div>
-
-            <div class="toolbar-separator"></div>
-
-            <div class="toolbar-group">
-                <button type="button" class="toolbar-btn" data-command="createLink" title="Agregar enlace">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="m15 7 4 4-4 4"/>
-                        <path d="M10 7 6 11l4 4"/>
-                        <circle cx="12" cy="12" r="1"/>
-                    </svg>
-                </button>
-                <button type="button" class="toolbar-btn" data-command="insertTable" title="Insertar tabla">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
-                        <line x1="9" y1="3" x2="9" y2="21"/>
-                        <line x1="15" y1="3" x2="15" y2="21"/>
-                        <line x1="3" y1="9" x2="21" y2="9"/>
-                        <line x1="3" y1="15" x2="21" y2="15"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
 
         <!-- Editor Principal -->
         <div class="task-rich-editor" contenteditable="true" data-placeholder="Describe los detalles de la tarea, objetivos, requisitos...">
