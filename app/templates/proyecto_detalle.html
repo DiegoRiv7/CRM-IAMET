@@ -3052,24 +3052,17 @@ function initializePowerTaskEditor() {
 function initializeCustomDatePicker() {
     const dateInput = document.getElementById('taskDueDate');
     
-    if (!dateInput) {
-        console.log('No se encontró el input de fecha');
-        return;
-    }
-    
-    console.log('Inicializando date picker para:', dateInput);
+    if (!dateInput) return;
     
     // Hacer readonly para prevenir escritura manual pero permitir eventos
     dateInput.readOnly = true;
     
     dateInput.addEventListener('click', function(e) {
         e.preventDefault();
-        console.log('Click en fecha');
         showCustomCalendar(this);
     });
     
     dateInput.addEventListener('focus', function() {
-        console.log('Focus en fecha');
         showCustomCalendar(this);
     });
     
@@ -3078,15 +3071,12 @@ function initializeCustomDatePicker() {
     if (datePicker) {
         datePicker.addEventListener('click', function(e) {
             e.preventDefault();
-            console.log('Click en date picker container');
             showCustomCalendar(dateInput);
         });
     }
 }
 
 function showCustomCalendar(inputElement) {
-    console.log('Mostrando calendario para:', inputElement);
-    
     // Remover calendario anterior si existe
     const existingCalendar = document.querySelector('.custom-calendar');
     if (existingCalendar) {
@@ -3097,19 +3087,23 @@ function showCustomCalendar(inputElement) {
     calendar.className = 'custom-calendar';
     calendar.style.cssText = `
         position: fixed;
-        top: 50%;
+        bottom: 120px;
         left: 50%;
-        transform: translate(-50%, -50%);
+        transform: translateX(-50%);
         width: 500px;
         max-width: 90vw;
-        background: rgba(255, 0, 0, 0.9);
-        backdrop-filter: blur(30px);
-        border: 3px solid #ff0000;
-        border-radius: 12px;
+        background: rgba(18, 18, 20, 0.95);
+        backdrop-filter: blur(50px) saturate(1.8);
+        -webkit-backdrop-filter: blur(50px) saturate(1.8);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 16px;
         padding: 1.5rem;
         z-index: 9999999;
-        box-shadow: 0 20px 60px rgba(255, 0, 0, 0.8);
-        animation: none;
+        box-shadow: 
+            0 32px 120px rgba(0, 0, 0, 0.6),
+            0 8px 32px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        animation: calendarSlideUp 0.3s ease-out;
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
@@ -3262,19 +3256,6 @@ function showCustomCalendar(inputElement) {
     
     // Appendar al body para mayor libertad de posicionamiento
     document.body.appendChild(calendar);
-    
-    console.log('Calendario creado y agregado al DOM');
-    console.log('Estilo del calendario:', calendar.style.cssText);
-    console.log('Z-index del modal:', document.getElementById('createTaskModal').style.zIndex);
-    
-    // Verificar que realmente está en el DOM
-    setTimeout(() => {
-        const calendarInDOM = document.querySelector('.custom-calendar');
-        console.log('Calendario en DOM después de timeout:', calendarInDOM);
-        if (calendarInDOM) {
-            console.log('Posición calculada:', calendarInDOM.getBoundingClientRect());
-        }
-    }, 500);
     
     // Cerrar al hacer clic fuera
     setTimeout(() => {
