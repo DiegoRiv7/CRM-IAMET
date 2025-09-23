@@ -1810,6 +1810,7 @@
     .custom-date-picker {
         position: relative;
         width: 100%;
+        cursor: pointer;
     }
     
     .date-input {
@@ -1823,6 +1824,7 @@
         outline: none;
         transition: all 0.2s ease;
         cursor: pointer;
+        user-select: none;
     }
     
     .date-input:focus, .date-input:hover {
@@ -3041,26 +3043,50 @@ function initializePowerTaskEditor() {
         });
     });
     
-    // Inicializar custom date picker
-    initializeCustomDatePicker();
+    // Inicializar custom date picker con un pequeño delay
+    setTimeout(() => {
+        initializeCustomDatePicker();
+    }, 100);
 }
 
 function initializeCustomDatePicker() {
     const dateInput = document.getElementById('taskDueDate');
-    const datePicker = document.querySelector('.custom-date-picker');
     
-    if (!dateInput || !datePicker) return;
+    if (!dateInput) {
+        console.log('No se encontró el input de fecha');
+        return;
+    }
     
-    dateInput.addEventListener('click', function() {
+    console.log('Inicializando date picker para:', dateInput);
+    
+    // Hacer readonly para prevenir escritura manual pero permitir eventos
+    dateInput.readOnly = true;
+    
+    dateInput.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('Click en fecha');
         showCustomCalendar(this);
     });
     
     dateInput.addEventListener('focus', function() {
+        console.log('Focus en fecha');
         showCustomCalendar(this);
     });
+    
+    // También agregar evento al contenedor
+    const datePicker = dateInput.parentElement;
+    if (datePicker) {
+        datePicker.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Click en date picker container');
+            showCustomCalendar(dateInput);
+        });
+    }
 }
 
 function showCustomCalendar(inputElement) {
+    console.log('Mostrando calendario para:', inputElement);
+    
     // Remover calendario anterior si existe
     const existingCalendar = document.querySelector('.custom-calendar');
     if (existingCalendar) {
@@ -3233,6 +3259,8 @@ function showCustomCalendar(inputElement) {
     
     // Appendar al body para mayor libertad de posicionamiento
     document.body.appendChild(calendar);
+    
+    console.log('Calendario creado y agregado al DOM');
     
     // Cerrar al hacer clic fuera
     setTimeout(() => {
@@ -4250,7 +4278,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="timing-item">
                 <label>Fecha límite</label>
                 <div class="custom-date-picker">
-                    <input type="text" id="taskDueDate" class="date-input" placeholder="Selecciona fecha y hora" readonly>
+                    <input type="text" id="taskDueDate" class="date-input" placeholder="Selecciona fecha y hora">
                     <svg class="date-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                         <line x1="16" y1="2" x2="16" y2="6"/>
