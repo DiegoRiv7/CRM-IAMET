@@ -3644,7 +3644,10 @@ async function submitPowerTaskForm() {
         formData.append('fecha_creacion', new Date().toISOString());
         
         // Agregar CSRF token
-        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+        if (csrfToken) {
+            formData.append('csrfmiddlewaretoken', csrfToken);
+        }
         
         // Enviar a la API
         const response = await fetch('/app/api/tareas/', {
@@ -3814,7 +3817,7 @@ async function populateUserDropdowns() {
 // Función para cargar tareas del proyecto
 async function cargarTareasDelProyecto() {
     try {
-        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/tareas/`);
+        const response = await fetch(`/app/api/tareas/?proyecto_id=${PROYECTO_ID}`);
         const data = await response.json();
         
         if (data.success && data.tareas) {
@@ -3836,7 +3839,7 @@ async function cargarTareasDelProyecto() {
                         onmouseout="this.style.background='transparent'">
                         <td style="padding: 1rem; color: var(--apple-label); font-weight: 500;">
                             ${tarea.titulo}
-                            ${tarea.alta_prioridad ? '<span style="color: #ffaa00; margin-left: 0.5rem;">★</span>' : ''}
+                            ${tarea.prioridad === 'alta' ? '<span style="color: #ffaa00; margin-left: 0.5rem;">★</span>' : ''}
                         </td>
                         <td style="padding: 1rem; color: var(--apple-label-secondary);">
                             ${formatearFecha(tarea.fecha_creacion)}
@@ -3859,6 +3862,18 @@ async function cargarTareasDelProyecto() {
         }
     } catch (error) {
         console.error('Error cargando tareas:', error);
+        
+        // Mostrar mensaje de error en la tabla
+        const tbody = document.querySelector('.tasks-table tbody');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="padding: 2rem; text-align: center; color: var(--apple-label-secondary);">
+                        Error cargando tareas. Por favor recarga la página.
+                    </td>
+                </tr>
+            `;
+        }
     }
 }
 
@@ -3892,8 +3907,10 @@ document.addEventListener('DOMContentLoaded', function() {
         btnCrearTarea.addEventListener('click', openCreateTaskModal);
     }
     
-    // Cargar tareas al cargar la página
-    cargarTareasDelProyecto();
+    // Cargar tareas al cargar la página (solo si existe la tabla)
+    if (document.querySelector('.tasks-table')) {
+        cargarTareasDelProyecto();
+    }
 
     // Manejar el envío del formulario de Crear Tarea
     const createTaskForm = document.getElementById('createTaskForm');

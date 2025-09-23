@@ -1645,3 +1645,115 @@ class ProyectoArchivo(models.Model):
             return f"{self.tamaño / (1024 * 1024):.1f} MB"
         else:
             return f"{self.tamaño / (1024 * 1024 * 1024):.1f} GB"
+
+
+class Tarea(models.Model):
+    """
+    Modelo para representar tareas dentro de proyectos
+    """
+    PRIORIDAD_CHOICES = [
+        ('baja', 'Baja'),
+        ('media', 'Media'),
+        ('alta', 'Alta'),
+    ]
+    
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente'),
+        ('en_progreso', 'En Progreso'),
+        ('completada', 'Completada'),
+        ('cancelada', 'Cancelada'),
+    ]
+    
+    titulo = models.CharField(
+        max_length=200,
+        verbose_name="Título de la Tarea"
+    )
+    descripcion = models.TextField(
+        blank=True,
+        verbose_name="Descripción"
+    )
+    proyecto = models.ForeignKey(
+        'Proyecto',
+        on_delete=models.CASCADE,
+        related_name='tareas',
+        verbose_name="Proyecto"
+    )
+    creado_por = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='tareas_creadas',
+        verbose_name="Creado por"
+    )
+    asignado_a = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tareas_asignadas',
+        verbose_name="Asignado a"
+    )
+    participantes = models.ManyToManyField(
+        User,
+        blank=True,
+        related_name='tareas_participando',
+        verbose_name="Participantes"
+    )
+    observadores = models.ManyToManyField(
+        User,
+        blank=True,
+        related_name='tareas_observando',
+        verbose_name="Observadores"
+    )
+    prioridad = models.CharField(
+        max_length=20,
+        choices=PRIORIDAD_CHOICES,
+        default='media',
+        verbose_name="Prioridad"
+    )
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADO_CHOICES,
+        default='pendiente',
+        verbose_name="Estado"
+    )
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de Creación"
+    )
+    fecha_limite = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha Límite"
+    )
+    fecha_completada = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Completado"
+    )
+    
+    class Meta:
+        verbose_name = "Tarea"
+        verbose_name_plural = "Tareas"
+        ordering = ['-fecha_creacion']
+    
+    def __str__(self):
+        return f"{self.titulo} - {self.proyecto.nombre}"
+    
+    def get_prioridad_color(self):
+        """Retorna el color asociado a la prioridad"""
+        colors = {
+            'baja': '#28a745',
+            'media': '#ffc107', 
+            'alta': '#dc3545'
+        }
+        return colors.get(self.prioridad, '#6c757d')
+    
+    def get_estado_color(self):
+        """Retorna el color asociado al estado"""
+        colors = {
+            'pendiente': '#6c757d',
+            'en_progreso': '#007bff',
+            'completada': '#28a745',
+            'cancelada': '#dc3545'
+        }
+        return colors.get(self.estado, '#6c757d')

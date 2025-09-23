@@ -475,43 +475,138 @@ def api_proyectos(request):
 @login_required
 def api_tareas(request):
     """
-    API para obtener tareas (placeholder por ahora)
+    API para obtener y crear tareas
     """
     if not request.user.is_superuser:
         return JsonResponse({'error': 'Sin permisos'}, status=403)
     
-    # Por ahora, devolver datos de ejemplo
-    tareas_ejemplo = [
-        {
-            'id': 1,
-            'titulo': 'Diseñar interfaz de notificaciones',
-            'descripcion': 'Crear mockups y prototipos para el sistema de notificaciones',
-            'prioridad': 'alta',
-            'fecha_limite': '2025-01-25',
-            'asignado_a': 'Rivera'
-        },
-        {
-            'id': 2,
-            'titulo': 'Optimizar consultas SQL',
-            'descripcion': 'Revisar y optimizar las consultas más lentas del sistema',
-            'prioridad': 'media',
-            'fecha_limite': '2025-02-01',
-            'asignado_a': 'Desarrollo'
-        },
-        {
-            'id': 3,
-            'titulo': 'Documentar API endpoints',
-            'descripcion': 'Crear documentación completa de todos los endpoints de la API',
-            'prioridad': 'baja',
-            'fecha_limite': '2025-02-10',
-            'asignado_a': 'Technical Writer'
-        }
-    ]
+    if request.method == 'GET':
+        # Obtener tareas por proyecto si se especifica
+        proyecto_id = request.GET.get('proyecto_id')
+        
+        if proyecto_id:
+            try:
+                from .models import Proyecto
+                proyecto = Proyecto.objects.get(id=proyecto_id)
+                # Por ahora devolver datos de ejemplo hasta que tengamos el modelo migrado
+                tareas_ejemplo = [
+                    {
+                        'id': 1,
+                        'titulo': 'Diseñar interfaz de notificaciones',
+                        'descripcion': 'Crear mockups y prototipos para el sistema de notificaciones',
+                        'prioridad': 'alta',
+                        'fecha_limite': '2025-01-25',
+                        'asignado_a': 'Rivera',
+                        'proyecto': proyecto.nombre
+                    },
+                    {
+                        'id': 2,
+                        'titulo': 'Optimizar consultas SQL',
+                        'descripcion': 'Revisar y optimizar las consultas más lentas del sistema',
+                        'prioridad': 'media',
+                        'fecha_limite': '2025-02-01',
+                        'asignado_a': 'Desarrollo',
+                        'proyecto': proyecto.nombre
+                    }
+                ]
+                return JsonResponse({
+                    'success': True,
+                    'tareas': tareas_ejemplo
+                })
+            except:
+                return JsonResponse({'error': 'Proyecto no encontrado'}, status=404)
+        
+        # Devolver todas las tareas (ejemplo)
+        tareas_ejemplo = [
+            {
+                'id': 1,
+                'titulo': 'Diseñar interfaz de notificaciones',
+                'descripcion': 'Crear mockups y prototipos para el sistema de notificaciones',
+                'prioridad': 'alta',
+                'fecha_limite': '2025-01-25',
+                'asignado_a': 'Rivera'
+            },
+            {
+                'id': 2,
+                'titulo': 'Optimizar consultas SQL',
+                'descripcion': 'Revisar y optimizar las consultas más lentas del sistema',
+                'prioridad': 'media',
+                'fecha_limite': '2025-02-01',
+                'asignado_a': 'Desarrollo'
+            },
+            {
+                'id': 3,
+                'titulo': 'Documentar API endpoints',
+                'descripcion': 'Crear documentación completa de todos los endpoints de la API',
+                'prioridad': 'baja',
+                'fecha_limite': '2025-02-10',
+                'asignado_a': 'Technical Writer'
+            }
+        ]
+        
+        return JsonResponse({
+            'success': True,
+            'tareas': tareas_ejemplo
+        })
     
-    return JsonResponse({
-        'success': True,
-        'tareas': tareas_ejemplo
-    })
+    elif request.method == 'POST':
+        try:
+            import json
+            from datetime import datetime
+            from django.contrib.auth.models import User
+            from .models import Proyecto
+            
+            # Obtener datos del request
+            titulo = request.POST.get('titulo', '').strip()
+            descripcion = request.POST.get('descripcion', '').strip()
+            proyecto_id = request.POST.get('proyecto_id')
+            alta_prioridad = request.POST.get('alta_prioridad', 'false').lower() == 'true'
+            prioridad = 'alta' if alta_prioridad else 'media'
+            fecha_limite = request.POST.get('fecha_limite')
+            asignado_a_id = request.POST.get('asignado_a')
+            participantes_json = request.POST.get('participantes', '[]')
+            observadores_json = request.POST.get('observadores', '[]')
+            
+            # Validaciones básicas
+            if not titulo:
+                return JsonResponse({'error': 'El título es requerido'}, status=400)
+            
+            if not proyecto_id:
+                return JsonResponse({'error': 'El proyecto es requerido'}, status=400)
+            
+            try:
+                proyecto = Proyecto.objects.get(id=proyecto_id)
+            except Proyecto.DoesNotExist:
+                return JsonResponse({'error': 'Proyecto no encontrado'}, status=404)
+            
+            # Por ahora, simular la creación de la tarea
+            nueva_tarea = {
+                'id': 999,  # ID temporal
+                'titulo': titulo,
+                'descripcion': descripcion,
+                'proyecto': proyecto.nombre,
+                'prioridad': prioridad,
+                'fecha_creacion': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'fecha_limite': fecha_limite,
+                'creado_por': request.user.username,
+                'estado': 'pendiente'
+            }
+            
+            # Aquí se crearían las notificaciones para participantes y observadores
+            # Por ahora simular que se envían las notificaciones
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Tarea creada exitosamente',
+                'tarea': nueva_tarea
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'error': f'Error al crear la tarea: {str(e)}'
+            }, status=500)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 
 @login_required  
