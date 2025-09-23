@@ -4055,30 +4055,65 @@ async function abrirDetallesTarea(tareaId) {
             const tarea = data.tareas.find(t => t.id == tareaId);
             
             if (tarea) {
-                // Llenar el modal con los datos de la tarea
+                // Llenar el header del modal
+                document.getElementById('taskNumber').textContent = `#${tarea.id}`;
                 document.getElementById('taskDetailTitle').textContent = tarea.titulo;
+                
+                // Configurar meta información
+                const statusIndicator = document.getElementById('taskDetailStatus');
+                const priorityIndicator = document.getElementById('taskDetailPriority');
+                const dateInfo = document.getElementById('taskDateInfo');
+                
+                // Estado
+                const estadoTexto = {
+                    'pendiente': 'Pendiente',
+                    'en_progreso': 'En Progreso',
+                    'completada': 'Completada',
+                    'cancelada': 'Cancelada'
+                };
+                statusIndicator.textContent = estadoTexto[tarea.estado] || 'Pendiente';
+                statusIndicator.className = `task-status-indicator ${tarea.estado}`;
+                
+                // Prioridad
+                const prioridadTexto = {
+                    'alta': 'Alta prioridad',
+                    'media': 'Prioridad media',
+                    'baja': 'Baja prioridad'
+                };
+                priorityIndicator.textContent = prioridadTexto[tarea.prioridad] || 'Prioridad media';
+                priorityIndicator.className = `task-priority-indicator ${tarea.prioridad}`;
+                
+                // Fecha
+                dateInfo.textContent = `Creado el ${formatearFecha(tarea.fecha_creacion)}`;
+                
+                // Descripción
+                const descContent = document.getElementById('taskDetailDescription');
+                if (tarea.descripcion && tarea.descripcion.trim()) {
+                    descContent.innerHTML = `<p>${tarea.descripcion}</p>`;
+                } else {
+                    descContent.innerHTML = '<p style="color: var(--apple-label-secondary); font-style: italic;">Sin descripción</p>';
+                }
+                
+                // Sidebar - Información
                 document.getElementById('taskDetailProject').textContent = tarea.proyecto || PROYECTO_NOMBRE;
-                document.getElementById('taskDetailCreator').textContent = tarea.creado_por;
                 document.getElementById('taskDetailCreated').textContent = formatearFecha(tarea.fecha_creacion);
                 document.getElementById('taskDetailDueDate').textContent = tarea.fecha_limite ? formatearFecha(tarea.fecha_limite) : 'Sin fecha límite';
-                document.getElementById('taskDetailResponsible').textContent = tarea.responsable || tarea.creado_por;
-                document.getElementById('taskDetailDescription').textContent = tarea.descripcion || 'Sin descripción';
                 
-                // Configurar badge de prioridad
-                const priorityBadge = document.getElementById('taskDetailPriority');
-                priorityBadge.textContent = tarea.prioridad.charAt(0).toUpperCase() + tarea.prioridad.slice(1);
-                priorityBadge.className = `task-priority-badge ${tarea.prioridad}`;
+                // Responsable con avatar
+                const responsibleEl = document.getElementById('taskDetailResponsible');
+                responsibleEl.innerHTML = `
+                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxjaXJjbGUgY3g9IjEyIiBjeT0iOCIgcj0iNSIgZmlsbD0iIzRCNzY4OCIvPgo8cGF0aCBkPSJtMjAgMjEtMi0yLTEuMi0xLjIiIHN0cm9rZT0iIzRCNzY4OCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+" alt="${tarea.responsable}" />
+                    <span>${tarea.responsable || tarea.creado_por}</span>
+                `;
                 
-                // Configurar badge de estado
-                const statusBadge = document.getElementById('taskDetailStatus');
-                statusBadge.textContent = tarea.estado || 'Pendiente';
+                // Configurar botones según permisos en el sidebar
+                configurarBotonesAvanzadosSegunPermisos(tarea);
                 
-                // Configurar participantes y observadores (por ahora vacío)
-                document.getElementById('taskDetailParticipants').innerHTML = '<span style="color: var(--apple-label-tertiary);">No hay participantes asignados</span>';
-                document.getElementById('taskDetailObservers').innerHTML = '<span style="color: var(--apple-label-tertiary);">No hay observadores asignados</span>';
+                // Cargar comentarios
+                cargarComentariosTarea(tareaId);
                 
-                // Configurar botones según permisos
-                configurarBotonesSegunPermisos(tarea);
+                // Cargar etiquetas de ejemplo
+                cargarEtiquetasTarea(tarea);
                 
                 // Abrir el modal
                 const modal = document.getElementById('taskDetailModal');
@@ -4102,53 +4137,43 @@ function closeTaskDetailModal() {
     document.body.style.overflow = '';
 }
 
-// Función para configurar botones según permisos del usuario
-function configurarBotonesSegunPermisos(tarea) {
-    const footer = document.querySelector('.task-detail-footer');
+// Función para configurar botones según permisos del usuario (para sidebar)
+function configurarBotonesAvanzadosSegunPermisos(tarea) {
+    const actionsContainer = document.getElementById('taskPrimaryActions');
     const esCreador = tarea.creado_por_id == CURRENT_USER_ID;
     const esResponsable = tarea.responsable_id == CURRENT_USER_ID;
     const estado = tarea.estado || 'pendiente';
     
     // Limpiar botones existentes
-    footer.innerHTML = '';
+    actionsContainer.innerHTML = '';
     
     if (esCreador) {
         // Botones para el creador de la tarea
-        footer.innerHTML = `
+        actionsContainer.innerHTML = `
             <button class="btn-task-action secondary" onclick="editTask(${tarea.id})">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
                 </svg>
-                Editar
+                Editar Tarea
             </button>
             <button class="btn-task-action danger" onclick="deleteTask(${tarea.id})">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3,6 5,6 21,6"/>
                     <path d="m19,6v14a2,2 0 0 1-2,2H7a2,2 0 0 1-2-2V6m3,0V4a2,2 0 0 1 2-2h4a2,2 0 0 1 2,2v2"/>
                 </svg>
-                Eliminar
+                Eliminar Tarea
             </button>
         `;
     } else if (esResponsable) {
         // Botones para el responsable de la tarea
         if (estado === 'pendiente') {
-            footer.innerHTML = `
-                <button class="btn-task-action secondary" onclick="createSubtask(${tarea.id})">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="5" x2="12" y2="19"/>
-                        <line x1="5" y1="12" x2="19" y2="12"/>
-                    </svg>
-                    Crear Subtarea
-                </button>
+            actionsContainer.innerHTML = `
                 <button class="btn-task-action primary" onclick="startTask(${tarea.id})">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polygon points="5,3 19,12 5,21"/>
                     </svg>
                     Iniciar Tarea
                 </button>
-            `;
-        } else if (estado === 'en_progreso') {
-            footer.innerHTML = `
                 <button class="btn-task-action secondary" onclick="createSubtask(${tarea.id})">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="12" y1="5" x2="12" y2="19"/>
@@ -4156,15 +4181,15 @@ function configurarBotonesSegunPermisos(tarea) {
                     </svg>
                     Crear Subtarea
                 </button>
+            `;
+        } else if (estado === 'en_progreso') {
+            actionsContainer.innerHTML = `
                 <button class="btn-task-action success" onclick="completeTask(${tarea.id})">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="20,6 9,17 4,12"/>
                     </svg>
                     Terminar Tarea
                 </button>
-            `;
-        } else if (estado === 'completada') {
-            footer.innerHTML = `
                 <button class="btn-task-action secondary" onclick="createSubtask(${tarea.id})">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="12" y1="5" x2="12" y2="19"/>
@@ -4172,24 +4197,34 @@ function configurarBotonesSegunPermisos(tarea) {
                     </svg>
                     Crear Subtarea
                 </button>
-                <span class="task-completed-label">
+            `;
+        } else if (estado === 'completada') {
+            actionsContainer.innerHTML = `
+                <div class="task-completed-label">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="20,6 9,17 4,12"/>
                     </svg>
                     Tarea Completada
-                </span>
+                </div>
+                <button class="btn-task-action secondary" onclick="createSubtask(${tarea.id})">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Crear Subtarea
+                </button>
             `;
         }
     } else {
         // Usuario sin permisos especiales (solo visualización)
-        footer.innerHTML = `
-            <span class="task-view-only-label">
+        actionsContainer.innerHTML = `
+            <div class="task-view-only-label">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                     <circle cx="12" cy="12" r="3"/>
                 </svg>
                 Solo lectura
-            </span>
+            </div>
         `;
     }
 }
@@ -4247,6 +4282,146 @@ function completeTask(tareaId) {
 function createSubtask(tareaId) {
     alert('Función de crear subtarea en desarrollo. Tarea padre ID: ' + tareaId);
     // TODO: Abrir modal de creación de subtarea
+}
+
+// Funciones para el nuevo modal avanzado
+function cargarComentariosTarea(tareaId) {
+    const timeline = document.getElementById('taskCommentsTimeline');
+    
+    // Por ahora mostrar datos de ejemplo
+    timeline.innerHTML = `
+        <div class="timeline-item">
+            <div class="timeline-avatar">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxjaXJjbGUgY3g9IjEyIiBjeT0iOCIgcj0iNSIgZmlsbD0iIzRCNzY4OCIvPgo8cGF0aCBkPSJtMjAgMjEtMi0yLTEuMi0xLjIiIHN0cm9rZT0iIzRCNzY4OCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+" alt="Usuario" />
+            </div>
+            <div class="timeline-content">
+                <div class="timeline-header">
+                    <span class="timeline-user">Eduardo Rivera</span>
+                    <span class="timeline-date">hace 2 horas</span>
+                </div>
+                <div class="timeline-text">
+                    Tarea creada y asignada para revisión de documentos.
+                </div>
+            </div>
+        </div>
+        <div class="timeline-item">
+            <div class="timeline-avatar">
+                <div class="activity-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5,3 19,12 5,21"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="timeline-content">
+                <div class="timeline-header">
+                    <span class="timeline-user">Sistema</span>
+                    <span class="timeline-date">hace 1 hora</span>
+                </div>
+                <div class="timeline-text">
+                    Estado cambiado a "En progreso"
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function submitTaskComment() {
+    const commentInput = document.getElementById('newTaskComment');
+    const comment = commentInput.value.trim();
+    
+    if (!comment) {
+        alert('Por favor escribe un comentario');
+        return;
+    }
+    
+    // TODO: Enviar comentario al backend
+    console.log('Enviando comentario:', comment);
+    
+    // Simular añadir comentario
+    const timeline = document.getElementById('taskCommentsTimeline');
+    const newComment = document.createElement('div');
+    newComment.className = 'timeline-item';
+    newComment.innerHTML = `
+        <div class="timeline-avatar">
+            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxjaXJjbGUgY3g9IjEyIiBjeT0iOCIgcj0iNSIgZmlsbD0iIzRCNzY4OCIvPgo8cGF0aCBkPSJtMjAgMjEtMi0yLTEuMi0xLjIiIHN0cm9rZT0iIzRCNzY4OCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+" alt="Usuario" />
+        </div>
+        <div class="timeline-content">
+            <div class="timeline-header">
+                <span class="timeline-user">Tú</span>
+                <span class="timeline-date">ahora</span>
+            </div>
+            <div class="timeline-text">
+                ${comment}
+            </div>
+        </div>
+    `;
+    
+    timeline.insertBefore(newComment, timeline.firstChild);
+    commentInput.value = '';
+}
+
+// Funciones placeholder para botones del header
+function toggleTaskWatch() {
+    alert('Función de seguir/no seguir tarea en desarrollo');
+}
+
+function shareTask() {
+    alert('Función de compartir tarea en desarrollo');
+}
+
+function editTaskDescription() {
+    alert('Función de editar descripción en desarrollo');
+}
+
+function addParticipant() {
+    alert('Función de agregar participante en desarrollo');
+}
+
+function addTaskLabel() {
+    alert('Función de agregar etiqueta en desarrollo');
+}
+
+function attachFile() {
+    alert('Función de adjuntar archivo en desarrollo');
+}
+
+function cargarEtiquetasTarea(tarea) {
+    const labelsContainer = document.getElementById('taskDetailLabels');
+    
+    // Simular etiquetas basadas en características de la tarea
+    let etiquetas = [];
+    
+    if (tarea.prioridad === 'alta') {
+        etiquetas.push('urgent');
+    }
+    
+    // Agregar etiquetas basadas en el título o descripción
+    if (tarea.titulo.toLowerCase().includes('bug') || tarea.titulo.toLowerCase().includes('error')) {
+        etiquetas.push('bug');
+    } else if (tarea.titulo.toLowerCase().includes('feature') || tarea.titulo.toLowerCase().includes('nueva')) {
+        etiquetas.push('feature');
+    } else if (tarea.titulo.toLowerCase().includes('document') || tarea.titulo.toLowerCase().includes('doc')) {
+        etiquetas.push('documentation');
+    } else {
+        etiquetas.push('enhancement');
+    }
+    
+    if (etiquetas.length > 0) {
+        const etiquetasHtml = etiquetas.map(etiqueta => {
+            const nombres = {
+                'bug': 'Bug',
+                'feature': 'Feature',
+                'urgent': 'Urgente',
+                'documentation': 'Documentación',
+                'enhancement': 'Mejora'
+            };
+            return `<span class="task-label ${etiqueta}">${nombres[etiqueta]}</span>`;
+        }).join('');
+        
+        labelsContainer.innerHTML = etiquetasHtml;
+    } else {
+        labelsContainer.innerHTML = '<div class="empty-state">Sin etiquetas</div>';
+    }
 }
 
 // Función auxiliar para actualizar estado de tarea
@@ -4812,97 +4987,210 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
-<!-- Modal de Detalles de Tarea -->
-<div class="task-detail-modal-overlay" id="taskDetailModal">
-    <div class="task-detail-container">
-        <!-- Header -->
-        <div class="task-detail-header">
-            <div class="task-detail-title-section">
-                <h2 class="task-detail-title" id="taskDetailTitle">Título de la Tarea</h2>
-                <div class="task-detail-meta">
-                    <span class="task-priority-badge" id="taskDetailPriority">Media</span>
-                    <span class="task-status-badge" id="taskDetailStatus">Pendiente</span>
-                </div>
-            </div>
-            <button class="task-detail-close" onclick="closeTaskDetailModal()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="m18 6-12 12M6 6l12 12"/>
-                </svg>
-            </button>
-        </div>
-
-        <!-- Contenido -->
-        <div class="task-detail-body">
-            <!-- Información Principal -->
-            <div class="task-info-section">
-                <div class="task-info-row">
-                    <span class="task-info-label">Proyecto:</span>
-                    <span class="task-info-value" id="taskDetailProject">Nombre del Proyecto</span>
-                </div>
-                <div class="task-info-row">
-                    <span class="task-info-label">Creado por:</span>
-                    <span class="task-info-value" id="taskDetailCreator">Usuario</span>
-                </div>
-                <div class="task-info-row">
-                    <span class="task-info-label">Fecha de creación:</span>
-                    <span class="task-info-value" id="taskDetailCreated">Fecha</span>
-                </div>
-                <div class="task-info-row">
-                    <span class="task-info-label">Fecha límite:</span>
-                    <span class="task-info-value" id="taskDetailDueDate">Fecha</span>
-                </div>
-                <div class="task-info-row">
-                    <span class="task-info-label">Responsable:</span>
-                    <span class="task-info-value" id="taskDetailResponsible">Usuario</span>
-                </div>
-            </div>
-
-            <!-- Descripción -->
-            <div class="task-description-section">
-                <h3 class="section-title">Descripción</h3>
-                <div class="task-description-content" id="taskDetailDescription">
-                    Descripción de la tarea...
-                </div>
-            </div>
-
-            <!-- Participantes y Observadores -->
-            <div class="task-people-section">
-                <div class="task-people-column">
-                    <h4 class="people-title">Participantes</h4>
-                    <div class="people-list" id="taskDetailParticipants">
-                        <!-- Lista de participantes -->
-                    </div>
-                </div>
-                <div class="task-people-column">
-                    <h4 class="people-title">Observadores</h4>
-                    <div class="people-list" id="taskDetailObservers">
-                        <!-- Lista de observadores -->
+<!-- Modal de Detalles de Tarea Professional -->
+<div class="advanced-task-modal-overlay" id="taskDetailModal">
+    <div class="advanced-task-container">
+        <!-- Header Superior -->
+        <div class="advanced-task-header">
+            <div class="header-left">
+                <h1 class="task-number" id="taskNumber">#1001</h1>
+                <div class="task-title-section">
+                    <h2 class="task-main-title" id="taskDetailTitle">Título de la Tarea</h2>
+                    <div class="task-meta-info">
+                        <span class="task-status-indicator" id="taskDetailStatus">En progreso</span>
+                        <span class="task-priority-indicator" id="taskDetailPriority">Alta prioridad</span>
+                        <span class="task-date-info" id="taskDateInfo">Creado el 24/4/2025</span>
                     </div>
                 </div>
             </div>
+            <div class="header-actions">
+                <button class="header-action-btn" onclick="toggleTaskWatch()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    Seguir
+                </button>
+                <button class="header-action-btn" onclick="shareTask()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                        <polyline points="16,6 12,2 8,6"/>
+                        <line x1="12" y1="2" x2="12" y2="15"/>
+                    </svg>
+                    Compartir
+                </button>
+                <button class="advanced-task-close" onclick="closeTaskDetailModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m18 6-12 12M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
         </div>
 
-        <!-- Footer con Acciones -->
-        <div class="task-detail-footer">
-            <button class="btn-task-action secondary" onclick="editTask()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-                </svg>
-                Editar
-            </button>
-            <button class="btn-task-action primary" onclick="markTaskComplete()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="20,6 9,17 4,12"/>
-                </svg>
-                Marcar Completada
-            </button>
+        <!-- Contenido Principal -->
+        <div class="advanced-task-content">
+            <!-- Área Principal -->
+            <div class="task-main-area">
+                <!-- Descripción -->
+                <div class="task-description-area">
+                    <div class="section-header">
+                        <h3 class="section-title">Descripción</h3>
+                        <button class="edit-description-btn" onclick="editTaskDescription()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="task-description-content" id="taskDetailDescription">
+                        <p>Descripción detallada de la tarea...</p>
+                    </div>
+                </div>
+
+                <!-- Comentarios -->
+                <div class="task-comments-area">
+                    <div class="comments-header">
+                        <h3 class="section-title">Actividad y Comentarios</h3>
+                        <div class="comments-filter">
+                            <button class="filter-btn active" data-filter="all">Todos</button>
+                            <button class="filter-btn" data-filter="comments">Comentarios</button>
+                            <button class="filter-btn" data-filter="activity">Actividad</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Nuevo Comentario -->
+                    <div class="new-comment-section">
+                        <div class="user-avatar">
+                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxwYXRoIGQ9Im0yMCAyMS0yLTItMS4yLTEuMiIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPGNpcmNsZSBjeD0iMTIiIGN5PSI4IiByPSI1IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiLz4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxNiIgcj0iNCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIi8+Cjwvc3ZnPgo8L3N2Zz4=" alt="Usuario" />
+                        </div>
+                        <div class="comment-input-area">
+                            <textarea 
+                                class="new-comment-input" 
+                                id="newTaskComment" 
+                                placeholder="Escribe un comentario..."
+                                rows="3"
+                            ></textarea>
+                            <div class="comment-actions">
+                                <div class="comment-tools">
+                                    <button class="tool-btn" title="Adjuntar archivo">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49"/>
+                                        </svg>
+                                    </button>
+                                    <button class="tool-btn" title="Mencionar usuario">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                            <circle cx="9" cy="7" r="4"/>
+                                            <path d="m22 21-3-3m0 0A6 6 0 1 1 8 8a6 6 0 0 1 11 11Z"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <button class="submit-comment-btn" onclick="submitTaskComment()">
+                                    Comentar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Comentarios y Actividad -->
+                    <div class="comments-timeline" id="taskCommentsTimeline">
+                        <!-- Los comentarios se cargarán aquí -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Derecho -->
+            <div class="task-sidebar">
+                <!-- Acciones Principales -->
+                <div class="sidebar-section">
+                    <div class="primary-actions" id="taskPrimaryActions">
+                        <!-- Los botones se generarán dinámicamente según permisos -->
+                    </div>
+                </div>
+
+                <!-- Información de la Tarea -->
+                <div class="sidebar-section">
+                    <h4 class="sidebar-title">Información</h4>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Responsable</span>
+                            <div class="info-value user-info" id="taskDetailResponsible">
+                                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxjaXJjbGUgY3g9IjEyIiBjeT0iOCIgcj0iNSIgZmlsbD0iIzRCNzY4OCIvPgo8cGF0aCBkPSJtMjAgMjEtMi0yLTEuMi0xLjIiIHN0cm9rZT0iIzRCNzY4OCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+" alt="Usuario" />
+                                <span>Usuario</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Proyecto</span>
+                            <span class="info-value project-link" id="taskDetailProject">Nombre del Proyecto</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Fecha límite</span>
+                            <span class="info-value date-value" id="taskDetailDueDate">Sin fecha límite</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Creado</span>
+                            <span class="info-value date-value" id="taskDetailCreated">Fecha</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Tiempo estimado</span>
+                            <span class="info-value" id="taskDetailEstimatedTime">No especificado</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Participantes -->
+                <div class="sidebar-section">
+                    <div class="section-header-small">
+                        <h4 class="sidebar-title">Participantes</h4>
+                        <button class="add-btn" onclick="addParticipant()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="participants-list" id="taskDetailParticipants">
+                        <div class="empty-state">No hay participantes asignados</div>
+                    </div>
+                </div>
+
+                <!-- Etiquetas -->
+                <div class="sidebar-section">
+                    <div class="section-header-small">
+                        <h4 class="sidebar-title">Etiquetas</h4>
+                        <button class="add-btn" onclick="addTaskLabel()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="labels-list" id="taskDetailLabels">
+                        <div class="empty-state">Sin etiquetas</div>
+                    </div>
+                </div>
+
+                <!-- Archivos Adjuntos -->
+                <div class="sidebar-section">
+                    <div class="section-header-small">
+                        <h4 class="sidebar-title">Archivos</h4>
+                        <button class="add-btn" onclick="attachFile()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="attachments-list" id="taskDetailAttachments">
+                        <div class="empty-state">No hay archivos adjuntos</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <style>
-/* Estilos para el Modal de Detalles de Tarea */
-.task-detail-modal-overlay {
+/* Estilos para el Modal Avanzado de Detalles de Tarea */
+.advanced-task-modal-overlay {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
@@ -4921,23 +5209,25 @@ document.addEventListener('DOMContentLoaded', function() {
     pointer-events: none;
 }
 
-.task-detail-modal-overlay.active {
+.advanced-task-modal-overlay.active {
     opacity: 1;
     visibility: visible;
     pointer-events: all;
 }
 
-.task-detail-container {
+.advanced-task-container {
     background: rgba(18, 18, 20, 0.95);
     backdrop-filter: blur(50px) saturate(1.8);
     -webkit-backdrop-filter: blur(50px) saturate(1.8);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
+    border-radius: 20px;
     width: 95%;
-    max-width: 600px;
-    max-height: 80vh;
-    overflow-y: auto;
+    max-width: 1200px;
+    height: 90vh;
+    max-height: 900px;
     position: relative;
+    display: flex;
+    flex-direction: column;
     box-shadow: 
         0 32px 120px rgba(0, 0, 0, 0.6),
         0 16px 60px rgba(0, 0, 0, 0.3),
@@ -4946,74 +5236,190 @@ document.addEventListener('DOMContentLoaded', function() {
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.task-detail-modal-overlay.active .task-detail-container {
+.advanced-task-modal-overlay.active .advanced-task-container {
     transform: scale(1) translateY(0);
 }
 
-.task-detail-header {
-    padding: 2rem 2rem 1rem 2rem;
+/* Header */
+.advanced-task-header {
+    padding: 2rem 2.5rem 1.5rem 2.5rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    flex-shrink: 0;
 }
 
-.task-detail-title-section {
+.header-left {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
     flex: 1;
 }
 
-.task-detail-title {
-    color: var(--apple-label);
+.task-number {
+    color: var(--apple-label-secondary);
     font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    opacity: 0.7;
+}
+
+.task-title-section {
+    flex: 1;
+}
+
+.task-main-title {
+    color: var(--apple-label);
+    font-size: 1.8rem;
     font-weight: 600;
     margin: 0 0 0.75rem 0;
     line-height: 1.3;
 }
 
-.task-detail-meta {
+.task-meta-info {
     display: flex;
-    gap: 0.75rem;
+    gap: 1rem;
     align-items: center;
+    flex-wrap: wrap;
 }
 
-.task-priority-badge, .task-status-badge {
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 500;
+.task-status-indicator {
+    padding: 0.4rem 1rem;
+    border-radius: 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: rgba(10, 132, 255, 0.15);
+    color: var(--apple-blue);
+    border: 1px solid rgba(10, 132, 255, 0.3);
 }
 
-.task-priority-badge {
-    background: rgba(255, 170, 0, 0.15);
-    color: #ffaa00;
-    border: 1px solid rgba(255, 170, 0, 0.3);
+.task-status-indicator.pendiente {
+    background: rgba(142, 142, 147, 0.15);
+    color: #8e8e93;
+    border-color: rgba(142, 142, 147, 0.3);
 }
 
-.task-priority-badge.alta {
+.task-status-indicator.en_progreso {
+    background: rgba(10, 132, 255, 0.15);
+    color: var(--apple-blue);
+    border-color: rgba(10, 132, 255, 0.3);
+}
+
+.task-status-indicator.completada {
+    background: rgba(52, 199, 89, 0.15);
+    color: #34c759;
+    border-color: rgba(52, 199, 89, 0.3);
+}
+
+.task-priority-indicator {
+    padding: 0.4rem 1rem;
+    border-radius: 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.task-priority-indicator.alta {
     background: rgba(255, 59, 48, 0.15);
     color: #ff3b30;
     border: 1px solid rgba(255, 59, 48, 0.3);
 }
 
-.task-priority-badge.media {
+.task-priority-indicator.media {
     background: rgba(255, 204, 0, 0.15);
     color: #ffcc00;
     border: 1px solid rgba(255, 204, 0, 0.3);
 }
 
-.task-priority-badge.baja {
+.task-priority-indicator.baja {
     background: rgba(52, 199, 89, 0.15);
     color: #34c759;
     border: 1px solid rgba(52, 199, 89, 0.3);
 }
 
-.task-status-badge {
-    background: rgba(142, 142, 147, 0.15);
-    color: #8e8e93;
-    border: 1px solid rgba(142, 142, 147, 0.3);
+.task-date-info {
+    color: var(--apple-label-secondary);
+    font-size: 0.9rem;
 }
 
-.task-detail-close {
+.header-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.header-action-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--apple-label);
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.header-action-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.advanced-task-close {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--apple-label-secondary);
+    cursor: pointer;
+    padding: 0.6rem;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+.advanced-task-close:hover {
+    background: rgba(255, 59, 48, 0.15);
+    border-color: rgba(255, 59, 48, 0.3);
+    color: #ff3b30;
+}
+
+/* Contenido Principal */
+.advanced-task-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.task-main-area {
+    flex: 1;
+    padding: 2rem 2.5rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* Descripción */
+.task-description-area {
+    
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.section-title {
+    color: var(--apple-label);
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.edit-description-btn {
     background: none;
     border: none;
     color: var(--apple-label-secondary);
@@ -5023,96 +5429,342 @@ document.addEventListener('DOMContentLoaded', function() {
     transition: all 0.2s ease;
 }
 
-.task-detail-close:hover {
+.edit-description-btn:hover {
     background: rgba(255, 255, 255, 0.1);
     color: var(--apple-label);
 }
 
-.task-detail-body {
-    padding: 1.5rem 2rem;
+.task-description-content {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 1.5rem;
+    color: var(--apple-label-secondary);
+    line-height: 1.6;
+    min-height: 100px;
 }
 
-.task-info-section {
-    margin-bottom: 2rem;
+/* Comentarios */
+.task-comments-area {
+    flex: 1;
 }
 
-.task-info-row {
+.comments-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 1.5rem;
 }
 
-.task-info-row:last-child {
-    border-bottom: none;
+.comments-filter {
+    display: flex;
+    gap: 0.5rem;
 }
 
-.task-info-label {
+.filter-btn {
+    padding: 0.5rem 1rem;
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.15);
     color: var(--apple-label-secondary);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-btn.active,
+.filter-btn:hover {
+    background: rgba(10, 132, 255, 0.15);
+    border-color: rgba(10, 132, 255, 0.3);
+    color: var(--apple-blue);
+}
+
+/* Nuevo Comentario */
+.new-comment-section {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+}
+
+.user-avatar {
+    flex-shrink: 0;
+}
+
+.user-avatar img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.comment-input-area {
+    flex: 1;
+}
+
+.new-comment-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 1rem;
+    color: var(--apple-label);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 80px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.new-comment-input:focus {
+    border-color: var(--apple-blue);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+}
+
+.new-comment-input::placeholder {
+    color: var(--apple-label-secondary);
+}
+
+.comment-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+.comment-tools {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.tool-btn {
+    background: none;
+    border: none;
+    color: var(--apple-label-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.tool-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--apple-label);
+}
+
+.submit-comment-btn {
+    background: linear-gradient(135deg, var(--apple-blue), #007aff);
+    border: none;
+    color: white;
+    padding: 0.6rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.submit-comment-btn:hover {
+    background: linear-gradient(135deg, #0051d5, #0056b3);
+}
+
+/* Timeline de Comentarios */
+.comments-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.timeline-item {
+    display: flex;
+    gap: 1rem;
+}
+
+.timeline-avatar {
+    flex-shrink: 0;
+}
+
+.timeline-avatar img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.activity-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(10, 132, 255, 0.15);
+    border: 2px solid rgba(10, 132, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--apple-blue);
+}
+
+.timeline-content {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.timeline-user {
+    color: var(--apple-label);
     font-weight: 500;
     font-size: 0.9rem;
 }
 
-.task-info-value {
-    color: var(--apple-label);
-    font-weight: 400;
-    text-align: right;
+.timeline-date {
+    color: var(--apple-label-secondary);
+    font-size: 0.8rem;
 }
 
-.task-description-section {
+.timeline-text {
+    color: var(--apple-label-secondary);
+    line-height: 1.5;
+    font-size: 0.9rem;
+}
+
+/* Sidebar */
+.task-sidebar {
+    width: 350px;
+    flex-shrink: 0;
+    padding: 2rem 2.5rem 2rem 1.5rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    overflow-y: auto;
+}
+
+.sidebar-section {
     margin-bottom: 2rem;
 }
 
-.section-title {
+.sidebar-section:last-child {
+    margin-bottom: 0;
+}
+
+.sidebar-title {
     color: var(--apple-label);
     font-size: 1.1rem;
     font-weight: 600;
     margin: 0 0 1rem 0;
 }
 
-.task-description-content {
-    color: var(--apple-label-secondary);
-    line-height: 1.6;
-    padding: 1rem;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.task-people-section {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
+.section-header-small {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 1rem;
 }
 
-.task-people-column {
-    
-}
-
-.people-title {
-    color: var(--apple-label);
-    font-size: 1rem;
-    font-weight: 600;
-    margin: 0 0 0.75rem 0;
-}
-
-.people-list {
+.add-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     color: var(--apple-label-secondary);
-    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0.4rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
 }
 
-.task-detail-footer {
-    padding: 1.5rem 2rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+.add-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--apple-label);
+}
+
+/* Acciones Principales */
+.primary-actions {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* Información */
+.info-grid {
+    display: flex;
+    flex-direction: column;
     gap: 1rem;
 }
 
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.info-label {
+    color: var(--apple-label-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.info-value {
+    color: var(--apple-label);
+    font-size: 0.95rem;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.user-info img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.project-link {
+    color: var(--apple-blue);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.project-link:hover {
+    text-decoration: underline;
+}
+
+.date-value {
+    color: var(--apple-label-secondary);
+}
+
+/* Listas */
+.participants-list,
+.labels-list,
+.attachments-list {
+    
+}
+
+.empty-state {
+    color: var(--apple-label-secondary);
+    font-size: 0.85rem;
+    font-style: italic;
+    text-align: center;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+/* Botones de acción reutilizados */
 .btn-task-action {
-    padding: 0.75rem 1.5rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
     border: none;
     border-radius: 8px;
     font-weight: 500;
@@ -5120,6 +5772,7 @@ document.addEventListener('DOMContentLoaded', function() {
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
     font-size: 0.9rem;
 }
@@ -5167,8 +5820,9 @@ document.addEventListener('DOMContentLoaded', function() {
 .task-completed-label, .task-view-only-label {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
+    padding: 0.75rem 1rem;
     color: var(--apple-label-secondary);
     font-size: 0.9rem;
     font-weight: 500;
@@ -5181,6 +5835,49 @@ document.addEventListener('DOMContentLoaded', function() {
     color: #34c759;
     border-color: rgba(52, 199, 89, 0.3);
     background: rgba(52, 199, 89, 0.1);
+}
+
+/* Etiquetas */
+.task-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid;
+    margin: 0.25rem 0.25rem 0.25rem 0;
+}
+
+.task-label.bug {
+    background: rgba(255, 59, 48, 0.15);
+    color: #ff3b30;
+    border-color: rgba(255, 59, 48, 0.3);
+}
+
+.task-label.feature {
+    background: rgba(10, 132, 255, 0.15);
+    color: var(--apple-blue);
+    border-color: rgba(10, 132, 255, 0.3);
+}
+
+.task-label.urgent {
+    background: rgba(255, 149, 0, 0.15);
+    color: #ff9500;
+    border-color: rgba(255, 149, 0, 0.3);
+}
+
+.task-label.documentation {
+    background: rgba(52, 199, 89, 0.15);
+    color: #34c759;
+    border-color: rgba(52, 199, 89, 0.3);
+}
+
+.task-label.enhancement {
+    background: rgba(191, 90, 242, 0.15);
+    color: #bf5af2;
+    border-color: rgba(191, 90, 242, 0.3);
 }
 </style>
 
