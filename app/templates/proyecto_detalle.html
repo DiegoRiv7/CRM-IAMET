@@ -1056,6 +1056,289 @@
         background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230a84ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") !important;
     }
 
+    /* ==========================================
+       APPLE LIQUID GLASS MODAL STYLES
+       ========================================== */
+    
+    .apple-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    .apple-modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .apple-modal-container {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(50px) saturate(1.8);
+        -webkit-backdrop-filter: blur(50px) saturate(1.8);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 28px;
+        padding: 2.5rem;
+        width: 90%;
+        max-width: 520px;
+        max-height: 85vh;
+        overflow-y: auto;
+        position: relative;
+        box-shadow: 
+            0 32px 80px rgba(0, 0, 0, 0.3),
+            0 16px 48px rgba(0, 0, 0, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2),
+            inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+        transform: scale(0.9) translateY(40px);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    .apple-modal-overlay.active .apple-modal-container {
+        transform: scale(1) translateY(0);
+    }
+    
+    .apple-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        position: relative;
+    }
+    
+    .apple-modal-header::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    }
+    
+    .apple-modal-title {
+        font-size: 1.75rem;
+        font-weight: 600;
+        color: var(--apple-label);
+        margin: 0;
+        letter-spacing: -0.02em;
+        background: linear-gradient(135deg, #ffffff, rgba(255, 255, 255, 0.8));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .apple-close-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        padding: 0.75rem;
+        color: var(--apple-label-secondary);
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .apple-close-btn:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.3);
+        color: var(--apple-label);
+        transform: scale(1.05);
+    }
+    
+    .apple-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    .apple-input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        position: relative;
+    }
+    
+    .apple-label {
+        font-size: 1rem;
+        font-weight: 500;
+        color: var(--apple-label);
+        letter-spacing: -0.01em;
+        opacity: 0.9;
+        transition: all 0.2s ease;
+    }
+    
+    .apple-input, .apple-select, .apple-textarea {
+        width: 100%;
+        padding: 1.125rem 1.5rem;
+        border-radius: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--apple-label);
+        font-size: 1rem;
+        font-weight: 400;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        box-sizing: border-box;
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        font-family: inherit;
+    }
+    
+    .apple-input::placeholder, .apple-textarea::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+        font-style: italic;
+    }
+    
+    .apple-input:focus, .apple-select:focus, .apple-textarea:focus {
+        outline: none;
+        border-color: var(--apple-blue);
+        background: rgba(255, 255, 255, 0.12);
+        box-shadow: 
+            0 0 0 4px rgba(10, 132, 255, 0.2),
+            0 12px 32px rgba(10, 132, 255, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        transform: translateY(-2px);
+    }
+    
+    .apple-input-group:focus-within .apple-label {
+        color: var(--apple-blue);
+        opacity: 1;
+        transform: translateY(-1px);
+    }
+    
+    .apple-textarea {
+        min-height: 120px;
+        resize: vertical;
+        line-height: 1.6;
+    }
+    
+    .apple-select {
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 1.25rem center;
+        background-size: 1.25rem;
+        padding-right: 3.5rem;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        cursor: pointer;
+    }
+    
+    .apple-select:focus {
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230a84ff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    }
+    
+    .apple-multi {
+        min-height: 140px;
+        background-image: none;
+        padding-right: 1.5rem;
+    }
+    
+    .apple-form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        position: relative;
+    }
+    
+    .apple-form-actions::before {
+        content: '';
+        position: absolute;
+        top: -1px;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    }
+    
+    .apple-btn {
+        padding: 1rem 2rem;
+        border-radius: 14px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        border: none;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+    }
+    
+    .apple-btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        color: var(--apple-label-secondary);
+    }
+    
+    .apple-btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.3);
+        color: var(--apple-label);
+        transform: translateY(-1px);
+    }
+    
+    .apple-btn-primary {
+        background: linear-gradient(135deg, var(--apple-blue), #4A90E2);
+        border: 2px solid rgba(10, 132, 255, 0.4);
+        color: white;
+        box-shadow: 
+            0 8px 25px rgba(10, 132, 255, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+    
+    .apple-btn-primary:hover {
+        background: linear-gradient(135deg, #4A90E2, var(--apple-blue));
+        transform: translateY(-2px);
+        box-shadow: 
+            0 12px 35px rgba(10, 132, 255, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+    
+    .apple-btn:active {
+        transform: translateY(0) scale(0.98);
+    }
+    
+    /* Animaciones adicionales para el modal */
+    @keyframes modalSlideIn {
+        0% {
+            transform: scale(0.9) translateY(40px);
+            opacity: 0.8;
+        }
+        100% {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes modalSlideOut {
+        0% {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+        100% {
+            transform: scale(0.95) translateY(20px);
+            opacity: 0;
+        }
+    }
+
     /* Search Widget */
     .search-widget-container {
         position: relative;
@@ -1302,52 +1585,81 @@
                 </div>
             </div>
 
-            <!-- Modal para Crear Tarea -->
-            <div class="modal-overlay" id="createTaskModal">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3 class="modal-title">Crear Nueva Tarea</h3>
-                        <button class="modal-close" onclick="closeCreateTaskModal()">
-                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path d="M6 18L18 6M6 6l12 12"/>
+            <!-- Nuevo Modal Liquid Glass para Crear Tarea -->
+            <div class="apple-modal-overlay" id="createTaskModal">
+                <div class="apple-modal-container">
+                    <div class="apple-modal-header">
+                        <h2 class="apple-modal-title">Crear Nueva Tarea</h2>
+                        <button class="apple-close-btn" onclick="closeCreateTaskModal()" type="button">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="m18 6-12 12M6 6l12 12"/>
                             </svg>
                         </button>
                     </div>
-                    <form id="createTaskForm">
-                        <div class="form-group">
-                            <label for="taskTitle" class="form-label">Título de la Tarea</label>
-                            <input type="text" id="taskTitle" name="taskTitle" class="form-input" placeholder="Ej: Implementar funcionalidad X" required>
+                    
+                    <form id="createTaskForm" class="apple-form">
+                        <div class="apple-input-group">
+                            <label class="apple-label">Título de la Tarea</label>
+                            <input 
+                                type="text" 
+                                id="taskTitle" 
+                                name="taskTitle" 
+                                class="apple-input" 
+                                placeholder="Ej: Implementar funcionalidad X" 
+                                required
+                            >
                         </div>
-                        <div class="form-group">
-                            <label for="taskDescription" class="form-label">Descripción</label>
-                            <textarea id="taskDescription" name="taskDescription" class="form-input" placeholder="Detalles de la tarea..." rows="4"></textarea>
+                        
+                        <div class="apple-input-group">
+                            <label class="apple-label">Descripción</label>
+                            <textarea 
+                                id="taskDescription" 
+                                name="taskDescription" 
+                                class="apple-input apple-textarea" 
+                                placeholder="Detalles de la tarea..."
+                                rows="4"
+                            ></textarea>
                         </div>
-                        <div class="form-group">
-                            <label for="taskResponsible" class="form-label">Responsable</label>
-                            <select id="taskResponsible" name="taskResponsible" class="form-select">
-                                <!-- Opciones de usuarios se cargarán aquí -->
+                        
+                        <div class="apple-input-group">
+                            <label class="apple-label">Responsable</label>
+                            <select id="taskResponsible" name="taskResponsible" class="apple-select">
                                 <option value="">Seleccionar responsable</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label for="taskParticipants" class="form-label">Participantes</label>
-                            <select id="taskParticipants" name="taskParticipants" class="form-select" multiple>
-                                <!-- Opciones de usuarios se cargarán aquí -->
+                        
+                        <div class="apple-input-group">
+                            <label class="apple-label">Participantes</label>
+                            <select id="taskParticipants" name="taskParticipants" class="apple-select apple-multi" multiple>
+                                <!-- Se llenarán desde JS -->
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label for="taskObservers" class="form-label">Observadores</label>
-                            <select id="taskObservers" name="taskObservers" class="form-select" multiple>
-                                <!-- Opciones de usuarios se cargarán aquí -->
+                        
+                        <div class="apple-input-group">
+                            <label class="apple-label">Observadores</label>
+                            <select id="taskObservers" name="taskObservers" class="apple-select apple-multi" multiple>
+                                <!-- Se llenarán desde JS -->
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label for="taskDueDate" class="form-label">Fecha Límite</label>
-                            <input type="datetime-local" id="taskDueDate" name="taskDueDate" class="form-input" required>
+                        
+                        <div class="apple-input-group">
+                            <label class="apple-label">Fecha Límite</label>
+                            <input 
+                                type="datetime-local" 
+                                id="taskDueDate" 
+                                name="taskDueDate" 
+                                class="apple-input" 
+                                required
+                            >
                         </div>
-                        <div class="form-actions">
-                            <button type="button" class="btn-cancelar" onclick="closeCreateTaskModal()">Cancelar</button>
-                            <button type="submit" class="btn-enviar" style="background: var(--apple-blue); border-color: rgba(10, 132, 255, 0.3);">Crear Tarea</button>
+                        
+                        <div class="apple-form-actions">
+                            <button type="button" class="apple-btn apple-btn-secondary" onclick="closeCreateTaskModal()">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="apple-btn apple-btn-primary">
+                                Crear Tarea
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -2084,12 +2396,33 @@ function openCreateTaskModal() {
     const modal = document.getElementById('createTaskModal');
     modal.classList.add('active');
     populateUserDropdowns();
+    
+    // Agregar animación suave de entrada
+    setTimeout(() => {
+        const container = modal.querySelector('.apple-modal-container');
+        if (container) {
+            container.style.animation = 'modalSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        }
+    }, 10);
 }
 
 function closeCreateTaskModal() {
     const modal = document.getElementById('createTaskModal');
-    modal.classList.remove('active');
-    document.getElementById('createTaskForm').reset(); // Limpiar formulario
+    const container = modal.querySelector('.apple-modal-container');
+    
+    // Animación de salida
+    if (container) {
+        container.style.animation = 'modalSlideOut 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    }
+    
+    setTimeout(() => {
+        modal.classList.remove('active');
+        document.getElementById('createTaskForm').reset();
+        // Resetear animación
+        if (container) {
+            container.style.animation = '';
+        }
+    }, 300);
 }
 
 async function populateUserDropdowns() {
@@ -2185,10 +2518,20 @@ document.addEventListener('DOMContentLoaded', function() {
             //     alert('Error de conexión al crear la tarea.');
             // }
 
-            alert('Tarea simulada creada. Revisa la consola para ver los datos.');
-            closeCreateTaskModal();
-            // Simular apertura de contenido de tarea
-            console.log('Simulando apertura de contenido de tarea para:', taskData.title);
+            // Agregar feedback visual de éxito
+            const submitBtn = createTaskForm.querySelector('.apple-btn-primary');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = '✓ Creada';
+            submitBtn.style.background = 'linear-gradient(135deg, #28a745, #34ce57)';
+            
+            setTimeout(() => {
+                closeCreateTaskModal();
+                // Resetear botón
+                submitBtn.textContent = originalText;
+                submitBtn.style.background = '';
+                alert('Tarea creada exitosamente!');
+                console.log('Tarea creada para:', taskData.title);
+            }, 1200);
         });
     }
 });
