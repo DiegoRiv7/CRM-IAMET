@@ -2105,4 +2105,307 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Variables para autocompletado
+let autocompleteVisible = false;
+let selectedAutocompleteIndex = -1;
+let currentUsers = [];
+let mentionStartPos = -1;
+let searchTimeout = null;
+
+// Crear elemento de autocompletado dinámicamente
+function createAutocompleteElement() {
+    let autocompleteEl = document.getElementById('userAutocomplete');
+    if (!autocompleteEl) {
+        autocompleteEl = document.createElement('div');
+        autocompleteEl.id = 'userAutocomplete';
+        autocompleteEl.className = 'user-autocomplete';
+        autocompleteEl.style.cssText = `
+            position: absolute;
+            background: rgba(28, 28, 30, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            min-width: 200px;
+            display: none;
+        `;
+        
+        // Insertar después del textarea
+        const comentarioInput = document.getElementById('comentarioInput');
+        if (comentarioInput && comentarioInput.parentNode.style.position !== 'relative') {
+            comentarioInput.parentNode.style.position = 'relative';
+        }
+        if (comentarioInput) {
+            comentarioInput.parentNode.appendChild(autocompleteEl);
+        }
+    }
+    return autocompleteEl;
+}
+
+// Manejar tipeo para menciones
+function handleMentionTyping(input, cursorPos) {
+    const text = input.value;
+    const beforeCursor = text.substring(0, cursorPos);
+    
+    // Buscar @ más cercana antes del cursor
+    const lastAtIndex = beforeCursor.lastIndexOf('@');
+    
+    if (lastAtIndex === -1) {
+        hideAutocomplete();
+        return;
+    }
+    
+    // Verificar que no haya espacios entre @ y cursor
+    const searchText = beforeCursor.substring(lastAtIndex + 1);
+    if (searchText.includes(' ') || searchText.includes('\n')) {
+        hideAutocomplete();
+        return;
+    }
+    
+    // Verificar que @ esté al inicio o precedida por espacio/salto de línea
+    if (lastAtIndex > 0) {
+        const charBeforeAt = beforeCursor[lastAtIndex - 1];
+        if (charBeforeAt !== ' ' && charBeforeAt !== '\n') {
+            hideAutocomplete();
+            return;
+        }
+    }
+    
+    mentionStartPos = lastAtIndex;
+    
+    // Debounce la búsqueda
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        buscarUsuarios(searchText, input);
+    }, 200);
+}
+
+// Buscar usuarios
+async function buscarUsuarios(query, input) {
+    try {
+        const response = await fetch(`/app/api/buscar-usuarios/?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        
+        if (data.success && data.usuarios.length > 0) {
+            currentUsers = data.usuarios;
+            mostrarAutocomplete(currentUsers, input);
+        } else {
+            hideAutocomplete();
+        }
+        
+    } catch (error) {
+        console.error('Error buscando usuarios:', error);
+        hideAutocomplete();
+    }
+}
+
+// Mostrar autocompletado
+function mostrarAutocomplete(usuarios, input) {
+    const autocompleteEl = createAutocompleteElement();
+    
+    if (usuarios.length === 0) {
+        autocompleteEl.innerHTML = `<div style="padding: 1rem; text-align: center; color: var(--apple-label-secondary); font-size: 0.875rem;">No se encontraron usuarios</div>`;
+    } else {
+        autocompleteEl.innerHTML = usuarios.map((usuario, index) => `
+            <div class="user-autocomplete-item" data-user-id="${usuario.id}" data-index="${index}" style="
+                padding: 0.75rem 1rem;
+                cursor: pointer;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                transition: background 0.2s ease;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            ">
+                <div style="
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    background: ${getAvatarColor(usuario.id)};
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-weight: 600;
+                    font-size: 0.75rem;
+                    flex-shrink: 0;
+                ">
+                    ${usuario.iniciales}
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="
+                        font-weight: 500;
+                        color: var(--apple-label);
+                        margin-bottom: 0.1rem;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    ">${usuario.nombre}</div>
+                    <div style="
+                        font-size: 0.75rem;
+                        color: var(--apple-label-secondary);
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    ">@${usuario.username}</div>
+                </div>
+            </div>
+        `).join('');
+        
+        // Agregar event listeners a los items
+        autocompleteEl.querySelectorAll('.user-autocomplete-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const userId = item.dataset.userId;
+                const userIndex = parseInt(item.dataset.index);
+                seleccionarUsuario(usuarios[userIndex], input);
+            });
+            
+            // Hover effect
+            item.addEventListener('mouseenter', () => {
+                item.style.background = 'rgba(10, 132, 255, 0.2)';
+            });
+            item.addEventListener('mouseleave', () => {
+                if (!item.classList.contains('selected')) {
+                    item.style.background = '';
+                }
+            });
+        });
+    }
+    
+    // Posicionar el autocompletado
+    posicionarAutocomplete(autocompleteEl, input);
+    
+    autocompleteEl.style.display = 'block';
+    autocompleteVisible = true;
+    selectedAutocompleteIndex = -1;
+}
+
+// Posicionar autocompletado
+function posicionarAutocomplete(autocompleteEl, input) {
+    autocompleteEl.style.top = (input.offsetTop + input.offsetHeight + 5) + 'px';
+    autocompleteEl.style.left = input.offsetLeft + 'px';
+    autocompleteEl.style.width = input.offsetWidth + 'px';
+}
+
+// Ocultar autocompletado
+function hideAutocomplete() {
+    const autocompleteEl = document.getElementById('userAutocomplete');
+    if (autocompleteEl) {
+        autocompleteEl.style.display = 'none';
+    }
+    autocompleteVisible = false;
+    selectedAutocompleteIndex = -1;
+    mentionStartPos = -1;
+    currentUsers = [];
+}
+
+// Seleccionar usuario
+function seleccionarUsuario(usuario, input) {
+    if (mentionStartPos === -1) return;
+    
+    const text = input.value;
+    const beforeMention = text.substring(0, mentionStartPos);
+    const afterCursor = text.substring(input.selectionStart);
+    
+    // Reemplazar @búsqueda con @usuario
+    const newText = beforeMention + `@${usuario.username} ` + afterCursor;
+    input.value = newText;
+    
+    // Posicionar cursor después de la mención
+    const newCursorPos = beforeMention.length + usuario.username.length + 2; // +2 para @ y espacio
+    input.setSelectionRange(newCursorPos, newCursorPos);
+    
+    hideAutocomplete();
+    input.focus();
+    
+    // Trigger input event para actualizar contador de caracteres
+    input.dispatchEvent(new Event('input'));
+}
+
+// Manejar teclas en autocompletado
+function handleAutocompleteKeydown(e) {
+    if (!autocompleteVisible) return;
+    
+    switch (e.key) {
+        case 'ArrowDown':
+            e.preventDefault();
+            selectedAutocompleteIndex = Math.min(selectedAutocompleteIndex + 1, currentUsers.length - 1);
+            updateAutocompleteSelection();
+            break;
+            
+        case 'ArrowUp':
+            e.preventDefault();
+            selectedAutocompleteIndex = Math.max(selectedAutocompleteIndex - 1, -1);
+            updateAutocompleteSelection();
+            break;
+            
+        case 'Enter':
+        case 'Tab':
+            e.preventDefault();
+            if (selectedAutocompleteIndex >= 0 && currentUsers[selectedAutocompleteIndex]) {
+                seleccionarUsuario(currentUsers[selectedAutocompleteIndex], e.target);
+            }
+            break;
+            
+        case 'Escape':
+            hideAutocomplete();
+            break;
+    }
+}
+
+// Actualizar selección visual en autocompletado
+function updateAutocompleteSelection() {
+    const autocompleteEl = document.getElementById('userAutocomplete');
+    if (!autocompleteEl) return;
+    
+    const items = autocompleteEl.querySelectorAll('.user-autocomplete-item');
+    items.forEach((item, index) => {
+        if (index === selectedAutocompleteIndex) {
+            item.classList.add('selected');
+            item.style.background = 'rgba(10, 132, 255, 0.2)';
+        } else {
+            item.classList.remove('selected');
+            item.style.background = '';
+        }
+    });
+}
+
+// Cerrar autocompletado al hacer clic fuera
+document.addEventListener('click', function(e) {
+    const autocompleteEl = document.getElementById('userAutocomplete');
+    const comentarioInput = document.getElementById('comentarioInput');
+    
+    if (autocompleteVisible && 
+        !autocompleteEl?.contains(e.target) && 
+        e.target !== comentarioInput) {
+        hideAutocomplete();
+    }
+});
+
+// Override la función mostrarSugerenciasUsuarios para usar el autocompletado
+function mostrarSugerenciasUsuarios(input) {
+    handleMentionTyping(input, input.selectionStart);
+}
+
+// Inicializar autocompletado cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        const comentarioInput = document.getElementById('comentarioInput');
+        if (comentarioInput) {
+            // Agregar listeners adicionales para autocompletado
+            comentarioInput.addEventListener('input', function(e) {
+                handleMentionTyping(this, this.selectionStart);
+            });
+            
+            comentarioInput.addEventListener('keydown', function(e) {
+                handleAutocompleteKeydown(e);
+            });
+        }
+    }, 100);
+});
+
 </script>{% endblock %}
