@@ -3097,19 +3097,22 @@ function showCustomCalendar(inputElement) {
     calendar.className = 'custom-calendar';
     calendar.style.cssText = `
         position: fixed;
-        bottom: 100px;
+        top: 50%;
         left: 50%;
-        transform: translateX(-50%);
+        transform: translate(-50%, -50%);
         width: 500px;
         max-width: 90vw;
-        background: rgba(18, 18, 20, 0.95);
+        background: rgba(255, 0, 0, 0.9);
         backdrop-filter: blur(30px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 3px solid #ff0000;
         border-radius: 12px;
-        padding: 1rem;
-        z-index: 1001;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-        animation: calendarSlideUp 0.3s ease-out;
+        padding: 1.5rem;
+        z-index: 9999999;
+        box-shadow: 0 20px 60px rgba(255, 0, 0, 0.8);
+        animation: none;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     `;
     
     const now = new Date();
@@ -3261,6 +3264,17 @@ function showCustomCalendar(inputElement) {
     document.body.appendChild(calendar);
     
     console.log('Calendario creado y agregado al DOM');
+    console.log('Estilo del calendario:', calendar.style.cssText);
+    console.log('Z-index del modal:', document.getElementById('createTaskModal').style.zIndex);
+    
+    // Verificar que realmente está en el DOM
+    setTimeout(() => {
+        const calendarInDOM = document.querySelector('.custom-calendar');
+        console.log('Calendario en DOM después de timeout:', calendarInDOM);
+        if (calendarInDOM) {
+            console.log('Posición calculada:', calendarInDOM.getBoundingClientRect());
+        }
+    }, 500);
     
     // Cerrar al hacer clic fuera
     setTimeout(() => {
