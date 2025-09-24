@@ -4488,42 +4488,18 @@ async function loadTaskTimeline(tareaId) {
     }
 }
 
-// Simular datos del timeline (reemplazar con API real)
+// Cargar timeline real de la tarea (inicialmente vacío)
 async function simulateTaskTimelineData(tareaId) {
     // Simular delay de carga
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500));
     
-    // Datos de ejemplo del timeline de la tarea
+    // Timeline inicialmente vacío - solo se llena cuando usuarios comenten
     TASK_TIMELINE_DATA.length = 0; // Limpiar array
-    TASK_TIMELINE_DATA.push(
-        {
-            id: 1,
-            tipo: 'creacion',
-            usuario: 'Juan Pérez',
-            usuario_id: 1,
-            contenido: 'Tarea creada',
-            fecha: 'hace 2 días',
-            fecha_timestamp: Date.now() - 2*24*60*60*1000
-        },
-        {
-            id: 2,
-            tipo: 'comentario',
-            usuario: 'María González',
-            usuario_id: 2,
-            contenido: 'Esta tarea necesita revisión adicional antes de continuar @juan',
-            fecha: 'hace 1 día',
-            fecha_timestamp: Date.now() - 1*24*60*60*1000
-        },
-        {
-            id: 3,
-            tipo: 'cambio_estado',
-            usuario: 'Sistema',
-            usuario_id: 0,
-            contenido: 'Estado cambiado a "En progreso"',
-            fecha: 'hace 8 horas',
-            fecha_timestamp: Date.now() - 8*60*60*1000
-        }
-    );
+    
+    // TODO: Aquí implementar llamada real a la API para obtener timeline de la tarea
+    // const response = await fetch(`/app/api/tareas/${tareaId}/timeline/`);
+    // const data = await response.json();
+    // TASK_TIMELINE_DATA.push(...data.timeline);
 }
 
 // Renderizar el timeline de la tarea
@@ -4563,9 +4539,9 @@ function createTaskTimelineItem(activity) {
             activityClass = 'comentario-icon';
             
             if (isCurrentUser) {
-                // Own comments are editable
+                // Own comments are editable and deletable
                 editableClass = 'editable';
-                clickHandler = `onclick="editarComentarioTarea(event, ${activity.id})"`;
+                clickHandler = ''; // No onclick en el contenido, usaremos botones específicos
             } else {
                 // Other users' comments allow replying
                 editableClass = 'replyable';
@@ -4573,7 +4549,33 @@ function createTaskTimelineItem(activity) {
             }
             
             title = `<strong>${activity.usuario}</strong> comentó:`;
-            content = processTaskMentions(activity.contenido);
+            content = `
+                <div id="comment-text-${activity.id}">
+                    ${processTaskMentions(activity.contenido)}
+                </div>
+                ${isCurrentUser ? `
+                <div class="comment-actions" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                    <button class="comment-action-btn edit-btn" onclick="editarComentarioTarea(event, ${activity.id})" title="Editar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                        </svg>
+                    </button>
+                    <button class="comment-action-btn delete-btn" onclick="eliminarComentarioTarea(event, ${activity.id})" title="Eliminar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3,6 5,6 21,6"/>
+                            <path d="m19,6v14a2,2 0 0 1-2,2H7a2,2 0 0 1-2-2V6m3,0V4a2,2 0 0 1 2-2h4a2,2 0 0 1 2,2v2"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="comment-edit-form" id="comment-edit-form-${activity.id}" style="display: none; margin-top: 0.5rem;">
+                    <textarea class="edit-comment-textarea" id="edit-textarea-${activity.id}" rows="2">${activity.contenido}</textarea>
+                    <div class="edit-comment-actions" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                        <button class="comment-action-btn save-btn" onclick="guardarEdicionComentarioTarea(event, ${activity.id})">Guardar</button>
+                        <button class="comment-action-btn cancel-btn" onclick="cancelarEdicionComentarioTarea(event, ${activity.id})">Cancelar</button>
+                    </div>
+                </div>
+                ` : ''}
+            `;
             break;
             
         case 'creacion':
@@ -4674,12 +4676,14 @@ function setupTaskCommentSystem(tareaId) {
     // Configurar textarea de comentario
     if (taskNuevoComentario && taskBtnComentar) {
         taskNuevoComentario.addEventListener('input', () => {
-            const hasContent = taskNuevoComentario.value.trim() || taskAttachedFiles.length > 0;
-            taskBtnComentar.disabled = !hasContent;
+            updateTaskCommentButtonState();
             
             // Auto-resize
             taskNuevoComentario.style.height = 'auto';
             taskNuevoComentario.style.height = taskNuevoComentario.scrollHeight + 'px';
+            
+            // Procesar menciones en tiempo real para autocompletado
+            procesarMencionesEnTiempoReal(taskNuevoComentario);
         });
         
         // Enviar comentario
@@ -4702,19 +4706,49 @@ function setupTaskCommentSystem(tareaId) {
 
 // Manejar archivos adjuntos en tareas
 function handleTaskFiles(files) {
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const allowedTypes = [
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+        'video/mp4', 'video/avi', 'video/mov',
+        'application/pdf',
+        'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/plain', 'text/csv',
+        'application/zip', 'application/x-rar-compressed'
+    ];
+    
     Array.from(files).forEach(file => {
-        if (file.size > 10 * 1024 * 1024) { // 10MB max
+        // Validar tamaño
+        if (file.size > maxSize) {
             alert(`El archivo "${file.name}" es muy grande. Máximo 10MB.`);
             return;
         }
+        
+        // Validar tipo
+        if (!allowedTypes.includes(file.type) && !file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+            alert(`El tipo de archivo "${file.name}" no está permitido.`);
+            return;
+        }
+        
+        // Evitar duplicados
+        const existe = taskAttachedFiles.some(f => f.name === file.name && f.size === file.size);
+        if (existe) {
+            alert(`El archivo "${file.name}" ya fue agregado.`);
+            return;
+        }
+        
         taskAttachedFiles.push(file);
     });
     
     renderTaskAttachedFiles();
-    
-    // Actualizar estado del botón enviar
+    updateTaskCommentButtonState();
+}
+
+// Actualizar estado del botón de comentar
+function updateTaskCommentButtonState() {
     const taskBtnComentar = document.getElementById('taskBtnComentar');
     const taskNuevoComentario = document.getElementById('taskNuevoComentario');
+    
     if (taskBtnComentar && taskNuevoComentario) {
         const hasContent = taskNuevoComentario.value.trim() || taskAttachedFiles.length > 0;
         taskBtnComentar.disabled = !hasContent;
@@ -4732,16 +4766,68 @@ function renderTaskAttachedFiles() {
     }
     
     taskAttachedFilesContainer.style.display = 'block';
-    taskAttachedFilesContainer.innerHTML = taskAttachedFiles.map((file, index) => `
-        <div class="attached-file">
-            <div class="attached-file-icon">${getTaskFileIcon(file.type)}</div>
-            <div class="attached-file-info">
-                <div class="attached-file-name">${file.name}</div>
-                <div class="attached-file-size">${formatFileSize(file.size)}</div>
-            </div>
-            <button class="remove-attached-file" onclick="removeTaskAttachedFile(${index})">×</button>
+    taskAttachedFilesContainer.innerHTML = `
+        <div class="attached-files-header">
+            <span class="attached-files-count">${taskAttachedFiles.length} archivo${taskAttachedFiles.length > 1 ? 's' : ''} adjunto${taskAttachedFiles.length > 1 ? 's' : ''}</span>
         </div>
-    `).join('');
+        ${taskAttachedFiles.map((file, index) => `
+            <div class="attached-file" data-file-type="${file.type}">
+                ${file.type.startsWith('image/') ? createImagePreview(file, index) : ''}
+                <div class="attached-file-icon">${getTaskFileIcon(file.type)}</div>
+                <div class="attached-file-info">
+                    <div class="attached-file-name" title="${file.name}">${truncateFileName(file.name, 30)}</div>
+                    <div class="attached-file-meta">
+                        <span class="attached-file-size">${formatFileSize(file.size)}</span>
+                        <span class="attached-file-type">${getFileTypeDescription(file.type)}</span>
+                    </div>
+                </div>
+                <button class="remove-attached-file" onclick="removeTaskAttachedFile(${index})" title="Quitar archivo">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        `).join('')}
+    `;
+}
+
+// Crear vista previa de imagen
+function createImagePreview(file, index) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const preview = document.querySelector(`[data-file-index="${index}"] .image-preview`);
+        if (preview) {
+            preview.style.backgroundImage = `url(${e.target.result})`;
+            preview.style.display = 'block';
+        }
+    };
+    reader.readAsDataURL(file);
+    
+    return `<div class="image-preview" data-file-index="${index}" style="display: none;"></div>`;
+}
+
+// Truncar nombre de archivo
+function truncateFileName(fileName, maxLength) {
+    if (fileName.length <= maxLength) return fileName;
+    
+    const extension = fileName.split('.').pop();
+    const nameWithoutExt = fileName.slice(0, fileName.lastIndexOf('.'));
+    const truncated = nameWithoutExt.slice(0, maxLength - extension.length - 4);
+    
+    return `${truncated}...${extension}`;
+}
+
+// Obtener descripción del tipo de archivo
+function getFileTypeDescription(fileType) {
+    if (fileType.startsWith('image/')) return 'Imagen';
+    if (fileType.startsWith('video/')) return 'Video';
+    if (fileType.includes('pdf')) return 'PDF';
+    if (fileType.includes('word') || fileType.includes('document')) return 'Documento';
+    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'Hoja de cálculo';
+    if (fileType.includes('zip') || fileType.includes('rar')) return 'Archivo comprimido';
+    if (fileType.includes('text')) return 'Texto';
+    return 'Archivo';
 }
 
 // Obtener ícono para archivo de tarea
@@ -4767,14 +4853,7 @@ function formatFileSize(bytes) {
 function removeTaskAttachedFile(index) {
     taskAttachedFiles.splice(index, 1);
     renderTaskAttachedFiles();
-    
-    // Actualizar botón enviar
-    const taskBtnComentar = document.getElementById('taskBtnComentar');
-    const taskNuevoComentario = document.getElementById('taskNuevoComentario');
-    if (taskBtnComentar && taskNuevoComentario) {
-        const hasContent = taskNuevoComentario.value.trim() || taskAttachedFiles.length > 0;
-        taskBtnComentar.disabled = !hasContent;
-    }
+    updateTaskCommentButtonState();
 }
 
 // Agregar comentario a tarea
@@ -4832,6 +4911,135 @@ async function simulateTaskCommentSubmission(tareaId, comentario) {
     };
     
     TASK_TIMELINE_DATA.unshift(newComment);
+    
+    // Sistema de notificaciones
+    await enviarNotificacionesComentario(tareaId, comentario, CURRENT_USER_ID);
+}
+
+// Sistema de notificaciones para comentarios de tareas
+async function enviarNotificacionesComentario(tareaId, comentario, autorId) {
+    try {
+        // TODO: Obtener información de la tarea desde la API real
+        const tareaInfo = await obtenerInfoTarea(tareaId);
+        
+        const notificaciones = [];
+        
+        // 1. Notificar al creador si el responsable comentó
+        if (autorId === tareaInfo.responsable_id && tareaInfo.creado_por_id !== autorId) {
+            notificaciones.push({
+                usuario_id: tareaInfo.creado_por_id,
+                tipo: 'comentario_tarea_responsable',
+                mensaje: `El responsable ${tareaInfo.responsable_nombre} comentó en tu tarea "${tareaInfo.titulo}"`,
+                tarea_id: tareaId
+            });
+        }
+        
+        // 2. Notificar al responsable si el creador comentó
+        if (autorId === tareaInfo.creado_por_id && tareaInfo.responsable_id !== autorId) {
+            notificaciones.push({
+                usuario_id: tareaInfo.responsable_id,
+                tipo: 'comentario_tarea_creador',
+                mensaje: `El creador ${tareaInfo.creado_por_nombre} comentó en la tarea "${tareaInfo.titulo}"`,
+                tarea_id: tareaId
+            });
+        }
+        
+        // 3. Notificar a usuarios mencionados (@usuario)
+        const menciones = extraerMenciones(comentario);
+        for (const mencion of menciones) {
+            const usuarioMencionado = await buscarUsuarioPorNombre(mencion);
+            if (usuarioMencionado && usuarioMencionado.id !== autorId) {
+                notificaciones.push({
+                    usuario_id: usuarioMencionado.id,
+                    tipo: 'mencion_tarea',
+                    mensaje: `Te mencionaron en un comentario de la tarea "${tareaInfo.titulo}"`,
+                    tarea_id: tareaId
+                });
+            }
+        }
+        
+        // Enviar todas las notificaciones
+        for (const notif of notificaciones) {
+            await enviarNotificacion(notif);
+        }
+        
+        console.log('Notificaciones enviadas:', notificaciones);
+        
+    } catch (error) {
+        console.error('Error enviando notificaciones:', error);
+    }
+}
+
+// Extraer menciones (@usuario) del texto
+function extraerMenciones(texto) {
+    const menciones = [];
+    const regex = /@(\w+)/g;
+    let match;
+    
+    while ((match = regex.exec(texto)) !== null) {
+        menciones.push(match[1]);
+    }
+    
+    return menciones;
+}
+
+// Simular obtención de información de la tarea
+async function obtenerInfoTarea(tareaId) {
+    // TODO: Reemplazar con llamada real a la API
+    // const response = await fetch(`/app/api/tareas/${tareaId}/`);
+    // return await response.json();
+    
+    // Simulación para pruebas
+    return {
+        id: tareaId,
+        titulo: 'Tarea de ejemplo',
+        creado_por_id: 1,
+        creado_por_nombre: 'Juan Pérez',
+        responsable_id: 2,
+        responsable_nombre: 'María González'
+    };
+}
+
+// Simular búsqueda de usuario por nombre
+async function buscarUsuarioPorNombre(nombre) {
+    // TODO: Reemplazar con llamada real a la API
+    // const response = await fetch(`/app/api/buscar-usuarios/?nombre=${nombre}`);
+    // return await response.json();
+    
+    // Simulación para pruebas
+    const usuarios = [
+        { id: 1, nombre: 'juan', nombre_completo: 'Juan Pérez' },
+        { id: 2, nombre: 'maria', nombre_completo: 'María González' },
+        { id: 3, nombre: 'carlos', nombre_completo: 'Carlos Rodríguez' }
+    ];
+    
+    return usuarios.find(u => u.nombre.toLowerCase() === nombre.toLowerCase());
+}
+
+// Enviar notificación
+async function enviarNotificacion(notificacion) {
+    try {
+        // TODO: Reemplazar con llamada real a la API de notificaciones
+        // const response = await fetch('/app/api/notificaciones/', {
+        //     method: 'POST',
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //         'X-CSRFToken': getCookie('csrftoken')
+        //     },
+        //     body: JSON.stringify(notificacion)
+        // });
+        
+        // Simulación: mostrar notificación en consola
+        console.log('📧 Notificación enviada:', notificacion);
+        
+        // En producción, aquí también se podría:
+        // - Enviar notificación push
+        // - Enviar email
+        // - Actualizar contador de notificaciones en tiempo real
+        
+    } catch (error) {
+        console.error('Error enviando notificación:', error);
+    }
 }
 
 // Configurar drag & drop para tareas
@@ -4948,16 +5156,189 @@ function editarComentarioTarea(event, comentarioId) {
     }
     taskCurrentlyEditing = comentarioId;
     
-    // TODO: Implementar edición de comentarios de tarea
-    console.log('Editando comentario de tarea:', comentarioId);
-    alert('Función de editar comentario en desarrollo');
+    // Mostrar formulario de edición
+    const textElement = document.getElementById(`comment-text-${comentarioId}`);
+    const editForm = document.getElementById(`comment-edit-form-${comentarioId}`);
+    const textarea = document.getElementById(`edit-textarea-${comentarioId}`);
+    
+    if (textElement && editForm && textarea) {
+        textElement.style.display = 'none';
+        editForm.style.display = 'block';
+        textarea.focus();
+        
+        // Auto-resize textarea
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
 }
 
 function cancelarEdicionComentarioTarea(event, comentarioId) {
     if (event) event.stopPropagation();
     taskCurrentlyEditing = null;
-    // TODO: Implementar cancelación de edición
-    console.log('Cancelando edición de comentario:', comentarioId);
+    
+    // Ocultar formulario de edición
+    const textElement = document.getElementById(`comment-text-${comentarioId}`);
+    const editForm = document.getElementById(`comment-edit-form-${comentarioId}`);
+    const textarea = document.getElementById(`edit-textarea-${comentarioId}`);
+    
+    if (textElement && editForm && textarea) {
+        textElement.style.display = 'block';
+        editForm.style.display = 'none';
+        
+        // Restaurar texto original
+        const originalComment = TASK_TIMELINE_DATA.find(item => item.id === comentarioId);
+        if (originalComment) {
+            textarea.value = originalComment.contenido;
+        }
+    }
+}
+
+// Guardar edición de comentario
+async function guardarEdicionComentarioTarea(event, comentarioId) {
+    event.stopPropagation();
+    
+    const textarea = document.getElementById(`edit-textarea-${comentarioId}`);
+    const newContent = textarea ? textarea.value.trim() : '';
+    
+    if (!newContent) {
+        alert('El comentario no puede estar vacío');
+        return;
+    }
+    
+    try {
+        // TODO: Implementar llamada real a API para actualizar comentario
+        await simulateTaskCommentEdit(comentarioId, newContent);
+        
+        // Actualizar datos locales
+        const commentIndex = TASK_TIMELINE_DATA.findIndex(item => item.id === comentarioId);
+        if (commentIndex !== -1) {
+            TASK_TIMELINE_DATA[commentIndex].contenido = newContent;
+        }
+        
+        // Actualizar interfaz
+        const textElement = document.getElementById(`comment-text-${comentarioId}`);
+        if (textElement) {
+            textElement.innerHTML = processTaskMentions(newContent);
+        }
+        
+        // Ocultar formulario de edición
+        cancelarEdicionComentarioTarea(null, comentarioId);
+        
+        console.log('Comentario actualizado:', comentarioId, newContent);
+        
+    } catch (error) {
+        console.error('Error actualizando comentario:', error);
+        alert('Error al actualizar comentario: ' + (error.message || 'Error desconocido'));
+    }
+}
+
+// Simular actualización de comentario
+async function simulateTaskCommentEdit(comentarioId, newContent) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    // TODO: Reemplazar con llamada real a API
+    // const response = await fetch(`/app/api/tareas/comentarios/${comentarioId}/`, {
+    //     method: 'PUT',
+    //     headers: {
+    //         'Content-Type': 'application/json',
+    //         'X-CSRFToken': getCookie('csrftoken')
+    //     },
+    //     body: JSON.stringify({ contenido: newContent })
+    // });
+}
+
+// Eliminar comentario de tarea
+async function eliminarComentarioTarea(event, comentarioId) {
+    event.stopPropagation();
+    
+    if (!confirm('¿Estás seguro de que quieres eliminar este comentario?')) {
+        return;
+    }
+    
+    try {
+        // TODO: Implementar llamada real a API para eliminar comentario
+        await simulateTaskCommentDelete(comentarioId);
+        
+        // Remover de datos locales
+        const commentIndex = TASK_TIMELINE_DATA.findIndex(item => item.id === comentarioId);
+        if (commentIndex !== -1) {
+            TASK_TIMELINE_DATA.splice(commentIndex, 1);
+        }
+        
+        // Remover del DOM
+        const timelineItem = document.getElementById(`task-timeline-item-${comentarioId}`);
+        if (timelineItem) {
+            timelineItem.remove();
+        }
+        
+        // Si no quedan comentarios, mostrar estado vacío
+        if (TASK_TIMELINE_DATA.length === 0) {
+            renderTaskTimeline();
+        }
+        
+        console.log('Comentario eliminado:', comentarioId);
+        
+    } catch (error) {
+        console.error('Error eliminando comentario:', error);
+        alert('Error al eliminar comentario: ' + (error.message || 'Error desconocido'));
+    }
+}
+
+// Simular eliminación de comentario
+async function simulateTaskCommentDelete(comentarioId) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    // TODO: Reemplazar con llamada real a API
+    // const response = await fetch(`/app/api/tareas/comentarios/${comentarioId}/`, {
+    //     method: 'DELETE',
+    //     headers: {
+    //         'X-CSRFToken': getCookie('csrftoken')
+    //     }
+    // });
+}
+
+// Procesar menciones en tiempo real para autocompletado
+function procesarMencionesEnTiempoReal(textarea) {
+    const text = textarea.value;
+    const cursorPos = textarea.selectionStart;
+    const beforeCursor = text.substring(0, cursorPos);
+    
+    // Buscar la última @ antes del cursor
+    const lastAtIndex = beforeCursor.lastIndexOf('@');
+    
+    if (lastAtIndex === -1) return;
+    
+    const searchText = beforeCursor.substring(lastAtIndex + 1);
+    
+    // Si hay espacios o saltos de línea, no mostrar autocompletado
+    if (searchText.includes(' ') || searchText.includes('\n')) return;
+    
+    // Si hay texto después de @, buscar usuarios
+    if (searchText.length > 0) {
+        mostrarAutocompletadoUsuarios(searchText, textarea, lastAtIndex);
+    }
+}
+
+// Mostrar autocompletado de usuarios (simulado)
+function mostrarAutocompletadoUsuarios(searchText, textarea, startPos) {
+    // TODO: Implementar autocompletado real con la API de usuarios
+    // Por ahora mostrar en consola
+    console.log('Buscando usuarios que coincidan con:', searchText);
+    
+    // Lista simulada de usuarios
+    const usuarios = [
+        { id: 1, nombre: 'juan', nombre_completo: 'Juan Pérez' },
+        { id: 2, nombre: 'maria', nombre_completo: 'María González' },
+        { id: 3, nombre: 'carlos', nombre_completo: 'Carlos Rodríguez' }
+    ];
+    
+    const coincidencias = usuarios.filter(u => 
+        u.nombre.toLowerCase().includes(searchText.toLowerCase()) ||
+        u.nombre_completo.toLowerCase().includes(searchText.toLowerCase())
+    );
+    
+    if (coincidencias.length > 0) {
+        console.log('Usuarios encontrados:', coincidencias);
+        // TODO: Mostrar dropdown de autocompletado
+    }
 }
 
 // Obtener cookie CSRF para las llamadas de API
@@ -6728,14 +7109,47 @@ document.addEventListener('DOMContentLoaded', function() {
     margin-bottom: 1rem;
 }
 
+.task-timeline-panel .attached-files-header {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 0.75rem;
+}
+
+.task-timeline-panel .attached-files-count {
+    font-size: 0.85rem;
+    color: var(--apple-label-secondary);
+    font-weight: 500;
+}
+
 .task-timeline-panel .attached-file {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 0.75rem;
     background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    padding: 0.5rem;
+    padding: 0.75rem;
     margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.task-timeline-panel .attached-file:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.task-timeline-panel .image-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 6px 6px 0 0;
+    opacity: 0.3;
 }
 
 .task-timeline-panel .attached-file-icon {
@@ -6754,6 +7168,7 @@ document.addEventListener('DOMContentLoaded', function() {
 .task-timeline-panel .attached-file-info {
     flex: 1;
     min-width: 0;
+    z-index: 1; /* Sobre la vista previa */
 }
 
 .task-timeline-panel .attached-file-name {
@@ -6763,11 +7178,27 @@ document.addEventListener('DOMContentLoaded', function() {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-weight: 500;
+}
+
+.task-timeline-panel .attached-file-meta {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
 }
 
 .task-timeline-panel .attached-file-size {
     font-size: 0.75rem;
     color: var(--apple-label-secondary);
+}
+
+.task-timeline-panel .attached-file-type {
+    font-size: 0.75rem;
+    color: var(--apple-label-tertiary);
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    font-weight: 500;
 }
 
 .task-timeline-panel .remove-attached-file {
@@ -6788,6 +7219,88 @@ document.addEventListener('DOMContentLoaded', function() {
 .task-timeline-panel .remove-attached-file:hover {
     background: var(--apple-red-hover, #d70015);
     transform: scale(1.1);
+}
+
+/* Botones de acción de comentarios */
+.task-timeline-panel .comment-action-btn {
+    background: none;
+    border: none;
+    padding: 0.25rem;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--apple-label-secondary);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+}
+
+.task-timeline-panel .comment-action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--apple-label);
+}
+
+.task-timeline-panel .comment-action-btn.edit-btn:hover {
+    color: var(--apple-blue);
+    background: rgba(10, 132, 255, 0.1);
+}
+
+.task-timeline-panel .comment-action-btn.delete-btn:hover {
+    color: var(--apple-red);
+    background: rgba(255, 69, 58, 0.1);
+}
+
+.task-timeline-panel .comment-action-btn.save-btn {
+    background: var(--apple-blue);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+.task-timeline-panel .comment-action-btn.save-btn:hover {
+    background: var(--apple-blue-hover, #0064d1);
+}
+
+.task-timeline-panel .comment-action-btn.cancel-btn {
+    background: var(--apple-label-quaternary);
+    color: var(--apple-label);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+.task-timeline-panel .comment-action-btn.cancel-btn:hover {
+    background: var(--apple-label-tertiary);
+}
+
+/* Formulario de edición de comentarios */
+.task-timeline-panel .edit-comment-textarea {
+    width: 100%;
+    background: var(--apple-background-tertiary);
+    border: 1px solid var(--apple-separator);
+    border-radius: 8px;
+    padding: 0.5rem;
+    color: var(--apple-label);
+    font-family: var(--apple-font-family);
+    font-size: 0.9rem;
+    resize: vertical;
+    min-height: 60px;
+}
+
+.task-timeline-panel .edit-comment-textarea:focus {
+    outline: none;
+    border-color: var(--apple-blue);
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
+}
+
+/* Acciones de comentarios solo visibles para comentarios propios */
+.task-timeline-panel .comment-actions {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.task-timeline-panel .timeline-content-item:hover .comment-actions {
+    opacity: 1;
 }
 
 /* Estilos para estrella de prioridad */
