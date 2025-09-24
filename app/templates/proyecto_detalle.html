@@ -4106,17 +4106,13 @@ async function abrirDetallesTarea(tareaId) {
                 statusIndicator.textContent = estadoTexto[tarea.estado] || 'Pendiente';
                 statusIndicator.className = `task-status-indicator ${tarea.estado}`;
                 
-                // Prioridad
-                const prioridadTexto = {
-                    'alta': 'Alta prioridad',
-                    'media': 'Prioridad media',
-                    'baja': 'Baja prioridad'
-                };
-                priorityIndicator.textContent = prioridadTexto[tarea.prioridad] || 'Prioridad media';
-                priorityIndicator.className = `task-priority-indicator ${tarea.prioridad}`;
-                
-                // Fecha
-                dateInfo.textContent = `Creado el ${formatearFecha(tarea.fecha_creacion)}`;
+                // Mostrar estrella de prioridad si es alta prioridad
+                const priorityStar = document.getElementById('taskPriorityStar');
+                if (tarea.prioridad === 'alta') {
+                    priorityStar.style.display = 'block';
+                } else {
+                    priorityStar.style.display = 'none';
+                }
                 
                 // Descripción
                 const descContent = document.getElementById('taskDetailDescription');
@@ -4477,7 +4473,7 @@ function crearSubTarea() {
     alert('Función crear sub-tarea en desarrollo');
 }
 
-// Función para cargar comentarios de tarea usando el sistema del feed
+// Función para cargar comentarios de tarea usando el sistema del feed real
 function cargarComentariosTarea(tareaId) {
     const taskFeedLoading = document.getElementById('taskFeedLoading');
     const taskFeedItems = document.getElementById('taskFeedItems');
@@ -4488,20 +4484,20 @@ function cargarComentariosTarea(tareaId) {
     taskFeedItems.innerHTML = '';
     taskFeedEmpty.style.display = 'none';
     
-    // Simular carga de comentarios - en el futuro esto será una llamada API real
+    // TODO: Implementar carga real de comentarios de tarea
+    // Por ahora mostrar estado vacío
     setTimeout(() => {
         taskFeedLoading.style.display = 'none';
-        
-        // Por ahora mostrar estado vacío
         taskFeedEmpty.style.display = 'block';
         
-        // Configurar el sistema de comentarios para tareas
-        configurarSistemaComentariosTarea(tareaId);
+        // Configurar el sistema de comentarios para tareas usando las MISMAS funciones del feed
+        configurarSistemaComentariosTareaReal(tareaId);
     }, 500);
 }
 
-// Configurar el sistema de comentarios específico para tareas
-function configurarSistemaComentariosTarea(tareaId) {
+// Nueva función que reutiliza EXACTAMENTE las funciones del feed principal
+function configurarSistemaComentariosTareaReal(tareaId) {
+    // Cambiar los IDs temporalmente para conectar con las funciones del feed
     const taskBtnNuevoComentario = document.getElementById('taskBtnNuevoComentario');
     const taskComentarioActions = document.getElementById('taskComentarioActions');
     const taskComentarioForm = document.getElementById('taskComentarioForm');
@@ -4511,41 +4507,71 @@ function configurarSistemaComentariosTarea(tareaId) {
     const taskBtnEnviar = document.getElementById('taskBtnEnviar');
     const taskBtnAdjuntar = document.getElementById('taskBtnAdjuntar');
     const taskFileInput = document.getElementById('taskFileInput');
+    const taskArchivosAdjuntos = document.getElementById('taskArchivosAdjuntos');
     
-    // Configurar eventos similares al feed principal
-    taskBtnNuevoComentario.addEventListener('click', function() {
+    // Agregar eventos click EXACTOS del feed principal
+    taskBtnNuevoComentario.addEventListener('click', () => {
         taskComentarioActions.style.display = 'flex';
         taskComentarioForm.style.display = 'block';
         taskComentarioInput.focus();
-        this.style.display = 'none';
+        taskBtnNuevoComentario.style.display = 'none';
     });
     
-    taskBtnCancelar.addEventListener('click', function() {
+    taskBtnCancelar.addEventListener('click', () => {
         taskComentarioForm.style.display = 'none';
         taskComentarioActions.style.display = 'none';
         taskBtnNuevoComentario.style.display = 'flex';
         taskComentarioInput.value = '';
         taskContadorCaracteres.textContent = '2000';
         taskBtnEnviar.disabled = true;
+        // Limpiar archivos adjuntos
+        taskArchivosAdjuntos.innerHTML = '';
     });
     
+    taskBtnAdjuntar.addEventListener('click', () => {
+        taskFileInput.click();
+    });
+    
+    // Evento para archivos seleccionados
+    taskFileInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            // Usar la misma función del feed principal
+            actualizarArchivosAdjuntos(e.target.files, taskArchivosAdjuntos);
+        }
+    });
+    
+    // Input de comentario con contador
     taskComentarioInput.addEventListener('input', function() {
         const caracteresRestantes = 2000 - this.value.length;
         taskContadorCaracteres.textContent = caracteresRestantes;
         taskBtnEnviar.disabled = this.value.trim().length === 0;
     });
     
-    taskBtnAdjuntar.addEventListener('click', function() {
-        taskFileInput.click();
-    });
-    
-    taskBtnEnviar.addEventListener('click', function() {
-        enviarComentarioTarea(tareaId);
+    // Envío de comentario
+    taskBtnEnviar.addEventListener('click', () => {
+        enviarComentarioTareaReal(tareaId);
     });
 }
 
-// Función para enviar comentario de tarea
-function enviarComentarioTarea(tareaId) {
+// Función para actualizar archivos adjuntos (copiada del feed principal)
+function actualizarArchivosAdjuntos(files, container) {
+    container.innerHTML = '';
+    Array.from(files).forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'archivo-adjunto-item';
+        fileItem.innerHTML = `
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49"/>
+            </svg>
+            <span>${file.name}</span>
+            <button type="button" onclick="removerArchivoAdjunto(${index}, this.parentElement.parentElement)">×</button>
+        `;
+        container.appendChild(fileItem);
+    });
+}
+
+// Función para enviar comentario de tarea usando el sistema real
+function enviarComentarioTareaReal(tareaId) {
     const taskComentarioInput = document.getElementById('taskComentarioInput');
     const comentario = taskComentarioInput.value.trim();
     
@@ -4554,17 +4580,15 @@ function enviarComentarioTarea(tareaId) {
         return;
     }
     
-    // TODO: Enviar comentario al backend
+    // TODO: Integrar con la API real de comentarios
     console.log('Enviando comentario para tarea:', tareaId, 'Comentario:', comentario);
     
-    // Simular respuesta exitosa
+    // Simular comentario añadido usando el mismo formato del feed
     const taskFeedItems = document.getElementById('taskFeedItems');
     const taskFeedEmpty = document.getElementById('taskFeedEmpty');
     
-    // Ocultar estado vacío
     taskFeedEmpty.style.display = 'none';
     
-    // Crear elemento de comentario usando el mismo estilo del feed
     const nuevoComentario = document.createElement('div');
     nuevoComentario.className = 'feed-item';
     nuevoComentario.innerHTML = `
@@ -4573,10 +4597,9 @@ function enviarComentarioTarea(tareaId) {
         <div class="feed-content">${comentario}</div>
     `;
     
-    // Insertar al inicio
     taskFeedItems.insertBefore(nuevoComentario, taskFeedItems.firstChild);
     
-    // Limpiar formulario
+    // Limpiar formulario usando el mismo patrón
     taskComentarioInput.value = '';
     document.getElementById('taskContadorCaracteres').textContent = '2000';
     document.getElementById('taskBtnEnviar').disabled = true;
@@ -4584,6 +4607,7 @@ function enviarComentarioTarea(tareaId) {
     document.getElementById('taskComentarioActions').style.display = 'none';
     document.getElementById('taskBtnNuevoComentario').style.display = 'flex';
 }
+
 
 function cargarEtiquetasTarea(tarea) {
     const labelsContainer = document.getElementById('taskDetailLabels');
@@ -5190,35 +5214,41 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- Modal de Detalles de Tarea Professional -->
 <div class="advanced-task-modal-overlay" id="taskDetailModal">
     <div class="advanced-task-container">
-        <!-- Header Superior -->
+        <!-- Header con título, prioridad y botones de acción -->
         <div class="advanced-task-header">
             <div class="header-left">
-                <h1 class="task-number" id="taskNumber">#1001</h1>
-                <div class="task-title-section">
-                    <h2 class="task-main-title" id="taskDetailTitle">Título de la Tarea</h2>
-                    <div class="task-meta-info">
-                        <span class="task-status-indicator" id="taskDetailStatus">En progreso</span>
-                        <span class="task-priority-indicator" id="taskDetailPriority">Alta prioridad</span>
-                        <span class="task-date-info" id="taskDateInfo">Creado el 24/4/2025</span>
-                    </div>
+                <h2 class="task-main-title" id="taskDetailTitle">Título de la Tarea</h2>
+                <div class="task-priority-star" id="taskPriorityStar" style="display: none;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                        <path d="M12 6L8 12H16L12 6Z" fill="currentColor" opacity="0.6"/>
+                    </svg>
                 </div>
             </div>
             <div class="header-actions">
-                <button class="header-action-btn" onclick="toggleTaskWatch()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                    Seguir
-                </button>
-                <button class="header-action-btn" onclick="shareTask()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-                        <polyline points="16,6 12,2 8,6"/>
-                        <line x1="12" y1="2" x2="12" y2="15"/>
-                    </svg>
-                    Compartir
-                </button>
+                <!-- Botones de acción de tarea -->
+                <div class="header-task-actions" id="headerTaskActions">
+                    <button class="header-action-btn start-task-btn" onclick="iniciarTarea()" id="headerStartTaskBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5,3 19,12 5,21"/>
+                        </svg>
+                        Iniciar
+                    </button>
+                    <button class="header-action-btn complete-task-btn" onclick="terminarTarea()" id="headerCompleteTaskBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22,4 12,14.01 9,11.01"/>
+                        </svg>
+                        Terminar
+                    </button>
+                    <button class="header-action-btn subtask-btn" onclick="crearSubTarea()" id="headerSubtaskBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Sub-tarea
+                    </button>
+                </div>
                 <button class="advanced-task-close" onclick="closeTaskDetailModal()">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="m18 6-12 12M6 6l12 12"/>
@@ -5256,93 +5286,68 @@ document.addEventListener('DOMContentLoaded', function() {
                 <!-- Sistema de Comentarios Integrado del Feed -->
                 <div class="task-comments-area">
                     <div class="comments-header">
-                        <h3 class="section-title">Actividad y Comentarios</h3>
-                        <div class="task-action-buttons">
-                            <button class="action-btn start-task-btn" onclick="iniciarTarea()" id="startTaskBtn">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polygon points="5,3 19,12 5,21"/>
-                                </svg>
-                                Iniciar Tarea
-                            </button>
-                            <button class="action-btn complete-task-btn" onclick="terminarTarea()" id="completeTaskBtn">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                                    <polyline points="22,4 12,14.01 9,11.01"/>
-                                </svg>
-                                Terminar Tarea
-                            </button>
-                            <button class="action-btn subtask-btn" onclick="crearSubTarea()" id="subtaskBtn">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="12" y1="5" x2="12" y2="19"/>
-                                    <line x1="5" y1="12" x2="19" y2="12"/>
-                                </svg>
-                                Crear Sub-tarea
-                            </button>
-                        </div>
+                        <h3 class="section-title">Comentarios</h3>
                     </div>
                     
-                    <!-- Reusando el sistema de comentarios del feed -->
-                    <div class="task-feed-container">
-                        <!-- Modal para nuevo comentario -->
-                        <div class="nuevo-comentario-modal task-comment-modal" id="taskNuevoComentarioModal">
-                            <div class="modal-comentario-header">
-                                <button class="btn-nuevo-comentario" id="taskBtnNuevoComentario">
+                    <!-- Sistema de comentarios EXACTO del feed principal -->
+                    <div class="nuevo-comentario-modal" id="taskNuevoComentarioModal">
+                        <div class="modal-comentario-header">
+                            <button class="btn-nuevo-comentario" id="taskBtnNuevoComentario">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Agregar comentario
+                            </button>
+                            <div class="comentario-actions" id="taskComentarioActions" style="display: none;">
+                                <button class="btn-adjuntar" id="taskBtnAdjuntar" title="Adjuntar archivos">
                                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                        <path d="M12 4v16m8-8H4"/>
+                                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49"/>
                                     </svg>
-                                    Agregar comentario
                                 </button>
-                                <div class="comentario-actions" id="taskComentarioActions" style="display: none;">
-                                    <button class="btn-adjuntar" id="taskBtnAdjuntar" title="Adjuntar archivos">
-                                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49"/>
-                                        </svg>
-                                    </button>
-                                    <button class="btn-mencion" id="taskBtnMencion" title="Mencionar usuario">
-                                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                            <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                        </svg>
-                                    </button>
-                                </div>
+                                <button class="btn-mencion" id="taskBtnMencion" title="Mencionar usuario">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                        <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                </button>
                             </div>
-                            
-                            <div class="comentario-form" id="taskComentarioForm" style="display: none;">
-                                <div class="archivos-adjuntos" id="taskArchivosAdjuntos"></div>
-                                <textarea 
-                                    id="taskComentarioInput" 
-                                    placeholder="Escribe un comentario... Usa @usuario para mencionar"
-                                    rows="3"
-                                    maxlength="2000"></textarea>
-                                <div class="comentario-form-actions">
-                                    <span class="contador-caracteres" id="taskContadorCaracteres">2000</span>
-                                    <button class="btn-cancelar" id="taskBtnCancelar">Cancelar</button>
-                                    <button class="btn-enviar" id="taskBtnEnviar" disabled>Enviar</button>
-                                </div>
-                            </div>
-                            
-                            <input type="file" id="taskFileInput" multiple style="display: none;" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar">
                         </div>
                         
-                        <!-- Feed de comentarios -->
-                        <div class="feed-container" id="taskFeedContainer">
-                            <div class="feed-loading" id="taskFeedLoading" style="display: none;">
-                                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-                                </svg>
-                                Cargando comentarios...
+                        <div class="comentario-form" id="taskComentarioForm" style="display: none;">
+                            <div class="archivos-adjuntos" id="taskArchivosAdjuntos"></div>
+                            <textarea 
+                                id="taskComentarioInput" 
+                                placeholder="Escribe un comentario... Usa @usuario para mencionar"
+                                rows="3"
+                                maxlength="2000"></textarea>
+                            <div class="comentario-form-actions">
+                                <span class="contador-caracteres" id="taskContadorCaracteres">2000</span>
+                                <button class="btn-cancelar" id="taskBtnCancelar">Cancelar</button>
+                                <button class="btn-enviar" id="taskBtnEnviar" disabled>Enviar</button>
                             </div>
-                            
-                            <div class="feed-items" id="taskFeedItems">
-                                <!-- Los comentarios se cargarán dinámicamente -->
-                            </div>
-                            
-                            <div class="feed-empty" id="taskFeedEmpty" style="display: none;">
-                                <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1">
-                                    <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                                </svg>
-                                <h3>¡Sé el primero en comentar!</h3>
-                                <p>Comparte actualizaciones o menciona a tus compañeros de equipo.</p>
-                            </div>
+                        </div>
+                        
+                        <input type="file" id="taskFileInput" multiple style="display: none;" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar">
+                    </div>
+                    
+                    <!-- Feed de comentarios -->
+                    <div class="feed-container" id="taskFeedContainer">
+                        <div class="feed-loading" id="taskFeedLoading" style="display: none;">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                            </svg>
+                            Cargando comentarios...
+                        </div>
+                        
+                        <div class="feed-items" id="taskFeedItems">
+                            <!-- Los comentarios se cargarán dinámicamente -->
+                        </div>
+                        
+                        <div class="feed-empty" id="taskFeedEmpty" style="display: none;">
+                            <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1">
+                                <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                            <h3>¡Sé el primero en comentar!</h3>
+                            <p>Comparte actualizaciones o menciona a tus compañeros de equipo.</p>
                         </div>
                     </div>
                 </div>
@@ -5870,6 +5875,102 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .task-comment-modal .modal-comentario-header {
     margin-bottom: 1rem;
+}
+
+/* Estilos para estrella de prioridad */
+.task-priority-star {
+    margin-left: 1rem;
+    color: #FF9500;
+    animation: flameFlicker 2s ease-in-out infinite;
+}
+
+.task-priority-star svg {
+    filter: drop-shadow(0 0 8px rgba(255, 149, 0, 0.6));
+}
+
+@keyframes flameFlicker {
+    0%, 100% { 
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
+}
+
+/* Estilos para botones de acción en header */
+.header-task-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-right: 1rem;
+}
+
+.header-action-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.header-action-btn.start-task-btn {
+    background: rgba(48, 209, 88, 0.15);
+    border: 1px solid rgba(48, 209, 88, 0.3);
+    color: #30D158;
+}
+
+.header-action-btn.start-task-btn:hover {
+    background: rgba(48, 209, 88, 0.25);
+    transform: translateY(-1px);
+}
+
+.header-action-btn.complete-task-btn {
+    background: rgba(10, 132, 255, 0.15);
+    border: 1px solid rgba(10, 132, 255, 0.3);
+    color: #0A84FF;
+}
+
+.header-action-btn.complete-task-btn:hover {
+    background: rgba(10, 132, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+.header-action-btn.subtask-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--apple-label);
+}
+
+.header-action-btn.subtask-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+}
+
+/* Actualizar header layout */
+.advanced-task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
 }
 
 /* Nuevo Comentario */
