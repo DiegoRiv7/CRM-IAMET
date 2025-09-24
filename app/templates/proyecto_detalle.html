@@ -4087,52 +4087,56 @@ async function abrirDetallesTarea(tareaId) {
             const tarea = data.tareas.find(t => t.id == tareaId);
             
             if (tarea) {
-                // Llenar el header del modal
-                document.getElementById('taskNumber').textContent = `#${tarea.id}`;
-                document.getElementById('taskDetailTitle').textContent = tarea.titulo;
-                
-                // Configurar meta información
-                const statusIndicator = document.getElementById('taskDetailStatus');
-                const priorityIndicator = document.getElementById('taskDetailPriority');
-                const dateInfo = document.getElementById('taskDateInfo');
-                
-                // Estado
-                const estadoTexto = {
-                    'pendiente': 'Pendiente',
-                    'en_progreso': 'En Progreso',
-                    'completada': 'Completada',
-                    'cancelada': 'Cancelada'
-                };
-                statusIndicator.textContent = estadoTexto[tarea.estado] || 'Pendiente';
-                statusIndicator.className = `task-status-indicator ${tarea.estado}`;
+                // Llenar el header del modal (solo título y prioridad)
+                const titleElement = document.getElementById('taskDetailTitle');
+                if (titleElement) {
+                    titleElement.textContent = tarea.titulo;
+                }
                 
                 // Mostrar estrella de prioridad si es alta prioridad
                 const priorityStar = document.getElementById('taskPriorityStar');
-                if (tarea.prioridad === 'alta') {
-                    priorityStar.style.display = 'block';
-                } else {
-                    priorityStar.style.display = 'none';
+                if (priorityStar) {
+                    if (tarea.prioridad === 'alta') {
+                        priorityStar.style.display = 'block';
+                    } else {
+                        priorityStar.style.display = 'none';
+                    }
                 }
                 
                 // Descripción
                 const descContent = document.getElementById('taskDetailDescription');
-                if (tarea.descripcion && tarea.descripcion.trim()) {
-                    descContent.innerHTML = `<p>${tarea.descripcion}</p>`;
-                } else {
-                    descContent.innerHTML = '<p style="color: var(--apple-label-secondary); font-style: italic;">Sin descripción</p>';
+                if (descContent) {
+                    if (tarea.descripcion && tarea.descripcion.trim()) {
+                        descContent.innerHTML = `<p>${tarea.descripcion}</p>`;
+                    } else {
+                        descContent.innerHTML = '<p style="color: var(--apple-label-secondary); font-style: italic;">Sin descripción</p>';
+                    }
                 }
                 
-                // Sidebar - Información
-                document.getElementById('taskDetailProject').textContent = tarea.proyecto || PROYECTO_NOMBRE;
-                document.getElementById('taskDetailCreated').textContent = formatearFecha(tarea.fecha_creacion);
-                document.getElementById('taskDetailDueDate').textContent = tarea.fecha_limite ? formatearFecha(tarea.fecha_limite) : 'Sin fecha límite';
+                // Sidebar - Información (con verificaciones de existencia)
+                const projectElement = document.getElementById('taskDetailProject');
+                if (projectElement) {
+                    projectElement.textContent = tarea.proyecto || PROYECTO_NOMBRE;
+                }
+                
+                const createdElement = document.getElementById('taskDetailCreated');
+                if (createdElement) {
+                    createdElement.textContent = formatearFecha(tarea.fecha_creacion);
+                }
+                
+                const dueDateElement = document.getElementById('taskDetailDueDate');
+                if (dueDateElement) {
+                    dueDateElement.textContent = tarea.fecha_limite ? formatearFecha(tarea.fecha_limite) : 'Sin fecha límite';
+                }
                 
                 // Responsable con avatar
                 const responsibleEl = document.getElementById('taskDetailResponsible');
-                responsibleEl.innerHTML = `
-                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxjaXJjbGUgY3g9IjEyIiBjeT0iOCIgcj0iNSIgZmlsbD0iIzRCNzY4OCIvPgo8cGF0aCBkPSJtMjAgMjEtMi0yLTEuMi0xLjIiIHN0cm9rZT0iIzRCNzY4OCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+" alt="${tarea.responsable}" />
-                    <span>${tarea.responsable || tarea.creado_por}</span>
-                `;
+                if (responsibleEl) {
+                    responsibleEl.innerHTML = `
+                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxjaXJjbGUgY3g9IjEyIiBjeT0iOCIgcj0iNSIgZmlsbD0iIzRCNzY4OCIvPgo8cGF0aCBkPSJtMjAgMjEtMi0yLTEuMi0xLjIiIHN0cm9rZT0iIzRCNzY4OCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+" alt="${tarea.responsable}" />
+                        <span>${tarea.responsable || tarea.creado_por}</span>
+                    `;
+                }
                 
                 // Configurar botones según permisos en el sidebar
                 configurarBotonesAvanzadosSegunPermisos(tarea);
@@ -4145,8 +4149,12 @@ async function abrirDetallesTarea(tareaId) {
                 
                 // Abrir el modal
                 const modal = document.getElementById('taskDetailModal');
-                modal.classList.add('active');
-                document.body.style.overflow = 'hidden';
+                if (modal) {
+                    modal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    console.error('No se encontró el modal de detalles de tarea');
+                }
                 
             } else {
                 alert('No se encontró la tarea especificada');
@@ -4161,99 +4169,62 @@ async function abrirDetallesTarea(tareaId) {
 // Función para cerrar el modal de detalles
 function closeTaskDetailModal() {
     const modal = document.getElementById('taskDetailModal');
-    modal.classList.remove('active');
-    document.body.style.overflow = '';
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    } else {
+        console.warn('No se encontró el modal de detalles de tarea para cerrar');
+    }
 }
 
-// Función para configurar botones según permisos del usuario (para sidebar)
+// Función para configurar botones según permisos del usuario (para header actions)
 function configurarBotonesAvanzadosSegunPermisos(tarea) {
-    const actionsContainer = document.getElementById('taskPrimaryActions');
+    // Obtener los botones del header con verificaciones de null
+    const headerStartBtn = document.getElementById('headerStartTaskBtn');
+    const headerCompleteBtn = document.getElementById('headerCompleteTaskBtn');
+    const headerSubtaskBtn = document.getElementById('headerSubtaskBtn');
+    const headerActions = document.getElementById('headerTaskActions');
+    
+    // Verificar que existe el contenedor principal
+    if (!headerActions) {
+        console.warn('No se encontró el contenedor de acciones del header');
+        return;
+    }
+    
     const esCreador = tarea.creado_por_id == CURRENT_USER_ID;
     const esResponsable = tarea.responsable_id == CURRENT_USER_ID;
     const estado = tarea.estado || 'pendiente';
     
-    // Limpiar botones existentes
-    actionsContainer.innerHTML = '';
-    
-    if (esCreador) {
-        // Botones para el creador de la tarea
-        actionsContainer.innerHTML = `
-            <button class="btn-task-action secondary" onclick="editTask(${tarea.id})">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-                </svg>
-                Editar Tarea
-            </button>
-            <button class="btn-task-action danger" onclick="deleteTask(${tarea.id})">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3,6 5,6 21,6"/>
-                    <path d="m19,6v14a2,2 0 0 1-2,2H7a2,2 0 0 1-2-2V6m3,0V4a2,2 0 0 1 2-2h4a2,2 0 0 1 2,2v2"/>
-                </svg>
-                Eliminar Tarea
-            </button>
-        `;
-    } else if (esResponsable) {
-        // Botones para el responsable de la tarea
-        if (estado === 'pendiente') {
-            actionsContainer.innerHTML = `
-                <button class="btn-task-action primary" onclick="startTask(${tarea.id})">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polygon points="5,3 19,12 5,21"/>
-                    </svg>
-                    Iniciar Tarea
-                </button>
-                <button class="btn-task-action secondary" onclick="createSubtask(${tarea.id})">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="5" x2="12" y2="19"/>
-                        <line x1="5" y1="12" x2="19" y2="12"/>
-                    </svg>
-                    Crear Subtarea
-                </button>
-            `;
-        } else if (estado === 'en_progreso') {
-            actionsContainer.innerHTML = `
-                <button class="btn-task-action success" onclick="completeTask(${tarea.id})">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="20,6 9,17 4,12"/>
-                    </svg>
-                    Terminar Tarea
-                </button>
-                <button class="btn-task-action secondary" onclick="createSubtask(${tarea.id})">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="5" x2="12" y2="19"/>
-                        <line x1="5" y1="12" x2="19" y2="12"/>
-                    </svg>
-                    Crear Subtarea
-                </button>
-            `;
-        } else if (estado === 'completada') {
-            actionsContainer.innerHTML = `
-                <div class="task-completed-label">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="20,6 9,17 4,12"/>
-                    </svg>
-                    Tarea Completada
-                </div>
-                <button class="btn-task-action secondary" onclick="createSubtask(${tarea.id})">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="5" x2="12" y2="19"/>
-                        <line x1="5" y1="12" x2="19" y2="12"/>
-                    </svg>
-                    Crear Subtarea
-                </button>
-            `;
+    // Configurar visibilidad y funcionalidad de los botones según permisos y estado
+    if (esCreador || esResponsable) {
+        // El usuario puede interactuar con la tarea
+        
+        if (headerStartBtn) {
+            headerStartBtn.style.display = (estado === 'pendiente') ? 'flex' : 'none';
+            headerStartBtn.onclick = () => iniciarTarea(tarea.id);
         }
+        
+        if (headerCompleteBtn) {
+            headerCompleteBtn.style.display = (estado === 'en_progreso') ? 'flex' : 'none';
+            headerCompleteBtn.onclick = () => terminarTarea(tarea.id);
+        }
+        
+        if (headerSubtaskBtn) {
+            headerSubtaskBtn.style.display = 'flex';
+            headerSubtaskBtn.onclick = () => crearSubTarea(tarea.id);
+        }
+        
+        // Si la tarea está completada, ocultar botones de inicio y terminación
+        if (estado === 'completada') {
+            if (headerStartBtn) headerStartBtn.style.display = 'none';
+            if (headerCompleteBtn) headerCompleteBtn.style.display = 'none';
+        }
+        
     } else {
-        // Usuario sin permisos especiales (solo visualización)
-        actionsContainer.innerHTML = `
-            <div class="task-view-only-label">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                </svg>
-                Solo lectura
-            </div>
-        `;
+        // Usuario sin permisos - ocultar todos los botones de acción
+        if (headerStartBtn) headerStartBtn.style.display = 'none';
+        if (headerCompleteBtn) headerCompleteBtn.style.display = 'none';
+        if (headerSubtaskBtn) headerSubtaskBtn.style.display = 'none';
     }
 }
 
@@ -4455,21 +4426,21 @@ function attachFile() {
 }
 
 // Funciones para botones de acción de tareas
-function iniciarTarea() {
+function iniciarTarea(tareaId = null) {
     // TODO: Cambiar estado de tarea a "en_progreso"
-    console.log('Iniciando tarea');
+    console.log('Iniciando tarea', tareaId);
     alert('Función iniciar tarea en desarrollo');
 }
 
-function terminarTarea() {
+function terminarTarea(tareaId = null) {
     // TODO: Cambiar estado de tarea a "completada"
-    console.log('Terminando tarea');
+    console.log('Terminando tarea', tareaId);
     alert('Función terminar tarea en desarrollo');
 }
 
-function crearSubTarea() {
+function crearSubTarea(tareaId = null) {
     // TODO: Abrir modal para crear sub-tarea
-    console.log('Creando sub-tarea');
+    console.log('Creando sub-tarea para tarea', tareaId);
     alert('Función crear sub-tarea en desarrollo');
 }
 
