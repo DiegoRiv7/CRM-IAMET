@@ -2207,11 +2207,11 @@
             <!-- Tareas Tab -->
             <div class="tab-content" id="tareas-content">
                 <div class="tasks-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                    <button class="btn-nuevo-comentario" id="btnCrearTarea" style="background: var(--apple-blue); border-color: rgba(10, 132, 255, 0.3);">
+                    <button class="btn-nuevo-comentario" id="btnCrearTarea" onclick="openCreateTaskModal()" style="background: var(--apple-blue); border-color: rgba(10, 132, 255, 0.3);">
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                             <path d="M12 4v16m8-8H4"/>
                         </svg>
-                        Crear Tarea
+                        Crear Tarea - PRUEBA ONCLICK
                     </button>
                     <div class="search-widget-container" id="search-widget-tareas">
                         <input type="text" id="searchTareas" placeholder="Buscar tareas..." class="search-input" value="">
@@ -5255,7 +5255,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div class="footer-right">
                 <button type="button" class="footer-action primary" id="submitTaskBtn" onclick="submitPowerTaskForm()">
-                    CREAR NUEVA TAREA - PRUEBA
+                    ✅ ESTE ES EL MODAL CORRECTO
                 </button>
             </div>
         </div>
