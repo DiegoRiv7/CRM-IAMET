@@ -2995,6 +2995,24 @@ function openCreateTaskModal(tareaParaEditar = null) {
     // Bloquear scroll del body
     document.body.style.overflow = 'hidden';
     
+    // IMPORTANTE: Resetear formulario ANTES de cualquier otra configuración
+    resetTaskForm();
+    resetPowerTaskForm();
+    
+    // Forzar configuración del botón para crear tarea si no hay tarea para editar
+    if (!tareaParaEditar) {
+        setTimeout(() => {
+            const submitBtn = document.querySelector('.footer-action.primary');
+            if (submitBtn) {
+                submitBtn.textContent = 'Crear tarea';
+                submitBtn.setAttribute('onclick', 'submitPowerTaskForm()');
+                submitBtn.disabled = false;
+                submitBtn.style.background = '';
+                console.log('Botón configurado para crear tarea:', submitBtn.onclick);
+            }
+        }, 50);
+    }
+    
     // Inicializar el editor avanzado
     initializePowerTaskEditor();
     loadUsersForAssignments();
@@ -3022,7 +3040,10 @@ function openCreateTaskModal(tareaParaEditar = null) {
     document.addEventListener('keydown', function(e) {
         if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && modal.classList.contains('active')) {
             e.preventDefault();
-            submitPowerTaskForm();
+            // Solo llamar submitPowerTaskForm si no es edición
+            if (!tareaParaEditar) {
+                submitPowerTaskForm();
+            }
         }
     });
 }
@@ -3075,10 +3096,21 @@ function closeCreateTaskModal() {
     
     // Resetear formulario para próximo uso
     resetTaskForm();
+    resetPowerTaskForm();
     
     setTimeout(() => {
         modal.classList.remove('active');
-        resetPowerTaskForm();
+        
+        // Asegurar reset completo del botón
+        const submitBtn = document.querySelector('.footer-action.primary');
+        if (submitBtn) {
+            submitBtn.textContent = 'Crear tarea';
+            submitBtn.setAttribute('onclick', 'submitPowerTaskForm()');
+            submitBtn.disabled = false;
+            submitBtn.style.background = '';
+        }
+        
+        console.log('Modal cerrado y formulario reseteado completamente');
     }, 300);
 }
 
@@ -3105,6 +3137,10 @@ function resetTaskForm() {
     if (submitBtn) {
         submitBtn.textContent = 'Crear tarea';
         submitBtn.setAttribute('onclick', 'submitPowerTaskForm()');
+        // Remover atributos de actualización si existen
+        submitBtn.removeAttribute('data-task-id');
+        submitBtn.disabled = false;
+        submitBtn.style.background = '';
     }
     
     // Remover ID de edición
@@ -3112,6 +3148,8 @@ function resetTaskForm() {
     if (form) {
         form.removeAttribute('data-editing-task-id');
     }
+    
+    console.log('Formulario reseteado para creación de tarea');
 }
 
 // Función para actualizar tarea existente
@@ -3750,9 +3788,18 @@ function removeUserFromSelection(userId, containerId) {
 }
 
 async function submitPowerTaskForm() {
+    console.log('submitPowerTaskForm llamado - CREANDO NUEVA TAREA');
+    
     const taskData = collectPowerTaskData();
     const submitBtn = document.querySelector('.footer-action.primary');
     const originalText = submitBtn.textContent;
+    
+    console.log('Datos de tarea recolectados:', taskData);
+    console.log('Estado del botón:', {
+        text: originalText,
+        onclick: submitBtn.getAttribute('onclick'),
+        disabled: submitBtn.disabled
+    });
     
     // Validar datos básicos
     if (!taskData.title || taskData.title === 'Nueva tarea' || taskData.title.trim() === '') {
