@@ -2211,7 +2211,7 @@
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                             <path d="M12 4v16m8-8H4"/>
                         </svg>
-                        Crear Tarea - PRUEBA ONCLICK
+                        Crear Tarea
                     </button>
                     <div class="search-widget-container" id="search-widget-tareas">
                         <input type="text" id="searchTareas" placeholder="Buscar tareas..." class="search-input" value="">
@@ -2989,20 +2989,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Funciones para el modal de Crear Tarea
 function openCreateTaskModal(tareaParaEditar = null) {
-    console.log('=== ABRIENDO MODAL ===');
-    console.log('tareaParaEditar:', tareaParaEditar);
-    
     const modal = document.getElementById('createTaskModal');
     modal.classList.add('active');
-    
-    // Verificar estado inicial del botón usando ID específico
-    const submitBtnInicial = document.getElementById('submitTaskBtn');
-    console.log('Estado inicial del botón:', {
-        text: submitBtnInicial?.textContent,
-        onclick: submitBtnInicial?.getAttribute('onclick'),
-        disabled: submitBtnInicial?.disabled,
-        id: submitBtnInicial?.id
-    });
     
     // Bloquear scroll del body
     document.body.style.overflow = 'hidden';
@@ -3011,22 +2999,15 @@ function openCreateTaskModal(tareaParaEditar = null) {
     resetTaskForm();
     resetPowerTaskForm();
     
-    // Forzar configuración del botón para crear tarea si no hay tarea para editar
+    // Configurar botón para crear tarea si no hay tarea para editar
     if (!tareaParaEditar) {
         setTimeout(() => {
             const submitBtn = document.getElementById('submitTaskBtn');
             if (submitBtn) {
-                console.log('FORZANDO CONFIGURACIÓN PARA CREAR TAREA');
                 submitBtn.textContent = 'Crear tarea';
                 submitBtn.setAttribute('onclick', 'submitPowerTaskForm()');
                 submitBtn.disabled = false;
                 submitBtn.style.background = '';
-                console.log('Botón después de configuración forzada:', {
-                    text: submitBtn.textContent,
-                    onclick: submitBtn.getAttribute('onclick'),
-                    disabled: submitBtn.disabled,
-                    id: submitBtn.id
-                });
             }
         }, 50);
     }
@@ -3068,12 +3049,10 @@ function openCreateTaskModal(tareaParaEditar = null) {
 
 // Función para poblar el formulario con datos de tarea existente
 function populateEditForm(tarea) {
-    console.log('populateEditForm llamado para tarea:', tarea.id);
-    
     // Actualizar título del modal
     const titleInput = document.getElementById('taskTitle');
     if (titleInput) {
-        titleInput.value = tarea.titulo;
+        titleInput.value = tarea.titulo || '';
     }
     
     // Actualizar contenido del editor
@@ -3097,7 +3076,6 @@ function populateEditForm(tarea) {
     // Cambiar texto del botón de submit usando ID específico
     const submitBtn = document.getElementById('submitTaskBtn');
     if (submitBtn) {
-        console.log('CONFIGURANDO BOTÓN PARA EDICIÓN:', tarea.id);
         submitBtn.textContent = 'Actualizar tarea';
         submitBtn.setAttribute('onclick', `updateExistingTask(${tarea.id})`);
     }
@@ -3110,7 +3088,6 @@ function populateEditForm(tarea) {
 }
 
 function closeCreateTaskModal() {
-    console.log('=== CERRANDO MODAL ===');
     const modal = document.getElementById('createTaskModal');
     
     // Restaurar scroll del body
@@ -3120,43 +3097,17 @@ function closeCreateTaskModal() {
     resetTaskForm();
     resetPowerTaskForm();
     
-    // RESET INMEDIATO del botón (sin timeout)
-    const submitBtnAntes = document.getElementById('submitTaskBtn');
-    console.log('Estado del botón ANTES del cierre:', {
-        text: submitBtnAntes?.textContent,
-        onclick: submitBtnAntes?.getAttribute('onclick'),
-        id: submitBtnAntes?.id
-    });
+    // Cerrar modal inmediatamente sin timeout para evitar flashes
+    modal.classList.remove('active');
     
-    setTimeout(() => {
-        modal.classList.remove('active');
-        
-        // Asegurar reset completo del botón usando ID específico
-        const submitBtn = document.getElementById('submitTaskBtn');
-        if (submitBtn) {
-            console.log('FORZANDO RESET DEL BOTÓN AL CERRAR');
-            submitBtn.textContent = 'Crear tarea';
-            submitBtn.setAttribute('onclick', 'submitPowerTaskForm()');
-            submitBtn.disabled = false;
-            submitBtn.style.background = '';
-            
-            // Remover cualquier event listener residual
-            submitBtn.replaceWith(submitBtn.cloneNode(true));
-            
-            // Re-configurar el onclick después del clonado
-            const newBtn = document.getElementById('submitTaskBtn');
-            newBtn.setAttribute('onclick', 'submitPowerTaskForm()');
-            newBtn.id = 'submitTaskBtn'; // Asegurar que mantiene el ID
-            
-            console.log('Botón después del reset en cierre:', {
-                text: newBtn.textContent,
-                onclick: newBtn.getAttribute('onclick'),
-                id: newBtn.id
-            });
-        }
-        
-        console.log('Modal cerrado y formulario reseteado completamente');
-    }, 300);
+    // Reset final del botón
+    const submitBtn = document.getElementById('submitTaskBtn');
+    if (submitBtn) {
+        submitBtn.textContent = 'Crear tarea';
+        submitBtn.setAttribute('onclick', 'submitPowerTaskForm()');
+        submitBtn.disabled = false;
+        submitBtn.style.background = '';
+    }
 }
 
 function initializePowerTaskEditor() {
@@ -3177,31 +3128,15 @@ function initializePowerTaskEditor() {
 
 // Función para resetear el formulario al modo creación
 function resetTaskForm() {
-    console.log('=== RESETEANDO FORMULARIO PARA CREACIÓN ===');
-    
     // Restaurar texto del botón usando ID específico
     const submitBtn = document.getElementById('submitTaskBtn');
     if (submitBtn) {
-        console.log('Estado del botón ANTES del reset:', {
-            text: submitBtn.textContent,
-            onclick: submitBtn.getAttribute('onclick'),
-            disabled: submitBtn.disabled,
-            id: submitBtn.id
-        });
-        
         submitBtn.textContent = 'Crear tarea';
         submitBtn.setAttribute('onclick', 'submitPowerTaskForm()');
         // Remover atributos de actualización si existen
         submitBtn.removeAttribute('data-task-id');
         submitBtn.disabled = false;
         submitBtn.style.background = '';
-        
-        console.log('Estado del botón DESPUÉS del reset:', {
-            text: submitBtn.textContent,
-            onclick: submitBtn.getAttribute('onclick'),
-            disabled: submitBtn.disabled,
-            id: submitBtn.id
-        });
     }
     
     // Remover ID de edición
@@ -3209,13 +3144,10 @@ function resetTaskForm() {
     if (form) {
         form.removeAttribute('data-editing-task-id');
     }
-    
-    console.log('Formulario reseteado para creación de tarea');
 }
 
 // Función para actualizar tarea existente
 async function updateExistingTask(tareaId) {
-    console.log('updateExistingTask llamado - ACTUALIZANDO TAREA:', tareaId);
     const taskData = collectPowerTaskData();
     const submitBtn = document.getElementById('submitTaskBtn');
     const originalText = submitBtn.textContent;
@@ -3850,19 +3782,9 @@ function removeUserFromSelection(userId, containerId) {
 }
 
 async function submitPowerTaskForm() {
-    console.log('submitPowerTaskForm llamado - CREANDO NUEVA TAREA');
-    
     const taskData = collectPowerTaskData();
     const submitBtn = document.getElementById('submitTaskBtn');
     const originalText = submitBtn.textContent;
-    
-    console.log('Datos de tarea recolectados:', taskData);
-    console.log('Estado del botón:', {
-        text: originalText,
-        onclick: submitBtn.getAttribute('onclick'),
-        disabled: submitBtn.disabled,
-        id: submitBtn.id
-    });
     
     // Validar datos básicos
     if (!taskData.title || taskData.title === 'Nueva tarea' || taskData.title.trim() === '') {
@@ -5255,7 +5177,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div class="footer-right">
                 <button type="button" class="footer-action primary" id="submitTaskBtn" onclick="submitPowerTaskForm()">
-                    ✅ ESTE ES EL MODAL CORRECTO
+                    Crear tarea
                 </button>
             </div>
         </div>
