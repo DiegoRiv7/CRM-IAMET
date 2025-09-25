@@ -4558,106 +4558,259 @@ function renderTaskTimeline() {
 // Crear elemento del timeline para tareas
 function createTaskTimelineItem(activity) {
     const isCurrentUser = activity.usuario_id === CURRENT_USER_ID;
-    const alignmentClass = isCurrentUser ? 'align-right' : '';
     
-    let icon, activityClass, title, content, editableClass = '', clickHandler = '';
-    
-    switch(activity.tipo) {
-        case 'comentario':
-            icon = '💬';
-            activityClass = 'comentario-icon';
-            
-            if (isCurrentUser) {
-                // Own comments are editable and deletable
-                editableClass = 'editable';
-                clickHandler = ''; // No onclick en el contenido, usaremos botones específicos
-            } else {
-                // Other users' comments allow replying
-                editableClass = 'replyable';
-                clickHandler = `onclick="showTaskReplyUI(event, ${activity.id}, '${activity.usuario}')"`;
-            }
-            
-            title = `<strong>${activity.usuario}</strong> comentó:`;
-            content = `
-                <div id="comment-text-${activity.id}">
-                    ${processTaskMentions(activity.contenido)}
-                </div>
-                ${isCurrentUser ? `
-                <div class="comment-actions" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
-                    <button class="comment-action-btn edit-btn" onclick="editarComentarioTarea(event, ${activity.id})" title="Editar">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-                        </svg>
-                    </button>
-                    <button class="comment-action-btn delete-btn" onclick="eliminarComentarioTarea(event, ${activity.id})" title="Eliminar">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3,6 5,6 21,6"/>
-                            <path d="m19,6v14a2,2 0 0 1-2,2H7a2,2 0 0 1-2-2V6m3,0V4a2,2 0 0 1 2-2h4a2,2 0 0 1 2,2v2"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="comment-edit-form" id="comment-edit-form-${activity.id}" style="display: none; margin-top: 0.5rem;">
-                    <textarea class="edit-comment-textarea" id="edit-textarea-${activity.id}" rows="2">${activity.contenido}</textarea>
-                    <div class="edit-comment-actions" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
-                        <button class="comment-action-btn save-btn" onclick="guardarEdicionComentarioTarea(event, ${activity.id})">Guardar</button>
-                        <button class="comment-action-btn cancel-btn" onclick="cancelarEdicionComentarioTarea(event, ${activity.id})">Cancelar</button>
+    // Generar archivos adjuntos HTML si existen
+    let archivosHTML = '';
+    if (activity.archivos && activity.archivos.length > 0) {
+        archivosHTML = `
+            <div class="comment-attachments" style="margin-top: 0.75rem;">
+                ${activity.archivos.map(archivo => `
+                    <div class="attachment-item" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 0.5rem;">
+                        <div class="attachment-icon">
+                            ${archivo.type && archivo.type.startsWith('image/') ? '🖼️' : '📎'}
+                        </div>
+                        <div class="attachment-info" style="flex: 1; min-width: 0;">
+                            <div class="attachment-name" style="font-size: 0.85rem; font-weight: 500; color: ${isCurrentUser ? 'rgba(255,255,255,0.9)' : 'var(--apple-label)'}; truncate;">${archivo.name}</div>
+                            <div class="attachment-size" style="font-size: 0.75rem; color: ${isCurrentUser ? 'rgba(255,255,255,0.7)' : 'var(--apple-label-secondary)'};">${formatFileSize(archivo.size || 0)}</div>
+                        </div>
                     </div>
-                </div>
-                ` : ''}
-            `;
-            break;
-            
-        case 'creacion':
-            icon = '✨';
-            activityClass = 'creacion-icon';
-            title = `<strong>${activity.usuario}</strong> creó la tarea`;
-            content = activity.contenido;
-            break;
-            
-        case 'cambio_estado':
-            icon = '🔄';
-            activityClass = 'cambio-estado-icon';
-            title = 'Estado de la tarea actualizado';
-            content = activity.contenido;
-            break;
-            
-        case 'subtarea':
-            icon = '📋';
-            activityClass = 'subtarea-icon';
-            title = `<strong>${activity.usuario}</strong> creó una subtarea`;
-            content = activity.contenido;
-            break;
-            
-        default:
-            icon = '📝';
-            activityClass = 'sistema-icon';
-            title = 'Actividad del Sistema';
-            content = activity.contenido;
-            break;
+                `).join('')}
+            </div>
+        `;
     }
     
-    return `
-        <div class="timeline-item ${alignmentClass}" data-tipo="${activity.tipo}" id="task-timeline-item-${activity.id}">
-            <div class="timeline-item-inner">
-                <div class="timeline-icon ${activityClass}">${icon}</div>
-                <div class="timeline-content-item ${editableClass}" ${clickHandler}>
-                    <div class="timeline-header-item">
-                        <div class="timeline-title-item">${title}</div>
-                        <div class="timeline-time">${activity.fecha}</div>
-                    </div>
-                    <div class="timeline-text">
-                        ${content}
+    if (activity.tipo === 'comentario') {
+        const clickHandler = isCurrentUser ? 
+            `onclick="mostrarModalEditarComentarioTarea(${activity.id}, '${activity.contenido.replace(/'/g, '\\\'')}')"` : 
+            `onclick="responderComentarioTarea(${activity.id}, '${activity.usuario}')"`;
+        
+        return `
+            <div class="timeline-item comment-bubble ${isCurrentUser ? 'align-right' : 'align-left'}" id="task-timeline-item-${activity.id}" ${clickHandler} style="cursor: pointer; margin-bottom: 1rem;">
+                <div class="comment-wrapper" style="display: flex; ${isCurrentUser ? 'justify-content: flex-end;' : 'justify-content: flex-start;'}">
+                    <div class="comment-content" style="max-width: 70%; background: ${isCurrentUser ? 'var(--apple-blue)' : 'rgba(255,255,255,0.1)'}; border-radius: 18px; padding: 0.75rem 1rem; position: relative;">
+                        <div class="comment-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
+                            <div class="user-info" style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span class="user-name" style="font-weight: 600; font-size: 0.85rem; color: ${isCurrentUser ? 'rgba(255,255,255,0.9)' : 'var(--apple-label)'};">${activity.usuario}</span>
+                                <span class="comment-time" style="font-size: 0.75rem; color: ${isCurrentUser ? 'rgba(255,255,255,0.7)' : 'var(--apple-label-secondary)'};">${activity.fecha}</span>
+                            </div>
+                        </div>
+                        <div class="comment-text" id="comment-text-${activity.id}" style="color: ${isCurrentUser ? 'white' : 'var(--apple-label)'}; line-height: 1.4;">
+                            ${processTaskMentions(activity.contenido)}
+                        </div>
+                        ${archivosHTML}
                     </div>
                 </div>
             </div>
-            <div class="reply-ui-container" id="task-reply-ui-container-${activity.id}"></div>
-        </div>
-    `;
+        `;
+    } else {
+        // Otros tipos de actividad (sistema, etc.)
+        let icon = '📝';
+        let title = 'Actividad del Sistema';
+        
+        switch(activity.tipo) {
+            case 'creacion':
+                icon = '✨';
+                title = `${activity.usuario} creó la tarea`;
+                break;
+            case 'cambio_estado':
+                icon = '🔄';
+                title = 'Estado actualizado';
+                break;
+            case 'subtarea':
+                icon = '📋';
+                title = `${activity.usuario} creó una subtarea`;
+                break;
+        }
+        
+        return `
+            <div class="timeline-item system-activity" id="task-timeline-item-${activity.id}" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0; opacity: 0.7;">
+                <div class="system-icon" style="font-size: 1.2rem;">${icon}</div>
+                <div class="system-content">
+                    <div class="system-title" style="font-size: 0.85rem; color: var(--apple-label); margin-bottom: 0.25rem;">${title}</div>
+                    <div class="system-time" style="font-size: 0.75rem; color: var(--apple-label-secondary);">${activity.fecha}</div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Funciones auxiliares para comentarios
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function getInitials(name) {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+}
+
+function getUserColor(userId) {
+    const colors = ['#0A84FF', '#30D158', '#AF52DE', '#FF9500', '#FF3B30', '#FFD60A', '#64D2FF', '#BF5AF2'];
+    return colors[userId % colors.length];
 }
 
 // Procesar menciones en comentarios de tareas (destacar @usuario)
 function processTaskMentions(text) {
     return text.replace(/@(\w+)/g, '<span style="color: var(--apple-blue); font-weight: 600;">@$1</span>');
+}
+
+// Modal de edición de comentarios como en cotizaciones por oportunidad
+function mostrarModalEditarComentarioTarea(comentarioId, contenidoActual) {
+    // Crear modal
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay active';
+    modal.id = 'taskEditCommentModal';
+    modal.innerHTML = `
+        <div class="modal-content" style="width: 500px; max-width: 90vw;">
+            <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+                <h3 class="modal-title" style="margin: 0; color: var(--apple-label);">Editar comentario</h3>
+                <button class="modal-close" onclick="cerrarModalEditarComentarioTarea()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--apple-label-secondary);">×</button>
+            </div>
+            <div class="modal-body">
+                <textarea 
+                    id="taskEditCommentTextarea" 
+                    placeholder="Edita tu comentario..." 
+                    style="
+                        width: 100%; 
+                        min-height: 120px; 
+                        padding: 1rem; 
+                        border: 1px solid rgba(255,255,255,0.2); 
+                        border-radius: 12px; 
+                        background: rgba(255,255,255,0.05);
+                        color: var(--apple-label);
+                        font-size: 0.9rem;
+                        line-height: 1.5;
+                        resize: vertical;
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    "
+                >${contenidoActual}</textarea>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 0.75rem; justify-content: space-between; margin-top: 1.5rem;">
+                <button 
+                    class="btn-eliminar" 
+                    onclick="eliminarComentarioTarea(${comentarioId})"
+                    style="
+                        padding: 0.75rem 1.5rem;
+                        background: #FF3B30;
+                        border: none;
+                        border-radius: 8px;
+                        color: white;
+                        cursor: pointer;
+                        font-weight: 600;
+                        font-size: 0.9rem;
+                    "
+                >Eliminar</button>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button 
+                        class="btn-cancelar" 
+                        onclick="cerrarModalEditarComentarioTarea()"
+                        style="
+                            padding: 0.75rem 1.5rem;
+                            background: rgba(255,255,255,0.1);
+                            border: 1px solid rgba(255,255,255,0.2);
+                            border-radius: 8px;
+                            color: var(--apple-label);
+                            cursor: pointer;
+                            font-size: 0.9rem;
+                        "
+                    >Cancelar</button>
+                    <button 
+                        class="btn-guardar" 
+                        onclick="guardarComentarioEditadoTarea(${comentarioId})"
+                        style="
+                            padding: 0.75rem 1.5rem;
+                            background: var(--apple-blue);
+                            border: none;
+                            border-radius: 8px;
+                            color: white;
+                            cursor: pointer;
+                            font-weight: 600;
+                            font-size: 0.9rem;
+                        "
+                    >Guardar</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Agregar al DOM
+    document.body.appendChild(modal);
+    
+    // Focus al textarea
+    const textarea = document.getElementById('taskEditCommentTextarea');
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    
+    // Cerrar con escape
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            cerrarModalEditarComentarioTarea();
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+    modal.handleEscape = handleEscape;
+}
+
+function cerrarModalEditarComentarioTarea() {
+    const modal = document.getElementById('taskEditCommentModal');
+    if (modal) {
+        if (modal.handleEscape) {
+            document.removeEventListener('keydown', modal.handleEscape);
+        }
+        modal.remove();
+    }
+}
+
+async function guardarComentarioEditadoTarea(comentarioId) {
+    const textarea = document.getElementById('taskEditCommentTextarea');
+    const nuevoContenido = textarea.value.trim();
+    
+    if (!nuevoContenido) {
+        alert('El comentario no puede estar vacío');
+        return;
+    }
+    
+    try {
+        // TODO: Implementar llamada real a API para actualizar comentario
+        await simulateTaskCommentEdit(comentarioId, nuevoContenido);
+        
+        // Actualizar datos locales
+        const currentTimeline = getCurrentTaskTimeline();
+        const commentIndex = currentTimeline.findIndex(item => item.id === comentarioId);
+        if (commentIndex !== -1) {
+            currentTimeline[commentIndex].contenido = nuevoContenido;
+        }
+        
+        // Actualizar interfaz
+        const textElement = document.getElementById(`comment-text-${comentarioId}`);
+        if (textElement) {
+            textElement.innerHTML = processTaskMentions(nuevoContenido);
+        }
+        
+        cerrarModalEditarComentarioTarea();
+        console.log('Comentario actualizado:', comentarioId, nuevoContenido);
+        
+    } catch (error) {
+        console.error('Error actualizando comentario:', error);
+        alert('Error al actualizar comentario: ' + (error.message || 'Error desconocido'));
+    }
+}
+
+// Función para responder a comentarios
+function responderComentarioTarea(comentarioId, nombreUsuario) {
+    const textarea = document.getElementById('taskNuevoComentario');
+    if (textarea) {
+        const mencion = `@${nombreUsuario} `;
+        textarea.value = mencion + textarea.value;
+        textarea.focus();
+        textarea.setSelectionRange(mencion.length, mencion.length);
+        
+        // Scroll al área de comentarios
+        textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 }
 
 // Configurar sistema de comentarios de tareas
@@ -4766,11 +4919,24 @@ function handleTaskFiles(files) {
             return;
         }
         
-        taskAttachedFiles.push(file);
+        // Crear vista previa para imágenes
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                file.preview = e.target.result;
+                taskAttachedFiles.push(file);
+                renderTaskAttachedFiles();
+                updateTaskCommentButtonState();
+            };
+            reader.readAsDataURL(file);
+        } else {
+            taskAttachedFiles.push(file);
+            renderTaskAttachedFiles();
+            updateTaskCommentButtonState();
+        }
     });
     
-    renderTaskAttachedFiles();
-    updateTaskCommentButtonState();
+    // No llamar renderTaskAttachedFiles aquí porque ya se llama dentro del forEach para imágenes
 }
 
 // Actualizar estado del botón de comentar
@@ -4911,6 +5077,8 @@ async function agregarComentarioTarea(tareaId) {
             taskNuevoComentario.value = '';
             taskNuevoComentario.style.height = 'auto';
         }
+        
+        // Limpiar archivos adjuntos DESPUÉS de agregarlos al comentario
         taskAttachedFiles = [];
         renderTaskAttachedFiles();
         updateTaskCommentButtonState();
@@ -4939,11 +5107,12 @@ async function simulateTaskCommentSubmission(tareaId, comentario) {
     const newComment = {
         id: Date.now(),
         tipo: 'comentario',
-        usuario: 'Usuario Actual',
+        usuario: CURRENT_USER_NAME || 'Usuario',
         usuario_id: CURRENT_USER_ID,
         contenido: comentario,
         fecha: 'ahora',
-        fecha_timestamp: Date.now()
+        fecha_timestamp: Date.now(),
+        archivos: [...taskAttachedFiles] // Incluir archivos adjuntos
     };
     
     console.log('💬 Agregando comentario:', newComment);
@@ -5299,8 +5468,9 @@ async function simulateTaskCommentEdit(comentarioId, newContent) {
 }
 
 // Eliminar comentario de tarea
-async function eliminarComentarioTarea(event, comentarioId) {
-    event.stopPropagation();
+async function eliminarComentarioTarea(comentarioId) {
+    // Cerrar modal de edición si está abierto
+    cerrarModalEditarComentarioTarea();
     
     if (!confirm('¿Estás seguro de que quieres eliminar este comentario?')) {
         return;
