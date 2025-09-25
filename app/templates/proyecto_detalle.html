@@ -4449,6 +4449,8 @@ const TASK_TIMELINES = {}; // Objeto para almacenar timeline por ID de tarea
 let CURRENT_TASK_ID = null; // ID de la tarea actual
 let taskAttachedFiles = []; // Archivos adjuntos para comentarios de tarea
 let taskIsSubmitting = false; // Prevenir envíos múltiples
+let taskCurrentlyEditing = null; // Control de edición
+let taskCurrentlyReplying = null; // Control de respuestas
 
 // Función helper para obtener timeline actual
 function getCurrentTaskTimeline() {
@@ -4458,8 +4460,6 @@ function getCurrentTaskTimeline() {
     }
     return TASK_TIMELINES[CURRENT_TASK_ID];
 }
-let taskCurrentlyEditing = null; // Control de edición
-let taskCurrentlyReplying = null; // Control de respuestas
 
 // Función principal para cargar timeline de tarea
 function cargarComentariosTarea(tareaId) {
