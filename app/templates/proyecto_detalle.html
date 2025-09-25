@@ -5324,7 +5324,6 @@ async function eliminarComentarioTarea(event, comentarioId) {
         }
         
         // Si no quedan comentarios, mostrar estado vacío
-        const currentTimeline = getCurrentTaskTimeline();
         if (currentTimeline.length === 0) {
             renderTaskTimeline();
         }
