@@ -4445,14 +4445,27 @@ function crearSubTarea(tareaId = null) {
 }
 
 // Sistema de Timeline para Tareas - IGUAL que Cotizaciones por Oportunidad
-const TASK_TIMELINE_DATA = []; // Array para almacenar los datos del timeline de la tarea
+const TASK_TIMELINES = {}; // Objeto para almacenar timeline por ID de tarea
+let CURRENT_TASK_ID = null; // ID de la tarea actual
 let taskAttachedFiles = []; // Archivos adjuntos para comentarios de tarea
 let taskIsSubmitting = false; // Prevenir envíos múltiples
+
+// Función helper para obtener timeline actual
+function getCurrentTaskTimeline() {
+    if (!CURRENT_TASK_ID) return [];
+    if (!TASK_TIMELINES[CURRENT_TASK_ID]) {
+        TASK_TIMELINES[CURRENT_TASK_ID] = [];
+    }
+    return TASK_TIMELINES[CURRENT_TASK_ID];
+}
 let taskCurrentlyEditing = null; // Control de edición
 let taskCurrentlyReplying = null; // Control de respuestas
 
 // Función principal para cargar timeline de tarea
 function cargarComentariosTarea(tareaId) {
+    // Establecer tarea actual
+    CURRENT_TASK_ID = tareaId;
+    
     // Inicializar el sistema de timeline
     initializeTaskTimeline(tareaId);
     
@@ -4493,21 +4506,34 @@ async function simulateTaskTimelineData(tareaId) {
     // Simular delay de carga
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    // Timeline inicialmente vacío - solo se llena cuando usuarios comenten
-    TASK_TIMELINE_DATA.length = 0; // Limpiar array
+    // Solo inicializar timeline si no existe para esta tarea
+    if (!TASK_TIMELINES[tareaId]) {
+        TASK_TIMELINES[tareaId] = [];
+        console.log('🆕 Inicializando timeline vacío para tarea', tareaId);
+    } else {
+        console.log('📝 Timeline existente para tarea', tareaId, 'con', TASK_TIMELINES[tareaId].length, 'elementos');
+    }
     
     // TODO: Aquí implementar llamada real a la API para obtener timeline de la tarea
     // const response = await fetch(`/app/api/tareas/${tareaId}/timeline/`);
     // const data = await response.json();
-    // TASK_TIMELINE_DATA.push(...data.timeline);
+    // TASK_TIMELINES[tareaId] = data.timeline || [];
 }
 
 // Renderizar el timeline de la tarea
 function renderTaskTimeline() {
+    console.log('🔄 Ejecutando renderTaskTimeline...');
     const taskTimelineItems = document.getElementById('taskTimelineItems');
-    if (!taskTimelineItems) return;
+    if (!taskTimelineItems) {
+        console.log('❌ No se encontró elemento taskTimelineItems');
+        return;
+    }
     
-    if (TASK_TIMELINE_DATA.length === 0) {
+    const currentTimeline = getCurrentTaskTimeline();
+    console.log('📋 Timeline actual tiene', currentTimeline.length, 'elementos para tarea', CURRENT_TASK_ID);
+    
+    if (currentTimeline.length === 0) {
+        console.log('📝 Timeline vacío, mostrando mensaje inicial');
         taskTimelineItems.innerHTML = `
             <div style="text-align: center; padding: 3rem; color: var(--apple-label-secondary);">
                 <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
@@ -4518,12 +4544,15 @@ function renderTaskTimeline() {
         return;
     }
     
-    const timelineHTML = TASK_TIMELINE_DATA
+    console.log('🔧 Generando HTML del timeline...');
+    const timelineHTML = currentTimeline
         .sort((a, b) => b.fecha_timestamp - a.fecha_timestamp) // Más recientes primero
         .map(activity => createTaskTimelineItem(activity))
         .join('');
     
+    console.log('✅ Timeline HTML generado, actualizando DOM...');
     taskTimelineItems.innerHTML = timelineHTML;
+    console.log('🎉 Timeline renderizado exitosamente');
 }
 
 // Crear elemento del timeline para tareas
@@ -4873,15 +4902,22 @@ async function agregarComentarioTarea(tareaId) {
     
     try {
         // TODO: Implementar llamada real a API para agregar comentario
+        console.log('🚀 Iniciando simulateTaskCommentSubmission...');
         await simulateTaskCommentSubmission(tareaId, comentario);
+        console.log('✅ simulateTaskCommentSubmission completado');
         
         // Limpiar formulario
-        if (taskNuevoComentario) taskNuevoComentario.value = '';
+        if (taskNuevoComentario) {
+            taskNuevoComentario.value = '';
+            taskNuevoComentario.style.height = 'auto';
+        }
         taskAttachedFiles = [];
         renderTaskAttachedFiles();
+        updateTaskCommentButtonState();
         
-        // Recargar timeline
-        await loadTaskTimeline(tareaId);
+        // Recargar timeline - solo renderizar, no cargar datos nuevos
+        console.log('📞 Llamando a renderTaskTimeline desde submitTaskComment...');
+        renderTaskTimeline();
         
     } catch (error) {
         console.error('Error agregando comentario:', error);
@@ -4910,7 +4946,21 @@ async function simulateTaskCommentSubmission(tareaId, comentario) {
         fecha_timestamp: Date.now()
     };
     
-    TASK_TIMELINE_DATA.unshift(newComment);
+    console.log('💬 Agregando comentario:', newComment);
+    const currentTimeline = getCurrentTaskTimeline();
+    currentTimeline.unshift(newComment);
+    console.log('📝 Timeline actual para tarea', tareaId, ':', currentTimeline);
+    console.log('🎯 TASK_TIMELINES object:', TASK_TIMELINES);
+    console.log('🏷️ CURRENT_TASK_ID:', CURRENT_TASK_ID);
+    
+    // Verificar elemento del timeline antes de renderizar
+    const taskTimelineItems = document.getElementById('taskTimelineItems');
+    console.log('🎯 Elemento taskTimelineItems encontrado:', !!taskTimelineItems);
+    if (taskTimelineItems) {
+        console.log('✅ Elemento existe, renderizando timeline...');
+    } else {
+        console.error('❌ No se encontró el elemento taskTimelineItems');
+    }
     
     // Sistema de notificaciones
     await enviarNotificacionesComentario(tareaId, comentario, CURRENT_USER_ID);
@@ -5186,7 +5236,8 @@ function cancelarEdicionComentarioTarea(event, comentarioId) {
         editForm.style.display = 'none';
         
         // Restaurar texto original
-        const originalComment = TASK_TIMELINE_DATA.find(item => item.id === comentarioId);
+        const currentTimeline = getCurrentTaskTimeline();
+        const originalComment = currentTimeline.find(item => item.id === comentarioId);
         if (originalComment) {
             textarea.value = originalComment.contenido;
         }
@@ -5210,9 +5261,10 @@ async function guardarEdicionComentarioTarea(event, comentarioId) {
         await simulateTaskCommentEdit(comentarioId, newContent);
         
         // Actualizar datos locales
-        const commentIndex = TASK_TIMELINE_DATA.findIndex(item => item.id === comentarioId);
+        const currentTimeline = getCurrentTaskTimeline();
+        const commentIndex = currentTimeline.findIndex(item => item.id === comentarioId);
         if (commentIndex !== -1) {
-            TASK_TIMELINE_DATA[commentIndex].contenido = newContent;
+            currentTimeline[commentIndex].contenido = newContent;
         }
         
         // Actualizar interfaz
@@ -5259,9 +5311,10 @@ async function eliminarComentarioTarea(event, comentarioId) {
         await simulateTaskCommentDelete(comentarioId);
         
         // Remover de datos locales
-        const commentIndex = TASK_TIMELINE_DATA.findIndex(item => item.id === comentarioId);
+        const currentTimeline = getCurrentTaskTimeline();
+        const commentIndex = currentTimeline.findIndex(item => item.id === comentarioId);
         if (commentIndex !== -1) {
-            TASK_TIMELINE_DATA.splice(commentIndex, 1);
+            currentTimeline.splice(commentIndex, 1);
         }
         
         // Remover del DOM
@@ -5271,7 +5324,8 @@ async function eliminarComentarioTarea(event, comentarioId) {
         }
         
         // Si no quedan comentarios, mostrar estado vacío
-        if (TASK_TIMELINE_DATA.length === 0) {
+        const currentTimeline = getCurrentTaskTimeline();
+        if (currentTimeline.length === 0) {
             renderTaskTimeline();
         }
         
