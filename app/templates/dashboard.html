@@ -180,16 +180,7 @@
                         <div class="text-gray-400 italic text-xl">Sin datos</div>
                     {% endif %}
                 </a>
-                <!-- Cliente con menos ventas -->
-                <a href="{% if cliente_menos_vendido %}{% url 'oportunidades_por_cliente' cliente_menos_vendido.cliente__id %}{% else %}#{% endif %}" class="glass-card flex-1 min-w-[320px] max-w-[540px] flex flex-col items-center justify-center p-10 transition-transform hover:scale-105 cursor-pointer">
-                    <span class="text-2xl font-bold text-gray-100 mb-3">Cliente con menos ventas</span>
-                    {% if cliente_menos_vendido %}
-                        <div class="text-4xl md:text-5xl font-extrabold text-white mb-2 text-center">{{ cliente_menos_vendido.cliente__nombre_empresa }}</div>
-                        <div class="text-3xl font-bold text-pink-200 mb-1 text-center">${{ cliente_menos_vendido.total_vendido|floatformat:2 }}</div>
-                    {% else %}
-                        <div class="text-gray-400 italic text-xl">Sin datos</div>
-                    {% endif %}
-                </a>
+
             </div>
 
 
@@ -215,27 +206,7 @@
                         <div class="text-green-50 italic text-lg">Sin datos</div>
                     {% endif %}
                 </a>
-                <!-- Marca con menos ventas -->
-                {% if marca_menos_vendida and marca_menos_vendida.marca and marca_menos_vendida.marca != '' and marca_menos_vendida.total_vendido > 0 %}
-                <a href="{% url 'producto_dashboard_detail' marca_menos_vendida.marca %}"
-                   class="glass-card group animate-fade-in-up animation-delay-1400 flex flex-col items-center justify-center p-8 transition-transform hover:scale-105 cursor-pointer border-pink-500 border-2 hover:bg-pink-800/30">
-                {% else %}
-                <div class="glass-card flex flex-col items-center justify-center p-8 opacity-70 cursor-not-allowed border-pink-500 border-2 bg-pink-900/20">
-                {% endif %}
-                    <h2 class="text-xl font-bold text-pink-200 mb-2">Marca con menos ventas</h2>
-                    <i data-lucide="arrow-down" class="lucide w-10 h-10 text-pink-400 group-hover:text-pink-200 transition-colors duration-300 mb-2"></i>
-                    {% if marca_menos_vendida %}
-                        <div class="text-3xl font-extrabold text-pink-100 mb-1">{{ marca_menos_vendida.nombre_marca }}</div>
-                        <div class="text-xl font-bold text-pink-200">${{ marca_menos_vendida.total_vendido|floatformat:2 }}</div>
-                    {% else %}
-                        <div class="text-pink-50 italic text-lg">Sin datos</div>
-                    {% endif %}
-                {% if marca_menos_vendida and marca_menos_vendida.marca and marca_menos_vendida.marca != '' and marca_menos_vendida.total_vendido > 0 %}
-                </a>
-                {% else %}
-                </div>
-                {% endif %}
-                </a>
+
             </div>
                 </a>
             </div>

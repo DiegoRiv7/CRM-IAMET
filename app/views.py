@@ -1211,14 +1211,13 @@ def dashboard(request):
         user_opportunities = TodoItem.objects.filter(usuario=request.user)
         print(f"DEBUG: Usuario {request.user.username} es vendedor. Obteniendo sus propias oportunidades.")
 
-    # 1. Cliente con más/menos ventas cerradas (100% probabilidad)
+    # 1. Cliente con más ventas cerradas (100% probabilidad)
     # Las ventas cerradas se filtran por usuario si no es supervisor
     ventas_cerradas_query = TodoItem.objects.filter(probabilidad_cierre=100, cliente__isnull=False)
     if not is_supervisor(request.user):
         ventas_cerradas_query = ventas_cerradas_query.filter(usuario=request.user)
 
     cliente_mas_vendido = None
-    cliente_menos_vendido = None
 
     ventas_por_cliente_cerradas = ventas_cerradas_query.values('cliente__nombre_empresa', 'cliente__id').annotate( # Asegura cliente__id
         total_vendido=Sum('monto')
@@ -1226,9 +1225,8 @@ def dashboard(request):
 
     if ventas_por_cliente_cerradas.exists():
         cliente_mas_vendido = ventas_por_cliente_cerradas.first()
-        cliente_menos_vendido = ventas_por_cliente_cerradas.last()
 
-    # 2. Producto más/menos vendido (total de oportunidades y ventas cerradas)
+    # 2. Producto más vendido (total de oportunidades y ventas cerradas)
     # La consulta de productos también debe considerar el rol de supervisor
     productos_data_base_query = TodoItem.objects.all() if is_supervisor(request.user) else TodoItem.objects.filter(usuario=request.user)
 
@@ -1251,16 +1249,13 @@ def dashboard(request):
         item_copy['total_vendido_cerrado'] = item_copy['total_vendido_cerrado'] or Decimal('0.00')
         productos_data_with_display.append(item_copy)
 
-    productos_data_sorted_asc = sorted(productos_data_with_display, key=lambda x: x['count_oportunidades'])
     productos_data_sorted_desc = sorted(productos_data_with_display, key=lambda x: x['count_oportunidades'], reverse=True)
 
-    # --- Marca más vendida y menos vendida (usando producto como proxy de marca) ---
+    # --- Marca más vendida (usando producto como proxy de marca) ---
     marca_mas_vendida = None
-    marca_menos_vendida = None
 
     # Ordenar productos por total vendido cerrado (ventas reales por marca)
     productos_sorted_by_ventas = sorted(productos_data_with_display, key=lambda x: x['total_vendido_cerrado'] or Decimal('0.00'), reverse=True)
-    productos_sorted_by_ventas_asc = sorted(productos_data_with_display, key=lambda x: x['total_vendido_cerrado'] or Decimal('0.00'))
 
     if productos_sorted_by_ventas:
         top_brand = productos_sorted_by_ventas[0]
@@ -1269,21 +1264,11 @@ def dashboard(request):
             'nombre_marca': top_brand['get_producto_display'],
             'total_vendido': top_brand['total_vendido_cerrado'],
         }
-    if productos_sorted_by_ventas_asc:
-        least_brand = productos_sorted_by_ventas_asc[0]
-        marca_menos_vendida = {
-            'marca': least_brand['producto_upper'],
-            'nombre_marca': least_brand['get_producto_display'],
-            'total_vendido': least_brand['total_vendido_cerrado'],
-        }
 
-    # --- Producto más/menos vendido (por cantidad de oportunidades, para compatibilidad con otras vistas) ---
+    # --- Producto más vendido (por cantidad de oportunidades, para compatibilidad con otras vistas) ---
     producto_mas_vendido = None
-    producto_menos_vendido = None
     if productos_data_sorted_desc:
         producto_mas_vendido = productos_data_sorted_desc[0]
-    if productos_data_sorted_asc:
-        producto_menos_vendido = productos_data_sorted_asc[0]
 
     if producto_mas_vendido:
         producto_mas_vendido_context = {
@@ -1294,16 +1279,6 @@ def dashboard(request):
         }
     else:
         producto_mas_vendido_context = None
-
-    if producto_menos_vendido:
-        producto_menos_vendido_context = {
-            'producto': producto_menos_vendido['producto_upper'],
-            'get_producto_display': producto_menos_vendido['get_producto_display'],
-            'count_oportunidades': producto_menos_vendido['count_oportunidades'],
-            'total_vendido_cerrado': producto_menos_vendido['total_vendido_cerrado'],
-        }
-    else:
-        producto_menos_vendido_context = None
 
     # --- Cliente Top (más ventas cerradas) ---
     if is_supervisor(request.user):
@@ -1420,14 +1395,13 @@ def dashboard(request):
     total_perdido_count = oportunidades_perdidas_query.count()
 
 
-    # --- Ventas por mes (para gráfica) ---
+    # --- Oportunidades por mes (para gráfica) ---
     from django.db.models.functions import TruncMonth
     from django.utils.timezone import now
     hoy = now().date()
-    # Agrupa ventas por mes_cierre (real, no fecha_creacion)
+    # Agrupa oportunidades por mes_cierre (real, no fecha_creacion)
     ano_actual = hoy.year
     ventas_por_mes_qs = TodoItem.objects.filter(
-        probabilidad_cierre=100,
         mes_cierre__isnull=False
     ).exclude(mes_cierre='')
     if not is_supervisor(request.user):
@@ -1442,11 +1416,8 @@ def dashboard(request):
 
     context = {
         'cliente_mas_vendido': cliente_mas_vendido,
-        'cliente_menos_vendido': cliente_menos_vendido,
         'marca_mas_vendida': marca_mas_vendida,
-        'marca_menos_vendida': marca_menos_vendida,
-        'producto_mas_vendido': producto_mas_vendido_context, # Usamos el nuevo contexto
-        'producto_menos_vendido': producto_menos_vendido_context, # Usamos el nuevo contexto para menos vendido
+        'producto_mas_vendido': producto_mas_vendido_context,
         # Datos del cliente top
         'productos_cliente_top_list': productos_cliente_top_list,
         'ventas_por_mes_list': ventas_por_mes_list,
