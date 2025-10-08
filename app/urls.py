@@ -111,7 +111,7 @@ urlpatterns = [
     # Ruta para editar (duplicar) una cotización
     path('cotizacion/<int:cotizacion_id>/editar/', views.editar_cotizacion_view, name='editar_cotizacion'),
 
-    path("usuario/", views.usuario_view, name="usuario"),
+    path("usuario/", views.usuario_redirect_view, name="usuario"),
 
     # Reporte de usuarios (solo para supervisores)
     path('reporte-usuarios/', views.reporte_usuarios, name='reporte_usuarios'),

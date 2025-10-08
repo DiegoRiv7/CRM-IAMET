@@ -2998,6 +2998,15 @@ def supervisor_required(view_func):
     decorated_view_func = login_required(user_passes_test(is_supervisor)(view_func))
     return decorated_view_func
 
+
+@login_required
+def usuario_redirect_view(request):
+    """
+    Redirige a la página de perfil del usuario actual.
+    """
+    return redirect('perfil_usuario', usuario_id=request.user.id)
+
+
 @supervisor_required
 def reporte_usuarios(request):
     usuarios = User.objects.all().order_by('username')
