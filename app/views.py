@@ -2166,6 +2166,8 @@ def oportunidades_perdidas_detail(request):
 # VISTA DEPRECADA - MANTENIDA POR REFERENCIA
 @login_required
 def generate_quote_pdf(request, pk):
+
+
     """
     DEPRECATED: Esta vista generaba PDF para TodoItem.
     Now it will use generate_cotizacion_pdf for the Cotizacion model.
