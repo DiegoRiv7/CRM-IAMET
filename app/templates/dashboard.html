@@ -165,16 +165,12 @@
             <p class="text-3xl font-semibold text-red-400 mt-2">${{ total_perdido_monto|format_currency_es }}</p>
         </a>
         
-        <!-- Placeholder for another widget -->
-        <div class="apple-card flex flex-col justify-center items-center text-center apple-fade-in" style="animation-delay: 0.6s;">
-            <h2 class="font-semibold text-lg text-gray-300 mb-3">Próximamente</h2>
-            <svg class="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        </div>
-
         <!-- Gráfica de Oportunidades por Mes -->
-        <div class="apple-card md:col-span-2 lg:col-span-4 apple-fade-in" style="animation-delay: 0.7s;">
+        <div class="apple-card md:col-span-2 lg:col-span-4 apple-fade-in" style="animation-delay: 0.6s;">
             <h2 class="font-semibold text-xl text-center text-white mb-4">Oportunidades por Mes</h2>
-            <canvas id="ventasMesChart" style="height: 280px;"></canvas>
+            <div style="position: relative; height: 280px; width: 100%;">
+                <canvas id="ventasMesChart"></canvas>
+            </div>
         </div>
     </section>
 
