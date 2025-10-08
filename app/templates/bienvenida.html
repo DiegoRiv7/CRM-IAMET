@@ -548,237 +548,115 @@
         filter: drop-shadow(0 2px 4px rgba(255, 107, 157, 0.4));
     }
 
-    /* Apple Spotlight Search Modal */
-    .spotlight-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.6);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        z-index: 9999;
-        display: flex;
-        align-items: flex-start;
-        justify-content: center;
-        padding-top: 10vh;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    }
 
-    .spotlight-modal.show {
-        opacity: 1;
-        visibility: visible;
-    }
-
-    .spotlight-container {
+    /* Apple Redesigned Action Bar with Separated Layout */
+    .redesigned-action-bar {
         width: 100%;
-        max-width: 640px;
-        margin: 0 20px;
-        transform: scale(0.9) translateY(-20px);
-        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        max-width: 500px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
     }
 
-    .spotlight-modal.show .spotlight-container {
-        transform: scale(1) translateY(0);
+    .action-icons-left {
+        display: flex;
+        gap: 16px;
     }
 
-    .spotlight-search {
+    .action-icons-right {
+        display: flex;
+    }
+
+    .circular-action-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
         background: rgba(28, 28, 30, 0.85);
-        backdrop-filter: blur(40px);
-        -webkit-backdrop-filter: blur(40px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        box-shadow: 
-            0 20px 60px rgba(0, 0, 0, 0.4),
-            0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-        overflow: hidden;
-    }
-
-    .spotlight-input-container {
-        display: flex;
-        align-items: center;
-        padding: 20px 24px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .spotlight-input {
-        flex: 1;
-        background: transparent;
-        border: none;
-        outline: none;
-        font-size: 28px;
-        font-weight: 300;
-        color: var(--apple-label);
-        font-family: var(--apple-font-family);
-        padding: 0;
-        margin-left: 16px;
-    }
-
-    .spotlight-input::placeholder {
-        color: var(--apple-gray);
-    }
-
-    .spotlight-icon {
-        width: 28px;
-        height: 28px;
-        color: var(--apple-gray);
-        flex-shrink: 0;
-    }
-
-    .spotlight-results {
-        max-height: 60vh;
-        overflow-y: auto;
-        padding: 8px 0;
-    }
-
-    .spotlight-result {
-        display: flex;
-        align-items: center;
-        padding: 12px 24px;
-        cursor: pointer;
-        transition: background-color 0.15s ease;
-        border: none;
-        background: transparent;
-        width: 100%;
-        text-align: left;
-    }
-
-    .spotlight-result:hover,
-    .spotlight-result.selected {
-        background: rgba(0, 122, 255, 0.15);
-    }
-
-    .spotlight-result-icon {
-        width: 20px;
-        height: 20px;
-        margin-right: 16px;
-        color: var(--apple-blue);
-        flex-shrink: 0;
-    }
-
-    .spotlight-result-content {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .spotlight-result-title {
-        font-size: 16px;
-        font-weight: 500;
-        color: var(--apple-label);
-        margin: 0 0 4px 0;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .spotlight-result-subtitle {
-        font-size: 14px;
-        color: var(--apple-gray);
-        margin: 0;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .spotlight-shortcut {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 6px;
-        padding: 4px 8px;
-        font-size: 12px;
-        color: var(--apple-gray);
-        font-family: var(--apple-font-mono);
-    }
-
-    /* Enhanced Action Bar */
-    .action-bar {
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
-        background: rgba(28, 28, 30, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         box-shadow: 
             0 8px 32px rgba(0, 0, 0, 0.3),
             0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-        padding: 12px 20px;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
 
-    .action-bar:hover {
-        background: rgba(28, 28, 30, 0.8);
-        border-color: rgba(255, 255, 255, 0.15);
-        transform: translateY(-2px);
+    .circular-action-btn:hover {
+        background: rgba(28, 28, 30, 0.95);
+        border-color: rgba(0, 122, 255, 0.5);
+        transform: translateY(-4px) scale(1.05);
         box-shadow: 
-            0 12px 40px rgba(0, 0, 0, 0.4),
-            0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+            0 16px 50px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+            0 0 20px rgba(0, 122, 255, 0.3);
     }
 
-    .search-input {
-        flex: 1;
-        background: rgba(44, 44, 46, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
-        padding: 12px 20px;
-        font-size: 16px;
+    .circular-action-btn:active {
+        transform: translateY(-2px) scale(1.02);
+        transition: transform 0.1s ease;
+    }
+
+    .circular-action-btn svg {
+        width: 28px;
+        height: 28px;
         color: var(--apple-label);
-        font-family: var(--apple-font-family);
-        outline: none;
-        transition: all 0.2s ease;
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
     }
 
-    .search-input:focus {
-        border-color: var(--apple-blue);
-        background: rgba(44, 44, 46, 0.8);
-        box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
-    }
-
-    .search-input::placeholder {
-        color: var(--apple-gray);
-    }
-
-    .action-button {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        background: rgba(44, 44, 46, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-    }
-
-    .action-button:hover {
-        background: rgba(44, 44, 46, 0.9);
-        border-color: rgba(255, 255, 255, 0.2);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    }
-
-    .action-button:active {
-        transform: translateY(0);
-    }
-
-    .action-button svg {
-        width: 24px;
-        height: 24px;
-        color: var(--apple-label);
-        transition: color 0.2s ease;
-    }
-
-    .action-button:hover svg {
+    .circular-action-btn:hover svg {
         color: var(--apple-blue);
+        filter: drop-shadow(0 0 8px rgba(0, 122, 255, 0.5));
+    }
+
+    /* Special styling for search button */
+    .search-trigger {
+        background: rgba(0, 122, 255, 0.15);
+        border-color: rgba(0, 122, 255, 0.3);
+    }
+
+    .search-trigger:hover {
+        background: rgba(0, 122, 255, 0.25);
+        border-color: rgba(0, 122, 255, 0.6);
+        box-shadow: 
+            0 16px 50px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(0, 122, 255, 0.2) inset,
+            0 0 30px rgba(0, 122, 255, 0.5);
+    }
+
+    .search-trigger svg {
+        color: var(--apple-blue);
+    }
+
+    .search-trigger:hover svg {
+        color: #ffffff;
+        transform: scale(1.1);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 640px) {
+        .redesigned-action-bar {
+            max-width: 100%;
+            gap: 12px;
+        }
+        
+        .action-icons-left {
+            gap: 12px;
+        }
+        
+        .circular-action-btn {
+            width: 56px;
+            height: 56px;
+        }
+        
+        .circular-action-btn svg {
+            width: 24px;
+            height: 24px;
+        }
     }
 </style>
 <div class="apple-bg"></div>
@@ -787,36 +665,44 @@
     <section class="w-full flex flex-col items-center justify-start apple-fade-in" style="padding-top: 40px;">
         <h1 class="apple-display text-center mb-6" style="margin-top: 0;">Bienvenido al cotizador</h1>
         
-        <!-- Enhanced Action Bar -->
-        <div class="action-bar mb-8">
-            <input type="text" 
-                   class="search-input" 
-                   id="main-search" 
-                   placeholder="Búsqueda en Spotlight">
+        <!-- Apple Redesigned Action Bar with Separated Icons -->
+        <div class="redesigned-action-bar mb-8">
+            <!-- Left side: newspaper and calendar icons -->
+            <div class="action-icons-left">
+                <button class="circular-action-btn" id="news-btn" title="Noticias y Reportes">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
+                        <path d="M18 14h-8"/>
+                        <path d="M15 18h-5"/>
+                        <path d="M10 6h8v4h-8V6Z"/>
+                    </svg>
+                </button>
+                
+                <button class="circular-action-btn" id="calendar-btn" title="Calendario y Eventos">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2"/>
+                        <path d="M16 2v4"/>
+                        <path d="M8 2v4"/>
+                        <path d="M3 10h18"/>
+                        <path d="M8 14h.01"/>
+                        <path d="M12 14h.01"/>
+                        <path d="M16 14h.01"/>
+                        <path d="M8 18h.01"/>
+                        <path d="M12 18h.01"/>
+                        <path d="M16 18h.01"/>
+                    </svg>
+                </button>
+            </div>
             
-            <button class="action-button" id="news-btn" title="Noticias y Reportes">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
-                    <path d="M18 14h-8"/>
-                    <path d="M15 18h-5"/>
-                    <path d="M10 6h8v4h-8V6Z"/>
-                </svg>
-            </button>
-            
-            <button class="action-button" id="calendar-btn" title="Calendario y Eventos">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2"/>
-                    <path d="M16 2v4"/>
-                    <path d="M8 2v4"/>
-                    <path d="M3 10h18"/>
-                    <path d="M8 14h.01"/>
-                    <path d="M12 14h.01"/>
-                    <path d="M16 14h.01"/>
-                    <path d="M8 18h.01"/>
-                    <path d="M12 18h.01"/>
-                    <path d="M16 18h.01"/>
-                </svg>
-            </button>
+            <!-- Right side: search button -->
+            <div class="action-icons-right">
+                <button class="circular-action-btn search-trigger" id="main-search-btn" title="Buscar (Doble espacio)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                </button>
+            </div>
         </div>
         
         <div class="mb-6">
@@ -992,74 +878,7 @@
             </div>
         </div>
     </section>
-    </section>
     
-    <!-- Apple Spotlight Search Modal -->
-    <div id="spotlight-modal" class="spotlight-modal">
-        <div class="spotlight-container">
-            <div class="spotlight-search">
-                <div class="spotlight-input-container">
-                    <svg class="spotlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"/>
-                        <path d="M21 21l-4.35-4.35"/>
-                    </svg>
-                    <input type="text" 
-                           class="spotlight-input" 
-                           id="spotlight-search-input" 
-                           placeholder="Buscar oportunidades, clientes, cotizaciones..."
-                           autocomplete="off">
-                </div>
-                <div class="spotlight-results" id="spotlight-results">
-                    <!-- Initial suggestions -->
-                    <button class="spotlight-result" data-action="dashboard">
-                        <svg class="spotlight-result-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="18" height="18" rx="2"/>
-                            <path d="M9 9h6v6H9z"/>
-                        </svg>
-                        <div class="spotlight-result-content">
-                            <h3 class="spotlight-result-title">Dashboard</h3>
-                            <p class="spotlight-result-subtitle">Ver resumen de oportunidades y métricas</p>
-                        </div>
-                    </button>
-                    
-                    <button class="spotlight-result" data-action="opportunities">
-                        <svg class="spotlight-result-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                            <polyline points="9,22 9,12 15,12 15,22"/>
-                        </svg>
-                        <div class="spotlight-result-content">
-                            <h3 class="spotlight-result-title">Oportunidades</h3>
-                            <p class="spotlight-result-subtitle">Gestionar oportunidades de venta</p>
-                        </div>
-                    </button>
-                    
-                    <button class="spotlight-result" data-action="quotations">
-                        <svg class="spotlight-result-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14,2 14,8 20,8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/>
-                        </svg>
-                        <div class="spotlight-result-content">
-                            <h3 class="spotlight-result-title">Cotizaciones</h3>
-                            <p class="spotlight-result-subtitle">Crear y gestionar cotizaciones</p>
-                        </div>
-                    </button>
-                    
-                    <button class="spotlight-result" data-action="clients">
-                        <svg class="spotlight-result-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                        </svg>
-                        <div class="spotlight-result-content">
-                            <h3 class="spotlight-result-title">Clientes</h3>
-                            <p class="spotlight-result-subtitle">Administrar base de clientes</p>
-                        </div>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
     
     <!-- Modal para seleccionar acción de oportunidad -->
     <div id="opportunity-action-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
@@ -1081,16 +900,6 @@
     </div>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Spotlight Search Modal Management
-    const spotlightModal = document.getElementById('spotlight-modal');
-    const spotlightInput = document.getElementById('spotlight-search-input');
-    const mainSearchInput = document.getElementById('main-search');
-    const spotlightResults = document.getElementById('spotlight-results');
-    let selectedIndex = 0;
-    let isDoubleSpace = false;
-    let spaceCount = 0;
-    let spaceTimeout = null;
-
     // Navigation routes
     const routes = {
         dashboard: '{% url "dashboard" %}',
@@ -1099,123 +908,17 @@ document.addEventListener('DOMContentLoaded', function() {
         clients: '{% url "reporte_ventas_por_cliente" %}'
     };
 
-    // Show spotlight modal
-    function showSpotlight() {
-        spotlightModal.classList.add('show');
-        setTimeout(() => {
-            spotlightInput.focus();
-        }, 100);
-    }
-
-    // Hide spotlight modal
-    function hideSpotlight() {
-        spotlightModal.classList.remove('show');
-        spotlightInput.value = '';
-        selectedIndex = 0;
-        updateSelection();
-    }
-
-    // Update result selection
-    function updateSelection() {
-        const results = spotlightResults.querySelectorAll('.spotlight-result');
-        results.forEach((result, index) => {
-            result.classList.toggle('selected', index === selectedIndex);
-        });
-    }
-
-    // Execute selected action
-    function executeAction() {
-        const results = spotlightResults.querySelectorAll('.spotlight-result');
-        const selectedResult = results[selectedIndex];
-        if (selectedResult) {
-            const action = selectedResult.getAttribute('data-action');
-            if (routes[action]) {
-                window.location.href = routes[action];
-            }
-        }
-    }
-
-    // Handle double space detection
-    function handleSpaceKey() {
-        spaceCount++;
-        
-        if (spaceTimeout) {
-            clearTimeout(spaceTimeout);
-        }
-        
-        if (spaceCount === 2) {
-            showSpotlight();
-            spaceCount = 0;
-            return;
-        }
-        
-        spaceTimeout = setTimeout(() => {
-            spaceCount = 0;
-        }, 500);
-    }
-
-    // Main search input click handler
-    if (mainSearchInput) {
-        mainSearchInput.addEventListener('click', function(e) {
+    // Main search button click handler - opens global spotlight
+    const mainSearchBtn = document.getElementById('main-search-btn');
+    if (mainSearchBtn) {
+        mainSearchBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            showSpotlight();
-        });
-
-        mainSearchInput.addEventListener('focus', function(e) {
-            e.preventDefault();
-            this.blur();
-            showSpotlight();
+            // Use the global openSpotlight function from base.html
+            if (window.openSpotlight) {
+                window.openSpotlight();
+            }
         });
     }
-
-    // Global keyboard handlers
-    document.addEventListener('keydown', function(e) {
-        // Double space to open spotlight
-        if (e.code === 'Space' && !spotlightModal.classList.contains('show')) {
-            handleSpaceKey();
-        }
-
-        // Escape to close spotlight
-        if (e.key === 'Escape' && spotlightModal.classList.contains('show')) {
-            hideSpotlight();
-        }
-
-        // Arrow navigation in spotlight
-        if (spotlightModal.classList.contains('show')) {
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                const results = spotlightResults.querySelectorAll('.spotlight-result');
-                selectedIndex = (selectedIndex + 1) % results.length;
-                updateSelection();
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                const results = spotlightResults.querySelectorAll('.spotlight-result');
-                selectedIndex = selectedIndex === 0 ? results.length - 1 : selectedIndex - 1;
-                updateSelection();
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                executeAction();
-            }
-        }
-    });
-
-    // Spotlight modal click to close
-    spotlightModal.addEventListener('click', function(e) {
-        if (e.target === spotlightModal) {
-            hideSpotlight();
-        }
-    });
-
-    // Result click handlers
-    spotlightResults.addEventListener('click', function(e) {
-        const result = e.target.closest('.spotlight-result');
-        if (result) {
-            const action = result.getAttribute('data-action');
-            if (routes[action]) {
-                window.location.href = routes[action];
-            }
-        }
-    });
 
     // News button functionality
     const newsBtn = document.getElementById('news-btn');
@@ -1234,33 +937,6 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = routes.opportunities;
         });
     }
-
-    // Search functionality
-    if (spotlightInput) {
-        spotlightInput.addEventListener('input', function(e) {
-            const query = e.target.value.toLowerCase();
-            
-            // Simple filtering for now - in production you'd make an AJAX call
-            const allResults = spotlightResults.querySelectorAll('.spotlight-result');
-            allResults.forEach(result => {
-                const title = result.querySelector('.spotlight-result-title').textContent.toLowerCase();
-                const subtitle = result.querySelector('.spotlight-result-subtitle').textContent.toLowerCase();
-                
-                if (title.includes(query) || subtitle.includes(query) || query === '') {
-                    result.style.display = 'flex';
-                } else {
-                    result.style.display = 'none';
-                }
-            });
-            
-            // Reset selection
-            selectedIndex = 0;
-            updateSelection();
-        });
-    }
-
-    // Initialize selection
-    updateSelection();
 });
 </script>
 </main>
