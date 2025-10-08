@@ -1327,7 +1327,7 @@ def dashboard(request):
     hoy = date.today()
     mes_actual_val = str(hoy.month).zfill(2)
     mes_actual_nombre = dict(TodoItem.MES_CHOICES).get(mes_actual_val, f"Mes {hoy.month}")
-    oportunidades_mes_actual = TodoItem.objects.filter(mes_cierre=mes_actual_val, probabilidad_cierre=100)
+    oportunidades_mes_actual = TodoItem.objects.filter(mes_cierre=mes_actual_val)
     if not is_supervisor(request.user):
         oportunidades_mes_actual = oportunidades_mes_actual.filter(usuario=request.user)
     monto_cobrado_mes_actual = oportunidades_mes_actual.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
