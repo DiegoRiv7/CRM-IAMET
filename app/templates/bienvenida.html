@@ -549,86 +549,144 @@
     }
 
 
-    /* Apple Redesigned Action Bar with Left Icons Group */
-    .redesigned-action-bar {
-        width: 100%;
-        max-width: 650px;
-        display: flex;
-        align-items: center;
-        gap: 20px;
-    }
-
-    .right-icons-group {
-        display: flex;
-        gap: 12px;
-        flex-shrink: 0;
-    }
-
-    .circular-action-btn {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: rgba(28, 28, 30, 0.85);
+    /* Header Navigation */
+    .header-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        background: rgba(0, 0, 0, 0.8);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 16px 0;
+    }
+
+    .header-content {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .header-logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .logo-img {
+        height: 40px;
+        width: auto;
+        object-fit: contain;
+    }
+
+    .company-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .company-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--apple-label);
+        margin: 0;
+        line-height: 1;
+    }
+
+    .company-tagline {
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--apple-gray);
+        margin: 0;
+        line-height: 1;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .header-icons {
+        display: flex;
+        gap: 12px;
+    }
+
+    .header-icon-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.15);
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        box-shadow: 
-            0 8px 32px rgba(0, 0, 0, 0.3),
-            0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-        flex-shrink: 0;
-    }
-
-    .circular-action-btn:hover {
-        background: rgba(28, 28, 30, 0.95);
-        border-color: rgba(0, 122, 255, 0.5);
-        transform: translateY(-4px) scale(1.05);
-        box-shadow: 
-            0 16px 50px rgba(0, 0, 0, 0.4),
-            0 0 0 1px rgba(255, 255, 255, 0.1) inset,
-            0 0 20px rgba(0, 122, 255, 0.3);
-    }
-
-    .circular-action-btn:active {
-        transform: translateY(-2px) scale(1.02);
-        transition: transform 0.1s ease;
-    }
-
-    .circular-action-btn svg {
-        width: 28px;
-        height: 28px;
-        color: var(--apple-label);
         transition: all 0.3s ease;
     }
 
-    .circular-action-btn:hover svg {
+    .header-icon-btn:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(0, 122, 255, 0.5);
+        transform: translateY(-1px);
+    }
+
+    .header-icon-btn svg {
+        width: 20px;
+        height: 20px;
+        color: var(--apple-label);
+        transition: color 0.3s ease;
+    }
+
+    .header-icon-btn:hover svg {
         color: var(--apple-blue);
-        filter: drop-shadow(0 0 8px rgba(0, 122, 255, 0.5));
     }
 
-    /* Search Bar Container */
-    .search-bar-container {
-        flex: 1;
-        max-width: 350px;
-        min-width: 200px;
+    /* Central Content */
+    .central-content {
+        width: 100%;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 120px 24px 60px;
+        text-align: center;
     }
 
-    .search-bar {
+    .main-title {
+        font-size: clamp(2.5rem, 6vw, 4rem);
+        font-weight: 600;
+        color: var(--apple-label);
+        margin-bottom: 40px;
+        line-height: 1.1;
+    }
+
+    .title-highlight {
+        color: var(--apple-blue);
+    }
+
+    /* Central Search Bar */
+    .central-search-container {
+        width: 100%;
+        max-width: 600px;
+        margin-bottom: 60px;
+    }
+
+    .central-search-bar {
         width: 100%;
         height: 60px;
-        background: rgba(28, 28, 30, 0.85);
+        background: rgba(28, 28, 30, 0.8);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: 30px;
         display: flex;
         align-items: center;
-        padding: 0 24px;
-        gap: 12px;
+        padding: 0 28px;
+        gap: 16px;
         cursor: pointer;
         transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         box-shadow: 
@@ -636,139 +694,145 @@
             0 0 0 1px rgba(255, 255, 255, 0.05) inset;
     }
 
-    .search-bar:hover {
+    .central-search-bar:hover {
         background: rgba(28, 28, 30, 0.95);
         border-color: rgba(0, 122, 255, 0.5);
-        transform: translateY(-2px);
+        transform: translateY(-3px);
         box-shadow: 
-            0 12px 40px rgba(0, 0, 0, 0.4),
+            0 16px 50px rgba(0, 0, 0, 0.4),
             0 0 0 1px rgba(255, 255, 255, 0.1) inset,
-            0 0 20px rgba(0, 122, 255, 0.3);
+            0 0 30px rgba(0, 122, 255, 0.3);
     }
 
-    .search-bar:active {
-        transform: translateY(-1px);
-        transition: transform 0.1s ease;
-    }
-
-    .search-bar-icon {
-        width: 22px;
-        height: 22px;
+    .central-search-icon {
+        width: 24px;
+        height: 24px;
         color: var(--apple-gray);
         flex-shrink: 0;
         transition: all 0.3s ease;
     }
 
-    .search-bar:hover .search-bar-icon {
+    .central-search-bar:hover .central-search-icon {
         color: var(--apple-blue);
     }
 
-    .search-bar-text {
+    .central-search-text {
         flex: 1;
-        font-size: 16px;
+        font-size: 18px;
         font-weight: 400;
         color: var(--apple-gray);
         font-family: var(--apple-font-family);
         transition: all 0.3s ease;
         user-select: none;
+        text-align: left;
     }
 
-    .search-bar:hover .search-bar-text {
+    .central-search-bar:hover .central-search-text {
         color: var(--apple-label-secondary);
     }
 
     /* Responsive adjustments */
-    @media (max-width: 640px) {
-        .redesigned-action-bar {
-            max-width: 100%;
-            gap: 12px;
+    @media (max-width: 768px) {
+        .header-content {
+            padding: 0 16px;
         }
 
-        .right-icons-group {
-            gap: 8px;
-        }
-        
-        .circular-action-btn {
-            width: 52px;
-            height: 52px;
-        }
-        
-        .circular-action-btn svg {
-            width: 24px;
-            height: 24px;
+        .company-name {
+            font-size: 16px;
         }
 
-        .search-bar {
-            height: 52px;
-            padding: 0 20px;
+        .company-tagline {
+            font-size: 10px;
         }
 
-        .search-bar-icon {
-            width: 20px;
-            height: 20px;
+        .header-icon-btn {
+            width: 40px;
+            height: 40px;
         }
 
-        .search-bar-text {
-            font-size: 15px;
+        .header-icon-btn svg {
+            width: 18px;
+            height: 18px;
         }
 
-        .search-bar-container {
-            min-width: 180px;
+        .central-content {
+            padding: 100px 16px 40px;
+        }
+
+        .central-search-bar {
+            height: 56px;
+            padding: 0 24px;
+        }
+
+        .central-search-icon {
+            width: 22px;
+            height: 22px;
+        }
+
+        .central-search-text {
+            font-size: 16px;
         }
     }
 </style>
 <div class="apple-bg"></div>
-<main>
-    <!-- Apple Welcome Section -->
-    <section class="w-full flex flex-col items-center justify-start apple-fade-in" style="padding-top: 40px;">
-        <h1 class="apple-display text-center mb-6" style="margin-top: 0;">Bienvenido al cotizador</h1>
-        
-        <!-- Apple Redesigned Action Bar with Search Left and Icons Right -->
-        <div class="redesigned-action-bar mb-8">
-            <!-- Left: Search bar -->
-            <div class="search-bar-container" id="main-search-container">
-                <div class="search-bar" id="main-search-bar">
-                    <svg class="search-bar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"/>
-                        <path d="M21 21l-4.35-4.35"/>
-                    </svg>
-                    <span class="search-bar-text">Buscar</span>
-                </div>
-            </div>
-            
-            <!-- Right icons group -->
-            <div class="right-icons-group">
-                <button class="circular-action-btn" id="news-btn" title="Noticias y Reportes">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
-                        <path d="M18 14h-8"/>
-                        <path d="M15 18h-5"/>
-                        <path d="M10 6h8v4h-8V6Z"/>
-                    </svg>
-                </button>
-                
-                <button class="circular-action-btn" id="calendar-btn" title="Calendario y Eventos">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="4" width="18" height="18" rx="2"/>
-                        <path d="M16 2v4"/>
-                        <path d="M8 2v4"/>
-                        <path d="M3 10h18"/>
-                        <path d="M8 14h.01"/>
-                        <path d="M12 14h.01"/>
-                        <path d="M16 14h.01"/>
-                        <path d="M8 18h.01"/>
-                        <path d="M12 18h.01"/>
-                        <path d="M16 18h.01"/>
-                    </svg>
-                </button>
+
+<!-- Header Navigation -->
+<header class="header-nav">
+    <div class="header-content">
+        <!-- Logo IAMET Left -->
+        <div class="header-logo">
+            <img src="https://www.iamet.mx/.cm4all/uproc.php/0/Fondos/.logo.png/picture-200?_=1904956a6f0" 
+                 alt="Logo IAMET" 
+                 class="logo-img"/>
+            <div class="company-info">
+                <h2 class="company-name">IAMET</h2>
+                <p class="company-tagline">EVOLUCIÓN TECNOLÓGICA</p>
             </div>
         </div>
         
-        <div class="mb-6">
-            <img src="https://www.iamet.mx/.cm4all/uproc.php/0/Fondos/.logo.png/picture-200?_=1904956a6f0" 
-                 alt="Logo IAMET" 
-                 class="apple-float"
-                 style="height: 100px; width: auto; object-fit: contain; border-radius: 16px; box-shadow: 0 4px 20px rgba(0, 122, 255, 0.2);"/>
+        <!-- Icons Right -->
+        <div class="header-icons">
+            <button class="header-icon-btn" id="news-btn-header" title="Noticias y Reportes">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
+                    <path d="M18 14h-8"/>
+                    <path d="M15 18h-5"/>
+                    <path d="M10 6h8v4h-8V6Z"/>
+                </svg>
+            </button>
+            
+            <button class="header-icon-btn" id="calendar-btn-header" title="Calendario y Eventos">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/>
+                    <path d="M16 2v4"/>
+                    <path d="M8 2v4"/>
+                    <path d="M3 10h18"/>
+                    <path d="M8 14h.01"/>
+                    <path d="M12 14h.01"/>
+                    <path d="M16 14h.01"/>
+                    <path d="M8 18h.01"/>
+                    <path d="M12 18h.01"/>
+                    <path d="M16 18h.01"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</header>
+
+<main>
+    <!-- Central Content Section -->
+    <section class="central-content apple-fade-in">
+        <h1 class="main-title">Bienvenido al <span class="title-highlight">Nethive</span></h1>
+        
+        <!-- Centered Search Bar -->
+        <div class="central-search-container" id="main-search-container">
+            <div class="central-search-bar" id="main-search-bar">
+                <svg class="central-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="M21 21l-4.35-4.35"/>
+                </svg>
+                <span class="central-search-text">Buscar cotizaciones, clientes o productos...</span>
+            </div>
         </div>
     </section>
     <!-- Apple Employee Cards Section -->
@@ -967,7 +1031,7 @@ document.addEventListener('DOMContentLoaded', function() {
         clients: '{% url "reporte_ventas_por_cliente" %}'
     };
 
-    // Main search bar click handler - opens global spotlight
+    // Central search bar click handler - opens global spotlight
     const mainSearchBar = document.getElementById('main-search-bar');
     const mainSearchContainer = document.getElementById('main-search-container');
     
@@ -991,19 +1055,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // News button functionality
-    const newsBtn = document.getElementById('news-btn');
-    if (newsBtn) {
-        newsBtn.addEventListener('click', function() {
+    // Header news button functionality
+    const newsBtnHeader = document.getElementById('news-btn-header');
+    if (newsBtnHeader) {
+        newsBtnHeader.addEventListener('click', function() {
             // Navigate to dashboard or reports section
             window.location.href = routes.dashboard;
         });
     }
 
-    // Calendar button functionality
-    const calendarBtn = document.getElementById('calendar-btn');
-    if (calendarBtn) {
-        calendarBtn.addEventListener('click', function() {
+    // Header calendar button functionality
+    const calendarBtnHeader = document.getElementById('calendar-btn-header');
+    if (calendarBtnHeader) {
+        calendarBtnHeader.addEventListener('click', function() {
             // Navigate to opportunities or create a calendar view
             window.location.href = routes.opportunities;
         });
