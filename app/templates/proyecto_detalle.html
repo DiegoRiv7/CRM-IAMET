@@ -4488,9 +4488,8 @@ function initializeTaskTimeline(tareaId) {
 // Cargar timeline de la tarea
 async function loadTaskTimeline(tareaId) {
     try {
-        // TODO: Implementar llamada real a API de timeline de tareas
-        // Por ahora simular datos
-        await simulateTaskTimelineData(tareaId);
+        // Cargar datos reales desde la API
+        await loadRealTaskTimelineData(tareaId);
         renderTaskTimeline();
         setupTaskTimelineSearch();
     } catch (error) {
@@ -4502,23 +4501,43 @@ async function loadTaskTimeline(tareaId) {
     }
 }
 
-// Cargar timeline real de la tarea (inicialmente vacío)
-async function simulateTaskTimelineData(tareaId) {
-    // Simular delay de carga
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Solo inicializar timeline si no existe para esta tarea
-    if (!TASK_TIMELINES[tareaId]) {
+// Cargar timeline real de la tarea desde la API
+async function loadRealTaskTimelineData(tareaId) {
+    try {
+        console.log('🔄 Cargando comentarios de tarea desde API:', tareaId);
+        const response = await fetch(`/app/api/tarea/${tareaId}/comentarios/`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('📝 Comentarios recibidos:', data);
+        
+        if (data.success && data.comentarios) {
+            // Convertir comentarios al formato del timeline
+            TASK_TIMELINES[tareaId] = data.comentarios.map(comentario => ({
+                id: comentario.id,
+                tipo: 'comentario',
+                contenido: comentario.contenido,
+                usuario: comentario.usuario_nombre || comentario.usuario,
+                usuario_id: comentario.usuario_id,
+                fecha: comentario.fecha_creacion,
+                archivos: comentario.archivos || [],
+                puede_editar: comentario.puede_editar,
+                puede_eliminar: comentario.puede_eliminar
+            }));
+        } else {
+            TASK_TIMELINES[tareaId] = [];
+        }
+        
+        console.log('✅ Timeline cargado para tarea', tareaId, 'con', TASK_TIMELINES[tareaId].length, 'elementos');
+        
+    } catch (error) {
+        console.error('❌ Error cargando timeline de tarea:', error);
         TASK_TIMELINES[tareaId] = [];
-        console.log('🆕 Inicializando timeline vacío para tarea', tareaId);
-    } else {
-        console.log('📝 Timeline existente para tarea', tareaId, 'con', TASK_TIMELINES[tareaId].length, 'elementos');
+        throw error;
     }
-    
-    // TODO: Aquí implementar llamada real a la API para obtener timeline de la tarea
-    // const response = await fetch(`/app/api/tareas/${tareaId}/timeline/`);
-    // const data = await response.json();
-    // TASK_TIMELINES[tareaId] = data.timeline || [];
 }
 
 // Renderizar el timeline de la tarea
@@ -5068,10 +5087,10 @@ async function agregarComentarioTarea(tareaId) {
     }
     
     try {
-        // TODO: Implementar llamada real a API para agregar comentario
-        console.log('🚀 Iniciando simulateTaskCommentSubmission...');
-        await simulateTaskCommentSubmission(tareaId, comentario);
-        console.log('✅ simulateTaskCommentSubmission completado');
+        // Enviar comentario a la API real
+        console.log('🚀 Enviando comentario a la API...');
+        await enviarComentarioTareaAPI(tareaId, comentario);
+        console.log('✅ Comentario enviado exitosamente');
         
         // Limpiar formulario
         if (taskNuevoComentario) {
@@ -5084,8 +5103,9 @@ async function agregarComentarioTarea(tareaId) {
         renderTaskAttachedFiles();
         updateTaskCommentButtonState();
         
-        // Recargar timeline - solo renderizar, no cargar datos nuevos
-        console.log('📞 Llamando a renderTaskTimeline desde submitTaskComment...');
+        // Recargar timeline desde la API
+        console.log('🔄 Recargando timeline desde la API...');
+        await loadRealTaskTimelineData(tareaId);
         renderTaskTimeline();
         
     } catch (error) {
@@ -5100,40 +5120,42 @@ async function agregarComentarioTarea(tareaId) {
     }
 }
 
-// Simular envío de comentario (reemplazar con API real)
-async function simulateTaskCommentSubmission(tareaId, comentario) {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Agregar nuevo comentario a los datos locales
-    const newComment = {
-        id: Date.now(),
-        tipo: 'comentario',
-        usuario: (typeof CURRENT_USER_NAME !== 'undefined' ? CURRENT_USER_NAME : 'Usuario') || 'Usuario',
-        usuario_id: CURRENT_USER_ID || 0,
-        contenido: comentario,
-        fecha: 'ahora',
-        fecha_timestamp: Date.now(),
-        archivos: [...taskAttachedFiles] // Incluir archivos adjuntos
-    };
-    
-    console.log('💬 Agregando comentario:', newComment);
-    const currentTimeline = getCurrentTaskTimeline();
-    currentTimeline.unshift(newComment);
-    console.log('📝 Timeline actual para tarea', tareaId, ':', currentTimeline);
-    console.log('🎯 TASK_TIMELINES object:', TASK_TIMELINES);
-    console.log('🏷️ CURRENT_TASK_ID:', CURRENT_TASK_ID);
-    
-    // Verificar elemento del timeline antes de renderizar
-    const taskTimelineItems = document.getElementById('taskTimelineItems');
-    console.log('🎯 Elemento taskTimelineItems encontrado:', !!taskTimelineItems);
-    if (taskTimelineItems) {
-        console.log('✅ Elemento existe, renderizando timeline...');
-    } else {
-        console.error('❌ No se encontró el elemento taskTimelineItems');
+// Enviar comentario a la API real
+async function enviarComentarioTareaAPI(tareaId, comentario) {
+    try {
+        const formData = new FormData();
+        formData.append('contenido', comentario);
+        
+        // Agregar archivos adjuntos si existen
+        taskAttachedFiles.forEach((file, index) => {
+            formData.append('archivos', file);
+        });
+        
+        const response = await fetch(`/app/api/tarea/${tareaId}/comentarios/agregar/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Error al guardar comentario');
+        }
+        
+        console.log('✅ Comentario guardado exitosamente:', data);
+        return data;
+        
+    } catch (error) {
+        console.error('❌ Error enviando comentario a la API:', error);
+        throw error;
     }
-    
-    // Sistema de notificaciones
-    await enviarNotificacionesComentario(tareaId, comentario, CURRENT_USER_ID);
 }
 
 // Sistema de notificaciones para comentarios de tareas
