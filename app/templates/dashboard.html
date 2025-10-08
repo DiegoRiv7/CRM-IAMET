@@ -97,9 +97,12 @@
         
         <!-- Mes Próximo -->
         <a href="{% url 'mes_dashboard_detail' proximo_mes_val %}" class="apple-card lg:col-span-2 flex flex-col justify-between apple-fade-in" style="animation-delay: 0.1s;">
-            <div>
-                <h2 class="font-semibold text-lg text-cyan-300 mb-2">Próximo Mes: {{ next_month_display }}</h2>
-                <p class="text-gray-400 text-sm">{{ total_oportunidades_proximo_mes }} Oportunidades</p>
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="font-semibold text-lg text-cyan-300 mb-2">📅 Próximo Mes: {{ next_month_display }}</h2>
+                    <p class="text-gray-400 text-sm">{{ total_oportunidades_proximo_mes }} Oportunidades (creadas en el mes)</p>
+                </div>
+                <div class="text-2xl">⏭️</div>
             </div>
             <div class="text-5xl font-bold text-white mt-4">
                 ${{ total_monto_esperado_proximo_mes|format_currency_es }}
@@ -108,9 +111,12 @@
 
         <!-- Mes Actual -->
         <a href="{% url 'oportunidades_mes_actual' %}" class="apple-card lg:col-span-2 flex flex-col justify-between apple-fade-in" style="animation-delay: 0.2s;">
-            <div>
-                <h2 class="font-semibold text-lg text-purple-300 mb-2">Mes Actual: {{ mes_actual_nombre }}</h2>
-                <p class="text-gray-400 text-sm">Monto Total en Oportunidades</p>
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="font-semibold text-lg text-purple-300 mb-2">📅 Mes Actual: {{ mes_actual_nombre }}</h2>
+                    <p class="text-gray-400 text-sm">Monto Total (oportunidades creadas este mes)</p>
+                </div>
+                <div class="text-2xl">⚡</div>
             </div>
             <div class="text-5xl font-bold text-white mt-4">
                 ${{ monto_total_mes_actual|format_currency_es }}
@@ -122,10 +128,12 @@
 
         <!-- Top Cliente -->
         <a href="{% if top_cliente %}{% url 'oportunidades_por_cliente' top_cliente.cliente__id %}{% else %}#{% endif %}" class="apple-card lg:col-span-2 flex flex-col justify-center items-center text-center apple-fade-in" style="animation-delay: 0.3s;">
+            <div class="text-4xl mb-3">🏢</div>
             <h2 class="font-semibold text-lg text-gray-300 mb-3">Top Cliente</h2>
             {% if top_cliente %}
                 <p class="text-2xl font-bold text-white">{{ top_cliente.cliente__nombre_empresa }}</p>
                 <p class="text-3xl font-semibold text-cyan-400 mt-2">${{ top_cliente.total_monto|format_currency_es }}</p>
+                <p class="text-gray-400 text-sm mt-1">Total en oportunidades</p>
             {% else %}
                 <p class="text-gray-400 italic">Sin datos</p>
             {% endif %}
@@ -133,20 +141,49 @@
 
         <!-- Top Marca -->
         <a href="{% if top_marca %}{% url 'producto_dashboard_detail' top_marca.marca %}{% else %}#{% endif %}" class="apple-card lg:col-span-2 flex flex-col justify-center items-center text-center apple-fade-in" style="animation-delay: 0.4s;">
+            <div class="text-4xl mb-3">📦</div>
             <h2 class="font-semibold text-lg text-gray-300 mb-3">Top Marca</h2>
             {% if top_marca %}
                 <p class="text-2xl font-bold text-white">{{ top_marca.nombre_marca }}</p>
                 <p class="text-3xl font-semibold text-green-400 mt-2">${{ top_marca.total_monto|format_currency_es }}</p>
+                <p class="text-gray-400 text-sm mt-1">Total en oportunidades</p>
             {% else %}
                 <p class="text-gray-400 italic">Sin datos</p>
             {% endif %}
         </a>
     </section>
 
+    <!-- Estadísticas Adicionales -->
+    <section class="w-full grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Total de Oportunidades -->
+        <div class="apple-card flex flex-col justify-center items-center text-center apple-fade-in" style="animation-delay: 0.5s;">
+            <div class="text-3xl mb-2">📊</div>
+            <h3 class="font-semibold text-lg text-gray-300 mb-2">Total Oportunidades</h3>
+            <p class="text-3xl font-bold text-blue-400">{{ total_oportunidades_count|default:0 }}</p>
+            <p class="text-gray-400 text-sm mt-1">En el sistema</p>
+        </div>
+
+        <!-- Promedio por Oportunidad -->
+        <div class="apple-card flex flex-col justify-center items-center text-center apple-fade-in" style="animation-delay: 0.6s;">
+            <div class="text-3xl mb-2">💰</div>
+            <h3 class="font-semibold text-lg text-gray-300 mb-2">Promedio por Oportunidad</h3>
+            <p class="text-3xl font-bold text-yellow-400">${{ promedio_oportunidad|default:0|format_currency_es }}</p>
+            <p class="text-gray-400 text-sm mt-1">Valor promedio</p>
+        </div>
+
+        <!-- Oportunidades este Año -->
+        <div class="apple-card flex flex-col justify-center items-center text-center apple-fade-in" style="animation-delay: 0.7s;">
+            <div class="text-3xl mb-2">🎯</div>
+            <h3 class="font-semibold text-lg text-gray-300 mb-2">Este Año</h3>
+            <p class="text-3xl font-bold text-orange-400">{{ oportunidades_ano_actual|default:0 }}</p>
+            <p class="text-gray-400 text-sm mt-1">Oportunidades creadas</p>
+        </div>
+    </section>
+
     <!-- Gráfica de Oportunidades por Mes -->
-    <section class="w-full apple-fade-in" style="animation-delay: 0.5s;">
+    <section class="w-full apple-fade-in" style="animation-delay: 0.8s;">
         <div class="apple-card">
-            <h2 class="font-semibold text-xl text-center text-white mb-4">Oportunidades por Mes</h2>
+            <h2 class="font-semibold text-xl text-center text-white mb-4">Oportunidades por Mes (Por Fecha de Creación)</h2>
             <div style="position: relative; height: 320px; width: 100%;">
                 <canvas id="ventasMesChart"></canvas>
             </div>

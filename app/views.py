@@ -1232,7 +1232,11 @@ def dashboard(request):
     mes_actual_val = str(today.month).zfill(2)
     mes_actual_nombre = dict(TodoItem.MES_CHOICES).get(mes_actual_val, f"Mes {today.month}")
     
-    oportunidades_mes_actual = base_opportunities.filter(mes_cierre=mes_actual_val)
+    # Filtrar por fecha de creación del mes actual
+    oportunidades_mes_actual = base_opportunities.filter(
+        fecha_creacion__year=today.year,
+        fecha_creacion__month=today.month
+    )
     monto_total_mes_actual = oportunidades_mes_actual.aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
     
     META_MENSUAL = Decimal('350000.00') if is_supervisor(request.user) else Decimal('130000.00')
@@ -1243,23 +1247,34 @@ def dashboard(request):
     next_month_value = str(next_month_date.month).zfill(2)
     next_month_display = dict(TodoItem.MES_CHOICES).get(next_month_value, f"Mes {next_month_date.month}")
 
-    oportunidades_proximo_mes = base_opportunities.filter(mes_cierre=next_month_value)
+    # Filtrar por fecha de creación del próximo mes
+    oportunidades_proximo_mes = base_opportunities.filter(
+        fecha_creacion__year=next_month_date.year,
+        fecha_creacion__month=next_month_date.month
+    )
     total_oportunidades_proximo_mes = oportunidades_proximo_mes.count()
     total_monto_esperado_proximo_mes = oportunidades_proximo_mes.aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
 
-    # --- Chart Data: Opportunities per month ---
+    # --- Chart Data: Opportunities per month by creation date ---
     ano_actual = today.year
     ventas_por_mes = base_opportunities.filter(
-        mes_cierre__isnull=False
-    ).exclude(mes_cierre='').values('mes_cierre').annotate(
-        monto=Sum('monto')
-    ).order_by('mes_cierre')
+        fecha_creacion__year=ano_actual
+    ).extra(
+        select={'mes_creacion': 'EXTRACT(month FROM fecha_creacion)'}
+    ).values('mes_creacion').annotate(
+        total=Sum('monto')
+    ).order_by('mes_creacion')
     
-    ventas_por_mes_dict = {v['mes_cierre']: float(v['monto'] or 0) for v in ventas_por_mes}
+    ventas_por_mes_dict = {int(v['mes_creacion']): float(v['total'] or 0) for v in ventas_por_mes}
     ventas_por_mes_list = []
     for i in range(1, 13):
-        mes_key = str(i).zfill(2)
-        ventas_por_mes_list.append({'mes': f'{ano_actual}-{mes_key}', 'monto': ventas_por_mes_dict.get(mes_key, 0)})
+        ventas_por_mes_list.append({'mes': f'{ano_actual}-{str(i).zfill(2)}', 'total': ventas_por_mes_dict.get(i, 0)})
+
+    # --- Additional Statistics ---
+    total_oportunidades_count = base_opportunities.count()
+    total_monto_general = base_opportunities.aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+    promedio_oportunidad = total_monto_general / total_oportunidades_count if total_oportunidades_count > 0 else Decimal('0.00')
+    oportunidades_ano_actual = base_opportunities.filter(fecha_creacion__year=ano_actual).count()
 
     context = {
         'is_supervisor': is_supervisor(request.user),
@@ -1282,6 +1297,11 @@ def dashboard(request):
         
         # Chart
         'ventas_por_mes_list': ventas_por_mes_list,
+        
+        # Additional Statistics
+        'total_oportunidades_count': total_oportunidades_count,
+        'promedio_oportunidad': promedio_oportunidad,
+        'oportunidades_ano_actual': oportunidades_ano_actual,
     }
     return render(request, "dashboard.html", context)
 
