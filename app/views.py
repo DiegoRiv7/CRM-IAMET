@@ -1322,17 +1322,14 @@ def dashboard(request):
         stroke_dashoffset_cliente_top = 339.292
         productos_cliente_top_list = []
 
-    # --- Lógica para el Mes Actual (Cobrado) ---
+    # --- Lógica para el Mes Actual (Oportunidades Creadas) ---
     hoy = date.today()
     mes_actual_val = str(hoy.month).zfill(2)
     mes_actual_nombre = dict(TodoItem.MES_CHOICES).get(mes_actual_val, f"Mes {hoy.month}")
-    oportunidades_mes_actual = TodoItem.objects.filter(mes_cierre=mes_actual_val, probabilidad_cierre=100)
+    oportunidades_creadas_mes_actual = TodoItem.objects.filter(fecha_creacion__year=hoy.year, fecha_creacion__month=hoy.month)
     if not is_supervisor(request.user):
-        oportunidades_mes_actual = oportunidades_mes_actual.filter(usuario=request.user)
-    monto_cobrado_mes_actual = oportunidades_mes_actual.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
-    META_MENSUAL = Decimal('350000.00') if is_supervisor(request.user) else Decimal('130000.00')
-    porcentaje_cobertura_mes_actual = int((monto_cobrado_mes_actual / META_MENSUAL * 100) if META_MENSUAL > 0 else 0)
-    stroke_dashoffset_mes_actual = 339.292 - (339.292 * porcentaje_cobertura_mes_actual / 100)
+        oportunidades_creadas_mes_actual = oportunidades_creadas_mes_actual.filter(usuario=request.user)
+    monto_creado_mes_actual = oportunidades_creadas_mes_actual.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
 
     # --- Lógica para el Próximo Mes y Alerta de Meta ---
     # Obtener el próximo mes
@@ -1427,11 +1424,9 @@ def dashboard(request):
         'cliente_top_monto': cliente_top_monto,
         'cliente_top_oportunidades_abiertas': cliente_top_oportunidades_abiertas,
         # Datos del mes actual
-        'monto_cobrado_mes_actual': monto_cobrado_mes_actual,
-        'porcentaje_cobertura_mes_actual': porcentaje_cobertura_mes_actual,
+        'monto_creado_mes_actual': monto_creado_mes_actual,
         'mes_actual_nombre': mes_actual_nombre,
         'mes_actual_val': mes_actual_val,
-        'stroke_dashoffset_mes_actual': stroke_dashoffset_mes_actual,
 
         # Datos del próximo mes
         'next_month_display': next_month_display,
