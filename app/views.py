@@ -1247,10 +1247,22 @@ def dashboard(request):
     next_month_value = str(next_month_date.month).zfill(2)
     next_month_display = dict(TodoItem.MES_CHOICES).get(next_month_value, f"Mes {next_month_date.month}")
 
+    # Debug info
+    print(f"DEBUG: today = {today}")
+    print(f"DEBUG: next_month_date = {next_month_date}")
+    print(f"DEBUG: next_month_value = {next_month_value}")
+    
     # Filtrar por mes de cierre del próximo mes
     oportunidades_proximo_mes = base_opportunities.filter(mes_cierre=next_month_value)
     total_oportunidades_proximo_mes = oportunidades_proximo_mes.count()
     total_monto_esperado_proximo_mes = oportunidades_proximo_mes.aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+    
+    print(f"DEBUG: Oportunidades próximo mes encontradas = {total_oportunidades_proximo_mes}")
+    print(f"DEBUG: Monto total próximo mes = {total_monto_esperado_proximo_mes}")
+    
+    # Revisar qué oportunidades existen en la base de datos con mes_cierre
+    all_mes_cierre = base_opportunities.exclude(mes_cierre__isnull=True).exclude(mes_cierre='').values_list('mes_cierre', flat=True).distinct()
+    print(f"DEBUG: Todos los valores de mes_cierre en BD = {list(all_mes_cierre)}")
 
     # --- Chart Data: Opportunities per month by creation date ---
     ano_actual = today.year
