@@ -80,6 +80,37 @@
         from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
     }
+
+    /* Modal Styles */
+    .apple-modal-option {
+        display: block;
+        padding: 16px;
+        background: rgba(44, 44, 46, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        text-decoration: none;
+        transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+    
+    .apple-modal-option:hover {
+        background: rgba(44, 44, 46, 0.8);
+        border-color: rgba(255, 255, 255, 0.15);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .apple-modal-option:active {
+        transform: translateY(0);
+        transition: none;
+    }
+
+    /* Modal Animation */
+    #report-modal.show #modal-content {
+        opacity: 1;
+        transform: scale(1);
+    }
 </style>
 
 <div class="apple-bg"></div>
@@ -193,17 +224,87 @@
         </div>
     </section>
 
-    <!-- Report Modal -->
-    <div id="report-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-        <div class="bg-gray-800 p-8 rounded-lg shadow-xl max-w-sm mx-auto">
-            <h2 class="text-2xl font-bold text-white mb-4">Generar Reporte</h2>
-            <p class="text-gray-400 mb-6">Seleccione el período para el reporte de oportunidades:</p>
-            <div class="flex flex-col space-y-4">
-                <a href="{% url 'exportar_oportunidades_csv' %}?periodo=mes" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg text-center">Último Mes</a>
-                <a href="{% url 'exportar_oportunidades_csv' %}?periodo=ano" class="bg-green-500 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg text-center">Año Actual</a>
-                <a href="{% url 'exportar_oportunidades_csv' %}?periodo=todas" class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg text-center">Todas</a>
+    <!-- Report Modal - Apple Style -->
+    <div id="report-modal" class="fixed inset-0 z-50 hidden">
+        <!-- Backdrop with blur -->
+        <div class="absolute inset-0 bg-black bg-opacity-40 backdrop-blur-sm"></div>
+        
+        <!-- Modal Container -->
+        <div class="relative flex items-center justify-center min-h-screen p-4">
+            <div class="apple-card max-w-md w-full mx-auto transform transition-all duration-300 scale-95 opacity-0" id="modal-content">
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center space-x-3">
+                        <div class="text-2xl">📊</div>
+                        <h2 class="text-xl font-semibold text-white">Generar Reporte</h2>
+                    </div>
+                    <button id="close-modal" class="w-8 h-8 rounded-full bg-gray-700 hover:bg-gray-600 flex items-center justify-center transition-colors">
+                        <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Description -->
+                <p class="text-gray-400 mb-6 text-sm leading-relaxed">
+                    Seleccione el período para exportar el reporte de oportunidades en formato CSV:
+                </p>
+                
+                <!-- Options -->
+                <div class="space-y-3">
+                    <a href="{% url 'exportar_oportunidades_csv' %}?periodo=mes" 
+                       class="apple-modal-option group">
+                        <div class="flex items-center space-x-3">
+                            <div class="text-lg">📅</div>
+                            <div class="flex-1">
+                                <div class="font-medium text-white group-hover:text-blue-300 transition-colors">Último Mes</div>
+                                <div class="text-xs text-gray-400">Oportunidades de los últimos 30 días</div>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-500 group-hover:text-blue-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </div>
+                    </a>
+                    
+                    <a href="{% url 'exportar_oportunidades_csv' %}?periodo=ano" 
+                       class="apple-modal-option group">
+                        <div class="flex items-center space-x-3">
+                            <div class="text-lg">🎯</div>
+                            <div class="flex-1">
+                                <div class="font-medium text-white group-hover:text-green-300 transition-colors">Año Actual</div>
+                                <div class="text-xs text-gray-400">Todas las oportunidades de {{ "now"|date:"Y" }}</div>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-500 group-hover:text-green-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </div>
+                    </a>
+                    
+                    <a href="{% url 'exportar_oportunidades_csv' %}?periodo=todas" 
+                       class="apple-modal-option group">
+                        <div class="flex items-center space-x-3">
+                            <div class="text-lg">📋</div>
+                            <div class="flex-1">
+                                <div class="font-medium text-white group-hover:text-purple-300 transition-colors">Todas las Oportunidades</div>
+                                <div class="text-xs text-gray-400">Exportar base de datos completa</div>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-500 group-hover:text-purple-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </div>
+                    </a>
+                </div>
+                
+                <!-- Footer -->
+                <div class="mt-6 pt-4 border-t border-gray-700">
+                    <div class="flex items-center space-x-2 text-xs text-gray-500">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>El archivo se descargará automáticamente</span>
+                    </div>
+                </div>
             </div>
-            <button id="close-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
         </div>
     </div>
 </main>
@@ -211,22 +312,54 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Modal script
+        // Modal script with Apple-style animations
         const reportButton = document.getElementById('report-button');
         const reportModal = document.getElementById('report-modal');
         const closeModal = document.getElementById('close-modal');
+        const modalContent = document.getElementById('modal-content');
+
+        function showModal() {
+            reportModal.classList.remove('hidden');
+            // Force reflow
+            reportModal.offsetHeight;
+            reportModal.classList.add('show');
+        }
+
+        function hideModal() {
+            reportModal.classList.remove('show');
+            setTimeout(() => {
+                reportModal.classList.add('hidden');
+            }, 300); // Match the transition duration
+        }
 
         if(reportButton) {
-            reportButton.addEventListener('click', function() {
-                reportModal.classList.remove('hidden');
+            reportButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                showModal();
             });
         }
 
         if(closeModal) {
             closeModal.addEventListener('click', function() {
-                reportModal.classList.add('hidden');
+                hideModal();
             });
         }
+
+        // Close modal when clicking backdrop
+        if(reportModal) {
+            reportModal.addEventListener('click', function(e) {
+                if (e.target === reportModal) {
+                    hideModal();
+                }
+            });
+        }
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && !reportModal.classList.contains('hidden')) {
+                hideModal();
+            }
+        });
         
         // Chart script
         var ventasPorMes = {{ ventas_por_mes_list|default:'[]'|safe }};
