@@ -1240,29 +1240,22 @@ def dashboard(request):
     monto_total_mes_actual = oportunidades_mes_actual.aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
     
     META_MENSUAL = Decimal('350000.00') if is_supervisor(request.user) else Decimal('130000.00')
-    porcentaje_cobertura_mes_actual = int((monto_total_mes_actual / META_MENSUAL * 100) if META_MENSUAL > 0 else 0)
+    porcentaje_cobertura_mes_actual = min(100, int((monto_total_mes_actual / META_MENSUAL * 100) if META_MENSUAL > 0 else 0))
 
     # --- Next Month ---
     next_month_date = today + relativedelta(months=1)
     next_month_value = str(next_month_date.month).zfill(2)
     next_month_display = dict(TodoItem.MES_CHOICES).get(next_month_value, f"Mes {next_month_date.month}")
-
-    # Debug info
-    print(f"DEBUG: today = {today}")
-    print(f"DEBUG: next_month_date = {next_month_date}")
-    print(f"DEBUG: next_month_value = {next_month_value}")
     
-    # Filtrar por mes de cierre del próximo mes
-    oportunidades_proximo_mes = base_opportunities.filter(mes_cierre=next_month_value)
+    # Filtrar por mes de cierre del próximo mes (búsqueda robusta)
+    oportunidades_proximo_mes = base_opportunities.filter(
+        Q(mes_cierre=next_month_value) |  # Formato con ceros (11)
+        Q(mes_cierre=str(next_month_date.month)) |  # Formato sin ceros (11)
+        Q(mes_cierre=next_month_display.upper()) |  # Nombre del mes
+        Q(mes_cierre=next_month_display.lower())   # Nombre del mes en minúscula
+    )
     total_oportunidades_proximo_mes = oportunidades_proximo_mes.count()
     total_monto_esperado_proximo_mes = oportunidades_proximo_mes.aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
-    
-    print(f"DEBUG: Oportunidades próximo mes encontradas = {total_oportunidades_proximo_mes}")
-    print(f"DEBUG: Monto total próximo mes = {total_monto_esperado_proximo_mes}")
-    
-    # Revisar qué oportunidades existen en la base de datos con mes_cierre
-    all_mes_cierre = base_opportunities.exclude(mes_cierre__isnull=True).exclude(mes_cierre='').values_list('mes_cierre', flat=True).distinct()
-    print(f"DEBUG: Todos los valores de mes_cierre en BD = {list(all_mes_cierre)}")
 
     # --- Chart Data: Opportunities per month by creation date ---
     ano_actual = today.year
