@@ -1202,213 +1202,59 @@ def api_eliminar_comentario_proyecto(request, comentario_id):
 
 @login_required
 def dashboard(request):
-    # Determinar si el usuario es un supervisor
-    if is_supervisor(request.user):
-        # Si es supervisor, obtiene todas las oportunidades de todos los usuarios
-        user_opportunities = TodoItem.objects.all()
-        print("DEBUG: Usuario es supervisor. Obteniendo todas las oportunidades.")
-    else:
-        # Si no es supervisor, solo obtiene las oportunidades del usuario actual
-        user_opportunities = TodoItem.objects.filter(usuario=request.user)
-        print(f"DEBUG: Usuario {request.user.username} es vendedor. Obteniendo sus propias oportunidades.")
+    # Base queryset for user-specific or all opportunities
+    base_opportunities = TodoItem.objects.all() if is_supervisor(request.user) else TodoItem.objects.filter(usuario=request.user)
 
-    # 1. Cliente con más ventas cerradas (100% probabilidad)
-    # Las ventas cerradas se filtran por usuario si no es supervisor
-    ventas_cerradas_query = TodoItem.objects.filter(probabilidad_cierre=100, cliente__isnull=False)
-    if not is_supervisor(request.user):
-        ventas_cerradas_query = ventas_cerradas_query.filter(usuario=request.user)
+    # --- Key Metrics ---
 
-    cliente_mas_vendido = None
+    # 1. Top Client by total opportunity amount
+    top_cliente = base_opportunities.filter(cliente__isnull=False).values(
+        'cliente__id', 'cliente__nombre_empresa'
+    ).annotate(
+        total_monto=Sum('monto')
+    ).order_by('-total_monto').first()
 
-    ventas_por_cliente_cerradas = ventas_cerradas_query.values('cliente__nombre_empresa', 'cliente__id').annotate( # Asegura cliente__id
-        total_vendido=Sum('monto')
-    ).order_by('-total_vendido')
-
-    if ventas_por_cliente_cerradas.exists():
-        cliente_mas_vendido = ventas_por_cliente_cerradas.first()
-
-    # 2. Producto más vendido (total de oportunidades y ventas cerradas)
-    # La consulta de productos también debe considerar el rol de supervisor
-    productos_data_base_query = TodoItem.objects.all() if is_supervisor(request.user) else TodoItem.objects.filter(usuario=request.user)
-
-    productos_data_raw = productos_data_base_query.annotate(
-        # Convertir el campo 'producto' a mayúsculas para la agrupación
-        producto_upper=Upper('producto')
-    ).values('producto_upper').annotate(
-        count_oportunidades=Count('id'),
-        total_monto=Sum('monto'),
-        # Suma el monto SOLO si la probabilidad de cierre es 100%
-        total_vendido_cerrado=Sum('monto', filter=Q(probabilidad_cierre=100))
-    ).order_by('-count_oportunidades') # Ordenar para encontrar el "más vendido"
-
-    productos_data_with_display = []
-    for item in productos_data_raw:
-        item_copy = item.copy()
-        # Usa 'producto_upper' para obtener el display, ya que es el valor normalizado
-        item_copy['get_producto_display'] = _get_display_for_value(item_copy['producto_upper'], TodoItem.PRODUCTO_CHOICES)
-        # Asegúrate de que total_vendido_cerrado sea 0.00 si es None
-        item_copy['total_vendido_cerrado'] = item_copy['total_vendido_cerrado'] or Decimal('0.00')
-        productos_data_with_display.append(item_copy)
-
-    productos_data_sorted_desc = sorted(productos_data_with_display, key=lambda x: x['count_oportunidades'], reverse=True)
-
-    # --- Marca más vendida (usando producto como proxy de marca) ---
-    marca_mas_vendida = None
-
-    # Ordenar productos por total vendido cerrado (ventas reales por marca)
-    productos_sorted_by_ventas = sorted(productos_data_with_display, key=lambda x: x['total_vendido_cerrado'] or Decimal('0.00'), reverse=True)
-
-    if productos_sorted_by_ventas:
-        top_brand = productos_sorted_by_ventas[0]
-        marca_mas_vendida = {
-            'marca': top_brand['producto_upper'],
-            'nombre_marca': top_brand['get_producto_display'],
-            'total_vendido': top_brand['total_vendido_cerrado'],
+    # 2. Top Brand (Product) by total opportunity amount
+    top_marca_data = base_opportunities.values('producto').annotate(
+        total_monto=Sum('monto')
+    ).order_by('-total_monto').first()
+    
+    top_marca = None
+    if top_marca_data and top_marca_data['producto']:
+        top_marca = {
+            'nombre_marca': _get_display_for_value(top_marca_data['producto'], TodoItem.PRODUCTO_CHOICES),
+            'total_monto': top_marca_data['total_monto'],
+            'marca': top_marca_data['producto']
         }
 
-    # --- Producto más vendido (por cantidad de oportunidades, para compatibilidad con otras vistas) ---
-    producto_mas_vendido = None
-    if productos_data_sorted_desc:
-        producto_mas_vendido = productos_data_sorted_desc[0]
-
-    if producto_mas_vendido:
-        producto_mas_vendido_context = {
-            'producto': producto_mas_vendido['producto_upper'],
-            'get_producto_display': producto_mas_vendido['get_producto_display'],
-            'count_oportunidades': producto_mas_vendido['count_oportunidades'],
-            'total_vendido_cerrado': producto_mas_vendido['total_vendido_cerrado'],
-        }
-    else:
-        producto_mas_vendido_context = None
-
-    # --- Cliente Top (más ventas cerradas) ---
-    if is_supervisor(request.user):
-        top_cliente_qs = (TodoItem.objects.filter(probabilidad_cierre=100)
-            .values('cliente__nombre_empresa')
-            .annotate(total_vendido=Sum('monto'))
-            .order_by('-total_vendido'))
-    else:
-        top_cliente_qs = (TodoItem.objects.filter(probabilidad_cierre=100, usuario=request.user)
-            .values('cliente__nombre_empresa')
-            .annotate(total_vendido=Sum('monto'))
-            .order_by('-total_vendido'))
-    if top_cliente_qs:
-        cliente_top_nombre = top_cliente_qs[0]['cliente__nombre_empresa']
-        cliente_top_monto = top_cliente_qs[0]['total_vendido']
-        # Oportunidades abiertas (1-99%) para ese cliente
-        if is_supervisor(request.user):
-            abiertas = TodoItem.objects.filter(cliente__nombre_empresa=cliente_top_nombre, probabilidad_cierre__gte=1, probabilidad_cierre__lte=99)
-        else:
-            abiertas = TodoItem.objects.filter(cliente__nombre_empresa=cliente_top_nombre, probabilidad_cierre__gte=1, probabilidad_cierre__lte=99, usuario=request.user)
-        cliente_top_oportunidades_abiertas = abiertas.count()
-        # Porcentaje de avance respecto a meta
-        meta_cliente_top = 400000 if is_supervisor(request.user) else 130000
-        porcentaje_cliente_top = int((cliente_top_monto / meta_cliente_top * 100) if meta_cliente_top > 0 else 0)
-        stroke_dashoffset_cliente_top = 339.292 - (339.292 * porcentaje_cliente_top / 100)
-        # Productos más vendidos a cliente top
-        productos_cliente_top = (TodoItem.objects.filter(cliente__nombre_empresa=cliente_top_nombre, probabilidad_cierre=100)
-            .values('producto')
-            .annotate(total_vendido=Sum('monto'))
-            .order_by('-total_vendido'))
-        # Convertir a lista de dicts con display name
-        productos_cliente_top_list = []
-        for p in productos_cliente_top:
-            display = dict(TodoItem.PRODUCTO_CHOICES).get(p['producto'], p['producto'])
-            productos_cliente_top_list.append({'producto': display, 'total_vendido': p['total_vendido'] or 0})
-    else:
-        cliente_top_nombre = None
-        cliente_top_monto = 0
-        cliente_top_oportunidades_abiertas = 0
-        porcentaje_cliente_top = 0
-        stroke_dashoffset_cliente_top = 339.292
-        productos_cliente_top_list = []
-
-    # --- Lógica para el Mes Actual (Cobrado) ---
-    hoy = date.today()
-    mes_actual_val = str(hoy.month).zfill(2)
-    mes_actual_nombre = dict(TodoItem.MES_CHOICES).get(mes_actual_val, f"Mes {hoy.month}")
-    oportunidades_mes_actual = TodoItem.objects.filter(mes_cierre=mes_actual_val)
-    if not is_supervisor(request.user):
-        oportunidades_mes_actual = oportunidades_mes_actual.filter(usuario=request.user)
-    monto_cobrado_mes_actual = oportunidades_mes_actual.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
-    META_MENSUAL = Decimal('350000.00') if is_supervisor(request.user) else Decimal('130000.00')
-    porcentaje_cobertura_mes_actual = int((monto_cobrado_mes_actual / META_MENSUAL * 100) if META_MENSUAL > 0 else 0)
-    stroke_dashoffset_mes_actual = 339.292 - (339.292 * porcentaje_cobertura_mes_actual / 100)
-
-    # --- Lógica para el Próximo Mes y Alerta de Meta ---
-    # Obtener el próximo mes
+    # --- Current Month ---
     today = date.today()
-    next_month_date = today + relativedelta(months=1)
-    next_month_value = next_month_date.month # El valor numérico del mes
-
-    # Obtener el nombre del próximo mes para la visualización
-    next_month_display = dict(TodoItem.MES_CHOICES).get(str(next_month_value).zfill(2), f"Mes {next_month_value}")
-
-    # Obtener las oportunidades del próximo mes (considerando el rol)
-    oportunidades_proximo_mes_query = TodoItem.objects.filter(mes_cierre=str(next_month_value).zfill(2))
-    if not is_supervisor(request.user):
-        oportunidades_proximo_mes_query = oportunidades_proximo_mes_query.filter(usuario=request.user)
-
-    total_oportunidades_proximo_mes = oportunidades_proximo_mes_query.exclude(probabilidad_cierre=0).count()
-    total_monto_esperado_proximo_mes = oportunidades_proximo_mes_query.aggregate(sum_monto=Sum('monto'))['sum_monto'] or Decimal('0.00')
-
-
-    # Lógica para la alerta de meta
+    mes_actual_val = str(today.month).zfill(2)
+    mes_actual_nombre = dict(TodoItem.MES_CHOICES).get(mes_actual_val, f"Mes {today.month}")
+    
+    oportunidades_mes_actual = base_opportunities.filter(mes_cierre=mes_actual_val)
+    monto_total_mes_actual = oportunidades_mes_actual.aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+    
     META_MENSUAL = Decimal('350000.00') if is_supervisor(request.user) else Decimal('130000.00')
-    total_ponderado_proximo_mes = Decimal('0.00') # Inicializar como Decimal
+    porcentaje_cobertura_mes_actual = int((monto_total_mes_actual / META_MENSUAL * 100) if META_MENSUAL > 0 else 0)
 
-    for op in oportunidades_proximo_mes_query: # Iterar sobre el queryset filtrado
-        if 70 <= op.probabilidad_cierre <= 100:
-            total_ponderado_proximo_mes += op.monto * Decimal('1.00') # Alta importancia
-        elif 50 <= op.probabilidad_cierre <= 69:
-            total_ponderado_proximo_mes += op.monto * Decimal('0.50') # Media importancia
-        else: # op.probabilidad_cierre < 50
-            total_ponderado_proximo_mes += op.monto * Decimal('0.10') # Baja importancia
+    # --- Next Month ---
+    next_month_date = today + relativedelta(months=1)
+    next_month_value = str(next_month_date.month).zfill(2)
+    next_month_display = dict(TodoItem.MES_CHOICES).get(next_month_value, f"Mes {next_month_date.month}")
 
-    alerta_proximo_mes = {
-        'status': '',
-        'message': '',
-        'icon': ''
-    }
+    oportunidades_proximo_mes = base_opportunities.filter(mes_cierre=next_month_value)
+    total_oportunidades_proximo_mes = oportunidades_proximo_mes.count()
+    total_monto_esperado_proximo_mes = oportunidades_proximo_mes.aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
 
-    if total_ponderado_proximo_mes >= META_MENSUAL:
-        alerta_proximo_mes['status'] = 'success'
-        alerta_proximo_mes['message'] = '¡Meta mensual alcanzada o superada!'
-        alerta_proximo_mes['icon'] = 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' # Checkmark circle
-    elif total_ponderado_proximo_mes >= META_MENSUAL * Decimal('0.70'): # Multiplicar por Decimal
-        alerta_proximo_mes['status'] = 'warning'
-        alerta_proximo_mes['message'] = 'Cerca de la meta, aún es posible alcanzarla.'
-        alerta_proximo_mes['icon'] = 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' # Exclamation triangle
-    else:
-        alerta_proximo_mes['status'] = 'danger'
-        alerta_proximo_mes['message'] = 'Se requiere más esfuerzo para alcanzar la meta.'
-        alerta_proximo_mes['icon'] = 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z' # X-mark circle
-
-
-    # --- TOTAL PERDIDO (0% probabilidad) ---
-    oportunidades_perdidas_query = TodoItem.objects.filter(probabilidad_cierre=0)
-    if not is_supervisor(request.user):
-        oportunidades_perdidas_query = oportunidades_perdidas_query.filter(usuario=request.user)
-
-    total_perdido_monto = oportunidades_perdidas_query.aggregate(
-        sum_monto=Sum('monto')
-    )['sum_monto'] or Decimal('0.00') # Asegurar que sea Decimal
-    total_perdido_count = oportunidades_perdidas_query.count()
-
-
-    # --- Oportunidades por mes (para gráfica) ---
-    from django.db.models.functions import TruncMonth
-    from django.utils.timezone import now
-    hoy = now().date()
-    # Agrupa oportunidades por mes_cierre (real, no fecha_creacion)
-    ano_actual = hoy.year
-    ventas_por_mes_qs = TodoItem.objects.filter(
+    # --- Chart Data: Opportunities per month ---
+    ano_actual = today.year
+    ventas_por_mes = base_opportunities.filter(
         mes_cierre__isnull=False
-    ).exclude(mes_cierre='')
-    if not is_supervisor(request.user):
-        ventas_por_mes_qs = ventas_por_mes_qs.filter(usuario=request.user)
-    ventas_por_mes = ventas_por_mes_qs.values('mes_cierre').annotate(monto=Sum('monto')).order_by('mes_cierre')
-    # Prepara lista de 12 meses (enero a diciembre)
+    ).exclude(mes_cierre='').values('mes_cierre').annotate(
+        monto=Sum('monto')
+    ).order_by('mes_cierre')
+    
     ventas_por_mes_dict = {v['mes_cierre']: float(v['monto'] or 0) for v in ventas_por_mes}
     ventas_por_mes_list = []
     for i in range(1, 13):
@@ -1416,37 +1262,28 @@ def dashboard(request):
         ventas_por_mes_list.append({'mes': f'{ano_actual}-{mes_key}', 'monto': ventas_por_mes_dict.get(mes_key, 0)})
 
     context = {
-        'cliente_mas_vendido': cliente_mas_vendido,
-        'marca_mas_vendida': marca_mas_vendida,
-        'producto_mas_vendido': producto_mas_vendido_context,
-        # Datos del cliente top
-        'productos_cliente_top_list': productos_cliente_top_list,
-        'ventas_por_mes_list': ventas_por_mes_list,
-        'porcentaje_cliente_top': porcentaje_cliente_top,
-        'stroke_dashoffset_cliente_top': stroke_dashoffset_cliente_top,
-        'cliente_top_nombre': cliente_top_nombre,
-        'cliente_top_monto': cliente_top_monto,
-        'cliente_top_oportunidades_abiertas': cliente_top_oportunidades_abiertas,
-        # Datos del mes actual
-        'monto_cobrado_mes_actual': monto_cobrado_mes_actual,
-        'porcentaje_cobertura_mes_actual': porcentaje_cobertura_mes_actual,
+        'is_supervisor': is_supervisor(request.user),
+        
+        # Key Widgets
+        'top_cliente': top_cliente,
+        'top_marca': top_marca,
+        
+        # Current Month
         'mes_actual_nombre': mes_actual_nombre,
+        'monto_total_mes_actual': monto_total_mes_actual,
+        'porcentaje_cobertura_mes_actual': porcentaje_cobertura_mes_actual,
         'mes_actual_val': mes_actual_val,
-        'stroke_dashoffset_mes_actual': stroke_dashoffset_mes_actual,
 
-        # Datos del próximo mes
+        # Next Month
         'next_month_display': next_month_display,
+        'proximo_mes_val': next_month_value,
         'total_oportunidades_proximo_mes': total_oportunidades_proximo_mes,
         'total_monto_esperado_proximo_mes': total_monto_esperado_proximo_mes,
-        'alerta_proximo_mes': alerta_proximo_mes,
-        'proximo_mes_val': str(next_month_value).zfill(2),
-
-        # Total Perdido
-        'total_perdido_monto': total_perdido_monto,
-        'total_perdido_count': total_perdido_count,
-        'is_supervisor': is_supervisor(request.user), # Pasamos si el usuario es supervisor al contexto
+        
+        # Chart
+        'ventas_por_mes_list': ventas_por_mes_list,
     }
-    return render (request, "dashboard.html", context)
+    return render(request, "dashboard.html", context)
 
 
 @login_required

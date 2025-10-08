@@ -9,23 +9,11 @@
     
     :root {
         --apple-blue: #007AFF;
-        --apple-blue-light: #4DA8FF;
-        --apple-blue-dark: #0056CC;
         --apple-gray: #8E8E93;
-        --apple-gray-2: #AEAEB2;
-        --apple-gray-3: #C7C7CC;
-        --apple-gray-4: #D1D1D6;
-        --apple-gray-5: #E5E5EA;
-        --apple-gray-6: #F2F2F7;
         --apple-background: #000000;
         --apple-background-secondary: #1D1D1F;
-        --apple-background-tertiary: #2C2C2E;
-        --apple-background-quaternary: #3A3A3C;
         --apple-label: #FFFFFF;
         --apple-label-secondary: #EBEBF5;
-        --apple-label-tertiary: #EBEBF599;
-        --apple-label-quaternary: #EBEBF54D;
-        --apple-separator: #38383A;
         --apple-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif;
     }
     
@@ -59,15 +47,6 @@
         margin: 0 auto;
     }
 
-    .apple-display {
-        font-family: var(--apple-font-family);
-        font-size: clamp(3rem, 8vw, 5rem);
-        font-weight: 700;
-        line-height: 1.05;
-        letter-spacing: -0.025em;
-        color: var(--apple-label);
-    }
-    
     .apple-title-1 {
         font-family: var(--apple-font-family);
         font-size: clamp(2rem, 5vw, 2.5rem);
@@ -93,6 +72,14 @@
         box-shadow: 0 16px 50px rgba(0, 0, 0, 0.5);
         border-color: rgba(0, 122, 255, 0.5);
     }
+
+    .apple-fade-in {
+        animation: appleFadeIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    @keyframes appleFadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 </style>
 
 <div class="apple-bg"></div>
@@ -106,19 +93,16 @@
     </section>
 
     <!-- iPad-like Widget Grid -->
-    <section class="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <section class="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         
         <!-- Mes Próximo -->
         <a href="{% url 'mes_dashboard_detail' proximo_mes_val %}" class="apple-card lg:col-span-2 flex flex-col justify-between apple-fade-in" style="animation-delay: 0.1s;">
             <div>
-                <h2 class="font-semibold text-lg text-cyan-300 mb-2">Mes Próximo: {{ next_month_display }}</h2>
+                <h2 class="font-semibold text-lg text-cyan-300 mb-2">Próximo Mes: {{ next_month_display }}</h2>
                 <p class="text-gray-400 text-sm">{{ total_oportunidades_proximo_mes }} Oportunidades</p>
             </div>
             <div class="text-5xl font-bold text-white mt-4">
                 ${{ total_monto_esperado_proximo_mes|format_currency_es }}
-            </div>
-            <div class="mt-auto text-sm font-semibold {% if alerta_proximo_mes.status == 'success' %}text-green-400{% elif alerta_proximo_mes.status == 'warning' %}text-yellow-400{% else %}text-red-400{% endif %}">
-                {{ alerta_proximo_mes.message }}
             </div>
         </a>
 
@@ -129,7 +113,7 @@
                 <p class="text-gray-400 text-sm">Monto Total en Oportunidades</p>
             </div>
             <div class="text-5xl font-bold text-white mt-4">
-                ${{ monto_cobrado_mes_actual|format_currency_es }}
+                ${{ monto_total_mes_actual|format_currency_es }}
             </div>
             <div class="w-full bg-gray-700 rounded-full h-2.5 mt-auto">
                 <div class="bg-purple-500 h-2.5 rounded-full" style="width: {{ porcentaje_cobertura_mes_actual }}%"></div>
@@ -137,38 +121,33 @@
         </a>
 
         <!-- Top Cliente -->
-        <a href="{% if cliente_mas_vendido %}{% url 'oportunidades_por_cliente' cliente_mas_vendido.cliente__id %}{% else %}#{% endif %}" class="apple-card flex flex-col justify-center items-center text-center apple-fade-in" style="animation-delay: 0.3s;">
+        <a href="{% if top_cliente %}{% url 'oportunidades_por_cliente' top_cliente.cliente__id %}{% else %}#{% endif %}" class="apple-card lg:col-span-2 flex flex-col justify-center items-center text-center apple-fade-in" style="animation-delay: 0.3s;">
             <h2 class="font-semibold text-lg text-gray-300 mb-3">Top Cliente</h2>
-            {% if cliente_mas_vendido %}
-                <p class="text-2xl font-bold text-white">{{ cliente_mas_vendido.cliente__nombre_empresa }}</p>
-                <p class="text-3xl font-semibold text-cyan-400 mt-2">${{ cliente_mas_vendido.total_vendido|format_currency_es }}</p>
+            {% if top_cliente %}
+                <p class="text-2xl font-bold text-white">{{ top_cliente.cliente__nombre_empresa }}</p>
+                <p class="text-3xl font-semibold text-cyan-400 mt-2">${{ top_cliente.total_monto|format_currency_es }}</p>
             {% else %}
                 <p class="text-gray-400 italic">Sin datos</p>
             {% endif %}
         </a>
 
-        <!-- Marca más vendida -->
-        <a href="{% if marca_mas_vendida and marca_mas_vendida.marca and marca_mas_vendida.marca != '' %}{% url 'producto_dashboard_detail' marca_mas_vendida.marca %}{% else %}#{% endif %}" class="apple-card flex flex-col justify-center items-center text-center apple-fade-in" style="animation-delay: 0.4s;">
-            <h2 class="font-semibold text-lg text-gray-300 mb-3">Marca más Vendida</h2>
-            {% if marca_mas_vendida %}
-                <p class="text-2xl font-bold text-white">{{ marca_mas_vendida.nombre_marca }}</p>
-                <p class="text-3xl font-semibold text-green-400 mt-2">${{ marca_mas_vendida.total_vendido|format_currency_es }}</p>
+        <!-- Top Marca -->
+        <a href="{% if top_marca %}{% url 'producto_dashboard_detail' top_marca.marca %}{% else %}#{% endif %}" class="apple-card lg:col-span-2 flex flex-col justify-center items-center text-center apple-fade-in" style="animation-delay: 0.4s;">
+            <h2 class="font-semibold text-lg text-gray-300 mb-3">Top Marca</h2>
+            {% if top_marca %}
+                <p class="text-2xl font-bold text-white">{{ top_marca.nombre_marca }}</p>
+                <p class="text-3xl font-semibold text-green-400 mt-2">${{ top_marca.total_monto|format_currency_es }}</p>
             {% else %}
                 <p class="text-gray-400 italic">Sin datos</p>
             {% endif %}
         </a>
+    </section>
 
-        <!-- Oportunidades Perdidas -->
-        <a href="{% url 'oportunidades_perdidas_detail' %}" class="apple-card flex flex-col justify-center items-center text-center apple-fade-in" style="animation-delay: 0.5s;">
-            <h2 class="font-semibold text-lg text-gray-300 mb-3">Oportunidades Perdidas</h2>
-            <p class="text-2xl font-bold text-white">{{ total_perdido_count }}</p>
-            <p class="text-3xl font-semibold text-red-400 mt-2">${{ total_perdido_monto|format_currency_es }}</p>
-        </a>
-        
-        <!-- Gráfica de Oportunidades por Mes -->
-        <div class="apple-card md:col-span-2 lg:col-span-4 apple-fade-in" style="animation-delay: 0.6s;">
+    <!-- Gráfica de Oportunidades por Mes -->
+    <section class="w-full apple-fade-in" style="animation-delay: 0.5s;">
+        <div class="apple-card">
             <h2 class="font-semibold text-xl text-center text-white mb-4">Oportunidades por Mes</h2>
-            <div style="position: relative; height: 280px; width: 100%;">
+            <div style="position: relative; height: 320px; width: 100%;">
                 <canvas id="ventasMesChart"></canvas>
             </div>
         </div>
