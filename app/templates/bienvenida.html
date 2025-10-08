@@ -549,130 +549,10 @@
     }
 
 
-    /* Header Navigation */
-    .header-nav {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 100;
-        background: rgba(0, 0, 0, 0.8);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 16px 0;
-    }
-
-    .header-content {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 0 24px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .header-logo {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .logo-img {
-        height: 40px;
-        width: auto;
-        object-fit: contain;
-    }
-
-    .company-info {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .company-name {
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--apple-label);
-        margin: 0;
-        line-height: 1;
-    }
-
-    .company-tagline {
-        font-size: 11px;
-        font-weight: 400;
-        color: var(--apple-gray);
-        margin: 0;
-        line-height: 1;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .header-icons {
-        display: flex;
-        gap: 12px;
-    }
-
-    .header-icon-btn {
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .header-icon-btn:hover {
-        background: rgba(255, 255, 255, 0.15);
-        border-color: rgba(0, 122, 255, 0.5);
-        transform: translateY(-1px);
-    }
-
-    .header-icon-btn svg {
-        width: 20px;
-        height: 20px;
-        color: var(--apple-label);
-        transition: color 0.3s ease;
-    }
-
-    .header-icon-btn:hover svg {
-        color: var(--apple-blue);
-    }
-
-    /* Central Content */
-    .central-content {
-        width: 100%;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 120px 24px 60px;
-        text-align: center;
-    }
-
-    .main-title {
-        font-size: clamp(2.5rem, 6vw, 4rem);
-        font-weight: 600;
-        color: var(--apple-label);
-        margin-bottom: 40px;
-        line-height: 1.1;
-    }
-
-    .title-highlight {
-        color: var(--apple-blue);
-    }
-
     /* Central Search Bar */
     .central-search-container {
         width: 100%;
         max-width: 600px;
-        margin-bottom: 60px;
     }
 
     .central-search-bar {
@@ -731,34 +611,60 @@
         color: var(--apple-label-secondary);
     }
 
+    /* Floating Action Widgets */
+    .floating-widgets {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+    }
+
+    .floating-widget-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: rgba(28, 28, 30, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    }
+
+    .floating-widget-btn:hover {
+        background: rgba(28, 28, 30, 0.95);
+        border-color: rgba(0, 122, 255, 0.5);
+        transform: translateY(-4px) scale(1.05);
+        box-shadow: 
+            0 16px 50px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+            0 0 20px rgba(0, 122, 255, 0.3);
+    }
+
+    .floating-widget-btn:active {
+        transform: translateY(-2px) scale(1.02);
+        transition: transform 0.1s ease;
+    }
+
+    .floating-widget-btn svg {
+        width: 28px;
+        height: 28px;
+        color: var(--apple-label);
+        transition: all 0.3s ease;
+    }
+
+    .floating-widget-btn:hover svg {
+        color: var(--apple-blue);
+        filter: drop-shadow(0 0 8px rgba(0, 122, 255, 0.5));
+    }
+
     /* Responsive adjustments */
     @media (max-width: 768px) {
-        .header-content {
-            padding: 0 16px;
-        }
-
-        .company-name {
-            font-size: 16px;
-        }
-
-        .company-tagline {
-            font-size: 10px;
-        }
-
-        .header-icon-btn {
-            width: 40px;
-            height: 40px;
-        }
-
-        .header-icon-btn svg {
-            width: 18px;
-            height: 18px;
-        }
-
-        .central-content {
-            padding: 100px 16px 40px;
-        }
-
         .central-search-bar {
             height: 56px;
             padding: 0 24px;
@@ -772,27 +678,42 @@
         .central-search-text {
             font-size: 16px;
         }
+
+        .floating-widget-btn {
+            width: 52px;
+            height: 52px;
+        }
+
+        .floating-widget-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .floating-widgets {
+            gap: 12px;
+        }
     }
 </style>
 <div class="apple-bg"></div>
-
-<!-- Header Navigation -->
-<header class="header-nav">
-    <div class="header-content">
-        <!-- Logo IAMET Left -->
-        <div class="header-logo">
-            <img src="https://www.iamet.mx/.cm4all/uproc.php/0/Fondos/.logo.png/picture-200?_=1904956a6f0" 
-                 alt="Logo IAMET" 
-                 class="logo-img"/>
-            <div class="company-info">
-                <h2 class="company-name">IAMET</h2>
-                <p class="company-tagline">EVOLUCIÓN TECNOLÓGICA</p>
+<main>
+    <!-- Apple Welcome Section -->
+    <section class="w-full flex flex-col items-center justify-start apple-fade-in" style="padding-top: 60px;">
+        <h1 class="apple-display text-center mb-8" style="margin-top: 0; color: var(--apple-label);">Nethive</h1>
+        
+        <!-- Centered Search Bar -->
+        <div class="central-search-container mb-8" id="main-search-container">
+            <div class="central-search-bar" id="main-search-bar">
+                <svg class="central-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="M21 21l-4.35-4.35"/>
+                </svg>
+                <span class="central-search-text">Buscar cotizaciones, clientes o productos...</span>
             </div>
         </div>
         
-        <!-- Icons Right -->
-        <div class="header-icons">
-            <button class="header-icon-btn" id="news-btn-header" title="Noticias y Reportes">
+        <!-- Floating Action Widgets -->
+        <div class="floating-widgets mb-8">
+            <button class="floating-widget-btn" id="news-btn" title="Noticias y Reportes">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
                     <path d="M18 14h-8"/>
@@ -801,7 +722,7 @@
                 </svg>
             </button>
             
-            <button class="header-icon-btn" id="calendar-btn-header" title="Calendario y Eventos">
+            <button class="floating-widget-btn" id="calendar-btn" title="Calendario y Eventos">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="4" width="18" height="18" rx="2"/>
                     <path d="M16 2v4"/>
@@ -816,23 +737,12 @@
                 </svg>
             </button>
         </div>
-    </div>
-</header>
-
-<main>
-    <!-- Central Content Section -->
-    <section class="central-content apple-fade-in">
-        <h1 class="main-title">Bienvenido al <span class="title-highlight">Nethive</span></h1>
         
-        <!-- Centered Search Bar -->
-        <div class="central-search-container" id="main-search-container">
-            <div class="central-search-bar" id="main-search-bar">
-                <svg class="central-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"/>
-                    <path d="M21 21l-4.35-4.35"/>
-                </svg>
-                <span class="central-search-text">Buscar cotizaciones, clientes o productos...</span>
-            </div>
+        <div class="mb-6">
+            <img src="https://www.iamet.mx/.cm4all/uproc.php/0/Fondos/.logo.png/picture-200?_=1904956a6f0" 
+                 alt="Logo IAMET" 
+                 class="apple-float"
+                 style="height: 100px; width: auto; object-fit: contain; border-radius: 16px; box-shadow: 0 4px 20px rgba(0, 122, 255, 0.2);"/>
         </div>
     </section>
     <!-- Apple Employee Cards Section -->
@@ -1055,19 +965,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Header news button functionality
-    const newsBtnHeader = document.getElementById('news-btn-header');
-    if (newsBtnHeader) {
-        newsBtnHeader.addEventListener('click', function() {
+    // Floating widget news button functionality
+    const newsBtn = document.getElementById('news-btn');
+    if (newsBtn) {
+        newsBtn.addEventListener('click', function() {
             // Navigate to dashboard or reports section
             window.location.href = routes.dashboard;
         });
     }
 
-    // Header calendar button functionality
-    const calendarBtnHeader = document.getElementById('calendar-btn-header');
-    if (calendarBtnHeader) {
-        calendarBtnHeader.addEventListener('click', function() {
+    // Floating widget calendar button functionality
+    const calendarBtn = document.getElementById('calendar-btn');
+    if (calendarBtn) {
+        calendarBtn.addEventListener('click', function() {
             // Navigate to opportunities or create a calendar view
             window.location.href = routes.opportunities;
         });
