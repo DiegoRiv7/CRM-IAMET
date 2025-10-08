@@ -558,7 +558,7 @@
         gap: 20px;
     }
 
-    .left-icons-group {
+    .right-icons-group {
         display: flex;
         gap: 12px;
         flex-shrink: 0;
@@ -684,7 +684,7 @@
             gap: 12px;
         }
 
-        .left-icons-group {
+        .right-icons-group {
             gap: 8px;
         }
         
@@ -723,10 +723,21 @@
     <section class="w-full flex flex-col items-center justify-start apple-fade-in" style="padding-top: 40px;">
         <h1 class="apple-display text-center mb-6" style="margin-top: 0;">Bienvenido al cotizador</h1>
         
-        <!-- Apple Redesigned Action Bar with Search Bar and Left Icons -->
+        <!-- Apple Redesigned Action Bar with Search Left and Icons Right -->
         <div class="redesigned-action-bar mb-8">
-            <!-- Left icons group -->
-            <div class="left-icons-group">
+            <!-- Left: Search bar -->
+            <div class="search-bar-container" id="main-search-container">
+                <div class="search-bar" id="main-search-bar">
+                    <svg class="search-bar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                    <span class="search-bar-text">Buscar</span>
+                </div>
+            </div>
+            
+            <!-- Right icons group -->
+            <div class="right-icons-group">
                 <button class="circular-action-btn" id="news-btn" title="Noticias y Reportes">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
@@ -750,17 +761,6 @@
                         <path d="M16 18h.01"/>
                     </svg>
                 </button>
-            </div>
-            
-            <!-- Right: Search bar -->
-            <div class="search-bar-container" id="main-search-container">
-                <div class="search-bar" id="main-search-bar">
-                    <svg class="search-bar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"/>
-                        <path d="M21 21l-4.35-4.35"/>
-                    </svg>
-                    <span class="search-bar-text">Búsqueda en Spotlight</span>
-                </div>
             </div>
         </div>
         
