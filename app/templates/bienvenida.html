@@ -549,23 +549,14 @@
     }
 
 
-    /* Apple Redesigned Action Bar with Separated Layout */
+    /* Apple Redesigned Action Bar with Search Bar Center */
     .redesigned-action-bar {
         width: 100%;
-        max-width: 500px;
+        max-width: 600px;
         display: flex;
         justify-content: space-between;
         align-items: center;
         gap: 20px;
-    }
-
-    .action-icons-left {
-        display: flex;
-        gap: 16px;
-    }
-
-    .action-icons-right {
-        display: flex;
     }
 
     .circular-action-btn {
@@ -584,6 +575,7 @@
         box-shadow: 
             0 8px 32px rgba(0, 0, 0, 0.3),
             0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+        flex-shrink: 0;
     }
 
     .circular-action-btn:hover {
@@ -613,28 +605,71 @@
         filter: drop-shadow(0 0 8px rgba(0, 122, 255, 0.5));
     }
 
-    /* Special styling for search button */
-    .search-trigger {
-        background: rgba(0, 122, 255, 0.15);
-        border-color: rgba(0, 122, 255, 0.3);
+    /* Search Bar Container */
+    .search-bar-container {
+        flex: 1;
+        max-width: 350px;
+        min-width: 200px;
     }
 
-    .search-trigger:hover {
-        background: rgba(0, 122, 255, 0.25);
-        border-color: rgba(0, 122, 255, 0.6);
+    .search-bar {
+        width: 100%;
+        height: 60px;
+        background: rgba(28, 28, 30, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 30px;
+        display: flex;
+        align-items: center;
+        padding: 0 24px;
+        gap: 12px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         box-shadow: 
-            0 16px 50px rgba(0, 0, 0, 0.4),
-            0 0 0 1px rgba(0, 122, 255, 0.2) inset,
-            0 0 30px rgba(0, 122, 255, 0.5);
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            0 0 0 1px rgba(255, 255, 255, 0.05) inset;
     }
 
-    .search-trigger svg {
+    .search-bar:hover {
+        background: rgba(28, 28, 30, 0.95);
+        border-color: rgba(0, 122, 255, 0.5);
+        transform: translateY(-2px);
+        box-shadow: 
+            0 12px 40px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+            0 0 20px rgba(0, 122, 255, 0.3);
+    }
+
+    .search-bar:active {
+        transform: translateY(-1px);
+        transition: transform 0.1s ease;
+    }
+
+    .search-bar-icon {
+        width: 22px;
+        height: 22px;
+        color: var(--apple-gray);
+        flex-shrink: 0;
+        transition: all 0.3s ease;
+    }
+
+    .search-bar:hover .search-bar-icon {
         color: var(--apple-blue);
     }
 
-    .search-trigger:hover svg {
-        color: #ffffff;
-        transform: scale(1.1);
+    .search-bar-text {
+        flex: 1;
+        font-size: 16px;
+        font-weight: 400;
+        color: var(--apple-gray);
+        font-family: var(--apple-font-family);
+        transition: all 0.3s ease;
+        user-select: none;
+    }
+
+    .search-bar:hover .search-bar-text {
+        color: var(--apple-label-secondary);
     }
 
     /* Responsive adjustments */
@@ -644,18 +679,33 @@
             gap: 12px;
         }
         
-        .action-icons-left {
-            gap: 12px;
-        }
-        
         .circular-action-btn {
-            width: 56px;
-            height: 56px;
+            width: 52px;
+            height: 52px;
         }
         
         .circular-action-btn svg {
             width: 24px;
             height: 24px;
+        }
+
+        .search-bar {
+            height: 52px;
+            padding: 0 20px;
+        }
+
+        .search-bar-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .search-bar-text {
+            font-size: 15px;
+        }
+
+        .search-bar-container {
+            min-width: 150px;
+            max-width: 250px;
         }
     }
 </style>
@@ -665,44 +715,44 @@
     <section class="w-full flex flex-col items-center justify-start apple-fade-in" style="padding-top: 40px;">
         <h1 class="apple-display text-center mb-6" style="margin-top: 0;">Bienvenido al cotizador</h1>
         
-        <!-- Apple Redesigned Action Bar with Separated Icons -->
+        <!-- Apple Redesigned Action Bar with Search Bar Center -->
         <div class="redesigned-action-bar mb-8">
-            <!-- Left side: newspaper and calendar icons -->
-            <div class="action-icons-left">
-                <button class="circular-action-btn" id="news-btn" title="Noticias y Reportes">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
-                        <path d="M18 14h-8"/>
-                        <path d="M15 18h-5"/>
-                        <path d="M10 6h8v4h-8V6Z"/>
-                    </svg>
-                </button>
-                
-                <button class="circular-action-btn" id="calendar-btn" title="Calendario y Eventos">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="4" width="18" height="18" rx="2"/>
-                        <path d="M16 2v4"/>
-                        <path d="M8 2v4"/>
-                        <path d="M3 10h18"/>
-                        <path d="M8 14h.01"/>
-                        <path d="M12 14h.01"/>
-                        <path d="M16 14h.01"/>
-                        <path d="M8 18h.01"/>
-                        <path d="M12 18h.01"/>
-                        <path d="M16 18h.01"/>
-                    </svg>
-                </button>
-            </div>
+            <!-- Left icon: newspaper -->
+            <button class="circular-action-btn" id="news-btn" title="Noticias y Reportes">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
+                    <path d="M18 14h-8"/>
+                    <path d="M15 18h-5"/>
+                    <path d="M10 6h8v4h-8V6Z"/>
+                </svg>
+            </button>
             
-            <!-- Right side: search button -->
-            <div class="action-icons-right">
-                <button class="circular-action-btn search-trigger" id="main-search-btn" title="Buscar (Doble espacio)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Center: Search bar -->
+            <div class="search-bar-container" id="main-search-container">
+                <div class="search-bar" id="main-search-bar">
+                    <svg class="search-bar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8"/>
                         <path d="M21 21l-4.35-4.35"/>
                     </svg>
-                </button>
+                    <span class="search-bar-text">Buscar oportunidad...</span>
+                </div>
             </div>
+            
+            <!-- Right icon: calendar -->
+            <button class="circular-action-btn" id="calendar-btn" title="Calendario y Eventos">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/>
+                    <path d="M16 2v4"/>
+                    <path d="M8 2v4"/>
+                    <path d="M3 10h18"/>
+                    <path d="M8 14h.01"/>
+                    <path d="M12 14h.01"/>
+                    <path d="M16 14h.01"/>
+                    <path d="M8 18h.01"/>
+                    <path d="M12 18h.01"/>
+                    <path d="M16 18h.01"/>
+                </svg>
+            </button>
         </div>
         
         <div class="mb-6">
@@ -908,10 +958,22 @@ document.addEventListener('DOMContentLoaded', function() {
         clients: '{% url "reporte_ventas_por_cliente" %}'
     };
 
-    // Main search button click handler - opens global spotlight
-    const mainSearchBtn = document.getElementById('main-search-btn');
-    if (mainSearchBtn) {
-        mainSearchBtn.addEventListener('click', function(e) {
+    // Main search bar click handler - opens global spotlight
+    const mainSearchBar = document.getElementById('main-search-bar');
+    const mainSearchContainer = document.getElementById('main-search-container');
+    
+    if (mainSearchBar) {
+        mainSearchBar.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Use the global openSpotlight function from base.html
+            if (window.openSpotlight) {
+                window.openSpotlight();
+            }
+        });
+    }
+    
+    if (mainSearchContainer) {
+        mainSearchContainer.addEventListener('click', function(e) {
             e.preventDefault();
             // Use the global openSpotlight function from base.html
             if (window.openSpotlight) {
