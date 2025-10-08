@@ -1247,11 +1247,8 @@ def dashboard(request):
     next_month_value = str(next_month_date.month).zfill(2)
     next_month_display = dict(TodoItem.MES_CHOICES).get(next_month_value, f"Mes {next_month_date.month}")
 
-    # Filtrar por fecha de creación del próximo mes
-    oportunidades_proximo_mes = base_opportunities.filter(
-        fecha_creacion__year=next_month_date.year,
-        fecha_creacion__month=next_month_date.month
-    )
+    # Filtrar por mes de cierre del próximo mes
+    oportunidades_proximo_mes = base_opportunities.filter(mes_cierre=next_month_value)
     total_oportunidades_proximo_mes = oportunidades_proximo_mes.count()
     total_monto_esperado_proximo_mes = oportunidades_proximo_mes.aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
 
