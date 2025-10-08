@@ -1,4 +1,5 @@
 from django.conf import settings
+import csv
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -8460,4 +8461,45 @@ def detectar_menciones_en_comentario(contenido, usuario_remitente, oportunidad, 
         except User.DoesNotExist:
             # Usuario mencionado no existe, ignorar
             pass
+
+
+@login_required
+def exportar_oportunidades_csv(request):
+    periodo = request.GET.get('periodo', 'todas')
+    
+    queryset = TodoItem.objects.all()
+    
+    if not is_supervisor(request.user):
+        queryset = queryset.filter(usuario=request.user)
+
+    today = date.today()
+    if periodo == 'mes':
+        queryset = queryset.filter(fecha_creacion__year=today.year, fecha_creacion__month=today.month)
+        filename = f"oportunidades_mes_{today.strftime('%Y_%m')}.csv"
+    elif periodo == 'ano':
+        queryset = queryset.filter(fecha_creacion__year=today.year)
+        filename = f"oportunidades_ano_{today.year}.csv"
+    else:
+        filename = "oportunidades_todas.csv"
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Oportunidad', 'Cliente', 'Monto', 'Probabilidad de Cierre', 'Mes de Cierre', 'Producto', 'Area', 'Usuario', 'Fecha Creacion'])
+    
+    for item in queryset:
+        writer.writerow([
+            item.oportunidad,
+            item.cliente.nombre_empresa if item.cliente else '',
+            item.monto,
+            item.probabilidad_cierre,
+            item.get_mes_cierre_display(),
+            item.get_producto_display(),
+            item.get_area_display(),
+            item.usuario.username,
+            item.fecha_creacion.strftime('%Y-%m-%d')
+        ])
+        
+    return response
         
