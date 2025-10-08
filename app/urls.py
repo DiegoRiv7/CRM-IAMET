@@ -15,6 +15,7 @@ urlpatterns = [
 
     # Dashboard principal
     path("dashboard/", views.dashboard, name="dashboard"),
+    path("exportar-oportunidades-csv/", views.exportar_oportunidades_csv, name="exportar_oportunidades_csv"),
     path("dashboard/mes-actual/", views.oportunidades_mes_actual, name="oportunidades_mes_actual"),
     
     # Tareas y Proyectos (solo superusuarios)
