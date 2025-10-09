@@ -31,7 +31,15 @@ class UserProfile(models.Model):
 
     def get_avatar_url(self):
         if self.usar_animado:
-            return '/static/img/avatar_animado_default.svg'
+            if self.avatar_tipo == 'fox-hero':
+                return '/static/images/fox-hero-avatar.jpeg'
+            # Aquí puedes agregar más casos para otros avatares
+            # Por ejemplo:
+            # elif self.avatar_tipo == 'dinosaur':
+            #     return '/static/images/dinosaurio.png'
+            else:
+                # Un avatar animado por defecto si no se encuentra uno específico
+                return '/static/img/avatar_animado_default.svg'
         elif self.avatar:
             return self.avatar.url
         else:
