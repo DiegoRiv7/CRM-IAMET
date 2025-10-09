@@ -2,6 +2,7 @@
 
 from django.contrib import admin
 from django.urls import path, include
+from django.contrib.auth import views as auth_views
 from django.views.generic.base import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
@@ -10,6 +11,9 @@ urlpatterns = [
     # Ruta para el panel de administración de Django
     path('admin/', admin.site.urls),
 
+    # Incluye las URLs de autenticación de Django
+    path('app/accounts/', include('django.contrib.auth.urls')),
+    
     # Incluye todas las URLs de la aplicación 'app' bajo el prefijo /app/
     # Esto hace que las rutas sean consistentes con la configuración (LOGIN_URL, etc.)
     path("app/", include("app.urls")),

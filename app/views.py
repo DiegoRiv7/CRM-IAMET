@@ -215,27 +215,60 @@ def bienvenida(request):
         .order_by('-oportunidades_creadas')
     )
     usuario_mes = None
-    if oportunidades_mes:
-        user_id = oportunidades_mes[0]['usuario']
-        user = User.objects.get(id=user_id)
-        user_profile = UserProfile.objects.get(user=user)
-        avatar_url = user_profile.get_avatar_url()
+    
+    # TEMPORAL: Forzar que Rivera sea empleado del mes para pruebas
+    try:
+        rivera_user = User.objects.get(username='Rivera')
+        rivera_profile = UserProfile.objects.get(user=rivera_user)
+        avatar_url = rivera_profile.get_avatar_url()
         if not avatar_url:
-            avatar_url = f'https://ui-avatars.com/api/?name={user.get_full_name() or user.username}&background=38bdf8&color=fff'
-        logger.info(f"DEBUG: URL del avatar del mes: {avatar_url}")
-
-        # Calcular el monto total de oportunidades creadas por este usuario en el mes actual
-        monto_total_mes = TodoItem.objects.filter(
+            avatar_url = f'https://ui-avatars.com/api/?name={rivera_user.get_full_name() or rivera_user.username}&background=38bdf8&color=fff'
+        logger.info(f"DEBUG: URL del avatar del mes (Rivera): {avatar_url}")
+        
+        # Calcular oportunidades y monto para Rivera
+        oportunidades_rivera = TodoItem.objects.filter(
             fecha_creacion__date__gte=inicio_mes_actual,
             fecha_creacion__date__lte=today,
-            usuario=user
-        ).aggregate(total=Sum('monto'))['total'] or 0
+            usuario=rivera_user
+        ).count()
+        
+        monto_total_rivera = TodoItem.objects.filter(
+            fecha_creacion__date__gte=inicio_mes_actual,
+            fecha_creacion__date__lte=today,
+            usuario=rivera_user
+        ).aggregate(total=Sum('monto'))['total'] or 150000  # Valor ejemplo
+        
         usuario_mes = {
-            'nombre': user.get_full_name() or user.username,
+            'nombre': rivera_user.get_full_name() or rivera_user.username,
             'avatar_url': avatar_url,
-            'oportunidades_creadas': oportunidades_mes[0]['oportunidades_creadas'],
-            'monto_total_mes': monto_total_mes,
+            'oportunidades_creadas': oportunidades_rivera if oportunidades_rivera > 0 else 25,  # Valor ejemplo
+            'monto_total_mes': monto_total_rivera,
+            'user': rivera_user  # Añadir el objeto user para el filtro
         }
+    except User.DoesNotExist:
+        # Si no existe Rivera, usar la lógica original
+        if oportunidades_mes:
+            user_id = oportunidades_mes[0]['usuario']
+            user = User.objects.get(id=user_id)
+            user_profile = UserProfile.objects.get(user=user)
+            avatar_url = user_profile.get_avatar_url()
+            if not avatar_url:
+                avatar_url = f'https://ui-avatars.com/api/?name={user.get_full_name() or user.username}&background=38bdf8&color=fff'
+            logger.info(f"DEBUG: URL del avatar del mes: {avatar_url}")
+
+            # Calcular el monto total de oportunidades creadas por este usuario en el mes actual
+            monto_total_mes = TodoItem.objects.filter(
+                fecha_creacion__date__gte=inicio_mes_actual,
+                fecha_creacion__date__lte=today,
+                usuario=user
+            ).aggregate(total=Sum('monto'))['total'] or 0
+            usuario_mes = {
+                'nombre': user.get_full_name() or user.username,
+                'avatar_url': avatar_url,
+                'oportunidades_creadas': oportunidades_mes[0]['oportunidades_creadas'],
+                'monto_total_mes': monto_total_mes,
+                'user': user  # Añadir el objeto user para el filtro
+            }
 
     # Usuario del día: más oportunidades registradas hoy, solo vendedores
     hoy = date.today()
