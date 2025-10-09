@@ -215,6 +215,11 @@ def bienvenida(request):
     if oportunidades_mes:
         user_id = oportunidades_mes[0]['usuario']
         user = User.objects.get(id=user_id)
+        user_profile = UserProfile.objects.get(user=user)
+        avatar_url = user_profile.get_avatar_url()
+        if not avatar_url:
+            avatar_url = f'https://ui-avatars.com/api/?name={user.get_full_name() or user.username}&background=38bdf8&color=fff'
+
         # Calcular el monto total de oportunidades creadas por este usuario en el mes actual
         monto_total_mes = TodoItem.objects.filter(
             fecha_creacion__date__gte=inicio_mes_actual,
@@ -223,7 +228,7 @@ def bienvenida(request):
         ).aggregate(total=Sum('monto'))['total'] or 0
         usuario_mes = {
             'nombre': user.get_full_name() or user.username,
-            'avatar_url': f'https://ui-avatars.com/api/?name={user.get_full_name() or user.username}&background=38bdf8&color=fff',
+            'avatar_url': avatar_url,
             'oportunidades_creadas': oportunidades_mes[0]['oportunidades_creadas'],
             'monto_total_mes': monto_total_mes,
         }
@@ -241,9 +246,14 @@ def bienvenida(request):
     if oportunidades_hoy and oportunidades_hoy[0]['oportunidades_hoy'] > 0:
         user_id = oportunidades_hoy[0]['usuario']
         user = User.objects.get(id=user_id)
+        user_profile = UserProfile.objects.get(user=user)
+        avatar_url = user_profile.get_avatar_url()
+        if not avatar_url:
+            avatar_url = f'https://ui-avatars.com/api/?name={user.get_full_name() or user.username}&background=f472b6&color=fff'
+
         usuario_dia = {
             'nombre': user.get_full_name() or user.username,
-            'avatar_url': f'https://ui-avatars.com/api/?name={user.get_full_name() or user.username}&background=f472b6&color=fff',
+            'avatar_url': avatar_url,
             'oportunidades_hoy': oportunidades_hoy[0]['oportunidades_hoy'],
         }
     # Si no hay oportunidades hoy, usuario_dia queda en None
