@@ -2862,8 +2862,24 @@ def supervisor_required(view_func):
 @login_required
 def usuario_redirect_view(request):
     """
-    Muestra la página de configuración avanzada.
+    Muestra la página de configuración avanzada y maneja el envío del formulario.
     """
+    if request.method == 'POST':
+        # Obtener o crear el perfil del usuario
+        profile, created = UserProfile.objects.get_or_create(user=request.user)
+        
+        # Manejar la subida de imagen
+        if 'avatar' in request.FILES:
+            profile.avatar = request.FILES['avatar']
+            profile.usar_animado = False
+        # Si se está seleccionando un avatar animado
+        elif 'avatar_choice' in request.POST:
+            profile.usar_animado = True
+            # Aquí podrías guardar qué avatar animado se seleccionó si tienes varios
+            
+        profile.save()
+        return redirect('home')  # Redirigir a la página de inicio
+        
     return render(request, 'personalizacion.html')
 
 
