@@ -268,23 +268,25 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         <form class="avatar-chooser" method="post" enctype="multipart/form-data" action="{% url 'usuario' %}" onsubmit="console.log('Formulario enviándose. Avatar choice:', document.getElementById('avatarChoice').value);">
             {% csrf_token %}
             <div class="avatar-preview-container" style="text-align: center; margin-bottom: 20px; position: relative; display: inline-block;">
-        <div class="avatar-preview" id="avatarPreview" style="position: relative;">
-            <!-- Vista previa dinámica -->
-            <div id="animGalleryPreview" style="display:flex; align-items:center; justify-content:center; width:100%; height:100%;"></div>
-            <img id="uploadedAvatar" src="" alt="Foto de perfil" style="display:none; width:100%; height:100%; object-fit:cover; border-radius:50%;"/>
+        <div style="display: flex; align-items: center; justify-content: center; position: relative; width: 220px; margin: 0 auto;">
+            <div class="avatar-preview" id="avatarPreview" style="position: relative;">
+                <!-- Vista previa dinámica -->
+                <div id="animGalleryPreview" style="display:flex; align-items:center; justify-content:center; width:100%; height:100%;"></div>
+                <img id="uploadedAvatar" src="" alt="Foto de perfil" style="display:none; width:100%; height:100%; object-fit:cover; border-radius:50%;"/>
+                
+                <div class="crop-overlay" id="cropOverlay" style="display:none;">
+                    <span>✂️ EDITAR</span>
+                </div>
+            </div>
             
-            <!-- Botón de edición con ícono de lápiz -->
-            <div id="editAvatarBtn" style="position: absolute; bottom: 8px; right: 8px; width: 36px; height: 36px; border-radius: 50%; background: #00cfff; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: all 0.2s ease; z-index: 10;}">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: #232946;">
+            <!-- Botón de edición con ícono de lápiz - Fuera del círculo -->
+            <div id="editAvatarBtn" style="position: absolute; bottom: 10px; right: 0; width: 40px; height: 40px; border-radius: 50%; background: #00cfff; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 3px solid #232946; box-shadow: 0 2px 8px rgba(0,0,0,0.3); transition: all 0.2s ease; z-index: 10;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: #232946;">
                     <path d="M13.94 5L19 10.06L9.062 20a2.25 2.25 0 0 1-.999.58l-5.116 1.395a.75.75 0 0 1-.92-.921l1.38-5.119a2.25 2.25 0 0 1 .577-.99L13.938 5zM15 6.06L17.94 9 15 11.94 12.06 9 15 6.06zM18.358 3a1 1 0 0 1 .697.288l3.657 3.657a1 1 0 0 1 0 1.414l-1.414 1.414L16.23 4.1l1.414-1.414A1 1 0 0 1 18.357 3z" fill="currentColor"/>
                 </svg>
             </div>
-            
-            <div class="crop-overlay" id="cropOverlay" style="display:none;">
-                <span>✂️ EDITAR</span>
-            </div>
         </div>
-        <div style="margin-top: 10px; font-size: 1.1em; color: #00cfff; font-weight: 500;">
+        <div style="margin-top: 15px; font-size: 1.1em; color: #00cfff; font-weight: 500;">
             Vista previa
         </div>
     </div>
@@ -476,6 +478,54 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     document.getElementById('editAvatarBtn').addEventListener('click', function(e) {
         e.stopPropagation();
         document.getElementById('avatarUpload').click();
+    });
+    
+    // Manejar clic en el botón de guardar
+    document.getElementById('saveAvatarBtn').addEventListener('click', function() {
+        // Simular envío del formulario sin recargar la página
+        const form = document.querySelector('.avatar-chooser');
+        const formData = new FormData(form);
+        
+        // Mostrar mensaje de carga
+        const saveBtn = document.getElementById('saveAvatarBtn');
+        const originalText = saveBtn.textContent;
+        saveBtn.textContent = 'Guardando...';
+        saveBtn.disabled = true;
+        
+        // Enviar datos con fetch
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Mostrar mensaje de éxito
+                saveBtn.textContent = '¡Guardado!';
+                saveBtn.style.background = '#4ade80';
+                setTimeout(() => {
+                    saveBtn.textContent = originalText;
+                    saveBtn.style.background = '#00cfff';
+                    saveBtn.disabled = false;
+                }, 2000);
+            } else {
+                throw new Error('Error al guardar');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            saveBtn.textContent = 'Error, intenta de nuevo';
+            saveBtn.style.background = '#ef4444';
+            setTimeout(() => {
+                saveBtn.textContent = originalText;
+                saveBtn.style.background = '#00cfff';
+                saveBtn.disabled = false;
+            }, 2000);
+        });
     });
 
     // Variables para el crop

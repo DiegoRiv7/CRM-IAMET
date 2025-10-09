@@ -62,9 +62,12 @@ class UserProfile(models.Model):
                 return '/static/images/panda.jpeg'
             elif self.avatar_tipo == 'cocodrilo':
                 return '/static/images/cocodrilo.jpeg'
+            elif self.avatar_tipo == '1':
+                # Para avatar tipo "1" (humano), devolver None para mostrar iniciales
+                return None
             else:
-                # Un avatar animado por defecto si no se encuentra uno específico
-                return '/static/img/avatar_animado_default.svg'
+                # Para tipos desconocidos, devolver None para mostrar iniciales
+                return None
         else:
             # Devuelve None si no hay imagen ni animado, para mostrar iniciales
             return None

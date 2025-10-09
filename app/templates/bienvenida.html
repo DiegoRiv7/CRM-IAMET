@@ -975,9 +975,15 @@
         <div class="apple-card text-center apple-float" style="animation-delay: 0.1s;">
             <h4 class="apple-title-3 mb-4">Empleado del Mes</h4>
             {% if usuario_mes %}
-                <img src="{{ usuario_mes.avatar_url }}" 
-                     alt="Avatar mes" 
-                     class="apple-avatar mx-auto mb-4"/>
+                {% if usuario_mes.avatar_url %}
+                    <img src="{{ usuario_mes.avatar_url }}" 
+                         alt="Avatar mes" 
+                         class="apple-avatar mx-auto mb-4"/>
+                {% else %}
+                    <div class="mx-auto mb-4" style="width: 80px; height: 80px;">
+                        {{ usuario_mes.user|user_avatar:"80" }}
+                    </div>
+                {% endif %}
                 <h5 class="apple-headline mb-2">{{ usuario_mes.nombre }}</h5>
                 <p class="apple-body">
                     Oportunidades creadas: <span style="color: var(--apple-blue); font-weight: 500;">{{ usuario_mes.oportunidades_creadas }}</span><br>
@@ -997,9 +1003,15 @@
         <div class="apple-card text-center apple-float" style="animation-delay: 0.2s;">
             <h4 class="apple-title-3 mb-4">Empleado del Día</h4>
             {% if usuario_dia %}
-                <img src="{{ usuario_dia.avatar_url }}" 
-                     alt="Avatar día" 
-                     class="apple-avatar mx-auto mb-4"/>
+                {% if usuario_dia.avatar_url %}
+                    <img src="{{ usuario_dia.avatar_url }}" 
+                         alt="Avatar día" 
+                         class="apple-avatar mx-auto mb-4"/>
+                {% else %}
+                    <div class="mx-auto mb-4" style="width: 80px; height: 80px;">
+                        {{ usuario_dia.user|user_avatar:"80" }}
+                    </div>
+                {% endif %}
                 <h5 class="apple-headline mb-2">{{ usuario_dia.nombre }}</h5>
                 <p class="apple-body">
                     Oportunidades hoy: <span style="color: var(--apple-blue); font-weight: 500;">{{ usuario_dia.oportunidades_hoy }}</span>
