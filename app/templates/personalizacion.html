@@ -263,32 +263,21 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     </style>
 </head>
 <body>
-    <div class="container" style="background: #232946; color: #fff; max-width: 480px; margin: 24px auto; border-radius: 18px; box-shadow: 0 4px 32px #000a; padding: 0 0 24px 0; overflow: hidden;">
+    <div class="container" style="background: #232946; color: #fff; max-width: 800px; margin: 24px auto; border-radius: 18px; box-shadow: 0 4px 32px #000a; padding: 24px; overflow: hidden;">
         <!-- Header -->
-        <div style="padding: 24px 24px 0;">
-            <h1 style="text-align:center; color:#00cfff; font-weight:700; margin-bottom:24px;">Configuración</h1>
-            
-            <!-- Tabs Navigation -->
-            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
-                <button class="tab-button active" data-tab="personalizacion">
-                    <i class="fas fa-user-astronaut" style="margin-right: 6px;"></i> Avatar
-                </button>
-                <button class="tab-button" data-tab="diseno">
-                    <i class="fas fa-palette" style="margin-right: 6px;"></i> Diseño
-                </button>
-                <button class="tab-button" data-tab="idioma">
-                    <i class="fas fa-globe" style="margin-right: 6px;"></i> Idioma
-                </button>
-                <button class="tab-button" data-tab="cuenta">
-                    <i class="fas fa-user-cog" style="margin-right: 6px;"></i> Cuenta
-                </button>
-            </div>
+        <div style="margin-bottom: 30px;">
+            <h1 style="text-align:center; color:#00cfff; font-weight:700; margin-bottom: 10px;">Configuración de Usuario</h1>
+            <p style="text-align: center; color: #a7a9be; margin: 0;">Personaliza tu experiencia en la plataforma</p>
         </div>
         
-        <!-- Tab Content -->
-        <div style="padding: 0 24px;">
-            <!-- Personalización Tab -->
-            <div id="personalizacion-tab" class="tab-content active">
+        <!-- Main Content -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;">
+            <!-- Avatar Section -->
+            <div class="config-section" style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <i class="fas fa-user-astronaut" style="color: #00cfff; font-size: 20px; margin-right: 10px;"></i>
+                    <h3 style="color: #00cfff; margin: 0; font-size: 1.1em;">Avatar</h3>
+                </div>
         <form class="avatar-chooser" method="post" enctype="multipart/form-data" action="{% url 'usuario' %}" onsubmit="console.log('Formulario enviándose. Avatar choice:', document.getElementById('avatarChoice').value);">
             {% csrf_token %}
             <div class="avatar-preview-container" style="text-align: center; margin-bottom: 20px; position: relative; display: inline-block;">
@@ -363,19 +352,20 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     <input type="hidden" id="avatarChoice" name="avatar_choice" value="dinosaur" style="background: red; color: white; display: block; width: 200px; height: 30px;" readonly>
 </div>
                 </div>
-                <div style="margin: 24px 0 12px; text-align:center;">
-                    <button type="submit" class="save-button" style="background:#00cfff; color:#232946; border:none;" onclick="console.log('Enviando avatar_choice:', document.getElementById('avatarChoice').value);">
+                <div style="margin-top: 20px; text-align:center;">
+                    <button type="submit" class="save-button" style="background:#00cfff; color:#232946; border:none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center;">
                         <i class="fas fa-save" style="margin-right: 8px;"></i>Guardar cambios
                     </button>
                 </div>
             </form>
             </div>
             
-            <!-- Diseño Tab -->
-            <div id="diseno-tab" class="tab-content" style="display: none;">
-                <h3 style="color: #00cfff; margin-bottom: 20px; font-size: 1.2em;">
-                    <i class="fas fa-palette" style="margin-right: 10px;"></i>Personaliza tu tema
-                </h3>
+            <!-- Design Section -->
+            <div class="config-section" style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <i class="fas fa-palette" style="color: #00cfff; font-size: 20px; margin-right: 10px;"></i>
+                    <h3 style="color: #00cfff; margin: 0; font-size: 1.1em;">Diseño</h3>
+                </div>
                 
                 <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
@@ -401,18 +391,19 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
                     </div>
                 </div>
                 
-                <div style="text-align: center; margin-top: 30px;">
-                    <button class="save-button" style="background: #00cfff; color: #232946;">
+                <div style="text-align: right; margin-top: 20px;">
+                    <button class="save-button" style="background: #00cfff; color: #232946; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center;">
                         <i class="fas fa-check" style="margin-right: 8px;"></i>Aplicar cambios
                     </button>
                 </div>
             </div>
             
-            <!-- Idioma Tab -->
-            <div id="idioma-tab" class="tab-content" style="display: none;">
-                <h3 style="color: #00cfff; margin-bottom: 20px; font-size: 1.2em;">
-                    <i class="fas fa-globe" style="margin-right: 10px;"></i>Selecciona tu idioma
-                </h3>
+            <!-- Language Section -->
+            <div class="config-section" style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <i class="fas fa-globe" style="color: #00cfff; font-size: 20px; margin-right: 10px;"></i>
+                    <h3 style="color: #00cfff; margin: 0; font-size: 1.1em;">Idioma</h3>
+                </div>
                 
                 <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
                     <div class="language-option" data-lang="es">
@@ -432,18 +423,19 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
                     </div>
                 </div>
                 
-                <div style="text-align: center; margin-top: 30px;">
-                    <button class="save-button" style="background: #00cfff; color: #232946;">
+                <div style="text-align: right; margin-top: 20px;">
+                    <button class="save-button" style="background: #00cfff; color: #232946; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center;">
                         <i class="fas fa-check" style="margin-right: 8px;"></i>Guardar preferencias
                     </button>
                 </div>
             </div>
             
-            <!-- Cuenta Tab -->
-            <div id="cuenta-tab" class="tab-content" style="display: none;">
-                <h3 style="color: #00cfff; margin-bottom: 20px; font-size: 1.2em;">
-                    <i class="fas fa-user" style="margin-right: 10px;"></i>Información de la cuenta
-                </h3>
+            <!-- Account Section -->
+            <div class="config-section" style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <i class="fas fa-user-cog" style="color: #00cfff; font-size: 20px; margin-right: 10px;"></i>
+                    <h3 style="color: #00cfff; margin: 0; font-size: 1.1em;">Cuenta</h3>
+                </div>
                 
                 <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
                     <div style="margin-bottom: 15px;">

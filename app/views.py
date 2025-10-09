@@ -293,6 +293,7 @@ def bienvenida(request):
             'nombre': user.get_full_name() or user.username,
             'avatar_url': avatar_url,
             'oportunidades_hoy': oportunidades_hoy[0]['oportunidades_hoy'],
+            'user': user  # Añadir el objeto user para el filtro
         }
     # Si no hay oportunidades hoy, usuario_dia queda en None
 
@@ -905,13 +906,22 @@ def api_buscar_usuarios(request):
         else:
             rol = "Usuario"
         
+        # Obtener avatar_url del usuario
+        avatar_url = None
+        if hasattr(usuario, 'userprofile'):
+            try:
+                avatar_url = usuario.userprofile.get_avatar_url()
+            except:
+                avatar_url = None
+        
         usuarios_data.append({
             'id': usuario.id,
             'nombre': nombre_completo,
             'username': usuario.username,
             'iniciales': iniciales,
             'rol': rol,
-            'email': usuario.email or ''
+            'email': usuario.email or '',
+            'avatar_url': avatar_url
         })
     
     return JsonResponse({
@@ -1089,7 +1099,8 @@ def api_comentarios_proyecto(request, proyecto_id):
                     'id': comentario.usuario.id,
                     'nombre': comentario.usuario.get_full_name() or comentario.usuario.username,
                     'username': comentario.usuario.username,
-                    'iniciales': ''.join([palabra[0].upper() for palabra in (comentario.usuario.get_full_name() or comentario.usuario.username).split()[:2]])
+                    'iniciales': ''.join([palabra[0].upper() for palabra in (comentario.usuario.get_full_name() or comentario.usuario.username).split()[:2]]),
+                    'avatar_url': getattr(comentario.usuario.userprofile, 'get_avatar_url', lambda: None)() if hasattr(comentario.usuario, 'userprofile') else None
                 },
                 'fecha': comentario.fecha_creacion.strftime('%d de %b, %Y - %H:%M'),
                 'fecha_edicion': comentario.fecha_edicion.strftime('%d de %b, %Y - %H:%M') if comentario.fecha_edicion else None,

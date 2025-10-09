@@ -2631,7 +2631,12 @@ function renderizarComentarios(comentarios) {
         div.innerHTML = `
             <div class="feed-item-header">
                 <div class="feed-user-info">
-                    <div class="feed-avatar" style="background: ${getAvatarColor(comentario.usuario.id)}">${comentario.usuario.iniciales}</div>
+                    <div class="feed-avatar" style="background: ${getAvatarColor(comentario.usuario.id)}">
+                        ${comentario.usuario.avatar_url ? 
+                            `<img src="${comentario.usuario.avatar_url}" alt="${comentario.usuario.nombre}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 
+                            comentario.usuario.iniciales
+                        }
+                    </div>
                     <div class="feed-user-details">
                         <h4>${comentario.usuario.nombre}</h4>
                         <div class="feed-date">${comentario.fecha}${comentario.editado && comentario.fecha_edicion ? ` • Editado ${comentario.fecha_edicion}` : ''}</div>
@@ -3699,7 +3704,21 @@ function showUserSuggestions(query, containerId, inputElement, showAll = false) 
                 font-size: 0.8rem;
                 flex-shrink: 0;
             `;
-            avatar.textContent = (user.first_name?.[0] || user.username?.[0] || '?').toUpperCase();
+            // Mostrar avatar o iniciales
+            if (user.avatar_url) {
+                const img = document.createElement('img');
+                img.src = user.avatar_url;
+                img.alt = displayName;
+                img.style.cssText = `
+                    width: 100%;
+                    height: 100%;
+                    border-radius: 50%;
+                    object-fit: cover;
+                `;
+                avatar.appendChild(img);
+            } else {
+                avatar.textContent = (user.first_name?.[0] || user.username?.[0] || '?').toUpperCase();
+            }
             
             // Crear información del usuario
             const userInfo = document.createElement('div');
@@ -5913,7 +5932,10 @@ function mostrarAutocomplete(usuarios, input) {
                     font-size: 0.75rem;
                     flex-shrink: 0;
                 ">
-                    ${usuario.iniciales}
+                    ${usuario.avatar_url ? 
+                        `<img src="${usuario.avatar_url}" alt="${usuario.nombre}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 
+                        usuario.iniciales
+                    }
                 </div>
                 <div style="flex: 1; min-width: 0;">
                     <div style="
@@ -6177,7 +6199,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         {% if user.userprofile.avatar %}
                             <img src="{{ user.userprofile.avatar.url }}" alt="{{ user.get_full_name }}">
                         {% else %}
-                            <div class="default-avatar">{{ user.first_name.0|default:user.username.0|upper }}</div>
+                            {% load app_filters %}
+                            {{ user|user_avatar:"40" }}
                         {% endif %}
                     </div>
                     <span class="creator-name">{{ user.get_full_name|default:user.username }}</span>
