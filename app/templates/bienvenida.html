@@ -803,22 +803,47 @@
     <!-- Logo Icon -->
     <div class="logo-floating apple-float">
         <svg class="nethive-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Tech Hive Logo -->
-            <g transform="translate(20, 15)">
-                <!-- Hexagonal Hive Structure -->
-                <polygon points="30,10 40,5 50,10 50,20 40,25 30,20" fill="white" opacity="0.9"/>
-                <polygon points="20,20 30,15 40,20 40,30 30,35 20,30" fill="white" opacity="0.8"/>
-                <polygon points="40,20 50,15 60,20 60,30 50,35 40,30" fill="white" opacity="0.8"/>
-                <polygon points="30,30 40,25 50,30 50,40 40,45 30,40" fill="white" opacity="0.7"/>
-                <polygon points="20,40 30,35 40,40 40,50 30,55 20,50" fill="white" opacity="0.6"/>
-                <polygon points="40,40 50,35 60,40 60,50 50,55 40,50" fill="white" opacity="0.6"/>
+            <!-- 3D Network Cube Logo -->
+            <g transform="translate(25, 20)">
+                <!-- Main Hexagon/Cube Structure -->
+                <polygon points="25,5 40,12 40,28 25,35 10,28 10,12" 
+                         fill="none" 
+                         stroke="#00D4FF" 
+                         stroke-width="2.5" 
+                         opacity="0.9"/>
                 
-                <!-- Tech Circuit Lines -->
-                <circle cx="35" cy="17" r="1.5" fill="#00D4FF"/>
-                <circle cx="45" cy="27" r="1.5" fill="#00D4FF"/>
-                <circle cx="35" cy="37" r="1.5" fill="#00D4FF"/>
-                <line x1="35" y1="17" x2="45" y2="27" stroke="#00D4FF" stroke-width="1" opacity="0.8"/>
-                <line x1="45" y1="27" x2="35" y2="37" stroke="#00D4FF" stroke-width="1" opacity="0.8"/>
+                <!-- Back Face (3D Effect) -->
+                <polygon points="30,0 45,7 45,23 30,30 15,23 15,7" 
+                         fill="none" 
+                         stroke="#00D4FF" 
+                         stroke-width="2" 
+                         opacity="0.6"/>
+                
+                <!-- Connecting Lines (3D Depth) -->
+                <line x1="25" y1="5" x2="30" y2="0" stroke="#00D4FF" stroke-width="2" opacity="0.7"/>
+                <line x1="40" y1="12" x2="45" y2="7" stroke="#00D4FF" stroke-width="2" opacity="0.7"/>
+                <line x1="40" y1="28" x2="45" y2="23" stroke="#00D4FF" stroke-width="2" opacity="0.7"/>
+                <line x1="10" y1="28" x2="15" y2="23" stroke="#00D4FF" stroke-width="2" opacity="0.7"/>
+                <line x1="10" y1="12" x2="15" y2="7" stroke="#00D4FF" stroke-width="2" opacity="0.7"/>
+                
+                <!-- Central Network Node -->
+                <circle cx="25" cy="20" r="3" fill="#FFFFFF" stroke="#00D4FF" stroke-width="1.5"/>
+                
+                <!-- Connection Points -->
+                <circle cx="25" cy="5" r="2" fill="#FFFFFF"/>
+                <circle cx="40" cy="12" r="2" fill="#FFFFFF"/>
+                <circle cx="40" cy="28" r="2" fill="#FFFFFF"/>
+                <circle cx="25" cy="35" r="2" fill="#FFFFFF"/>
+                <circle cx="10" cy="28" r="2" fill="#FFFFFF"/>
+                <circle cx="10" cy="12" r="2" fill="#FFFFFF"/>
+                
+                <!-- Internal Network Lines -->
+                <line x1="25" y1="20" x2="25" y2="5" stroke="#00D4FF" stroke-width="1.5" opacity="0.8"/>
+                <line x1="25" y1="20" x2="40" y2="12" stroke="#00D4FF" stroke-width="1.5" opacity="0.8"/>
+                <line x1="25" y1="20" x2="40" y2="28" stroke="#00D4FF" stroke-width="1.5" opacity="0.8"/>
+                <line x1="25" y1="20" x2="25" y2="35" stroke="#00D4FF" stroke-width="1.5" opacity="0.8"/>
+                <line x1="25" y1="20" x2="10" y2="28" stroke="#00D4FF" stroke-width="1.5" opacity="0.8"/>
+                <line x1="25" y1="20" x2="10" y2="12" stroke="#00D4FF" stroke-width="1.5" opacity="0.8"/>
             </g>
         </svg>
     </div>
