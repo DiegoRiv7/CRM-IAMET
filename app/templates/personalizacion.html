@@ -263,8 +263,32 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     </style>
 </head>
 <body>
-    <div class="container" style="background: #232946; color: #fff; max-width: 420px; margin: 48px auto; border-radius: 18px; box-shadow: 0 4px 32px #000a; padding: 38px 28px 32px 28px;">
-        <h1 style="text-align:center; color:#00cfff; font-weight:700; margin-bottom:32px;">Configuración avanzada</h1>
+    <div class="container" style="background: #232946; color: #fff; max-width: 480px; margin: 24px auto; border-radius: 18px; box-shadow: 0 4px 32px #000a; padding: 0 0 24px 0; overflow: hidden;">
+        <!-- Header -->
+        <div style="padding: 24px 24px 0;">
+            <h1 style="text-align:center; color:#00cfff; font-weight:700; margin-bottom:24px;">Configuración</h1>
+            
+            <!-- Tabs Navigation -->
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
+                <button class="tab-button active" data-tab="personalizacion">
+                    <i class="fas fa-user-astronaut" style="margin-right: 6px;"></i> Avatar
+                </button>
+                <button class="tab-button" data-tab="diseno">
+                    <i class="fas fa-palette" style="margin-right: 6px;"></i> Diseño
+                </button>
+                <button class="tab-button" data-tab="idioma">
+                    <i class="fas fa-globe" style="margin-right: 6px;"></i> Idioma
+                </button>
+                <button class="tab-button" data-tab="cuenta">
+                    <i class="fas fa-user-cog" style="margin-right: 6px;"></i> Cuenta
+                </button>
+            </div>
+        </div>
+        
+        <!-- Tab Content -->
+        <div style="padding: 0 24px;">
+            <!-- Personalización Tab -->
+            <div id="personalizacion-tab" class="tab-content active">
         <form class="avatar-chooser" method="post" enctype="multipart/form-data" action="{% url 'usuario' %}" onsubmit="console.log('Formulario enviándose. Avatar choice:', document.getElementById('avatarChoice').value);">
             {% csrf_token %}
             <div class="avatar-preview-container" style="text-align: center; margin-bottom: 20px; position: relative; display: inline-block;">
@@ -338,9 +362,117 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     <input type="file" id="avatarUpload" name="avatar" accept="image/*">
     <input type="hidden" id="avatarChoice" name="avatar_choice" value="dinosaur" style="background: red; color: white; display: block; width: 200px; height: 30px;" readonly>
 </div>
+                </div>
+                <div style="margin: 24px 0 12px; text-align:center;">
+                    <button type="submit" class="save-button" style="background:#00cfff; color:#232946; border:none;" onclick="console.log('Enviando avatar_choice:', document.getElementById('avatarChoice').value);">
+                        <i class="fas fa-save" style="margin-right: 8px;"></i>Guardar cambios
+                    </button>
+                </div>
+            </form>
             </div>
-            <div style="margin-top:12px; text-align:center;">
-                <button type="submit" class="avatar-label" style="background:#00cfff; color:#fff; border:none;" onclick="console.log('Enviando avatar_choice:', document.getElementById('avatarChoice').value);">Guardar configuración</button>
+            
+            <!-- Diseño Tab -->
+            <div id="diseno-tab" class="tab-content" style="display: none;">
+                <h3 style="color: #00cfff; margin-bottom: 20px; font-size: 1.2em;">
+                    <i class="fas fa-palette" style="margin-right: 10px;"></i>Personaliza tu tema
+                </h3>
+                
+                <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div>
+                            <div style="font-weight: 500; margin-bottom: 5px;">Modo Oscuro</div>
+                            <div style="font-size: 0.85em; color: #aaa;">Activa el tema oscuro para una mejor experiencia visual</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="darkModeToggle">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <div style="font-weight: 500; margin-bottom: 10px;">Color de acento</div>
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <div class="color-option" data-color="#00cfff" style="background: #00cfff;"></div>
+                            <div class="color-option" data-color="#4ade80" style="background: #4ade80;"></div>
+                            <div class="color-option" data-color="#f472b6" style="background: #f472b6;"></div>
+                            <div class="color-option" data-color="#f59e0b" style="background: #f59e0b;"></div>
+                            <div class="color-option" data-color="#8b5cf6" style="background: #8b5cf6;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="save-button" style="background: #00cfff; color: #232946;">
+                        <i class="fas fa-check" style="margin-right: 8px;"></i>Aplicar cambios
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Idioma Tab -->
+            <div id="idioma-tab" class="tab-content" style="display: none;">
+                <h3 style="color: #00cfff; margin-bottom: 20px; font-size: 1.2em;">
+                    <i class="fas fa-globe" style="margin-right: 10px;"></i>Selecciona tu idioma
+                </h3>
+                
+                <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                    <div class="language-option" data-lang="es">
+                        <img src="https://flagcdn.com/w40/es.png" alt="Español" style="width: 24px; margin-right: 10px;">
+                        <span>Español</span>
+                        <i class="fas fa-check" style="margin-left: auto; color: #00cfff;"></i>
+                    </div>
+                    <div class="language-option" data-lang="en">
+                        <img src="https://flagcdn.com/w40/gb.png" alt="English" style="width: 24px; margin-right: 10px;">
+                        <span>English</span>
+                        <i class="fas fa-check" style="margin-left: auto; color: #00cfff; display: none;"></i>
+                    </div>
+                    <div class="language-option" data-lang="pt">
+                        <img src="https://flagcdn.com/w40/br.png" alt="Português" style="width: 24px; margin-right: 10px;">
+                        <span>Português</span>
+                        <i class="fas fa-check" style="margin-left: auto; color: #00cfff; display: none;"></i>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="save-button" style="background: #00cfff; color: #232946;">
+                        <i class="fas fa-check" style="margin-right: 8px;"></i>Guardar preferencias
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Cuenta Tab -->
+            <div id="cuenta-tab" class="tab-content" style="display: none;">
+                <h3 style="color: #00cfff; margin-bottom: 20px; font-size: 1.2em;">
+                    <i class="fas fa-user" style="margin-right: 10px;"></i>Información de la cuenta
+                </h3>
+                
+                <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #aaa;">Nombre de usuario</label>
+                        <input type="text" value="{{ user.username }}" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff;">
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #aaa;">Género</label>
+                        <select style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff;">
+                            <option>Seleccionar...</option>
+                            <option>Masculino</option>
+                            <option>Femenino</option>
+                            <option>Otro</option>
+                            <option>Prefiero no decirlo</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #aaa;">Fecha de nacimiento</label>
+                        <input type="date" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff;">
+                    </div>
+                </div>
+                
+                <div style="margin-top: 30px; text-align: center;">
+                    <a href="{% url 'logout' %}" class="logout-button" style="display: inline-flex; align-items: center; color: #ff6b6b; text-decoration: none; font-weight: 500;">
+                        <i class="fas fa-sign-out-alt" style="margin-right: 8px;"></i>Cerrar sesión
+                    </a>
+                </div>
             </div>
             
             <!-- Selector de idioma -->
@@ -847,10 +979,6 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         document.querySelector('form.avatar-chooser').submit();
     });
     
-    // Inicializar botones al cargar la página
-    updateLanguageButtons();
-    
-</script>
     </script>
-</body>
+    </body>
 </html>
