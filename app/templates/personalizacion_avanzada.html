@@ -1643,65 +1643,47 @@
                 container = document.createElement('div');
                 container.className = 'notification-container';
                 document.body.appendChild(container);
-                const circleCenterY = containerSize / 2;
-                
-                const currentScale = cropData.scale;
-                const scaledWidth = imgDisplayWidth * currentScale;
-                const scaledHeight = imgDisplayHeight * currentScale;
-                
-                const imageCenterX = containerSize / 2 + imageX;
-                const imageCenterY = containerSize / 2 + imageY;
-                
-                const sourceX = (circleCenterX - imageCenterX + scaledWidth/2) / currentScale * scaleX;
-                const sourceY = (circleCenterY - imageCenterY + scaledHeight/2) / currentScale * scaleY;
-                const sourceSize = (circleRadius * 2) / currentScale * scaleX;
-                
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-                ctx.clip();
-                
-                ctx.drawImage(
-                    tempImg,
-                    sourceX - sourceSize/2,
-                    sourceY - sourceSize/2,
-                    sourceSize,
-                    sourceSize,
-                    0,
-                    0,
-                    size,
-                    size
-                );
-                
-                ctx.restore();
-                
-                canvas.toBlob(function(blob) {
-                    const croppedUrl = URL.createObjectURL(blob);
-                    const uploadedAvatar = document.getElementById('uploadedAvatar');
-                    uploadedAvatar.src = croppedUrl;
-                    uploadedAvatar.style.display = 'block';
-                    document.getElementById('animGalleryPreview').style.display = 'none';
-                    
-                    const croppedFile = new File([blob], currentImageFile.name, {
-                        type: currentImageFile.type,
-                        lastModified: Date.now()
-                    });
-                    
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(croppedFile);
-                    document.getElementById('avatarUpload').files = dataTransfer.files;
-                    
-                    document.getElementById('cropModal').style.display = 'none';
-                    
-                    imageX = 0;
-                    imageY = 0;
-                    cropData = { x: 0, y: 0, scale: 1 };
-                    zoomSlider.value = 1;
-                    cropImage.style.transform = 'translate(-50%, -50%) scale(1)';
-                }, currentImageFile.type, 0.9);
-            };
+            }
             
-            tempImg.src = cropImage.src;
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <span>${message}</span>
+                    <button class="notification-close">&times;</button>
+                </div>
+            `;
+            
+            // Add to container
+            container.appendChild(notification);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                notification.classList.add('fade-out');
+                setTimeout(() => {
+                    notification.remove();
+                    // Remove container if no more notifications
+                    if (container && container.children.length === 0) {
+                        container.remove();
+                    }
+                }, 300);
+            }, 5000);
+            
+            // Close button functionality
+            const closeBtn = notification.querySelector('.notification-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    notification.classList.add('fade-out');
+                    setTimeout(() => {
+                        notification.remove();
+                        // Remove container if no more notifications
+                        if (container && container.children.length === 0) {
+                            container.remove();
+                        }
+                    }, 300);
+                });
+            }
         }
 
         // Design functionality

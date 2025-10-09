@@ -1809,7 +1809,13 @@ def set_language(request):
     Vista para cambiar el idioma de la aplicación
     Soporta tanto peticiones AJAX como formularios normales
     """
-    if request.method == 'POST':
+    if request.method != 'POST':
+        return JsonResponse(
+            {'status': 'error', 'message': 'Método no permitido'}, 
+            status=405
+        )
+    
+    try:
         language = request.POST.get('language', 'es')
         
         # Validar que el idioma esté en los idiomas configurados
@@ -1862,6 +1868,16 @@ def set_language(request):
         
         return response
     
+    except Exception as e:
+        # Registrar el error para depuración
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f'Error al cambiar el idioma: {str(e)}', exc_info=True)
+        
+        return JsonResponse(
+            {'status': 'error', 'message': str(e)},
+            status=500
+        )
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
 
 @login_required
