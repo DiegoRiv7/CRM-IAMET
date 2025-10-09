@@ -802,26 +802,139 @@
 <div class="floating-logo-container">
     <!-- Logo Icon -->
     <div class="logo-floating apple-float">
-        <svg class="nethive-logo" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg class="nethive-logo" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
-                <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <!-- Gradientes para efectos 3D -->
+                <linearGradient id="hiveGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:#FFA500;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#FF8C00;stop-opacity:1" />
+                </linearGradient>
+                <linearGradient id="roboticGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" style="stop-color:#007AFF;stop-opacity:1" />
                     <stop offset="100%" style="stop-color:#00D4FF;stop-opacity:1" />
                 </linearGradient>
+                <linearGradient id="beeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#FF6B35;stop-opacity:1" />
+                </linearGradient>
+                <!-- Filtros para efectos -->
+                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
             </defs>
-            <!-- Capa de Relleno Transparente con Gradiente (base tridimensional) -->
-            <path d="M24 6L12 13V27L24 34L36 27V13L24 6Z" fill="url(#blueGradient)" opacity="0.4"/>
             
-            <!-- Hexágono Central (Define la estructura de la colmena) -->
-            <path d="M24 8L10 16V32L24 40L38 32V16L24 8Z" stroke="url(#blueGradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Estructura de Colmena Base - Hexágonos conectados -->
+            <g transform="translate(32,32)">
+                <!-- Hexágono Central -->
+                <polygon points="-10,-6 -5,-12 5,-12 10,-6 5,6 -5,6" 
+                         fill="url(#hiveGradient)" 
+                         stroke="url(#roboticGradient)" 
+                         stroke-width="1.5" 
+                         opacity="0.8"/>
+                
+                <!-- Hexágonos satélite -->
+                <polygon points="-25,-15 -20,-21 -10,-21 -5,-15 -10,-9 -20,-9" 
+                         fill="url(#hiveGradient)" 
+                         stroke="url(#roboticGradient)" 
+                         stroke-width="1" 
+                         opacity="0.6"/>
+                         
+                <polygon points="5,-15 10,-21 20,-21 25,-15 20,-9 10,-9" 
+                         fill="url(#hiveGradient)" 
+                         stroke="url(#roboticGradient)" 
+                         stroke-width="1" 
+                         opacity="0.6"/>
+                         
+                <polygon points="-25,9 -20,3 -10,3 -5,9 -10,15 -20,15" 
+                         fill="url(#hiveGradient)" 
+                         stroke="url(#roboticGradient)" 
+                         stroke-width="1" 
+                         opacity="0.6"/>
+                         
+                <polygon points="5,9 10,3 20,3 25,9 20,15 10,15" 
+                         fill="url(#hiveGradient)" 
+                         stroke="url(#roboticGradient)" 
+                         stroke-width="1" 
+                         opacity="0.6"/>
+            </g>
             
-            <!-- Patrón de Red / Conexión de Datos (Color cian brillante) -->
-            <path d="M24 8V40M10 16L38 32M38 16L10 32" stroke="#00D4FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
-
-            <!-- Puntos de Conexión (Nodos) -->
-            <circle cx="24" cy="24" r="3" fill="white"/>
-            <circle cx="10" cy="16" r="2" fill="white"/>
-            <circle cx="38" cy="32" r="2" fill="white"/>
+            <!-- Abejas Robot Volando -->
+            <!-- Abeja 1 - Esquina superior izquierda -->
+            <g transform="translate(16,12) scale(0.8)">
+                <!-- Cuerpo robótico -->
+                <ellipse cx="0" cy="0" rx="6" ry="3" fill="url(#beeGradient)"/>
+                <!-- Cabeza robótica -->
+                <circle cx="-5" cy="0" r="2.5" fill="url(#roboticGradient)"/>
+                <!-- Ojos LED -->
+                <circle cx="-6" cy="-1" r="0.8" fill="#00FFFF" filter="url(#glow)"/>
+                <circle cx="-6" cy="1" r="0.8" fill="#00FFFF" filter="url(#glow)"/>
+                <!-- Alas mecánicas -->
+                <ellipse cx="2" cy="-3" rx="4" ry="1.5" fill="none" stroke="url(#roboticGradient)" stroke-width="1" opacity="0.7"/>
+                <ellipse cx="2" cy="3" rx="4" ry="1.5" fill="none" stroke="url(#roboticGradient)" stroke-width="1" opacity="0.7"/>
+                <!-- Antenas -->
+                <line x1="-7" y1="-2" x2="-9" y2="-4" stroke="url(#roboticGradient)" stroke-width="1"/>
+                <line x1="-7" y1="2" x2="-9" y2="4" stroke="url(#roboticGradient)" stroke-width="1"/>
+                <circle cx="-9" cy="-4" r="0.5" fill="#00FFFF"/>
+                <circle cx="-9" cy="4" r="0.5" fill="#00FFFF"/>
+            </g>
+            
+            <!-- Abeja 2 - Esquina superior derecha -->
+            <g transform="translate(48,16) scale(0.7) rotate(45)">
+                <!-- Cuerpo robótico -->
+                <ellipse cx="0" cy="0" rx="6" ry="3" fill="url(#beeGradient)"/>
+                <!-- Cabeza robótica -->
+                <circle cx="-5" cy="0" r="2.5" fill="url(#roboticGradient)"/>
+                <!-- Ojos LED -->
+                <circle cx="-6" cy="-1" r="0.8" fill="#FFD700" filter="url(#glow)"/>
+                <circle cx="-6" cy="1" r="0.8" fill="#FFD700" filter="url(#glow)"/>
+                <!-- Alas mecánicas -->
+                <ellipse cx="2" cy="-3" rx="4" ry="1.5" fill="none" stroke="url(#roboticGradient)" stroke-width="1" opacity="0.7"/>
+                <ellipse cx="2" cy="3" rx="4" ry="1.5" fill="none" stroke="url(#roboticGradient)" stroke-width="1" opacity="0.7"/>
+            </g>
+            
+            <!-- Abeja 3 - Esquina inferior -->
+            <g transform="translate(32,52) scale(0.6) rotate(-30)">
+                <!-- Cuerpo robótico -->
+                <ellipse cx="0" cy="0" rx="6" ry="3" fill="url(#beeGradient)"/>
+                <!-- Cabeza robótica -->
+                <circle cx="-5" cy="0" r="2.5" fill="url(#roboticGradient)"/>
+                <!-- Ojos LED -->
+                <circle cx="-6" cy="-1" r="0.8" fill="#FF6B35" filter="url(#glow)"/>
+                <circle cx="-6" cy="1" r="0.8" fill="#FF6B35" filter="url(#glow)"/>
+                <!-- Alas mecánicas -->
+                <ellipse cx="2" cy="-3" rx="4" ry="1.5" fill="none" stroke="url(#roboticGradient)" stroke-width="1" opacity="0.7"/>
+                <ellipse cx="2" cy="3" rx="4" ry="1.5" fill="none" stroke="url(#roboticGradient)" stroke-width="1" opacity="0.7"/>
+            </g>
+            
+            <!-- Conexiones de Red / Datos entre elementos -->
+            <g opacity="0.6">
+                <!-- Líneas de datos punteadas -->
+                <line x1="16" y1="12" x2="32" y2="20" stroke="url(#roboticGradient)" stroke-width="1" stroke-dasharray="2,2"/>
+                <line x1="48" y1="16" x2="32" y2="25" stroke="url(#roboticGradient)" stroke-width="1" stroke-dasharray="2,2"/>
+                <line x1="32" y1="52" x2="32" y2="40" stroke="url(#roboticGradient)" stroke-width="1" stroke-dasharray="2,2"/>
+                
+                <!-- Nodos de conexión -->
+                <circle cx="32" cy="20" r="1.5" fill="#00FFFF" filter="url(#glow)"/>
+                <circle cx="32" cy="25" r="1.5" fill="#00FFFF" filter="url(#glow)"/>
+                <circle cx="32" cy="40" r="1.5" fill="#00FFFF" filter="url(#glow)"/>
+            </g>
+            
+            <!-- Centro de control tecnológico -->
+            <g transform="translate(32,32)">
+                <!-- Núcleo central -->
+                <circle cx="0" cy="0" r="3" fill="url(#roboticGradient)" filter="url(#glow)"/>
+                <!-- Anillo de control -->
+                <circle cx="0" cy="0" r="5" fill="none" stroke="#00FFFF" stroke-width="1" opacity="0.8"/>
+                <!-- Indicadores LED -->
+                <circle cx="0" cy="-7" r="1" fill="#00FF00" filter="url(#glow)"/>
+                <circle cx="6" cy="3.5" r="1" fill="#FFD700" filter="url(#glow)"/>
+                <circle cx="-6" cy="3.5" r="1" fill="#FF6B35" filter="url(#glow)"/>
+            </g>
         </svg>
     </div>
     
