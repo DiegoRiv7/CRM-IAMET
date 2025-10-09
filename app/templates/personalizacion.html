@@ -493,9 +493,6 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
                 <option value="owl">🦉 Búho</option>
                 <option value="panda">🐼 Panda</option>
                 <option value="wolf">🐺 Lobo</option>
-                <option value="dragon">🐉 Dragón</option>
-                <option value="cat">🐱 Gato</option>
-                <option value="bear">🐻 Oso</option>
             </select>
         </div>
         
@@ -937,10 +934,7 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         fox: "Cute, friendly, cartoon fox, sitting up, fluffy orange and white fur, big curious eyes, 3D render, highly detailed, vibrant colors, clean white background, digital art. Avatar circle crop.",
         owl: "Cute, friendly, cartoon owl, wise, large golden eyes, elegant brown and white feathers, 3D render, highly detailed, vibrant colors, clean white background, digital art. Avatar circle crop.",
         panda: "Cute, friendly, cartoon giant panda, holding bamboo, round face, black and white fur, 3D render, highly detailed, clean white background, digital art. Avatar circle crop.",
-        wolf: "Cute, friendly, cartoon wolf cub, blue-gray fur, sharp but kind eyes, howling playfully, 3D render, highly detailed, vibrant colors, clean white background, digital art. Avatar circle crop.",
-        dragon: "Cute, friendly, cartoon baby dragon, small wings, bright scales, big innocent eyes, 3D render, highly detailed, vibrant colors, clean white background, digital art. Avatar circle crop.",
-        cat: "Cute, friendly, cartoon cat, fluffy fur, bright eyes, sitting pose, 3D render, highly detailed, vibrant colors, clean white background, digital art. Avatar circle crop.",
-        bear: "Cute, friendly, cartoon bear cub, soft brown fur, round ears, sitting pose, 3D render, highly detailed, vibrant colors, clean white background, digital art. Avatar circle crop."
+        wolf: "Cute, friendly, cartoon wolf cub, blue-gray fur, sharp but kind eyes, howling playfully, 3D render, highly detailed, vibrant colors, clean white background, digital art. Avatar circle crop."
     };
     
     // Elementos del generador AI
@@ -966,7 +960,7 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         return new Blob([byteArray], { type: contentType });
     }
     
-    // Función para generar avatar con AI (simulada)
+    // Función para generar avatar con AI usando Google AI API
     async function generateAIAvatar() {
         const selectedAnimal = aiAnimalSelect.value;
         const prompt = AI_AVATAR_PROMPTS[selectedAnimal];
@@ -978,53 +972,82 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         generateAiButton.disabled = true;
         
         try {
-            // Por ahora, simularemos la generación usando placeholders creativos
-            // En producción, aquí irías la llamada real a la API de AI
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Simular delay
+            const base64Data = await fetchImageWithRetry({
+                instances: { 
+                    prompt: prompt,
+                    aspectRatio: "1:1",
+                    sampleCount: 1 
+                },
+                parameters: { 
+                    sampleImageSize: "1024",
+                }
+            });
             
-            // Generar imagen placeholder creativa basada en el animal
-            const colors = {
-                dinosaur: '90EE90/32CD32',
-                fox: 'FF6347/FF4500',
-                owl: '8B4513/CD853F',
-                panda: '000000/FFFFFF',
-                wolf: '696969/A9A9A9',
-                dragon: '9370DB/8A2BE2',
-                cat: 'FFA500/FF8C00',
-                bear: '8B4513/A0522D'
-            };
+            const imageUrl = base64ToImageUrl(base64Data);
             
-            const colorPair = colors[selectedAnimal] || 'FF6B6B/4ECDC4';
-            const animalEmoji = {
-                dinosaur: '🦕',
-                fox: '🦊',
-                owl: '🦉',
-                panda: '🐼',
-                wolf: '🐺',
-                dragon: '🐉',
-                cat: '🐱',
-                bear: '🐻'
-            };
-            
-            const placeholderUrl = `https://placehold.co/256x256/${colorPair}?text=${animalEmoji[selectedAnimal]}+AI`;
-            
-            // Crear imagen placeholder
-            aiGeneratedImage.src = placeholderUrl;
+            // Mostrar la imagen generada
+            aiGeneratedImage.src = imageUrl;
             aiLoading.style.display = 'none';
             aiAvatarPreview.style.display = 'block';
             
-            // Crear un blob simulado para el avatar
-            const response = await fetch(placeholderUrl);
-            generatedAvatarBlob = await response.blob();
+            // Crear blob de la imagen generada
+            generatedAvatarBlob = base64ToBlob(base64Data);
+            
+            // Mostrar mensaje de éxito
+            aiError.textContent = `¡Avatar de ${selectedAnimal.charAt(0).toUpperCase() + selectedAnimal.slice(1)} generado con éxito!`;
+            aiError.style.color = '#00dd00';
+            aiError.style.display = 'block';
             
         } catch (error) {
             console.error('Error generating AI avatar:', error);
-            aiError.textContent = 'Error al generar el avatar. Inténtalo de nuevo.';
+            aiError.textContent = `Error: No se pudo generar el avatar. (${error.message})`;
+            aiError.style.color = '#ff6b6b';
             aiError.style.display = 'block';
             aiLoading.style.display = 'none';
         } finally {
             generateAiButton.disabled = false;
         }
+    }
+    
+    // Función para realizar peticiones a la API con reintentos
+    async function fetchImageWithRetry(payload, retries = 3) {
+        const API_KEY = ""; // Aquí va tu API key de Google AI
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${API_KEY}`;
+        
+        for (let i = 0; i < retries; i++) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.predictions && result.predictions.length > 0 && result.predictions[0].bytesBase64Encoded) {
+                    return result.predictions[0].bytesBase64Encoded;
+                } else {
+                    throw new Error("Respuesta de la API incompleta o vacía.");
+                }
+
+            } catch (error) {
+                if (i < retries - 1) {
+                    const delay = Math.pow(2, i) * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                } else {
+                    throw error;
+                }
+            }
+        }
+    }
+    
+    // Función para convertir base64 a URL de imagen
+    function base64ToImageUrl(base64Data) {
+        return `data:image/png;base64,${base64Data}`;
     }
     
     // Función para usar el avatar generado
