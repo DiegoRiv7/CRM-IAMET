@@ -150,6 +150,12 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             box-shadow: 0 0 20px rgba(0,207,255,0.5);
         }
         
+        /* Estilo para avatares con imagen cuando están seleccionados */
+        .avatar-choice.selected img {
+            border: 3px solid #00cfff;
+            box-shadow: 0 0 15px rgba(0,207,255,0.8);
+        }
+        
         .avatar-anim svg {
             width: 80%;
             height: 80%;
@@ -442,7 +448,7 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         </button>
         
         <!-- Zorro Súper Héroe -->
-        <button type="button" class="avatar-choice" data-avatar="fox-hero" title="Zorro Súper Héroe" style="background: linear-gradient(135deg, #ff6b47 0%, #ff4500 50%, #ff8c00 100%); border: 2px solid #ff4500; overflow: hidden;">
+        <button type="button" class="avatar-anim avatar-choice" data-avatar="fox-hero" title="Zorro Súper Héroe" style="background: linear-gradient(135deg, #ff6b47 0%, #ff4500 50%, #ff8c00 100%); border: 2px solid #ff4500; overflow: hidden;">
             <img src="/static/images/fox-hero-avatar.jpeg" alt="Zorro Súper Héroe" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
         </button>
         
@@ -561,6 +567,13 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         animGalleryPreview.style = btn.getAttribute('style');
         uploadedAvatar.style.display = 'none';
         animGalleryPreview.style.display = 'block';
+        
+        // Si es una imagen (como el zorro), asegurar que se muestre correctamente
+        const img = animGalleryPreview.querySelector('img');
+        if (img) {
+            img.style.borderRadius = '50%';
+            img.style.objectFit = 'cover';
+        }
     }
     avatarChoices.forEach(btn => {
         btn.addEventListener('click', function() {
