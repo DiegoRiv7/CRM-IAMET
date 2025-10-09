@@ -90,7 +90,17 @@
                     <div class="timeline-event">
                         <div class="bg-slate-700 p-4 rounded-lg shadow-sm border border-slate-600">
                             <p class="text-slate-200 text-sm mb-1 font-semibold">Negociación creada <span class="text-slate-400 text-xs font-normal">17:06 - 25/07/2025</span></p>
-                            <p class="text-slate-400 text-sm">Creada por <span class="text-blue-400 font-semibold">{% if oportunidad.usuario %}{{ oportunidad.usuario.username }}{% else %}N/A{% endif %}</span></p>
+                            <p class="text-slate-400 text-sm flex items-center gap-2">
+                                Creada por 
+                                {% if oportunidad.usuario %}
+                                    <div class="flex items-center gap-2">
+                                        {{ oportunidad.usuario|user_avatar:"24" }}
+                                        <span class="text-blue-400 font-semibold">{{ oportunidad.usuario.username }}</span>
+                                    </div>
+                                {% else %}
+                                    <span class="text-blue-400 font-semibold">N/A</span>
+                                {% endif %}
+                            </p>
                         </div>
                     </div>
                     <div class="timeline-event">
@@ -177,7 +187,14 @@
                     </div>
                     <div>
                         <strong class="block text-slate-400 mb-1">Usuario:</strong>
-                        <p class="font-medium">{% if oportunidad.usuario %}{{ oportunidad.usuario.username }}{% else %}N/A{% endif %}</p>
+                        {% if oportunidad.usuario %}
+                            <div class="flex items-center gap-3">
+                                {{ oportunidad.usuario|user_avatar:"32" }}
+                                <p class="font-medium">{{ oportunidad.usuario.username }}</p>
+                            </div>
+                        {% else %}
+                            <p class="font-medium">N/A</p>
+                        {% endif %}
                     </div>
                     <div>
                         <strong class="block text-slate-400 mb-1">Cliente:</strong>

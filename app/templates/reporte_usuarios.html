@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load app_filters %}
 {% block title %}Reporte de Usuarios{% endblock %}
 {% block content %}
 <div class="mt-8 bg-white/10 backdrop-blur-lg text-gray-100 p-8 rounded-2xl shadow-2xl border border-gray-700 glass-card animate-fade-in dashboard-container">
@@ -15,6 +16,7 @@
         <table class="min-w-full divide-y divide-gray-700 rounded-2xl overflow-hidden shadow-xl glass-table animate-fade-in">
             <thead class="bg-gray-800/80">
                 <tr>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Avatar</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Usuario</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Nombre</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Email</th>
@@ -24,6 +26,9 @@
             <tbody class="bg-gray-800/60 divide-y divide-gray-700">
                 {% for usuario in usuarios %}
                 <tr class="hover:bg-indigo-900/30 transition-colors duration-200">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {{ usuario|user_avatar:"48" }}
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{{ usuario.username }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ usuario.get_full_name }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ usuario.email }}</td>

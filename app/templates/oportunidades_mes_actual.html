@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load app_filters %}
 {% block content %}
 <div class="max-w-full mx-auto mt-10 p-8 glass-card relative dashboard-container">
 
@@ -30,7 +31,12 @@
         {% for op in oportunidades %}
         <tr class="border-b border-purple-800 hover:bg-purple-800/30">
           <td class="py-2 px-4">{{ op.cliente }}</td>
-          <td class="py-2 px-4">{{ op.usuario.get_full_name|default:op.usuario.username }}</td>
+          <td class="py-2 px-4">
+            <div class="flex items-center gap-3">
+              {{ op.usuario|user_avatar:"32" }}
+              <span>{{ op.usuario.get_full_name|default:op.usuario.username }}</span>
+            </div>
+          </td>
           <td class="py-2 px-4">${{ op.monto|floatformat:2 }}</td>
           <td class="py-2 px-4">{{ op.get_mes_cierre_display }} {{ op.anio_cierre }}</td>
           <td class="py-2 px-4">{{ op.probabilidad_cierre }}%</td>

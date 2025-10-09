@@ -2890,6 +2890,12 @@ def usuario_redirect_view(request):
             request.session['django_language'] = profile.language
             from django.utils import translation
             translation.activate(profile.language)
+            profile.save()
+            
+            # Si es solo un cambio de idioma, redirigir a la misma página con recarga
+            if request.POST.get('language_only') == 'true':
+                messages.success(request, 'Idioma actualizado correctamente / Language updated successfully')
+                return redirect('usuario')
         
         profile.save()
         

@@ -43,6 +43,82 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             100% { filter: hue-rotate(360deg); }
         }
         
+        @keyframes pandaEat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-2px) rotate(-1deg); }
+            50% { transform: translateY(2px) rotate(1deg); }
+            75% { transform: translateY(-1px) rotate(1deg); }
+        }
+        
+        @keyframes pandaBlink {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(0.1); }
+        }
+        
+        @keyframes bambooSway {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+        
+        /* Animaciones para el dinosaurio */
+        @keyframes dinoRoar {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.1) rotate(-5deg); }
+            50% { transform: scale(1.05) rotate(5deg); }
+            75% { transform: scale(1.1) rotate(5deg); }
+        }
+        
+        @keyframes dinoTailWag {
+            0%, 100% { transform: rotate(-10deg); }
+            50% { transform: rotate(10deg); }
+        }
+        
+        @keyframes dinoBlink {
+            0%, 96%, 100% { transform: scaleY(1); }
+            98% { transform: scaleY(0.1); }
+        }
+        
+        @keyframes dinoMoveAround {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            20% { transform: translate(10px, -5px) rotate(5deg); }
+            40% { transform: translate(-5px, 5px) rotate(-5deg); }
+            60% { transform: translate(5px, 0) rotate(3deg); }
+            80% { transform: translate(-10px, -3px) rotate(-3deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+        
+        /* Estilo para permitir que los avatares se salgan del círculo */
+        .avatar-anim {
+            overflow: visible;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .avatar-anim::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            transform: translate(-50%, -50%);
+            z-index: -1;
+            transition: all 0.3s ease;
+        }
+        
+        .avatar-anim:hover::after {
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .avatar-anim.selected::after {
+            border: 2px solid #00cfff;
+            box-shadow: 0 0 15px rgba(0,207,255,0.5);
+        }
+        
         /* Estilos mejorados para avatares */
         .avatar-anim {
             width: 64px;
@@ -135,69 +211,188 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" stroke="#fff" stroke-width="4" opacity="0.2"/><path d="M24 8a8 8 0 018 8c0 4-3 8-8 8s-8-4-8-8a8 8 0 018-8z" fill="#00cfff"/><circle cx="24" cy="22" r="4" fill="#fff"/><ellipse cx="24" cy="34" rx="10" ry="4" fill="#ff00c8" opacity="0.6"/></svg>
         </button>
         
-        <!-- Dinosaurio T-Rex 3D -->
-        <button type="button" class="avatar-anim avatar-choice" data-avatar="dinosaur" title="Dinosaurio T-Rex" style="animation: bounceAnim 2s infinite; background: linear-gradient(135deg,#4ade80 0%,#22c55e 50%,#16a34a 100%);">
-            <svg viewBox="0 0 48 48" fill="none">
-                <!-- Cuerpo del dinosaurio -->
-                <ellipse cx="24" cy="28" rx="12" ry="8" fill="#22c55e"/>
-                <!-- Cabeza grande -->
-                <ellipse cx="18" cy="18" rx="10" ry="8" fill="#4ade80"/>
-                <!-- Hocico -->
-                <ellipse cx="12" cy="18" rx="6" ry="4" fill="#16a34a"/>
-                <!-- Ojos brillantes -->
-                <circle cx="15" cy="15" r="2" fill="#fff"/>
-                <circle cx="21" cy="15" r="2" fill="#fff"/>
-                <circle cx="15" cy="15" r="1" fill="#000"/>
-                <circle cx="21" cy="15" r="1" fill="#000"/>
-                <!-- Dientes -->
-                <polygon points="9,16 11,18 9,20" fill="#fff"/>
-                <polygon points="11,16 13,18 11,20" fill="#fff"/>
+        <!-- Dinosaurio T-Rex 3D Interactivo -->
+        <button type="button" class="avatar-anim avatar-choice dino-container" data-avatar="dinosaur" title="Dinosaurio T-Rex" style="animation: dinoMoveAround 8s infinite; background: linear-gradient(135deg,#4ade80 0%,#22c55e 50%,#16a34a 100%);">
+            <svg viewBox="0 0 100 100" fill="none" style="width: 120%; height: 120%; margin: -10% 0 0 -10%;">
+                <!-- Fondo circular con sombra -->
+                <circle cx="50" cy="50" r="45" fill="#e8f5e9" filter="drop-shadow(0 4px 8px rgba(0,0,0,0.2))"/>
+                
+                <!-- Cola con movimiento -->
+                <g class="dino-tail">
+                    <path d="M80 50 Q95 40 90 25 Q85 10 70 20 L75 30 Z" fill="#4caf50" stroke="#2e7d32" stroke-width="1.5"/>
+                    <path d="M75 30 Q80 25 80 20 Q80 15 75 18" stroke="#2e7d32" stroke-width="1.5" fill="none" stroke-linecap="round">
+                        <animate attributeName="d" values="M75 30 Q80 25 80 20 Q80 15 75 18; M75 30 Q85 20 85 15 Q85 10 75 15; M75 30 Q80 25 80 20 Q80 15 75 18" dur="3s" repeatCount="indefinite"/>
+                    </path>
+                </g>
+                
+                <!-- Cuerpo principal con efecto 3D -->
+                <ellipse cx="50" cy="65" rx="25" ry="15" fill="#81c784" stroke="#4caf50" stroke-width="2"/>
+                <ellipse cx="45" cy="60" rx="20" ry="12" fill="#a5d6a7" stroke="#4caf50" stroke-width="1"/>
+                
+                <!-- Panza más clara -->
+                <ellipse cx="45" cy="68" rx="18" ry="8" fill="#c8e6c9" opacity="0.8"/>
+                
+                <!-- Patas traseras -->
+                <rect x="30" y="65" width="8" height="20" rx="4" fill="#66bb6a" transform="skewX(-10)">
+                    <animate attributeName="y" values="65;60;65" dur="2s" repeatCount="indefinite"/>
+                </rect>
+                <rect x="60" y="65" width="8" height="20" rx="4" fill="#66bb6a" transform="skewX(10)">
+                    <animate attributeName="y" values="60;65;60" dur="2.5s" repeatCount="indefinite"/>
+                </rect>
+                
                 <!-- Brazos pequeños -->
-                <ellipse cx="30" cy="22" rx="3" ry="6" fill="#22c55e"/>
-                <ellipse cx="32" cy="25" rx="2" ry="3" fill="#16a34a"/>
-                <!-- Patas -->
-                <ellipse cx="20" cy="38" rx="4" ry="6" fill="#16a34a"/>
-                <ellipse cx="28" cy="38" rx="4" ry="6" fill="#16a34a"/>
-                <!-- Cola -->
-                <ellipse cx="36" cy="26" rx="8" ry="4" fill="#22c55e" transform="rotate(30 36 26)"/>
-                <!-- Efectos 3D -->
-                <ellipse cx="18" cy="16" rx="8" ry="6" fill="none" stroke="#4ade80" stroke-width="1" opacity="0.5"/>
+                <ellipse cx="35" cy="60" rx="5" ry="12" fill="#66bb6a" transform="rotate(-20 35 60)">
+                    <animateTransform attributeName="transform" type="rotate" values="-20 35 60; -30 35 60; -20 35 60" dur="3s" repeatCount="indefinite"/>
+                </ellipse>
+                
+                <!-- Cuello y cabeza -->
+                <path d="M30 50 Q20 30 10 40 Q0 50 15 45 Q25 42 30 50 Z" fill="#a5d6a7" stroke="#4caf50" stroke-width="1.5"/>
+                
+                <!-- Cabeza con efecto 3D -->
+                <ellipse cx="15" cy="35" rx="15" ry="12" fill="#81c784" stroke="#4caf50" stroke-width="1.5">
+                    <animate attributeName="ry" values="12;10;12" dur="4s" repeatCount="indefinite"/>
+                </ellipse>
+                
+                <!-- Ojos con parpadeo -->
+                <g class="dino-eyes">
+                    <ellipse cx="10" cy="32" rx="3" ry="4" fill="#333">
+                        <animate attributeName="ry" values="4;0.5;4" dur="8s" repeatCount="indefinite"/>
+                    </ellipse>
+                    <ellipse cx="20" cy="32" rx="3" ry="4" fill="#333">
+                        <animate attributeName="ry" values="4;0.5;4" dur="8s" repeatCount="indefinite" begin="1s"/>
+                    </ellipse>
+                    
+                    <!-- Reflejos en los ojos -->
+                    <circle cx="11" cy="31" r="1" fill="#fff">
+                        <animate attributeName="cx" values="11;11.5;11" dur="5s" repeatCount="indefinite"/>
+                    </circle>
+                    <circle cx="21" cy="31" r="1" fill="#fff">
+                        <animate attributeName="cx" values="21;21.5;21" dur="5s" repeatCount="indefinite" begin="0.5s"/>
+                    </circle>
+                </g>
+                
+                <!-- Boca abierta con dientes -->
+                <path d="M5 38 Q8 42 12 40 Q15 38 18 40" stroke="#333" stroke-width="1.5" fill="none" stroke-linecap="round">
+                    <animate attributeName="d" values="M5 38 Q8 42 12 40 Q15 38 18 40; M5 36 Q8 45 12 43 Q15 41 18 43; M5 38 Q8 42 12 40 Q15 38 18 40" dur="5s" repeatCount="indefinite"/>
+                </path>
+                
+                <!-- Dientes -->
+                <path d="M8 40 L10 38 L12 40" stroke="#fff" stroke-width="1" fill="#fff">
+                    <animate attributeName="d" values="M8 40 L10 38 L12 40; M8 38 L10 36 L12 38; M8 40 L10 38 L12 40" dur="5s" repeatCount="indefinite"/>
+                </path>
+                
+                <!-- Manchas en la espalda -->
+                <ellipse cx="45" cy="55" rx="15" ry="5" fill="#2e7d32" opacity="0.3" transform="rotate(-10 45 55)">
+                    <animate attributeName="opacity" values="0.3;0.5;0.3" dur="4s" repeatCount="indefinite"/>
+                </ellipse>
+                
+                <!-- Uñas -->
+                <path d="M25 80 L28 83 L25 86" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.5">
+                    <animate attributeName="d" values="M25 80 L28 83 L25 86; M25 82 L28 85 L25 88; M25 80 L28 83 L25 86" dur="2s" repeatCount="indefinite"/>
+                </path>
+                <path d="M65 80 L68 83 L65 86" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.5">
+                    <animate attributeName="d" values="M65 80 L68 83 L65 86; M65 82 L68 85 L65 88; M65 80 L68 83 L65 86" dur="2.5s" repeatCount="indefinite"/>
+                </path>
+                
+                <!-- Efecto de brillo -->
+                <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" stroke-dasharray="5,2"/>
+                
+                <!-- Sombra dinámica -->
+                <ellipse cx="50" cy="95" rx="30" ry="5" fill="rgba(0,0,0,0.1)" filter="blur(3px)">
+                    <animate attributeName="rx" values="30;35;30" dur="3s" repeatCount="indefinite"/>
+                </ellipse>
+                
+                <!-- Elemento interactivo que se sale del círculo (cola) -->
+                <circle cx="90" cy="30" r="8" fill="#4caf50" opacity="0.7" style="mix-blend-mode: multiply;">
+                    <animate attributeName="r" values="8;10;8" dur="4s" repeatCount="indefinite"/>
+                    <animate attributeName="cx" values="90;92;90" dur="5s" repeatCount="indefinite"/>
+                    <animate attributeName="cy" values="30;28;30" dur="3s" repeatCount="indefinite"/>
+                </circle>
             </svg>
         </button>
         
-        <!-- Panda 3D -->
-        <button type="button" class="avatar-anim avatar-choice" data-avatar="panda" title="Panda Adorable" style="animation: pulseAnim 2.5s infinite; background: linear-gradient(135deg,#f3f4f6 0%,#e5e7eb 50%,#d1d5db 100%);">
+        <!-- Panda 3D Mejorado -->
+        <button type="button" class="avatar-anim avatar-choice" data-avatar="panda" title="Panda 3D" style="animation: pandaEat 3s infinite; background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 50%, #d1d5db 100%);">
             <svg viewBox="0 0 48 48" fill="none">
-                <!-- Orejas negras -->
-                <circle cx="15" cy="12" r="6" fill="#000"/>
-                <circle cx="33" cy="12" r="6" fill="#000"/>
-                <circle cx="15" cy="12" r="4" fill="#1f2937"/>
-                <circle cx="33" cy="12" r="4" fill="#1f2937"/>
-                <!-- Cabeza blanca -->
-                <circle cx="24" cy="20" r="12" fill="#f9fafb"/>
-                <circle cx="24" cy="20" r="10" fill="#fff"/>
-                <!-- Manchas de ojos negras -->
-                <ellipse cx="20" cy="18" rx="4" ry="6" fill="#000"/>
-                <ellipse cx="28" cy="18" rx="4" ry="6" fill="#000"/>
-                <!-- Ojos blancos -->
-                <circle cx="20" cy="18" r="2.5" fill="#fff"/>
-                <circle cx="28" cy="18" r="2.5" fill="#fff"/>
-                <circle cx="20" cy="18" r="1.5" fill="#000"/>
-                <circle cx="28" cy="18" r="1.5" fill="#000"/>
-                <!-- Nariz -->
-                <ellipse cx="24" cy="22" rx="2" ry="1.5" fill="#000"/>
-                <!-- Boca sonriente -->
-                <path d="M20 25 Q24 28 28 25" stroke="#000" stroke-width="2" fill="none" stroke-linecap="round"/>
-                <!-- Cuerpo -->
-                <ellipse cx="24" cy="35" rx="8" ry="10" fill="#f9fafb"/>
-                <ellipse cx="24" cy="35" rx="6" ry="8" fill="#fff"/>
+                <!-- Fondo circular con sombra -->
+                <circle cx="24" cy="24" r="22" fill="#f0f2f5" filter="drop-shadow(0 4px 8px rgba(0,0,0,0.2))"/>
+                
+                <!-- Cuerpo principal con efecto 3D -->
+                <ellipse cx="24" cy="36" rx="14" ry="10" fill="#fff" stroke="#e0e0e0" stroke-width="1.5"/>
+                <ellipse cx="24" cy="34" rx="12" ry="8" fill="#f8f9fa" stroke="#e0e0e0" stroke-width="1"/>
+                
+                <!-- Cabeza con efecto 3D -->
+                <circle cx="24" cy="18" r="14" fill="#fff" stroke="#e0e0e0" stroke-width="1.5"/>
+                
+                <!-- Orejas con efecto 3D -->
+                <circle cx="14" cy="12" r="6" fill="#333" stroke="#222" stroke-width="1">
+                    <animate attributeName="r" values="6;5.8;6" dur="3s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="34" cy="12" r="6" fill="#333" stroke="#222" stroke-width="1">
+                    <animate attributeName="r" values="6;5.8;6" dur="3s" repeatCount="indefinite"/>
+                </circle>
+                
+                <!-- Manchas de ojos -->
+                <path d="M16 16 Q20 14 24 16 Q28 14 32 16 Q30 20 32 24 Q28 22 24 22 Q20 22 16 24 Q18 20 16 16Z" 
+                      fill="#333" fill-opacity="0.9" stroke="#222" stroke-width="1"/>
+                
+                <!-- Ojos con efecto de parpadeo -->
+                <g class="panda-eyes">
+                    <ellipse cx="19" cy="18" rx="3" ry="4" fill="#000">
+                        <animate attributeName="ry" values="4;0.5;4" dur="5s" repeatCount="indefinite"/>
+                    </ellipse>
+                    <ellipse cx="29" cy="18" rx="3" ry="4" fill="#000">
+                        <animate attributeName="ry" values="4;0.5;4" dur="5s" repeatCount="indefinite"/>
+                    </ellipse>
+                    
+                    <!-- Reflejos en los ojos -->
+                    <circle cx="20" cy="17" r="1" fill="#fff">
+                        <animate attributeName="cx" values="20;20.5;20" dur="4s" repeatCount="indefinite"/>
+                    </circle>
+                    <circle cx="30" cy="17" r="1" fill="#fff">
+                        <animate attributeName="cx" values="30;30.5;30" dur="4s" repeatCount="indefinite"/>
+                    </circle>
+                </g>
+                
+                <!-- Nariz y boca -->
+                <path d="M22 22 Q24 20 26 22 Q25 24 24 24 Q23 24 22 22Z" fill="#333" stroke="#222" stroke-width="0.5"/>
+                <path d="M20 26 Q24 28 28 26" stroke="#333" stroke-width="1.5" fill="none" stroke-linecap="round">
+                    <animate attributeName="d" values="M20 26 Q24 28 28 26; M20 26 Q24 25 28 26; M20 26 Q24 28 28 26" dur="3s" repeatCount="indefinite"/>
+                </path>
+                
+                <!-- Mejillas rosadas -->
+                <circle cx="18" cy="22" r="2" fill="#ffb6c1" opacity="0.6">
+                    <animate attributeName="opacity" values="0.6;0.3;0.6" dur="4s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="30" cy="22" r="2" fill="#ffb6c1" opacity="0.6">
+                    <animate attributeName="opacity" values="0.6;0.3;0.6" dur="4s" repeatCount="indefinite"/>
+                </circle>
+                
                 <!-- Brazos -->
-                <ellipse cx="15" cy="30" rx="3" ry="8" fill="#000"/>
-                <ellipse cx="33" cy="30" rx="3" ry="8" fill="#000"/>
-                <!-- Efectos 3D -->
-                <circle cx="24" cy="20" r="11" fill="none" stroke="#e5e7eb" stroke-width="1" opacity="0.7"/>
-                <circle cx="22" cy="17" r="1" fill="#fff" opacity="0.8"/>
-                <circle cx="30" cy="17" r="1" fill="#fff" opacity="0.8"/>
+                <ellipse cx="12" cy="30" rx="4" ry="8" fill="#333" transform="rotate(-20 12 30)">
+                    <animateTransform attributeName="transform" type="rotate" values="-20 12 30; -10 12 30; -20 12 30" dur="3s" repeatCount="indefinite"/>
+                </ellipse>
+                <ellipse cx="36" cy="30" rx="4" ry="8" fill="#333" transform="rotate(20 36 30)">
+                    <animateTransform attributeName="transform" type="rotate" values="20 36 30; 10 36 30; 20 36 30" dur="3s" repeatCount="indefinite"/>
+                </ellipse>
+                
+                <!-- Bambú -->
+                <g class="bamboo" transform="translate(20, 35)">
+                    <rect x="0" y="-10" width="2" height="12" fill="#4CAF50" rx="1">
+                        <animate attributeName="y" values="-10;-8;-10" dur="2s" repeatCount="indefinite"/>
+                    </rect>
+                    <rect x="-1" y="-12" width="4" height="2" fill="#388E3C" rx="1">
+                        <animateTransform attributeName="transform" type="rotate" values="0 1 -11; 5 1 -11; 0 1 -11" dur="3s" repeatCount="indefinite"/>
+                    </rect>
+                </g>
+                
+                <!-- Efecto de brillo -->
+                <circle cx="24" cy="24" r="22" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" stroke-dasharray="5,2"/>
+                
+                <!-- Sombra debajo del panda -->
+                <ellipse cx="24" cy="44" rx="12" ry="2" fill="rgba(0,0,0,0.1)" filter="blur(2px)">
+                    <animate attributeName="rx" values="12;14;12" dur="3s" repeatCount="indefinite"/>
+                </ellipse>
             </svg>
         </button>
         
@@ -671,6 +866,13 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     confirmBtn.addEventListener('click', function() {
         // Actualizar el campo oculto
         document.getElementById('selectedLanguage').value = selectedLanguage;
+        
+        // Crear un campo oculto para indicar que es solo cambio de idioma
+        const languageOnlyField = document.createElement('input');
+        languageOnlyField.type = 'hidden';
+        languageOnlyField.name = 'language_only';
+        languageOnlyField.value = 'true';
+        document.querySelector('form.avatar-chooser').appendChild(languageOnlyField);
         
         // Mostrar mensaje de carga
         this.textContent = 'Aplicando...';
