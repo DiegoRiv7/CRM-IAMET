@@ -171,6 +171,10 @@ def user_avatar(user, size="40"):
                         <polygon points="10,24 14,26 12,28" fill="#fff"/>
                     </svg>
                 ''',
+                'fox-hero': '''
+                    <img src="/static/images/fox-hero-avatar.jpeg" alt="Zorro Súper Héroe" 
+                         style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />
+                ''',
                 '1': '''
                     <svg viewBox="0 0 48 48" fill="none" style="width: 70%; height: 70%;">
                         <circle cx="24" cy="24" r="20" stroke="#fff" stroke-width="4" opacity="0.2"/>
@@ -187,6 +191,7 @@ def user_avatar(user, size="40"):
                 'panda': 'linear-gradient(135deg,#f3f4f6 0%,#e5e7eb 50%,#d1d5db 100%)',
                 'eagle': 'linear-gradient(135deg,#fbbf24 0%,#f59e0b 50%,#d97706 100%)',
                 'shark': 'linear-gradient(135deg,#0ea5e9 0%,#0284c7 50%,#0369a1 100%)',
+                'fox-hero': 'linear-gradient(135deg, #ff6b47 0%, #ff4500 50%, #ff8c00 100%)',
                 '1': 'linear-gradient(135deg, #00cfff 0%, #ff00c8 100%)'
             }
             

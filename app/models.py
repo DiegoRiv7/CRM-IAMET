@@ -10,6 +10,7 @@ from django.dispatch import receiver
 class UserProfile(models.Model):
     AVATAR_TIPO_CHOICES = [
         ('1', 'Humano'),
+        ('fox-hero', 'Zorro Súper Héroe'),
         ('dinosaur', 'Dinosaurio T-Rex'),
         ('panda', 'Panda'),
         ('eagle', 'Águila'),

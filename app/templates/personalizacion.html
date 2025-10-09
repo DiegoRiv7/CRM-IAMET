@@ -216,6 +216,11 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" stroke="#fff" stroke-width="4" opacity="0.2"/><path d="M24 8a8 8 0 018 8c0 4-3 8-8 8s-8-4-8-8a8 8 0 018-8z" fill="#00cfff"/><circle cx="24" cy="22" r="4" fill="#fff"/><ellipse cx="24" cy="34" rx="10" ry="4" fill="#ff00c8" opacity="0.6"/></svg>
         </button>
         
+        <!-- Zorro Súper Héroe -->
+        <button type="button" class="avatar-choice" data-avatar="fox-hero" title="Zorro Súper Héroe" style="background: linear-gradient(135deg, #ff6b47 0%, #ff4500 50%, #ff8c00 100%); border: 3px solid #ff4500; overflow: hidden;">
+            <img src="/static/images/fox-hero-avatar.jpeg" alt="Zorro Súper Héroe" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+        </button>
+        
         <!-- Dinosaurio T-Rex 3D Interactivo -->
         <button type="button" class="avatar-anim avatar-choice dino-container" data-avatar="dinosaur" title="Dinosaurio T-Rex" style="animation: dinoMoveAround 8s infinite; background: linear-gradient(135deg,#4ade80 0%,#22c55e 50%,#16a34a 100%);">
             <svg viewBox="0 0 100 100" fill="none" style="width: 120%; height: 120%; margin: -10% 0 0 -10%;">
@@ -479,43 +484,7 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             </svg>
         </button>
     </div>
-    <div style="margin-top:10px;font-size:0.97em;color:#aaa;">Selecciona un avatar animado, genera uno con AI o sube tu foto</div>
-    
-    <!-- Nueva sección: Generador de avatar con AI -->
-    <div style="margin-top:20px; padding:20px; background:rgba(255,255,255,0.05); border-radius:12px; text-align:center;">
-        <h3 style="color:#00cfff; margin-bottom:15px; font-size:1.1em;">🤖 Generador de Avatar con AI</h3>
-        <p style="color:#aaa; font-size:0.9em; margin-bottom:15px;">Genera un avatar único usando inteligencia artificial</p>
-        
-        <div style="display:flex; justify-content:center; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
-            <select id="ai-animal-select" style="padding:8px 12px; background:#232946; color:#fff; border:1px solid #444; border-radius:8px; outline:none;">
-                <option value="dinosaur">🦕 Dinosaurio (T-Rex)</option>
-                <option value="fox">🦊 Zorro</option>
-                <option value="owl">🦉 Búho</option>
-                <option value="panda">🐼 Panda</option>
-                <option value="wolf">🐺 Lobo</option>
-            </select>
-        </div>
-        
-        <button type="button" id="generate-ai-avatar" style="padding:10px 20px; background:#00cfff; color:#232946; border:none; border-radius:8px; cursor:pointer; font-weight:bold; transition:all 0.3s ease; margin-bottom:10px;">
-            ✨ Generar Avatar
-        </button>
-        
-        <div id="ai-loading" style="display:none; color:#00cfff; margin-top:10px;">
-            <div style="display:inline-block; animation:spin 1s linear infinite;">⌛</div>
-            Generando avatar único...
-        </div>
-        
-        <div id="ai-avatar-preview" style="display:none; margin-top:15px;">
-            <div style="width:120px; height:120px; margin:0 auto 10px; border-radius:50%; overflow:hidden; border:3px solid #00cfff; box-shadow:0 0 15px rgba(0,255,255,0.6);">
-                <img id="ai-generated-image" style="width:100%; height:100%; object-fit:cover;">
-            </div>
-            <button type="button" id="use-ai-avatar" style="padding:8px 16px; background:#00dd00; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:0.9em;">
-                ✅ Usar este avatar
-            </button>
-        </div>
-        
-        <div id="ai-error" style="display:none; color:#ff6b6b; margin-top:10px; font-size:0.9em;"></div>
-    </div>
+    <div style="margin-top:10px;font-size:0.97em;color:#aaa;">Selecciona un avatar o sube tu foto</div>
     
     <label for="avatarUpload" class="avatar-label">Subir foto</label>
     <input type="file" id="avatarUpload" name="avatar" accept="image/*">
@@ -928,170 +897,6 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     // Inicializar botones al cargar la página
     updateLanguageButtons();
     
-    // ===== GENERADOR DE AVATAR CON AI =====
-    const AI_AVATAR_PROMPTS = {
-        dinosaur: "Cute, friendly, cartoon dinosaur, T-Rex species, small round eyes, smiling, 3D render, highly detailed, vibrant green and yellow colors, clean white background, digital art, children's book style. Avatar circle crop.",
-        fox: "Cute, friendly, cartoon fox, sitting up, fluffy orange and white fur, big curious eyes, 3D render, highly detailed, vibrant colors, clean white background, digital art. Avatar circle crop.",
-        owl: "Cute, friendly, cartoon owl, wise, large golden eyes, elegant brown and white feathers, 3D render, highly detailed, vibrant colors, clean white background, digital art. Avatar circle crop.",
-        panda: "Cute, friendly, cartoon giant panda, holding bamboo, round face, black and white fur, 3D render, highly detailed, clean white background, digital art. Avatar circle crop.",
-        wolf: "Cute, friendly, cartoon wolf cub, blue-gray fur, sharp but kind eyes, howling playfully, 3D render, highly detailed, vibrant colors, clean white background, digital art. Avatar circle crop."
-    };
-    
-    // Elementos del generador AI
-    const generateAiButton = document.getElementById('generate-ai-avatar');
-    const aiAnimalSelect = document.getElementById('ai-animal-select');
-    const aiLoading = document.getElementById('ai-loading');
-    const aiAvatarPreview = document.getElementById('ai-avatar-preview');
-    const aiGeneratedImage = document.getElementById('ai-generated-image');
-    const useAiAvatarButton = document.getElementById('use-ai-avatar');
-    const aiError = document.getElementById('ai-error');
-    
-    // Variable para almacenar el avatar generado
-    let generatedAvatarBlob = null;
-    
-    // Función para convertir base64 a blob
-    function base64ToBlob(base64, contentType = 'image/png') {
-        const byteCharacters = atob(base64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        return new Blob([byteArray], { type: contentType });
-    }
-    
-    // Función para generar avatar con AI usando Google AI API
-    async function generateAIAvatar() {
-        const selectedAnimal = aiAnimalSelect.value;
-        const prompt = AI_AVATAR_PROMPTS[selectedAnimal];
-        
-        // Mostrar loading y ocultar errores
-        aiLoading.style.display = 'block';
-        aiError.style.display = 'none';
-        aiAvatarPreview.style.display = 'none';
-        generateAiButton.disabled = true;
-        
-        try {
-            const base64Data = await fetchImageWithRetry({
-                instances: { 
-                    prompt: prompt,
-                    aspectRatio: "1:1",
-                    sampleCount: 1 
-                },
-                parameters: { 
-                    sampleImageSize: "1024",
-                }
-            });
-            
-            const imageUrl = base64ToImageUrl(base64Data);
-            
-            // Mostrar la imagen generada
-            aiGeneratedImage.src = imageUrl;
-            aiLoading.style.display = 'none';
-            aiAvatarPreview.style.display = 'block';
-            
-            // Crear blob de la imagen generada
-            generatedAvatarBlob = base64ToBlob(base64Data);
-            
-            // Mostrar mensaje de éxito
-            aiError.textContent = `¡Avatar de ${selectedAnimal.charAt(0).toUpperCase() + selectedAnimal.slice(1)} generado con éxito!`;
-            aiError.style.color = '#00dd00';
-            aiError.style.display = 'block';
-            
-        } catch (error) {
-            console.error('Error generating AI avatar:', error);
-            aiError.textContent = `Error: No se pudo generar el avatar. (${error.message})`;
-            aiError.style.color = '#ff6b6b';
-            aiError.style.display = 'block';
-            aiLoading.style.display = 'none';
-        } finally {
-            generateAiButton.disabled = false;
-        }
-    }
-    
-    // Función para realizar peticiones a la API con reintentos
-    async function fetchImageWithRetry(payload, retries = 3) {
-        const API_KEY = "AIzaSyDoGM7zNtSdsBkPVb2Rq5VAZbroXAsOLB8";
-        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${API_KEY}`;
-        
-        for (let i = 0; i < retries; i++) {
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-
-                const result = await response.json();
-                
-                if (result.predictions && result.predictions.length > 0 && result.predictions[0].bytesBase64Encoded) {
-                    return result.predictions[0].bytesBase64Encoded;
-                } else {
-                    throw new Error("Respuesta de la API incompleta o vacía.");
-                }
-
-            } catch (error) {
-                if (i < retries - 1) {
-                    const delay = Math.pow(2, i) * 1000;
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                } else {
-                    throw error;
-                }
-            }
-        }
-    }
-    
-    // Función para convertir base64 a URL de imagen
-    function base64ToImageUrl(base64Data) {
-        return `data:image/png;base64,${base64Data}`;
-    }
-    
-    // Función para usar el avatar generado
-    function useGeneratedAvatar() {
-        if (generatedAvatarBlob) {
-            // Crear un archivo a partir del blob
-            const file = new File([generatedAvatarBlob], `ai-avatar-${aiAnimalSelect.value}.png`, { 
-                type: 'image/png' 
-            });
-            
-            // Crear un DataTransfer y añadir el archivo
-            const dataTransfer = new DataTransfer();
-            dataTransfer.items.add(file);
-            
-            // Asignar el archivo al input de upload
-            const avatarUpload = document.getElementById('avatarUpload');
-            avatarUpload.files = dataTransfer.files;
-            
-            // Disparar el evento change para procesar la imagen
-            const changeEvent = new Event('change', { bubbles: true });
-            avatarUpload.dispatchEvent(changeEvent);
-            
-            // Ocultar la preview del AI
-            aiAvatarPreview.style.display = 'none';
-            
-            // Mostrar mensaje de éxito
-            aiError.textContent = '✅ Avatar AI aplicado correctamente';
-            aiError.style.color = '#00dd00';
-            aiError.style.display = 'block';
-            
-            setTimeout(() => {
-                aiError.style.display = 'none';
-            }, 3000);
-        }
-    }
-    
-    // Event listeners para el generador AI
-    if (generateAiButton) {
-        generateAiButton.addEventListener('click', generateAIAvatar);
-    }
-    
-    if (useAiAvatarButton) {
-        useAiAvatarButton.addEventListener('click', useGeneratedAvatar);
-    }
 </script>
     </script>
 </body>
