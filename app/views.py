@@ -3005,54 +3005,10 @@ def supervisor_required(view_func):
 @login_required
 def usuario_redirect_view(request):
     """
-    Muestra la página de configuración avanzada y maneja el envío del formulario.
+    Redirige a la página de configuración avanzada
     """
-    if request.method == 'POST':
-        # Debug: imprimir datos recibidos
-        print(f"DEBUG - POST data: {request.POST}")
-        print(f"DEBUG - avatar_choice: {request.POST.get('avatar_choice', 'NO ENVIADO')}")
-        
-        # Obtener o crear el perfil del usuario
-        profile, created = UserProfile.objects.get_or_create(user=request.user)
-        
-        # Manejar la subida de imagen
-        if 'avatar' in request.FILES and request.FILES['avatar']:
-            profile.avatar = request.FILES['avatar']
-            profile.usar_animado = False
-            profile.avatar_tipo = '1'  # Reset a humano por defecto
-        # Si se está seleccionando un avatar animado
-        elif 'avatar_choice' in request.POST and request.POST['avatar_choice']:
-            print(f"DEBUG - Guardando avatar animado: {request.POST['avatar_choice']}")
-            profile.usar_animado = True
-            profile.avatar_tipo = request.POST['avatar_choice']  # Guardar el tipo seleccionado
-            # Limpiar avatar anterior si existía
-            profile.avatar = None
-            print(f"DEBUG - Profile actualizado: usar_animado={profile.usar_animado}, avatar_tipo={profile.avatar_tipo}")
-        
-        # Manejar el cambio de idioma
-        if 'language' in request.POST:
-            profile.language = request.POST['language']
-            # Guardar preferencia de idioma en la sesión
-            request.session['django_language'] = profile.language
-            from django.utils import translation
-            translation.activate(profile.language)
-            profile.save()
-            
-            # Si es solo un cambio de idioma, redirigir a la misma página con recarga
-            if request.POST.get('language_only') == 'true':
-                messages.success(request, 'Idioma actualizado correctamente / Language updated successfully')
-                return redirect('usuario')
-        
-        profile.save()
-        
-        # Redirigir a la página de inicio
-        return redirect('home')
-    
-    # Si es GET, mostrar la página de configuración con el idioma actual
-    profile = get_object_or_404(UserProfile, user=request.user)
-    return render(request, 'personalizacion.html', {'user_profile': profile})
-        
-    return render(request, 'personalizacion.html')
+    from django.shortcuts import redirect
+    return redirect('configuracion_avanzada')
 
 
 @supervisor_required
