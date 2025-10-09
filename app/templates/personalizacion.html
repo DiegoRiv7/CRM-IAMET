@@ -448,7 +448,7 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         </button>
         
         <!-- Zorro Súper Héroe -->
-        <button type="button" class="avatar-anim avatar-choice" data-avatar="fox-hero" title="Zorro Súper Héroe" style="background: linear-gradient(135deg, #ff6b47 0%, #ff4500 50%, #ff8c00 100%); border: 2px solid #ff4500; overflow: hidden;">
+        <button type="button" class="avatar-choice" data-avatar="fox-hero" title="Zorro Súper Héroe" style="background: linear-gradient(135deg, #ff6b47 0%, #ff4500 50%, #ff8c00 100%); border: 2px solid #ff4500; overflow: hidden;">
             <img src="/static/images/fox-hero-avatar.jpeg" alt="Zorro Súper Héroe" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
         </button>
         
@@ -498,7 +498,7 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
 </div>
             </div>
             <div style="margin-top:18px; text-align:center;">
-                <button type="submit" class="avatar-label" style="background:#00cfff; color:#fff; border:none;">Guardar configuración</button>
+                <button type="submit" class="avatar-label" style="background:#00cfff; color:#fff; border:none;" onclick="console.log('Enviando avatar_choice:', document.getElementById('avatarChoice').value);">Guardar configuración</button>
             </div>
             
             <!-- Selector de idioma -->
@@ -583,6 +583,7 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             setAnimPreview(selectedAvatar);
             // Actualizar el campo oculto
             document.getElementById('avatarChoice').value = selectedAvatar;
+            console.log('Avatar seleccionado:', selectedAvatar); // Debug
         });
     });
     // Inicializa preview
