@@ -1011,7 +1011,7 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     
     // Función para realizar peticiones a la API con reintentos
     async function fetchImageWithRetry(payload, retries = 3) {
-        const API_KEY = ""; // Aquí va tu API key de Google AI
+        const API_KEY = "AIzaSyDoGM7zNtSdsBkPVb2Rq5VAZbroXAsOLB8";
         const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${API_KEY}`;
         
         for (let i = 0; i < retries; i++) {
