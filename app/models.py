@@ -34,7 +34,9 @@ class UserProfile(models.Model):
     language = models.CharField(max_length=2, choices=LANGUAGE_CHOICES, default='es', verbose_name="Idioma de preferencia")
 
     def get_avatar_url(self):
-        if self.usar_animado:
+        if self.avatar:
+            return self.avatar.url
+        elif self.usar_animado:
             if self.avatar_tipo == 'fox-hero':
                 return '/static/images/fox-hero-avatar.jpeg'
             # Aquí puedes agregar más casos para otros avatares
@@ -56,8 +58,6 @@ class UserProfile(models.Model):
             else:
                 # Un avatar animado por defecto si no se encuentra uno específico
                 return '/static/img/avatar_animado_default.svg'
-        elif self.avatar:
-            return self.avatar.url
         else:
             # Devuelve None si no hay imagen ni animado, para mostrar iniciales
             return None
