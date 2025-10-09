@@ -1809,31 +1809,46 @@ def set_language(request):
     Vista para cambiar el idioma de la aplicación
     Soporta tanto peticiones AJAX como formularios normales
     """
-    if request.method != 'POST':
-        return JsonResponse(
-            {'status': 'error', 'message': 'Método no permitido'}, 
-            status=405
-        )
+    logger = logging.getLogger(__name__)
     
     try:
+        # Verificar método HTTP
+        if request.method != 'POST':
+            logger.warning('Intento de acceso con método no permitido: %s', request.method)
+            return JsonResponse(
+                {'status': 'error', 'message': 'Método no permitido'}, 
+                status=405
+            )
+        
+        # Obtener el idioma solicitado
         language = request.POST.get('language', 'es')
+        logger.info('Solicitud de cambio de idioma a: %s', language)
         
         # Validar que el idioma esté en los idiomas configurados
-        if language not in [lang[0] for lang in settings.LANGUAGES]:
-            language = 'es'  # Valor por defecto si el idioma no es válido
+        available_languages = [lang[0] for lang in settings.LANGUAGES]
+        if language not in available_languages:
+            logger.warning('Idioma no válido: %s. Idiomas disponibles: %s', language, available_languages)
+            language = 'es'  # Valor por defecto
         
         # Activar el idioma para esta sesión
         translation.activate(language)
+        logger.debug('Idioma activado: %s', language)
         
         # Configurar el idioma en la sesión
         if hasattr(request, 'session'):
             request.session[translation.LANGUAGE_SESSION_KEY] = language
-            request.session.save()
+            request.session.modified = True
+            logger.debug('Idioma guardado en la sesión')
         
         # Guardar en el perfil del usuario si está autenticado
-        if request.user.is_authenticated and hasattr(request.user, 'userprofile'):
-            request.user.userprofile.language = language
-            request.user.userprofile.save()
+        if request.user.is_authenticated:
+            try:
+                if hasattr(request.user, 'userprofile'):
+                    request.user.userprofile.language = language
+                    request.user.userprofile.save()
+                    logger.debug('Idioma guardado en el perfil del usuario')
+            except Exception as e:
+                logger.error('Error al guardar el idioma en el perfil del usuario: %s', str(e), exc_info=True)
         
         # Determinar si es una petición AJAX
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
@@ -1866,19 +1881,22 @@ def set_language(request):
             samesite='Lax'
         )
         
+        logger.info('Cambio de idioma exitoso a: %s', language)
         return response
     
     except Exception as e:
-        # Registrar el error para depuración
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f'Error al cambiar el idioma: {str(e)}', exc_info=True)
+        # Registrar el error completo para depuración
+        logger.error('Error al cambiar el idioma', exc_info=True)
         
+        # Devolver un mensaje de error genérico al cliente
         return JsonResponse(
-            {'status': 'error', 'message': str(e)},
+            {
+                'status': 'error', 
+                'message': 'Error interno del servidor al cambiar el idioma',
+                'debug': str(e) if settings.DEBUG else None
+            },
             status=500
         )
-    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
 
 @login_required
 def editar_venta_todoitem(request, pk):
