@@ -161,19 +161,72 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             height: 80%;
         }
         
-        /* Mejorar la vista previa */
-        .avatar-preview {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            margin: 0 auto 20px;
+        /* Estilos para la galería de avatares */
+        .avatar-options {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        #avatarGallery {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 5px;
+        }
+        
+        /* Estilos para los botones de avatar */
+        .avatar-choice {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            border: 2px solid rgba(255,255,255,0.15);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            padding: 0;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 4px solid rgba(255,255,255,0.2);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            background: rgba(255,255,255,0.05);
+        }
+        
+        .avatar-choice:hover {
+            transform: scale(1.05);
+            border-color: rgba(0,207,255,0.5);
+            box-shadow: 0 0 8px rgba(0,207,255,0.3);
+        }
+        
+        .avatar-choice.selected {
+            border: 2px solid #00cfff;
+            box-shadow: 0 0 10px rgba(0,207,255,0.6);
+        }
+        
+        .avatar-choice img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        
+        /* Vista previa del avatar */
+        .avatar-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 20px;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid rgba(255,255,255,0.15);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             overflow: hidden;
             position: relative;
+            background: rgba(255,255,255,0.05);
         }
         
         /* Crop overlay para cuando tenemos imagen */
@@ -215,11 +268,15 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         <span>✂️ EDITAR</span>
     </div>
 </div>
-<div class="avatar-options" style="flex-direction:column;align-items:center;gap:10px;">
-    <div id="avatarGallery" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;max-width:400px;">
+<div class="avatar-options">
+    <div id="avatarGallery">
         <!-- Avatar Humano Original -->
-        <button type="button" class="avatar-anim avatar-choice" data-avatar="1" title="Avatar Humano" style="animation: rotateAnim 2.5s linear infinite; background: linear-gradient(135deg,#00cfff 0%,#ff00c8 100%);">
-            <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" stroke="#fff" stroke-width="4" opacity="0.2"/><path d="M24 8a8 8 0 018 8c0 4-3 8-8 8s-8-4-8-8a8 8 0 018-8z" fill="#00cfff"/><circle cx="24" cy="22" r="4" fill="#fff"/><ellipse cx="24" cy="34" rx="10" ry="4" fill="#ff00c8" opacity="0.6"/></svg>
+        <button type="button" class="avatar-choice" data-avatar="1" title="Humano">
+            <svg viewBox="0 0 48 48" fill="none" style="width: 100%; height: 100%; padding: 8px;">
+                <circle cx="24" cy="24" r="20" fill="#00cfff" opacity="0.9"/>
+                <circle cx="24" cy="18" r="6" fill="#fff"/>
+                <ellipse cx="24" cy="36" rx="10" ry="8" fill="#ff00c8" opacity="0.8"/>
+            </svg>
         </button>
         
         <!-- Dinosaurio -->
@@ -307,7 +364,7 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     <input type="hidden" id="avatarChoice" name="avatar_choice" value="1" style="background: red; color: white; display: block; width: 200px; height: 30px;" readonly>
 </div>
             </div>
-            <div style="margin-top:18px; text-align:center;">
+            <div style="margin-top:12px; text-align:center;">
                 <button type="submit" class="avatar-label" style="background:#00cfff; color:#fff; border:none;" onclick="console.log('Enviando avatar_choice:', document.getElementById('avatarChoice').value);">Guardar configuración</button>
             </div>
             
