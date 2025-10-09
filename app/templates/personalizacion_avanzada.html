@@ -436,10 +436,16 @@
             border: 1px solid rgba(255, 107, 157, 0.2);
         }
         
-        .animal-option:hover {
+        .animal-option:hover,
+        .avatar-choice:hover {
             background: rgba(255, 255, 255, 0.1);
             border-color: var(--apple-blue);
             transform: translateY(-2px);
+        }
+        
+        .avatar-choice.selected {
+            border-color: var(--apple-blue) !important;
+            box-shadow: 0 0 10px rgba(0, 122, 255, 0.5) !important;
         }
         
         .animal-emoji {
@@ -828,47 +834,90 @@
                 <button class="modal-close" onclick="hideModal('avatarModal')">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="avatar-section">
-                    <h3>Subir Foto Personal</h3>
-                    <p>Sube tu propia foto de perfil</p>
-                    <button class="btn-primary" onclick="uploadPhoto()">
-                        📸 Subir Foto
-                    </button>
-                    <input type="file" id="avatarInput" accept="image/*" style="display: none;" onchange="handleAvatarUpload(event)">
-                </div>
-                
-                <div class="divider"></div>
-                
-                <div class="avatar-section">
-                    <h3>Avatares Animados</h3>
-                    <p>Elige un avatar de animal</p>
-                    <div class="animal-grid">
-                        <div class="animal-option" onclick="selectAnimalAvatar('cat')">
-                            <div class="animal-emoji">🐱</div>
-                            <span>Gato</span>
+                <form class="avatar-chooser" method="post" enctype="multipart/form-data" action="{% url 'usuario' %}">
+                    {% csrf_token %}
+                    
+                    <!-- Vista previa del avatar -->
+                    <div class="avatar-preview-container" style="text-align: center; margin-bottom: 20px;">
+                        <div class="avatar-preview" id="avatarPreview" style="width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; border: 3px solid var(--apple-blue); position: relative; overflow: hidden;">
+                            <div id="animGalleryPreview" style="display:flex; align-items:center; justify-content:center; width:100%; height:100%;"></div>
+                            <img id="uploadedAvatar" src="" alt="Foto de perfil" style="display:none; width:100%; height:100%; object-fit:cover; border-radius:50%;"/>
+                            
+                            <!-- Botón de edición -->
+                            <div id="editAvatarBtn" style="position: absolute; bottom: -5px; right: -5px; width: 32px; height: 32px; border-radius: 50%; background: var(--apple-blue); display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid var(--apple-background-secondary); box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 10;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="color: white;">
+                                    <path d="M13.94 5L19 10.06L9.062 20a2.25 2.25 0 0 1-.999.58l-5.116 1.395a.75.75 0 0 1-.92-.921l1.38-5.119a2.25 2.25 0 0 1 .577-.99L13.938 5z" fill="currentColor"/>
+                                </svg>
+                            </div>
                         </div>
-                        <div class="animal-option" onclick="selectAnimalAvatar('dog')">
-                            <div class="animal-emoji">🐶</div>
-                            <span>Perro</span>
-                        </div>
-                        <div class="animal-option" onclick="selectAnimalAvatar('fox')">
-                            <div class="animal-emoji">🦊</div>
-                            <span>Zorro</span>
-                        </div>
-                        <div class="animal-option" onclick="selectAnimalAvatar('bear')">
-                            <div class="animal-emoji">🐻</div>
-                            <span>Oso</span>
-                        </div>
-                        <div class="animal-option" onclick="selectAnimalAvatar('panda')">
-                            <div class="animal-emoji">🐼</div>
-                            <span>Panda</span>
-                        </div>
-                        <div class="animal-option" onclick="selectAnimalAvatar('lion')">
-                            <div class="animal-emoji">🦁</div>
-                            <span>León</span>
+                        <div style="font-size: 14px; color: var(--apple-label-secondary);">Vista previa del avatar</div>
+                    </div>
+                    
+                    <!-- Galería de avatares existentes -->
+                    <div class="avatar-section">
+                        <h3>Avatares Disponibles</h3>
+                        <p>Selecciona uno de los avatares animados</p>
+                        <div id="avatarGallery" class="animal-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0;">
+                            <!-- Dinosaurio -->
+                            <button type="button" class="avatar-choice" data-avatar="dinosaur" title="Dinosaurio" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; overflow: hidden; transition: all 0.2s ease;">
+                                <img src="/static/images/dinosaurio.jpeg" alt="Dinosaurio" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                            </button>
+                            
+                            <!-- Panda -->
+                            <button type="button" class="avatar-choice" data-avatar="panda" title="Panda" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; overflow: hidden; transition: all 0.2s ease;">
+                                <img src="/static/images/panda.jpeg" alt="Panda" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                            </button>
+                            
+                            <!-- Águila -->
+                            <button type="button" class="avatar-choice" data-avatar="eagle" title="Águila" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; overflow: hidden; transition: all 0.2s ease;">
+                                <img src="/static/images/aguila.jpeg" alt="Águila" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                            </button>
+                            
+                            <!-- Zorro Súper Héroe -->
+                            <button type="button" class="avatar-choice" data-avatar="fox-hero" title="Zorro Súper Héroe" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; overflow: hidden; transition: all 0.2s ease;">
+                                <img src="/static/images/fox-hero-avatar.jpeg" alt="Zorro Súper Héroe" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                            </button>
+
+                            <!-- Lobo -->
+                            <button type="button" class="avatar-choice" data-avatar="lobo" title="Lobo" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; overflow: hidden; transition: all 0.2s ease;">
+                                <img src="/static/images/lobo.jpeg" alt="Lobo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                            </button>
+
+                            <!-- Buho -->
+                            <button type="button" class="avatar-choice" data-avatar="buho" title="Buho" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; overflow: hidden; transition: all 0.2s ease;">
+                                <img src="/static/images/buho.jpeg" alt="Buho" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                            </button>
+
+                            <!-- Axolote -->
+                            <button type="button" class="avatar-choice" data-avatar="axolote" title="Axolote" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; overflow: hidden; transition: all 0.2s ease;">
+                                <img src="/static/images/axolote.jpeg" alt="Axolote" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                            </button>
+
+                            <!-- Cocodrilo -->
+                            <button type="button" class="avatar-choice" data-avatar="cocodrilo" title="Cocodrilo" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; overflow: hidden; transition: all 0.2s ease;">
+                                <img src="/static/images/cocodrilo.jpeg" alt="Cocodrilo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                            </button>
                         </div>
                     </div>
-                </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <div class="avatar-section">
+                        <h3>Subir Foto Personal</h3>
+                        <p>O sube tu propia foto de perfil</p>
+                        <button type="button" class="btn-primary" onclick="uploadPhoto()">
+                            📸 Subir Foto
+                        </button>
+                        <input type="file" id="avatarUpload" name="avatar" accept="image/*" style="display: none;">
+                        <input type="hidden" id="avatarChoice" name="avatar_choice" value="">
+                    </div>
+                    
+                    <div style="margin-top: 20px; text-align: center; padding-top: 16px; border-top: 1px solid var(--apple-separator);">
+                        <button type="submit" class="btn-primary" style="width: 100%;">
+                            💾 Guardar Avatar
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -1044,6 +1093,10 @@
 
         function openAvatarSettings() {
             showModal('avatarModal');
+            // Initialize avatar system when modal opens
+            setTimeout(() => {
+                initializeAvatarSystem();
+            }, 100);
         }
 
         function openDesignSettings() {
@@ -1069,57 +1122,113 @@
             document.body.style.overflow = 'auto';
         }
 
-        // Avatar functionality
+        // Avatar functionality - original system
         function uploadPhoto() {
-            document.getElementById('avatarInput').click();
+            document.getElementById('avatarUpload').click();
         }
 
-        function handleAvatarUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const formData = new FormData();
-                formData.append('avatar', file);
-                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        // Avatar selection logic from original system
+        function initializeAvatarSystem() {
+            const avatarChoices = document.querySelectorAll('.avatar-choice');
+            const animGalleryPreview = document.getElementById('animGalleryPreview');
+            const uploadedAvatar = document.getElementById('uploadedAvatar');
+            const avatarUpload = document.getElementById('avatarUpload');
+            let selectedAvatar = 'dinosaur';
 
-                fetch('{% url "avatar_generator" %}', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('Error al subir la imagen: ' + (data.error || 'Error desconocido'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error al subir la imagen');
-                });
-            }
-        }
-
-        function selectAnimalAvatar(animalName) {
-            const formData = new FormData();
-            formData.append('animal_avatar', animalName);
-            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-
-            fetch('{% url "avatar_generator" %}', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Error al seleccionar avatar: ' + (data.error || 'Error desconocido'));
+            function setAnimPreview(idx) {
+                const btn = document.querySelector('.avatar-choice[data-avatar="'+idx+'"]');
+                if (!btn) return;
+                
+                const previewContent = btn.cloneNode(true);
+                
+                animGalleryPreview.innerHTML = '';
+                animGalleryPreview.className = 'avatar-preview-content';
+                animGalleryPreview.style = '';
+                
+                const previewImg = previewContent.querySelector('img');
+                if (previewImg) {
+                    previewImg.style.width = '100%';
+                    previewImg.style.height = '100%';
+                    previewImg.style.objectFit = 'cover';
+                    previewImg.style.borderRadius = '50%';
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error al seleccionar avatar');
+                
+                animGalleryPreview.style.display = 'flex';
+                animGalleryPreview.style.alignItems = 'center';
+                animGalleryPreview.style.justifyContent = 'center';
+                animGalleryPreview.style.width = '100%';
+                animGalleryPreview.style.height = '100%';
+                
+                previewContent.style.width = '100%';
+                previewContent.style.height = '100%';
+                previewContent.style.padding = '0';
+                previewContent.style.border = 'none';
+                previewContent.style.background = 'transparent';
+                previewContent.style.boxShadow = 'none';
+                
+                animGalleryPreview.appendChild(previewContent);
+                uploadedAvatar.style.display = 'none';
+            }
+
+            avatarChoices.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    avatarChoices.forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    btn.style.borderColor = 'var(--apple-blue)';
+                    btn.style.boxShadow = '0 0 10px rgba(0, 122, 255, 0.5)';
+                    
+                    // Reset other buttons
+                    avatarChoices.forEach(b => {
+                        if (b !== btn) {
+                            b.style.borderColor = 'transparent';
+                            b.style.boxShadow = 'none';
+                        }
+                    });
+                    
+                    selectedAvatar = btn.getAttribute('data-avatar');
+                    setAnimPreview(selectedAvatar);
+                    document.getElementById('avatarChoice').value = selectedAvatar;
+                });
+            });
+
+            // Initialize with user's current avatar or default
+            const defaultAvatar = '{{ user_profile.avatar_tipo|default:"dinosaur" }}';
+            const initialAvatar = document.querySelector(`.avatar-choice[data-avatar="${defaultAvatar}"]`);
+            
+            if (initialAvatar) {
+                initialAvatar.click();
+            } else {
+                const defaultBtn = document.querySelector('.avatar-choice[data-avatar="dinosaur"]');
+                if (defaultBtn) {
+                    defaultBtn.click();
+                }
+            }
+
+            // Handle edit button click
+            document.getElementById('editAvatarBtn').addEventListener('click', function(e) {
+                e.stopPropagation();
+                document.getElementById('avatarUpload').click();
+            });
+
+            // Handle file upload
+            avatarUpload.addEventListener('change', function(e) {
+                if (e.target.files && e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        uploadedAvatar.src = ev.target.result;
+                        uploadedAvatar.style.display = 'block';
+                        animGalleryPreview.style.display = 'none';
+                        
+                        // Clear avatar selection
+                        avatarChoices.forEach(b => {
+                            b.classList.remove('selected');
+                            b.style.borderColor = 'transparent';
+                            b.style.boxShadow = 'none';
+                        });
+                        document.getElementById('avatarChoice').value = '';
+                    }
+                    reader.readAsDataURL(e.target.files[0]);
+                }
             });
         }
 
