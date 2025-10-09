@@ -215,18 +215,24 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         
         /* Vista previa del avatar */
         .avatar-preview {
-            width: 100px;
-            height: 100px;
-            border-radius: 20px;
-            margin: 0 auto 15px;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 3px solid rgba(255,255,255,0.15);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border: 3px solid rgba(0,207,255,0.3);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             overflow: hidden;
             position: relative;
             background: rgba(255,255,255,0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .avatar-preview:hover {
+            transform: scale(1.03);
+            box-shadow: 0 6px 25px rgba(0,207,255,0.2);
         }
         
         /* Crop overlay para cuando tenemos imagen */
@@ -260,25 +266,21 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         <h1 style="text-align:center; color:#00cfff; font-weight:700; margin-bottom:32px;">Configuración avanzada</h1>
         <form class="avatar-chooser" method="post" enctype="multipart/form-data" action="{% url 'usuario' %}" onsubmit="console.log('Formulario enviándose. Avatar choice:', document.getElementById('avatarChoice').value);">
             {% csrf_token %}
-            <div class="avatar-preview" id="avatarPreview">
-    <!-- Vista previa dinámica -->
-    <div id="animGalleryPreview" style="display:block;"></div>
-    <img id="uploadedAvatar" src="" alt="Foto de perfil" style="display:none; width:100%; height:100%; object-fit:cover; border-radius:50%;"/>
-    <div class="crop-overlay" id="cropOverlay" style="display:none;">
-        <span>✂️ EDITAR</span>
+            <div class="avatar-preview-container" style="text-align: center; margin-bottom: 20px;">
+        <div class="avatar-preview" id="avatarPreview">
+            <!-- Vista previa dinámica -->
+            <div id="animGalleryPreview" style="display:flex; align-items:center; justify-content:center; width:100%; height:100%;"></div>
+            <img id="uploadedAvatar" src="" alt="Foto de perfil" style="display:none; width:100%; height:100%; object-fit:cover; border-radius:50%;"/>
+            <div class="crop-overlay" id="cropOverlay" style="display:none;">
+                <span>✂️ EDITAR</span>
+            </div>
+        </div>
+        <div style="margin-top: 10px; font-size: 1.1em; color: #00cfff; font-weight: 500;">
+            Vista previa
+        </div>
     </div>
-</div>
 <div class="avatar-options">
     <div id="avatarGallery">
-        <!-- Avatar Humano Original -->
-        <button type="button" class="avatar-choice" data-avatar="1" title="Humano">
-            <svg viewBox="0 0 48 48" fill="none" style="width: 100%; height: 100%; padding: 8px;">
-                <circle cx="24" cy="24" r="20" fill="#00cfff" opacity="0.9"/>
-                <circle cx="24" cy="18" r="6" fill="#fff"/>
-                <ellipse cx="24" cy="36" rx="10" ry="8" fill="#ff00c8" opacity="0.8"/>
-            </svg>
-        </button>
-        
         <!-- Dinosaurio -->
         <button type="button" class="avatar-choice" data-avatar="dinosaur" title="Dinosaurio" style="background: linear-gradient(135deg, #4ade80 0%, #22c55e 50%, #16a34a 100%); border: 2px solid #22c55e; overflow: hidden;">
             <img src="/static/images/dinosaurio.jpeg" alt="Dinosaurio" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
@@ -297,44 +299,6 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         <!-- Zorro Súper Héroe -->
         <button type="button" class="avatar-choice" data-avatar="fox-hero" title="Zorro Súper Héroe" style="background: linear-gradient(135deg, #ff6b47 0%, #ff4500 50%, #ff8c00 100%); border: 2px solid #ff4500; overflow: hidden;">
             <img src="/static/images/fox-hero-avatar.jpeg" alt="Zorro Súper Héroe" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-        </button>
-        
-        <!-- Tiburón 3D -->
-        <button type="button" class="avatar-anim avatar-choice" data-avatar="shark" title="Tiburón Feroz" style="animation: swimAnim 2.5s infinite; background: linear-gradient(135deg,#0ea5e9 0%,#0284c7 50%,#0369a1 100%);">
-            <svg viewBox="0 0 48 48" fill="none">
-                <!-- Cuerpo principal -->
-                <ellipse cx="24" cy="24" rx="16" ry="8" fill="#0284c7"/>
-                <ellipse cx="24" cy="24" rx="14" ry="6" fill="#0ea5e9"/>
-                <!-- Cabeza puntiaguda -->
-                <polygon points="8,24 20,18 20,30" fill="#0369a1"/>
-                <polygon points="10,24 18,20 18,28" fill="#0284c7"/>
-                <!-- Aleta dorsal -->
-                <polygon points="20,12 28,8 32,18 24,16" fill="#0369a1"/>
-                <polygon points="22,14 26,10 30,16 26,16" fill="#0284c7"/>
-                <!-- Aletas laterales -->
-                <ellipse cx="18" cy="28" rx="6" ry="3" fill="#0369a1" transform="rotate(30 18 28)"/>
-                <ellipse cx="18" cy="20" rx="6" ry="3" fill="#0369a1" transform="rotate(-30 18 20)"/>
-                <!-- Cola -->
-                <polygon points="36,20 44,12 44,24 40,24" fill="#0369a1"/>
-                <polygon points="36,28 44,36 44,24 40,24" fill="#0369a1"/>
-                <polygon points="38,22 42,16 42,26 40,24" fill="#0284c7"/>
-                <polygon points="38,26 42,32 42,26 40,24" fill="#0284c7"/>
-                <!-- Ojo -->
-                <circle cx="16" cy="22" r="3" fill="#000"/>
-                <circle cx="16" cy="22" r="2" fill="#fff"/>
-                <circle cx="17" cy="21" r="1" fill="#000"/>
-                <!-- Dientes -->
-                <polygon points="8,24 12,26 10,28" fill="#fff"/>
-                <polygon points="10,24 14,26 12,28" fill="#fff"/>
-                <polygon points="12,24 16,26 14,28" fill="#fff"/>
-                <!-- Branquias -->
-                <path d="M18 20 Q20 22 18 24" stroke="#0369a1" stroke-width="1"/>
-                <path d="M20 20 Q22 22 20 24" stroke="#0369a1" stroke-width="1"/>
-                <path d="M22 20 Q24 22 22 24" stroke="#0369a1" stroke-width="1"/>
-                <!-- Efectos 3D -->
-                <ellipse cx="24" cy="22" rx="14" ry="5" fill="none" stroke="#0ea5e9" stroke-width="1" opacity="0.5"/>
-                <circle cx="15" cy="20" r="0.5" fill="#fff"/>
-            </svg>
         </button>
 
         <!-- Lobo -->
@@ -361,7 +325,7 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     
     <label for="avatarUpload" class="avatar-label">Subir foto</label>
     <input type="file" id="avatarUpload" name="avatar" accept="image/*">
-    <input type="hidden" id="avatarChoice" name="avatar_choice" value="1" style="background: red; color: white; display: block; width: 200px; height: 30px;" readonly>
+    <input type="hidden" id="avatarChoice" name="avatar_choice" value="dinosaur" style="background: red; color: white; display: block; width: 200px; height: 30px;" readonly>
 </div>
             </div>
             <div style="margin-top:12px; text-align:center;">
@@ -429,18 +393,44 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         // Copia el SVG y estilos del avatar seleccionado a la vista previa
         const btn = document.querySelector('.avatar-choice[data-avatar="'+idx+'"]');
         if (!btn) return;
-        animGalleryPreview.innerHTML = btn.innerHTML;
-        animGalleryPreview.className = btn.className;
-        animGalleryPreview.style = btn.getAttribute('style');
-        uploadedAvatar.style.display = 'none';
-        animGalleryPreview.style.display = 'block';
         
-        // Si es una imagen (como el zorro), asegurar que se muestre correctamente
-        const img = animGalleryPreview.querySelector('img');
-        if (img) {
-            img.style.borderRadius = '50%';
-            img.style.objectFit = 'cover';
+        // Clonar el botón para la vista previa
+        const previewContent = btn.cloneNode(true);
+        
+        // Limpiar y configurar el contenedor de vista previa
+        animGalleryPreview.innerHTML = '';
+        animGalleryPreview.className = 'avatar-preview-content';
+        animGalleryPreview.style = '';
+        
+        // Configurar la vista previa
+        const previewImg = previewContent.querySelector('img');
+        if (previewImg) {
+            previewImg.style.width = '100%';
+            previewImg.style.height = '100%';
+            previewImg.style.objectFit = 'cover';
+            previewImg.style.borderRadius = '50%';
         }
+        
+        // Aplicar estilos al contenedor de vista previa
+        animGalleryPreview.style.display = 'flex';
+        animGalleryPreview.style.alignItems = 'center';
+        animGalleryPreview.style.justifyContent = 'center';
+        animGalleryPreview.style.width = '100%';
+        animGalleryPreview.style.height = '100%';
+        
+        // Asegurar que el botón clonado ocupe todo el espacio
+        previewContent.style.width = '100%';
+        previewContent.style.height = '100%';
+        previewContent.style.padding = '0';
+        previewContent.style.border = 'none';
+        previewContent.style.background = 'transparent';
+        previewContent.style.boxShadow = 'none';
+        
+        // Agregar el contenido clonado a la vista previa
+        animGalleryPreview.appendChild(previewContent);
+        
+        // Ocultar la imagen subida si está visible
+        uploadedAvatar.style.display = 'none';
     }
     avatarChoices.forEach(btn => {
         btn.addEventListener('click', function() {
@@ -453,8 +443,25 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             console.log('Avatar seleccionado:', selectedAvatar); // Debug
         });
     });
-    // Inicializa preview
-    setAnimPreview(selectedAvatar);
+    // Inicializa con el avatar actual del usuario o el predeterminado
+    const defaultAvatar = '{{ user_profile.avatar_tipo|default:"dinosaur" }}';
+    const initialAvatar = document.querySelector(`.avatar-choice[data-avatar="${defaultAvatar}"]`);
+    
+    if (initialAvatar) {
+        initialAvatar.classList.add('selected');
+        selectedAvatar = defaultAvatar;
+        document.getElementById('avatarChoice').value = selectedAvatar;
+        setAnimPreview(selectedAvatar);
+    } else {
+        // Si no se encuentra el avatar guardado, usar el predeterminado
+        const defaultBtn = document.querySelector('.avatar-choice[data-avatar="dinosaur"]');
+        if (defaultBtn) {
+            defaultBtn.classList.add('selected');
+            selectedAvatar = 'dinosaur';
+            document.getElementById('avatarChoice').value = selectedAvatar;
+            setAnimPreview(selectedAvatar);
+        }
+    }
 
     // Variables para el crop
     let currentImageFile = null;
