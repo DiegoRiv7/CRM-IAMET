@@ -15,19 +15,29 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         <form class="avatar-chooser" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="avatar-preview" id="avatarPreview">
-                <!-- Por defecto: animado -->
-                <div id="defaultAnim" class="avatar-anim" style="display:block;">
-                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="24" cy="24" r="20" stroke="#fff" stroke-width="4" opacity="0.2"/>
-                        <path d="M24 8a8 8 0 018 8c0 4-3 8-8 8s-8-4-8-8a8 8 0 018-8z" fill="#00cfff"/>
-                        <circle cx="24" cy="22" r="4" fill="#fff"/>
-                        <ellipse cx="24" cy="34" rx="10" ry="4" fill="#ff00c8" opacity="0.6"/>
-                    </svg>
-                </div>
-                <img id="uploadedAvatar" src="" alt="Foto de perfil" style="display:none; width:100%; height:100%; object-fit:cover;"/>
-            </div>
-            <div class="avatar-options">
-                <button type="button" id="chooseAnim" class="avatar-label" style="border-color:#ff00c8; color:#ff00c8;">Avatar animado</button>
+    <!-- Vista previa dinámica -->
+    <div id="animGalleryPreview" style="display:block;"></div>
+    <img id="uploadedAvatar" src="" alt="Foto de perfil" style="display:none; width:100%; height:100%; object-fit:cover; border-radius:50%;"/>
+</div>
+<div class="avatar-options" style="flex-direction:column;align-items:center;gap:10px;">
+    <div id="avatarGallery" style="display:flex;gap:16px;justify-content:center;">
+        <button type="button" class="avatar-anim avatar-choice" data-avatar="1" title="Avatar 1" style="animation: rotateAnim 2.5s linear infinite; background: linear-gradient(135deg,#00cfff 0%,#ff00c8 100%);">
+            <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" stroke="#fff" stroke-width="4" opacity="0.2"/><path d="M24 8a8 8 0 018 8c0 4-3 8-8 8s-8-4-8-8a8 8 0 018-8z" fill="#00cfff"/><circle cx="24" cy="22" r="4" fill="#fff"/><ellipse cx="24" cy="34" rx="10" ry="4" fill="#ff00c8" opacity="0.6"/></svg>
+        </button>
+        <button type="button" class="avatar-anim avatar-choice" data-avatar="2" title="Avatar 2" style="animation: pulseAnim 1.8s infinite alternate; background: linear-gradient(135deg,#ffb300 0%,#ff0080 100%);">
+            <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" stroke="#fff" stroke-width="4" opacity="0.2"/><ellipse cx="24" cy="20" rx="8" ry="10" fill="#ffb300"/><ellipse cx="24" cy="34" rx="10" ry="4" fill="#ff0080" opacity="0.5"/><circle cx="24" cy="22" r="4" fill="#fff"/></svg>
+        </button>
+        <button type="button" class="avatar-anim avatar-choice" data-avatar="3" title="Avatar 3" style="animation: bounceAnim 1.5s infinite alternate; background: linear-gradient(135deg,#00ffae 0%,#0080ff 100%);">
+            <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" stroke="#fff" stroke-width="4" opacity="0.2"/><rect x="16" y="14" width="16" height="12" rx="6" fill="#00ffae"/><ellipse cx="24" cy="34" rx="10" ry="4" fill="#0080ff" opacity="0.5"/><circle cx="24" cy="22" r="4" fill="#fff"/></svg>
+        </button>
+        <button type="button" class="avatar-anim avatar-choice" data-avatar="4" title="Avatar 4" style="animation: colorAnim 3s linear infinite; background: linear-gradient(135deg,#ff5e62 0%,#ff9966 100%);">
+            <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" stroke="#fff" stroke-width="4" opacity="0.2"/><ellipse cx="24" cy="20" rx="10" ry="8" fill="#ff5e62"/><ellipse cx="24" cy="34" rx="10" ry="4" fill="#ff9966" opacity="0.5"/><circle cx="24" cy="22" r="4" fill="#fff"/></svg>
+        </button>
+    </div>
+    <div style="margin-top:10px;font-size:0.97em;color:#aaa;">Selecciona un avatar animado o sube tu foto</div>
+    <label for="avatarUpload" class="avatar-label">Subir foto</label>
+    <input type="file" id="avatarUpload" name="avatar" accept="image/*">
+</div>
                 <label for="avatarUpload" class="avatar-label">Subir foto</label>
                 <input type="file" id="avatarUpload" name="avatar" accept="image/*">
             </div>
@@ -38,27 +48,55 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         <div style="color:#aaa; font-size:0.95em; margin-top:30px; text-align:center;">Tu foto o avatar aparecerá junto a tu nombre en el sistema.<br>Por ejemplo: empleado del día, mes, proyectos y tareas.</div>
     </div>
     <script>
-    // Vista previa de avatar
-    const avatarUpload = document.getElementById('avatarUpload');
+    // Selección y vista previa de avatar animado
+    const avatarGallery = document.getElementById('avatarGallery');
+    const avatarChoices = document.querySelectorAll('.avatar-choice');
+    const animGalleryPreview = document.getElementById('animGalleryPreview');
     const uploadedAvatar = document.getElementById('uploadedAvatar');
-    const defaultAnim = document.getElementById('defaultAnim');
-    const chooseAnim = document.getElementById('chooseAnim');
+    const avatarUpload = document.getElementById('avatarUpload');
+    let selectedAvatar = 1;
+
+    function setAnimPreview(idx) {
+        // Copia el SVG y estilos del avatar seleccionado a la vista previa
+        const btn = document.querySelector('.avatar-choice[data-avatar="'+idx+'"]');
+        if (!btn) return;
+        animGalleryPreview.innerHTML = btn.innerHTML;
+        animGalleryPreview.className = btn.className;
+        animGalleryPreview.style = btn.getAttribute('style');
+        uploadedAvatar.style.display = 'none';
+        animGalleryPreview.style.display = 'block';
+    }
+    avatarChoices.forEach(btn => {
+        btn.addEventListener('click', function() {
+            avatarChoices.forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedAvatar = btn.getAttribute('data-avatar');
+            setAnimPreview(selectedAvatar);
+        });
+    });
+    // Inicializa preview
+    setAnimPreview(selectedAvatar);
+
+    // Vista previa y crop circular de la imagen subida
     avatarUpload.addEventListener('change', function(e) {
         if (e.target.files && e.target.files[0]) {
             const reader = new FileReader();
             reader.onload = function(ev) {
                 uploadedAvatar.src = ev.target.result;
                 uploadedAvatar.style.display = 'block';
-                defaultAnim.style.display = 'none';
+                animGalleryPreview.style.display = 'none';
+                // Aquí se puede integrar una librería JS de crop circular (ej: Cropper.js)
             }
             reader.readAsDataURL(e.target.files[0]);
         }
     });
-    chooseAnim.addEventListener('click', function(e) {
-        e.preventDefault();
-        uploadedAvatar.style.display = 'none';
-        defaultAnim.style.display = 'block';
-        avatarUpload.value = null;
+
+    // Al guardar, redirige a bienvenida (simulación, reemplazar por lógica backend real)
+    document.querySelector('form.avatar-chooser').addEventListener('submit', function(e) {
+        // Puedes agregar lógica de validación/crop aquí
+        setTimeout(function() {
+            window.location.href = '/home/';
+        }, 300);
     });
     </script>
 </body>
