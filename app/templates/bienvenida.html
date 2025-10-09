@@ -620,17 +620,36 @@
     }
 
     .logo-floating {
+        width: 70px;
         height: 70px;
-        width: auto;
-        object-fit: contain;
-        border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(0, 122, 255, 0.2);
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 32px rgba(0, 122, 255, 0.3);
         transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
 
     .logo-floating:hover {
         transform: translateY(-2px) scale(1.05);
-        box-shadow: 0 8px 30px rgba(0, 122, 255, 0.3);
+        box-shadow: 0 12px 40px rgba(0, 122, 255, 0.4);
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .nethive-logo {
+        width: 45px;
+        height: 45px;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        transition: all 0.3s ease;
+    }
+
+    .logo-floating:hover .nethive-logo {
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+        transform: scale(1.05);
     }
 
     /* Floating Action Buttons Top Right */
@@ -710,8 +729,13 @@
         }
 
         .logo-floating {
+            width: 56px;
             height: 56px;
-            padding: 8px;
+        }
+
+        .nethive-logo {
+            width: 35px;
+            height: 35px;
         }
 
         .floating-actions-top {
@@ -735,9 +759,27 @@
 
 <!-- Floating Logo Top Left -->
 <div class="floating-logo">
-    <img src="https://www.iamet.mx/.cm4all/uproc.php/0/Fondos/.logo.png/picture-200?_=1904956a6f0" 
-         alt="Logo IAMET" 
-         class="logo-floating apple-float"/>
+    <div class="logo-floating apple-float">
+        <svg class="nethive-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Cloud Key Logo -->
+            <g transform="translate(10, 15)">
+                <!-- Cloud Shape -->
+                <path d="M20 35C20 28.373 25.373 23 32 23C34.5 21.5 37.5 20.5 41 20.5C47.627 20.5 53 25.873 53 32.5C55.5 32.5 58 34.5 58 37.5C58 40.5 55.5 42.5 53 42.5H25C22.239 42.5 20 40.261 20 37.5C20 36.5 20 35.5 20 35Z" 
+                      fill="white" 
+                      stroke="none"/>
+                
+                <!-- Key Stem -->
+                <rect x="37" y="42.5" width="4" height="25" fill="white"/>
+                
+                <!-- Key Teeth -->
+                <rect x="37" y="55" width="8" height="4" fill="white"/>
+                <rect x="37" y="62" width="6" height="3" fill="white"/>
+                
+                <!-- Cloud Hole -->
+                <circle cx="39" cy="32" r="4" fill="#000"/>
+            </g>
+        </svg>
+    </div>
 </div>
 
 <!-- Floating Action Buttons Top Right -->
