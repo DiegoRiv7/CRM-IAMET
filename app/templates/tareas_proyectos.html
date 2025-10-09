@@ -1167,9 +1167,12 @@ function mostrarResultadosBusqueda(usuarios) {
         item.onclick = () => agregarMiembro(usuario);
         
         const avatarColor = getAvatarColor(usuario.id - 1); // Usar ID para color consistente
+        const avatarContent = usuario.avatar_url ? 
+            `<img src="${usuario.avatar_url}" alt="${usuario.nombre}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 
+            usuario.iniciales;
         item.innerHTML = `
             <div class="user-avatar" style="background-color: ${avatarColor};">
-                ${usuario.iniciales}
+                ${avatarContent}
             </div>
             <div class="user-info">
                 <div class="user-name">${usuario.nombre}</div>
