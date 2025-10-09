@@ -1807,26 +1807,58 @@ def user_logout(request):
 def set_language(request):
     """
     Vista para cambiar el idioma de la aplicación
+    Soporta tanto peticiones AJAX como formularios normales
     """
     if request.method == 'POST':
         language = request.POST.get('language', 'es')
-        response = JsonResponse({'status': 'success', 'language': language})
         
-        # Configurar el idioma en la sesión
-        if hasattr(request, 'session'):
-            request.session['django_language'] = language
-            request.session.save()
-        
-        # Configurar el idioma en la cookie
-        response.set_cookie('django_language', language, max_age=365*24*60*60)  # 1 año
+        # Validar que el idioma esté en los idiomas configurados
+        if language not in [lang[0] for lang in settings.LANGUAGES]:
+            language = 'es'  # Valor por defecto si el idioma no es válido
         
         # Activar el idioma para esta sesión
         translation.activate(language)
+        
+        # Configurar el idioma en la sesión
+        if hasattr(request, 'session'):
+            request.session[translation.LANGUAGE_SESSION_KEY] = language
+            request.session.save()
         
         # Guardar en el perfil del usuario si está autenticado
         if request.user.is_authenticated and hasattr(request.user, 'userprofile'):
             request.user.userprofile.language = language
             request.user.userprofile.save()
+        
+        # Determinar si es una petición AJAX
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
+                 request.content_type == 'application/json' or \
+                 request.META.get('HTTP_ACCEPT') == 'application/json'
+        
+        # Configurar la respuesta
+        if is_ajax:
+            response_data = {
+                'status': 'success', 
+                'language': language,
+                'message': 'Idioma cambiado correctamente',
+                'redirect': request.META.get('HTTP_REFERER', '/')
+            }
+            response = JsonResponse(response_data)
+        else:
+            # Para formularios normales, redirigir a la página anterior o a la raíz
+            next_url = request.POST.get('next', request.META.get('HTTP_REFERER', '/'))
+            response = redirect(next_url)
+        
+        # Configurar la cookie de idioma
+        response.set_cookie(
+            settings.LANGUAGE_COOKIE_NAME,
+            language,
+            max_age=365 * 24 * 60 * 60,  # 1 año
+            path=settings.LANGUAGE_COOKIE_PATH or '/',
+            domain=settings.LANGUAGE_COOKIE_DOMAIN or None,
+            secure=request.is_secure(),
+            httponly=True,
+            samesite='Lax'
+        )
         
         return response
     

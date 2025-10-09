@@ -79,6 +79,26 @@
     }
     .search-icon-container:hover { background: rgba(255, 255, 255, 0.15); transform: scale(1.05); }
     
+    /* Filter Widget */
+    .filter-icon-container {
+        width: 40px; height: 40px; border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        color: var(--apple-label);
+    }
+    .filter-icon-container:hover { 
+        background: rgba(255, 255, 255, 0.15); 
+        transform: scale(1.05); 
+    }
+    .filter-icon-container.active {
+        background: var(--apple-blue);
+        color: white;
+    }
+    
     .search-input {
         position: absolute;
         right: 22px;
@@ -201,7 +221,14 @@
 <div class="todos-container">
     <div class="content-block">
         <div class="ipados-header">
-            <h1 class="page-title">Oportunidades</h1>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <h1 class="page-title">Oportunidades</h1>
+                <div class="filter-icon-container" id="filter-icon" onclick="toggleFilterModal()">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
+                    </svg>
+                </div>
+            </div>
             <div class="header-controls">
                 <div class="search-widget-container" id="search-widget">
                     <input type="text" id="searchOportunidad" placeholder="Buscar oportunidad..." class="search-input" value="{{ search_query }}">

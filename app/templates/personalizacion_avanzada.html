@@ -662,6 +662,45 @@
         
         /* Button Styles */
         .btn-primary,
+        /* Notification styles */
+        .notification {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #000000e6;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            z-index: 9999;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        .notification.success {
+            background: linear-gradient(135deg, #34C759, #30D158);
+        }
+        .notification.error {
+            background: linear-gradient(135deg, #FF3B30, #FF453A);
+        }
+        .notification.warning {
+            background: linear-gradient(135deg, #FF9F0A, #FF9500);
+        }
+        .notification .icon {
+            font-size: 16px;
+        }
+
         .btn-danger {
             padding: 12px 24px;
             border: none;
@@ -1518,31 +1557,68 @@
 
         // Language functionality
         function changeLanguage(langCode, langName) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '{% url "set_language" %}';
-            
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = 'csrfmiddlewaretoken';
-            csrfInput.value = '{{ csrf_token }}';
-            
-            const langInput = document.createElement('input');
-            langInput.type = 'hidden';
-            langInput.name = 'language';
-            langInput.value = langCode;
-            
-            const nextInput = document.createElement('input');
-            nextInput.type = 'hidden';
-            nextInput.name = 'next';
-            nextInput.value = window.location.pathname;
-            
-            form.appendChild(csrfInput);
-            form.appendChild(langInput);
-            form.appendChild(nextInput);
-            
-            document.body.appendChild(form);
-            form.submit();
+            // Show loading state
+            const languageButtons = document.querySelectorAll('.language-option');
+            languageButtons.forEach(btn => {
+                btn.disabled = true;
+                if (btn.dataset.lang === langCode) {
+                    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${btn.textContent}`;
+                }
+            });
+
+            // Create form data
+            const formData = new URLSearchParams();
+            formData.append('language', langCode);
+            formData.append('next', window.location.pathname);
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+            // Make AJAX request to change language
+            fetch('{% url "set_language" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: formData,
+                credentials: 'same-origin'  // Important for cookies to be sent
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update UI to show selected language
+                    document.documentElement.lang = langCode;
+                    
+                    // Show success message
+                    showNotification(`Idioma cambiado a ${langName}`, 'success');
+                    
+                    // Reload the page to apply the new language
+                    setTimeout(() => {
+                        // Force a hard reload to ensure all static files are re-fetched
+                        window.location.href = window.location.href;
+                    }, 500);
+                } else {
+                    throw new Error(data.message || 'Error al cambiar el idioma');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification(error.message || 'Error al cambiar el idioma', 'error');
+                
+                // Re-enable buttons on error
+                languageButtons.forEach(btn => {
+                    btn.disabled = false;
+                    if (btn.dataset.lang === langCode) {
+                        const langText = btn.textContent.trim();
+                        btn.innerHTML = langText;
+                    }
+                });
+            });
         }
 
         // User info functionality
