@@ -605,6 +605,7 @@ def api_tareas(request):
                             'fecha_limite': '2025-01-25',
                             'fecha_creacion': '2025-01-20',
                             'creado_por': 'Rivera',
+                            'responsable': generar_participante(1, 'Juan Rivera', 'rivera'),
                             'proyecto': proyecto.nombre,
                             'participantes': [
                                 generar_participante(1, 'Juan Rivera', 'rivera'),
@@ -620,6 +621,7 @@ def api_tareas(request):
                             'fecha_limite': '2025-02-01',
                             'fecha_creacion': '2025-01-20',
                             'creado_por': 'Desarrollo',
+                            'responsable': generar_participante(2, 'María García', 'mgarcia'),
                             'proyecto': proyecto.nombre,
                             'participantes': [
                                 generar_participante(1, 'Juan Rivera', 'rivera'),

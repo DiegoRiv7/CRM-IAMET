@@ -1534,10 +1534,20 @@ class Proyecto(models.Model):
         miembros_list = []
         for miembro in self.miembros.all()[:3]:  # Máximo 3 para mostrar
             iniciales = ''.join([palabra[0].upper() for palabra in (miembro.get_full_name() or miembro.username).split()[:2]])
+            
+            # Obtener avatar_url del usuario
+            avatar_url = None
+            if hasattr(miembro, 'userprofile'):
+                try:
+                    avatar_url = miembro.userprofile.get_avatar_url()
+                except:
+                    avatar_url = None
+            
             miembros_list.append({
                 'id': miembro.id,
                 'nombre': miembro.get_full_name() or miembro.username,
-                'iniciales': iniciales
+                'iniciales': iniciales,
+                'avatar_url': avatar_url
             })
         return miembros_list
     

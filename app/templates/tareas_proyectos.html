@@ -948,7 +948,10 @@ function mostrarProyectosTabla(proyectos) {
         const avatarColors = ['#0A84FF', '#30D158', '#AF52DE', '#FF9500', '#FF3B30'];
         const avatarsHtml = visibleMembers.map((miembro, index) => {
             const color = avatarColors[index % avatarColors.length];
-            return `<div class="member-avatar" title="${miembro.nombre}" style="background-color: ${color};">${miembro.iniciales}</div>`;
+            const avatarContent = miembro.avatar_url ? 
+                `<img src="${miembro.avatar_url}" alt="${miembro.nombre}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 
+                miembro.iniciales;
+            return `<div class="member-avatar" title="${miembro.nombre}" style="background-color: ${color};">${avatarContent}</div>`;
         }).join('');
         const extraCountHtml = hiddenMembersCount > 0 ? `<div class="member-count">+${hiddenMembersCount}</div>` : '';
         let rolClass = proyecto.mi_rol === 'Jefe de proyecto' ? 'jefe' : 'miembro';
@@ -1230,9 +1233,12 @@ function actualizarMiembrosSeleccionados() {
         memberElement.className = 'selected-member';
         
         const avatarColor = getAvatarColor(miembro.id - 1); // Usar ID para color consistente
+        const avatarContent = miembro.avatar_url ? 
+            `<img src="${miembro.avatar_url}" alt="${miembro.nombre}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 
+            miembro.iniciales;
         memberElement.innerHTML = `
             <div class="selected-member-avatar" style="background-color: ${avatarColor};">
-                ${miembro.iniciales}
+                ${avatarContent}
             </div>
             <span>${miembro.nombre}</span>
             <button type="button" class="remove-member" onclick="eliminarMiembro(${miembro.id})">×</button>

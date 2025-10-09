@@ -1793,10 +1793,27 @@
 
     async function loadTimeline() {
         const timelineItemsContainer = document.getElementById('timelineItems');
-        const oportunidadId = OPORTUNIDAD_ID;
-        const noResultsMessage = document.getElementById('noSearchResultsMessage');
-        if(noResultsMessage) noResultsMessage.remove();
+        if (!timelineItemsContainer) {
+            console.error('No se encontró el contenedor del timeline');
+            return;
+        }
 
+        const oportunidadId = typeof OPORTUNIDAD_ID !== 'undefined' ? OPORTUNIDAD_ID : null;
+        if (!oportunidadId) {
+            console.error('No se encontró el ID de la oportunidad');
+            timelineItemsContainer.innerHTML = `
+                <div class="no-items-message-simple">
+                    <div class="no-items-icon">❌</div>
+                    <div class="no-items-text">Error: No se pudo identificar la oportunidad.</div>
+                </div>
+            `;
+            return;
+        }
+
+        const noResultsMessage = document.getElementById('noSearchResultsMessage');
+        if (noResultsMessage) noResultsMessage.remove();
+
+        // Mostrar mensaje de carga
         timelineItemsContainer.innerHTML = `
             <div class="no-items-message-simple" id="loadingTimelineMessage">
                 <div class="no-items-icon">⏳</div>
@@ -1806,31 +1823,52 @@
 
         try {
             const response = await fetch(`/app/api/timeline-oportunidad/${oportunidadId}/`);
-            const data = await response.json();
             
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            
+            const data = await response.json().catch(error => {
+                console.error('Error al analizar la respuesta JSON:', error);
+                throw new Error('La respuesta del servidor no es un JSON válido');
+            });
+            
+            // Limpiar el contenedor
             timelineItemsContainer.innerHTML = '';
 
-            if (data.success && data.timeline && Array.isArray(data.timeline) && data.timeline.length > 0) {
-                data.timeline.forEach(activity => {
-                    const renderedItem = renderTimelineItem(activity);
-                    if (renderedItem) {
-                        timelineItemsContainer.insertAdjacentHTML('beforeend', renderedItem);
-                    }
-                });
+            if (data && data.success && Array.isArray(data.timeline)) {
+                if (data.timeline.length > 0) {
+                    data.timeline.forEach(activity => {
+                        try {
+                            const renderedItem = renderTimelineItem(activity);
+                            if (renderedItem) {
+                                timelineItemsContainer.insertAdjacentHTML('beforeend', renderedItem);
+                            }
+                        } catch (renderError) {
+                            console.error('Error al renderizar un ítem del timeline:', renderError);
+                        }
+                    });
+                } else {
+                    // No hay actividades
+                    timelineItemsContainer.innerHTML = `
+                        <div class="no-items-message-simple">
+                            <div class="no-items-icon">📭</div>
+                            <div class="no-items-text">No hay actividades registradas para esta oportunidad.</div>
+                        </div>
+                    `;
+                }
             } else {
-                timelineItemsContainer.innerHTML = `
-                    <div class="no-items-message-simple">
-                        <div class="no-items-icon">🤷‍♂️</div>
-                        <div class="no-items-text">No hay actividades registradas para esta oportunidad.</div>
-                    </div>
-                `;
+                // Respuesta inesperada del servidor
+                console.error('Formato de respuesta inesperado:', data);
+                throw new Error('Formato de respuesta inesperado del servidor');
             }
         } catch (error) {
-            console.error('Error loading timeline:', error);
+            console.error('Error al cargar el timeline:', error);
             timelineItemsContainer.innerHTML = `
                 <div class="no-items-message-simple">
-                    <div class="no-items-icon">❌</div>
-                    <div class="no-items-text">Error al cargar el timeline. Intenta recargar la página.</div>
+                    <div class="no-items-icon">⚠️</div>
+                    <div class="no-items-text">Error al cargar el timeline. <button onclick="loadTimeline()" class="text-blue-400 hover:underline">Reintentar</button></div>
+                    <div class="text-xs text-red-400 mt-2">${error.message || 'Error desconocido'}</div>
                 </div>
             `;
         }

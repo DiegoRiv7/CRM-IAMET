@@ -4152,10 +4152,22 @@ async function abrirDetallesTarea(tareaId) {
                 // Responsable con avatar
                 const responsibleEl = document.getElementById('taskDetailResponsible');
                 if (responsibleEl) {
-                    responsibleEl.innerHTML = `
-                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxjaXJjbGUgY3g9IjEyIiBjeT0iOCIgcj0iNSIgZmlsbD0iIzRCNzY4OCIvPgo8cGF0aCBkPSJtMjAgMjEtMi0yLTEuMi0xLjIiIHN0cm9rZT0iIzRCNzY4OCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+" alt="${tarea.responsable}" />
-                        <span>${tarea.responsable || tarea.creado_por}</span>
-                    `;
+                    if (tarea.responsable && typeof tarea.responsable === 'object') {
+                        // Si responsable es un objeto con datos completos
+                        const avatarContent = tarea.responsable.avatar_url ? 
+                            `<img src="${tarea.responsable.avatar_url}" alt="${tarea.responsable.nombre}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">` : 
+                            `<div style="width: 24px; height: 24px; border-radius: 50%; background: ${getAvatarColor(tarea.responsable.id)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.7rem;">${tarea.responsable.iniciales}</div>`;
+                        responsibleEl.innerHTML = `
+                            ${avatarContent}
+                            <span>${tarea.responsable.nombre}</span>
+                        `;
+                    } else {
+                        // Fallback para responsable como string
+                        responsibleEl.innerHTML = `
+                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxjaXJjbGUgY3g9IjEyIiBjeT0iOCIgcj0iNSIgZmlsbD0iIzRCNzY4OCIvPgo8cGF0aCBkPSJtMjAgMjEtMi0yLTEuMi0xLjIiIHN0cm9rZT0iIzRCNzY4OCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+" alt="${tarea.responsable}" />
+                            <span>${tarea.responsable || tarea.creado_por}</span>
+                        `;
+                    }
                 }
                 
                 // Configurar botones según permisos en el sidebar

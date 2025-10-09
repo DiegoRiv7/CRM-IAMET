@@ -3,7 +3,8 @@ Template: personalizacion.html
 Propósito: Página para que el usuario pueda personalizar el diseño de la web a su gusto.
 -->
 <!DOCTYPE html>
-<html lang="es">
+{% load i18n %}
+<html lang="{{ user_profile.language|default:'es' }}">
 <head>
     <meta charset="UTF-8">
     <title>Configuración avanzada</title>
