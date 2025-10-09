@@ -611,16 +611,50 @@
         color: var(--apple-label-secondary);
     }
 
-    /* Floating Action Widgets */
-    .floating-widgets {
-        display: flex;
-        gap: 16px;
-        justify-content: center;
+    /* Floating Logo Top Left */
+    .floating-logo {
+        position: fixed;
+        top: 24px;
+        left: 24px;
+        z-index: 1000;
     }
 
-    .floating-widget-btn {
-        width: 60px;
+    .logo-floating {
         height: 60px;
+        width: auto;
+        object-fit: contain;
+        border-radius: 16px;
+        box-shadow: 
+            0 8px 32px rgba(0, 122, 255, 0.3),
+            0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+        background: rgba(28, 28, 30, 0.8);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .logo-floating:hover {
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 
+            0 12px 40px rgba(0, 122, 255, 0.4),
+            0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+    }
+
+    /* Floating Action Buttons Top Right */
+    .floating-actions-top {
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        z-index: 1000;
+        display: flex;
+        gap: 12px;
+    }
+
+    .floating-top-btn {
+        width: 50px;
+        height: 50px;
         border-radius: 50%;
         background: rgba(28, 28, 30, 0.85);
         backdrop-filter: blur(20px);
@@ -636,29 +670,29 @@
             0 0 0 1px rgba(255, 255, 255, 0.05) inset;
     }
 
-    .floating-widget-btn:hover {
+    .floating-top-btn:hover {
         background: rgba(28, 28, 30, 0.95);
         border-color: rgba(0, 122, 255, 0.5);
-        transform: translateY(-4px) scale(1.05);
+        transform: translateY(-3px) scale(1.05);
         box-shadow: 
             0 16px 50px rgba(0, 0, 0, 0.4),
             0 0 0 1px rgba(255, 255, 255, 0.1) inset,
             0 0 20px rgba(0, 122, 255, 0.3);
     }
 
-    .floating-widget-btn:active {
-        transform: translateY(-2px) scale(1.02);
+    .floating-top-btn:active {
+        transform: translateY(-1px) scale(1.02);
         transition: transform 0.1s ease;
     }
 
-    .floating-widget-btn svg {
-        width: 28px;
-        height: 28px;
+    .floating-top-btn svg {
+        width: 22px;
+        height: 22px;
         color: var(--apple-label);
         transition: all 0.3s ease;
     }
 
-    .floating-widget-btn:hover svg {
+    .floating-top-btn:hover svg {
         color: var(--apple-blue);
         filter: drop-shadow(0 0 8px rgba(0, 122, 255, 0.5));
     }
@@ -679,29 +713,76 @@
             font-size: 16px;
         }
 
-        .floating-widget-btn {
-            width: 52px;
-            height: 52px;
+        .floating-logo {
+            top: 16px;
+            left: 16px;
         }
 
-        .floating-widget-btn svg {
-            width: 24px;
-            height: 24px;
+        .logo-floating {
+            height: 50px;
+            padding: 6px;
         }
 
-        .floating-widgets {
-            gap: 12px;
+        .floating-actions-top {
+            top: 16px;
+            right: 16px;
+            gap: 8px;
+        }
+
+        .floating-top-btn {
+            width: 44px;
+            height: 44px;
+        }
+
+        .floating-top-btn svg {
+            width: 20px;
+            height: 20px;
         }
     }
 </style>
 <div class="apple-bg"></div>
+
+<!-- Floating Logo Top Left -->
+<div class="floating-logo">
+    <img src="https://www.iamet.mx/.cm4all/uproc.php/0/Fondos/.logo.png/picture-200?_=1904956a6f0" 
+         alt="Logo IAMET" 
+         class="logo-floating apple-float"/>
+</div>
+
+<!-- Floating Action Buttons Top Right -->
+<div class="floating-actions-top">
+    <button class="floating-top-btn" id="news-btn" title="Noticias y Reportes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
+            <path d="M18 14h-8"/>
+            <path d="M15 18h-5"/>
+            <path d="M10 6h8v4h-8V6Z"/>
+        </svg>
+    </button>
+    
+    <button class="floating-top-btn" id="calendar-btn" title="Calendario y Eventos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <path d="M16 2v4"/>
+            <path d="M8 2v4"/>
+            <path d="M3 10h18"/>
+            <path d="M8 14h.01"/>
+            <path d="M12 14h.01"/>
+            <path d="M16 14h.01"/>
+            <path d="M8 18h.01"/>
+            <path d="M12 18h.01"/>
+            <path d="M16 18h.01"/>
+        </svg>
+    </button>
+</div>
+
 <main>
     <!-- Apple Welcome Section -->
-    <section class="w-full flex flex-col items-center justify-start apple-fade-in" style="padding-top: 60px;">
+    <section class="w-full flex flex-col items-center justify-center apple-fade-in" style="min-height: 100vh; padding-top: 60px;">
         <h1 class="apple-display text-center mb-8" style="margin-top: 0; color: var(--apple-label);">Nethive</h1>
         
         <!-- Centered Search Bar -->
-        <div class="central-search-container mb-8" id="main-search-container">
+        <div class="central-search-container mb-12" id="main-search-container">
             <div class="central-search-bar" id="main-search-bar">
                 <svg class="central-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="11" cy="11" r="8"/>
@@ -709,40 +790,6 @@
                 </svg>
                 <span class="central-search-text">Buscar cotizaciones, clientes o productos...</span>
             </div>
-        </div>
-        
-        <!-- Floating Action Widgets -->
-        <div class="floating-widgets mb-8">
-            <button class="floating-widget-btn" id="news-btn" title="Noticias y Reportes">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
-                    <path d="M18 14h-8"/>
-                    <path d="M15 18h-5"/>
-                    <path d="M10 6h8v4h-8V6Z"/>
-                </svg>
-            </button>
-            
-            <button class="floating-widget-btn" id="calendar-btn" title="Calendario y Eventos">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2"/>
-                    <path d="M16 2v4"/>
-                    <path d="M8 2v4"/>
-                    <path d="M3 10h18"/>
-                    <path d="M8 14h.01"/>
-                    <path d="M12 14h.01"/>
-                    <path d="M16 14h.01"/>
-                    <path d="M8 18h.01"/>
-                    <path d="M12 18h.01"/>
-                    <path d="M16 18h.01"/>
-                </svg>
-            </button>
-        </div>
-        
-        <div class="mb-6">
-            <img src="https://www.iamet.mx/.cm4all/uproc.php/0/Fondos/.logo.png/picture-200?_=1904956a6f0" 
-                 alt="Logo IAMET" 
-                 class="apple-float"
-                 style="height: 100px; width: auto; object-fit: contain; border-radius: 16px; box-shadow: 0 4px 20px rgba(0, 122, 255, 0.2);"/>
         </div>
     </section>
     <!-- Apple Employee Cards Section -->
