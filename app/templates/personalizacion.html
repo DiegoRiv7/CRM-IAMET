@@ -227,129 +227,14 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             <img src="/static/images/dinosaurio.jpeg" alt="Dinosaurio" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
         </button>
         
-        <!-- Panda 3D Mejorado -->
-        <button type="button" class="avatar-anim avatar-choice" data-avatar="panda" title="Panda 3D" style="animation: pandaEat 3s infinite; background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 50%, #d1d5db 100%);">
-            <svg viewBox="0 0 48 48" fill="none">
-                <!-- Fondo circular con sombra -->
-                <circle cx="24" cy="24" r="22" fill="#f0f2f5" filter="drop-shadow(0 4px 8px rgba(0,0,0,0.2))"/>
-                
-                <!-- Cuerpo principal con efecto 3D -->
-                <ellipse cx="24" cy="36" rx="14" ry="10" fill="#fff" stroke="#e0e0e0" stroke-width="1.5"/>
-                <ellipse cx="24" cy="34" rx="12" ry="8" fill="#f8f9fa" stroke="#e0e0e0" stroke-width="1"/>
-                
-                <!-- Cabeza con efecto 3D -->
-                <circle cx="24" cy="18" r="14" fill="#fff" stroke="#e0e0e0" stroke-width="1.5"/>
-                
-                <!-- Orejas con efecto 3D -->
-                <circle cx="14" cy="12" r="6" fill="#333" stroke="#222" stroke-width="1">
-                    <animate attributeName="r" values="6;5.8;6" dur="3s" repeatCount="indefinite"/>
-                </circle>
-                <circle cx="34" cy="12" r="6" fill="#333" stroke="#222" stroke-width="1">
-                    <animate attributeName="r" values="6;5.8;6" dur="3s" repeatCount="indefinite"/>
-                </circle>
-                
-                <!-- Manchas de ojos -->
-                <path d="M16 16 Q20 14 24 16 Q28 14 32 16 Q30 20 32 24 Q28 22 24 22 Q20 22 16 24 Q18 20 16 16Z" 
-                      fill="#333" fill-opacity="0.9" stroke="#222" stroke-width="1"/>
-                
-                <!-- Ojos con efecto de parpadeo -->
-                <g class="panda-eyes">
-                    <ellipse cx="19" cy="18" rx="3" ry="4" fill="#000">
-                        <animate attributeName="ry" values="4;0.5;4" dur="5s" repeatCount="indefinite"/>
-                    </ellipse>
-                    <ellipse cx="29" cy="18" rx="3" ry="4" fill="#000">
-                        <animate attributeName="ry" values="4;0.5;4" dur="5s" repeatCount="indefinite"/>
-                    </ellipse>
-                    
-                    <!-- Reflejos en los ojos -->
-                    <circle cx="20" cy="17" r="1" fill="#fff">
-                        <animate attributeName="cx" values="20;20.5;20" dur="4s" repeatCount="indefinite"/>
-                    </circle>
-                    <circle cx="30" cy="17" r="1" fill="#fff">
-                        <animate attributeName="cx" values="30;30.5;30" dur="4s" repeatCount="indefinite"/>
-                    </circle>
-                </g>
-                
-                <!-- Nariz y boca -->
-                <path d="M22 22 Q24 20 26 22 Q25 24 24 24 Q23 24 22 22Z" fill="#333" stroke="#222" stroke-width="0.5"/>
-                <path d="M20 26 Q24 28 28 26" stroke="#333" stroke-width="1.5" fill="none" stroke-linecap="round">
-                    <animate attributeName="d" values="M20 26 Q24 28 28 26; M20 26 Q24 25 28 26; M20 26 Q24 28 28 26" dur="3s" repeatCount="indefinite"/>
-                </path>
-                
-                <!-- Mejillas rosadas -->
-                <circle cx="18" cy="22" r="2" fill="#ffb6c1" opacity="0.6">
-                    <animate attributeName="opacity" values="0.6;0.3;0.6" dur="4s" repeatCount="indefinite"/>
-                </circle>
-                <circle cx="30" cy="22" r="2" fill="#ffb6c1" opacity="0.6">
-                    <animate attributeName="opacity" values="0.6;0.3;0.6" dur="4s" repeatCount="indefinite"/>
-                </circle>
-                
-                <!-- Brazos -->
-                <ellipse cx="12" cy="30" rx="4" ry="8" fill="#333" transform="rotate(-20 12 30)">
-                    <animateTransform attributeName="transform" type="rotate" values="-20 12 30; -10 12 30; -20 12 30" dur="3s" repeatCount="indefinite"/>
-                </ellipse>
-                <ellipse cx="36" cy="30" rx="4" ry="8" fill="#333" transform="rotate(20 36 30)">
-                    <animateTransform attributeName="transform" type="rotate" values="20 36 30; 10 36 30; 20 36 30" dur="3s" repeatCount="indefinite"/>
-                </ellipse>
-                
-                <!-- Bambú -->
-                <g class="bamboo" transform="translate(20, 35)">
-                    <rect x="0" y="-10" width="2" height="12" fill="#4CAF50" rx="1">
-                        <animate attributeName="y" values="-10;-8;-10" dur="2s" repeatCount="indefinite"/>
-                    </rect>
-                    <rect x="-1" y="-12" width="4" height="2" fill="#388E3C" rx="1">
-                        <animateTransform attributeName="transform" type="rotate" values="0 1 -11; 5 1 -11; 0 1 -11" dur="3s" repeatCount="indefinite"/>
-                    </rect>
-                </g>
-                
-                <!-- Efecto de brillo -->
-                <circle cx="24" cy="24" r="22" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" stroke-dasharray="5,2"/>
-                
-                <!-- Sombra debajo del panda -->
-                <ellipse cx="24" cy="44" rx="12" ry="2" fill="rgba(0,0,0,0.1)" filter="blur(2px)">
-                    <animate attributeName="rx" values="12;14;12" dur="3s" repeatCount="indefinite"/>
-                </ellipse>
-            </svg>
+        <!-- Panda -->
+        <button type="button" class="avatar-choice" data-avatar="panda" title="Panda" style="background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 50%, #d1d5db 100%); border: 2px solid #e5e7eb; overflow: hidden;">
+            <img src="/static/images/panda.jpeg" alt="Panda" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
         </button>
         
-        <!-- Águila 3D -->
-        <button type="button" class="avatar-anim avatar-choice" data-avatar="eagle" title="Águila Majestuosa" style="animation: flyAnim 3s infinite; background: linear-gradient(135deg,#fbbf24 0%,#f59e0b 50%,#d97706 100%);">
-            <svg viewBox="0 0 48 48" fill="none">
-                <!-- Alas extendidas -->
-                <ellipse cx="12" cy="24" rx="8" ry="12" fill="#92400e" transform="rotate(-30 12 24)"/>
-                <ellipse cx="36" cy="24" rx="8" ry="12" fill="#92400e" transform="rotate(30 36 24)"/>
-                <ellipse cx="12" cy="24" rx="6" ry="10" fill="#d97706" transform="rotate(-30 12 24)"/>
-                <ellipse cx="36" cy="24" rx="6" ry="10" fill="#d97706" transform="rotate(30 36 24)"/>
-                <!-- Cuerpo -->
-                <ellipse cx="24" cy="28" rx="8" ry="12" fill="#f59e0b"/>
-                <ellipse cx="24" cy="28" rx="6" ry="10" fill="#fbbf24"/>
-                <!-- Cabeza -->
-                <circle cx="24" cy="16" r="8" fill="#f9fafb"/>
-                <circle cx="24" cy="16" r="6" fill="#fff"/>
-                <!-- Pico águila -->
-                <polygon points="24,18 20,22 24,20" fill="#fbbf24"/>
-                <polygon points="24,18 18,20 22,22" fill="#f59e0b"/>
-                <!-- Ojos de águila -->
-                <circle cx="21" cy="14" r="2" fill="#fbbf24"/>
-                <circle cx="27" cy="14" r="2" fill="#fbbf24"/>
-                <circle cx="21" cy="14" r="1.5" fill="#000"/>
-                <circle cx="27" cy="14" r="1.5" fill="#000"/>
-                <!-- Cejas características -->
-                <path d="M19 12 L23 13" stroke="#92400e" stroke-width="2" stroke-linecap="round"/>
-                <path d="M25 13 L29 12" stroke="#92400e" stroke-width="2" stroke-linecap="round"/>
-                <!-- Patas -->
-                <ellipse cx="20" cy="38" rx="2" ry="4" fill="#fbbf24"/>
-                <ellipse cx="28" cy="38" rx="2" ry="4" fill="#fbbf24"/>
-                <!-- Garras -->
-                <polygon points="18,40 20,42 18,44" fill="#92400e"/>
-                <polygon points="22,40 20,42 22,44" fill="#92400e"/>
-                <polygon points="26,40 28,42 26,44" fill="#92400e"/>
-                <polygon points="30,40 28,42 30,44" fill="#92400e"/>
-                <!-- Efectos 3D -->
-                <ellipse cx="24" cy="16" r="7" fill="none" stroke="#fbbf24" stroke-width="1" opacity="0.6"/>
-                <circle cx="22" cy="13" r="0.5" fill="#fff"/>
-                <circle cx="28" cy="13" r="0.5" fill="#fff"/>
-            </svg>
+        <!-- Águila -->
+        <button type="button" class="avatar-choice" data-avatar="eagle" title="Águila" style="background: linear-gradient(135deg,#fbbf24 0%,#f59e0b 50%,#d97706 100%); border: 2px solid #f59e0b; overflow: hidden;">
+            <img src="/static/images/aguila.jpeg" alt="Águila" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
         </button>
         
         <!-- Zorro Súper Héroe -->
@@ -393,6 +278,26 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
                 <ellipse cx="24" cy="22" rx="14" ry="5" fill="none" stroke="#0ea5e9" stroke-width="1" opacity="0.5"/>
                 <circle cx="15" cy="20" r="0.5" fill="#fff"/>
             </svg>
+        </button>
+
+        <!-- Lobo -->
+        <button type="button" class="avatar-choice" data-avatar="lobo" title="Lobo" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 50%, #1f2937 100%); border: 2px solid #4b5563; overflow: hidden;">
+            <img src="/static/images/lobo.jpeg" alt="Lobo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+        </button>
+
+        <!-- Buho -->
+        <button type="button" class="avatar-choice" data-avatar="buho" title="Buho" style="background: linear-gradient(135deg, #8d5524 0%, #654321 50%, #4a2c0f 100%); border: 2px solid #654321; overflow: hidden;">
+            <img src="/static/images/buho.jpeg" alt="Buho" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+        </button>
+
+        <!-- Axolote -->
+        <button type="button" class="avatar-choice" data-avatar="axolote" title="Axolote" style="background: linear-gradient(135deg, #f472b6 0%, #ec4899 50%, #db2777 100%); border: 2px solid #ec4899; overflow: hidden;">
+            <img src="/static/images/axolote.jpeg" alt="Axolote" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+        </button>
+
+        <!-- Cocodrilo -->
+        <button type="button" class="avatar-choice" data-avatar="cocodrilo" title="Cocodrilo" style="background: linear-gradient(135deg, #166534 0%, #15803d 50%, #16a34a 100%); border: 2px solid #15803d; overflow: hidden;">
+            <img src="/static/images/cocodrilo.jpeg" alt="Cocodrilo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
         </button>
     </div>
     <div style="margin-top:10px;font-size:0.97em;color:#aaa;">Selecciona un avatar o sube tu foto</div>
