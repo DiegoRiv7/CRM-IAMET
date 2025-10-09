@@ -611,17 +611,20 @@
         color: var(--apple-label-secondary);
     }
 
-    /* Floating Logo Top Left */
-    .floating-logo {
+    /* Floating Logo Container Top Left */
+    .floating-logo-container {
         position: fixed;
         top: 32px;
         left: 32px;
         z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
 
     .logo-floating {
-        width: 70px;
-        height: 70px;
+        width: 60px;
+        height: 60px;
         border-radius: 50%;
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(20px);
@@ -641,8 +644,8 @@
     }
 
     .nethive-logo {
-        width: 45px;
-        height: 45px;
+        width: 38px;
+        height: 38px;
         filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
         transition: all 0.3s ease;
     }
@@ -650,6 +653,35 @@
     .logo-floating:hover .nethive-logo {
         filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
         transform: scale(1.05);
+    }
+
+    /* Logo Text */
+    .logo-text {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .brand-name {
+        font-family: var(--apple-font-family);
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--apple-label);
+        line-height: 1;
+        letter-spacing: -0.5px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .brand-tagline {
+        font-family: var(--apple-font-family);
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--apple-gray);
+        line-height: 1;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-top: 2px;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     }
 
     /* Floating Action Buttons Top Right */
@@ -723,19 +755,28 @@
             font-size: 16px;
         }
 
-        .floating-logo {
+        .floating-logo-container {
             top: 20px;
             left: 20px;
+            gap: 8px;
         }
 
         .logo-floating {
-            width: 56px;
-            height: 56px;
+            width: 50px;
+            height: 50px;
         }
 
         .nethive-logo {
-            width: 35px;
-            height: 35px;
+            width: 32px;
+            height: 32px;
+        }
+
+        .brand-name {
+            font-size: 16px;
+        }
+
+        .brand-tagline {
+            font-size: 10px;
         }
 
         .floating-actions-top {
@@ -758,27 +799,34 @@
 <div class="apple-bg"></div>
 
 <!-- Floating Logo Top Left -->
-<div class="floating-logo">
+<div class="floating-logo-container">
+    <!-- Logo Icon -->
     <div class="logo-floating apple-float">
         <svg class="nethive-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Cloud Key Logo -->
-            <g transform="translate(10, 15)">
-                <!-- Cloud Shape -->
-                <path d="M20 35C20 28.373 25.373 23 32 23C34.5 21.5 37.5 20.5 41 20.5C47.627 20.5 53 25.873 53 32.5C55.5 32.5 58 34.5 58 37.5C58 40.5 55.5 42.5 53 42.5H25C22.239 42.5 20 40.261 20 37.5C20 36.5 20 35.5 20 35Z" 
-                      fill="white" 
-                      stroke="none"/>
+            <!-- Tech Hive Logo -->
+            <g transform="translate(20, 15)">
+                <!-- Hexagonal Hive Structure -->
+                <polygon points="30,10 40,5 50,10 50,20 40,25 30,20" fill="white" opacity="0.9"/>
+                <polygon points="20,20 30,15 40,20 40,30 30,35 20,30" fill="white" opacity="0.8"/>
+                <polygon points="40,20 50,15 60,20 60,30 50,35 40,30" fill="white" opacity="0.8"/>
+                <polygon points="30,30 40,25 50,30 50,40 40,45 30,40" fill="white" opacity="0.7"/>
+                <polygon points="20,40 30,35 40,40 40,50 30,55 20,50" fill="white" opacity="0.6"/>
+                <polygon points="40,40 50,35 60,40 60,50 50,55 40,50" fill="white" opacity="0.6"/>
                 
-                <!-- Key Stem -->
-                <rect x="37" y="42.5" width="4" height="25" fill="white"/>
-                
-                <!-- Key Teeth -->
-                <rect x="37" y="55" width="8" height="4" fill="white"/>
-                <rect x="37" y="62" width="6" height="3" fill="white"/>
-                
-                <!-- Cloud Hole -->
-                <circle cx="39" cy="32" r="4" fill="#000"/>
+                <!-- Tech Circuit Lines -->
+                <circle cx="35" cy="17" r="1.5" fill="#00D4FF"/>
+                <circle cx="45" cy="27" r="1.5" fill="#00D4FF"/>
+                <circle cx="35" cy="37" r="1.5" fill="#00D4FF"/>
+                <line x1="35" y1="17" x2="45" y2="27" stroke="#00D4FF" stroke-width="1" opacity="0.8"/>
+                <line x1="45" y1="27" x2="35" y2="37" stroke="#00D4FF" stroke-width="1" opacity="0.8"/>
             </g>
         </svg>
+    </div>
+    
+    <!-- Logo Text -->
+    <div class="logo-text">
+        <div class="brand-name">NETHIVE</div>
+        <div class="brand-tagline">COTIZADOR</div>
     </div>
 </div>
 
