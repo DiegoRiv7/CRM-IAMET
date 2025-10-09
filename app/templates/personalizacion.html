@@ -292,19 +292,24 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             <!-- Selector de idioma -->
             <div class="language-selector" style="margin-top: 30px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; text-align: center;">
                 <h3 style="color: #00cfff; margin-bottom: 15px; font-size: 1.1em;">Idioma / Language</h3>
-                <div style="display: flex; justify-content: center; gap: 10px;">
-                    <button type="button" class="language-option {% if user_profile.language == 'es' %}selected{% endif %}" 
+                <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 15px;">
+                    <button type="button" class="language-option" 
                             data-lang="es" 
                             style="padding: 10px 20px; border: 2px solid #00cfff; background: {% if user_profile.language == 'es' %}#00cfff; color: #232946;{% else %}transparent; color: #fff;{% endif %}; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;">
                         Español
                     </button>
-                    <button type="button" class="language-option {% if user_profile.language == 'en' %}selected{% endif %}" 
+                    <button type="button" class="language-option" 
                             data-lang="en" 
                             style="padding: 10px 20px; border: 2px solid #00cfff; background: {% if user_profile.language == 'en' %}#00cfff; color: #232946;{% else %}transparent; color: #fff;{% endif %}; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;">
                         English
                     </button>
                 </div>
                 <input type="hidden" name="language" id="selectedLanguage" value="{{ user_profile.language|default:'es' }}">
+                <button type="button" id="confirmLanguageBtn" 
+                        style="padding: 10px 24px; background: #00cfff; color: #232946; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; display: none; transition: all 0.3s ease;">
+                    Confirmar idioma / Confirm Language
+                </button>
+                <div id="languageMessage" style="margin-top: 10px; color: #00cfff; font-size: 0.9em; min-height: 20px;"></div>
             </div>
         </form>
         <div style="color:#aaa; font-size:0.95em; margin-top:30px; text-align:center;">Tu foto o avatar aparecerá junto a tu nombre en el sistema.<br>Por ejemplo: empleado del día, mes, proyectos y tareas.</div>
@@ -532,28 +537,33 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         tempImg.onload = function() {
             const containerSize = 350;
             const circleRadius = 140; // 280/2
-            const scale = cropData.scale;
             
-            // Calcular la posición del círculo en relación a la imagen
-            const imageRect = cropImage.getBoundingClientRect();
-            const containerRect = document.getElementById('cropContainer').getBoundingClientRect();
-            
-            // Calcular offset del círculo respecto al centro del contenedor
-            const circleCenterX = containerSize / 2;
-            const circleCenterY = containerSize / 2;
-            
-            // Calcular la porción de la imagen original que corresponde al círculo
+            // Obtener las dimensiones actuales de la imagen mostrada
             const imgDisplayWidth = parseInt(cropImage.style.width);
             const imgDisplayHeight = parseInt(cropImage.style.height);
             
-            // Escala de la imagen original vs imagen mostrada
+            // Calcular la escala de la imagen original vs la mostrada
             const scaleX = tempImg.width / imgDisplayWidth;
             const scaleY = tempImg.height / imgDisplayHeight;
             
-            // Posición del círculo en coordenadas de imagen original
-            const cropX = (circleCenterX - imageX - imgDisplayWidth/2) * scaleX / scale;
-            const cropY = (circleCenterY - imageY - imgDisplayHeight/2) * scaleY / scale;
-            const cropRadius = circleRadius * scaleX / scale;
+            // Calcular el área que está visible en el círculo
+            // Centro del círculo en el contenedor
+            const circleCenterX = containerSize / 2;
+            const circleCenterY = containerSize / 2;
+            
+            // Posición actual de la imagen (con transform aplicado)
+            const currentScale = cropData.scale;
+            const scaledWidth = imgDisplayWidth * currentScale;
+            const scaledHeight = imgDisplayHeight * currentScale;
+            
+            // Posición del centro de la imagen después del transform
+            const imageCenterX = containerSize / 2 + imageX;
+            const imageCenterY = containerSize / 2 + imageY;
+            
+            // Calcular qué parte de la imagen original corresponde al círculo
+            const sourceX = (circleCenterX - imageCenterX + scaledWidth/2) / currentScale * scaleX;
+            const sourceY = (circleCenterY - imageCenterY + scaledHeight/2) / currentScale * scaleY;
+            const sourceSize = (circleRadius * 2) / currentScale * scaleX;
             
             // Hacer el canvas circular
             ctx.save();
@@ -561,17 +571,13 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
             ctx.clip();
             
-            // Dibujar la imagen centrada en el área del círculo
-            const drawSize = size;
-            const drawX = size/2 - cropRadius;
-            const drawY = size/2 - cropRadius;
-            
+            // Dibujar la imagen croppeada
             ctx.drawImage(
                 tempImg,
-                cropX - cropRadius,
-                cropY - cropRadius,
-                cropRadius * 2,
-                cropRadius * 2,
+                sourceX - sourceSize/2,
+                sourceY - sourceSize/2,
+                sourceSize,
+                sourceSize,
                 0,
                 0,
                 size,
@@ -629,28 +635,54 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     });
     
     // Manejo del selector de idioma
-    document.querySelectorAll('.language-option').forEach(button => {
-        button.addEventListener('click', function() {
-            const lang = this.getAttribute('data-lang');
-            
-            // Actualizar estilos visuales
-            document.querySelectorAll('.language-option').forEach(btn => {
+    let selectedLanguage = '{{ user_profile.language|default:"es" }}';
+    const languageOptions = document.querySelectorAll('.language-option');
+    const confirmBtn = document.getElementById('confirmLanguageBtn');
+    const languageMessage = document.getElementById('languageMessage');
+    
+    // Inicializar botones según el idioma actual
+    function updateLanguageButtons() {
+        languageOptions.forEach(btn => {
+            const lang = btn.getAttribute('data-lang');
+            if (lang === selectedLanguage) {
+                btn.style.background = '#00cfff';
+                btn.style.color = '#232946';
+            } else {
                 btn.style.background = 'transparent';
                 btn.style.color = '#fff';
-            });
-            this.style.background = '#00cfff';
-            this.style.color = '#232946';
-            
-            // Actualizar campo oculto
-            document.getElementById('selectedLanguage').value = lang;
-            
-            // Opcional: Mostrar feedback visual
-            this.textContent += ' ✓';
-            setTimeout(() => {
-                this.textContent = this.textContent.replace(' ✓', '');
-            }, 1000);
+            }
+        });
+    }
+    
+    // Manejar clic en opción de idioma
+    languageOptions.forEach(button => {
+        button.addEventListener('click', function() {
+            const newLang = this.getAttribute('data-lang');
+            if (newLang !== selectedLanguage) {
+                selectedLanguage = newLang;
+                updateLanguageButtons();
+                confirmBtn.style.display = 'inline-block';
+                languageMessage.textContent = '';
+            }
         });
     });
+    
+    // Manejar confirmación de idioma
+    confirmBtn.addEventListener('click', function() {
+        // Actualizar el campo oculto
+        document.getElementById('selectedLanguage').value = selectedLanguage;
+        
+        // Mostrar mensaje de carga
+        this.textContent = 'Aplicando...';
+        this.disabled = true;
+        languageMessage.textContent = 'Aplicando cambios de idioma...';
+        
+        // Enviar el formulario para guardar el idioma
+        document.querySelector('form.avatar-chooser').submit();
+    });
+    
+    // Inicializar botones al cargar la página
+    updateLanguageButtons();
 </script>
     </script>
 </body>
