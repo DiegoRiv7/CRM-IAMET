@@ -2862,9 +2862,9 @@ def supervisor_required(view_func):
 @login_required
 def usuario_redirect_view(request):
     """
-    Redirige a la página de perfil del usuario actual.
+    Muestra la página de configuración avanzada.
     """
-    return redirect('perfil_usuario', usuario_id=request.user.id)
+    return render(request, 'personalizacion.html')
 
 
 @supervisor_required
