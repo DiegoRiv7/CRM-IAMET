@@ -1705,70 +1705,30 @@
         }
 
         // Design functionality
-        function applyTheme(isDark) {
+        function applyTheme(theme) {
+            // Update active state
             document.querySelectorAll('.theme-option').forEach(option => {
-                if (option.getAttribute('onclick').includes(`'${currentTheme}'`)) {
+                if (option.getAttribute('onclick').includes(`'${theme}'`)) {
                     option.classList.add('active');
-            languageButtons.forEach(btn => {
-                btn.disabled = true;
-                if (btn.dataset.lang === langCode) {
-                    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${btn.textContent}`;
-                }
-            });
-
-            // Create form data
-            const formData = new URLSearchParams();
-            formData.append('language', langCode);
-            formData.append('next', window.location.pathname);
-            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-
-            // Make AJAX request to change language
-            fetch('{% url "set_language" %}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: formData,
-                credentials: 'same-origin'  // Important for cookies to be sent
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.status === 'success') {
-                    // Update UI to show selected language
-                    document.documentElement.lang = langCode;
-                    
-                    // Show success message
-                    showNotification(`Idioma cambiado a ${langName}`, 'success');
-                    
-                    // Reload the page to apply the new language
-                    setTimeout(() => {
-                        // Force a hard reload to ensure all static files are re-fetched
-                        window.location.href = window.location.href;
-                    }, 500);
+                    option.style.border = '2px solid var(--apple-blue)';
                 } else {
-                    throw new Error(data.message || 'Error al cambiar el idioma');
+                    option.classList.remove('active');
+                    option.style.border = '1px solid var(--apple-separator)';
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification(error.message || 'Error al cambiar el idioma', 'error');
-                
-                // Re-enable buttons on error
-                languageButtons.forEach(btn => {
-                    btn.disabled = false;
-                    if (btn.dataset.lang === langCode) {
-                        const langText = btn.textContent.trim();
-                        btn.innerHTML = langText;
-                    }
-                });
             });
+
+            // Apply theme
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+
+            // Show notification
+            const themeNames = {
+                'dark': 'Oscuro',
+                'light': 'Claro',
+                'pink': 'Rosa',
+                'blue': 'Azul'
+            };
+            showNotification(`Tema cambiado a ${themeNames[theme] || theme}`, 'success');
         }
 
         // User info functionality
