@@ -494,9 +494,137 @@
         }
         
         .theme-option:hover,
-        .theme-option.active {
+        .theme-option.active,
+        .dock-option:hover,
+        .dock-option.active {
             border-color: var(--apple-blue);
             transform: translateY(-2px);
+        }
+        
+        /* Dock Options Styles */
+        .dock-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .dock-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+            border: 2px solid var(--apple-gray-5);
+            background: var(--apple-background-secondary);
+        }
+        
+        .dock-option:hover {
+            border-color: var(--apple-blue-light);
+        }
+        
+        .dock-option.active {
+            border-color: var(--apple-blue);
+            background-color: rgba(0, 122, 255, 0.1);
+        }
+        
+        .dock-option span {
+            margin-top: 8px;
+            font-size: 14px;
+            color: var(--apple-label);
+        }
+        
+        .dock-preview {
+            width: 100px;
+            height: 70px;
+            position: relative;
+            background: var(--apple-background-tertiary);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .preview-dock {
+            position: absolute;
+            background: var(--apple-blue);
+            opacity: 0.7;
+        }
+        
+        .preview-dock.bottom {
+            bottom: 5px;
+            left: 10%;
+            width: 80%;
+            height: 8px;
+            border-radius: 4px;
+        }
+        
+        .preview-dock.top {
+            top: 5px;
+            left: 10%;
+            width: 80%;
+            height: 8px;
+            border-radius: 4px;
+        }
+        
+        .preview-dock.left {
+            left: 5px;
+            top: 10%;
+            width: 8px;
+            height: 80%;
+            border-radius: 4px;
+        }
+        
+        .preview-dock.right {
+            right: 5px;
+            top: 10%;
+            width: 8px;
+            height: 80%;
+            border-radius: 4px;
+        }
+        
+        /* Theme Preview Styles */
+        .theme-preview-large {
+            width: 100%;
+            height: 120px;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            position: relative;
+            border: 1px solid var(--apple-separator);
+        }
+        
+        .preview-header {
+            height: 20px;
+            background: var(--apple-background-tertiary);
+            border-bottom: 1px solid var(--apple-separator);
+        }
+        
+        .preview-content {
+            height: calc(100% - 21px);
+            background: var(--apple-background);
+            position: relative;
+        }
+        
+        /* Theme Specific Styles */
+        .dark-preview {
+            --preview-bg: #1c1c1e;
+            --preview-header: #2c2c2e;
+        }
+        
+        .light-preview {
+            --preview-bg: #f2f2f7;
+            --preview-header: #ffffff;
+        }
+        
+        .pink-preview {
+            --preview-bg: #ffebf0;
+            --preview-header: #fff5f8;
+        }
+        
+        .blue-preview {
+            --preview-bg: #f0f7ff;
+            --preview-header: #f5faff;
         }
         
         .theme-preview-large {
@@ -997,25 +1125,82 @@
             </div>
             <div class="modal-body">
                 <div class="design-section">
-                    <h3>Tema</h3>
-                    <p>Elige entre tema oscuro o claro</p>
+                    <h3><i class="fas fa-palette" style="margin-right: 8px;"></i> Tema de Color</h3>
+                    <p>Personaliza los colores de la aplicación</p>
                     <div class="theme-options">
-                        <div class="theme-option" onclick="applyTheme(true)">
+                        <div class="theme-option" onclick="applyTheme('dark')">
                             <div class="theme-preview-large dark-preview">
                                 <div class="preview-header"></div>
-                                <div class="preview-content"></div>
+                                <div class="preview-content">
+                                    <div class="preview-dock bottom"></div>
+                                </div>
                             </div>
                             <span>Oscuro</span>
                         </div>
-                        <div class="theme-option" onclick="applyTheme(false)">
+                        <div class="theme-option" onclick="applyTheme('light')">
                             <div class="theme-preview-large light-preview">
                                 <div class="preview-header"></div>
-                                <div class="preview-content"></div>
+                                <div class="preview-content">
+                                    <div class="preview-dock bottom"></div>
+                                </div>
                             </div>
                             <span>Claro</span>
                         </div>
+                        <div class="theme-option" onclick="applyTheme('pink')">
+                            <div class="theme-preview-large pink-preview">
+                                <div class="preview-header"></div>
+                                <div class="preview-content">
+                                    <div class="preview-dock bottom"></div>
+                                </div>
+                            </div>
+                            <span>Rosa</span>
+                        </div>
+                        <div class="theme-option" onclick="applyTheme('blue')">
+                            <div class="theme-preview-large blue-preview">
+                                <div class="preview-header"></div>
+                                <div class="preview-content">
+                                    <div class="preview-dock bottom"></div>
+                                </div>
+                            </div>
+                            <span>Azul</span>
+                        </div>
                     </div>
                 </div>
+                
+                <div class="design-section" style="margin-top: 30px;">
+                    <h3><i class="fas fa-th-large" style="margin-right: 8px;"></i> Posición del Dock</h3>
+                    <p>Elige dónde quieres que aparezca el menú de navegación</p>
+                    <div class="dock-options">
+                        <div class="dock-option" data-position="bottom" onclick="setDockPosition('bottom')">
+                            <div class="dock-preview bottom">
+                                <div class="preview-dock bottom"></div>
+                            </div>
+                            <span>Inferior</span>
+                        </div>
+                        <div class="dock-option" data-position="top" onclick="setDockPosition('top')">
+                            <div class="dock-preview top">
+                                <div class="preview-dock top"></div>
+                            </div>
+                            <span>Superior</span>
+                        </div>
+                        <div class="dock-option" data-position="left" onclick="setDockPosition('left')">
+                            <div class="dock-preview left">
+                                <div class="preview-dock left"></div>
+                            </div>
+                            <span>Izquierda</span>
+                        </div>
+                        <div class="dock-option" data-position="right" onclick="setDockPosition('right')">
+                            <div class="dock-preview right">
+                                <div class="preview-dock right"></div>
+                            </div>
+                            <span>Derecha</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="hideModal('designModal')">Cerrar</button>
+                <button class="btn btn-primary" onclick="saveDesignSettings()">Guardar Cambios</button>
             </div>
         </div>
     </div>
@@ -1533,32 +1718,9 @@
 
         // Design functionality
         function applyTheme(isDark) {
-            const preferences = {
-                isDarkMode: isDark,
-                timestamp: new Date().toISOString()
-            };
-            
-            localStorage.setItem('designPreferences', JSON.stringify(preferences));
-            
-            if (isDark) {
-                document.documentElement.classList.remove('light-theme');
-                document.body.classList.remove('light-theme');
-            } else {
-                document.documentElement.classList.add('light-theme');
-                document.body.classList.add('light-theme');
-            }
-            
-            // Update active state
             document.querySelectorAll('.theme-option').forEach(option => {
-                option.classList.remove('active');
-            });
-            document.querySelector(`[onclick="applyTheme(${isDark})"]`).classList.add('active');
-        }
-
-        // Language functionality
-        function changeLanguage(langCode, langName) {
-            // Show loading state
-            const languageButtons = document.querySelectorAll('.language-option');
+                if (option.getAttribute('onclick').includes(`'${currentTheme}'`)) {
+                    option.classList.add('active');
             languageButtons.forEach(btn => {
                 btn.disabled = true;
                 if (btn.dataset.lang === langCode) {
