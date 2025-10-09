@@ -219,6 +219,7 @@ def bienvenida(request):
         avatar_url = user_profile.get_avatar_url()
         if not avatar_url:
             avatar_url = f'https://ui-avatars.com/api/?name={user.get_full_name() or user.username}&background=38bdf8&color=fff'
+        print(f"DEBUG: URL del avatar del mes: {avatar_url}")
 
         # Calcular el monto total de oportunidades creadas por este usuario en el mes actual
         monto_total_mes = TodoItem.objects.filter(
@@ -250,6 +251,7 @@ def bienvenida(request):
         avatar_url = user_profile.get_avatar_url()
         if not avatar_url:
             avatar_url = f'https://ui-avatars.com/api/?name={user.get_full_name() or user.username}&background=f472b6&color=fff'
+        print(f"DEBUG: URL del avatar del día: {avatar_url}")
 
         usuario_dia = {
             'nombre': user.get_full_name() or user.username,
