@@ -6037,6 +6037,62 @@ def avatar_generator(request):
     # Si es GET, mostrar la página del generador
     return render(request, 'avatar_generator.html')
 
+@login_required
+def configuracion_avanzada(request):
+    """
+    Vista para la configuración avanzada de usuario con diseño tipo macOS
+    """
+    # Asegurar que el usuario tenga un perfil
+    user_profile, created = UserProfile.objects.get_or_create(user=request.user)
+    
+    if request.method == 'POST':
+        try:
+            # Actualizar información del usuario
+            user = request.user
+            
+            # Actualizar campos del modelo User
+            username = request.POST.get('username', '').strip()
+            first_name = request.POST.get('first_name', '').strip()
+            last_name = request.POST.get('last_name', '').strip()
+            email = request.POST.get('email', '').strip()
+            
+            if username and username != user.username:
+                # Verificar que el username no esté en uso
+                if User.objects.filter(username=username).exclude(id=user.id).exists():
+                    return JsonResponse({'success': False, 'error': 'Este nombre de usuario ya está en uso'})
+                user.username = username
+            
+            user.first_name = first_name
+            user.last_name = last_name
+            user.email = email
+            user.save()
+            
+            # Actualizar campos del perfil
+            birthday = request.POST.get('birthday', '').strip()
+            gender = request.POST.get('gender', '').strip()
+            
+            if birthday:
+                try:
+                    from datetime import datetime
+                    user_profile.birthday = datetime.strptime(birthday, '%Y-%m-%d').date()
+                except ValueError:
+                    pass  # Ignorar fecha inválida
+            
+            if gender in ['M', 'F', 'O', 'N']:
+                user_profile.gender = gender
+            
+            user_profile.save()
+            
+            return JsonResponse({'success': True, 'message': 'Información actualizada correctamente'})
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    context = {
+        'user_profile': user_profile,
+    }
+    return render(request, 'personalizacion_avanzada.html', context)
+
 
 def limpiar_y_corregir_texto(texto):
     """

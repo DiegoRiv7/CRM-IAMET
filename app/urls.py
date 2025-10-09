@@ -240,4 +240,7 @@ urlpatterns = [
     
     # Generador de avatares con IA
     path('avatar-generator/', views.avatar_generator, name='avatar_generator'),
+    
+    # Configuración avanzada de usuario
+    path('configuracion-avanzada/', views.configuracion_avanzada, name='configuracion_avanzada'),
 ]
