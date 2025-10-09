@@ -802,49 +802,26 @@
 <div class="floating-logo-container">
     <!-- Logo Icon -->
     <div class="logo-floating apple-float">
-        <svg class="nethive-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- 3D Network Cube Logo -->
-            <g transform="translate(25, 20)">
-                <!-- Main Hexagon/Cube Structure -->
-                <polygon points="25,5 40,12 40,28 25,35 10,28 10,12" 
-                         fill="none" 
-                         stroke="#00D4FF" 
-                         stroke-width="2.5" 
-                         opacity="0.9"/>
-                
-                <!-- Back Face (3D Effect) -->
-                <polygon points="30,0 45,7 45,23 30,30 15,23 15,7" 
-                         fill="none" 
-                         stroke="#00D4FF" 
-                         stroke-width="2" 
-                         opacity="0.6"/>
-                
-                <!-- Connecting Lines (3D Depth) -->
-                <line x1="25" y1="5" x2="30" y2="0" stroke="#00D4FF" stroke-width="2" opacity="0.7"/>
-                <line x1="40" y1="12" x2="45" y2="7" stroke="#00D4FF" stroke-width="2" opacity="0.7"/>
-                <line x1="40" y1="28" x2="45" y2="23" stroke="#00D4FF" stroke-width="2" opacity="0.7"/>
-                <line x1="10" y1="28" x2="15" y2="23" stroke="#00D4FF" stroke-width="2" opacity="0.7"/>
-                <line x1="10" y1="12" x2="15" y2="7" stroke="#00D4FF" stroke-width="2" opacity="0.7"/>
-                
-                <!-- Central Network Node -->
-                <circle cx="25" cy="20" r="3" fill="#FFFFFF" stroke="#00D4FF" stroke-width="1.5"/>
-                
-                <!-- Connection Points -->
-                <circle cx="25" cy="5" r="2" fill="#FFFFFF"/>
-                <circle cx="40" cy="12" r="2" fill="#FFFFFF"/>
-                <circle cx="40" cy="28" r="2" fill="#FFFFFF"/>
-                <circle cx="25" cy="35" r="2" fill="#FFFFFF"/>
-                <circle cx="10" cy="28" r="2" fill="#FFFFFF"/>
-                <circle cx="10" cy="12" r="2" fill="#FFFFFF"/>
-                
-                <!-- Internal Network Lines -->
-                <line x1="25" y1="20" x2="25" y2="5" stroke="#00D4FF" stroke-width="1.5" opacity="0.8"/>
-                <line x1="25" y1="20" x2="40" y2="12" stroke="#00D4FF" stroke-width="1.5" opacity="0.8"/>
-                <line x1="25" y1="20" x2="40" y2="28" stroke="#00D4FF" stroke-width="1.5" opacity="0.8"/>
-                <line x1="25" y1="20" x2="25" y2="35" stroke="#00D4FF" stroke-width="1.5" opacity="0.8"/>
-                <line x1="25" y1="20" x2="10" y2="28" stroke="#00D4FF" stroke-width="1.5" opacity="0.8"/>
-                <line x1="25" y1="20" x2="10" y2="12" stroke="#00D4FF" stroke-width="1.5" opacity="0.8"/>
-            </g>
+        <svg class="nethive-logo" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#007AFF;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#00D4FF;stop-opacity:1" />
+                </linearGradient>
+            </defs>
+            <!-- Capa de Relleno Transparente con Gradiente (base tridimensional) -->
+            <path d="M24 6L12 13V27L24 34L36 27V13L24 6Z" fill="url(#blueGradient)" opacity="0.4"/>
+            
+            <!-- Hexágono Central (Define la estructura de la colmena) -->
+            <path d="M24 8L10 16V32L24 40L38 32V16L24 8Z" stroke="url(#blueGradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            
+            <!-- Patrón de Red / Conexión de Datos (Color cian brillante) -->
+            <path d="M24 8V40M10 16L38 32M38 16L10 32" stroke="#00D4FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+
+            <!-- Puntos de Conexión (Nodos) -->
+            <circle cx="24" cy="24" r="3" fill="white"/>
+            <circle cx="10" cy="16" r="2" fill="white"/>
+            <circle cx="38" cy="32" r="2" fill="white"/>
         </svg>
     </div>
     
