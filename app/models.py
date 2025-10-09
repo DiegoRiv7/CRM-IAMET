@@ -10,6 +10,24 @@ from django.dispatch import receiver
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bitrix_user_id = models.IntegerField(blank=True, null=True, verbose_name="ID de Usuario en Bitrix24")
+    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True, verbose_name="Avatar o Foto de Perfil")
+    usar_animado = models.BooleanField(default=False, verbose_name="Usar avatar animado por defecto")
+
+    def get_avatar_url(self):
+        if self.usar_animado:
+            return '/static/img/avatar_animado_default.svg'
+        elif self.avatar:
+            return self.avatar.url
+        else:
+            # Devuelve None si no hay imagen ni animado, para mostrar iniciales
+            return None
+
+    def iniciales(self):
+        nombres = self.user.get_full_name() or self.user.username
+        partes = nombres.split()
+        if len(partes) == 1:
+            return partes[0][:2].upper()
+        return (partes[0][0] + partes[-1][0]).upper()
 
     def __str__(self):
         return f"Perfil de {self.user.username}"

@@ -6,22 +6,60 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Personalización de Diseño</title>
+    <title>Configuración avanzada</title>
     <link rel="stylesheet" href="/static/css/personalizacion.css">
-    <style>
-        body { font-family: Arial, sans-serif; background: #f8f9fa; margin: 0; padding: 0; }
-        .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); padding: 32px; }
-        h1 { color: #333; text-align: center; }
-        .placeholder { color: #888; margin-top: 24px; text-align: center; }
-    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Personaliza el diseño de la página</h1>
-        <div class="placeholder">
-            Aquí podrás modificar el diseño de la página a tu gusto.<br>
-            (Próximamente: opciones de personalización)
-        </div>
+    <div class="container" style="background: #232946; color: #fff; max-width: 420px; margin: 48px auto; border-radius: 18px; box-shadow: 0 4px 32px #000a; padding: 38px 28px 32px 28px;">
+        <h1 style="text-align:center; color:#00cfff; font-weight:700; margin-bottom:32px;">Configuración avanzada</h1>
+        <form class="avatar-chooser" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="avatar-preview" id="avatarPreview">
+                <!-- Por defecto: animado -->
+                <div id="defaultAnim" class="avatar-anim" style="display:block;">
+                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="24" cy="24" r="20" stroke="#fff" stroke-width="4" opacity="0.2"/>
+                        <path d="M24 8a8 8 0 018 8c0 4-3 8-8 8s-8-4-8-8a8 8 0 018-8z" fill="#00cfff"/>
+                        <circle cx="24" cy="22" r="4" fill="#fff"/>
+                        <ellipse cx="24" cy="34" rx="10" ry="4" fill="#ff00c8" opacity="0.6"/>
+                    </svg>
+                </div>
+                <img id="uploadedAvatar" src="" alt="Foto de perfil" style="display:none; width:100%; height:100%; object-fit:cover;"/>
+            </div>
+            <div class="avatar-options">
+                <button type="button" id="chooseAnim" class="avatar-label" style="border-color:#ff00c8; color:#ff00c8;">Avatar animado</button>
+                <label for="avatarUpload" class="avatar-label">Subir foto</label>
+                <input type="file" id="avatarUpload" name="avatar" accept="image/*">
+            </div>
+            <div style="margin-top:18px; text-align:center;">
+                <button type="submit" class="avatar-label" style="background:#00cfff; color:#fff; border:none;">Guardar configuración</button>
+            </div>
+        </form>
+        <div style="color:#aaa; font-size:0.95em; margin-top:30px; text-align:center;">Tu foto o avatar aparecerá junto a tu nombre en el sistema.<br>Por ejemplo: empleado del día, mes, proyectos y tareas.</div>
     </div>
+    <script>
+    // Vista previa de avatar
+    const avatarUpload = document.getElementById('avatarUpload');
+    const uploadedAvatar = document.getElementById('uploadedAvatar');
+    const defaultAnim = document.getElementById('defaultAnim');
+    const chooseAnim = document.getElementById('chooseAnim');
+    avatarUpload.addEventListener('change', function(e) {
+        if (e.target.files && e.target.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                uploadedAvatar.src = ev.target.result;
+                uploadedAvatar.style.display = 'block';
+                defaultAnim.style.display = 'none';
+            }
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    });
+    chooseAnim.addEventListener('click', function(e) {
+        e.preventDefault();
+        uploadedAvatar.style.display = 'none';
+        defaultAnim.style.display = 'block';
+        avatarUpload.value = null;
+    });
+    </script>
 </body>
 </html>
