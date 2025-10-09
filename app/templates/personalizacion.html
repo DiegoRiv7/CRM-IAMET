@@ -263,20 +263,30 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     </style>
 </head>
 <body>
-    <div class="container" style="background: #232946; color: #fff; max-width: 800px; margin: 24px auto; border-radius: 18px; box-shadow: 0 4px 32px #000a; padding: 24px; overflow: hidden;">
+    <div class="container" style="background: #232946; color: #fff; max-width: 1200px; margin: 24px auto; padding: 20px; overflow: hidden;">
         <!-- Header -->
-        <div style="margin-bottom: 30px;">
-            <h1 style="text-align:center; color:#00cfff; font-weight:700; margin-bottom: 10px;">Configuración de Usuario</h1>
-            <p style="text-align: center; color: #a7a9be; margin: 0;">Personaliza tu experiencia en la plataforma</p>
+        <div style="margin-bottom: 30px; text-align: center;">
+            <h1 style="color:#00cfff; font-weight:700; margin-bottom: 10px; font-size: 2em;">Configuración de Usuario</h1>
+            <p style="color: #a7a9be; margin: 0; font-size: 1.1em;">Personaliza tu experiencia en la plataforma</p>
         </div>
         
         <!-- Main Content -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(500px, 1fr)); gap: 25px; padding: 10px;">
             <!-- Avatar Section -->
-            <div class="config-section" style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
-                <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                    <i class="fas fa-user-astronaut" style="color: #00cfff; font-size: 20px; margin-right: 10px;"></i>
-                    <h3 style="color: #00cfff; margin: 0; font-size: 1.1em;">Avatar</h3>
+            <div class="config-section" style="
+                background: rgba(255,255,255,0.03); 
+                border-radius: 15px; 
+                padding: 25px; 
+                border: 1px solid rgba(255,255,255,0.1);
+                box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                transition: all 0.3s ease;
+                height: fit-content;
+            ">
+                <div style="display: flex; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <div style="width: 40px; height: 40px; background: rgba(0,207,255,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                        <i class="fas fa-user-astronaut" style="color: #00cfff; font-size: 18px;"></i>
+                    </div>
+                    <h3 style="color: #fff; margin: 0; font-size: 1.2em; font-weight: 600;">Avatar</h3>
                 </div>
         <form class="avatar-chooser" method="post" enctype="multipart/form-data" action="{% url 'usuario' %}" onsubmit="console.log('Formulario enviándose. Avatar choice:', document.getElementById('avatarChoice').value);">
             {% csrf_token %}
@@ -361,10 +371,20 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             </div>
             
             <!-- Design Section -->
-            <div class="config-section" style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
-                <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                    <i class="fas fa-palette" style="color: #00cfff; font-size: 20px; margin-right: 10px;"></i>
-                    <h3 style="color: #00cfff; margin: 0; font-size: 1.1em;">Diseño</h3>
+            <div class="config-section" style="
+                background: rgba(255,255,255,0.03); 
+                border-radius: 15px; 
+                padding: 25px; 
+                border: 1px solid rgba(255,255,255,0.1);
+                box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                transition: all 0.3s ease;
+                height: fit-content;
+            ">
+                <div style="display: flex; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <div style="width: 40px; height: 40px; background: rgba(0,207,255,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                        <i class="fas fa-palette" style="color: #00cfff; font-size: 18px;"></i>
+                    </div>
+                    <h3 style="color: #fff; margin: 0; font-size: 1.2em; font-weight: 600;">Diseño</h3>
                 </div>
                 
                 <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
@@ -399,10 +419,20 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             </div>
             
             <!-- Language Section -->
-            <div class="config-section" style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
-                <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                    <i class="fas fa-globe" style="color: #00cfff; font-size: 20px; margin-right: 10px;"></i>
-                    <h3 style="color: #00cfff; margin: 0; font-size: 1.1em;">Idioma</h3>
+            <div class="config-section" style="
+                background: rgba(255,255,255,0.03); 
+                border-radius: 15px; 
+                padding: 25px; 
+                border: 1px solid rgba(255,255,255,0.1);
+                box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                transition: all 0.3s ease;
+                height: fit-content;
+            ">
+                <div style="display: flex; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <div style="width: 40px; height: 40px; background: rgba(0,207,255,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                        <i class="fas fa-globe" style="color: #00cfff; font-size: 18px;"></i>
+                    </div>
+                    <h3 style="color: #fff; margin: 0; font-size: 1.2em; font-weight: 600;">Idioma</h3>
                 </div>
                 
                 <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
@@ -431,10 +461,20 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             </div>
             
             <!-- Account Section -->
-            <div class="config-section" style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
-                <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                    <i class="fas fa-user-cog" style="color: #00cfff; font-size: 20px; margin-right: 10px;"></i>
-                    <h3 style="color: #00cfff; margin: 0; font-size: 1.1em;">Cuenta</h3>
+            <div class="config-section" style="
+                background: rgba(255,255,255,0.03); 
+                border-radius: 15px; 
+                padding: 25px; 
+                border: 1px solid rgba(255,255,255,0.1);
+                box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                transition: all 0.3s ease;
+                height: fit-content;
+            ">
+                <div style="display: flex; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <div style="width: 40px; height: 40px; background: rgba(0,207,255,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                        <i class="fas fa-user-cog" style="color: #00cfff; font-size: 18px;"></i>
+                    </div>
+                    <h3 style="color: #fff; margin: 0; font-size: 1.2em; font-weight: 600;">Cuenta</h3>
                 </div>
                 
                 <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
@@ -472,25 +512,23 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             
             <!-- Selector de idioma -->
             <div class="language-selector" style="margin-top: 30px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; text-align: center;">
-                <h3 style="color: #00cfff; margin-bottom: 15px; font-size: 1.1em;">Idioma / Language</h3>
+                <h3 style="color: #00cfff; margin-bottom: 15px; font-size: 1.1em;">{% trans 'Idioma' %} / {% trans 'Language' %}</h3>
                 <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 15px;">
                     <button type="button" class="language-option" 
                             data-lang="es" 
-                            style="padding: 10px 20px; border: 2px solid #00cfff; background: {% if user_profile.language == 'es' %}#00cfff; color: #232946;{% else %}transparent; color: #fff;{% endif %}; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;">
-                        Español
+                            style="padding: 10px 20px; border: 2px solid #00cfff; background: {% if user_profile.language == 'es' %}#00cfff; color: #232946;{% else %}transparent; color: #fff;{% endif %}; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;"
+                            onclick="setLanguage('es')">
+                        {% trans 'Español' %}
                     </button>
                     <button type="button" class="language-option" 
                             data-lang="en" 
-                            style="padding: 10px 20px; border: 2px solid #00cfff; background: {% if user_profile.language == 'en' %}#00cfff; color: #232946;{% else %}transparent; color: #fff;{% endif %}; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;">
-                        English
+                            style="padding: 10px 20px; border: 2px solid #00cfff; background: {% if user_profile.language == 'en' %}#00cfff; color: #232946;{% else %}transparent; color: #fff;{% endif %}; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;"
+                            onclick="setLanguage('en')">
+                        {% trans 'English' %}
                     </button>
                 </div>
-                <input type="hidden" name="language" id="selectedLanguage" value="{{ user_profile.language|default:'es' }}">
-                <button type="button" id="confirmLanguageBtn" 
-                        style="padding: 10px 24px; background: #00cfff; color: #232946; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; display: none; transition: all 0.3s ease;">
-                    Confirmar idioma / Confirm Language
-                </button>
                 <div id="languageMessage" style="margin-top: 10px; color: #00cfff; font-size: 0.9em; min-height: 20px;"></div>
+                {% csrf_token %}
             </div>
         </form>
         <div style="color:#aaa; font-size:0.95em; margin-top:30px; text-align:center;">Tu foto o avatar aparecerá junto a tu nombre en el sistema.<br>Por ejemplo: empleado del día, mes, proyectos y tareas.</div>
@@ -928,9 +966,10 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     
     // Inicializar botones según el idioma actual
     function updateLanguageButtons() {
-        languageOptions.forEach(btn => {
+        const buttons = document.querySelectorAll('.language-option');
+        buttons.forEach(btn => {
             const lang = btn.getAttribute('data-lang');
-            if (lang === selectedLanguage) {
+            if (lang === '{{ user_profile.language|default:"es" }}') {
                 btn.style.background = '#00cfff';
                 btn.style.color = '#232946';
             } else {
@@ -940,40 +979,42 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         });
     }
     
-    // Manejar clic en opción de idioma
-    languageOptions.forEach(button => {
-        button.addEventListener('click', function() {
-            const newLang = this.getAttribute('data-lang');
-            if (newLang !== selectedLanguage) {
-                selectedLanguage = newLang;
-                updateLanguageButtons();
-                confirmBtn.style.display = 'inline-block';
-                languageMessage.textContent = '';
+    // Función para cambiar el idioma
+    function setLanguage(lang) {
+        const messageDiv = document.getElementById('languageMessage');
+        messageDiv.textContent = lang === 'es' ? 'Cambiando a español...' : 'Changing to English...';
+        
+        // Enviar solicitud al servidor para cambiar el idioma
+        fetch('/app/set-language/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: `language=${lang}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                messageDiv.textContent = lang === 'es' ? 'Idioma actualizado. Recargando...' : 'Language updated. Reloading...';
+                // Recargar la página después de un breve retraso
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                messageDiv.textContent = 'Error: ' + (data.message || 'Error al cambiar el idioma');
             }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            messageDiv.textContent = 'Error al conectar con el servidor';
         });
-    });
+    }
     
-    // Manejar confirmación de idioma
-    confirmBtn.addEventListener('click', function() {
-        // Actualizar el campo oculto
-        document.getElementById('selectedLanguage').value = selectedLanguage;
-        
-        // Crear un campo oculto para indicar que es solo cambio de idioma
-        const languageOnlyField = document.createElement('input');
-        languageOnlyField.type = 'hidden';
-        languageOnlyField.name = 'language_only';
-        languageOnlyField.value = 'true';
-        document.querySelector('form.avatar-chooser').appendChild(languageOnlyField);
-        
-        // Mostrar mensaje de carga
-        this.textContent = 'Aplicando...';
-        this.disabled = true;
-        languageMessage.textContent = 'Aplicando cambios de idioma...';
-        
-        // Enviar el formulario para guardar el idioma
-        document.querySelector('form.avatar-chooser').submit();
+    // Inicializar los botones de idioma cuando el documento esté listo
+    document.addEventListener('DOMContentLoaded', function() {
+        updateLanguageButtons();
     });
-    
     </script>
     </body>
 </html>

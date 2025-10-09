@@ -44,8 +44,11 @@ def convert_to_tijuana_time(utc_datetime):
     except Exception:
         return utc_datetime
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import timezone, translation
+from django.utils.translation import gettext_lazy as _
 from datetime import datetime
+from django.utils.translation import activate, get_language
+from django.http import JsonResponse
 
 # Importaciones para generación de PDF
 from weasyprint import HTML
@@ -560,6 +563,39 @@ def api_tareas(request):
                 
                 # Agregar datos de ejemplo solo si no hay tareas creadas
                 if not tareas_del_proyecto:
+                    # Crear usuarios de ejemplo para participantes
+                    from django.contrib.auth.models import User
+                    usuarios_ejemplo = []
+                    try:
+                        # Intentar obtener usuarios reales
+                        usuarios_ejemplo = list(User.objects.all()[:4])
+                    except:
+                        # Si hay error, usar datos estáticos
+                        pass
+                    
+                    # Función para generar datos de participante
+                    def generar_participante(user_id, nombre, username):
+                        iniciales = ''.join([palabra[0].upper() for palabra in nombre.split()[:2]])
+                        avatar_url = None
+                        if usuarios_ejemplo:
+                            try:
+                                user = usuarios_ejemplo[user_id % len(usuarios_ejemplo)]
+                                if hasattr(user, 'userprofile'):
+                                    avatar_url = user.userprofile.get_avatar_url()
+                                nombre = user.get_full_name() or user.username
+                                iniciales = ''.join([palabra[0].upper() for palabra in nombre.split()[:2]])
+                            except:
+                                pass
+                        
+                        return {
+                            'id': user_id,
+                            'nombre': nombre,
+                            'username': username,
+                            'iniciales': iniciales,
+                            'avatar_url': avatar_url,
+                            'rol': 'Participante'
+                        }
+                    
                     tareas_del_proyecto = [
                         {
                             'id': 1,
@@ -569,7 +605,12 @@ def api_tareas(request):
                             'fecha_limite': '2025-01-25',
                             'fecha_creacion': '2025-01-20',
                             'creado_por': 'Rivera',
-                            'proyecto': proyecto.nombre
+                            'proyecto': proyecto.nombre,
+                            'participantes': [
+                                generar_participante(1, 'Juan Rivera', 'rivera'),
+                                generar_participante(2, 'María García', 'mgarcia'),
+                                generar_participante(3, 'Carlos López', 'clopez')
+                            ]
                         },
                         {
                             'id': 2,
@@ -579,7 +620,11 @@ def api_tareas(request):
                             'fecha_limite': '2025-02-01',
                             'fecha_creacion': '2025-01-20',
                             'creado_por': 'Desarrollo',
-                            'proyecto': proyecto.nombre
+                            'proyecto': proyecto.nombre,
+                            'participantes': [
+                                generar_participante(1, 'Juan Rivera', 'rivera'),
+                                generar_participante(4, 'Ana Martínez', 'amartinez')
+                            ]
                         }
                     ]
                 
@@ -1755,6 +1800,35 @@ def user_login(request):
 def user_logout(request):
     logout(request)
     return redirect('user_login')
+
+
+def set_language(request):
+    """
+    Vista para cambiar el idioma de la aplicación
+    """
+    if request.method == 'POST':
+        language = request.POST.get('language', 'es')
+        response = JsonResponse({'status': 'success', 'language': language})
+        
+        # Configurar el idioma en la sesión
+        if hasattr(request, 'session'):
+            request.session['django_language'] = language
+            request.session.save()
+        
+        # Configurar el idioma en la cookie
+        response.set_cookie('django_language', language, max_age=365*24*60*60)  # 1 año
+        
+        # Activar el idioma para esta sesión
+        translation.activate(language)
+        
+        # Guardar en el perfil del usuario si está autenticado
+        if request.user.is_authenticated and hasattr(request.user, 'userprofile'):
+            request.user.userprofile.language = language
+            request.user.userprofile.save()
+        
+        return response
+    
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
 
 @login_required
 def editar_venta_todoitem(request, pk):
@@ -4474,13 +4548,14 @@ def check_new_bitrix_opportunities(request):
     """
     from .bitrix_integration import get_all_bitrix_deals
     from datetime import datetime, timedelta
-    from django.utils import timezone
-    from datetime import datetime as django_timezone
-    
+    from django.utils import timezone, translation
+    from django.utils.translation import gettext_lazy as _
+    from django.http import JsonResponse
+    from django.utils.translation import activate, get_language
+
     try:
         # Obtener timestamp de la última verificación desde el parámetro GET
         last_check_timestamp = request.GET.get('last_check')
-        
         if not last_check_timestamp:
             return JsonResponse({
                 'success': False,

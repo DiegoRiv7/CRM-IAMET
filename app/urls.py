@@ -1,5 +1,6 @@
 from django.urls import path
 from django.views.generic import RedirectView, TemplateView # <--- ¡Añadido TemplateView aquí!
+from django.views.i18n import set_language as django_set_language
 
 from . import views
 from .bitrix_integration import get_bitrix_companies_api
@@ -64,10 +65,11 @@ urlpatterns = [
     path("api/descargar-archivo-oportunidad/<int:archivo_id>/", views.descargar_archivo_oportunidad, name="descargar_archivo_oportunidad"),
     path("api/vista-previa-archivo-oportunidad/<int:archivo_id>/", views.vista_previa_archivo_oportunidad, name="vista_previa_archivo_oportunidad"),
 
-    # Rutas de autenticación (registro, login, logout)
+    # Rutas de autenticación (registro, login, logout, idioma)
     path("register/", views.register, name="register"),
     path("login/", views.user_login, name="user_login"),
     path("logout/", views.user_logout, name="user_logout"),
+    path("set-language/", views.set_language, name="set_language"),
 
     # Ruta para editar o eliminar una oportunidad de venta específica
     # <int:pk> captura el ID numérico de la oportunidad
