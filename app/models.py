@@ -8,10 +8,19 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 class UserProfile(models.Model):
+    AVATAR_TIPO_CHOICES = [
+        ('1', 'Humano'),
+        ('dinosaur', 'Dinosaurio T-Rex'),
+        ('panda', 'Panda'),
+        ('eagle', 'Águila'),
+        ('shark', 'Tiburón'),
+    ]
+    
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bitrix_user_id = models.IntegerField(blank=True, null=True, verbose_name="ID de Usuario en Bitrix24")
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True, verbose_name="Avatar o Foto de Perfil")
     usar_animado = models.BooleanField(default=False, verbose_name="Usar avatar animado por defecto")
+    avatar_tipo = models.CharField(max_length=20, choices=AVATAR_TIPO_CHOICES, default='1', verbose_name="Tipo de Avatar")
 
     def get_avatar_url(self):
         if self.usar_animado:

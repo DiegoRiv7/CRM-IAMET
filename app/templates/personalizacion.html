@@ -8,6 +8,112 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     <meta charset="UTF-8">
     <title>Configuración avanzada</title>
     <link rel="stylesheet" href="/static/css/personalizacion.css">
+    <style>
+        /* Animaciones para avatares de animales */
+        @keyframes bounceAnim {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-8px) scale(1.05); }
+        }
+        
+        @keyframes pulseAnim {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(2deg); }
+        }
+        
+        @keyframes flyAnim {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            25% { transform: translateY(-3px) rotate(1deg); }
+            75% { transform: translateY(-6px) rotate(-1deg); }
+        }
+        
+        @keyframes swimAnim {
+            0%, 100% { transform: translateX(0px) rotate(0deg); }
+            33% { transform: translateX(2px) rotate(1deg); }
+            66% { transform: translateX(-2px) rotate(-1deg); }
+        }
+        
+        @keyframes rotateAnim {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.05); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+        
+        @keyframes colorAnim {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+        
+        /* Estilos mejorados para avatares */
+        .avatar-anim {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .avatar-anim:hover {
+            transform: scale(1.1);
+            border-color: rgba(255,255,255,0.6);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+        
+        .avatar-anim.selected {
+            border-color: #00cfff;
+            border-width: 4px;
+            box-shadow: 0 0 20px rgba(0,207,255,0.5);
+        }
+        
+        .avatar-anim svg {
+            width: 80%;
+            height: 80%;
+        }
+        
+        /* Mejorar la vista previa */
+        .avatar-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 4px solid rgba(255,255,255,0.2);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* Crop overlay para cuando tenemos imagen */
+        .crop-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 2px dashed #00cfff;
+            border-radius: 50%;
+            background: rgba(0,207,255,0.1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #00cfff;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .avatar-preview:hover .crop-overlay {
+            opacity: 1;
+        }
+    </style>
 </head>
 <body>
     <div class="container" style="background: #232946; color: #fff; max-width: 420px; margin: 48px auto; border-radius: 18px; box-shadow: 0 4px 32px #000a; padding: 38px 28px 32px 28px;">
@@ -18,20 +124,159 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     <!-- Vista previa dinámica -->
     <div id="animGalleryPreview" style="display:block;"></div>
     <img id="uploadedAvatar" src="" alt="Foto de perfil" style="display:none; width:100%; height:100%; object-fit:cover; border-radius:50%;"/>
+    <div class="crop-overlay" id="cropOverlay" style="display:none;">
+        <span>✂️ EDITAR</span>
+    </div>
 </div>
 <div class="avatar-options" style="flex-direction:column;align-items:center;gap:10px;">
-    <div id="avatarGallery" style="display:flex;gap:16px;justify-content:center;">
-        <button type="button" class="avatar-anim avatar-choice" data-avatar="1" title="Avatar 1" style="animation: rotateAnim 2.5s linear infinite; background: linear-gradient(135deg,#00cfff 0%,#ff00c8 100%);">
+    <div id="avatarGallery" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;max-width:400px;">
+        <!-- Avatar Humano Original -->
+        <button type="button" class="avatar-anim avatar-choice" data-avatar="1" title="Avatar Humano" style="animation: rotateAnim 2.5s linear infinite; background: linear-gradient(135deg,#00cfff 0%,#ff00c8 100%);">
             <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" stroke="#fff" stroke-width="4" opacity="0.2"/><path d="M24 8a8 8 0 018 8c0 4-3 8-8 8s-8-4-8-8a8 8 0 018-8z" fill="#00cfff"/><circle cx="24" cy="22" r="4" fill="#fff"/><ellipse cx="24" cy="34" rx="10" ry="4" fill="#ff00c8" opacity="0.6"/></svg>
         </button>
-        <button type="button" class="avatar-anim avatar-choice" data-avatar="2" title="Avatar 2" style="animation: pulseAnim 1.8s infinite alternate; background: linear-gradient(135deg,#ffb300 0%,#ff0080 100%);">
-            <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" stroke="#fff" stroke-width="4" opacity="0.2"/><ellipse cx="24" cy="20" rx="8" ry="10" fill="#ffb300"/><ellipse cx="24" cy="34" rx="10" ry="4" fill="#ff0080" opacity="0.5"/><circle cx="24" cy="22" r="4" fill="#fff"/></svg>
+        
+        <!-- Dinosaurio T-Rex 3D -->
+        <button type="button" class="avatar-anim avatar-choice" data-avatar="dinosaur" title="Dinosaurio T-Rex" style="animation: bounceAnim 2s infinite; background: linear-gradient(135deg,#4ade80 0%,#22c55e 50%,#16a34a 100%);">
+            <svg viewBox="0 0 48 48" fill="none">
+                <!-- Cuerpo del dinosaurio -->
+                <ellipse cx="24" cy="28" rx="12" ry="8" fill="#22c55e"/>
+                <!-- Cabeza grande -->
+                <ellipse cx="18" cy="18" rx="10" ry="8" fill="#4ade80"/>
+                <!-- Hocico -->
+                <ellipse cx="12" cy="18" rx="6" ry="4" fill="#16a34a"/>
+                <!-- Ojos brillantes -->
+                <circle cx="15" cy="15" r="2" fill="#fff"/>
+                <circle cx="21" cy="15" r="2" fill="#fff"/>
+                <circle cx="15" cy="15" r="1" fill="#000"/>
+                <circle cx="21" cy="15" r="1" fill="#000"/>
+                <!-- Dientes -->
+                <polygon points="9,16 11,18 9,20" fill="#fff"/>
+                <polygon points="11,16 13,18 11,20" fill="#fff"/>
+                <!-- Brazos pequeños -->
+                <ellipse cx="30" cy="22" rx="3" ry="6" fill="#22c55e"/>
+                <ellipse cx="32" cy="25" rx="2" ry="3" fill="#16a34a"/>
+                <!-- Patas -->
+                <ellipse cx="20" cy="38" rx="4" ry="6" fill="#16a34a"/>
+                <ellipse cx="28" cy="38" rx="4" ry="6" fill="#16a34a"/>
+                <!-- Cola -->
+                <ellipse cx="36" cy="26" rx="8" ry="4" fill="#22c55e" transform="rotate(30 36 26)"/>
+                <!-- Efectos 3D -->
+                <ellipse cx="18" cy="16" rx="8" ry="6" fill="none" stroke="#4ade80" stroke-width="1" opacity="0.5"/>
+            </svg>
         </button>
-        <button type="button" class="avatar-anim avatar-choice" data-avatar="3" title="Avatar 3" style="animation: bounceAnim 1.5s infinite alternate; background: linear-gradient(135deg,#00ffae 0%,#0080ff 100%);">
-            <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" stroke="#fff" stroke-width="4" opacity="0.2"/><rect x="16" y="14" width="16" height="12" rx="6" fill="#00ffae"/><ellipse cx="24" cy="34" rx="10" ry="4" fill="#0080ff" opacity="0.5"/><circle cx="24" cy="22" r="4" fill="#fff"/></svg>
+        
+        <!-- Panda 3D -->
+        <button type="button" class="avatar-anim avatar-choice" data-avatar="panda" title="Panda Adorable" style="animation: pulseAnim 2.5s infinite; background: linear-gradient(135deg,#f3f4f6 0%,#e5e7eb 50%,#d1d5db 100%);">
+            <svg viewBox="0 0 48 48" fill="none">
+                <!-- Orejas negras -->
+                <circle cx="15" cy="12" r="6" fill="#000"/>
+                <circle cx="33" cy="12" r="6" fill="#000"/>
+                <circle cx="15" cy="12" r="4" fill="#1f2937"/>
+                <circle cx="33" cy="12" r="4" fill="#1f2937"/>
+                <!-- Cabeza blanca -->
+                <circle cx="24" cy="20" r="12" fill="#f9fafb"/>
+                <circle cx="24" cy="20" r="10" fill="#fff"/>
+                <!-- Manchas de ojos negras -->
+                <ellipse cx="20" cy="18" rx="4" ry="6" fill="#000"/>
+                <ellipse cx="28" cy="18" rx="4" ry="6" fill="#000"/>
+                <!-- Ojos blancos -->
+                <circle cx="20" cy="18" r="2.5" fill="#fff"/>
+                <circle cx="28" cy="18" r="2.5" fill="#fff"/>
+                <circle cx="20" cy="18" r="1.5" fill="#000"/>
+                <circle cx="28" cy="18" r="1.5" fill="#000"/>
+                <!-- Nariz -->
+                <ellipse cx="24" cy="22" rx="2" ry="1.5" fill="#000"/>
+                <!-- Boca sonriente -->
+                <path d="M20 25 Q24 28 28 25" stroke="#000" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <!-- Cuerpo -->
+                <ellipse cx="24" cy="35" rx="8" ry="10" fill="#f9fafb"/>
+                <ellipse cx="24" cy="35" rx="6" ry="8" fill="#fff"/>
+                <!-- Brazos -->
+                <ellipse cx="15" cy="30" rx="3" ry="8" fill="#000"/>
+                <ellipse cx="33" cy="30" rx="3" ry="8" fill="#000"/>
+                <!-- Efectos 3D -->
+                <circle cx="24" cy="20" r="11" fill="none" stroke="#e5e7eb" stroke-width="1" opacity="0.7"/>
+                <circle cx="22" cy="17" r="1" fill="#fff" opacity="0.8"/>
+                <circle cx="30" cy="17" r="1" fill="#fff" opacity="0.8"/>
+            </svg>
         </button>
-        <button type="button" class="avatar-anim avatar-choice" data-avatar="4" title="Avatar 4" style="animation: colorAnim 3s linear infinite; background: linear-gradient(135deg,#ff5e62 0%,#ff9966 100%);">
-            <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" stroke="#fff" stroke-width="4" opacity="0.2"/><ellipse cx="24" cy="20" rx="10" ry="8" fill="#ff5e62"/><ellipse cx="24" cy="34" rx="10" ry="4" fill="#ff9966" opacity="0.5"/><circle cx="24" cy="22" r="4" fill="#fff"/></svg>
+        
+        <!-- Águila 3D -->
+        <button type="button" class="avatar-anim avatar-choice" data-avatar="eagle" title="Águila Majestuosa" style="animation: flyAnim 3s infinite; background: linear-gradient(135deg,#fbbf24 0%,#f59e0b 50%,#d97706 100%);">
+            <svg viewBox="0 0 48 48" fill="none">
+                <!-- Alas extendidas -->
+                <ellipse cx="12" cy="24" rx="8" ry="12" fill="#92400e" transform="rotate(-30 12 24)"/>
+                <ellipse cx="36" cy="24" rx="8" ry="12" fill="#92400e" transform="rotate(30 36 24)"/>
+                <ellipse cx="12" cy="24" rx="6" ry="10" fill="#d97706" transform="rotate(-30 12 24)"/>
+                <ellipse cx="36" cy="24" rx="6" ry="10" fill="#d97706" transform="rotate(30 36 24)"/>
+                <!-- Cuerpo -->
+                <ellipse cx="24" cy="28" rx="8" ry="12" fill="#f59e0b"/>
+                <ellipse cx="24" cy="28" rx="6" ry="10" fill="#fbbf24"/>
+                <!-- Cabeza -->
+                <circle cx="24" cy="16" r="8" fill="#f9fafb"/>
+                <circle cx="24" cy="16" r="6" fill="#fff"/>
+                <!-- Pico águila -->
+                <polygon points="24,18 20,22 24,20" fill="#fbbf24"/>
+                <polygon points="24,18 18,20 22,22" fill="#f59e0b"/>
+                <!-- Ojos de águila -->
+                <circle cx="21" cy="14" r="2" fill="#fbbf24"/>
+                <circle cx="27" cy="14" r="2" fill="#fbbf24"/>
+                <circle cx="21" cy="14" r="1.5" fill="#000"/>
+                <circle cx="27" cy="14" r="1.5" fill="#000"/>
+                <!-- Cejas características -->
+                <path d="M19 12 L23 13" stroke="#92400e" stroke-width="2" stroke-linecap="round"/>
+                <path d="M25 13 L29 12" stroke="#92400e" stroke-width="2" stroke-linecap="round"/>
+                <!-- Patas -->
+                <ellipse cx="20" cy="38" rx="2" ry="4" fill="#fbbf24"/>
+                <ellipse cx="28" cy="38" rx="2" ry="4" fill="#fbbf24"/>
+                <!-- Garras -->
+                <polygon points="18,40 20,42 18,44" fill="#92400e"/>
+                <polygon points="22,40 20,42 22,44" fill="#92400e"/>
+                <polygon points="26,40 28,42 26,44" fill="#92400e"/>
+                <polygon points="30,40 28,42 30,44" fill="#92400e"/>
+                <!-- Efectos 3D -->
+                <ellipse cx="24" cy="16" r="7" fill="none" stroke="#fbbf24" stroke-width="1" opacity="0.6"/>
+                <circle cx="22" cy="13" r="0.5" fill="#fff"/>
+                <circle cx="28" cy="13" r="0.5" fill="#fff"/>
+            </svg>
+        </button>
+        
+        <!-- Tiburón 3D -->
+        <button type="button" class="avatar-anim avatar-choice" data-avatar="shark" title="Tiburón Feroz" style="animation: swimAnim 2.5s infinite; background: linear-gradient(135deg,#0ea5e9 0%,#0284c7 50%,#0369a1 100%);">
+            <svg viewBox="0 0 48 48" fill="none">
+                <!-- Cuerpo principal -->
+                <ellipse cx="24" cy="24" rx="16" ry="8" fill="#0284c7"/>
+                <ellipse cx="24" cy="24" rx="14" ry="6" fill="#0ea5e9"/>
+                <!-- Cabeza puntiaguda -->
+                <polygon points="8,24 20,18 20,30" fill="#0369a1"/>
+                <polygon points="10,24 18,20 18,28" fill="#0284c7"/>
+                <!-- Aleta dorsal -->
+                <polygon points="20,12 28,8 32,18 24,16" fill="#0369a1"/>
+                <polygon points="22,14 26,10 30,16 26,16" fill="#0284c7"/>
+                <!-- Aletas laterales -->
+                <ellipse cx="18" cy="28" rx="6" ry="3" fill="#0369a1" transform="rotate(30 18 28)"/>
+                <ellipse cx="18" cy="20" rx="6" ry="3" fill="#0369a1" transform="rotate(-30 18 20)"/>
+                <!-- Cola -->
+                <polygon points="36,20 44,12 44,24 40,24" fill="#0369a1"/>
+                <polygon points="36,28 44,36 44,24 40,24" fill="#0369a1"/>
+                <polygon points="38,22 42,16 42,26 40,24" fill="#0284c7"/>
+                <polygon points="38,26 42,32 42,26 40,24" fill="#0284c7"/>
+                <!-- Ojo -->
+                <circle cx="16" cy="22" r="3" fill="#000"/>
+                <circle cx="16" cy="22" r="2" fill="#fff"/>
+                <circle cx="17" cy="21" r="1" fill="#000"/>
+                <!-- Dientes -->
+                <polygon points="8,24 12,26 10,28" fill="#fff"/>
+                <polygon points="10,24 14,26 12,28" fill="#fff"/>
+                <polygon points="12,24 16,26 14,28" fill="#fff"/>
+                <!-- Branquias -->
+                <path d="M18 20 Q20 22 18 24" stroke="#0369a1" stroke-width="1"/>
+                <path d="M20 20 Q22 22 20 24" stroke="#0369a1" stroke-width="1"/>
+                <path d="M22 20 Q24 22 22 24" stroke="#0369a1" stroke-width="1"/>
+                <!-- Efectos 3D -->
+                <ellipse cx="24" cy="22" rx="14" ry="5" fill="none" stroke="#0ea5e9" stroke-width="1" opacity="0.5"/>
+                <circle cx="15" cy="20" r="0.5" fill="#fff"/>
+            </svg>
         </button>
     </div>
     <div style="margin-top:10px;font-size:0.97em;color:#aaa;">Selecciona un avatar animado o sube tu foto</div>
@@ -45,6 +290,28 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             </div>
         </form>
         <div style="color:#aaa; font-size:0.95em; margin-top:30px; text-align:center;">Tu foto o avatar aparecerá junto a tu nombre en el sistema.<br>Por ejemplo: empleado del día, mes, proyectos y tareas.</div>
+    </div>
+    
+    <!-- Modal de Crop estilo Instagram -->
+    <div id="cropModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); z-index:1000; justify-content:center; align-items:center;">
+        <div style="background:#232946; border-radius:18px; padding:24px; max-width:500px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+            <h2 style="color:#00cfff; text-align:center; margin-bottom:20px;">Ajustar Foto</h2>
+            
+            <div id="cropContainer" style="width:300px; height:300px; margin:0 auto 20px; position:relative; border:2px solid #00cfff; border-radius:50%; overflow:hidden;">
+                <img id="cropImage" style="width:100%; height:100%; object-fit:cover; cursor:grab;">
+                <div id="cropOverlayModal" style="position:absolute; top:0; left:0; right:0; bottom:0; border:2px dashed rgba(0,207,255,0.5); border-radius:50%; pointer-events:none;"></div>
+            </div>
+            
+            <div style="text-align:center; margin-bottom:20px;">
+                <label style="color:#fff; margin-right:10px;">Zoom:</label>
+                <input type="range" id="zoomSlider" min="1" max="3" step="0.1" value="1" style="width:200px;">
+            </div>
+            
+            <div style="display:flex; gap:12px; justify-content:center;">
+                <button type="button" onclick="cancelCrop()" style="background:#666; color:#fff; border:none; padding:12px 24px; border-radius:8px; cursor:pointer;">Cancelar</button>
+                <button type="button" onclick="applyCrop()" style="background:#00cfff; color:#fff; border:none; padding:12px 24px; border-radius:8px; cursor:pointer;">Aplicar</button>
+            </div>
+        </div>
     </div>
     <script>
     // Selección y vista previa de avatar animado
@@ -78,20 +345,176 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     // Inicializa preview
     setAnimPreview(selectedAvatar);
 
+    // Variables para el crop
+    let currentImageFile = null;
+    let cropData = { x: 0, y: 0, scale: 1 };
+    
     // Vista previa y crop circular de la imagen subida
     avatarUpload.addEventListener('change', function(e) {
         if (e.target.files && e.target.files[0]) {
+            currentImageFile = e.target.files[0];
             const reader = new FileReader();
             reader.onload = function(ev) {
-                uploadedAvatar.src = ev.target.result;
-                uploadedAvatar.style.display = 'block';
-                animGalleryPreview.style.display = 'none';
+                // Mostrar la imagen en el crop modal
+                document.getElementById('cropImage').src = ev.target.result;
+                document.getElementById('cropModal').style.display = 'flex';
+                
                 // Limpiar la selección de avatar animado
                 avatarChoices.forEach(b => b.classList.remove('selected'));
                 document.getElementById('avatarChoice').value = '';
-                // Aquí se puede integrar una librería JS de crop circular (ej: Cropper.js)
             }
             reader.readAsDataURL(e.target.files[0]);
+        }
+    });
+    
+    // Funcionalidad del crop modal
+    const cropImage = document.getElementById('cropImage');
+    const zoomSlider = document.getElementById('zoomSlider');
+    let isDragging = false;
+    let startX, startY, imageX = 0, imageY = 0;
+    
+    // Zoom functionality
+    zoomSlider.addEventListener('input', function() {
+        const scale = this.value;
+        cropData.scale = scale;
+        cropImage.style.transform = `translate(${imageX}px, ${imageY}px) scale(${scale})`;
+    });
+    
+    // Drag functionality
+    cropImage.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        startX = e.clientX - imageX;
+        startY = e.clientY - imageY;
+        cropImage.style.cursor = 'grabbing';
+    });
+    
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        
+        imageX = e.clientX - startX;
+        imageY = e.clientY - startY;
+        cropData.x = imageX;
+        cropData.y = imageY;
+        
+        cropImage.style.transform = `translate(${imageX}px, ${imageY}px) scale(${cropData.scale})`;
+    });
+    
+    document.addEventListener('mouseup', function() {
+        isDragging = false;
+        cropImage.style.cursor = 'grab';
+    });
+    
+    // Touch events para móviles
+    cropImage.addEventListener('touchstart', function(e) {
+        isDragging = true;
+        const touch = e.touches[0];
+        startX = touch.clientX - imageX;
+        startY = touch.clientY - imageY;
+    });
+    
+    document.addEventListener('touchmove', function(e) {
+        if (!isDragging) return;
+        e.preventDefault();
+        
+        const touch = e.touches[0];
+        imageX = touch.clientX - startX;
+        imageY = touch.clientY - startY;
+        cropData.x = imageX;
+        cropData.y = imageY;
+        
+        cropImage.style.transform = `translate(${imageX}px, ${imageY}px) scale(${cropData.scale})`;
+    });
+    
+    document.addEventListener('touchend', function() {
+        isDragging = false;
+    });
+    
+    // Funciones del modal
+    function cancelCrop() {
+        document.getElementById('cropModal').style.display = 'none';
+        // Reset file input
+        avatarUpload.value = '';
+        // Reset transform
+        imageX = 0;
+        imageY = 0;
+        cropData = { x: 0, y: 0, scale: 1 };
+        zoomSlider.value = 1;
+        cropImage.style.transform = 'translate(0px, 0px) scale(1)';
+    }
+    
+    function applyCrop() {
+        // Crear canvas para generar la imagen croppeada
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const size = 300; // Tamaño del avatar final
+        
+        canvas.width = size;
+        canvas.height = size;
+        
+        // Crear imagen temporal
+        const tempImg = new Image();
+        tempImg.onload = function() {
+            // Calcular las dimensiones finales
+            const scale = cropData.scale;
+            const sourceWidth = tempImg.width;
+            const sourceHeight = tempImg.height;
+            
+            // Hacer el canvas circular
+            ctx.beginPath();
+            ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+            ctx.clip();
+            
+            // Dibujar la imagen con las transformaciones aplicadas
+            ctx.drawImage(
+                tempImg,
+                cropData.x / scale,
+                cropData.y / scale,
+                sourceWidth,
+                sourceHeight,
+                0,
+                0,
+                size * scale,
+                size * scale
+            );
+            
+            // Convertir canvas a blob y actualizar la vista previa
+            canvas.toBlob(function(blob) {
+                const croppedUrl = URL.createObjectURL(blob);
+                uploadedAvatar.src = croppedUrl;
+                uploadedAvatar.style.display = 'block';
+                animGalleryPreview.style.display = 'none';
+                document.getElementById('cropOverlay').style.display = 'block';
+                
+                // Crear un nuevo archivo con la imagen croppeada
+                const croppedFile = new File([blob], currentImageFile.name, {
+                    type: currentImageFile.type,
+                    lastModified: Date.now()
+                });
+                
+                // Actualizar el input file con la imagen croppeada
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(croppedFile);
+                avatarUpload.files = dataTransfer.files;
+                
+                document.getElementById('cropModal').style.display = 'none';
+                
+                // Reset transform
+                imageX = 0;
+                imageY = 0;
+                cropData = { x: 0, y: 0, scale: 1 };
+                zoomSlider.value = 1;
+                cropImage.style.transform = 'translate(0px, 0px) scale(1)';
+            }, currentImageFile.type, 0.9);
+        };
+        
+        tempImg.src = cropImage.src;
+    }
+    
+    // Click en el overlay de crop para reabrir el modal
+    document.getElementById('cropOverlay').addEventListener('click', function() {
+        if (uploadedAvatar.style.display === 'block') {
+            document.getElementById('cropImage').src = uploadedAvatar.src;
+            document.getElementById('cropModal').style.display = 'flex';
         }
     });
 

@@ -2875,9 +2875,11 @@ def usuario_redirect_view(request):
         if 'avatar' in request.FILES and request.FILES['avatar']:
             profile.avatar = request.FILES['avatar']
             profile.usar_animado = False
+            profile.avatar_tipo = '1'  # Reset a humano por defecto
         # Si se está seleccionando un avatar animado
         elif 'avatar_choice' in request.POST and request.POST['avatar_choice']:
             profile.usar_animado = True
+            profile.avatar_tipo = request.POST['avatar_choice']  # Guardar el tipo seleccionado
             # Limpiar avatar anterior si existía
             profile.avatar = None
         
