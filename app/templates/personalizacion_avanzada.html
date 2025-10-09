@@ -1634,27 +1634,15 @@
             zoomSlider.value = 1;
             cropImage.style.transform = 'translate(-50%, -50%) scale(1)';
         }
-
-        function applyCrop() {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const size = 300;
-            
-            canvas.width = size;
-            canvas.height = size;
-            
-            const tempImg = new Image();
-            tempImg.onload = function() {
-                const containerSize = 350;
-                const circleRadius = 140;
-                
-                const imgDisplayWidth = parseInt(cropImage.style.width);
-                const imgDisplayHeight = parseInt(cropImage.style.height);
-                
-                const scaleX = tempImg.width / imgDisplayWidth;
-                const scaleY = tempImg.height / imgDisplayHeight;
-                
-                const circleCenterX = containerSize / 2;
+        
+        // Notification system
+        function showNotification(message, type = 'info') {
+            // Create notification container if it doesn't exist
+            let container = document.querySelector('.notification-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.className = 'notification-container';
+                document.body.appendChild(container);
                 const circleCenterY = containerSize / 2;
                 
                 const currentScale = cropData.scale;
@@ -1811,6 +1799,67 @@
             .catch(error => {
                 console.error('Error:', error);
                 alert('Error al guardar la información');
+            });
+        }
+
+        function changeLanguage(langCode, langName) {
+            // Show loading state
+            const languageButtons = document.querySelectorAll('.language-option');
+            languageButtons.forEach(btn => {
+                btn.disabled = true;
+                if (btn.getAttribute('onclick').includes(`'${langCode}'`)) {
+                    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${btn.textContent}`;
+                }
+            });
+
+            // Create form data
+            const formData = new FormData();
+            formData.append('language', langCode);
+            formData.append('next', window.location.pathname);
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+            // Make AJAX request to change language
+            fetch('{% url "set_language" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update UI to show selected language
+                    document.documentElement.lang = langCode;
+                    
+                    // Show success message
+                    showNotification(`Idioma cambiado a ${langName}`, 'success');
+                    
+                    // Reload the page to apply the new language
+                    setTimeout(() => {
+                        window.location.reload(true);
+                    }, 500);
+                } else {
+                    throw new Error(data.message || 'Error al cambiar el idioma');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification(error.message || 'Error al cambiar el idioma', 'error');
+                
+                // Re-enable buttons on error
+                languageButtons.forEach(btn => {
+                    btn.disabled = false;
+                    const langText = btn.textContent.trim();
+                    btn.textContent = langText;
+                });
             });
         }
 
