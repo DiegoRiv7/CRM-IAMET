@@ -187,6 +187,9 @@ def bienvenida(request):
     """
     Vista de bienvenida que será la primera que vea el usuario al ingresar.
     """
+    # Asegurar que el usuario tenga un perfil
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
+    
     # Determinar perfil
     perfil = "SUPERVISOR" if is_supervisor(request.user) else "VENDEDOR"
     # Fecha actual
@@ -2869,15 +2872,17 @@ def usuario_redirect_view(request):
         profile, created = UserProfile.objects.get_or_create(user=request.user)
         
         # Manejar la subida de imagen
-        if 'avatar' in request.FILES:
+        if 'avatar' in request.FILES and request.FILES['avatar']:
             profile.avatar = request.FILES['avatar']
             profile.usar_animado = False
         # Si se está seleccionando un avatar animado
-        elif 'avatar_choice' in request.POST:
+        elif 'avatar_choice' in request.POST and request.POST['avatar_choice']:
             profile.usar_animado = True
-            # Aquí podrías guardar qué avatar animado se seleccionó si tienes varios
-            
+            # Limpiar avatar anterior si existía
+            profile.avatar = None
+        
         profile.save()
+        
         # Redirigir a la página de inicio
         return redirect('home')
         
