@@ -288,6 +288,24 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             <div style="margin-top:18px; text-align:center;">
                 <button type="submit" class="avatar-label" style="background:#00cfff; color:#fff; border:none;">Guardar configuración</button>
             </div>
+            
+            <!-- Selector de idioma -->
+            <div class="language-selector" style="margin-top: 30px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; text-align: center;">
+                <h3 style="color: #00cfff; margin-bottom: 15px; font-size: 1.1em;">Idioma / Language</h3>
+                <div style="display: flex; justify-content: center; gap: 10px;">
+                    <button type="button" class="language-option {% if user_profile.language == 'es' %}selected{% endif %}" 
+                            data-lang="es" 
+                            style="padding: 10px 20px; border: 2px solid #00cfff; background: {% if user_profile.language == 'es' %}#00cfff; color: #232946;{% else %}transparent; color: #fff;{% endif %}; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;">
+                        Español
+                    </button>
+                    <button type="button" class="language-option {% if user_profile.language == 'en' %}selected{% endif %}" 
+                            data-lang="en" 
+                            style="padding: 10px 20px; border: 2px solid #00cfff; background: {% if user_profile.language == 'en' %}#00cfff; color: #232946;{% else %}transparent; color: #fff;{% endif %}; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;">
+                        English
+                    </button>
+                </div>
+                <input type="hidden" name="language" id="selectedLanguage" value="{{ user_profile.language|default:'es' }}">
+            </div>
         </form>
         <div style="color:#aaa; font-size:0.95em; margin-top:30px; text-align:center;">Tu foto o avatar aparecerá junto a tu nombre en el sistema.<br>Por ejemplo: empleado del día, mes, proyectos y tareas.</div>
     </div>
@@ -297,9 +315,10 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         <div style="background:#232946; border-radius:18px; padding:24px; max-width:500px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.5);">
             <h2 style="color:#00cfff; text-align:center; margin-bottom:20px;">Ajustar Foto</h2>
             
-            <div id="cropContainer" style="width:300px; height:300px; margin:0 auto 20px; position:relative; border:2px solid #00cfff; border-radius:50%; overflow:hidden;">
-                <img id="cropImage" style="width:100%; height:100%; object-fit:cover; cursor:grab;">
-                <div id="cropOverlayModal" style="position:absolute; top:0; left:0; right:0; bottom:0; border:2px dashed rgba(0,207,255,0.5); border-radius:50%; pointer-events:none;"></div>
+            <div id="cropContainer" style="width:350px; height:350px; margin:0 auto 20px; position:relative; border:2px solid #333; border-radius:12px; overflow:hidden; background:#000;">
+                <img id="cropImage" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); cursor:grab; user-select:none;">
+                <div id="cropOverlayModal" style="position:absolute; top:50%; left:50%; width:280px; height:280px; transform:translate(-50%, -50%); border:3px solid #00cfff; border-radius:50%; pointer-events:none; box-shadow:0 0 0 9999px rgba(0,0,0,0.5);"></div>
+                <div style="position:absolute; top:10px; left:10px; color:#fff; font-size:12px; opacity:0.7;">Arrastra y ajusta tu imagen</div>
             </div>
             
             <div style="text-align:center; margin-bottom:20px;">
@@ -359,6 +378,9 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
                 document.getElementById('cropImage').src = ev.target.result;
                 document.getElementById('cropModal').style.display = 'flex';
                 
+                // Inicializar el crop con el nuevo tamaño
+                setTimeout(() => initializeCropImage(), 100);
+                
                 // Limpiar la selección de avatar animado
                 avatarChoices.forEach(b => b.classList.remove('selected'));
                 document.getElementById('avatarChoice').value = '';
@@ -367,21 +389,69 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         }
     });
     
-    // Funcionalidad del crop modal
+    // Funcionalidad del crop modal estilo Instagram
     const cropImage = document.getElementById('cropImage');
     const zoomSlider = document.getElementById('zoomSlider');
     let isDragging = false;
     let startX, startY, imageX = 0, imageY = 0;
+    let imageNaturalSize = { width: 0, height: 0 };
+    
+    // Función para inicializar la imagen en el crop
+    function initializeCropImage() {
+        const img = new Image();
+        img.onload = function() {
+            imageNaturalSize.width = this.naturalWidth;
+            imageNaturalSize.height = this.naturalHeight;
+            
+            // Calcular el tamaño inicial manteniendo aspecto original (estilo Instagram)
+            const containerSize = 350;
+            const aspectRatio = this.naturalWidth / this.naturalHeight;
+            
+            let displayWidth, displayHeight;
+            if (aspectRatio > 1) {
+                // Imagen horizontal
+                displayWidth = containerSize;
+                displayHeight = containerSize / aspectRatio;
+            } else {
+                // Imagen vertical o cuadrada
+                displayHeight = containerSize;
+                displayWidth = containerSize * aspectRatio;
+            }
+            
+            // Asegurar que la imagen cubra al menos el círculo
+            const circleSize = 280;
+            const minScale = Math.max(circleSize / displayWidth, circleSize / displayHeight);
+            if (minScale > 1) {
+                displayWidth *= minScale;
+                displayHeight *= minScale;
+            }
+            
+            cropImage.style.width = displayWidth + 'px';
+            cropImage.style.height = displayHeight + 'px';
+            
+            // Reset position
+            imageX = 0;
+            imageY = 0;
+            cropData = { x: 0, y: 0, scale: 1 };
+            zoomSlider.value = 1;
+            updateImageTransform();
+        };
+        img.src = cropImage.src;
+    }
+    
+    function updateImageTransform() {
+        cropImage.style.transform = `translate(calc(-50% + ${imageX}px), calc(-50% + ${imageY}px)) scale(${cropData.scale})`;
+    }
     
     // Zoom functionality
     zoomSlider.addEventListener('input', function() {
-        const scale = this.value;
-        cropData.scale = scale;
-        cropImage.style.transform = `translate(${imageX}px, ${imageY}px) scale(${scale})`;
+        cropData.scale = parseFloat(this.value);
+        updateImageTransform();
     });
     
-    // Drag functionality
+    // Drag functionality - Mouse events
     cropImage.addEventListener('mousedown', function(e) {
+        e.preventDefault();
         isDragging = true;
         startX = e.clientX - imageX;
         startY = e.clientY - imageY;
@@ -390,22 +460,26 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     
     document.addEventListener('mousemove', function(e) {
         if (!isDragging) return;
+        e.preventDefault();
         
         imageX = e.clientX - startX;
         imageY = e.clientY - startY;
         cropData.x = imageX;
         cropData.y = imageY;
         
-        cropImage.style.transform = `translate(${imageX}px, ${imageY}px) scale(${cropData.scale})`;
+        updateImageTransform();
     });
     
     document.addEventListener('mouseup', function() {
-        isDragging = false;
-        cropImage.style.cursor = 'grab';
+        if (isDragging) {
+            isDragging = false;
+            cropImage.style.cursor = 'grab';
+        }
     });
     
     // Touch events para móviles
     cropImage.addEventListener('touchstart', function(e) {
+        e.preventDefault();
         isDragging = true;
         const touch = e.touches[0];
         startX = touch.clientX - imageX;
@@ -422,11 +496,13 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         cropData.x = imageX;
         cropData.y = imageY;
         
-        cropImage.style.transform = `translate(${imageX}px, ${imageY}px) scale(${cropData.scale})`;
+        updateImageTransform();
     });
     
     document.addEventListener('touchend', function() {
-        isDragging = false;
+        if (isDragging) {
+            isDragging = false;
+        }
     });
     
     // Funciones del modal
@@ -454,28 +530,55 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         // Crear imagen temporal
         const tempImg = new Image();
         tempImg.onload = function() {
-            // Calcular las dimensiones finales
+            const containerSize = 350;
+            const circleRadius = 140; // 280/2
             const scale = cropData.scale;
-            const sourceWidth = tempImg.width;
-            const sourceHeight = tempImg.height;
+            
+            // Calcular la posición del círculo en relación a la imagen
+            const imageRect = cropImage.getBoundingClientRect();
+            const containerRect = document.getElementById('cropContainer').getBoundingClientRect();
+            
+            // Calcular offset del círculo respecto al centro del contenedor
+            const circleCenterX = containerSize / 2;
+            const circleCenterY = containerSize / 2;
+            
+            // Calcular la porción de la imagen original que corresponde al círculo
+            const imgDisplayWidth = parseInt(cropImage.style.width);
+            const imgDisplayHeight = parseInt(cropImage.style.height);
+            
+            // Escala de la imagen original vs imagen mostrada
+            const scaleX = tempImg.width / imgDisplayWidth;
+            const scaleY = tempImg.height / imgDisplayHeight;
+            
+            // Posición del círculo en coordenadas de imagen original
+            const cropX = (circleCenterX - imageX - imgDisplayWidth/2) * scaleX / scale;
+            const cropY = (circleCenterY - imageY - imgDisplayHeight/2) * scaleY / scale;
+            const cropRadius = circleRadius * scaleX / scale;
             
             // Hacer el canvas circular
+            ctx.save();
             ctx.beginPath();
             ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
             ctx.clip();
             
-            // Dibujar la imagen con las transformaciones aplicadas
+            // Dibujar la imagen centrada en el área del círculo
+            const drawSize = size;
+            const drawX = size/2 - cropRadius;
+            const drawY = size/2 - cropRadius;
+            
             ctx.drawImage(
                 tempImg,
-                cropData.x / scale,
-                cropData.y / scale,
-                sourceWidth,
-                sourceHeight,
+                cropX - cropRadius,
+                cropY - cropRadius,
+                cropRadius * 2,
+                cropRadius * 2,
                 0,
                 0,
-                size * scale,
-                size * scale
+                size,
+                size
             );
+            
+            ctx.restore();
             
             // Convertir canvas a blob y actualizar la vista previa
             canvas.toBlob(function(blob) {
@@ -503,7 +606,7 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
                 imageY = 0;
                 cropData = { x: 0, y: 0, scale: 1 };
                 zoomSlider.value = 1;
-                cropImage.style.transform = 'translate(0px, 0px) scale(1)';
+                cropImage.style.transform = 'translate(-50%, -50%) scale(1)';
             }, currentImageFile.type, 0.9);
         };
         
@@ -515,14 +618,40 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         if (uploadedAvatar.style.display === 'block') {
             document.getElementById('cropImage').src = uploadedAvatar.src;
             document.getElementById('cropModal').style.display = 'flex';
+            setTimeout(() => initializeCropImage(), 100);
         }
     });
-
+    
     // Al guardar, redirige a bienvenida
     document.querySelector('form.avatar-chooser').addEventListener('submit', function(e) {
         // Puedes agregar lógica de validación/crop aquí
         // El formulario se enviará normalmente y Django manejará la redirección
     });
+    
+    // Manejo del selector de idioma
+    document.querySelectorAll('.language-option').forEach(button => {
+        button.addEventListener('click', function() {
+            const lang = this.getAttribute('data-lang');
+            
+            // Actualizar estilos visuales
+            document.querySelectorAll('.language-option').forEach(btn => {
+                btn.style.background = 'transparent';
+                btn.style.color = '#fff';
+            });
+            this.style.background = '#00cfff';
+            this.style.color = '#232946';
+            
+            // Actualizar campo oculto
+            document.getElementById('selectedLanguage').value = lang;
+            
+            // Opcional: Mostrar feedback visual
+            this.textContent += ' ✓';
+            setTimeout(() => {
+                this.textContent = this.textContent.replace(' ✓', '');
+            }, 1000);
+        });
+    });
+</script>
     </script>
 </body>
 </html>

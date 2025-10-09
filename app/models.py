@@ -16,11 +16,17 @@ class UserProfile(models.Model):
         ('shark', 'Tiburón'),
     ]
     
+    LANGUAGE_CHOICES = [
+        ('es', 'Español'),
+        ('en', 'English'),
+    ]
+    
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bitrix_user_id = models.IntegerField(blank=True, null=True, verbose_name="ID de Usuario en Bitrix24")
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True, verbose_name="Avatar o Foto de Perfil")
     usar_animado = models.BooleanField(default=False, verbose_name="Usar avatar animado por defecto")
     avatar_tipo = models.CharField(max_length=20, choices=AVATAR_TIPO_CHOICES, default='1', verbose_name="Tipo de Avatar")
+    language = models.CharField(max_length=2, choices=LANGUAGE_CHOICES, default='es', verbose_name="Idioma de preferencia")
 
     def get_avatar_url(self):
         if self.usar_animado:

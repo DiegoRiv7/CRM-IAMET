@@ -2883,10 +2883,22 @@ def usuario_redirect_view(request):
             # Limpiar avatar anterior si existía
             profile.avatar = None
         
+        # Manejar el cambio de idioma
+        if 'language' in request.POST:
+            profile.language = request.POST['language']
+            # Guardar preferencia de idioma en la sesión
+            request.session['django_language'] = profile.language
+            from django.utils import translation
+            translation.activate(profile.language)
+        
         profile.save()
         
         # Redirigir a la página de inicio
         return redirect('home')
+    
+    # Si es GET, mostrar la página de configuración con el idioma actual
+    profile = get_object_or_404(UserProfile, user=request.user)
+    return render(request, 'personalizacion.html', {'user_profile': profile})
         
     return render(request, 'personalizacion.html')
 

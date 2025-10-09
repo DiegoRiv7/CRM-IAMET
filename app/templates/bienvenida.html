@@ -890,8 +890,8 @@
 
 <main>
     <!-- Apple Welcome Section -->
-    <section class="w-full flex flex-col items-center justify-start apple-fade-in" style="padding-top: 80px; padding-bottom: 40px;">
-        <div class="user-avatar-container" style="width: 160px; height: 160px; border-radius: 50%; overflow: hidden; margin-bottom: 24px; border: 4px solid var(--apple-blue); box-shadow: 0 8px 32px rgba(0, 122, 255, 0.3);">
+    <section class="w-full flex flex-col items-center justify-start apple-fade-in" style="padding-top: 80px; padding-bottom: 20px;">
+        <div class="user-avatar-container" style="width: 160px; height: 160px; border-radius: 50%; overflow: hidden; margin-bottom: 16px; border: 4px solid var(--apple-blue); box-shadow: 0 8px 32px rgba(0, 122, 255, 0.3);">
             {% if user_profile and user_profile.avatar %}
                 <img src="{{ user_profile.avatar.url }}" alt="{{ user.get_full_name|default:user.username }}" style="width: 100%; height: 100%; object-fit: cover;">
             {% elif user_profile and user_profile.usar_animado %}
@@ -1020,11 +1020,11 @@
                 </div>
             {% endif %}
         </div>
-        <h1 class="apple-title-1 text-center mb-2" style="color: var(--apple-label);">¡Bienvenido, {{ user.first_name|default:user.username }}!</h1>
-        <p class="apple-body text-center mb-6" style="color: var(--apple-label-secondary); max-width: 500px;">¿En qué podemos ayudarte hoy?</p>
+        <h1 class="apple-title-1 text-center mb-1" style="color: var(--apple-label);">¡Bienvenido, {{ user.first_name|default:user.username }}!</h1>
+        <p class="apple-body text-center mb-4" style="color: var(--apple-label-secondary); max-width: 500px;">¿En qué vamos a trabajar hoy?</p>
         
         <!-- Centered Search Bar -->
-        <div class="central-search-container mb-8" id="main-search-container">
+        <div class="central-search-container mb-4" id="main-search-container">
             <div class="central-search-bar" id="main-search-bar">
                 <svg class="central-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="11" cy="11" r="8"/>
@@ -1035,7 +1035,7 @@
         </div>
     </section>
     <!-- Apple Employee Cards Section -->
-    <section class="w-full grid grid-cols-1 md:grid-cols-2 gap-6 py-8 max-w-4xl apple-fade-in" style="animation-delay:0.2s;">
+    <section class="w-full grid grid-cols-1 md:grid-cols-2 gap-6 py-4 max-w-4xl apple-fade-in" style="animation-delay:0.2s;">
         <div class="apple-card text-center apple-float" style="animation-delay: 0.1s;">
             <h4 class="apple-title-3 mb-4">Empleado del Mes</h4>
             {% if usuario_mes %}
