@@ -1327,7 +1327,7 @@
 </div>
 
 <script>
-    const OPORTUNIDAD_ID = parseInt("{{ oportunidad.id }}".replace(/,/g, ''));
+    const OPORTUNIDAD_ID = parseInt("{{ oportunidad.id }}".replace(/[,\s]/g, ''));
     const OPPORTUNITY_OWNER_ID = {{ oportunidad.usuario.id }};
     const CURRENT_USER_ID = {{ user.id }};
     

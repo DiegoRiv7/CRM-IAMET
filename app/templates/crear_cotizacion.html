@@ -822,7 +822,7 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
         const clientesData = JSON.parse('{{ clientes_data_json|escapejs }}');
         const clienteIdInicial = '{{ cliente_id_inicial|default:"" }}'; // Get initial client ID if provided
         const oportunidadIdInicialRaw = '{{ oportunidad_id_inicial|default:"" }}'; // Get initial opportunity ID if provided
-        const oportunidadIdInicial = oportunidadIdInicialRaw.replace(/,/g, '').trim(); // Clean commas and spaces
+        const oportunidadIdInicial = oportunidadIdInicialRaw.replace(/[,\s]/g, '').trim(); // Clean commas and all spaces
         
         console.log(`DEBUG JS: clienteIdInicial = "${clienteIdInicial}"`);
         console.log(`DEBUG JS: oportunidadIdInicial = "${oportunidadIdInicial}"`);
@@ -1243,7 +1243,7 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                 // Cargar oportunidades sin cliente específico pero con la oportunidad inicial
                 setTimeout(async () => {
                     try {
-                        const cleanOportunidadId = oportunidadIdInicial.replace(/,/g, '').trim();
+                        const cleanOportunidadId = oportunidadIdInicial.replace(/[,\s]/g, '').trim();
                         const url = `/app/api/get-oportunidades-por-cliente/?oportunidad_inicial_id=${cleanOportunidadId}`;
                         console.log(`DEBUG JS: Cargando oportunidades desde: ${url}`);
                         
@@ -1290,7 +1290,7 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                 let url = `/app/api/get-oportunidades-por-cliente/?cliente_id=${clientId}`;
                 if (oportunidadIdInicial && oportunidadIdInicial.trim() !== '') {
                     // Limpiar el ID antes de enviarlo
-                    const cleanOportunidadId = oportunidadIdInicial.replace(/,/g, '').trim();
+                    const cleanOportunidadId = oportunidadIdInicial.replace(/[,\s]/g, '').trim();
                     url += `&oportunidad_inicial_id=${cleanOportunidadId}`;
                     console.log(`DEBUG JS: Solicitando oportunidades con oportunidad inicial: ${cleanOportunidadId} (original: ${oportunidadIdInicial})`);
                 }
@@ -1316,7 +1316,7 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                     console.log(`DEBUG JS: Intentando preseleccionar oportunidad ID: ${oportunidadIdInicial}`);
                     
                     // Limpiar el ID para la búsqueda
-                    const cleanOportunidadId = oportunidadIdInicial.replace(/,/g, '').trim();
+                    const cleanOportunidadId = oportunidadIdInicial.replace(/[,\s]/g, '').trim();
                     
                     // Verificar inmediatamente si la opción existe
                     const oportunidadOption = oportunidadSelect.querySelector(`option[value="${cleanOportunidadId}"]`);
@@ -1347,7 +1347,7 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
         async function loadSpecificOpportunity(opportunityId) {
             try {
                 // Limpiar el ID de comas y espacios
-                const cleanOpportunityId = opportunityId.toString().replace(/,/g, '').trim();
+                const cleanOpportunityId = opportunityId.toString().replace(/[,\s]/g, '').trim();
                 console.log(`DEBUG JS: Cargando oportunidad específica: ${cleanOpportunityId} (original: ${opportunityId})`);
                 const response = await fetch(`/app/api/oportunidad/${cleanOpportunityId}/detalle/`);
                 if (!response.ok) {
