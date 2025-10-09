@@ -1,6 +1,9 @@
 # app/models.py
 
 from django.db import models
+import logging
+
+logger = logging.getLogger(__name__)
 from django.contrib.auth.models import User
 from django.utils import timezone
 from decimal import Decimal # Importa Decimal para manejar números con precisión
@@ -34,6 +37,10 @@ class UserProfile(models.Model):
     language = models.CharField(max_length=2, choices=LANGUAGE_CHOICES, default='es', verbose_name="Idioma de preferencia")
 
     def get_avatar_url(self):
+        logger.info(f"get_avatar_url para usuario: {self.user.username}")
+        logger.info(f"  - self.avatar: {self.avatar}")
+        logger.info(f"  - self.usar_animado: {self.usar_animado}")
+        logger.info(f"  - self.avatar_tipo: {self.avatar_tipo}")
         if self.avatar:
             return self.avatar.url
         elif self.usar_animado:
