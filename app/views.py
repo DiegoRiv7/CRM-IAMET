@@ -2873,6 +2873,10 @@ def usuario_redirect_view(request):
     Muestra la página de configuración avanzada y maneja el envío del formulario.
     """
     if request.method == 'POST':
+        # Debug: imprimir datos recibidos
+        print(f"DEBUG - POST data: {request.POST}")
+        print(f"DEBUG - avatar_choice: {request.POST.get('avatar_choice', 'NO ENVIADO')}")
+        
         # Obtener o crear el perfil del usuario
         profile, created = UserProfile.objects.get_or_create(user=request.user)
         
@@ -2883,10 +2887,12 @@ def usuario_redirect_view(request):
             profile.avatar_tipo = '1'  # Reset a humano por defecto
         # Si se está seleccionando un avatar animado
         elif 'avatar_choice' in request.POST and request.POST['avatar_choice']:
+            print(f"DEBUG - Guardando avatar animado: {request.POST['avatar_choice']}")
             profile.usar_animado = True
             profile.avatar_tipo = request.POST['avatar_choice']  # Guardar el tipo seleccionado
             # Limpiar avatar anterior si existía
             profile.avatar = None
+            print(f"DEBUG - Profile actualizado: usar_animado={profile.usar_animado}, avatar_tipo={profile.avatar_tipo}")
         
         # Manejar el cambio de idioma
         if 'language' in request.POST:

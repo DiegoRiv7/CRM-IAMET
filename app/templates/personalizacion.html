@@ -205,7 +205,7 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
 <body>
     <div class="container" style="background: #232946; color: #fff; max-width: 420px; margin: 48px auto; border-radius: 18px; box-shadow: 0 4px 32px #000a; padding: 38px 28px 32px 28px;">
         <h1 style="text-align:center; color:#00cfff; font-weight:700; margin-bottom:32px;">Configuración avanzada</h1>
-        <form class="avatar-chooser" method="post" enctype="multipart/form-data" action="{% url 'usuario' %}">
+        <form class="avatar-chooser" method="post" enctype="multipart/form-data" action="{% url 'usuario' %}" onsubmit="console.log('Formulario enviándose. Avatar choice:', document.getElementById('avatarChoice').value);">
             {% csrf_token %}
             <div class="avatar-preview" id="avatarPreview">
     <!-- Vista previa dinámica -->
