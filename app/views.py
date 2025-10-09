@@ -3005,9 +3005,33 @@ def supervisor_required(view_func):
 @login_required
 def usuario_redirect_view(request):
     """
-    Redirige a la página de configuración avanzada
+    Muestra la página de configuración avanzada y maneja el envío del formulario de avatar.
     """
-    from django.shortcuts import redirect
+    if request.method == 'POST':
+        # Obtener o crear el perfil del usuario
+        profile, created = UserProfile.objects.get_or_create(user=request.user)
+        
+        # Manejar la subida de imagen
+        if 'avatar' in request.FILES and request.FILES['avatar']:
+            profile.avatar = request.FILES['avatar']
+            profile.usar_animado = False
+            profile.avatar_tipo = '1'  # Reset a humano por defecto
+        # Si se está seleccionando un avatar animado
+        elif 'avatar_choice' in request.POST and request.POST['avatar_choice']:
+            profile.usar_animado = True
+            profile.avatar_tipo = request.POST['avatar_choice']  # Guardar el tipo seleccionado
+            # Limpiar avatar anterior si existía
+            profile.avatar = None
+        
+        profile.save()
+        
+        # Agregar mensaje de éxito
+        messages.success(request, 'Avatar actualizado correctamente')
+        
+        # Redirigir a la configuración avanzada
+        return redirect('configuracion_avanzada')
+    
+    # Si es GET, redirigir a configuración avanzada
     return redirect('configuracion_avanzada')
 
 

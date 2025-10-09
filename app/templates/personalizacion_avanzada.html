@@ -6,6 +6,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configuración Avanzada</title>
+    
+    <!-- Incluir Font Awesome para íconos del dock -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         /* Apple macOS Design System */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
@@ -737,6 +740,17 @@
             <p>Personaliza tu experiencia</p>
         </div>
 
+        <!-- Messages -->
+        {% if messages %}
+            <div style="margin-bottom: 20px;">
+                {% for message in messages %}
+                    <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid #4CAF50; border-radius: 8px; padding: 12px; margin-bottom: 10px; color: #4CAF50; text-align: center;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
         <!-- Settings Grid -->
         <div class="settings-grid">
             <!-- Avatar Card -->
@@ -825,6 +839,9 @@
         </div>
     </div>
 
+    <!-- Incluir el dock -->
+    {% include 'dock.html' %}
+
     <!-- Modals -->
     <!-- Avatar Modal -->
     <div id="avatarModal" class="modal" style="display: none;">
@@ -840,7 +857,17 @@
                     <!-- Vista previa del avatar -->
                     <div class="avatar-preview-container" style="text-align: center; margin-bottom: 20px;">
                         <div class="avatar-preview" id="avatarPreview" style="width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; border: 3px solid var(--apple-blue); position: relative; overflow: hidden;">
-                            <div id="animGalleryPreview" style="display:flex; align-items:center; justify-content:center; width:100%; height:100%;"></div>
+                            <div id="animGalleryPreview" style="display:flex; align-items:center; justify-content:center; width:100%; height:100%;">
+                                {% if user_profile.avatar %}
+                                    <!-- Si tiene foto subida, mostrarla -->
+                                    <img src="{{ user_profile.avatar.url }}" alt="Avatar" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+                                {% else %}
+                                    <!-- Si no tiene foto, mostrar el avatar animado o placeholder -->
+                                    <div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 48px; color: var(--apple-label-secondary);">
+                                        👤
+                                    </div>
+                                {% endif %}
+                            </div>
                             <img id="uploadedAvatar" src="" alt="Foto de perfil" style="display:none; width:100%; height:100%; object-fit:cover; border-radius:50%;"/>
                             
                             <!-- Botón de edición -->
@@ -1056,6 +1083,29 @@
         </div>
     </div>
 
+    <!-- Modal de Crop estilo Instagram -->
+    <div id="cropModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); z-index:10000; justify-content:center; align-items:center;">
+        <div style="background:var(--apple-background-secondary); border-radius:18px; padding:24px; max-width:500px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+            <h2 style="color:var(--apple-blue); text-align:center; margin-bottom:20px;">Ajustar Foto</h2>
+            
+            <div id="cropContainer" style="width:350px; height:350px; margin:0 auto 20px; position:relative; border:2px solid var(--apple-separator); border-radius:12px; overflow:hidden; background:#000;">
+                <img id="cropImage" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); cursor:grab; user-select:none;">
+                <div id="cropOverlayModal" style="position:absolute; top:50%; left:50%; width:280px; height:280px; transform:translate(-50%, -50%); border:3px solid var(--apple-blue); border-radius:50%; pointer-events:none; box-shadow:0 0 0 9999px rgba(0,0,0,0.5);"></div>
+                <div style="position:absolute; top:10px; left:10px; color:#fff; font-size:12px; opacity:0.7;">Arrastra y ajusta tu imagen</div>
+            </div>
+            
+            <div style="text-align:center; margin-bottom:20px;">
+                <label style="color:var(--apple-label); margin-right:10px;">Zoom:</label>
+                <input type="range" id="zoomSlider" min="1" max="3" step="0.1" value="1" style="width:200px;">
+            </div>
+            
+            <div style="display:flex; gap:12px; justify-content:center;">
+                <button type="button" onclick="cancelCrop()" style="background:var(--apple-gray); color:var(--apple-label); border:none; padding:12px 24px; border-radius:8px; cursor:pointer;">Cancelar</button>
+                <button type="button" onclick="applyCrop()" style="background:var(--apple-blue); color:white; border:none; padding:12px 24px; border-radius:8px; cursor:pointer;">Aplicar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Apply theme immediately to prevent flash
         (function() {
@@ -1210,14 +1260,18 @@
                 document.getElementById('avatarUpload').click();
             });
 
-            // Handle file upload
+            // Handle file upload with crop modal
             avatarUpload.addEventListener('change', function(e) {
                 if (e.target.files && e.target.files[0]) {
+                    currentImageFile = e.target.files[0];
                     const reader = new FileReader();
                     reader.onload = function(ev) {
-                        uploadedAvatar.src = ev.target.result;
-                        uploadedAvatar.style.display = 'block';
-                        animGalleryPreview.style.display = 'none';
+                        // Show crop modal
+                        document.getElementById('cropImage').src = ev.target.result;
+                        document.getElementById('cropModal').style.display = 'flex';
+                        
+                        // Initialize crop
+                        setTimeout(() => initializeCropImage(), 100);
                         
                         // Clear avatar selection
                         avatarChoices.forEach(b => {
@@ -1230,6 +1284,212 @@
                     reader.readAsDataURL(e.target.files[0]);
                 }
             });
+        }
+
+        // Variables para el crop
+        let currentImageFile = null;
+        let cropData = { x: 0, y: 0, scale: 1 };
+
+        // Funcionalidad completa del crop modal
+        const cropImage = document.getElementById('cropImage');
+        const zoomSlider = document.getElementById('zoomSlider');
+        let isDragging = false;
+        let startX, startY, imageX = 0, imageY = 0;
+        let imageNaturalSize = { width: 0, height: 0 };
+
+        function initializeCropImage() {
+            const img = new Image();
+            img.onload = function() {
+                imageNaturalSize.width = this.naturalWidth;
+                imageNaturalSize.height = this.naturalHeight;
+                
+                const containerSize = 350;
+                const aspectRatio = this.naturalWidth / this.naturalHeight;
+                
+                let displayWidth, displayHeight;
+                if (aspectRatio > 1) {
+                    displayWidth = containerSize;
+                    displayHeight = containerSize / aspectRatio;
+                } else {
+                    displayHeight = containerSize;
+                    displayWidth = containerSize * aspectRatio;
+                }
+                
+                const circleSize = 280;
+                const minScale = Math.max(circleSize / displayWidth, circleSize / displayHeight);
+                if (minScale > 1) {
+                    displayWidth *= minScale;
+                    displayHeight *= minScale;
+                }
+                
+                cropImage.style.width = displayWidth + 'px';
+                cropImage.style.height = displayHeight + 'px';
+                
+                imageX = 0;
+                imageY = 0;
+                cropData = { x: 0, y: 0, scale: 1 };
+                zoomSlider.value = 1;
+                updateImageTransform();
+            };
+            img.src = cropImage.src;
+        }
+
+        function updateImageTransform() {
+            cropImage.style.transform = `translate(calc(-50% + ${imageX}px), calc(-50% + ${imageY}px)) scale(${cropData.scale})`;
+        }
+
+        // Zoom functionality
+        zoomSlider.addEventListener('input', function() {
+            cropData.scale = parseFloat(this.value);
+            updateImageTransform();
+        });
+
+        // Drag functionality - Mouse events
+        cropImage.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            isDragging = true;
+            startX = e.clientX - imageX;
+            startY = e.clientY - imageY;
+            cropImage.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            
+            imageX = e.clientX - startX;
+            imageY = e.clientY - startY;
+            cropData.x = imageX;
+            cropData.y = imageY;
+            
+            updateImageTransform();
+        });
+
+        document.addEventListener('mouseup', function() {
+            if (isDragging) {
+                isDragging = false;
+                cropImage.style.cursor = 'grab';
+            }
+        });
+
+        // Touch events para móviles
+        cropImage.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            isDragging = true;
+            const touch = e.touches[0];
+            startX = touch.clientX - imageX;
+            startY = touch.clientY - imageY;
+        });
+
+        document.addEventListener('touchmove', function(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            
+            const touch = e.touches[0];
+            imageX = touch.clientX - startX;
+            imageY = touch.clientY - startY;
+            cropData.x = imageX;
+            cropData.y = imageY;
+            
+            updateImageTransform();
+        });
+
+        document.addEventListener('touchend', function() {
+            if (isDragging) {
+                isDragging = false;
+            }
+        });
+
+        // Funciones del modal de crop
+        function cancelCrop() {
+            document.getElementById('cropModal').style.display = 'none';
+            document.getElementById('avatarUpload').value = '';
+            imageX = 0;
+            imageY = 0;
+            cropData = { x: 0, y: 0, scale: 1 };
+            zoomSlider.value = 1;
+            cropImage.style.transform = 'translate(-50%, -50%) scale(1)';
+        }
+
+        function applyCrop() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const size = 300;
+            
+            canvas.width = size;
+            canvas.height = size;
+            
+            const tempImg = new Image();
+            tempImg.onload = function() {
+                const containerSize = 350;
+                const circleRadius = 140;
+                
+                const imgDisplayWidth = parseInt(cropImage.style.width);
+                const imgDisplayHeight = parseInt(cropImage.style.height);
+                
+                const scaleX = tempImg.width / imgDisplayWidth;
+                const scaleY = tempImg.height / imgDisplayHeight;
+                
+                const circleCenterX = containerSize / 2;
+                const circleCenterY = containerSize / 2;
+                
+                const currentScale = cropData.scale;
+                const scaledWidth = imgDisplayWidth * currentScale;
+                const scaledHeight = imgDisplayHeight * currentScale;
+                
+                const imageCenterX = containerSize / 2 + imageX;
+                const imageCenterY = containerSize / 2 + imageY;
+                
+                const sourceX = (circleCenterX - imageCenterX + scaledWidth/2) / currentScale * scaleX;
+                const sourceY = (circleCenterY - imageCenterY + scaledHeight/2) / currentScale * scaleY;
+                const sourceSize = (circleRadius * 2) / currentScale * scaleX;
+                
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+                ctx.clip();
+                
+                ctx.drawImage(
+                    tempImg,
+                    sourceX - sourceSize/2,
+                    sourceY - sourceSize/2,
+                    sourceSize,
+                    sourceSize,
+                    0,
+                    0,
+                    size,
+                    size
+                );
+                
+                ctx.restore();
+                
+                canvas.toBlob(function(blob) {
+                    const croppedUrl = URL.createObjectURL(blob);
+                    const uploadedAvatar = document.getElementById('uploadedAvatar');
+                    uploadedAvatar.src = croppedUrl;
+                    uploadedAvatar.style.display = 'block';
+                    document.getElementById('animGalleryPreview').style.display = 'none';
+                    
+                    const croppedFile = new File([blob], currentImageFile.name, {
+                        type: currentImageFile.type,
+                        lastModified: Date.now()
+                    });
+                    
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(croppedFile);
+                    document.getElementById('avatarUpload').files = dataTransfer.files;
+                    
+                    document.getElementById('cropModal').style.display = 'none';
+                    
+                    imageX = 0;
+                    imageY = 0;
+                    cropData = { x: 0, y: 0, scale: 1 };
+                    zoomSlider.value = 1;
+                    cropImage.style.transform = 'translate(-50%, -50%) scale(1)';
+                }, currentImageFile.type, 0.9);
+            };
+            
+            tempImg.src = cropImage.src;
         }
 
         // Design functionality
