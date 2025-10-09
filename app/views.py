@@ -2878,8 +2878,8 @@ def usuario_redirect_view(request):
             # Aquí podrías guardar qué avatar animado se seleccionó si tienes varios
             
         profile.save()
-        # Redirigir a la página de inicio usando la ruta completa con el prefijo /app/
-        return redirect('/app/home/')  # Usar la ruta completa con el prefijo /app/
+        # Redirigir a la página de inicio
+        return redirect('home')
         
     return render(request, 'personalizacion.html')
 

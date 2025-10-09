@@ -37,9 +37,8 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     <div style="margin-top:10px;font-size:0.97em;color:#aaa;">Selecciona un avatar animado o sube tu foto</div>
     <label for="avatarUpload" class="avatar-label">Subir foto</label>
     <input type="file" id="avatarUpload" name="avatar" accept="image/*">
+    <input type="hidden" id="avatarChoice" name="avatar_choice" value="1">
 </div>
-                <label for="avatarUpload" class="avatar-label">Subir foto</label>
-                <input type="file" id="avatarUpload" name="avatar" accept="image/*">
             </div>
             <div style="margin-top:18px; text-align:center;">
                 <button type="submit" class="avatar-label" style="background:#00cfff; color:#fff; border:none;">Guardar configuración</button>
@@ -72,6 +71,8 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             btn.classList.add('selected');
             selectedAvatar = btn.getAttribute('data-avatar');
             setAnimPreview(selectedAvatar);
+            // Actualizar el campo oculto
+            document.getElementById('avatarChoice').value = selectedAvatar;
         });
     });
     // Inicializa preview
@@ -85,18 +86,19 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
                 uploadedAvatar.src = ev.target.result;
                 uploadedAvatar.style.display = 'block';
                 animGalleryPreview.style.display = 'none';
+                // Limpiar la selección de avatar animado
+                avatarChoices.forEach(b => b.classList.remove('selected'));
+                document.getElementById('avatarChoice').value = '';
                 // Aquí se puede integrar una librería JS de crop circular (ej: Cropper.js)
             }
             reader.readAsDataURL(e.target.files[0]);
         }
     });
 
-    // Al guardar, redirige a bienvenida (simulación, reemplazar por lógica backend real)
+    // Al guardar, redirige a bienvenida
     document.querySelector('form.avatar-chooser').addEventListener('submit', function(e) {
         // Puedes agregar lógica de validación/crop aquí
-        setTimeout(function() {
-            window.location.href = '/home/';
-        }, 300);
+        // El formulario se enviará normalmente y Django manejará la redirección
     });
     </script>
 </body>
