@@ -45,9 +45,12 @@ def convert_to_tijuana_time(utc_datetime):
         return utc_datetime
 from django.urls import reverse
 from django.utils import timezone, translation
-from django.utils.translation import gettext_lazy as _, LANGUAGE_SESSION_KEY
+from django.utils.translation import gettext_lazy as _
 from datetime import datetime
 from django.utils.translation import activate, get_language
+
+# Definir la constante manualmente para compatibilidad
+LANGUAGE_SESSION_KEY = 'django_language'
 from django.http import JsonResponse
 
 # Importaciones para generación de PDF
