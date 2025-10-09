@@ -235,4 +235,7 @@ urlpatterns = [
     path('api/marcar-todas-notificaciones-leidas/', views.marcar_todas_notificaciones_leidas_api, name='marcar_todas_notificaciones_leidas_api'),
     
     path('koti-bot-html/', TemplateView.as_view(template_name='nethive_bot.html'), name='koti_bot_html'),
+    
+    # Generador de avatares con IA
+    path('avatar-generator/', views.avatar_generator, name='avatar_generator'),
 ]

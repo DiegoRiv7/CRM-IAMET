@@ -1,4 +1,9 @@
 from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+import json
+import requests
+from django.conf import settings
 import csv
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
@@ -5818,6 +5823,78 @@ def parse_producto_inteligente(linea, marcas_validas):
         'descripcion': descripcion,
         'precio': precio
     }
+
+@login_required
+def avatar_generator(request):
+    """
+    Vista para el generador de avatares con IA
+    """
+    if request.method == 'POST':
+        # Obtener el animal seleccionado
+        data = json.loads(request.body)
+        animal = data.get('animal', 'dinosaur')
+        
+        # Definir los prompts para cada animal
+        AVATAR_PROMPTS = {
+            'dinosaur': "Cute, friendly, cartoon dinosaur, T-Rex species, small round eyes, smiling, 3D render, highly detailed, vibrant green and yellow colors, clean white background, digital art, children's book style. Avatar circle crop.",
+            'fox': "Cute, friendly, cartoon fox, sitting up, fluffy orange and white fur, big curious eyes, 3D render, highly detailed, vibrant colors, clean white background, digital art. Avatar circle crop.",
+            'owl': "Cute, friendly, cartoon owl, wise, large golden eyes, elegant brown and white feathers, 3D render, highly detailed, vibrant colors, clean white background, digital art. Avatar circle crop.",
+            'panda': "Cute, friendly, cartoon giant panda, holding bamboo, round face, black and white fur, 3D render, highly detailed, clean white background, digital art. Avatar circle crop.",
+            'wolf': "Cute, friendly, cartoon wolf cub, blue-gray fur, sharp but kind eyes, howling playfully, 3D render, highly detailed, vibrant colors, clean white background, digital art. Avatar circle crop."
+        }
+        
+        # Obtener el prompt según el animal seleccionado
+        prompt = AVATAR_PROMPTS.get(animal, AVATAR_PROMPTS['dinosaur'])
+        
+        # Configurar la petición a la API de generación de imágenes
+        # NOTA: Necesitarás configurar tu propia API key en settings.py
+        api_key = getattr(settings, 'IMAGEN_API_KEY', '')
+        if not api_key:
+            return JsonResponse({'error': 'API key no configurada'}, status=500)
+            
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key={api_key}"
+        
+        payload = {
+            "instances": [
+                {
+                    "prompt": prompt,
+                    "aspectRatio": "1:1",
+                    "sampleCount": 1
+                }
+            ],
+            "parameters": {
+                "sampleImageSize": "1024"
+            }
+        }
+        
+        try:
+            # Realizar la petición a la API
+            response = requests.post(url, json=payload)
+            response.raise_for_status()
+            result = response.json()
+            
+            # Extraer la imagen generada
+            if 'predictions' in result and result['predictions']:
+                image_data = result['predictions'][0].get('bytesBase64Encoded', '')
+                if image_data:
+                    # Guardar la imagen en el perfil del usuario si está autenticado
+                    if hasattr(request.user, 'userprofile'):
+                        request.user.userprofile.avatar = f"data:image/png;base64,{image_data}"
+                        request.user.userprofile.save()
+                    
+                    return JsonResponse({
+                        'success': True,
+                        'image_url': f"data:image/png;base64,{image_data}"
+                    })
+            
+            return JsonResponse({'error': 'No se pudo generar la imagen'}, status=500)
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    # Si es GET, mostrar la página del generador
+    return render(request, 'avatar_generator.html')
+
 
 def limpiar_y_corregir_texto(texto):
     """
