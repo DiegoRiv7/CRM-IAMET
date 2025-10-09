@@ -116,75 +116,6 @@ def user_avatar(user, size="40"):
         elif profile.usar_animado:
             avatar_type = profile.avatar_tipo or '1'
             
-            # Definir los SVGs para cada tipo de avatar
-            avatar_svgs = {
-                'dinosaur': '''
-                    <svg viewBox="0 0 48 48" fill="none" style="width: 80%; height: 80%;">
-                        <ellipse cx="24" cy="28" rx="12" ry="8" fill="#22c55e"/>
-                        <ellipse cx="18" cy="18" rx="10" ry="8" fill="#4ade80"/>
-                        <ellipse cx="12" cy="18" rx="6" ry="4" fill="#16a34a"/>
-                        <circle cx="15" cy="15" r="2" fill="#fff"/>
-                        <circle cx="21" cy="15" r="2" fill="#fff"/>
-                        <circle cx="15" cy="15" r="1" fill="#000"/>
-                        <circle cx="21" cy="15" r="1" fill="#000"/>
-                        <polygon points="9,16 11,18 9,20" fill="#fff"/>
-                        <polygon points="11,16 13,18 11,20" fill="#fff"/>
-                    </svg>
-                ''',
-                'panda': '''
-                    <svg viewBox="0 0 48 48" fill="none" style="width: 80%; height: 80%;">
-                        <circle cx="15" cy="12" r="6" fill="#000"/>
-                        <circle cx="33" cy="12" r="6" fill="#000"/>
-                        <circle cx="24" cy="20" r="12" fill="#f9fafb"/>
-                        <circle cx="24" cy="20" r="10" fill="#fff"/>
-                        <ellipse cx="20" cy="18" rx="4" ry="6" fill="#000"/>
-                        <ellipse cx="28" cy="18" rx="4" ry="6" fill="#000"/>
-                        <circle cx="20" cy="18" r="2.5" fill="#fff"/>
-                        <circle cx="28" cy="18" r="2.5" fill="#fff"/>
-                        <circle cx="20" cy="18" r="1.5" fill="#000"/>
-                        <circle cx="28" cy="18" r="1.5" fill="#000"/>
-                        <ellipse cx="24" cy="22" rx="2" ry="1.5" fill="#000"/>
-                    </svg>
-                ''',
-                'eagle': '''
-                    <svg viewBox="0 0 48 48" fill="none" style="width: 80%; height: 80%;">
-                        <ellipse cx="24" cy="28" rx="8" ry="12" fill="#f59e0b"/>
-                        <ellipse cx="24" cy="28" rx="6" ry="10" fill="#fbbf24"/>
-                        <circle cx="24" cy="16" r="8" fill="#f9fafb"/>
-                        <circle cx="24" cy="16" r="6" fill="#fff"/>
-                        <polygon points="24,18 20,22 24,20" fill="#fbbf24"/>
-                        <circle cx="21" cy="14" r="2" fill="#fbbf24"/>
-                        <circle cx="27" cy="14" r="2" fill="#fbbf24"/>
-                        <circle cx="21" cy="14" r="1.5" fill="#000"/>
-                        <circle cx="27" cy="14" r="1.5" fill="#000"/>
-                    </svg>
-                ''',
-                'shark': '''
-                    <svg viewBox="0 0 48 48" fill="none" style="width: 80%; height: 80%;">
-                        <ellipse cx="24" cy="24" rx="16" ry="8" fill="#0284c7"/>
-                        <ellipse cx="24" cy="24" rx="14" ry="6" fill="#0ea5e9"/>
-                        <polygon points="8,24 20,18 20,30" fill="#0369a1"/>
-                        <circle cx="16" cy="22" r="3" fill="#000"/>
-                        <circle cx="16" cy="22" r="2" fill="#fff"/>
-                        <circle cx="17" cy="21" r="1" fill="#000"/>
-                        <polygon points="8,24 12,26 10,28" fill="#fff"/>
-                        <polygon points="10,24 14,26 12,28" fill="#fff"/>
-                    </svg>
-                ''',
-                'fox-hero': '''
-                    <img src="/static/images/fox-hero-avatar.jpeg" alt="Zorro Súper Héroe" 
-                         style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />
-                ''',
-                '1': '''
-                    <svg viewBox="0 0 48 48" fill="none" style="width: 70%; height: 70%;">
-                        <circle cx="24" cy="24" r="20" stroke="#fff" stroke-width="4" opacity="0.2"/>
-                        <path d="M24 8a8 8 0 018 8c0 4-3 8-8 8s-8-4-8-8a8 8 0 018-8z" fill="#fff"/>
-                        <circle cx="24" cy="22" r="4" fill="#fff"/>
-                        <ellipse cx="24" cy="34" rx="10" ry="4" fill="#fff" opacity="0.7"/>
-                    </svg>
-                '''
-            }
-            
             # Definir gradientes para cada tipo
             gradients = {
                 'dinosaur': 'linear-gradient(135deg,#4ade80 0%,#22c55e 50%,#16a34a 100%)',
@@ -192,19 +123,49 @@ def user_avatar(user, size="40"):
                 'eagle': 'linear-gradient(135deg,#fbbf24 0%,#f59e0b 50%,#d97706 100%)',
                 'shark': 'linear-gradient(135deg,#0ea5e9 0%,#0284c7 50%,#0369a1 100%)',
                 'fox-hero': 'linear-gradient(135deg, #ff6b47 0%, #ff4500 50%, #ff8c00 100%)',
+                'lobo': 'linear-gradient(135deg, #6b7280 0%, #4b5563 50%, #1f2937 100%)',
+                'buho': 'linear-gradient(135deg, #8d5524 0%, #654321 50%, #4a2c0f 100%)',
+                'axolote': 'linear-gradient(135deg, #f472b6 0%, #ec4899 50%, #db2777 100%)',
+                'cocodrilo': 'linear-gradient(135deg, #166534 0%, #15803d 50%, #16a34a 100%)',
                 '1': 'linear-gradient(135deg, #00cfff 0%, #ff00c8 100%)'
             }
             
-            svg_content = avatar_svgs.get(avatar_type, avatar_svgs['1'])
+            # Definir las imágenes para cada tipo de avatar
+            avatar_images = {
+                'dinosaur': '/static/images/dinosaurio.jpeg',
+                'panda': '/static/images/panda.jpeg', 
+                'eagle': '/static/images/aguila.jpeg',
+                'shark': '/static/images/tiburon.jpeg',
+                'fox-hero': '/static/images/fox-hero-avatar.jpeg',
+                'lobo': '/static/images/lobo.jpeg',
+                'buho': '/static/images/buho.jpeg',
+                'axolote': '/static/images/axolote.jpeg',
+                'cocodrilo': '/static/images/cocodrilo.jpeg',
+                '1': None  # Para mostrar iniciales
+            }
+            
+            avatar_image_url = avatar_images.get(avatar_type)
             gradient = gradients.get(avatar_type, gradients['1'])
             
-            return mark_safe(f'''
-                <div style="width: {size}px; height: {size}px; border-radius: 50%; 
-                     background: {gradient}; display: flex; align-items: center; 
-                     justify-content: center; border: 2px solid #007AFF;">
-                    {svg_content}
-                </div>
-            ''')
+            if avatar_image_url:
+                # Mostrar imagen del avatar
+                return mark_safe(f'''
+                    <div style="width: {size}px; height: {size}px; border-radius: 50%; 
+                         background: {gradient}; display: flex; align-items: center; 
+                         justify-content: center; border: 2px solid #007AFF; overflow: hidden;">
+                        <img src="{avatar_image_url}" alt="Avatar" 
+                             style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />
+                    </div>
+                ''')
+            else:
+                # Mostrar iniciales para avatar tipo '1' o desconocido
+                initials = user.get_full_name()[:2].upper() if user.get_full_name() else user.username[:2].upper()
+                return mark_safe(f'''
+                    <div style="width: {size}px; height: {size}px; border-radius: 50%; 
+                         background: {gradient}; color: white; 
+                         display: flex; align-items: center; justify-content: center; font-weight: bold; 
+                         font-size: {int(size)//2.5}px; border: 2px solid #007AFF;">{initials}</div>
+                ''')
         
         # Si no tiene nada configurado, mostrar iniciales
         else:
