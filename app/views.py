@@ -1676,79 +1676,8 @@ def todos (request):
     }
     return render (request, "todos.html", context)
 
-@login_required
-def exportar_oportunidades_csv(request):
-    if is_supervisor(request.user):
-        items = TodoItem.objects.select_related('usuario', 'cliente').all()
-    else:
-        items = TodoItem.objects.select_related('usuario', 'cliente').filter(usuario=request.user)
 
-    logger.debug(f"Request GET: {request.GET}")
-    logger.debug(f"Initial items count: {items.count()}")
 
-    oportunidad = request.GET.get('filterOportunidad', '').strip()
-    if oportunidad:
-        items = items.filter(oportunidad__icontains=oportunidad)
-
-    cliente = request.GET.get('filterCliente', '').strip()
-    if cliente:
-        items = items.filter(cliente__nombre_empresa__icontains=cliente)
-
-    try:
-        monto_min = request.GET.get('filterMontoMin')
-        if monto_min:
-            items = items.filter(monto__gte=Decimal(monto_min))
-
-        monto_max = request.GET.get('filterMontoMax')
-        if monto_max:
-            items = items.filter(monto__lte=Decimal(monto_max))
-    except (ValueError, TypeError, decimal.InvalidOperation):
-        pass # Ignorar si los valores de monto no son números válidos
-
-    orden_probabilidad = request.GET.get('orden_probabilidad')
-    if orden_probabilidad:
-        if orden_probabilidad == 'prob_asc':
-            items = items.order_by('probabilidad_cierre')
-        elif orden_probabilidad == 'prob_desc':
-            items = items.order_by('-probabilidad_cierre')
-
-    mes_cierre = request.GET.get('filterMesCierre', '').strip()
-    if mes_cierre:
-        items = items.filter(mes_cierre=mes_cierre)
-
-    area = request.GET.get('filterArea', '').strip()
-    if area:
-        items = items.filter(area=area)
-
-    orden_monto = request.GET.get('orden_monto')
-    if orden_monto:
-        if orden_monto == 'monto_asc':
-            items = items.order_by('monto')
-        elif orden_monto == 'monto_desc':
-            items = items.order_by('-monto')
-        
-    contacto = request.GET.get('filterContacto', '').strip()
-    if contacto:
-        items = items.filter(contacto__icontains=contacto)
-
-    # Crear la respuesta CSV
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="reporte_oportunidades.csv"'
-
-    writer = csv.writer(response)
-    writer.writerow(['Oportunidad', 'Cliente', 'Monto', 'Probabilidad', 'Mes Cierre', 'Contacto'])
-
-    for item in items:
-        writer.writerow([
-            item.oportunidad,
-            item.cliente.nombre_empresa if item.cliente else 'N/A',
-            item.monto,
-            item.probabilidad_cierre,
-            item.get_mes_cierre_display(),
-            item.contacto
-        ])
-
-    return response
 
 from .bitrix_integration import get_or_create_bitrix_company, send_opportunity_to_bitrix, update_opportunity_in_bitrix, get_all_bitrix_companies, get_all_bitrix_contacts
 
