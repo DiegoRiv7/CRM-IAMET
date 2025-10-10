@@ -2378,32 +2378,53 @@ def exportar_oportunidades_csv(request):
             'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'PÓLIZA', 'CISCO'
         ]
         
-        # Add quarterly headers (each quarter will have 3 month columns)
-        quarterly_headers = ['Q1', '', '', 'Q2', '', '', 'Q3', '', '', 'Q4', '', '']
         monthly_headers = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC']
         
-        # Create first row with main headers + quarterly headers
-        first_row_headers = main_headers + quarterly_headers
-        for col, header in enumerate(first_row_headers, 1):
+        # Create first row with main headers
+        for col, header in enumerate(main_headers, 1):
             cell = ws.cell(row=1, column=col, value=header)
             cell.font = header_font
             cell.fill = header_fill
             cell.alignment = header_alignment
             cell.border = border
         
-        # Create second row with monthly headers (only for the quarterly section)
-        second_row_start_col = len(main_headers) + 1
-        for col, month in enumerate(monthly_headers, second_row_start_col):
+        # Add Q1-Q4 headers that span 3 columns each
+        quarterly_start_col = len(main_headers) + 1
+        quarters = ['Q1', 'Q2', 'Q3', 'Q4']
+        
+        for i, quarter in enumerate(quarters):
+            col_start = quarterly_start_col + (i * 3)
+            col_end = col_start + 2
+            
+            # Set the Q header in the first cell
+            cell = ws.cell(row=1, column=col_start, value=quarter)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+            cell.border = border
+            
+            # Merge cells for the quarter header (3 columns)
+            ws.merge_cells(start_row=1, start_column=col_start, end_row=1, end_column=col_end)
+            
+            # Apply border to merged cells
+            for col in range(col_start, col_end + 1):
+                cell = ws.cell(row=1, column=col)
+                cell.border = border
+        
+        # Create second row with monthly headers
+        for col, month in enumerate(monthly_headers, quarterly_start_col):
             cell = ws.cell(row=2, column=col, value=month)
             cell.font = header_font
             cell.fill = header_fill
             cell.alignment = header_alignment
             cell.border = border
         
-        # Fill empty cells in second row for main headers
-        for col in range(1, second_row_start_col):
+        # Fill empty cells in second row for main headers (extend main headers vertically)
+        for col in range(1, quarterly_start_col):
             cell = ws.cell(row=2, column=col, value='')
             cell.border = border
+            # Merge the main header cells to span both rows
+            ws.merge_cells(start_row=1, start_column=col, end_row=2, end_column=col)
     else:
         # Fallback to CSV - simplified structure
         headers = [
