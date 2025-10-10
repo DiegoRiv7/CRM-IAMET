@@ -1263,7 +1263,6 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="hideModal('designModal')">Cerrar</button>
                 <button class="btn btn-primary" onclick="saveDesignSettings()">Guardar Cambios</button>
             </div>
         </div>
@@ -1886,14 +1885,11 @@
 
         // Design functionality
         function applyTheme(theme) {
-            // Update active state
+            // Update active state using CSS classes
             document.querySelectorAll('.theme-option').forEach(option => {
+                option.classList.remove('active');
                 if (option.getAttribute('onclick').includes(`'${theme}'`)) {
                     option.classList.add('active');
-                    option.style.border = '2px solid var(--apple-blue)';
-                } else {
-                    option.classList.remove('active');
-                    option.style.border = '1px solid var(--apple-separator)';
                 }
             });
 
@@ -2013,7 +2009,36 @@
         // Las funciones del dock ahora están definidas globalmente en dock.html
         // No necesitamos redefinirlas aquí
         
-        // La inicialización del dock ahora se maneja globalmente en dock.html
+        // Inicializar estados activos al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar tema activo
+            const currentTheme = localStorage.getItem('theme') || 'dark';
+            initializeActiveTheme(currentTheme);
+            
+            // Inicializar dock activo (ya se maneja en dock.html, pero asegurar estado visual)
+            setTimeout(function() {
+                const currentDockPosition = localStorage.getItem('dockPosition') || 'bottom';
+                initializeActiveDockOption(currentDockPosition);
+            }, 200);
+        });
+        
+        function initializeActiveTheme(theme) {
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.classList.remove('active');
+                if (option.getAttribute('onclick').includes(`'${theme}'`)) {
+                    option.classList.add('active');
+                }
+            });
+        }
+        
+        function initializeActiveDockOption(position) {
+            document.querySelectorAll('.dock-option').forEach(option => {
+                option.classList.remove('active');
+                if (option.getAttribute('data-position') === position) {
+                    option.classList.add('active');
+                }
+            });
+        }
     </script>
 </body>
 </html>
