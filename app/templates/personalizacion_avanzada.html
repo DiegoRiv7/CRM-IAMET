@@ -1524,15 +1524,6 @@
                             </div>
                             <span>Oscuro</span>
                         </div>
-                        <div class="theme-option" onclick="applyTheme('light')">
-                            <div class="theme-preview-large light-preview">
-                                <div class="preview-header"></div>
-                                <div class="preview-content">
-                                    <div class="preview-dock bottom"></div>
-                                </div>
-                            </div>
-                            <span>Claro</span>
-                        </div>
                         <div class="theme-option" onclick="applyTheme('pink')">
                             <div class="theme-preview-large pink-preview">
                                 <div class="preview-header"></div>
@@ -1541,6 +1532,15 @@
                                 </div>
                             </div>
                             <span>Rosa</span>
+                        </div>
+                        <div class="theme-option" onclick="applyTheme('light')">
+                            <div class="theme-preview-large light-preview">
+                                <div class="preview-header"></div>
+                                <div class="preview-content">
+                                    <div class="preview-dock bottom"></div>
+                                </div>
+                            </div>
+                            <span>Claro</span>
                         </div>
                         <div class="theme-option" onclick="applyTheme('blue')">
                             <div class="theme-preview-large blue-preview">
@@ -2282,36 +2282,41 @@
         function applyTheme(theme) {
             console.log('applyTheme called with:', theme);
             
-            // Update active state using CSS classes with immediate visual feedback
-            document.querySelectorAll('.theme-option').forEach(option => {
+            // Primero, deseleccionar todos los temas
+            const allThemeOptions = document.querySelectorAll('.theme-option');
+            allThemeOptions.forEach(option => {
+                // Remover clase activa
                 option.classList.remove('active');
-                // Limpiar estilos inline previos
-                option.style.transform = '';
+                
+                // Limpiar todos los estilos inline
                 option.style.borderColor = '';
-                option.style.backgroundColor = '';
                 option.style.boxShadow = '';
+                option.style.transform = '';
+                option.style.backgroundColor = '';
+                
+                // Si el tema ya tenía estilos en línea, limpiarlos
+                option.removeAttribute('style');
             });
             
-            // Find and activate the selected theme option
+            // Encontrar y activar el tema seleccionado
             const selectedOption = document.querySelector(`.theme-option[onclick*="'${theme}'"]`);
             if (selectedOption) {
+                // Agregar clase activa
                 selectedOption.classList.add('active');
-                console.log('Added active class to theme option:', selectedOption);
                 
-                // Aplicar estilos de selección
+                // Aplicar estilos directamente al elemento
                 selectedOption.style.borderColor = 'var(--apple-blue)';
-                selectedOption.style.boxShadow = '0 0 0 2px rgba(0, 122, 255, 0.3)';
+                selectedOption.style.boxShadow = '0 0 0 2px rgba(0, 122, 255, 0.5)';
                 
-                // Efecto de animación
-                selectedOption.style.transform = 'translateY(-2px) scale(1.05)';
-                setTimeout(() => {
-                    selectedOption.style.transform = '';
-                }, 150);
+                // Efecto de animación sutil
+                selectedOption.style.transform = 'translateY(-2px)';
+                
+                console.log('Tema seleccionado:', theme, selectedOption);
+                
+                // Guardar preferencia y aplicar el tema al documento
+                localStorage.setItem('theme', theme);
+                document.documentElement.setAttribute('data-theme', theme);
             }
-
-            // Apply theme
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
 
             // Show notification
             const themeNames = {
