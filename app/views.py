@@ -2293,12 +2293,13 @@ def generate_quote_pdf(request, pk):
 
 @login_required
 def exportar_oportunidades_csv(request):
+    # 1. Get the base queryset
     if is_supervisor(request.user):
         items = TodoItem.objects.select_related('usuario', 'cliente').all()
     else:
         items = TodoItem.objects.select_related('usuario', 'cliente').filter(usuario=request.user)
 
-    # Re-aplicar los filtros del request GET
+    # 2. Apply filters
     oportunidad_filter = request.GET.get('filterOportunidad', '').strip()
     if oportunidad_filter:
         items = items.filter(oportunidad__icontains=oportunidad_filter)
@@ -2326,6 +2327,7 @@ def exportar_oportunidades_csv(request):
     if area_filter:
         items = items.filter(area=area_filter)
 
+    # 3. Apply sorting
     orden_monto = request.GET.get('orden_monto')
     if orden_monto:
         if orden_monto == 'monto_asc':
@@ -2340,15 +2342,19 @@ def exportar_oportunidades_csv(request):
         elif orden_probabilidad == 'prob_desc':
             items = items.order_by('-probabilidad_cierre')
 
-    response = HttpResponse(content_type='text/csv')
+    # 4. Create CSV response
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
     response['Content-Disposition'] = 'attachment; filename="reporte_oportunidades.csv"'
 
     writer = csv.writer(response)
+    
+    # 5. Write headers
     writer.writerow([
         'Oportunidad', 'Cliente', 'Monto', 'Probabilidad de Cierre', 'Mes de Cierre',
-        'Producto', 'Area', 'Usuario', 'Fecha Creacion'
+        'Producto', 'Area', 'Usuario', 'Fecha Creacion', 'Contacto'
     ])
 
+    # 6. Write data rows
     for item in items:
         writer.writerow([
             item.oportunidad,
@@ -2360,6 +2366,7 @@ def exportar_oportunidades_csv(request):
             item.get_area_display(),
             item.usuario.get_full_name() or item.usuario.username,
             item.fecha_creacion.strftime('%Y-%m-%d'),
+            item.contacto,
         ])
 
     return response
