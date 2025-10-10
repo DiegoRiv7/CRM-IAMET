@@ -2372,12 +2372,34 @@ window.addEventListener('error', function(e) {
 // === DOCK POSITION MANAGEMENT (GLOBAL FUNCTIONS) ===
 // Estas funciones deben estar fuera del IIFE para ser accesibles globalmente
 
+// APLICAR POSICIÓN INMEDIATAMENTE (sin esperar DOMContentLoaded)
+(function() {
+    // Obtener la posición guardada inmediatamente
+    const savedPosition = localStorage.getItem('dockPosition') || 'bottom';
+    
+    // Aplicar CSS inmediatamente para evitar animaciones no deseadas
+    const style = document.createElement('style');
+    style.id = 'initial-dock-position-style';
+    style.textContent = `
+        .macos-dock { opacity: 0 !important; visibility: hidden !important; }
+        #dock-${savedPosition} { opacity: 1 !important; visibility: visible !important; }
+    `;
+    document.head.appendChild(style);
+    
+    console.log('Applied initial dock position:', savedPosition);
+})();
+
 // Funciones globales para el manejo del dock - disponibles en todas las páginas
 window.applyDockPosition = function(position) {
     // Remover estilos anteriores si existen
     const existingStyle = document.getElementById('dock-position-style');
+    const initialStyle = document.getElementById('initial-dock-position-style');
+    
     if (existingStyle) {
         existingStyle.remove();
+    }
+    if (initialStyle) {
+        initialStyle.remove();
     }
     
     // Crear nuevo estilo para la posición del dock
@@ -2475,24 +2497,34 @@ window.checkDockVisibility = function() {
     return visibleDock;
 };
 
-// Inicializar la posición del dock en todas las páginas
+// Inicializar estados de UI una vez que el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
-        // Get current dock position from localStorage or default to bottom
         const currentPosition = localStorage.getItem('dockPosition') || 'bottom';
-        console.log('Initializing dock position:', currentPosition);
+        console.log('Setting UI states for dock position:', currentPosition);
         
-        // Usar la función setDockPosition para aplicar la posición
-        // Esto asegura que se use el sistema correcto
-        if (typeof window.setDockPosition === 'function') {
-            window.setDockPosition(currentPosition);
-        } else {
-            console.log('setDockPosition function not available yet, retrying...');
-            setTimeout(function() {
-                if (typeof window.setDockPosition === 'function') {
-                    window.setDockPosition(currentPosition);
-                }
-            }, 500);
+        // Solo actualizar los estados de UI sin cambiar la posición del dock
+        // (la posición ya se aplicó inmediatamente arriba)
+        
+        // Update active state for dock options (para el modal de configuración)
+        document.querySelectorAll('.dock-option').forEach(option => {
+            option.classList.remove('active');
+        });
+        
+        const selectedOption = document.querySelector(`[data-position="${currentPosition}"]`);
+        if (selectedOption) {
+            selectedOption.classList.add('active');
+            console.log('Set active dock option:', selectedOption);
+        }
+        
+        // Update position arrows too
+        document.querySelectorAll('.position-arrow').forEach(arrow => {
+            arrow.classList.remove('active');
+        });
+        const activeArrow = document.querySelector(`#position-${currentPosition}`);
+        if (activeArrow) {
+            activeArrow.classList.add('active');
+            console.log('Set active position arrow:', activeArrow);
         }
     }, 100);
 });
