@@ -8727,4 +8727,61 @@ def exportar_oportunidades_csv(request):
         ])
         
     return response
+
+@login_required
+@require_http_methods(["POST"])
+def actualizar_avatar(request):
+    """
+    API para actualizar el avatar del usuario
+    """
+    try:
+        # Obtener o crear el perfil del usuario
+        user_profile, created = UserProfile.objects.get_or_create(user=request.user)
+        
+        # Verificar si se envió un archivo de avatar
+        if 'avatar' in request.FILES:
+            avatar_file = request.FILES['avatar']
+            
+            # Validar tipo de archivo
+            allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+            if avatar_file.content_type not in allowed_types:
+                return JsonResponse({
+                    'success': False, 
+                    'error': 'Tipo de archivo no permitido. Solo se permiten imágenes (JPG, PNG, GIF, WebP)'
+                })
+            
+            # Validar tamaño de archivo (máximo 5MB)
+            if avatar_file.size > 5 * 1024 * 1024:
+                return JsonResponse({
+                    'success': False, 
+                    'error': 'El archivo es demasiado grande. Máximo 5MB permitido'
+                })
+            
+            # Eliminar avatar anterior si existe
+            if user_profile.avatar:
+                try:
+                    user_profile.avatar.delete(save=False)
+                except:
+                    pass  # Ignorar errores al eliminar archivo anterior
+            
+            # Guardar nuevo avatar
+            user_profile.avatar = avatar_file
+            user_profile.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Avatar actualizado correctamente',
+                'avatar_url': user_profile.get_avatar_url()
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'No se envió ningún archivo de avatar'
+            })
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error al actualizar avatar: {str(e)}'
+        })
         

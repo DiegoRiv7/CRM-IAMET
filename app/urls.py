@@ -243,4 +243,7 @@ urlpatterns = [
     
     # Configuración avanzada de usuario
     path('configuracion-avanzada/', views.configuracion_avanzada, name='configuracion_avanzada'),
+    
+    # API para actualizar avatar de usuario
+    path('api/actualizar-avatar/', views.actualizar_avatar, name='actualizar_avatar'),
 ]
