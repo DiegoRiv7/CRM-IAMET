@@ -2389,11 +2389,22 @@ window.addEventListener('error', function(e) {
     };
 
     window.saveDockPosition = function(position) {
-        // Guardar en localStorage
-        localStorage.setItem('dockPosition', position);
+        try {
+            // Guardar en localStorage
+            localStorage.setItem('dockPosition', position);
+            // Verificar que se guardó correctamente
+            const saved = localStorage.getItem('dockPosition');
+            console.log('Saved dock position:', saved);
+            return saved === position;
+        } catch (error) {
+            console.error('Error saving dock position to localStorage:', error);
+            return false;
+        }
     };
 
     window.setDockPosition = function(position) {
+        console.log('setDockPosition called with:', position);
+        
         // Update active state for dock options
         document.querySelectorAll('.dock-option').forEach(option => {
             option.classList.remove('active');
@@ -2403,6 +2414,9 @@ window.addEventListener('error', function(e) {
         const selectedOption = document.querySelector(`[data-position="${position}"]`);
         if (selectedOption) {
             selectedOption.classList.add('active');
+            console.log('Added active class to:', selectedOption);
+        } else {
+            console.log('Could not find option for position:', position);
         }
         
         // Apply dock position
@@ -2410,6 +2424,7 @@ window.addEventListener('error', function(e) {
         
         // Save preference to localStorage
         window.saveDockPosition(position);
+        console.log('Dock position saved to localStorage:', position);
         
         // Show notification if showNotification function exists
         if (typeof showNotification === 'function') {
@@ -2423,19 +2438,58 @@ window.addEventListener('error', function(e) {
         }
     };
     
+    // Función para verificar que el dock esté visible
+    window.checkDockVisibility = function() {
+        const allDocks = ['dock-left', 'dock-right', 'dock-top', 'dock-bottom'];
+        let visibleDock = null;
+        
+        allDocks.forEach(dockId => {
+            const dock = document.getElementById(dockId);
+            if (dock) {
+                const styles = window.getComputedStyle(dock);
+                if (styles.opacity > 0 && styles.visibility === 'visible') {
+                    visibleDock = dockId;
+                }
+            }
+        });
+        
+        console.log('Currently visible dock:', visibleDock);
+        return visibleDock;
+    };
+
     // Inicializar la posición del dock en todas las páginas
     document.addEventListener('DOMContentLoaded', function() {
         // Get current dock position from localStorage or default to bottom
         const currentPosition = localStorage.getItem('dockPosition') || 'bottom';
+        console.log('Initializing dock position:', currentPosition);
         
         // Aplicar estilos para mostrar solo el dock seleccionado
         window.applyDockPosition(currentPosition);
         
-        // Set active option if we're on the config page
-        const currentOption = document.querySelector(`[data-position="${currentPosition}"]`);
-        if (currentOption) {
-            currentOption.classList.add('active');
-        }
+        // Verificar después de un momento que el dock esté visible
+        setTimeout(function() {
+            const visibleDock = window.checkDockVisibility();
+            if (!visibleDock || visibleDock !== `dock-${currentPosition}`) {
+                console.log('Dock not visible, reapplying...');
+                window.applyDockPosition(currentPosition);
+            }
+        }, 200);
+        
+        // Set active option if we're on the config page (delay to ensure DOM is ready)
+        setTimeout(function() {
+            const currentOption = document.querySelector(`[data-position="${currentPosition}"]`);
+            if (currentOption) {
+                // Remove active from all options first
+                document.querySelectorAll('.dock-option').forEach(option => {
+                    option.classList.remove('active');
+                });
+                // Add active to current option
+                currentOption.classList.add('active');
+                console.log('Set active option on page load:', currentOption);
+            } else {
+                console.log('No dock option found for position:', currentPosition);
+            }
+        }, 300);
     });
 })();
 </script>
