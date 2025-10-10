@@ -320,6 +320,23 @@
             color: #2D1B2E !important;
         }
         
+        /* Asegurar que todo el texto en modales con tema rosa sea negro */
+        body[data-theme="pink"] .modal-content *,
+        .pink-theme .modal-content *,
+        html[data-theme="pink"] body .modal-content * {
+            color: #2D1B2E !important;
+        }
+        
+        /* Excepciones para elementos que deben mantener su color original */
+        body[data-theme="pink"] .modal-content i,
+        body[data-theme="pink"] .modal-content svg,
+        .pink-theme .modal-content i,
+        .pink-theme .modal-content svg,
+        html[data-theme="pink"] body .modal-content i,
+        html[data-theme="pink"] body .modal-content svg {
+            color: inherit !important;
+        }
+        
         body[data-theme="pink"] .dropdown-menu,
         .pink-theme .dropdown-menu,
         html[data-theme="pink"] body .dropdown-menu {

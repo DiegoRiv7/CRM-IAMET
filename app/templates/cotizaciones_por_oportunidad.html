@@ -1197,14 +1197,14 @@
     }
 
     .light-theme .timeline-item.align-right .timeline-content-item {
-        background: linear-gradient(145deg, rgba(10, 132, 255, 0.12) 0%, rgba(10, 132, 255, 0.04) 30%, rgba(0, 112, 235, 0.08) 70%, rgba(10, 132, 255, 0.02) 100%),
+        background: linear-gradient(145deg, rgba(255, 107, 157, 0.12) 0%, rgba(255, 107, 157, 0.04) 30%, rgba(229, 90, 135, 0.08) 70%, rgba(255, 107, 157, 0.02) 100%),
                     linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(255, 107, 157, 0.05) 100%),
                     rgba(255, 245, 248, 0.9) !important;
         box-shadow:
-            0 8px 32px rgba(10, 132, 255, 0.1),
-            0 4px 16px rgba(10, 132, 255, 0.05),
+            0 8px 32px rgba(255, 107, 157, 0.1),
+            0 4px 16px rgba(255, 107, 157, 0.05),
             inset 0 1px 0 rgba(255, 255, 255, 0.3),
-            inset 0 -1px 0 rgba(10, 132, 255, 0.1) !important;
+            inset 0 -1px 0 rgba(255, 107, 157, 0.1) !important;
     }
 
     .light-theme .timeline-title-item {
@@ -1391,6 +1391,116 @@
 
     .light-theme .comment-edit-btn.delete {
         background: #FF453A !important;
+    }
+    
+    /* Timeline icons with pink theme */
+    .light-theme .cotizacion-icon {
+        background: #FF6B9D !important;
+    }
+    
+    .light-theme .volumetria-icon {
+        background: #FF9F0A !important;
+    }
+    
+    .light-theme .creacion-icon {
+        background: #32D74B !important;
+    }
+    
+    .light-theme .comentario-icon {
+        background: #FF6B9D !important;
+    }
+    
+    .light-theme .cambio-estado-icon {
+        background: #FFD60A !important;
+        color: var(--apple-label) !important;
+    }
+    
+    .light-theme .sistema-icon {
+        background: #8E8E93 !important;
+    }
+    
+    /* Additional pink theme styles for opportunity information */
+    .light-theme .info-grid {
+        color: #2D1B2E !important;
+    }
+    
+    .light-theme .info-item {
+        border-bottom-color: rgba(255, 107, 157, 0.2) !important;
+    }
+    
+    .light-theme .info-value {
+        color: #2D1B2E !important;
+    }
+    
+    .light-theme .info-value strong {
+        color: #E55A87 !important;
+    }
+    
+    .light-theme .edit-opportunity-btn {
+        color: #6B4C6D !important;
+    }
+    
+    .light-theme .edit-opportunity-btn:hover {
+        color: #FF6B9D !important;
+        background: rgba(255, 107, 157, 0.1) !important;
+    }
+    
+    .light-theme .info-edit {
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.9) 0%,
+            rgba(255, 248, 250, 0.85) 100%) !important;
+        border-color: rgba(255, 107, 157, 0.3) !important;
+        color: #2D1B2E !important;
+    }
+    
+    .light-theme .info-edit:focus {
+        border-color: #FF6B9D !important;
+        box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.2) !important;
+    }
+    
+    .light-theme .apple-button-small {
+        background: #FF6B9D !important;
+        color: white !important;
+    }
+    
+    .light-theme .apple-button-secondary.apple-button-small {
+        background: linear-gradient(135deg,
+            rgba(255, 245, 248, 0.9) 0%,
+            rgba(255, 232, 239, 0.85) 100%) !important;
+        color: #E55A87 !important;
+        border-color: rgba(255, 107, 157, 0.3) !important;
+    }
+    
+    .light-theme .apple-button-secondary.apple-button-small:hover {
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.95) 0%,
+            rgba(255, 245, 248, 0.9) 100%) !important;
+    }
+    
+    /* Ensure all text in info panels is black in pink theme */
+    .light-theme .crm-info-panel,
+    .light-theme .crm-timeline-panel {
+        color: #2D1B2E !important;
+    }
+    
+    .light-theme .crm-info-panel *,
+    .light-theme .crm-timeline-panel * {
+        color: inherit !important;
+    }
+    
+    .light-theme .crm-info-panel .info-value,
+    .light-theme .crm-timeline-panel .info-value {
+        color: #2D1B2E !important;
+    }
+    
+    .light-theme .crm-info-panel .section-title,
+    .light-theme .crm-timeline-panel .section-title {
+        color: #E55A87 !important;
+    }
+    
+    .light-theme .crm-info-panel .info-label,
+    .light-theme .crm-timeline-panel .info-label {
+        color: #6B4C6D !important;
     }
 
 </style>
