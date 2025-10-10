@@ -2371,79 +2371,20 @@ def exportar_oportunidades_csv(request):
             bottom=Side(style='thin')
         )
         
-        # Define main headers (brands)
-        main_headers = [
+        # Define all headers (brands + months)
+        all_headers = [
             'OPORTUNIDAD', 'AREA', 'CONTACTO', 'ZEBRA', 'PANDUIT', 'APC', 'AVIGILION', 
-            'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'PÓLIZA', 'CISCO'
+            'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'PÓLIZA', 'CISCO',
+            'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC'
         ]
         
-        # Define quarterly and monthly headers
-        quarterly_headers = ['Q1', 'Q2', 'Q3', 'Q4']
-        monthly_headers = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC']
-        
-        # ROW 1: Write main headers and Q1-Q4 headers
-        current_col = 1
-        
-        # Write main headers in row 1
-        for header in main_headers:
-            cell = ws.cell(row=1, column=current_col, value=header)
+        # Write all headers in a single row
+        for col, header in enumerate(all_headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
             cell.font = header_font
             cell.fill = header_fill
             cell.alignment = header_alignment
             cell.border = border
-            current_col += 1
-        
-        # Write Q1-Q4 headers in row 1 (each will span 3 columns via merge)
-        q_start_col = current_col
-        for i, quarter in enumerate(quarterly_headers):
-            # Set Q header only in the first column of each 3-column group
-            col_pos = q_start_col + (i * 3)
-            cell = ws.cell(row=1, column=col_pos, value=quarter)
-            cell.font = header_font
-            cell.fill = header_fill
-            cell.alignment = header_alignment
-            cell.border = border
-        
-        # ROW 2: Write empty cells for main headers and monthly headers
-        current_col = 1
-        
-        # Empty cells for main headers (they will span both rows)
-        for i in range(len(main_headers)):
-            cell = ws.cell(row=2, column=current_col, value='')
-            cell.border = border
-            current_col += 1
-        
-        # Write monthly headers in row 2
-        for month in monthly_headers:
-            cell = ws.cell(row=2, column=current_col, value=month)
-            cell.font = header_font
-            cell.fill = header_fill
-            cell.alignment = header_alignment
-            cell.border = border
-            current_col += 1
-        
-        # Apply styling to all cells that will be merged for Q headers
-        for i in range(4):  # Q1, Q2, Q3, Q4
-            start_col = q_start_col + (i * 3)
-            end_col = start_col + 2
-            # Apply style to the 2 additional cells that will be merged
-            for col in range(start_col + 1, end_col + 1):
-                cell = ws.cell(row=1, column=col, value='')
-                cell.font = header_font
-                cell.fill = header_fill
-                cell.alignment = header_alignment
-                cell.border = border
-        
-        # MERGE CELLS after all content and styling is set
-        # Merge main headers vertically (rows 1-2)
-        for col in range(1, len(main_headers) + 1):
-            ws.merge_cells(start_row=1, start_column=col, end_row=2, end_column=col)
-        
-        # Merge Q headers horizontally (3 columns each)
-        for i in range(4):  # Q1, Q2, Q3, Q4
-            start_col = q_start_col + (i * 3)
-            end_col = start_col + 2
-            ws.merge_cells(start_row=1, start_column=start_col, end_row=1, end_column=end_col)
     else:
         # Fallback to CSV - simplified structure
         headers = [
@@ -2466,13 +2407,25 @@ def exportar_oportunidades_csv(request):
         'PÓLIZA': 12, 'CISCO': 13
     }
         
-    # Debug: Print item count
-    print(f"DEBUG: Total items found: {items.count()}")
+    # Debug: Print item count and sample data
+    items_count = items.count()
+    print(f"DEBUG: Total items found: {items_count}")
     
-    # Write data rows (start at row 3 for Excel due to double header, row 2 for CSV)
-    row = 3 if OPENPYXL_AVAILABLE else 2
+    if items_count > 0:
+        # Show first item fields for debugging
+        first_item = items.first()
+        print(f"DEBUG: First item fields:")
+        print(f"  - oportunidad: {getattr(first_item, 'oportunidad', 'NOT_FOUND')}")
+        print(f"  - mes_cierre: {getattr(first_item, 'mes_cierre', 'NOT_FOUND')} (type: {type(getattr(first_item, 'mes_cierre', None))})")
+        print(f"  - probabilidad_cierre: {getattr(first_item, 'probabilidad_cierre', 'NOT_FOUND')} (type: {type(getattr(first_item, 'probabilidad_cierre', None))})")
+        print(f"  - monto: {getattr(first_item, 'monto', 'NOT_FOUND')}")
+    else:
+        print("DEBUG: No items found - check your filters!")
+    
+    # Write data rows (start at row 2 for Excel since we now have single header, row 2 for CSV)
+    row = 2
     for item in items:
-        print(f"DEBUG: Processing item: {item.oportunidad}, mes_cierre: {item.mes_cierre}, probabilidad: {item.probabilidad_cierre}")
+        print(f"DEBUG: Processing item: {item.oportunidad}")
         # Get cotization details for this opportunity
         cotizaciones = item.cotizaciones.all()
         
@@ -2531,17 +2484,49 @@ def exportar_oportunidades_csv(request):
         
         # Add monthly data - LA PROBABILIDAD VA EN EL MES DE CIERRE
         months = [''] * 12
-        if item.mes_cierre:
+        
+        # Mejorar extracción de mes_cierre y probabilidad
+        mes_cierre_valor = getattr(item, 'mes_cierre', None)
+        probabilidad_valor = getattr(item, 'probabilidad_cierre', None)
+        
+        print(f"DEBUG: Raw mes_cierre: {mes_cierre_valor} (type: {type(mes_cierre_valor)})")
+        print(f"DEBUG: Raw probabilidad_cierre: {probabilidad_valor} (type: {type(probabilidad_valor)})")
+        
+        if mes_cierre_valor is not None:
             try:
-                mes = int(item.mes_cierre)
+                # Intentar convertir el mes_cierre a entero
+                if isinstance(mes_cierre_valor, str):
+                    mes = int(mes_cierre_valor.strip())
+                else:
+                    mes = int(mes_cierre_valor)
+                    
                 print(f"DEBUG: mes_cierre converted to int: {mes}")
+                
                 if 1 <= mes <= 12:
-                    # Poner la probabilidad en el mes de cierre
-                    probabilidad_valor = f"{item.probabilidad_cierre}%" if item.probabilidad_cierre else "100%"
-                    months[mes - 1] = probabilidad_valor
-                    print(f"DEBUG: Setting month {mes} to {probabilidad_valor}")
+                    # Formatear la probabilidad
+                    if probabilidad_valor is not None and probabilidad_valor != '':
+                        if isinstance(probabilidad_valor, str):
+                            # Si ya viene con %, quitarlo primero
+                            prob_clean = probabilidad_valor.replace('%', '').strip()
+                            try:
+                                prob_num = float(prob_clean)
+                                probabilidad_str = f"{prob_num}%"
+                            except ValueError:
+                                probabilidad_str = f"{probabilidad_valor}%"
+                        else:
+                            probabilidad_str = f"{probabilidad_valor}%"
+                    else:
+                        probabilidad_str = "100%"  # Default
+                    
+                    months[mes - 1] = probabilidad_str
+                    print(f"DEBUG: Setting month {mes} ({['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEPT','OCT','NOV','DIC'][mes-1]}) to {probabilidad_str}")
+                else:
+                    print(f"DEBUG: mes_cierre {mes} is out of range (1-12)")
+                    
             except (ValueError, TypeError) as e:
-                print(f"DEBUG: Error converting mes_cierre: {e}")
+                print(f"DEBUG: Error converting mes_cierre '{mes_cierre_valor}': {e}")
+        else:
+            print(f"DEBUG: mes_cierre is None or empty")
         
         print(f"DEBUG: Final months array: {months}")
         row_data.extend(months)
