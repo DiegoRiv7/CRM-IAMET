@@ -3080,7 +3080,10 @@ window.applyDockTypeStyles = function(type) {
     
     // Set up compact dock functionality if type is compact
     if (type === 'compact') {
-        setupCompactDockFunctionality();
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+            setupCompactDockFunctionality();
+        }, 100);
     }
 };
 
@@ -3088,19 +3091,23 @@ window.applyDockTypeStyles = function(type) {
 function setupCompactDockFunctionality() {
     console.log('Setting up compact dock functionality');
     
-    // Find all dock elements
-    const dockElements = document.querySelectorAll('.macos-dock, nav.macos-dock, #dock-bottom, #dock-top, #dock-left, #dock-right');
+    // Find all dock elements - be more specific to avoid duplicates
+    const dockElements = document.querySelectorAll('nav.macos-dock[id^="dock-"]');
+    console.log('Found dock elements for compact setup:', dockElements.length);
     
     dockElements.forEach(dock => {
         // Find the home icon in this dock
         const homeIcon = dock.querySelector('.home-icon');
         
         if (homeIcon) {
-            // Remove any existing event listeners to prevent duplicates
-            homeIcon.removeEventListener('click', toggleCompactDock);
+            // Remove any existing compact dock event listeners
+            const existingHandler = homeIcon._compactClickHandler;
+            if (existingHandler) {
+                homeIcon.removeEventListener('click', existingHandler, true);
+            }
             
-            // Add click event listener to home icon
-            homeIcon.addEventListener('click', function(e) {
+            // Create new click handler for home icon
+            const compactClickHandler = function(e) {
                 // Handle compact dock mode
                 if (dock.classList.contains('dock-compact')) {
                     if (!dock.classList.contains('expanded')) {
@@ -3125,27 +3132,40 @@ function setupCompactDockFunctionality() {
                     }
                 }
                 // If not compact mode, allow normal navigation
-            }, true); // Use capture phase to ensure we handle it first
+            };
+            
+            // Store reference and add event listener
+            homeIcon._compactClickHandler = compactClickHandler;
+            homeIcon.addEventListener('click', compactClickHandler, true);
             
             console.log('Added click listener to home icon in dock:', dock.id);
         }
         
-        // Add click outside to collapse functionality
-        document.addEventListener('click', function(e) {
-            // Check if dock is compact and expanded
-            if (dock.classList.contains('dock-compact') && dock.classList.contains('expanded')) {
-                // Check if click is outside the dock
-                if (!dock.contains(e.target)) {
-                    dock.classList.remove('expanded');
-                    console.log('Dock collapsed due to outside click');
+        // Add click outside to collapse functionality (only once per dock)
+        if (!dock._outsideClickSetup) {
+            const outsideClickHandler = function(e) {
+                // Check if this specific dock is compact and expanded
+                if (dock.classList.contains('dock-compact') && dock.classList.contains('expanded')) {
+                    // Check if click is outside this specific dock
+                    if (!dock.contains(e.target)) {
+                        dock.classList.remove('expanded');
+                        console.log('Dock collapsed due to outside click:', dock.id);
+                    }
                 }
-            }
-        });
+            };
+            
+            document.addEventListener('click', outsideClickHandler);
+            dock._outsideClickSetup = true;
+            dock._outsideClickHandler = outsideClickHandler;
+        }
         
         // Prevent dock clicks from bubbling up and causing collapse
-        dock.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
+        if (!dock._clickStopSetup) {
+            dock.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            dock._clickStopSetup = true;
+        }
     });
 }
 
