@@ -547,7 +547,14 @@ function generarReporteCSV() {
     window.location.href = url.toString();
 }
 
+let originalRows = [];
+
 document.addEventListener('DOMContentLoaded', function() {
+    const tableBody = document.getElementById('tablaOportunidades');
+    if (tableBody) {
+        originalRows = Array.from(tableBody.getElementsByTagName('tr'));
+    }
+    
     // Animated Search Widget Logic
     const searchWidget = document.getElementById('search-widget');
     const searchIcon = document.getElementById('search-icon');
@@ -641,7 +648,7 @@ function applyFilters() {
     const ordenMonto = document.getElementById('filterOrdenMonto').value;
     
     const tableBody = document.getElementById('tablaOportunidades');
-    const rows = Array.from(tableBody.getElementsByTagName('tr'));
+    const rows = originalRows;
     
     let filteredRows = [];
 
