@@ -2401,19 +2401,70 @@
 
         // Initialize dock editor on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Primero limpiar duplicados del dock
-            cleanDuplicateIcons();
-            // Luego inicializar editor
-            initializeDockEditor();
+            // Esperar un momento para que se establezcan los estilos de visibilidad
+            setTimeout(() => {
+                // Primero asegurar visibilidad correcta
+                ensureCorrectDockVisibility();
+                // Luego limpiar duplicados del dock
+                cleanDuplicateIcons();
+                // Marcar docks como cargados
+                markDocksAsLoaded();
+                // Luego inicializar editor
+                initializeDockEditor();
+            }, 100);
         });
+        
+        // Función para asegurar visibilidad correcta de docks
+        function ensureCorrectDockVisibility() {
+            const allDocks = document.querySelectorAll('.macos-dock');
+            const visibleDocks = document.querySelectorAll('.macos-dock[style*="opacity: 1"]');
+            
+            console.log(`Total docks: ${allDocks.length}, Visibles: ${visibleDocks.length}`);
+            
+            // Si hay más de un dock visible, algo está mal
+            if (visibleDocks.length > 1) {
+                console.warn('¡Múltiples docks visibles detectados! Corrigiendo...');
+                
+                // Ocultar todos los docks primero
+                allDocks.forEach(dock => {
+                    dock.style.opacity = '0';
+                    dock.style.visibility = 'hidden';
+                });
+                
+                // Solo mostrar el dock que debería estar visible
+                // (esto debería ser manejado por el sistema de posicionamiento existente)
+                const savedPosition = localStorage.getItem('dockPosition') || 'bottom';
+                const activeDock = document.getElementById(`dock-${savedPosition}`);
+                
+                if (activeDock) {
+                    activeDock.style.opacity = '1';
+                    activeDock.style.visibility = 'visible';
+                    console.log(`Mostrando solo dock-${savedPosition}`);
+                }
+            }
+        }
+        
+        // Función para marcar docks como cargados
+        function markDocksAsLoaded() {
+            const visibleDocks = document.querySelectorAll('.macos-dock[style*="opacity: 1"]');
+            visibleDocks.forEach(dock => {
+                // Esperar a que termine la animación antes de marcar como cargado
+                setTimeout(() => {
+                    dock.classList.add('dock-loaded');
+                }, 500);
+            });
+        }
         
         // Función para limpiar iconos duplicados
         function cleanDuplicateIcons() {
             console.log('Limpiando iconos duplicados...');
             
-            const docks = document.querySelectorAll('.macos-dock');
+            // Solo procesar docks visibles
+            const docks = document.querySelectorAll('.macos-dock[style*="opacity: 1"]');
+            console.log(`Procesando ${docks.length} docks visibles`);
             
-            docks.forEach(dock => {
+            docks.forEach((dock, dockIndex) => {
+                console.log(`Limpiando dock ${dock.id || dockIndex + 1}`);
                 const seenIds = new Set();
                 const items = Array.from(dock.querySelectorAll('.dock-item, .dock-separator'));
                 
@@ -2619,8 +2670,9 @@
         function applyDockOrder() {
             console.log('Aplicando nuevo orden del dock:', currentDockOrder);
             
-            // Buscar todos los docks en la página
-            const docks = document.querySelectorAll('.macos-dock');
+            // Buscar solo los docks visibles en la página
+            const docks = document.querySelectorAll('.macos-dock[style*="opacity: 1"]');
+            console.log(`Aplicando orden a ${docks.length} docks visibles`);
             
             // Evitar ejecución múltiple
             if (window.dockOrderApplying) {

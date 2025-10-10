@@ -146,13 +146,11 @@
         transform: scale(1.2) translateX(5px);
     }
     
-    /* Evitar flash inicial - dock compacto aparece inmediatamente colapsado */
-    .macos-dock.dock-compact:not(.expanded) {
+    /* Evitar flash inicial - solo para docks visibles en modo compacto */
+    .macos-dock.dock-compact:not(.expanded)[style*="opacity: 1"] {
         width: 64px !important;
         height: 64px !important;
         border-radius: 50% !important;
-        opacity: 0;
-        animation: fadeInDock 0.4s ease-out 0.2s forwards;
         
         /* Forzar estado colapsado inmediatamente */
         min-width: 64px !important;
@@ -161,13 +159,15 @@
         max-height: 64px !important;
     }
 
-    /* Forzar ocultación de todos los iconos excepto home en estado inicial */
-    .macos-dock.dock-compact:not(.expanded) .dock-item:not(.home-icon) {
+    /* Asegurar que el dock compacto comience con animación suave solo si está visible */
+    .macos-dock.dock-compact:not(.expanded)[style*="opacity: 1"]:not(.dock-loaded) {
         opacity: 0 !important;
-        visibility: hidden !important;
-        transform: scale(0) !important;
-        position: absolute !important;
-        pointer-events: none !important;
+        animation: fadeInDock 0.3s ease-out 0.1s forwards;
+    }
+    
+    /* Marcar como cargado después de la animación */
+    .macos-dock.dock-compact.dock-loaded {
+        animation: none;
     }
 
     @keyframes fadeInDock {
