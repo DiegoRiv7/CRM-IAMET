@@ -2564,12 +2564,102 @@
         }
 
         function applyDockOrder() {
-            // This would require a page reload to fully apply the new order
-            // For now, we'll just save it and show a message
-            console.log('New dock order saved:', currentDockOrder);
+            console.log('Aplicando nuevo orden del dock:', currentDockOrder);
             
-            // Optionally, we could reload the page to apply changes
-            // setTimeout(() => location.reload(), 1000);
+            // Buscar todos los docks en la página
+            const docks = document.querySelectorAll('.macos-dock');
+            
+            docks.forEach(dock => {
+                // Obtener todos los items actuales del dock
+                const currentItems = Array.from(dock.querySelectorAll('.dock-item, .dock-separator'));
+                const itemsMap = new Map();
+                
+                console.log(`Procesando dock con ${currentItems.length} elementos`);
+                
+                // Crear un mapa de items existentes usando múltiples métodos de identificación
+                currentItems.forEach((item, index) => {
+                    let itemId = '';
+                    
+                    // Método 1: Por clases específicas
+                    if (item.classList.contains('home-icon')) {
+                        itemId = 'home';
+                    } else if (item.classList.contains('dock-separator')) {
+                        itemId = 'separator';
+                    } else {
+                        // Método 2: Por el texto del tooltip
+                        const tooltip = item.querySelector('.tooltip');
+                        const tooltipText = tooltip ? tooltip.textContent.trim() : '';
+                        
+                        // Método 3: Por el href del enlace
+                        const href = item.getAttribute('href') || '';
+                        
+                        // Mapeo mejorado con múltiples criterios
+                        if (tooltipText === 'Oportunidades' || href.includes('todos')) {
+                            itemId = 'todos';
+                        } else if (tooltipText === 'Cotizaciones' && !tooltipText.includes('Automáticas')) {
+                            itemId = 'cotizaciones';
+                        } else if (tooltipText === 'Cotizaciones Automáticas' || href.includes('cotizaciones_automaticas')) {
+                            itemId = 'cotizaciones_automaticas';
+                        } else if (tooltipText === 'Gestión de Productos' || href.includes('gestion_productos')) {
+                            itemId = 'gestion_productos';
+                        } else if (tooltipText === 'Catálogo Volumetría' || href.includes('gestion_catalogo_volumetria')) {
+                            itemId = 'gestion_catalogo_volumetria';
+                        } else if (tooltipText === 'Tareas y Proyectos' || href.includes('tareas_proyectos')) {
+                            itemId = 'tareas_proyectos';
+                        } else if (tooltipText === 'Configuración' || href.includes('configuracion_avanzada')) {
+                            itemId = 'configuracion_avanzada';
+                        } else if (tooltipText === 'Incrementa' || href.includes('/incrementa/')) {
+                            itemId = 'incrementa';
+                        } else if (tooltipText === 'Admin' || href.includes('/admin/')) {
+                            itemId = 'admin';
+                        } else if (tooltipText === 'Usuario' || tooltipText === 'Profile' || href.includes('user_profile')) {
+                            itemId = 'usuario';
+                        } else if (tooltipText === 'Notificaciones' || tooltipText.includes('Notificaciones')) {
+                            itemId = 'notifications';
+                        } else if (tooltipText === 'Asistente Virtual' || tooltipText.includes('Asistente')) {
+                            itemId = 'assistant';
+                        } else if (tooltipText === 'Cerrar Sesión' || tooltipText === 'Logout' || href.includes('logout')) {
+                            itemId = 'logout';
+                        }
+                        
+                        console.log(`Elemento ${index}: tooltip="${tooltipText}", href="${href}", itemId="${itemId}"`);
+                    }
+                    
+                    if (itemId && !itemsMap.has(itemId)) {
+                        itemsMap.set(itemId, item);
+                        console.log(`Mapeado: ${itemId} -> elemento`);
+                    }
+                });
+                
+                console.log('Elementos mapeados:', Array.from(itemsMap.keys()));
+                
+                // Reordenar los elementos según el nuevo orden
+                const orderedItems = [];
+                currentDockOrder.forEach(orderItem => {
+                    const element = itemsMap.get(orderItem.id);
+                    if (element) {
+                        orderedItems.push(element);
+                        console.log(`Agregado al orden: ${orderItem.id}`);
+                    } else {
+                        console.warn(`No se encontró elemento para: ${orderItem.id}`);
+                    }
+                });
+                
+                if (orderedItems.length > 0) {
+                    // Limpiar el dock y agregar los elementos en el nuevo orden
+                    dock.innerHTML = '';
+                    orderedItems.forEach(item => {
+                        dock.appendChild(item);
+                    });
+                    
+                    console.log(`Dock reordenado: ${orderedItems.length} elementos aplicados`);
+                } else {
+                    console.error('No se pudieron reordenar los elementos - lista vacía');
+                }
+            });
+            
+            // Mostrar notificación de éxito
+            showNotification('¡Orden del dock aplicado exitosamente!', 'success');
         }
 
         // User info functionality
