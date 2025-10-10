@@ -1711,6 +1711,17 @@ def exportar_oportunidades_csv(request):
     mes_cierre = request.GET.get('filterMesCierre', '').strip()
     if mes_cierre:
         items = items.filter(mes_cierre=mes_cierre)
+
+    area = request.GET.get('filterArea', '').strip()
+    if area:
+        items = items.filter(area=area)
+
+    orden_monto = request.GET.get('orden_monto')
+    if orden_monto:
+        if orden_monto == 'monto_asc':
+            items = items.order_by('monto')
+        elif orden_monto == 'monto_desc':
+            items = items.order_by('-monto')
         
     contacto = request.GET.get('filterContacto', '').strip()
     if contacto:
