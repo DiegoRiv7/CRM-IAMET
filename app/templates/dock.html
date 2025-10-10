@@ -2367,129 +2367,133 @@ window.addEventListener('error', function(e) {
         // Verificar notificaciones cada 30 segundos
         setInterval(loadNotifications, 30000);
     });
-
-    // === DOCK POSITION MANAGEMENT (GLOBAL FUNCTIONS) ===
-    
-    // Funciones globales para el manejo del dock - disponibles en todas las páginas
-    window.applyDockPosition = function(position) {
-        // Remover estilos anteriores si existen
-        const existingStyle = document.getElementById('dock-position-style');
-        if (existingStyle) {
-            existingStyle.remove();
-        }
-        
-        // Crear nuevo estilo para la posición del dock
-        const style = document.createElement('style');
-        style.id = 'dock-position-style';
-        style.textContent = `
-            .macos-dock { opacity: 0 !important; visibility: hidden !important; }
-            #dock-${position} { opacity: 1 !important; visibility: visible !important; }
-        `;
-        document.head.appendChild(style);
-    };
-
-    window.saveDockPosition = function(position) {
-        try {
-            // Guardar en localStorage
-            localStorage.setItem('dockPosition', position);
-            // Verificar que se guardó correctamente
-            const saved = localStorage.getItem('dockPosition');
-            console.log('Saved dock position:', saved);
-            return saved === position;
-        } catch (error) {
-            console.error('Error saving dock position to localStorage:', error);
-            return false;
-        }
-    };
-
-    // Agregar funcionalidad a la función setDockPosition existente
-    // Interceptar y extender la función original
-    const originalSetDockPosition = window.setDockPosition || setDockPosition;
-    
-    window.setDockPosition = function(position) {
-        console.log('setDockPosition called with:', position);
-        
-        // Llamar a la función original si existe
-        if (typeof originalSetDockPosition === 'function') {
-            originalSetDockPosition(position);
-        }
-        
-        // Update active state for dock options (para el modal de configuración)
-        document.querySelectorAll('.dock-option').forEach(option => {
-            option.classList.remove('active');
-        });
-        
-        // Set active state for selected option
-        const selectedOption = document.querySelector(`[data-position="${position}"]`);
-        if (selectedOption) {
-            selectedOption.classList.add('active');
-            console.log('Added active class to:', selectedOption);
-        }
-        
-        // Update position arrows too
-        document.querySelectorAll('.position-arrow').forEach(arrow => {
-            arrow.classList.remove('active');
-        });
-        const activeArrow = document.querySelector(`#position-${position}`);
-        if (activeArrow) {
-            activeArrow.classList.add('active');
-        }
-        
-        // Save preference to localStorage
-        window.saveDockPosition(position);
-        console.log('Dock position saved to localStorage:', position);
-        
-        // Show notification if showNotification function exists
-        if (typeof showNotification === 'function') {
-            const positionNames = {
-                'bottom': 'Inferior',
-                'top': 'Superior', 
-                'left': 'Izquierda',
-                'right': 'Derecha'
-            };
-            showNotification(`Posición del dock cambiada a: ${positionNames[position]}`, 'success');
-        }
-    };
-    
-    // Función para verificar que el dock esté visible
-    window.checkDockVisibility = function() {
-        const allDocks = ['dock-left', 'dock-right', 'dock-top', 'dock-bottom'];
-        let visibleDock = null;
-        
-        allDocks.forEach(dockId => {
-            const dock = document.getElementById(dockId);
-            if (dock) {
-                const styles = window.getComputedStyle(dock);
-                if (styles.opacity > 0 && styles.visibility === 'visible') {
-                    visibleDock = dockId;
-                }
-            }
-        });
-        
-        console.log('Currently visible dock:', visibleDock);
-        return visibleDock;
-    };
-
-    // Inicializar la posición del dock en todas las páginas
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(function() {
-            // Get current dock position from localStorage or default to bottom
-            const currentPosition = localStorage.getItem('dockPosition') || 'bottom';
-            console.log('Initializing dock position:', currentPosition);
-            
-            // Usar la función setDockPosition para aplicar la posición
-            // Esto asegura que se use el sistema correcto
-            if (typeof window.setDockPosition === 'function') {
-                window.setDockPosition(currentPosition);
-            } else {
-                console.log('setDockPosition function not available yet, retrying...');
-                setTimeout(function() {
-                    if (typeof window.setDockPosition === 'function') {
-                        window.setDockPosition(currentPosition);
-                    }
-                }, 500);
-            }
-        }, 100);
-    });
 })();
+
+// === DOCK POSITION MANAGEMENT (GLOBAL FUNCTIONS) ===
+// Estas funciones deben estar fuera del IIFE para ser accesibles globalmente
+
+// Funciones globales para el manejo del dock - disponibles en todas las páginas
+window.applyDockPosition = function(position) {
+    // Remover estilos anteriores si existen
+    const existingStyle = document.getElementById('dock-position-style');
+    if (existingStyle) {
+        existingStyle.remove();
+    }
+    
+    // Crear nuevo estilo para la posición del dock
+    const style = document.createElement('style');
+    style.id = 'dock-position-style';
+    style.textContent = `
+        .macos-dock { opacity: 0 !important; visibility: hidden !important; }
+        #dock-${position} { opacity: 1 !important; visibility: visible !important; }
+    `;
+    document.head.appendChild(style);
+};
+
+window.saveDockPosition = function(position) {
+    try {
+        // Guardar en localStorage
+        localStorage.setItem('dockPosition', position);
+        // Verificar que se guardó correctamente
+        const saved = localStorage.getItem('dockPosition');
+        console.log('Saved dock position:', saved);
+        return saved === position;
+    } catch (error) {
+        console.error('Error saving dock position to localStorage:', error);
+        return false;
+    }
+};
+
+// Agregar funcionalidad a la función setDockPosition existente
+// Interceptar y extender la función original
+const originalSetDockPosition = window.setDockPosition || (typeof setDockPosition !== 'undefined' ? setDockPosition : null);
+
+window.setDockPosition = function(position) {
+    console.log('setDockPosition called with:', position);
+    
+    // Llamar a la función original si existe
+    if (typeof originalSetDockPosition === 'function') {
+        originalSetDockPosition(position);
+    } else {
+        // Si no existe la función original, usar nuestro método básico
+        window.applyDockPosition(position);
+    }
+    
+    // Update active state for dock options (para el modal de configuración)
+    document.querySelectorAll('.dock-option').forEach(option => {
+        option.classList.remove('active');
+    });
+    
+    // Set active state for selected option
+    const selectedOption = document.querySelector(`[data-position="${position}"]`);
+    if (selectedOption) {
+        selectedOption.classList.add('active');
+        console.log('Added active class to:', selectedOption);
+    }
+    
+    // Update position arrows too
+    document.querySelectorAll('.position-arrow').forEach(arrow => {
+        arrow.classList.remove('active');
+    });
+    const activeArrow = document.querySelector(`#position-${position}`);
+    if (activeArrow) {
+        activeArrow.classList.add('active');
+    }
+    
+    // Save preference to localStorage
+    window.saveDockPosition(position);
+    console.log('Dock position saved to localStorage:', position);
+    
+    // Show notification if showNotification function exists
+    if (typeof showNotification === 'function') {
+        const positionNames = {
+            'bottom': 'Inferior',
+            'top': 'Superior', 
+            'left': 'Izquierda',
+            'right': 'Derecha'
+        };
+        showNotification(`Posición del dock cambiada a: ${positionNames[position]}`, 'success');
+    }
+};
+    
+// Función para verificar que el dock esté visible
+window.checkDockVisibility = function() {
+    const allDocks = ['dock-left', 'dock-right', 'dock-top', 'dock-bottom'];
+    let visibleDock = null;
+    
+    allDocks.forEach(dockId => {
+        const dock = document.getElementById(dockId);
+        if (dock) {
+            const styles = window.getComputedStyle(dock);
+            if (styles.opacity > 0 && styles.visibility === 'visible') {
+                visibleDock = dockId;
+            }
+        }
+    });
+    
+    console.log('Currently visible dock:', visibleDock);
+    return visibleDock;
+};
+
+// Inicializar la posición del dock en todas las páginas
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        // Get current dock position from localStorage or default to bottom
+        const currentPosition = localStorage.getItem('dockPosition') || 'bottom';
+        console.log('Initializing dock position:', currentPosition);
+        
+        // Usar la función setDockPosition para aplicar la posición
+        // Esto asegura que se use el sistema correcto
+        if (typeof window.setDockPosition === 'function') {
+            window.setDockPosition(currentPosition);
+        } else {
+            console.log('setDockPosition function not available yet, retrying...');
+            setTimeout(function() {
+                if (typeof window.setDockPosition === 'function') {
+                    window.setDockPosition(currentPosition);
+                }
+            }, 500);
+        }
+    }, 100);
+});
 </script>
