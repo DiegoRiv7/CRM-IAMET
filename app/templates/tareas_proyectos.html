@@ -44,6 +44,395 @@
         font-family: var(--apple-font-family);
     }
 
+    /* Pink Theme for Tareas y Proyectos */
+    html[data-theme="pink"] .tareas-container,
+    body[data-theme="pink"] .tareas-container,
+    html.light-theme[data-theme="pink"] .tareas-container {
+        background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%) !important;
+        min-height: 100vh;
+    }
+
+    html[data-theme="pink"] body,
+    body[data-theme="pink"] body,
+    html.light-theme[data-theme="pink"] body {
+        background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%) !important;
+    }
+
+    html[data-theme="pink"] .projects-table-container,
+    body[data-theme="pink"] .projects-table-container,
+    html.light-theme[data-theme="pink"] .projects-table-container {
+        background: linear-gradient(135deg,
+            rgba(255, 240, 245, 0.9) 0%,
+            rgba(255, 232, 239, 0.85) 100%) !important;
+        backdrop-filter: blur(25px) !important;
+        -webkit-backdrop-filter: blur(25px) !important;
+        border: 1px solid rgba(255, 107, 157, 0.3) !important;
+        box-shadow:
+            0 8px 32px rgba(255, 107, 157, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+    }
+
+    html[data-theme="pink"] .page-title,
+    body[data-theme="pink"] .page-title,
+    html.light-theme[data-theme="pink"] .page-title {
+        color: var(--apple-label) !important;
+    }
+
+    html[data-theme="pink"] .table-row:hover:not(.header-row),
+    body[data-theme="pink"] .table-row:hover:not(.header-row),
+    html.light-theme[data-theme="pink"] .table-row:hover:not(.header-row) {
+        background: rgba(255, 240, 245, 0.5) !important;
+    }
+
+    html[data-theme="pink"] .header-row,
+    body[data-theme="pink"] .header-row,
+    html.light-theme[data-theme="pink"] .header-row {
+        color: var(--apple-label-secondary) !important;
+    }
+
+    html[data-theme="pink"] .table-cell,
+    body[data-theme="pink"] .table-cell,
+    html.light-theme[data-theme="pink"] .table-cell {
+        color: var(--apple-label) !important;
+    }
+
+    html[data-theme="pink"] .name-cell,
+    body[data-theme="pink"] .name-cell,
+    html.light-theme[data-theme="pink"] .name-cell {
+        color: var(--apple-pink-dark) !important;
+    }
+
+    html[data-theme="pink"] .tab-selector,
+    body[data-theme="pink"] .tab-selector,
+    html.light-theme[data-theme="pink"] .tab-selector {
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.7) 0%,
+            rgba(255, 248, 250, 0.6) 100%) !important;
+        backdrop-filter: blur(25px) !important;
+        -webkit-backdrop-filter: blur(25px) !important;
+        border: 1px solid rgba(255, 107, 157, 0.2) !important;
+        box-shadow:
+            0 8px 32px rgba(255, 107, 157, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+    }
+
+    html[data-theme="pink"] .tab-slider,
+    body[data-theme="pink"] .tab-slider,
+    html.light-theme[data-theme="pink"] .tab-slider {
+        background: linear-gradient(135deg,
+            rgba(255, 182, 193, 0.7) 0%,
+            rgba(255, 160, 180, 0.6) 100%) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border: 1px solid rgba(255, 107, 157, 0.25) !important;
+        box-shadow:
+            0 2px 8px rgba(255, 107, 157, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+    }
+
+    html[data-theme="pink"] .tab-option.active,
+    body[data-theme="pink"] .tab-option.active,
+    html.light-theme[data-theme="pink"] .tab-option.active {
+        color: var(--apple-pink-dark) !important;
+        font-weight: 600 !important;
+    }
+
+    html[data-theme="pink"] .tab-option:not(.active),
+    body[data-theme="pink"] .tab-option:not(.active),
+    html.light-theme[data-theme="pink"] .tab-option:not(.active) {
+        color: var(--apple-label-secondary) !important;
+    }
+
+    html[data-theme="pink"] .create-btn,
+    body[data-theme="pink"] .create-btn,
+    html.light-theme[data-theme="pink"] .create-btn {
+        background: var(--apple-pink-gradient) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border: 1px solid rgba(255, 107, 157, 0.3) !important;
+        box-shadow:
+            0 8px 32px rgba(255, 107, 157, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    }
+
+    html[data-theme="pink"] .create-btn:hover,
+    body[data-theme="pink"] .create-btn:hover,
+    html.light-theme[data-theme="pink"] .create-btn:hover {
+        background: linear-gradient(135deg,
+            var(--apple-pink-dark) 0%,
+            var(--apple-pink-medium) 100%) !important;
+        box-shadow:
+            0 12px 40px rgba(255, 107, 157, 0.35),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+        border-color: rgba(255, 107, 157, 0.4) !important;
+    }
+
+    html[data-theme="pink"] .search-widget-container .search-icon-container,
+    body[data-theme="pink"] .search-widget-container .search-icon-container,
+    html.light-theme[data-theme="pink"] .search-widget-container .search-icon-container {
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.7) 0%,
+            rgba(255, 248, 250, 0.6) 100%) !important;
+        backdrop-filter: blur(15px) !important;
+        -webkit-backdrop-filter: blur(15px) !important;
+        border: 1px solid rgba(255, 107, 157, 0.2) !important;
+        box-shadow:
+            0 4px 12px rgba(255, 107, 157, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+    }
+
+    html[data-theme="pink"] .search-widget-container .search-icon-container:hover,
+    body[data-theme="pink"] .search-widget-container .search-icon-container:hover,
+    html.light-theme[data-theme="pink"] .search-widget-container .search-icon-container:hover {
+        background: linear-gradient(135deg,
+            rgba(255, 248, 250, 0.8) 0%,
+            rgba(255, 240, 245, 0.7) 100%) !important;
+    }
+
+    html[data-theme="pink"] .search-widget-container .search-input,
+    body[data-theme="pink"] .search-widget-container .search-input,
+    html.light-theme[data-theme="pink"] .search-widget-container .search-input {
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.7) 0%,
+            rgba(255, 248, 250, 0.6) 100%) !important;
+        backdrop-filter: blur(15px) !important;
+        -webkit-backdrop-filter: blur(15px) !important;
+        border: 1px solid rgba(255, 107, 157, 0.2) !important;
+        color: var(--apple-label) !important;
+    }
+
+    html[data-theme="pink"] .search-widget-container .search-input::placeholder,
+    body[data-theme="pink"] .search-widget-container .search-input::placeholder,
+    html.light-theme[data-theme="pink"] .search-widget-container .search-input::placeholder {
+        color: var(--apple-label-secondary) !important;
+    }
+
+    html[data-theme="pink"] .modal-content,
+    body[data-theme="pink"] .modal-content,
+    html.light-theme[data-theme="pink"] .modal-content {
+        background: linear-gradient(135deg,
+            rgba(255, 245, 248, 0.95) 0%,
+            rgba(255, 232, 239, 0.9) 25%,
+            rgba(255, 218, 230, 0.85) 50%,
+            rgba(255, 200, 213, 0.8) 75%,
+            rgba(255, 182, 193, 0.75) 100%) !important;
+        backdrop-filter: blur(30px) !important;
+        -webkit-backdrop-filter: blur(30px) !important;
+        border: 1px solid rgba(255, 107, 157, 0.25) !important;
+        box-shadow:
+            0 20px 60px rgba(255, 107, 157, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+    }
+
+    html[data-theme="pink"] .modal-title,
+    body[data-theme="pink"] .modal-title,
+    html.light-theme[data-theme="pink"] .modal-title {
+        color: var(--apple-label) !important;
+    }
+
+    html[data-theme="pink"] .form-label,
+    body[data-theme="pink"] .form-label,
+    html.light-theme[data-theme="pink"] .form-label {
+        color: var(--apple-label) !important;
+    }
+
+    html[data-theme="pink"] .form-input,
+    body[data-theme="pink"] .form-input,
+    html.light-theme[data-theme="pink"] .form-input,
+    html[data-theme="pink"] .form-textarea,
+    body[data-theme="pink"] .form-textarea,
+    html.light-theme[data-theme="pink"] .form-textarea,
+    html[data-theme="pink"] .form-select,
+    body[data-theme="pink"] .form-select,
+    html.light-theme[data-theme="pink"] .form-select {
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.7) 0%,
+            rgba(255, 248, 250, 0.6) 100%) !important;
+        backdrop-filter: blur(15px) !important;
+        -webkit-backdrop-filter: blur(15px) !important;
+        border: 1px solid rgba(255, 107, 157, 0.2) !important;
+        color: var(--apple-label) !important;
+        box-shadow:
+            inset 0 1px 3px rgba(255, 107, 157, 0.1),
+            0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+    }
+
+    html[data-theme="pink"] .form-input:focus,
+    body[data-theme="pink"] .form-input:focus,
+    html.light-theme[data-theme="pink"] .form-input:focus,
+    html[data-theme="pink"] .form-textarea:focus,
+    body[data-theme="pink"] .form-textarea:focus,
+    html.light-theme[data-theme="pink"] .form-textarea:focus,
+    html[data-theme="pink"] .form-select:focus,
+    body[data-theme="pink"] .form-select:focus,
+    html.light-theme[data-theme="pink"] .form-select:focus {
+        border-color: var(--apple-pink-dark) !important;
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.8) 0%,
+            rgba(255, 248, 250, 0.7) 100%) !important;
+        box-shadow:
+            inset 0 1px 3px rgba(255, 107, 157, 0.1),
+            0 0 0 3px rgba(255, 107, 157, 0.2) !important;
+    }
+
+    html[data-theme="pink"] .form-input::placeholder,
+    body[data-theme="pink"] .form-input::placeholder,
+    html.light-theme[data-theme="pink"] .form-input::placeholder,
+    html[data-theme="pink"] .form-textarea::placeholder,
+    body[data-theme="pink"] .form-textarea::placeholder,
+    html.light-theme[data-theme="pink"] .form-textarea::placeholder {
+        color: var(--apple-label-secondary) !important;
+    }
+
+    html[data-theme="pink"] .btn-primary,
+    body[data-theme="pink"] .btn-primary,
+    html.light-theme[data-theme="pink"] .btn-primary {
+        background: var(--apple-pink-gradient) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border: 1px solid rgba(255, 107, 157, 0.3) !important;
+        box-shadow:
+            0 4px 16px rgba(255, 107, 157, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    }
+
+    html[data-theme="pink"] .btn-primary:hover,
+    body[data-theme="pink"] .btn-primary:hover,
+    html.light-theme[data-theme="pink"] .btn-primary:hover {
+        background: linear-gradient(135deg,
+            var(--apple-pink-dark) 0%,
+            var(--apple-pink-medium) 100%) !important;
+        box-shadow:
+            0 6px 20px rgba(255, 107, 157, 0.35),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+    }
+
+    html[data-theme="pink"] .btn-secondary,
+    body[data-theme="pink"] .btn-secondary,
+    html.light-theme[data-theme="pink"] .btn-secondary {
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.7) 0%,
+            rgba(255, 248, 250, 0.6) 100%) !important;
+        backdrop-filter: blur(15px) !important;
+        -webkit-backdrop-filter: blur(15px) !important;
+        border: 1px solid rgba(255, 107, 157, 0.2) !important;
+        color: var(--apple-label) !important;
+        box-shadow:
+            0 2px 8px rgba(255, 107, 157, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+    }
+
+    html[data-theme="pink"] .btn-secondary:hover,
+    body[data-theme="pink"] .btn-secondary:hover,
+    html.light-theme[data-theme="pink"] .btn-secondary:hover {
+        background: linear-gradient(135deg,
+            rgba(255, 248, 250, 0.8) 0%,
+            rgba(255, 240, 245, 0.7) 100%) !important;
+    }
+
+    html[data-theme="pink"] .user-search-results,
+    body[data-theme="pink"] .user-search-results,
+    html.light-theme[data-theme="pink"] .user-search-results {
+        background: linear-gradient(135deg,
+            rgba(255, 245, 248, 0.95) 0%,
+            rgba(255, 232, 239, 0.9) 100%) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border: 1px solid rgba(255, 107, 157, 0.25) !important;
+        box-shadow:
+            0 8px 32px rgba(255, 107, 157, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+    }
+
+    html[data-theme="pink"] .user-search-item:hover,
+    body[data-theme="pink"] .user-search-item:hover,
+    html.light-theme[data-theme="pink"] .user-search-item:hover {
+        background: rgba(255, 240, 245, 0.5) !important;
+    }
+
+    html[data-theme="pink"] .user-name,
+    body[data-theme="pink"] .user-name,
+    html.light-theme[data-theme="pink"] .user-name {
+        color: var(--apple-label) !important;
+    }
+
+    html[data-theme="pink"] .user-email,
+    body[data-theme="pink"] .user-email,
+    html.light-theme[data-theme="pink"] .user-email {
+        color: var(--apple-label-secondary) !important;
+    }
+
+    html[data-theme="pink"] .selected-member,
+    body[data-theme="pink"] .selected-member,
+    html.light-theme[data-theme="pink"] .selected-member {
+        background: linear-gradient(135deg,
+            rgba(255, 240, 245, 0.8) 0%,
+            rgba(255, 232, 239, 0.7) 100%) !important;
+        border: 1px solid rgba(255, 107, 157, 0.3) !important;
+        color: var(--apple-pink-dark) !important;
+        box-shadow:
+            0 2px 8px rgba(255, 107, 157, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+    }
+
+    html[data-theme="pink"] .remove-member:hover,
+    body[data-theme="pink"] .remove-member:hover,
+    html.light-theme[data-theme="pink"] .remove-member:hover {
+        background: rgba(255, 107, 157, 0.2) !important;
+    }
+
+    html[data-theme="pink"] .pagination-btn,
+    body[data-theme="pink"] .pagination-btn,
+    html.light-theme[data-theme="pink"] .pagination-btn {
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.7) 0%,
+            rgba(255, 248, 250, 0.6) 100%) !important;
+        color: var(--apple-label) !important;
+        border: 1px solid rgba(255, 107, 157, 0.2) !important;
+        box-shadow:
+            0 2px 8px rgba(255, 107, 157, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+    }
+
+    html[data-theme="pink"] .pagination-btn:hover,
+    body[data-theme="pink"] .pagination-btn:hover,
+    html.light-theme[data-theme="pink"] .pagination-btn:hover {
+        background: linear-gradient(135deg,
+            rgba(255, 248, 250, 0.8) 0%,
+            rgba(255, 240, 245, 0.7) 100%) !important;
+    }
+
+    html[data-theme="pink"] .pagination-info,
+    body[data-theme="pink"] .pagination-info,
+    html.light-theme[data-theme="pink"] .pagination-info {
+        background: var(--apple-pink-gradient) !important;
+        color: white !important;
+        box-shadow:
+            0 4px 12px rgba(255, 107, 157, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    }
+
+    html[data-theme="pink"] .popup-content,
+    body[data-theme="pink"] .popup-content,
+    html.light-theme[data-theme="pink"] .popup-content {
+        background: linear-gradient(135deg,
+            rgba(255, 245, 248, 0.95) 0%,
+            rgba(255, 232, 239, 0.9) 100%) !important;
+        backdrop-filter: blur(30px) !important;
+        -webkit-backdrop-filter: blur(30px) !important;
+        border: 1px solid rgba(48, 209, 88, 0.3) !important;
+        box-shadow:
+            0 20px 60px rgba(255, 107, 157, 0.3),
+            0 0 0 1px rgba(48, 209, 88, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+    }
+
+    html[data-theme="pink"] .popup-message,
+    body[data-theme="pink"] .popup-message,
+    html.light-theme[data-theme="pink"] .popup-message {
+        color: var(--apple-label) !important;
+    }
+
     /* Header and table are now inside .content-block */
     .ipados-header {
         display: flex;

@@ -470,6 +470,121 @@
         --apple-separator: rgba(229, 90, 135, 0.2) !important;
     }
 
+    /* Pink Theme for Dock - Enhanced */
+    html[data-theme="pink"] .macos-dock,
+    body[data-theme="pink"] .macos-dock,
+    html.light-theme[data-theme="pink"] .macos-dock,
+    .macos-dock.pink-theme {
+        background: linear-gradient(135deg,
+            rgba(255, 240, 245, 0.9) 0%,
+            rgba(255, 232, 239, 0.85) 100%) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border: 1px solid rgba(255, 107, 157, 0.3) !important;
+        box-shadow:
+            0 8px 32px rgba(255, 107, 157, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+    }
+
+    /* Pink Theme for Dock Icons */
+    html[data-theme="pink"] .dock-icon,
+    body[data-theme="pink"] .dock-icon,
+    html.light-theme[data-theme="pink"] .dock-icon,
+    .macos-dock.pink-theme .dock-icon {
+        color: var(--apple-label) !important;
+    }
+
+    /* Pink Theme for Dock Tooltips */
+    html[data-theme="pink"] .tooltip,
+    body[data-theme="pink"] .tooltip,
+    html.light-theme[data-theme="pink"] .tooltip,
+    .macos-dock.pink-theme .tooltip {
+        background: linear-gradient(135deg,
+            rgba(255, 240, 245, 0.98) 0%,
+            rgba(255, 232, 239, 0.95) 100%) !important;
+        backdrop-filter: blur(15px) !important;
+        -webkit-backdrop-filter: blur(15px) !important;
+        color: var(--apple-label) !important;
+        border: 1px solid rgba(255, 107, 157, 0.2) !important;
+        box-shadow:
+            0 4px 16px rgba(255, 107, 157, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+    }
+
+    /* Pink Theme for Design Panel */
+    html[data-theme="pink"] .design-panel,
+    body[data-theme="pink"] .design-panel,
+    html.light-theme[data-theme="pink"] .design-panel {
+        background: linear-gradient(135deg,
+            rgba(255, 228, 239, 0.9) 0%,
+            rgba(255, 209, 220, 0.85) 50%,
+            rgba(255, 192, 203, 0.8) 100%) !important;
+        backdrop-filter: blur(25px) !important;
+        -webkit-backdrop-filter: blur(25px) !important;
+        border: 1px solid rgba(255, 107, 157, 0.25) !important;
+        box-shadow:
+            0 12px 40px rgba(255, 107, 157, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+    }
+
+    /* Pink Theme for Design Controls */
+    html[data-theme="pink"] .design-control,
+    body[data-theme="pink"] .design-control,
+    html.light-theme[data-theme="pink"] .design-control {
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.9) 0%,
+            rgba(255, 248, 250, 0.85) 100%) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 107, 157, 0.2) !important;
+        box-shadow:
+            0 2px 8px rgba(255, 107, 157, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+    }
+
+    html[data-theme="pink"] .design-control.active,
+    body[data-theme="pink"] .design-control.active,
+    html.light-theme[data-theme="pink"] .design-control.active {
+        background: var(--apple-pink-gradient) !important;
+        box-shadow:
+            0 4px 12px rgba(255, 20, 147, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+    }
+
+    /* Pink Theme for Position Controls */
+    html[data-theme="pink"] .position-controls,
+    body[data-theme="pink"] .position-controls,
+    html.light-theme[data-theme="pink"] .position-controls {
+        background: rgba(255, 192, 203, 0.3) !important;
+        backdrop-filter: blur(25px) !important;
+        -webkit-backdrop-filter: blur(25px) !important;
+        border: 1px solid rgba(255, 107, 157, 0.25) !important;
+        box-shadow:
+            0 12px 40px rgba(255, 107, 157, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+    }
+
+    html[data-theme="pink"] .position-arrow,
+    body[data-theme="pink"] .position-arrow,
+    html.light-theme[data-theme="pink"] .position-arrow {
+        background: rgba(255, 255, 255, 0.6) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 107, 157, 0.2) !important;
+        box-shadow:
+            0 2px 8px rgba(255, 107, 157, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+    }
+
+    html[data-theme="pink"] .position-arrow.active,
+    body[data-theme="pink"] .position-arrow.active,
+    html.light-theme[data-theme="pink"] .position-arrow.active {
+        background: var(--apple-pink-gradient) !important;
+        box-shadow:
+            0 4px 12px rgba(255, 107, 157, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+    }
+
     /* Light theme specific styles for summer vibes */
     .light-theme .macos-dock {
         background: linear-gradient(135deg, 
