@@ -2083,6 +2083,138 @@
         cursor: not-allowed;
         transform: none;
     }
+
+    /* Light theme styles for notifications modal - Pink Theme */
+    .light-theme .notifications-modal {
+        background: rgba(255, 107, 157, 0.15);
+        backdrop-filter: blur(15px) saturate(120%);
+    }
+
+    .light-theme .notifications-content {
+        background: linear-gradient(135deg,
+            rgba(255, 245, 248, 0.95) 0%,
+            rgba(255, 232, 239, 0.9) 25%,
+            rgba(255, 218, 230, 0.85) 50%,
+            rgba(255, 200, 213, 0.8) 75%,
+            rgba(255, 182, 193, 0.75) 100%);
+        backdrop-filter: blur(25px) saturate(150%);
+        border: 1px solid rgba(255, 107, 157, 0.25);
+        box-shadow:
+            0 20px 60px rgba(255, 107, 157, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    .light-theme .notifications-header {
+        border-bottom: 1px solid rgba(255, 107, 157, 0.2);
+    }
+
+    .light-theme .notifications-title {
+        color: var(--apple-label);
+    }
+
+    .light-theme .close-notifications {
+        color: var(--apple-label-secondary);
+        background: rgba(255, 255, 255, 0.5);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 107, 157, 0.15);
+    }
+
+    .light-theme .close-notifications:hover {
+        background: linear-gradient(135deg,
+            rgba(255, 240, 245, 0.8) 0%,
+            rgba(255, 232, 239, 0.7) 100%);
+        color: var(--apple-label);
+        border-color: rgba(255, 107, 157, 0.25);
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(255, 107, 157, 0.2);
+    }
+
+    .light-theme .notification-item {
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.7) 0%,
+            rgba(255, 248, 250, 0.6) 100%);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 107, 157, 0.15);
+        box-shadow:
+            0 4px 15px rgba(255, 107, 157, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .light-theme .notification-item:hover {
+        border-color: rgba(255, 107, 157, 0.3);
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.85) 0%,
+            rgba(255, 248, 250, 0.75) 100%);
+        transform: translateY(-2px);
+        box-shadow:
+            0 8px 25px rgba(255, 107, 157, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    .light-theme .notification-item.unread {
+        border-left: 3px solid var(--apple-pink-dark);
+        background: linear-gradient(135deg,
+            rgba(255, 240, 245, 0.8) 0%,
+            rgba(255, 232, 239, 0.7) 50%,
+            rgba(255, 218, 230, 0.6) 100%);
+    }
+
+    .light-theme .notification-item.unread::before {
+        background: var(--apple-pink-dark);
+        box-shadow: 0 0 8px rgba(255, 107, 157, 0.5);
+    }
+
+    .light-theme .notification-sender {
+        color: var(--apple-pink-dark);
+    }
+
+    .light-theme .notification-title {
+        color: var(--apple-label);
+    }
+
+    .light-theme .notification-message {
+        color: var(--apple-label-secondary);
+    }
+
+    .light-theme .notification-time {
+        color: var(--apple-label-tertiary);
+    }
+
+    .light-theme .no-notifications {
+        color: var(--apple-label-secondary);
+    }
+
+    .light-theme .no-notifications-icon {
+        filter: sepia(0.2) saturate(1.5) hue-rotate(330deg);
+        opacity: 0.6;
+    }
+
+    .light-theme .mark-all-read {
+        background: var(--apple-pink-gradient);
+        color: white;
+        border: 1px solid rgba(255, 107, 157, 0.2);
+        box-shadow:
+            0 4px 12px rgba(255, 107, 157, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+
+    .light-theme .mark-all-read:hover {
+        background: linear-gradient(135deg,
+            var(--apple-pink-dark) 0%,
+            var(--apple-pink-medium) 100%);
+        transform: translateY(-2px) scale(1.02);
+        box-shadow:
+            0 6px 20px rgba(255, 107, 157, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+
+    .light-theme .mark-all-read:disabled {
+        background: var(--apple-gray-3);
+        color: var(--apple-gray);
+        border-color: var(--apple-gray-4);
+        transform: none;
+        box-shadow: none;
+    }
 </style>
 
 <!-- Dock Left -->

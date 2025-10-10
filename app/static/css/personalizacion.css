@@ -8,6 +8,54 @@ body {
     margin: 0;
     min-height: 100vh;
 }
+
+/* Light theme styles for personalization page - Pink Theme */
+.light-theme body {
+    background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%);
+    color: var(--apple-label, #2D1B2E);
+}
+
+.light-theme .avatar-preview {
+    background: linear-gradient(135deg,
+        rgba(255, 245, 248, 0.9) 0%,
+        rgba(255, 232, 239, 0.8) 100%);
+    border: 2px solid var(--apple-pink-medium, #FF91A4);
+    box-shadow:
+        0 4px 15px rgba(255, 107, 157, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.light-theme .avatar-choice {
+    box-shadow: 0 2px 10px rgba(255, 107, 157, 0.15);
+}
+
+.light-theme .avatar-choice.selected,
+.light-theme .avatar-choice:focus {
+    border: 2.5px solid var(--apple-pink-dark, #E55A87);
+    box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.3);
+}
+
+.light-theme .avatar-label {
+    background: linear-gradient(135deg,
+        rgba(255, 255, 255, 0.9) 0%,
+        rgba(255, 248, 250, 0.8) 100%);
+    color: var(--apple-pink-dark, #E55A87);
+    border: 1px solid var(--apple-pink-medium, #FF91A4);
+    backdrop-filter: blur(10px);
+    box-shadow:
+        0 2px 8px rgba(255, 107, 157, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.light-theme .avatar-label:hover {
+    background: linear-gradient(135deg,
+        rgba(255, 248, 250, 0.95) 0%,
+        rgba(255, 240, 245, 0.9) 100%);
+    transform: translateY(-1px);
+    box-shadow:
+        0 4px 12px rgba(255, 107, 157, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
 .avatar-chooser {
     display: flex;
     flex-direction: column;
