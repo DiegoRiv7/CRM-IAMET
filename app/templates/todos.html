@@ -694,5 +694,21 @@ function applyFilters() {
     
     updateNoResultsMessage(filteredRows.length, tableBody);
 }
+
+function updateNoResultsMessage(visibleCount, tableBody) {
+    // Remove existing no-results message
+    const existingMessage = tableBody.querySelector('.no-results-row');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+    
+    // Add no-results message if needed
+    if (visibleCount === 0) {
+        const noResultsRow = document.createElement('tr');
+        noResultsRow.className = 'no-results-row';
+        noResultsRow.innerHTML = '<td colspan="6" class="text-center py-10 text-gray-400">No se encontraron oportunidades que coincidan con los filtros aplicados.</td>';
+        tableBody.appendChild(noResultsRow);
+    }
+}
 </script>
 {% endblock %}
