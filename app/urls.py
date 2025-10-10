@@ -10,6 +10,7 @@ from . import views_exportar
 
 urlpatterns = [
     path('bitrix/webhook/', views.bitrix_webhook_receiver, name='bitrix-webhook-handler'),
+    path('bitrix/sync/', views.bitrix_sync_admin, name='bitrix-sync-admin'),
     # Página de bienvenida (será la nueva Home)
     path("home/", views.bienvenida, name="home"),
     path("", views.bienvenida, name="root_home"),

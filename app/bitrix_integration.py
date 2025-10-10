@@ -817,3 +817,31 @@ def create_project_and_upload_volumetria(project_name, file_name, file_content_b
             'file_uploaded': False
         }
     return None
+
+def delete_opportunity_from_bitrix(bitrix_deal_id, request=None):
+    """
+    Elimina una oportunidad de Bitrix24
+    """
+    if not BITRIX_WEBHOOK_URL:
+        if request:
+            messages.error(request, "Error: La URL del webhook de Bitrix24 no está configurada.")
+        print("Error: La URL del webhook de Bitrix24 no está configurada.")
+        return False
+
+    delete_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "crm.deal.delete.json")
+    
+    try:
+        response = requests.post(delete_url, json={'id': bitrix_deal_id})
+        response.raise_for_status()
+        json_response = response.json()
+        
+        if json_response.get('result'):
+            print(f"DEBUG Bitrix: Oportunidad {bitrix_deal_id} eliminada de Bitrix24 con éxito")
+            return True
+        else:
+            print(f"DEBUG Bitrix: Error al eliminar oportunidad {bitrix_deal_id} de Bitrix24: {json_response.get('error_description', json_response)}")
+            return False
+            
+    except requests.exceptions.RequestException as e:
+        print(f"DEBUG Bitrix: Error al eliminar oportunidad {bitrix_deal_id} de Bitrix24: {e}")
+        return False

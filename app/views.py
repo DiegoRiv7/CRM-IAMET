@@ -3478,13 +3478,29 @@ def bitrix_webhook_receiver(request):
         print(f"BITRIX WEBHOOK: POST data: {dict(data)}", flush=True)
         print(f"BITRIX WEBHOOK: Received event '{event}'", flush=True)
 
-        if event in ['ONCRMDEALADD', 'ONCRMDEALUPDATE']:
+        if event in ['ONCRMDEALADD', 'ONCRMDEALUPDATE', 'ONCRMDEALDEL']:
             deal_id = data.get('data[FIELDS][ID]')
             if not deal_id:
                 print(f"BITRIX WEBHOOK: '{event}' event received but no deal ID found.", flush=True)
                 return JsonResponse({'status': 'error', 'message': 'Deal ID missing'}, status=400)
 
             print(f"BITRIX WEBHOOK: Processing {event} for Deal ID: {deal_id}", flush=True)
+            
+            # Check if this is a deletion event
+            if event == 'ONCRMDEALDEL':
+                print(f"BITRIX WEBHOOK: Processing DELETE event for Deal ID: {deal_id}", flush=True)
+                try:
+                    existing_opportunity = TodoItem.objects.get(bitrix_deal_id=deal_id)
+                    opportunity_name = existing_opportunity.oportunidad
+                    existing_opportunity.delete()
+                    print(f"BITRIX WEBHOOK: Successfully deleted opportunity '{opportunity_name}' (Deal ID: {deal_id})", flush=True)
+                    return JsonResponse({'status': 'success', 'message': f'Opportunity deleted: {opportunity_name}'})
+                except TodoItem.DoesNotExist:
+                    print(f"BITRIX WEBHOOK: Deal ID {deal_id} not found locally for deletion. Nothing to delete.", flush=True)
+                    return JsonResponse({'status': 'success', 'message': 'Opportunity not found locally, nothing to delete'})
+                except Exception as delete_error:
+                    print(f"BITRIX WEBHOOK: Error deleting opportunity for Deal ID {deal_id}: {delete_error}", flush=True)
+                    return JsonResponse({'status': 'error', 'message': f'Error deleting opportunity: {str(delete_error)}'}, status=500)
 
             # Check if this is an update to an existing deal
             is_update = event == 'ONCRMDEALUPDATE'
@@ -9046,4 +9062,77 @@ def actualizar_avatar(request):
             'success': False,
             'error': f'Error al actualizar avatar: {str(e)}'
         })
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def bitrix_sync_admin(request):
+    """
+    Vista de administración para sincronización con Bitrix24
+    """
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'sync_deletions':
+            # Sincronizar eliminaciones
+            from .bitrix_integration import get_all_bitrix_deals
+            
+            try:
+                # Obtener todas las oportunidades locales con bitrix_deal_id
+                local_opportunities = TodoItem.objects.filter(bitrix_deal_id__isnull=False)
+                
+                # Obtener todos los deals de Bitrix24
+                bitrix_deals = get_all_bitrix_deals()
+                if not bitrix_deals:
+                    messages.error(request, 'No se pudieron obtener deals de Bitrix24')
+                    return redirect('bitrix-sync-admin')
+                
+                # Crear set de IDs que existen en Bitrix24
+                bitrix_deal_ids = {str(deal['ID']) for deal in bitrix_deals}
+                
+                # Encontrar oportunidades locales que ya no existen en Bitrix24
+                opportunities_to_delete = []
+                for opportunity in local_opportunities:
+                    if str(opportunity.bitrix_deal_id) not in bitrix_deal_ids:
+                        opportunities_to_delete.append(opportunity)
+                
+                # Eliminar las oportunidades
+                deleted_count = 0
+                for opportunity in opportunities_to_delete:
+                    try:
+                        opportunity.delete()
+                        deleted_count += 1
+                    except Exception as e:
+                        print(f"Error eliminando oportunidad {opportunity.id}: {e}")
+                
+                if deleted_count > 0:
+                    messages.success(request, f'Se eliminaron {deleted_count} oportunidades que ya no existen en Bitrix24')
+                else:
+                    messages.info(request, 'No hay oportunidades para eliminar. Todo está sincronizado.')
+                    
+            except Exception as e:
+                messages.error(request, f'Error durante la sincronización: {str(e)}')
+        
+        elif action == 'import_all':
+            # Importar todas las oportunidades
+            from django.core.management import call_command
+            from io import StringIO
+            
+            try:
+                out = StringIO()
+                call_command('import_bitrix_opportunities', stdout=out)
+                output = out.getvalue()
+                messages.success(request, f'Importación completada: {output}')
+            except Exception as e:
+                messages.error(request, f'Error durante la importación: {str(e)}')
+        
+        return redirect('bitrix-sync-admin')
+    
+    # GET request - mostrar estadísticas
+    context = {
+        'total_opportunities': TodoItem.objects.count(),
+        'bitrix_opportunities': TodoItem.objects.filter(bitrix_deal_id__isnull=False).count(),
+        'local_opportunities': TodoItem.objects.filter(bitrix_deal_id__isnull=True).count(),
+    }
+    
+    return render(request, 'bitrix_sync_admin.html', context)
         

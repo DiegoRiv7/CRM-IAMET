@@ -1,0 +1,138 @@
+{% extends 'base_generic.html' %}
+{% load static %}
+
+{% block title %}Administración Sincronización Bitrix24{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1>🔄 Administración Sincronización Bitrix24</h1>
+            <p class="text-muted">Gestiona la sincronización de oportunidades con Bitrix24</p>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-primary">{{ total_opportunities }}</h3>
+                    <p class="card-text">Total de Oportunidades</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-success">{{ bitrix_opportunities }}</h3>
+                    <p class="card-text">Sincronizadas con Bitrix24</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-warning">{{ local_opportunities }}</h3>
+                    <p class="card-text">Solo Locales</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones de Sincronización -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>🗑️ Sincronizar Eliminaciones</h5>
+                </div>
+                <div class="card-body">
+                    <p>Elimina las oportunidades locales que ya no existen en Bitrix24.</p>
+                    <p class="text-muted small">
+                        <strong>Precaución:</strong> Esta acción eliminará permanentemente las oportunidades que ya no estén en Bitrix24.
+                    </p>
+                    <form method="post" onsubmit="return confirm('¿Estás seguro de sincronizar eliminaciones? Esta acción no se puede deshacer.')">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="sync_deletions">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-sync"></i> Sincronizar Eliminaciones
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>⬇️ Importar Todas las Oportunidades</h5>
+                </div>
+                <div class="card-body">
+                    <p>Importa todas las oportunidades desde Bitrix24.</p>
+                    <p class="text-muted small">
+                        <strong>Nota:</strong> Solo creará nuevas oportunidades, no duplicará las existentes.
+                    </p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="import_all">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-download"></i> Importar Todas
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información de Configuración -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>ℹ️ Información de Configuración</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Eventos Webhook Configurados:</h6>
+                    <ul>
+                        <li><strong>ONCRMDEALADD</strong> - Se crea una nueva oportunidad en Bitrix24</li>
+                        <li><strong>ONCRMDEALUPDATE</strong> - Se actualiza una oportunidad existente</li>
+                        <li><strong>ONCRMDEALDEL</strong> - Se elimina una oportunidad en Bitrix24</li>
+                    </ul>
+                    
+                    <h6 class="mt-3">URL del Webhook:</h6>
+                    <code>{{ request.build_absolute_uri }}/app/bitrix/webhook/</code>
+                    
+                    <h6 class="mt-3">Comandos de Consola:</h6>
+                    <div class="code-block">
+                        <p><strong>Sincronizar eliminaciones:</strong></p>
+                        <code>python manage.py sync_bitrix_deletions</code>
+                        
+                        <p class="mt-2"><strong>Configurar webhooks:</strong></p>
+                        <code>python manage.py setup_bitrix_webhooks --webhook-url https://tudominio.com/app/bitrix/webhook/ --bitrix-webhook https://tubitrix.bitrix24.mx/rest/123/abc123/</code>
+                        
+                        <p class="mt-2"><strong>Importar oportunidades:</strong></p>
+                        <code>python manage.py import_bitrix_opportunities</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.code-block {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    border-left: 4px solid #007bff;
+}
+
+.code-block code {
+    background-color: transparent;
+    color: #495057;
+    display: block;
+    margin: 5px 0;
+}
+</style>
+{% endblock %}
