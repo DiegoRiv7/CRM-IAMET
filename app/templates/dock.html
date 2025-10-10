@@ -3541,6 +3541,30 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         console.log('Marked', allDocks.length, 'docks as ready');
         
+        // Asegurar que solo esté visible el dock correcto
+        if (typeof ensureCorrectDockVisibility === 'function') {
+            ensureCorrectDockVisibility();
+        } else {
+            // Función inline de respaldo para asegurar visibilidad correcta
+            const savedPosition = localStorage.getItem('dockPosition') || 'bottom';
+            const activeDock = document.getElementById(`dock-${savedPosition}`);
+            
+            allDocks.forEach(dock => {
+                if (dock === activeDock) {
+                    dock.style.opacity = '1';
+                    dock.style.visibility = 'visible';
+                    dock.style.pointerEvents = 'auto';
+                    dock.style.zIndex = '';
+                } else {
+                    dock.style.opacity = '0';
+                    dock.style.visibility = 'hidden';
+                    dock.style.pointerEvents = 'none';
+                    dock.style.zIndex = '-1';
+                }
+            });
+            console.log('Ensured only dock-' + savedPosition + ' is visible');
+        }
+        
         // Solo actualizar los estados de UI sin cambiar la posición del dock
         // (la posición ya se aplicó inmediatamente arriba)
         
