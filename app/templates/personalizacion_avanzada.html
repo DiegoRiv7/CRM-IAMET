@@ -1130,19 +1130,24 @@
                         <p style="margin: 0 0 15px 0; color: var(--apple-label-secondary); font-size: 14px;">O sube tu propia foto de perfil</p>
                         
                         <!-- Botón para seleccionar archivo -->
-                        <div style="width: 100%; position: relative; z-index: 10; margin-bottom: 15px;">
+                        <div style="width: 100%; margin-bottom: 15px;">
                             <input type="file" id="avatarUpload" name="avatar" accept="image/*" style="display: none;">
-                            <button type="button" class="btn-primary" onclick="document.getElementById('avatarUpload').click()" style="width: 100%; padding: 14px; font-size: 16px; font-weight: 500; border: none; border-radius: 10px; background: var(--apple-blue); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
+                            <button type="button" class="btn-primary" onclick="document.getElementById('avatarUpload').click()" style="width: 100%; padding: 14px; font-size: 16px; font-weight: 500; border: none; border-radius: 10px; background: var(--apple-blue); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
                                 <span>📸</span> Seleccionar Foto
                             </button>
                         </div>
                         
-                        <!-- Botón de guardar cambios -->
-                        <div style="width: 100%; position: relative; z-index: 10;">
-                            <button type="submit" class="btn-primary" style="width: 100%; padding: 14px; font-size: 16px; font-weight: 600; border: none; border-radius: 10px; background: #34C759; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
-                                <span>💾</span> Guardar Cambios
-                            </button>
+                        <!-- Botón de guardar cambios - Fijo en la parte inferior -->
+                        <div style="position: fixed; bottom: 20px; left: 0; right: 0; padding: 0 20px; z-index: 10000;">
+                            <div style="max-width: 600px; margin: 0 auto; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+                                <button type="submit" style="width: 100%; padding: 14px; font-size: 16px; font-weight: 600; border: none; border-radius: 10px; background: #34C759; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                    <span>💾</span> Guardar Cambios
+                                </button>
+                            </div>
                         </div>
+                        
+                        <!-- Espacio para el botón fijo -->
+                        <div style="height: 80px;"></div>
                         
                         <input type="hidden" id="avatarChoice" name="avatar_choice" value="">
                     </div>
