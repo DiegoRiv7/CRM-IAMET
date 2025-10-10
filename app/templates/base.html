@@ -62,14 +62,29 @@
                     // Apply the saved theme
                     if (savedTheme === 'pink') {
                         document.documentElement.classList.add('light-theme');
-                        document.documentElement.style.setProperty('--apple-background', '#ffebf0');
-                        document.documentElement.style.setProperty('--apple-background-secondary', '#fff5f8');
-                        document.documentElement.style.setProperty('--apple-background-tertiary', '#ffe0e6');
-                        document.documentElement.style.setProperty('--apple-label', '#d63384');
-                        document.documentElement.style.setProperty('--apple-label-secondary', '#c7366f');
-                        document.documentElement.style.setProperty('--apple-blue', '#ff6b9d');
-                        document.documentElement.style.setProperty('--apple-blue-light', '#ff8fab');
-                        document.documentElement.style.setProperty('--apple-blue-dark', '#e6396b');
+                        document.documentElement.setAttribute('data-theme', 'pink');
+                        document.body.setAttribute('data-theme', 'pink');
+                        document.documentElement.style.setProperty('--apple-background', 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)');
+                        document.documentElement.style.setProperty('--apple-background-secondary', 'rgba(255, 240, 245, 0.8)');
+                        document.documentElement.style.setProperty('--apple-background-tertiary', 'rgba(255, 232, 239, 0.9)');
+                        document.documentElement.style.setProperty('--apple-background-quaternary', '#FFEBF0');
+                        document.documentElement.style.setProperty('--apple-label', '#2D1B2E');
+                        document.documentElement.style.setProperty('--apple-label-secondary', '#4A2B4D');
+                        document.documentElement.style.setProperty('--apple-label-tertiary', '#6B4C6D');
+                        document.documentElement.style.setProperty('--apple-blue', '#FF6B9D');
+                        document.documentElement.style.setProperty('--apple-blue-light', '#FF8FB3');
+                        document.documentElement.style.setProperty('--apple-blue-dark', '#E55A87');
+                        document.documentElement.style.setProperty('--apple-pink-gradient', 'linear-gradient(135deg, #FF6B9D 0%, #FFB6C1 50%, #FFC0CB 100%)');
+                        document.documentElement.style.setProperty('--apple-pink-light', '#FFB6C1');
+                        document.documentElement.style.setProperty('--apple-pink-medium', '#FF91A4');
+                        document.documentElement.style.setProperty('--apple-pink-dark', '#E55A87');
+                        document.documentElement.style.setProperty('--apple-gray', '#8B7D8B');
+                        document.documentElement.style.setProperty('--apple-gray-2', '#A695A6');
+                        document.documentElement.style.setProperty('--apple-gray-3', '#C1B6C1');
+                        document.documentElement.style.setProperty('--apple-gray-4', '#DCD6DC');
+                        document.documentElement.style.setProperty('--apple-gray-5', '#F0ECF0');
+                        document.documentElement.style.setProperty('--apple-gray-6', '#F8F5F8');
+                        document.documentElement.style.setProperty('--apple-separator', 'rgba(229, 90, 135, 0.2)');
                     } else if (savedTheme === 'light') {
                         document.documentElement.classList.add('light-theme');
                     } else if (savedTheme === 'blue') {
@@ -131,6 +146,392 @@
             min-height: 100vh;
             padding-bottom: 80px;
             position: relative;
+        }
+        
+        /* Pink Theme Styles - Applied globally with enhanced coverage */
+        body[data-theme="pink"],
+        .pink-theme,
+        html[data-theme="pink"] body,
+        html.light-theme[data-theme="pink"] body {
+            background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%) !important;
+            color: #2D1B2E !important;
+        }
+        
+        /* Enhanced pink theme for all elements */
+        body[data-theme="pink"] *,
+        .pink-theme *,
+        html[data-theme="pink"] body *,
+        html.light-theme[data-theme="pink"] body * {
+            border-color: rgba(229, 90, 135, 0.2) !important;
+        }
+        
+        body[data-theme="pink"] .glass-card,
+        .pink-theme .glass-card,
+        html[data-theme="pink"] body .glass-card {
+            background: rgba(255, 245, 248, 0.8) !important;
+            border: 1px solid rgba(255, 107, 157, 0.3) !important;
+            box-shadow: 0 8px 32px 0 rgba(255, 107, 157, 0.15) !important;
+        }
+        
+        body[data-theme="pink"] .glass-table,
+        .pink-theme .glass-table,
+        html[data-theme="pink"] body .glass-table {
+            background: rgba(255, 240, 245, 0.6) !important;
+            border: 1px solid rgba(255, 107, 157, 0.25) !important;
+        }
+        
+        body[data-theme="pink"] h1,
+        body[data-theme="pink"] h2,
+        body[data-theme="pink"] h3,
+        body[data-theme="pink"] h4,
+        body[data-theme="pink"] h5,
+        body[data-theme="pink"] h6,
+        .pink-theme h1,
+        .pink-theme h2,
+        .pink-theme h3,
+        .pink-theme h4,
+        .pink-theme h5,
+        .pink-theme h6,
+        html[data-theme="pink"] body h1,
+        html[data-theme="pink"] body h2,
+        html[data-theme="pink"] body h3,
+        html[data-theme="pink"] body h4,
+        html[data-theme="pink"] body h5,
+        html[data-theme="pink"] body h6 {
+            color: #2D1B2E !important;
+        }
+        
+        body[data-theme="pink"] .text-white,
+        .pink-theme .text-white,
+        html[data-theme="pink"] body .text-white {
+            color: #2D1B2E !important;
+        }
+        
+        body[data-theme="pink"] .bg-gray-800,
+        body[data-theme="pink"] .bg-gray-900,
+        body[data-theme="pink"] .bg-dark,
+        .pink-theme .bg-gray-800,
+        .pink-theme .bg-gray-900,
+        .pink-theme .bg-dark,
+        html[data-theme="pink"] body .bg-gray-800,
+        html[data-theme="pink"] body .bg-gray-900,
+        html[data-theme="pink"] body .bg-dark {
+            background-color: #FFEBF0 !important;
+        }
+        
+        body[data-theme="pink"] .bg-gray-700,
+        .pink-theme .bg-gray-700,
+        html[data-theme="pink"] body .bg-gray-700 {
+            background-color: #FFE8EF !important;
+        }
+        
+        body[data-theme="pink"] .bg-gray-600,
+        .pink-theme .bg-gray-600,
+        html[data-theme="pink"] body .bg-gray-600 {
+            background-color: #FFD1DC !important;
+        }
+        
+        body[data-theme="pink"] .text-gray-300,
+        body[data-theme="pink"] .text-gray-400,
+        .pink-theme .text-gray-300,
+        .pink-theme .text-gray-400,
+        html[data-theme="pink"] body .text-gray-300,
+        html[data-theme="pink"] body .text-gray-400 {
+            color: #6B4C6D !important;
+        }
+        
+        body[data-theme="pink"] .text-gray-200,
+        .pink-theme .text-gray-200,
+        html[data-theme="pink"] body .text-gray-200 {
+            color: #4A2B4D !important;
+        }
+        
+        body[data-theme="pink"] .border-gray-700,
+        .pink-theme .border-gray-700,
+        html[data-theme="pink"] body .border-gray-700 {
+            border-color: rgba(255, 107, 157, 0.3) !important;
+        }
+        
+        body[data-theme="pink"] .border-gray-600,
+        .pink-theme .border-gray-600,
+        html[data-theme="pink"] body .border-gray-600 {
+            border-color: rgba(255, 107, 157, 0.2) !important;
+        }
+        
+        body[data-theme="pink"] button,
+        body[data-theme="pink"] .btn,
+        .pink-theme button,
+        .pink-theme .btn,
+        html[data-theme="pink"] body button,
+        html[data-theme="pink"] body .btn {
+            background-color: #FF6B9D !important;
+            color: white !important;
+            border-color: #FF6B9D !important;
+        }
+        
+        body[data-theme="pink"] button:hover,
+        body[data-theme="pink"] .btn:hover,
+        .pink-theme button:hover,
+        .pink-theme .btn:hover,
+        html[data-theme="pink"] body button:hover,
+        html[data-theme="pink"] body .btn:hover {
+            background-color: #E55A87 !important;
+            border-color: #E55A87 !important;
+        }
+        
+        body[data-theme="pink"] input,
+        body[data-theme="pink"] select,
+        body[data-theme="pink"] textarea,
+        .pink-theme input,
+        .pink-theme select,
+        .pink-theme textarea,
+        html[data-theme="pink"] body input,
+        html[data-theme="pink"] body select,
+        html[data-theme="pink"] body textarea {
+            background-color: rgba(255, 255, 255, 0.8) !important;
+            color: #2D1B2E !important;
+            border-color: rgba(255, 107, 157, 0.3) !important;
+        }
+        
+        body[data-theme="pink"] input:focus,
+        body[data-theme="pink"] select:focus,
+        body[data-theme="pink"] textarea:focus,
+        .pink-theme input:focus,
+        .pink-theme select:focus,
+        .pink-theme textarea:focus,
+        html[data-theme="pink"] body input:focus,
+        html[data-theme="pink"] body select:focus,
+        html[data-theme="pink"] body textarea:focus {
+            border-color: #FF6B9D !important;
+            box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.2) !important;
+        }
+        
+        body[data-theme="pink"] .card,
+        .pink-theme .card,
+        html[data-theme="pink"] body .card {
+            background-color: rgba(255, 245, 248, 0.9) !important;
+            border-color: rgba(255, 107, 157, 0.3) !important;
+        }
+        
+        body[data-theme="pink"] .modal-content,
+        .pink-theme .modal-content,
+        html[data-theme="pink"] body .modal-content {
+            background-color: #FFF5F8 !important;
+            color: #2D1B2E !important;
+        }
+        
+        body[data-theme="pink"] .dropdown-menu,
+        .pink-theme .dropdown-menu,
+        html[data-theme="pink"] body .dropdown-menu {
+            background-color: #FFF5F8 !important;
+            border-color: rgba(255, 107, 157, 0.3) !important;
+        }
+        
+        body[data-theme="pink"] .dropdown-item,
+        .pink-theme .dropdown-item,
+        html[data-theme="pink"] body .dropdown-item {
+            color: #2D1B2E !important;
+        }
+        
+        body[data-theme="pink"] .dropdown-item:hover,
+        .pink-theme .dropdown-item:hover,
+        html[data-theme="pink"] body .dropdown-item:hover {
+            background-color: rgba(255, 107, 157, 0.1) !important;
+            color: #4A2B4D !important;
+        }
+        
+        body[data-theme="pink"] .table,
+        .pink-theme .table,
+        html[data-theme="pink"] body .table {
+            color: #2D1B2E !important;
+        }
+        
+        body[data-theme="pink"] .table th,
+        .pink-theme .table th,
+        html[data-theme="pink"] body .table th {
+            background-color: rgba(255, 107, 157, 0.1) !important;
+            border-color: rgba(255, 107, 157, 0.3) !important;
+            color: #4A2B4D !important;
+        }
+        
+        body[data-theme="pink"] .table td,
+        .pink-theme .table td,
+        html[data-theme="pink"] body .table td {
+            border-color: rgba(255, 107, 157, 0.2) !important;
+        }
+        
+        body[data-theme="pink"] .navbar,
+        .pink-theme .navbar,
+        html[data-theme="pink"] body .navbar {
+            background-color: #FF6B9D !important;
+        }
+        
+        body[data-theme="pink"] .sidebar,
+        .pink-theme .sidebar,
+        html[data-theme="pink"] body .sidebar {
+            background-color: #FFEBF0 !important;
+        }
+        
+        body[data-theme="pink"] .pagination .page-link,
+        .pink-theme .pagination .page-link,
+        html[data-theme="pink"] body .pagination .page-link {
+            background-color: #FFF5F8 !important;
+            color: #FF6B9D !important;
+            border-color: rgba(255, 107, 157, 0.3) !important;
+        }
+        
+        body[data-theme="pink"] .pagination .page-link:hover,
+        .pink-theme .pagination .page-link:hover,
+        html[data-theme="pink"] body .pagination .page-link:hover {
+            background-color: #FF6B9D !important;
+            color: white !important;
+        }
+        
+        body[data-theme="pink"] .pagination .page-item.active .page-link,
+        .pink-theme .pagination .page-item.active .page-link,
+        html[data-theme="pink"] body .pagination .page-item.active .page-link {
+            background-color: #FF6B9D !important;
+            border-color: #FF6B9D !important;
+        }
+        
+        body[data-theme="pink"] .alert,
+        .pink-theme .alert,
+        html[data-theme="pink"] body .alert {
+            background-color: rgba(255, 107, 157, 0.1) !important;
+            border-color: rgba(255, 107, 157, 0.3) !important;
+            color: #4A2B4D !important;
+        }
+        
+        body[data-theme="pink"] .badge,
+        .pink-theme .badge,
+        html[data-theme="pink"] body .badge {
+            background-color: #FF6B9D !important;
+            color: white !important;
+        }
+        
+        body[data-theme="pink"] .progress-bar,
+        .pink-theme .progress-bar,
+        html[data-theme="pink"] body .progress-bar {
+            background-color: #FF6B9D !important;
+        }
+        
+        body[data-theme="pink"] .nav-link,
+        .pink-theme .nav-link,
+        html[data-theme="pink"] body .nav-link {
+            color: #2D1B2E !important;
+        }
+        
+        body[data-theme="pink"] .nav-link:hover,
+        .pink-theme .nav-link:hover,
+        html[data-theme="pink"] body .nav-link:hover {
+            color: #FF6B9D !important;
+        }
+        
+        body[data-theme="pink"] .nav-link.active,
+        .pink-theme .nav-link.active,
+        html[data-theme="pink"] body .nav-link.active {
+            color: #4A2B4D !important;
+            background-color: rgba(255, 107, 157, 0.1) !important;
+        }
+        
+        body[data-theme="pink"] .form-control,
+        .pink-theme .form-control,
+        html[data-theme="pink"] body .form-control {
+            background-color: rgba(255, 255, 255, 0.8) !important;
+            color: #2D1B2E !important;
+            border-color: rgba(255, 107, 157, 0.3) !important;
+        }
+        
+        body[data-theme="pink"] .form-control:focus,
+        .pink-theme .form-control:focus,
+        html[data-theme="pink"] body .form-control:focus {
+            border-color: #FF6B9D !important;
+            box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.2) !important;
+        }
+        
+        /* Spotlight search styles for pink theme */
+        body[data-theme="pink"] .spotlight-container,
+        .pink-theme .spotlight-container,
+        html[data-theme="pink"] body .spotlight-container {
+            background: rgba(255, 245, 248, 0.95) !important;
+            border: 1px solid rgba(255, 107, 157, 0.3) !important;
+            color: #2D1B2E !important;
+        }
+        
+        body[data-theme="pink"] .spotlight-search-box,
+        .pink-theme .spotlight-search-box,
+        html[data-theme="pink"] body .spotlight-search-box {
+            border-bottom: 1px solid rgba(255, 107, 157, 0.3) !important;
+        }
+        
+        body[data-theme="pink"] .spotlight-icon,
+        .pink-theme .spotlight-icon,
+        html[data-theme="pink"] body .spotlight-icon {
+            color: #4A2B4D !important;
+        }
+        
+        body[data-theme="pink"] .spotlight-shortcut,
+        .pink-theme .spotlight-shortcut,
+        html[data-theme="pink"] body .spotlight-shortcut {
+            background: rgba(255, 107, 157, 0.1) !important;
+            color: #4A2B4D !important;
+        }
+        
+        body[data-theme="pink"] #spotlight-input,
+        .pink-theme #spotlight-input,
+        html[data-theme="pink"] body #spotlight-input {
+            color: #2D1B2E !important;
+        }
+        
+        body[data-theme="pink"] #spotlight-input::placeholder,
+        .pink-theme #spotlight-input::placeholder,
+        html[data-theme="pink"] body #spotlight-input::placeholder {
+            color: #6B4C6D !important;
+        }
+        
+        body[data-theme="pink"] .spotlight-empty,
+        .pink-theme .spotlight-empty,
+        html[data-theme="pink"] body .spotlight-empty {
+            color: #6B4C6D !important;
+        }
+        
+        body[data-theme="pink"] .spotlight-item,
+        .pink-theme .spotlight-item,
+        html[data-theme="pink"] body .spotlight-item {
+            border-bottom: 1px solid rgba(255, 107, 157, 0.2) !important;
+        }
+        
+        body[data-theme="pink"] .spotlight-item:hover,
+        body[data-theme="pink"] .spotlight-item.selected,
+        .pink-theme .spotlight-item:hover,
+        .pink-theme .spotlight-item.selected,
+        html[data-theme="pink"] body .spotlight-item:hover,
+        html[data-theme="pink"] body .spotlight-item.selected {
+            background: rgba(255, 107, 157, 0.1) !important;
+        }
+        
+        body[data-theme="pink"] .spotlight-item-title,
+        .pink-theme .spotlight-item-title,
+        html[data-theme="pink"] body .spotlight-item-title {
+            color: #2D1B2E !important;
+        }
+        
+        body[data-theme="pink"] .spotlight-item-subtitle,
+        .pink-theme .spotlight-item-subtitle,
+        html[data-theme="pink"] body .spotlight-item-subtitle {
+            color: #6B4C6D !important;
+        }
+        
+        body[data-theme="pink"] .spotlight-loading,
+        .pink-theme .spotlight-loading,
+        html[data-theme="pink"] body .spotlight-loading {
+            color: #6B4C6D !important;
+        }
+        
+        body[data-theme="pink"] .spotlight-item-icon,
+        .pink-theme .spotlight-item-icon,
+        html[data-theme="pink"] body .spotlight-item-icon {
+            background: #FF6B9D !important;
         }
         
         /* Estilos generales para el contenido principal */
