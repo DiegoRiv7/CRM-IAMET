@@ -512,13 +512,28 @@
             background: rgba(255, 255, 255, 0.9);
             border: 1px solid rgba(0, 0, 0, 0.1);
         }
-        
         .theme-option:hover,
         .theme-option.active,
         .dock-option:hover,
         .dock-option.active {
-            border-color: var(--apple-blue);
+            border-color: var(--apple-blue) !important;
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3) !important;
             transform: translateY(-2px);
+            transition: all 0.2s ease;
+        }
+        
+        /* Estilo específico para el tema activo */
+        .theme-option.active {
+            border-color: var(--apple-blue) !important;
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.5) !important;
+            position: relative;
+        }
+        
+        /* Estilo para el tema oscuro por defecto */
+        .theme-option[onclick*="'dark'"] {
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.5);
+            background: rgba(0, 0, 0, 0.1);
         }
         
         /* Dock Options Styles */
@@ -1500,7 +1515,7 @@
                     <h3><i class="fas fa-palette" style="margin-right: 8px;"></i> Tema de Color</h3>
                     <p>Personaliza los colores de la aplicación</p>
                     <div class="theme-options">
-                        <div class="theme-option" onclick="applyTheme('dark')">
+                        <div class="theme-option active" data-theme="dark" onclick="applyTheme('dark')">
                             <div class="theme-preview-large dark-preview">
                                 <div class="preview-header"></div>
                                 <div class="preview-content">
@@ -2283,10 +2298,13 @@
                 selectedOption.classList.add('active');
                 console.log('Added active class to theme option:', selectedOption);
                 
-                // Forzar un pequeño efecto visual sin interferer con los CSS
+                // Aplicar estilos de selección
+                selectedOption.style.borderColor = 'var(--apple-blue)';
+                selectedOption.style.boxShadow = '0 0 0 2px rgba(0, 122, 255, 0.3)';
+                
+                // Efecto de animación
                 selectedOption.style.transform = 'translateY(-2px) scale(1.05)';
                 setTimeout(() => {
-                    // Quitar el estilo inline para que use el CSS de la clase active
                     selectedOption.style.transform = '';
                 }, 150);
             }
@@ -2916,8 +2934,12 @@
         
         // Inicializar estados activos al cargar la página
         document.addEventListener('DOMContentLoaded', function() {
-            // Inicializar tema activo
-            const currentTheme = localStorage.getItem('theme') || 'dark';
+            // Inicializar tema activo - forzar tema oscuro por defecto si no hay preferencia guardada
+            let currentTheme = localStorage.getItem('theme');
+            if (!currentTheme) {
+                currentTheme = 'dark';
+                localStorage.setItem('theme', 'dark');
+            }
             initializeActiveTheme(currentTheme);
             
             // Inicializar dock activo (ya se maneja en dock.html, pero asegurar estado visual)
@@ -2936,10 +2958,23 @@
         });
         
         function initializeActiveTheme(theme) {
+            // Asegurarse de que el tema oscuro sea el predeterminado si no hay tema guardado
+            if (!localStorage.getItem('theme')) {
+                theme = 'dark';
+                localStorage.setItem('theme', 'dark');
+            }
+            
             document.querySelectorAll('.theme-option').forEach(option => {
                 option.classList.remove('active');
                 if (option.getAttribute('onclick').includes(`'${theme}'`)) {
                     option.classList.add('active');
+                    // Aplicar estilos de selección
+                    option.style.borderColor = 'var(--apple-blue)';
+                    option.style.boxShadow = '0 0 0 2px rgba(0, 122, 255, 0.5)';
+                } else {
+                    // Limpiar estilos de los otros temas
+                    option.style.borderColor = '';
+                    option.style.boxShadow = '';
                 }
             });
         }
