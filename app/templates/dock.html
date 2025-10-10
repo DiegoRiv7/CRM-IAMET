@@ -2845,6 +2845,64 @@ window.applyDockTypeStyles = function(type) {
     });
 };
 
+// Center cursor on page load to prevent dock hover
+(function() {
+    function centerCursor() {
+        // Get viewport dimensions
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        
+        // Create invisible element to trigger cursor movement
+        const tempElement = document.createElement('div');
+        tempElement.style.cssText = `
+            position: fixed;
+            left: ${centerX}px;
+            top: ${centerY}px;
+            width: 1px;
+            height: 1px;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0;
+        `;
+        
+        document.body.appendChild(tempElement);
+        
+        // Simulate hover on center element to move cursor
+        const event = new MouseEvent('mousemove', {
+            clientX: centerX,
+            clientY: centerY,
+            bubbles: true
+        });
+        
+        // Dispatch the event to center the cursor
+        document.dispatchEvent(event);
+        
+        // Clean up
+        setTimeout(() => {
+            if (tempElement.parentNode) {
+                tempElement.parentNode.removeChild(tempElement);
+            }
+        }, 100);
+        
+        console.log('Cursor centered at:', centerX, centerY);
+    }
+    
+    // Center cursor on page load
+    window.addEventListener('load', function() {
+        setTimeout(centerCursor, 100);
+    });
+    
+    // Also center on DOM ready as backup
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(centerCursor, 50);
+    });
+    
+    // Center cursor before page unload (for next page)
+    window.addEventListener('beforeunload', function() {
+        centerCursor();
+    });
+})();
+
 // Simplified hover control for transparent dock
 (function() {
     let mouseMovedAfterLoad = false;
