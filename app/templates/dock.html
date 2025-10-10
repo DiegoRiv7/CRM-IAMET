@@ -150,6 +150,23 @@
     .macos-dock.dock-compact .dock-item:hover {
         transform: none !important;
     }
+    
+    /* Evitar cualquier transform en el dock compacto completo */
+    nav.macos-dock.dock-compact:hover,
+    .macos-dock.dock-compact:hover {
+        transform: none !important;
+    }
+    
+    /* Evitar hover effects en dock-items del dock compacto */
+    nav.macos-dock.dock-compact .dock-item,
+    .macos-dock.dock-compact .dock-item {
+        transform: none !important;
+    }
+    
+    nav.macos-dock.dock-compact .dock-item:hover,
+    .macos-dock.dock-compact .dock-item:hover {
+        transform: none !important;
+    }
 
     .dock-item:hover .tooltip {
         opacity: 1;
@@ -514,20 +531,52 @@
         transform-origin: center !important;
     }
 
-    /* Para docks verticales compactos */
+    /* Para docks verticales compactos - MANTENER POSICIÓN */
     nav.macos-dock#dock-left.dock-compact:not(.expanded),
     nav.macos-dock#dock-right.dock-compact:not(.expanded) {
         width: 50px !important;
         height: 50px !important;
         border-radius: 50% !important;
+        transform: none !important;
+        position: fixed !important;
+    }
+    
+    /* Específico para dock-left */
+    nav.macos-dock#dock-left.dock-compact:not(.expanded) {
+        left: 12px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+    }
+    
+    /* Específico para dock-right */
+    nav.macos-dock#dock-right.dock-compact:not(.expanded) {
+        right: 12px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
     }
 
-    /* Para docks horizontales compactos */
+    /* Para docks horizontales compactos - MANTENER POSICIÓN */
     nav.macos-dock#dock-bottom.dock-compact:not(.expanded),
     nav.macos-dock#dock-top.dock-compact:not(.expanded) {
         width: 50px !important;
         height: 50px !important;
         border-radius: 50% !important;
+        transform: none !important;
+        position: fixed !important;
+    }
+    
+    /* Específico para dock-bottom */
+    nav.macos-dock#dock-bottom.dock-compact:not(.expanded) {
+        bottom: 12px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+    }
+    
+    /* Específico para dock-top */
+    nav.macos-dock#dock-top.dock-compact:not(.expanded) {
+        top: 12px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
     }
 
     /* Ocultar todos los iconos excepto el de casa en dock compacto */
@@ -599,24 +648,28 @@
         animation: expandDock 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
     }
 
-    /* Animación de expansión del dock */
+    /* Animación de expansión del dock - CENTRADA */
     @keyframes expandDock {
         0% {
             width: 50px;
             height: 50px;
             border-radius: 50%;
             padding: 0;
-            transform: scale(1);
+            transform-origin: center center;
         }
         50% {
-            transform: scale(1.1);
+            width: 60px;
+            height: 60px;
+            border-radius: 45%;
+            padding: 2px;
+            transform-origin: center center;
         }
         100% {
             width: auto;
             height: auto;
             border-radius: 16px;
             padding: 8px;
-            transform: scale(1);
+            transform-origin: center center;
         }
     }
 
@@ -662,13 +715,12 @@
         margin: 0 4px !important;
     }
 
-    /* Efecto hover en dock compacto completo */
+    /* Efecto hover en dock compacto completo - SIN TRANSFORM */
     nav.macos-dock#dock-bottom.dock-compact:not(.expanded):hover,
     nav.macos-dock#dock-top.dock-compact:not(.expanded):hover,
     nav.macos-dock#dock-left.dock-compact:not(.expanded):hover,
     nav.macos-dock#dock-right.dock-compact:not(.expanded):hover,
     .macos-dock.dock-compact:not(.expanded):hover {
-        transform: scale(1.1) !important;
         border: 2px solid rgba(0, 122, 255, 0.6) !important;
         box-shadow: 
             0 0 0 3px rgba(0, 122, 255, 0.3) !important,
@@ -677,7 +729,7 @@
         background: rgba(29, 29, 31, 0.95) !important;
     }
 
-    /* Efecto hover en icono casa del dock compacto */
+    /* Efecto hover en icono casa del dock compacto - SIN TRANSFORM */
     nav.macos-dock#dock-bottom.dock-compact:not(.expanded):hover .dock-item.home-icon .dock-icon,
     nav.macos-dock#dock-top.dock-compact:not(.expanded):hover .dock-item.home-icon .dock-icon,
     nav.macos-dock#dock-left.dock-compact:not(.expanded):hover .dock-item.home-icon .dock-icon,
@@ -685,7 +737,7 @@
     .macos-dock.dock-compact:not(.expanded):hover .dock-item.home-icon .dock-icon {
         color: rgba(0, 122, 255, 0.9) !important;
         opacity: 1 !important;
-        transform: scale(1.1) !important;
+        filter: drop-shadow(0 0 8px rgba(0, 122, 255, 0.6)) !important;
     }
     
     .light-theme nav.macos-dock#dock-bottom.dock-transparent:hover,
