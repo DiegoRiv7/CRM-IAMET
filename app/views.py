@@ -1648,25 +1648,31 @@ def todos (request):
         # Búsqueda global en todas las oportunidades
         items = items.filter(oportunidad__icontains=search_query)
 
-    # Implementar paginación optimizada - 20 elementos por página
-    paginator = Paginator(items, 20)
-    page_number = request.GET.get('page', 1)
-    
-    try:
-        page_obj = paginator.get_page(page_number)
-    except PageNotAnInteger:
-        # Si la página no es un entero, mostrar la primera página
-        page_obj = paginator.page(1)
-    except EmptyPage:
-        # Si la página está fuera de rango, mostrar la última página
-        page_obj = paginator.page(paginator.num_pages)
-    
+    reporte_activo = request.GET.get('reporte', 'false').lower() == 'true'
+
+    if reporte_activo:
+        # Modo reporte: No paginar, mostrar todos los items
+        page_obj = None
+        context_items = items
+    else:
+        # Modo normal: Aplicar paginación
+        paginator = Paginator(items, 20)
+        page_number = request.GET.get('page', 1)
+        try:
+            page_obj = paginator.get_page(page_number)
+        except PageNotAnInteger:
+            page_obj = paginator.page(1)
+        except EmptyPage:
+            page_obj = paginator.page(paginator.num_pages)
+        context_items = page_obj
+
     context = {
-        "items": page_obj,  # Ahora items es el objeto page con paginación
-        "page_obj": page_obj,  # También pasamos el objeto página para los controles
+        "items": context_items,
+        "page_obj": page_obj,
         "filter_form": filter_form,
         "is_supervisor": is_supervisor(request.user),
-        "search_query": search_query,  # Para mantener el valor en el input
+        "search_query": search_query,
+        "reporte_activo": reporte_activo,
     }
     return render (request, "todos.html", context)
 

@@ -362,7 +362,7 @@
         <div class="ipados-header">
             <div style="display: flex; align-items: center; gap: 1rem;">
                 <h1 class="page-title">Oportunidades</h1>
-                <div class="filter-icon-container" id="filter-icon" onclick="toggleFilterModal()">
+                <div class="filter-icon-container {% if reporte_activo %}active{% endif %}" id="filter-icon" onclick="activarModoReporte()">
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
                     </svg>
@@ -381,7 +381,7 @@
         </div>
 
         <!-- Filter Modal -->
-        <div class="filter-modal" id="filterModal">
+        <div class="filter-modal {% if reporte_activo %}show{% endif %}" id="filterModal">
             <div class="filter-modal-content">
                 <div class="filter-modal-header">
                     <h3 class="filter-modal-title">Filtrar Oportunidades</h3>
@@ -441,6 +441,9 @@
                 </div>
                 
                 <div class="filter-actions">
+                    {% if reporte_activo %}
+                        <a href="{% url 'todos' %}" class="filter-btn secondary">Salir de modo reporte</a>
+                    {% endif %}
                     <button class="filter-btn secondary" onclick="clearFilters()">Limpiar Filtros</button>
                     <button class="filter-btn primary" onclick="applyFilters()">Aplicar Filtros</button>
                 </div>
@@ -500,7 +503,7 @@
             </table>
         </div>
         
-        {% if page_obj.has_other_pages %}
+        {% if page_obj and page_obj.has_other_pages %}
         <div class="mt-6 flex items-center justify-between">
             <div class="text-sm text-gray-400">
                 Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }}
@@ -595,24 +598,22 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Filter Modal Functions
-function toggleFilterModal() {
-    const modal = document.getElementById('filterModal');
-    const filterIcon = document.getElementById('filter-icon');
-    
-    if (modal.classList.contains('show')) {
-        closeFilterModal();
-    } else {
-        modal.classList.add('show');
-        filterIcon.classList.add('active');
-    }
+function activarModoReporte() {
+    const url = new URL(window.location);
+    url.searchParams.set('reporte', 'true');
+    window.location.href = url.toString();
 }
 
 function closeFilterModal() {
-    const modal = document.getElementById('filterModal');
-    const filterIcon = document.getElementById('filter-icon');
-    
-    modal.classList.remove('show');
-    filterIcon.classList.remove('active');
+    {% if reporte_activo %}
+        window.location.href = '{% url 'todos' %}';
+    {% else %}
+        const modal = document.getElementById('filterModal');
+        const filterIcon = document.getElementById('filter-icon');
+        
+        modal.classList.remove('show');
+        filterIcon.classList.remove('active');
+    {% endif %}
 }
 
 function clearFilters() {
@@ -695,9 +696,11 @@ function applyFilters() {
     
     // Show message if no results
     updateNoResultsMessage(visibleCount, tableBody);
-    
+
+    {% if not reporte_activo %}
     // Close modal after applying filters
     closeFilterModal();
+    {% endif %}
 }
 
 function updateNoResultsMessage(visibleCount, tableBody) {
@@ -716,6 +719,7 @@ function updateNoResultsMessage(visibleCount, tableBody) {
     }
 }
 
+{% if not reporte_activo %}
 // Close modal when clicking outside
 document.addEventListener('click', function(event) {
     const modal = document.getElementById('filterModal');
@@ -727,5 +731,6 @@ document.addEventListener('click', function(event) {
         closeFilterModal();
     }
 });
+{% endif %}
 </script>
 {% endblock %}
