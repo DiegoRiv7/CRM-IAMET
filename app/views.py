@@ -2371,64 +2371,75 @@ def exportar_oportunidades_csv(request):
             bottom=Side(style='thin')
         )
         
-        # Define headers according to the format in the images
-        # Usar solo las marcas que están realmente en PRODUCTO_CHOICES
+        # Define main headers (brands)
         main_headers = [
             'OPORTUNIDAD', 'AREA', 'CONTACTO', 'ZEBRA', 'PANDUIT', 'APC', 'AVIGILION', 
             'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'PÓLIZA', 'CISCO'
         ]
         
+        # Define quarterly and monthly headers
+        quarterly_headers = ['Q1', 'Q2', 'Q3', 'Q4']
         monthly_headers = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC']
         
-        # Create first row with main headers
-        for col, header in enumerate(main_headers, 1):
-            cell = ws.cell(row=1, column=col, value=header)
+        # ROW 1: Write main headers and Q1-Q4 headers
+        current_col = 1
+        
+        # Write main headers in row 1
+        for header in main_headers:
+            cell = ws.cell(row=1, column=current_col, value=header)
             cell.font = header_font
             cell.fill = header_fill
             cell.alignment = header_alignment
             cell.border = border
+            current_col += 1
         
-        # Add Q1-Q4 headers that span 3 columns each
-        quarterly_start_col = len(main_headers) + 1
-        quarters = ['Q1', 'Q2', 'Q3', 'Q4']
-        
-        # First, set all Q headers and apply styles
-        for i, quarter in enumerate(quarters):
-            col_start = quarterly_start_col + (i * 3)
-            col_end = col_start + 2
+        # Write Q1-Q4 headers in row 1 (each spanning 3 columns)
+        q_start_col = current_col
+        for i, quarter in enumerate(quarterly_headers):
+            # Set Q header in first column of the 3-column span
+            col_pos = q_start_col + (i * 3)
+            cell = ws.cell(row=1, column=col_pos, value=quarter)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+            cell.border = border
             
-            # Set the Q header in the first cell and the empty cells
-            for col_offset in range(3):
-                col = col_start + col_offset
-                cell = ws.cell(row=1, column=col, value=quarter if col_offset == 0 else '')
+            # Set empty styled cells for the next 2 columns
+            for offset in [1, 2]:
+                cell = ws.cell(row=1, column=col_pos + offset, value='')
                 cell.font = header_font
                 cell.fill = header_fill
                 cell.alignment = header_alignment
                 cell.border = border
         
-        # Create second row with monthly headers
-        for col, month in enumerate(monthly_headers, quarterly_start_col):
-            cell = ws.cell(row=2, column=col, value=month)
+        # ROW 2: Write empty cells for main headers and monthly headers
+        current_col = 1
+        
+        # Empty cells for main headers (they will span both rows)
+        for i in range(len(main_headers)):
+            cell = ws.cell(row=2, column=current_col, value='')
+            cell.border = border
+            current_col += 1
+        
+        # Write monthly headers in row 2
+        for month in monthly_headers:
+            cell = ws.cell(row=2, column=current_col, value=month)
             cell.font = header_font
             cell.fill = header_fill
             cell.alignment = header_alignment
             cell.border = border
+            current_col += 1
         
-        # Fill empty cells in second row for main headers
-        for col in range(1, quarterly_start_col):
-            cell = ws.cell(row=2, column=col, value='')
-            cell.border = border
-        
-        # Now apply all merges after setting all values
-        # Merge main header cells to span both rows
-        for col in range(1, quarterly_start_col):
+        # MERGE CELLS after all content is set
+        # Merge main headers vertically (rows 1-2)
+        for col in range(1, len(main_headers) + 1):
             ws.merge_cells(start_row=1, start_column=col, end_row=2, end_column=col)
         
-        # Merge Q headers to span 3 columns each
-        for i, quarter in enumerate(quarters):
-            col_start = quarterly_start_col + (i * 3)
-            col_end = col_start + 2
-            ws.merge_cells(start_row=1, start_column=col_start, end_row=1, end_column=col_end)
+        # Merge Q headers horizontally (3 columns each)
+        for i in range(4):  # Q1, Q2, Q3, Q4
+            start_col = q_start_col + (i * 3)
+            end_col = start_col + 2
+            ws.merge_cells(start_row=1, start_column=start_col, end_row=1, end_column=end_col)
     else:
         # Fallback to CSV - simplified structure
         headers = [
@@ -2451,9 +2462,13 @@ def exportar_oportunidades_csv(request):
         'PÓLIZA': 12, 'CISCO': 13
     }
         
+    # Debug: Print item count
+    print(f"DEBUG: Total items found: {items.count()}")
+    
     # Write data rows (start at row 3 for Excel due to double header, row 2 for CSV)
     row = 3 if OPENPYXL_AVAILABLE else 2
     for item in items:
+        print(f"DEBUG: Processing item: {item.oportunidad}, mes_cierre: {item.mes_cierre}, probabilidad: {item.probabilidad_cierre}")
         # Get cotization details for this opportunity
         cotizaciones = item.cotizaciones.all()
         
@@ -2515,12 +2530,16 @@ def exportar_oportunidades_csv(request):
         if item.mes_cierre:
             try:
                 mes = int(item.mes_cierre)
+                print(f"DEBUG: mes_cierre converted to int: {mes}")
                 if 1 <= mes <= 12:
                     # Poner la probabilidad en el mes de cierre
                     probabilidad_valor = f"{item.probabilidad_cierre}%" if item.probabilidad_cierre else "100%"
                     months[mes - 1] = probabilidad_valor
-            except (ValueError, TypeError):
-                pass
+                    print(f"DEBUG: Setting month {mes} to {probabilidad_valor}")
+            except (ValueError, TypeError) as e:
+                print(f"DEBUG: Error converting mes_cierre: {e}")
+        
+        print(f"DEBUG: Final months array: {months}")
         row_data.extend(months)
         
         if OPENPYXL_AVAILABLE:
