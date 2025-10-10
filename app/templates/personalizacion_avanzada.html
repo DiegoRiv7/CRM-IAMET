@@ -1890,6 +1890,11 @@
             // Update active state using CSS classes with immediate visual feedback
             document.querySelectorAll('.theme-option').forEach(option => {
                 option.classList.remove('active');
+                // Limpiar estilos inline previos
+                option.style.transform = '';
+                option.style.borderColor = '';
+                option.style.backgroundColor = '';
+                option.style.boxShadow = '';
             });
             
             // Find and activate the selected theme option
@@ -1901,8 +1906,14 @@
                 // Force immediate visual feedback
                 selectedOption.style.transform = 'translateY(-2px) scale(1.05)';
                 selectedOption.style.borderColor = 'var(--apple-blue)';
+                selectedOption.style.backgroundColor = 'rgba(0, 122, 255, 0.2)';
+                selectedOption.style.boxShadow = '0 0 0 2px rgba(0, 122, 255, 0.3)';
                 setTimeout(() => {
+                    // Mantener el color pero quitar solo la escala
                     selectedOption.style.transform = 'translateY(-2px)';
+                    selectedOption.style.borderColor = 'var(--apple-blue)';
+                    selectedOption.style.backgroundColor = 'rgba(0, 122, 255, 0.2)';
+                    selectedOption.style.boxShadow = '0 0 0 2px rgba(0, 122, 255, 0.3)';
                 }, 150);
             }
 

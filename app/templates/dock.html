@@ -2472,6 +2472,11 @@ window.setDockPosition = function(position) {
     // Update active state for dock options (para el modal de configuración)
     document.querySelectorAll('.dock-option').forEach(option => {
         option.classList.remove('active');
+        // Limpiar estilos inline previos
+        option.style.transform = '';
+        option.style.borderColor = '';
+        option.style.backgroundColor = '';
+        option.style.boxShadow = '';
     });
     
     // Set active state for selected option with immediate visual feedback
@@ -2486,7 +2491,11 @@ window.setDockPosition = function(position) {
         selectedOption.style.backgroundColor = 'rgba(0, 122, 255, 0.2)';
         selectedOption.style.boxShadow = '0 0 0 2px rgba(0, 122, 255, 0.3)';
         setTimeout(() => {
+            // Mantener el color pero quitar solo la escala
             selectedOption.style.transform = 'translateY(-2px)';
+            selectedOption.style.borderColor = 'var(--apple-blue)';
+            selectedOption.style.backgroundColor = 'rgba(0, 122, 255, 0.2)';
+            selectedOption.style.boxShadow = '0 0 0 2px rgba(0, 122, 255, 0.3)';
         }, 150);
     } else {
         console.log('No dock option found for position:', position);
