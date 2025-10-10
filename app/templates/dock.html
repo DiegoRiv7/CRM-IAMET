@@ -2374,14 +2374,25 @@ window.addEventListener('error', function(e) {
         // Get current dock position from localStorage or default to bottom
         const currentPosition = localStorage.getItem('dockPosition') || 'bottom';
         
-        // Show only the current dock
-        const allDocks = ['dock-left', 'dock-right', 'dock-top', 'dock-bottom'];
-        allDocks.forEach(dockId => {
-            const dock = document.getElementById(dockId);
-            if (dock) {
-                dock.style.display = dockId === `dock-${currentPosition}` ? 'flex' : 'none';
-            }
-        });
+        // Aplicar estilos para mostrar solo el dock seleccionado
+        applyDockPosition(currentPosition);
     });
+    
+    function applyDockPosition(position) {
+        // Remover estilos anteriores si existen
+        const existingStyle = document.getElementById('dock-position-style');
+        if (existingStyle) {
+            existingStyle.remove();
+        }
+        
+        // Crear nuevo estilo para la posición del dock
+        const style = document.createElement('style');
+        style.id = 'dock-position-style';
+        style.textContent = `
+            .macos-dock { opacity: 0 !important; visibility: hidden !important; }
+            #dock-${position} { opacity: 1 !important; visibility: visible !important; }
+        `;
+        document.head.appendChild(style);
+    }
 })();
 </script>
