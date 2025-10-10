@@ -1405,14 +1405,47 @@
         }
 
         function openAvatarSettings() {
+            console.log('Abriendo configuración de avatar...');
+            
+            // Mostrar el modal
+            const modal = document.getElementById('avatarModal');
+            if (!modal) {
+                console.error('No se encontró el modal de avatar');
+                return;
+            }
+            
             showModal('avatarModal');
-            // Initialize avatar system when modal opens
+            
+            // Inicializar el sistema de avatar después de que el modal esté visible
             setTimeout(() => {
                 try {
+                    console.log('Inicializando sistema de avatar...');
                     initializeAvatarSystem();
-                    console.log('Avatar system initialized');
+                    
+                    // Asegurarse de que los botones sean visibles
+                    const uploadButton = document.querySelector('.avatar-section .btn-primary');
+                    if (uploadButton) {
+                        uploadButton.style.display = 'flex';
+                        uploadButton.style.visibility = 'visible';
+                        uploadButton.style.opacity = '1';
+                        uploadButton.style.position = 'relative';
+                        uploadButton.style.zIndex = '100';
+                    }
+                    
+                    const saveButton = document.querySelector('.avatar-chooser .btn-primary');
+                    if (saveButton) {
+                        saveButton.style.display = 'flex';
+                        saveButton.style.visibility = 'visible';
+                        saveButton.style.opacity = '1';
+                        saveButton.style.position = 'relative';
+                        saveButton.style.zIndex = '100';
+                    }
+                    
+                    console.log('Sistema de avatar inicializado correctamente');
                 } catch (error) {
-                    console.error('Error initializing avatar system:', error);
+                    console.error('Error al inicializar el sistema de avatar:', error);
+                    // Mostrar un mensaje de error al usuario
+                    showNotification('Error al cargar la configuración de avatar', 'error');
                 }
             }, 100);
         }
