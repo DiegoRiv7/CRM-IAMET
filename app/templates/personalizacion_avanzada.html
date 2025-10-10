@@ -627,6 +627,11 @@
             --preview-header: #f5faff;
         }
         
+        .white-preview {
+            --preview-bg: #ffffff;
+            --preview-header: #f8f9fa;
+        }
+        
         .theme-preview-large {
             width: 120px;
             height: 80px;
@@ -635,15 +640,6 @@
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        
-        .dark-preview {
-            background: linear-gradient(to bottom, #1D1D1F 0%, #2C2C2E 100%);
-        }
-        
-        .light-preview {
-            background: linear-gradient(to bottom, #FFF5F8 0%, #FFE8EF 100%);
-        }
-        
         .preview-header {
             height: 20px;
             background: rgba(255, 255, 255, 0.1);
@@ -1163,6 +1159,15 @@
                                 </div>
                             </div>
                             <span>Azul</span>
+                        </div>
+                        <div class="theme-option" onclick="applyTheme('white')">
+                            <div class="theme-preview-large white-preview">
+                                <div class="preview-header"></div>
+                                <div class="preview-content">
+                                    <div class="preview-dock bottom"></div>
+                                </div>
+                            </div>
+                            <span>Blanco</span>
                         </div>
                     </div>
                 </div>
@@ -1708,7 +1713,8 @@
                 'dark': 'Oscuro',
                 'light': 'Claro',
                 'pink': 'Rosa',
-                'blue': 'Azul'
+                'blue': 'Azul',
+                'white': 'Blanco'
             };
             showNotification(`Tema cambiado a ${themeNames[theme] || theme}`, 'success');
         }
