@@ -61,22 +61,49 @@
     </div>
 
     <!-- Acciones de Sincronización -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-sync"></i> 🎯 Sincronización Completa (Recomendado)</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Sincronización bidireccional completa:</strong> Importa nuevas oportunidades, actualiza existentes, detecta perdidas y limpia datos incorrectos.</p>
+                    <ul class="list-unstyled">
+                        <li>✅ Importa oportunidades nuevas de Bitrix24</li>
+                        <li>🔄 Actualiza datos modificados (títulos, montos, estados)</li>
+                        <li>❌ Detecta y marca oportunidades perdidas</li>
+                        <li>🧹 Identifica oportunidades huérfanas (eliminadas en Bitrix24)</li>
+                        <li>📊 Proporciona estadísticas completas</li>
+                    </ul>
+                    <form method="post" onsubmit="return confirm('¿Ejecutar sincronización completa? Esto revisará todas las oportunidades y puede tomar varios minutos.')">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="full_bitrix_sync">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sync"></i> Sincronización Completa
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
-                    <h5>❌ Sincronizar Oportunidades Perdidas</h5>
+                    <h5>❌ Solo Detectar Perdidas</h5>
                 </div>
                 <div class="card-body">
-                    <p>Revisa todas las oportunidades y detecta cuáles están marcadas como perdidas en Bitrix24.</p>
+                    <p>Solo revisa oportunidades existentes y detecta cuáles están marcadas como perdidas en Bitrix24.</p>
                     <p class="text-muted small">
-                        <strong>Recomendado:</strong> Ejecuta esto primero para limpiar oportunidades perdidas que no se detectaron antes.
+                        <strong>Uso específico:</strong> Si solo quieres detectar perdidas sin importar nuevas.
                     </p>
-                    <form method="post" onsubmit="return confirm('¿Sincronizar estados de oportunidades perdidas? Esto puede tomar varios minutos.')">
+                    <form method="post" onsubmit="return confirm('¿Solo detectar perdidas? (Recomendamos usar Sincronización Completa)')">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="sync_lost_opportunities">
                         <button type="submit" class="btn btn-danger">
-                            <i class="fas fa-search"></i> Detectar Perdidas
+                            <i class="fas fa-search"></i> Solo Perdidas
                         </button>
                     </form>
                 </div>
@@ -152,11 +179,14 @@
                         <p class="mt-2"><strong>Configurar webhooks:</strong></p>
                         <code>python manage.py setup_bitrix_webhooks --webhook-url https://tudominio.com/app/bitrix/webhook/ --bitrix-webhook https://tubitrix.bitrix24.mx/rest/123/abc123/</code>
                         
-                        <p class="mt-2"><strong>Sincronizar oportunidades perdidas:</strong></p>
-                        <code>python manage.py sync_lost_opportunities</code>
+                        <p class="mt-2"><strong>Sincronización completa (recomendado):</strong></p>
+                        <code>docker-compose exec web python manage.py full_bitrix_sync</code>
                         
-                        <p class="mt-2"><strong>Importar oportunidades:</strong></p>
-                        <code>python manage.py import_bitrix_opportunities</code>
+                        <p class="mt-2"><strong>Solo detectar perdidas:</strong></p>
+                        <code>docker-compose exec web python manage.py sync_lost_opportunities</code>
+                        
+                        <p class="mt-2"><strong>Solo importar nuevas:</strong></p>
+                        <code>docker-compose exec web python manage.py import_bitrix_opportunities</code>
                     </div>
                 </div>
             </div>

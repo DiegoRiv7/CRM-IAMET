@@ -9244,6 +9244,37 @@ def bitrix_sync_admin(request):
             except Exception as e:
                 messages.error(request, f'Error durante la sincronización: {str(e)}')
         
+        elif action == 'full_bitrix_sync':
+            # Ejecutar sincronización completa bidireccional
+            try:
+                from django.core.management import call_command
+                from io import StringIO
+                
+                # Capturar la salida del comando
+                out = StringIO()
+                call_command('full_bitrix_sync', stdout=out)
+                output = out.getvalue()
+                
+                # Extraer estadísticas del output
+                lines = output.split('\n')
+                for line in lines:
+                    if 'Nuevas importadas:' in line:
+                        new_count = line.split(':')[-1].strip()
+                    elif 'Actualizadas:' in line:
+                        updated_count = line.split(':')[-1].strip()
+                    elif 'Perdidas detectadas:' in line:
+                        lost_count = line.split(':')[-1].strip()
+                
+                messages.success(
+                    request, 
+                    f'Sincronización completa terminada. Nuevas: {new_count if "new_count" in locals() else "0"}, '
+                    f'Actualizadas: {updated_count if "updated_count" in locals() else "0"}, '
+                    f'Perdidas: {lost_count if "lost_count" in locals() else "0"}'
+                )
+                    
+            except Exception as e:
+                messages.error(request, f'Error durante la sincronización completa: {str(e)}')
+        
         return redirect('bitrix-sync-admin')
     
     # GET request - mostrar estadísticas
