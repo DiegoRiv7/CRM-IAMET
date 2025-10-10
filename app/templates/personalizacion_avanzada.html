@@ -347,6 +347,8 @@
             overflow: hidden;
             border: 1px solid var(--apple-separator);
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 10000;
         }
         
         .light-theme .modal-content {
@@ -397,6 +399,10 @@
             padding: 0 28px 28px;
             overflow-y: auto;
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
         }
         
         /* Avatar Modal Styles */
@@ -1109,11 +1115,11 @@
                     
                     <div class="divider"></div>
                     
-                    <div class="avatar-section" style="width: 100%; box-sizing: border-box; margin: 20px 0; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px solid var(--apple-separator);">
-                        <h3 style="margin: 0 0 10px 0; color: var(--apple-label); font-size: 18px;">Subir Foto Personal</h3>
-                        <p style="margin: 0 0 15px 0; color: var(--apple-label-secondary);">O sube tu propia foto de perfil</p>
-                        <div style="width: 100%;">
-                            <button type="button" class="btn-primary" onclick="uploadPhoto()" style="width: 100%; padding: 14px; font-size: 16px; font-weight: 500; border: none; border-radius: 10px; background: var(--apple-blue); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
+                    <div class="avatar-section" style="width: 100%; box-sizing: border-box; margin: 20px 0; padding: 20px; background: rgba(255, 255, 255, 0.1); border-radius: 12px; border: 1px solid var(--apple-separator); position: relative; z-index: 10;">
+                        <h3 style="margin: 0 0 10px 0; color: var(--apple-label); font-size: 18px; font-weight: 600;">Subir Foto Personal</h3>
+                        <p style="margin: 0 0 15px 0; color: var(--apple-label-secondary); font-size: 14px;">O sube tu propia foto de perfil</p>
+                        <div style="width: 100%; position: relative; z-index: 10;">
+                            <button type="button" class="btn-primary" onclick="uploadPhoto()" style="width: 100%; padding: 14px; font-size: 16px; font-weight: 500; border: none; border-radius: 10px; background: var(--apple-blue); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease; position: relative; z-index: 10;">
                                 <span>📸</span> Subir Foto
                             </button>
                             <input type="file" id="avatarUpload" name="avatar" accept="image/*" style="display: none;">
@@ -1121,8 +1127,8 @@
                         </div>
                     </div>
                     
-                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--apple-separator); position: sticky; bottom: 0; background: var(--apple-background-secondary);">
-                        <button type="submit" class="btn-primary" style="width: 100%; padding: 16px; font-size: 16px; font-weight: 600; border: none; border-radius: 12px; background: var(--apple-blue); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);">
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--apple-separator); position: sticky; bottom: 0; background: var(--apple-background-secondary); z-index: 20;">
+                        <button type="submit" class="btn-primary" style="width: 100%; padding: 16px; font-size: 16px; font-weight: 600; border: none; border-radius: 12px; background: var(--apple-blue); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); position: relative; z-index: 20;">
                             <span>💾</span> Guardar Cambios
                         </button>
                     </div>
