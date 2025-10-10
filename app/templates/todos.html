@@ -294,18 +294,31 @@
 
 .report-filters-container {
     display: flex;
-    gap: 0.75rem;
-    align-items: flex-end;
+    gap: 1rem;
+    align-items: stretch; /* To make the items have the same height */
     width: 100%;
+}
+
+.filter-box {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--apple-separator);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    flex-grow: 1;
 }
 
 .report-filters-container .filter-group {
     margin-bottom: 0;
-    flex-grow: 1;
 }
 
 .report-filters-container .filter-actions {
     margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
     flex-shrink: 0;
 }
 
@@ -334,38 +347,40 @@
                 <a href="{% url 'nueva_oportunidad' %}" class="create-btn secondary">+ Nueva Oportunidad</a>
             </div>
             {% else %}
-            <div class="report-filters-container">
-                <div class="filter-group">
-                    <input type="text" class="filter-input" id="filterOportunidad" placeholder="Buscar en Oportunidad...">
-                </div>
-                <div class="filter-group">
-                    <select class="filter-input" id="filterCliente">
-                        <option value="">Todos los clientes</option>
-                        {% regroup items by cliente.nombre_empresa as clientes_grouped %}
-                        {% for cliente in clientes_grouped %}{% if cliente.grouper %}<option value="{{ cliente.grouper }}">{{ cliente.grouper }}</option>{% endif %}{% endfor %}
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <input type="number" class="filter-input" id="filterMontoMin" placeholder="Monto min">
-                </div>
-                <div class="filter-group">
-                    <input type="number" class="filter-input" id="filterMontoMax" placeholder="Monto max">
-                </div>
-                <div class="filter-group">
-                    <select class="filter-input" id="filterMesCierre">
-                        <option value="">Todos los meses</option>
-                        {% regroup items by get_mes_cierre_display as meses_grouped %}{% for mes in meses_grouped %}{% if mes.grouper %}<option value="{{ mes.grouper }}">{{ mes.grouper }}</option>{% endif %}{% endfor %}
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <input type="text" class="filter-input" id="filterContacto" placeholder="Contacto...">
-                </div>
-                <div class="filter-actions">
-                    <button class="filter-btn secondary" onclick="clearFilters()">Limpiar</button>
-                    <button class="filter-btn primary" onclick="applyFilters()">Filtrar</button>
-                    <a href="{% url 'todos' %}" class="filter-btn secondary">Salir</a>
-                </div>
-            </div>
+                        <div class="report-filters-container">
+                            <div class="filter-box">
+                                <div class="filter-group">
+                                    <input type="text" class="filter-input" id="filterOportunidad" placeholder="Buscar en Oportunidad...">
+                                </div>
+                                <div class="filter-group">
+                                    <select class="filter-input" id="filterCliente">
+                                        <option value="">Todos los clientes</option>
+                                        {% regroup items by cliente.nombre_empresa as clientes_grouped %}{% for cliente in clientes_grouped %}{% if cliente.grouper %}<option value="{{ cliente.grouper }}">{{ cliente.grouper }}</option>{% endif %}{% endfor %}
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <input type="number" class="filter-input" id="filterMontoMin" placeholder="Monto min">
+                                </div>
+                                <div class="filter-group">
+                                    <input type="number" class="filter-input" id="filterMontoMax" placeholder="Monto max">
+                                </div>
+                                <div class="filter-group">
+                                    <select class="filter-input" id="filterMesCierre">
+                                        <option value="">Todos los meses</option>
+                                        {% regroup items by get_mes_cierre_display as meses_grouped %}{% for mes in meses_grouped %}{% if mes.grouper %}<option value="{{ mes.grouper }}">{{ mes.grouper }}</option>{% endif %}{% endfor %}
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <input type="text" class="filter-input" id="filterContacto" placeholder="Contacto...">
+                                </div>
+                            </div>
+                            <div class="filter-actions">
+                                <button class="filter-btn secondary" onclick="clearFilters()">Limpiar</button>
+                                <button class="filter-btn primary" onclick="applyFilters()">Filtrar</button>
+                                <button class="filter-btn primary" id="generate-report-btn">Generar Reporte</button>
+                                <a href="{% url 'todos' %}" class="filter-btn secondary">Salir</a>
+                            </div>
+                        </div>
             {% endif %}
         </div>
 
