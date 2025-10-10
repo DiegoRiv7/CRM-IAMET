@@ -170,6 +170,18 @@
         animation: none;
     }
 
+    /* Asegurar que docks ocultos no sean interactivos */
+    .macos-dock[style*="opacity: 0"],
+    .macos-dock[style*="visibility: hidden"] {
+        pointer-events: none !important;
+        z-index: -1 !important;
+    }
+    
+    .macos-dock[style*="opacity: 0"] .dock-item,
+    .macos-dock[style*="visibility: hidden"] .dock-item {
+        pointer-events: none !important;
+    }
+
     @keyframes fadeInDock {
         0% {
             opacity: 0;

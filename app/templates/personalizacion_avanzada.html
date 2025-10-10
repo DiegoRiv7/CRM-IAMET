@@ -2421,26 +2421,44 @@
             
             console.log(`Total docks: ${allDocks.length}, Visibles: ${visibleDocks.length}`);
             
-            // Si hay más de un dock visible, algo está mal
-            if (visibleDocks.length > 1) {
-                console.warn('¡Múltiples docks visibles detectados! Corrigiendo...');
-                
-                // Ocultar todos los docks primero
-                allDocks.forEach(dock => {
+            // Obtener la posición que debería estar activa
+            const savedPosition = localStorage.getItem('dockPosition') || 'bottom';
+            const activeDock = document.getElementById(`dock-${savedPosition}`);
+            
+            // Siempre asegurar que solo el dock correcto esté habilitado
+            allDocks.forEach(dock => {
+                if (dock === activeDock) {
+                    // Este es el dock que debería estar activo
+                    dock.style.opacity = '1';
+                    dock.style.visibility = 'visible';
+                    dock.style.pointerEvents = 'auto';
+                    dock.style.zIndex = '';
+                    
+                    // Rehabilitar elementos internos
+                    const items = dock.querySelectorAll('.dock-item, .dock-separator');
+                    items.forEach(item => {
+                        item.style.pointerEvents = 'auto';
+                    });
+                } else {
+                    // Todos los demás docks deben estar completamente deshabilitados
                     dock.style.opacity = '0';
                     dock.style.visibility = 'hidden';
-                });
-                
-                // Solo mostrar el dock que debería estar visible
-                // (esto debería ser manejado por el sistema de posicionamiento existente)
-                const savedPosition = localStorage.getItem('dockPosition') || 'bottom';
-                const activeDock = document.getElementById(`dock-${savedPosition}`);
-                
-                if (activeDock) {
-                    activeDock.style.opacity = '1';
-                    activeDock.style.visibility = 'visible';
-                    console.log(`Mostrando solo dock-${savedPosition}`);
+                    dock.style.pointerEvents = 'none';
+                    dock.style.zIndex = '-1';
+                    
+                    // Deshabilitar elementos internos
+                    const items = dock.querySelectorAll('.dock-item, .dock-separator');
+                    items.forEach(item => {
+                        item.style.pointerEvents = 'none';
+                    });
                 }
+            });
+            
+            console.log(`Configurado dock-${savedPosition} como activo, otros deshabilitados`);
+            
+            // Si había múltiples docks visibles, era un problema que ya se corrigió arriba
+            if (visibleDocks.length > 1) {
+                console.warn('Se detectaron múltiples docks visibles - ya corregido');
             }
         }
         
