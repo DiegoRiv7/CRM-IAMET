@@ -12,7 +12,6 @@ urlpatterns = [
     path('bitrix/webhook/', views.bitrix_webhook_receiver, name='bitrix-webhook-handler'),
     path('bitrix/sync/', views.bitrix_sync_admin, name='bitrix-sync-admin'),
     path('bitrix/lost-opportunities/', views.bitrix_lost_opportunities, name='bitrix-lost-opportunities'),
-    path('bitrix/debug-stage-ids/', views.debug_stage_ids, name='debug-stage-ids'),
     # Página de bienvenida (será la nueva Home)
     path("home/", views.bienvenida, name="home"),
     path("", views.bienvenida, name="root_home"),

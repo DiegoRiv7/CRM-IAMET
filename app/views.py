@@ -36,6 +36,7 @@ def is_lost_opportunity(stage_id):
     Maneja múltiples formatos de stage_id:
     - '2': Formato simple
     - 'C2:11': Formato con prefijo numérico (perdido)
+    - 'C2:LOSE': Formato "Cerrar negociación" -> "Cerrado perdido"
     - 'LOSE': Formato texto
     
     NOTA: C2:NEW no es perdido, es nuevo
@@ -50,9 +51,11 @@ def is_lost_opportunity(stage_id):
         return True
     elif stage_id == 'LOSE':  # Formato texto
         return True
+    elif stage_id == 'C2:LOSE':  # Formato "Cerrar negociación" -> "Cerrado perdido"
+        return True
     elif stage_id.startswith('C2:'):
         # Solo considerar perdido si después de C2: hay un número
-        # C2:NEW = nuevo, C2:11 = perdido
+        # C2:NEW = nuevo, C2:11 = perdido, C2:LOSE = perdido (ya manejado arriba)
         try:
             suffix = stage_id[3:]  # Obtener la parte después de 'C2:'
             int(suffix)  # Si es un número, es perdido
@@ -3765,15 +3768,6 @@ def bitrix_webhook_receiver(request):
                     # Obtener el estado de Bitrix24
                     bitrix_stage_id = deal_details.get('STAGE_ID')
                     print(f"BITRIX WEBHOOK: Raw STAGE_ID: {bitrix_stage_id}", flush=True)
-                    print(f"BITRIX WEBHOOK: STAGE_ID Type: {type(bitrix_stage_id)}", flush=True)
-                    
-                    # Log para capturar todos los stage_ids únicos
-                    import os
-                    log_file = '/tmp/bitrix_stage_ids.log'
-                    with open(log_file, 'a') as f:
-                        f.write(f"UPDATE - Deal: {existing_opportunity.oportunidad} | STAGE_ID: {bitrix_stage_id} | Timestamp: {timezone.now()}\n")
-                    
-                    print(f"BITRIX WEBHOOK: All Deal Details: {deal_details}", flush=True)
                     
                     # Verificar si la oportunidad está en "Cerrado Perdido"
                     # Formatos posibles: '2', 'C2:11', 'LOSE', etc.
@@ -3861,15 +3855,6 @@ def bitrix_webhook_receiver(request):
                     # Obtener el estado de Bitrix24
                     bitrix_stage_id = deal_details.get('STAGE_ID')
                     print(f"BITRIX WEBHOOK: Raw STAGE_ID for new opportunity: {bitrix_stage_id}", flush=True)
-                    print(f"BITRIX WEBHOOK: STAGE_ID Type for new: {type(bitrix_stage_id)}", flush=True)
-                    
-                    # Log para capturar todos los stage_ids únicos
-                    import os
-                    log_file = '/tmp/bitrix_stage_ids.log'
-                    with open(log_file, 'a') as f:
-                        f.write(f"NEW - Deal: {deal_details.get('TITLE')} | STAGE_ID: {bitrix_stage_id} | Timestamp: {timezone.now()}\n")
-                    
-                    print(f"BITRIX WEBHOOK: All Deal Details for new: {deal_details}", flush=True)
                     
                     # Verificar si la nueva oportunidad está en "Cerrado Perdido"
                     is_lost_status_new = is_lost_opportunity(bitrix_stage_id)
@@ -9269,17 +9254,6 @@ def handle_lost_opportunity(opportunity, action='log_only'):
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
-@login_required
-def debug_stage_ids(request):
-    """Vista temporal para ver todos los stage_ids capturados"""
-    try:
-        with open('/tmp/bitrix_stage_ids.log', 'r') as f:
-            log_content = f.read()
-    except FileNotFoundError:
-        log_content = "No hay logs aún"
-    
-    return HttpResponse(f"<pre>{log_content}</pre>", content_type='text/html')
-
 @login_required  
 def bitrix_lost_opportunities(request):
     """
