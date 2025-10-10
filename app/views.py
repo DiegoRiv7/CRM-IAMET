@@ -2372,31 +2372,42 @@ def exportar_oportunidades_csv(request):
         )
         
         # Define headers according to the format in the images
-        headers = [
+        main_headers = [
             'OPORTUNIDAD', 'AREA', 'CONTACTO', 'ZEBRA', 'PANDUIT', 'APC', 'AVIGILION', 
             'GENETEC', 'AXIS', 'Desarrollo APP', 'ELLINEATE', 'POLIZA', 'CISCO'
         ]
         
-        # Add quarterly and monthly columns
-        quarterly_headers = ['Q1', 'Q2', 'Q3', 'Q4']
+        # Add quarterly headers (each quarter will have 3 month columns)
+        quarterly_headers = ['Q1', '', '', 'Q2', '', '', 'Q3', '', '', 'Q4', '', '']
         monthly_headers = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC']
         
-        headers.extend(quarterly_headers)
-        headers.extend(monthly_headers)
-        
-        # Write headers
-        for col, header in enumerate(headers, 1):
+        # Create first row with main headers + quarterly headers
+        first_row_headers = main_headers + quarterly_headers
+        for col, header in enumerate(first_row_headers, 1):
             cell = ws.cell(row=1, column=col, value=header)
             cell.font = header_font
             cell.fill = header_fill
             cell.alignment = header_alignment
             cell.border = border
+        
+        # Create second row with monthly headers (only for the quarterly section)
+        second_row_start_col = len(main_headers) + 1
+        for col, month in enumerate(monthly_headers, second_row_start_col):
+            cell = ws.cell(row=2, column=col, value=month)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+            cell.border = border
+        
+        # Fill empty cells in second row for main headers
+        for col in range(1, second_row_start_col):
+            cell = ws.cell(row=2, column=col, value='')
+            cell.border = border
     else:
-        # Fallback to CSV
+        # Fallback to CSV - simplified structure
         headers = [
             'OPORTUNIDAD', 'AREA', 'CONTACTO', 'ZEBRA', 'PANDUIT', 'APC', 'AVIGILION', 
             'GENETEC', 'AXIS', 'Desarrollo APP', 'ELLINEATE', 'POLIZA', 'CISCO',
-            'Q1', 'Q2', 'Q3', 'Q4',
             'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC'
         ]
         
@@ -2414,32 +2425,52 @@ def exportar_oportunidades_csv(request):
         'ELLINEATE': 11, 'POLIZA': 12, 'CISCO': 13
     }
         
-    # Write data rows
-    row = 2
+    # Write data rows (start at row 3 for Excel due to double header, row 2 for CSV)
+    row = 3 if OPENPYXL_AVAILABLE else 2
     for item in items:
         # Get cotization details for this opportunity
         cotizaciones = item.cotizaciones.all()
         
-        # Calculate totals by brand from cotization details
-        brand_totals = {}
-        total_amount = 0
+        # Para cada oportunidad, el monto va en la columna del producto/área de la oportunidad
+        # No en las cotizaciones, sino en el producto/área de la oportunidad misma
+        oportunidad_producto = item.get_producto_display() if hasattr(item, 'get_producto_display') else ''
+        oportunidad_monto = float(item.monto) if item.monto else 0
         
-        for cotizacion in cotizaciones:
-            for detalle in cotizacion.detalles.all():
-                # Get brand from marca field or try to detect from product name
-                marca = getattr(detalle, 'marca', None)
-                if not marca and detalle.nombre_producto:
-                    # Try to detect brand from product name
-                    producto_upper = detalle.nombre_producto.upper()
-                    for brand in brand_columns.keys():
-                        if brand.upper() in producto_upper:
-                            marca = brand
-                            break
+        # Mapear el producto de la oportunidad a las marcas disponibles
+        brand_totals = {}
+        if oportunidad_producto and oportunidad_monto > 0:
+            # Detectar marca por el producto de la oportunidad
+            producto_upper = oportunidad_producto.upper()
+            marca_detectada = None
+            
+            for brand in brand_columns.keys():
+                if brand.upper() in producto_upper:
+                    marca_detectada = brand
+                    break
+            
+            # Si no se detecta por nombre, usar mapeo específico
+            if not marca_detectada:
+                producto_mappings = {
+                    'ZEBRA': ['ZEBRA'],
+                    'PANDUIT': ['PANDUIT'],
+                    'APC': ['APC', 'UPS'],
+                    'AVIGILION': ['AVIGILION', 'CCTV', 'CAMARA'],
+                    'GENETEC': ['GENETEC', 'SEGURIDAD'],
+                    'AXIS': ['AXIS'],
+                    'Desarrollo APP': ['APP', 'DESARROLLO', 'SOFTWARE'],
+                    'ELLINEATE': ['ELLINEATE', 'CABLEADO'],
+                    'POLIZA': ['POLIZA', 'SEGURO'],
+                    'CISCO': ['CISCO', 'NETWORKING', 'RED']
+                }
                 
-                if marca and marca in brand_columns:
-                    total_line = float(detalle.cantidad) * float(detalle.precio_con_descuento or detalle.precio_unitario)
-                    brand_totals[marca] = brand_totals.get(marca, 0) + total_line
-                    total_amount += total_line
+                for brand, keywords in producto_mappings.items():
+                    if any(keyword in producto_upper for keyword in keywords):
+                        marca_detectada = brand
+                        break
+            
+            # Si se detectó una marca, asignar el monto
+            if marca_detectada:
+                brand_totals[marca_detectada] = oportunidad_monto
         
         # Prepare row data
         row_data = [
@@ -2453,25 +2484,15 @@ def exportar_oportunidades_csv(request):
             amount = brand_totals.get(brand, 0)
             row_data.append(f"${amount:,.2f}" if amount > 0 else '')
         
-        # Add quarterly data
-        quarters = ['', '', '', '']
-        if item.mes_cierre:
-            try:
-                mes = int(item.mes_cierre)
-                quarter = ((mes - 1) // 3) + 1  # Q1: 1-3, Q2: 4-6, Q3: 7-9, Q4: 10-12
-                if 1 <= quarter <= 4:
-                    quarters[quarter - 1] = f"{item.probabilidad_cierre}%" if item.probabilidad_cierre else "100%"
-            except (ValueError, TypeError):
-                pass
-        row_data.extend(quarters)
-        
-        # Add monthly data
+        # Add monthly data - LA PROBABILIDAD VA EN EL MES DE CIERRE
         months = [''] * 12
         if item.mes_cierre:
             try:
                 mes = int(item.mes_cierre)
                 if 1 <= mes <= 12:
-                    months[mes - 1] = f"{item.probabilidad_cierre}%" if item.probabilidad_cierre else "100%"
+                    # Poner la probabilidad en el mes de cierre
+                    probabilidad_valor = f"{item.probabilidad_cierre}%" if item.probabilidad_cierre else "100%"
+                    months[mes - 1] = probabilidad_valor
             except (ValueError, TypeError):
                 pass
         row_data.extend(months)
@@ -2481,7 +2502,7 @@ def exportar_oportunidades_csv(request):
             for col, value in enumerate(row_data, 1):
                 cell = ws.cell(row=row, column=col, value=value)
                 cell.border = border
-                # Format currency columns
+                # Format currency columns (brand columns are 4-13)
                 if col >= 4 and col <= 13 and value and value != '':
                     try:
                         numeric_value = float(value.replace('$', '').replace(',', ''))
@@ -2496,8 +2517,9 @@ def exportar_oportunidades_csv(request):
         row += 1
     
     if OPENPYXL_AVAILABLE:
-        # Auto-adjust column widths
-        for col in range(1, len(headers) + 1):
+        # Auto-adjust column widths (13 main headers + 12 month columns = 25 total)
+        total_columns = 13 + 12  # main headers + monthly columns
+        for col in range(1, total_columns + 1):
             column_letter = get_column_letter(col)
             ws.column_dimensions[column_letter].width = 12
             
