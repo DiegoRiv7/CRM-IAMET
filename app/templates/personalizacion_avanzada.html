@@ -1136,11 +1136,13 @@
                         </div>
                     </div>
                     
-                    <div class="avatar-save-container" style="margin-top: 30px; padding: 20px; background: var(--apple-background-secondary); border-top: 1px solid var(--apple-separator); position: sticky; bottom: 0; left: 0; right: 0; z-index: 1000; display: flex; justify-content: center;">
-                        <button type="submit" class="btn btn-primary" style="width: 100%; max-width: 400px; padding: 16px; font-size: 16px; font-weight: 600; border: none; border-radius: 12px; background: var(--apple-blue); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);">
+                    <!-- Botón de guardar simplificado -->
+                    <div style="position: fixed; bottom: 20px; left: 0; right: 0; padding: 0 20px; z-index: 9999;">
+                        <button type="submit" class="btn-primary" style="width: 100%; max-width: 600px; margin: 0 auto; padding: 16px; font-size: 16px; font-weight: 600; border: none; border-radius: 12px; background: var(--apple-blue); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);">
                             <span>💾</span> Guardar Cambios
                         </button>
                     </div>
+                    <div style="height: 80px;"></div> <!-- Espacio para el botón fijo -->
                 </form>
             </div>
         </div>
@@ -1434,20 +1436,15 @@
                     
                     // Asegurarse de que el botón de guardar sea visible
                     const saveButton = document.querySelector('.avatar-chooser .btn-primary');
-                    const saveContainer = document.querySelector('.avatar-save-container');
-                    
                     if (saveButton) {
                         saveButton.style.display = 'flex';
                         saveButton.style.visibility = 'visible';
                         saveButton.style.opacity = '1';
-                        saveButton.style.position = 'relative';
-                        saveButton.style.zIndex = '1000';
-                    }
-                    
-                    if (saveContainer) {
-                        saveContainer.style.display = 'flex';
-                        saveContainer.style.visibility = 'visible';
-                        saveContainer.style.opacity = '1';
+                        saveButton.style.position = 'fixed';
+                        saveButton.style.zIndex = '9999';
+                        saveButton.style.bottom = '20px';
+                        saveButton.style.left = '50%';
+                        saveButton.style.transform = 'translateX(-50%)';
                     }
                     
                     console.log('Sistema de avatar inicializado correctamente');
