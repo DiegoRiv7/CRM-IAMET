@@ -117,8 +117,8 @@
     }
 
     .dock-item .dock-icon {
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
         color: #EBEBF5;
         transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
@@ -213,10 +213,10 @@
         transition: none !important;
     }
 
-    /* Solo aplicar animación de entrada después del setup */
+    /* Solo aplicar animación de entrada después del setup - Más sutil */
     .macos-dock.dock-compact:not(.expanded).dock-ready {
         opacity: 0;
-        animation: fadeInDock 0.4s ease-out 0.1s forwards;
+        animation: fadeInDock 0.25s ease-out 0.05s forwards;
         transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
@@ -961,8 +961,8 @@
     
     /* Tamaño de iconos SVG en dock expandido - MEJORADO */
     nav.macos-dock.dock-compact.expanded .dock-item .dock-icon {
-        width: 40px !important;
-        height: 40px !important;
+        width: 44px !important;
+        height: 44px !important;
         color: #EBEBF5 !important;
     }
 
@@ -995,8 +995,8 @@
         opacity: 1 !important;
         filter: drop-shadow(0 0 12px rgba(0, 122, 255, 0.8)) 
                drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4)) !important;
-        width: 32px !important;
-        height: 32px !important;
+        width: 34px !important;
+        height: 34px !important;
         transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
     }
     
