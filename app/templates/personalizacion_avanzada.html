@@ -1109,11 +1109,11 @@
                     
                     <div class="divider"></div>
                     
-                    <div class="avatar-section" style="width: 100%; box-sizing: border-box;">
-                        <h3>Subir Foto Personal</h3>
-                        <p>O sube tu propia foto de perfil</p>
+                    <div class="avatar-section" style="width: 100%; box-sizing: border-box; margin: 20px 0; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px solid var(--apple-separator);">
+                        <h3 style="margin: 0 0 10px 0; color: var(--apple-label); font-size: 18px;">Subir Foto Personal</h3>
+                        <p style="margin: 0 0 15px 0; color: var(--apple-label-secondary);">O sube tu propia foto de perfil</p>
                         <div style="width: 100%;">
-                            <button type="button" class="btn-primary" onclick="uploadPhoto()" style="width: 100%; padding: 12px; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <button type="button" class="btn-primary" onclick="uploadPhoto()" style="width: 100%; padding: 14px; font-size: 16px; font-weight: 500; border: none; border-radius: 10px; background: var(--apple-blue); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
                                 <span>📸</span> Subir Foto
                             </button>
                             <input type="file" id="avatarUpload" name="avatar" accept="image/*" style="display: none;">
@@ -1121,8 +1121,8 @@
                         </div>
                     </div>
                     
-                    <div style="margin-top: 20px; text-align: center; padding: 16px 0; border-top: 1px solid var(--apple-separator); position: sticky; bottom: 0; background: var(--apple-background-secondary);">
-                        <button type="submit" class="btn-primary" style="width: 100%; padding: 14px; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--apple-separator); position: sticky; bottom: 0; background: var(--apple-background-secondary);">
+                        <button type="submit" class="btn-primary" style="width: 100%; padding: 16px; font-size: 16px; font-weight: 600; border: none; border-radius: 12px; background: var(--apple-blue); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);">
                             <span>💾</span> Guardar Cambios
                         </button>
                     </div>
@@ -1393,7 +1393,12 @@
             showModal('avatarModal');
             // Initialize avatar system when modal opens
             setTimeout(() => {
-                initializeAvatarSystem();
+                try {
+                    initializeAvatarSystem();
+                    console.log('Avatar system initialized');
+                } catch (error) {
+                    console.error('Error initializing avatar system:', error);
+                }
             }, 100);
         }
 
