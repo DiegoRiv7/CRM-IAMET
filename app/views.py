@@ -2294,9 +2294,9 @@ def generate_quote_pdf(request, pk):
 @login_required
 def exportar_oportunidades_csv(request):
     if is_supervisor(request.user):
-        items = TodoItem.objects.select_related('usuario', 'cliente').prefetch_related('cotizaciones').all()
+        items = TodoItem.objects.select_related('usuario', 'cliente').all()
     else:
-        items = TodoItem.objects.select_related('usuario', 'cliente').prefetch_related('cotizaciones').filter(usuario=request.user)
+        items = TodoItem.objects.select_related('usuario', 'cliente').filter(usuario=request.user)
 
     # Re-aplicar los filtros del request GET
     oportunidad_filter = request.GET.get('filterOportunidad', '').strip()
@@ -2341,51 +2341,26 @@ def exportar_oportunidades_csv(request):
             items = items.order_by('-probabilidad_cierre')
 
     response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="reporte_detallado_oportunidades.csv"'
+    response['Content-Disposition'] = 'attachment; filename="reporte_oportunidades.csv"'
 
     writer = csv.writer(response)
     writer.writerow([
-        'Oportunidad ID', 'Oportunidad', 'Cliente', 'Contacto', 'Vendedor', 'Área',
-        'Producto', 'Monto Oportunidad', 'Probabilidad', 'Mes Cierre Oportunidad',
-        'Comentarios Oportunidad', 'Cotización ID', 'Cotización Título', 'Cotización Total',
-        'Cotización Fecha'
+        'Oportunidad', 'Cliente', 'Contacto', 'Vendedor', 'Área',
+        'Producto', 'Monto', 'Probabilidad', 'Mes Cierre'
     ])
 
     for item in items:
-        if item.cotizaciones.exists():
-            for cotizacion in item.cotizaciones.all():
-                writer.writerow([
-                    item.id,
-                    item.oportunidad,
-                    item.cliente.nombre_empresa if item.cliente else 'N/A',
-                    item.contacto,
-                    item.usuario.get_full_name() or item.usuario.username,
-                    item.get_area_display(),
-                    item.get_producto_display(),
-                    item.monto,
-                    item.probabilidad_cierre,
-                    item.get_mes_cierre_display(),
-                    item.comentarios,
-                    cotizacion.id,
-                    cotizacion.titulo,
-                    cotizacion.total,
-                    cotizacion.fecha_creacion.strftime('%Y-%m-%d')
-                ])
-        else:
-            writer.writerow([
-                item.id,
-                item.oportunidad,
-                item.cliente.nombre_empresa if item.cliente else 'N/A',
-                item.contacto,
-                item.usuario.get_full_name() or item.usuario.username,
-                item.get_area_display(),
-                item.get_producto_display(),
-                item.monto,
-                item.probabilidad_cierre,
-                item.get_mes_cierre_display(),
-                item.comentarios,
-                'N/A', 'N/A', 'N/A', 'N/A'
-            ])
+        writer.writerow([
+            item.oportunidad,
+            item.cliente.nombre_empresa if item.cliente else 'N/A',
+            item.contacto,
+            item.usuario.get_full_name() or item.usuario.username,
+            item.get_area_display(),
+            item.get_producto_display(),
+            item.monto,
+            item.probabilidad_cierre,
+            item.get_mes_cierre_display(),
+        ])
 
     return response
 
