@@ -2393,24 +2393,16 @@ def exportar_oportunidades_csv(request):
             cell.border = border
             current_col += 1
         
-        # Write Q1-Q4 headers in row 1 (each spanning 3 columns)
+        # Write Q1-Q4 headers in row 1 (each will span 3 columns via merge)
         q_start_col = current_col
         for i, quarter in enumerate(quarterly_headers):
-            # Set Q header in first column of the 3-column span
+            # Set Q header only in the first column of each 3-column group
             col_pos = q_start_col + (i * 3)
             cell = ws.cell(row=1, column=col_pos, value=quarter)
             cell.font = header_font
             cell.fill = header_fill
             cell.alignment = header_alignment
             cell.border = border
-            
-            # Set empty styled cells for the next 2 columns
-            for offset in [1, 2]:
-                cell = ws.cell(row=1, column=col_pos + offset, value='')
-                cell.font = header_font
-                cell.fill = header_fill
-                cell.alignment = header_alignment
-                cell.border = border
         
         # ROW 2: Write empty cells for main headers and monthly headers
         current_col = 1
@@ -2430,7 +2422,19 @@ def exportar_oportunidades_csv(request):
             cell.border = border
             current_col += 1
         
-        # MERGE CELLS after all content is set
+        # Apply styling to all cells that will be merged for Q headers
+        for i in range(4):  # Q1, Q2, Q3, Q4
+            start_col = q_start_col + (i * 3)
+            end_col = start_col + 2
+            # Apply style to the 2 additional cells that will be merged
+            for col in range(start_col + 1, end_col + 1):
+                cell = ws.cell(row=1, column=col, value='')
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = header_alignment
+                cell.border = border
+        
+        # MERGE CELLS after all content and styling is set
         # Merge main headers vertically (rows 1-2)
         for col in range(1, len(main_headers) + 1):
             ws.merge_cells(start_row=1, start_column=col, end_row=2, end_column=col)
