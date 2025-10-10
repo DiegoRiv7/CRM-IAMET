@@ -846,7 +846,19 @@
         .btn-primary {
             background: var(--apple-blue);
             color: white;
-            flex: 1;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
         }
         
         .btn-primary:hover {
@@ -1097,19 +1109,21 @@
                     
                     <div class="divider"></div>
                     
-                    <div class="avatar-section">
+                    <div class="avatar-section" style="width: 100%; box-sizing: border-box;">
                         <h3>Subir Foto Personal</h3>
                         <p>O sube tu propia foto de perfil</p>
-                        <button type="button" class="btn-primary" onclick="uploadPhoto()">
-                            📸 Subir Foto
-                        </button>
-                        <input type="file" id="avatarUpload" name="avatar" accept="image/*" style="display: none;">
-                        <input type="hidden" id="avatarChoice" name="avatar_choice" value="">
+                        <div style="width: 100%;">
+                            <button type="button" class="btn-primary" onclick="uploadPhoto()" style="width: 100%; padding: 12px; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <span>📸</span> Subir Foto
+                            </button>
+                            <input type="file" id="avatarUpload" name="avatar" accept="image/*" style="display: none;">
+                            <input type="hidden" id="avatarChoice" name="avatar_choice" value="">
+                        </div>
                     </div>
                     
-                    <div style="margin-top: 20px; text-align: center; padding-top: 16px; border-top: 1px solid var(--apple-separator);">
-                        <button type="submit" class="btn-primary" style="width: 100%;">
-                            💾 Guardar Avatar
+                    <div style="margin-top: 20px; text-align: center; padding: 16px 0; border-top: 1px solid var(--apple-separator); position: sticky; bottom: 0; background: var(--apple-background-secondary);">
+                        <button type="submit" class="btn-primary" style="width: 100%; padding: 14px; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <span>💾</span> Guardar Cambios
                         </button>
                     </div>
                 </form>
