@@ -1,17 +1,10 @@
-<!DOCTYPE html>
 {% extends "base.html" %}
 {% load app_filters %}
-<!-- Add SheetJS library for Excel generation -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 {% block title %}Oportunidades{% endblock %}
 
 {% block content %}
 <style>
-    /* Add CSS for Excel report generation */
-    .excel-report {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        font-size: 12px;
     /* This page intentionally overrides the base container for a full-width layout */
     .main-content.container {
         max-width: none !important;
@@ -422,9 +415,7 @@
                                                                                             </div>                            <div class="filter-actions">
                                 <button class="filter-btn secondary" onclick="clearFilters()">Limpiar</button>
                                 <button class="filter-btn primary" onclick="applyFilters()">Filtrar</button>
-                                <button class="filter-btn primary" id="generate-report-btn" onclick="generarReporteCSV()">
-    <i class="fas fa-file-excel"></i> Generar Reporte
-</button>
+                                <button class="filter-btn primary" id="generate-report-btn" onclick="generarReporteCSV()">Generar Reporte</button>
                                 <a href="{% url 'todos' %}" class="filter-btn secondary">Salir</a>
                             </div>
                         </div>
@@ -530,140 +521,27 @@
 </div>
 
 <script>
-// Function to show notification
-function showNotification(message, type = 'info') {
-    // Remove any existing notifications
-    const existingNotification = document.querySelector('.notification');
-    if (existingNotification) {
-        existingNotification.remove();
-    }
-    
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    
-    // Add icon based on type
-    let icon = 'ℹ️';
-    if (type === 'success') icon = '✅';
-    else if (type === 'error') icon = '❌';
-    else if (type === 'warning') icon = '⚠️';
-    
-    notification.innerHTML = `${icon} ${message}`;
-    
-    // Add to DOM
-    document.body.appendChild(notification);
-    
-    // Show with animation
-    setTimeout(() => {
-        notification.classList.add('show');
-    }, 10);
-    
-    // Auto-remove after delay
-    setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => {
-            notification.remove();
-        }, 300);
-    }, 5000);
-}
-
-// Add styles for notifications
-const style = document.createElement('style');
-style.textContent = `
-.notification {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%) translateY(100px);
-    background: rgba(0, 0, 0, 0.9);
-    color: white;
-    padding: 12px 24px;
-    border-radius: 30px;
-    font-size: 14px;
-    font-weight: 500;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    z-index: 9999;
-    opacity: 0;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.notification.show {
-    transform: translateX(-50%) translateY(0);
-    opacity: 1;
-}
-
-.notification.success {
-    background: linear-gradient(135deg, #34C759, #30D158);
-}
-
-.notification.error {
-    background: linear-gradient(135deg, #FF3B30, #FF453A);
-}
-
-.notification.warning {
-    background: linear-gradient(135deg, #FF9F0A, #FF9500);
-    color: #000;
-}
-`;
-document.head.appendChild(style);
-
-
 function generarReporteCSV() {
-    // Mostrar estado de carga
-    const originalButtonText = document.getElementById('generate-report-btn').innerHTML;
-    document.getElementById('generate-report-btn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
-    document.getElementById('generate-report-btn').disabled = true;
+    const oportunidad = document.getElementById('filterOportunidad').value.trim();
+    const cliente = document.getElementById('filterCliente').value.trim();
+    const montoMin = document.getElementById('filterMontoMin').value;
+    const montoMax = document.getElementById('filterMontoMax').value;
+    const mesCierre = document.getElementById('filterMesCierre').value.trim();
+    const area = document.getElementById('filterArea').value.trim();
+    const ordenMonto = document.getElementById('filterOrdenMonto').value;
+    const ordenProbabilidad = document.getElementById('filterOrdenProbabilidad').value;
 
-    try {
-        // Obtener los valores actuales de los filtros
-        const oportunidad = document.getElementById('filterOportunidad')?.value || '';
-        const cliente = document.getElementById('filterCliente')?.value || '';
-        const montoMin = document.getElementById('filterMontoMin')?.value || '';
-        const montoMax = document.getElementById('filterMontoMax')?.value || '';
-        const mesCierre = document.getElementById('filterMesCierre')?.value || '';
-        const area = document.getElementById('filterArea')?.value || '';
-        const ordenMonto = document.getElementById('filterOrdenMonto')?.value || '';
-        const ordenProbabilidad = document.getElementById('filterOrdenProbabilidad')?.value || '';
+    const url = new URL('{% url 'exportar_oportunidades_csv' %}', window.location.origin);
+    if (oportunidad) url.searchParams.set('filterOportunidad', oportunidad);
+    if (cliente) url.searchParams.set('filterCliente', cliente);
+    if (montoMin) url.searchParams.set('filterMontoMin', montoMin);
+    if (montoMax) url.searchParams.set('filterMontoMax', montoMax);
+    if (mesCierre) url.searchParams.set('filterMesCierre', mesCierre);
+    if (area) url.searchParams.set('filterArea', area);
+    if (ordenMonto) url.searchParams.set('orden_monto', ordenMonto);
+    if (ordenProbabilidad) url.searchParams.set('orden_probabilidad', ordenProbabilidad);
 
-        // Construir la URL con los parámetros de filtro
-        const url = new URL('{% url "exportar_oportunidades_csv" %}', window.location.origin);
-        
-        // Agregar solo los filtros que tienen valor
-        if (oportunidad) url.searchParams.append('filterOportunidad', oportunidad);
-        if (cliente) url.searchParams.append('filterCliente', cliente);
-        if (montoMin) url.searchParams.append('filterMontoMin', montoMin);
-        if (montoMax) url.searchParams.append('filterMontoMax', montoMax);
-        if (mesCierre) url.searchParams.append('filterMesCierre', mesCierre);
-        if (area) url.searchParams.append('filterArea', area);
-        if (ordenMonto) url.searchParams.append('orden_monto', ordenMonto);
-        if (ordenProbabilidad) url.searchParams.append('orden_probabilidad', ordenProbabilidad);
-        
-        // Agregar parámetro para indicar que es un reporte completo
-        url.searchParams.append('periodo', 'filtrado');
-        
-        // Redirigir a la URL de exportación (esto descargará el archivo)
-        window.location.href = url.toString();
-        
-        // Mostrar notificación después de un breve retraso para dar tiempo a la descarga
-        setTimeout(() => {
-            showNotification('Reporte generado exitosamente', 'success');
-        }, 1000);
-        
-    } catch (error) {
-        console.error('Error al generar el reporte:', error);
-        showNotification('Error al generar el reporte: ' + (error.message || 'Error desconocido'), 'error');
-    } finally {
-        // Restaurar el estado del botón después de un pequeño retraso
-        setTimeout(() => {
-            document.getElementById('generate-report-btn').innerHTML = originalButtonText;
-            document.getElementById('generate-report-btn').disabled = false;
-        }, 2000);
-    }
+    window.location.href = url.toString();
 }
 
 let originalRows = [];
