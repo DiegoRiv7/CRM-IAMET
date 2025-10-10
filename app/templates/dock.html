@@ -333,7 +333,11 @@
     }
     
     /* Transparent dock - macOS-like behavior */
-    .macos-dock.dock-transparent {
+    .macos-dock.dock-transparent,
+    #dock-bottom.dock-transparent,
+    #dock-top.dock-transparent,
+    #dock-left.dock-transparent,
+    #dock-right.dock-transparent {
         background: rgba(29, 29, 31, 0.1) !important;
         backdrop-filter: blur(8px) !important;
         -webkit-backdrop-filter: blur(8px) !important;
@@ -343,7 +347,11 @@
         transition: all 0.3s ease !important;
     }
     
-    .macos-dock.dock-transparent:hover {
+    .macos-dock.dock-transparent:hover,
+    #dock-bottom.dock-transparent:hover,
+    #dock-top.dock-transparent:hover,
+    #dock-left.dock-transparent:hover,
+    #dock-right.dock-transparent:hover {
         background: rgba(29, 29, 31, 0.8) !important;
         backdrop-filter: blur(20px) !important;
         -webkit-backdrop-filter: blur(20px) !important;
@@ -352,17 +360,25 @@
             0 0 0 2px rgba(0, 122, 255, 0.3) !important,
             0 8px 32px rgba(0, 0, 0, 0.4) !important;
         opacity: 1 !important;
-        transform: scale(1.02) !important;
+        transform: scale(1.01) !important;
     }
     
     /* Light theme transparent dock */
-    .light-theme .macos-dock.dock-transparent {
+    .light-theme .macos-dock.dock-transparent,
+    .light-theme #dock-bottom.dock-transparent,
+    .light-theme #dock-top.dock-transparent,
+    .light-theme #dock-left.dock-transparent,
+    .light-theme #dock-right.dock-transparent {
         background: rgba(255, 255, 255, 0.1) !important;
         border: 1px solid rgba(255, 107, 157, 0.1) !important;
         box-shadow: 0 4px 16px rgba(255, 107, 157, 0.05) !important;
     }
     
-    .light-theme .macos-dock.dock-transparent:hover {
+    .light-theme .macos-dock.dock-transparent:hover,
+    .light-theme #dock-bottom.dock-transparent:hover,
+    .light-theme #dock-top.dock-transparent:hover,
+    .light-theme #dock-left.dock-transparent:hover,
+    .light-theme #dock-right.dock-transparent:hover {
         background: rgba(255, 240, 245, 0.95) !important;
         border: 2px solid rgba(0, 122, 255, 0.6) !important;
         box-shadow: 
@@ -371,19 +387,31 @@
     }
     
     /* Compact dock */
-    .macos-dock.dock-compact {
+    .macos-dock.dock-compact,
+    #dock-bottom.dock-compact,
+    #dock-top.dock-compact,
+    #dock-left.dock-compact,
+    #dock-right.dock-compact {
         padding: 4px !important;
         border-radius: 12px !important;
         background: rgba(29, 29, 31, 0.9) !important;
     }
     
-    .macos-dock.dock-compact .dock-item {
+    .macos-dock.dock-compact .dock-item,
+    #dock-bottom.dock-compact .dock-item,
+    #dock-top.dock-compact .dock-item,
+    #dock-left.dock-compact .dock-item,
+    #dock-right.dock-compact .dock-item {
         width: 32px !important;
         height: 32px !important;
         margin: 0 2px !important;
     }
     
-    .macos-dock.dock-compact .dock-icon {
+    .macos-dock.dock-compact .dock-icon,
+    #dock-bottom.dock-compact .dock-icon,
+    #dock-top.dock-compact .dock-icon,
+    #dock-left.dock-compact .dock-icon,
+    #dock-right.dock-compact .dock-icon {
         width: 20px !important;
         height: 20px !important;
     }
@@ -2636,12 +2664,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const currentDockType = localStorage.getItem('dockType') || 'normal';
         console.log('Applying saved dock type:', currentDockType);
         
-        const dockElements = document.querySelectorAll('.macos-dock, nav.macos-dock');
-        dockElements.forEach(dock => {
-            dock.classList.remove('dock-normal', 'dock-transparent', 'dock-compact');
-            dock.classList.add(`dock-${currentDockType}`);
-            console.log('Applied dock type class:', `dock-${currentDockType}`);
-        });
+        // Apply saved dock type using the global function
+        applyDockTypeStyles(currentDockType);
     }, 100);
 });
+
+// Global function to apply dock type styles
+window.applyDockTypeStyles = function(type) {
+    console.log('Applying dock type styles:', type);
+    
+    // Find all dock elements with more specific selectors
+    const dockElements = document.querySelectorAll('.macos-dock, nav.macos-dock, #dock-bottom, #dock-top, #dock-left, #dock-right');
+    
+    console.log('Found dock elements:', dockElements.length);
+    
+    // Remove all dock type classes
+    dockElements.forEach(dock => {
+        dock.classList.remove('dock-normal', 'dock-transparent', 'dock-compact');
+        
+        // Add the new dock type class
+        dock.classList.add(`dock-${type}`);
+        console.log('Applied class dock-' + type + ' to dock element:', dock);
+    });
+};
 </script>

@@ -2195,21 +2195,14 @@
             showNotification(`Tipo de dock cambiado a ${typeNames[type] || type}`, 'success');
         }
 
-        // Apply dock type styles to actual dock
+        // Apply dock type styles using global function from dock.html
         function applyDockTypeStyles(type) {
-            console.log('Applying dock type styles:', type);
-            
-            // Find all dock elements
-            const dockElements = document.querySelectorAll('.macos-dock, nav.macos-dock');
-            
-            // Remove all dock type classes
-            dockElements.forEach(dock => {
-                dock.classList.remove('dock-normal', 'dock-transparent', 'dock-compact');
-                
-                // Add the new dock type class
-                dock.classList.add(`dock-${type}`);
-                console.log('Applied class dock-' + type + ' to dock element');
-            });
+            // Use the global function defined in dock.html
+            if (window.applyDockTypeStyles) {
+                window.applyDockTypeStyles(type);
+            } else {
+                console.log('Global applyDockTypeStyles function not found, will be applied on page load');
+            }
         }
 
         // Dock icons functionality
