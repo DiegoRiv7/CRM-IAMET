@@ -2392,23 +2392,18 @@ def exportar_oportunidades_csv(request):
         quarterly_start_col = len(main_headers) + 1
         quarters = ['Q1', 'Q2', 'Q3', 'Q4']
         
+        # First, set all Q headers and apply styles
         for i, quarter in enumerate(quarters):
             col_start = quarterly_start_col + (i * 3)
             col_end = col_start + 2
             
-            # Set the Q header in the first cell
-            cell = ws.cell(row=1, column=col_start, value=quarter)
-            cell.font = header_font
-            cell.fill = header_fill
-            cell.alignment = header_alignment
-            cell.border = border
-            
-            # Merge cells for the quarter header (3 columns)
-            ws.merge_cells(start_row=1, start_column=col_start, end_row=1, end_column=col_end)
-            
-            # Apply border to merged cells
-            for col in range(col_start, col_end + 1):
-                cell = ws.cell(row=1, column=col)
+            # Set the Q header in the first cell and the empty cells
+            for col_offset in range(3):
+                col = col_start + col_offset
+                cell = ws.cell(row=1, column=col, value=quarter if col_offset == 0 else '')
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = header_alignment
                 cell.border = border
         
         # Create second row with monthly headers
@@ -2419,12 +2414,21 @@ def exportar_oportunidades_csv(request):
             cell.alignment = header_alignment
             cell.border = border
         
-        # Fill empty cells in second row for main headers (extend main headers vertically)
+        # Fill empty cells in second row for main headers
         for col in range(1, quarterly_start_col):
             cell = ws.cell(row=2, column=col, value='')
             cell.border = border
-            # Merge the main header cells to span both rows
+        
+        # Now apply all merges after setting all values
+        # Merge main header cells to span both rows
+        for col in range(1, quarterly_start_col):
             ws.merge_cells(start_row=1, start_column=col, end_row=2, end_column=col)
+        
+        # Merge Q headers to span 3 columns each
+        for i, quarter in enumerate(quarters):
+            col_start = quarterly_start_col + (i * 3)
+            col_end = col_start + 2
+            ws.merge_cells(start_row=1, start_column=col_start, end_row=1, end_column=col_end)
     else:
         # Fallback to CSV - simplified structure
         headers = [
