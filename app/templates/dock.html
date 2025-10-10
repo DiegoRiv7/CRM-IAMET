@@ -2402,10 +2402,19 @@ window.addEventListener('error', function(e) {
         }
     };
 
+    // Agregar funcionalidad a la función setDockPosition existente
+    // Interceptar y extender la función original
+    const originalSetDockPosition = window.setDockPosition || setDockPosition;
+    
     window.setDockPosition = function(position) {
         console.log('setDockPosition called with:', position);
         
-        // Update active state for dock options
+        // Llamar a la función original si existe
+        if (typeof originalSetDockPosition === 'function') {
+            originalSetDockPosition(position);
+        }
+        
+        // Update active state for dock options (para el modal de configuración)
         document.querySelectorAll('.dock-option').forEach(option => {
             option.classList.remove('active');
         });
@@ -2415,12 +2424,16 @@ window.addEventListener('error', function(e) {
         if (selectedOption) {
             selectedOption.classList.add('active');
             console.log('Added active class to:', selectedOption);
-        } else {
-            console.log('Could not find option for position:', position);
         }
         
-        // Apply dock position
-        window.applyDockPosition(position);
+        // Update position arrows too
+        document.querySelectorAll('.position-arrow').forEach(arrow => {
+            arrow.classList.remove('active');
+        });
+        const activeArrow = document.querySelector(`#position-${position}`);
+        if (activeArrow) {
+            activeArrow.classList.add('active');
+        }
         
         // Save preference to localStorage
         window.saveDockPosition(position);
@@ -2459,37 +2472,24 @@ window.addEventListener('error', function(e) {
 
     // Inicializar la posición del dock en todas las páginas
     document.addEventListener('DOMContentLoaded', function() {
-        // Get current dock position from localStorage or default to bottom
-        const currentPosition = localStorage.getItem('dockPosition') || 'bottom';
-        console.log('Initializing dock position:', currentPosition);
-        
-        // Aplicar estilos para mostrar solo el dock seleccionado
-        window.applyDockPosition(currentPosition);
-        
-        // Verificar después de un momento que el dock esté visible
         setTimeout(function() {
-            const visibleDock = window.checkDockVisibility();
-            if (!visibleDock || visibleDock !== `dock-${currentPosition}`) {
-                console.log('Dock not visible, reapplying...');
-                window.applyDockPosition(currentPosition);
-            }
-        }, 200);
-        
-        // Set active option if we're on the config page (delay to ensure DOM is ready)
-        setTimeout(function() {
-            const currentOption = document.querySelector(`[data-position="${currentPosition}"]`);
-            if (currentOption) {
-                // Remove active from all options first
-                document.querySelectorAll('.dock-option').forEach(option => {
-                    option.classList.remove('active');
-                });
-                // Add active to current option
-                currentOption.classList.add('active');
-                console.log('Set active option on page load:', currentOption);
+            // Get current dock position from localStorage or default to bottom
+            const currentPosition = localStorage.getItem('dockPosition') || 'bottom';
+            console.log('Initializing dock position:', currentPosition);
+            
+            // Usar la función setDockPosition para aplicar la posición
+            // Esto asegura que se use el sistema correcto
+            if (typeof window.setDockPosition === 'function') {
+                window.setDockPosition(currentPosition);
             } else {
-                console.log('No dock option found for position:', currentPosition);
+                console.log('setDockPosition function not available yet, retrying...');
+                setTimeout(function() {
+                    if (typeof window.setDockPosition === 'function') {
+                        window.setDockPosition(currentPosition);
+                    }
+                }, 500);
             }
-        }, 300);
+        }, 100);
     });
 })();
 </script>
