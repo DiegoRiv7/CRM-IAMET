@@ -3527,6 +3527,94 @@ window.checkDockVisibility = function() {
     return visibleDock;
 };
 
+// Función para aplicar el orden de iconos guardado en localStorage
+function applySavedDockOrder() {
+    try {
+        const savedOrder = localStorage.getItem('dockOrder');
+        if (!savedOrder) {
+            console.log('No hay orden de dock guardado');
+            return;
+        }
+        
+        const dockOrder = JSON.parse(savedOrder);
+        console.log('Aplicando orden de dock guardado:', dockOrder);
+        
+        // Buscar el dock visible
+        const visibleDock = document.querySelector('.macos-dock[style*="opacity: 1"]') || 
+                           document.querySelector('.macos-dock:not([style*="opacity: 0"])');
+        
+        if (!visibleDock) {
+            console.log('No se encontró dock visible para aplicar orden');
+            return;
+        }
+        
+        console.log('Aplicando orden al dock:', visibleDock.id);
+        
+        // Mapear iconos por su identificador (href o tooltip)
+        const iconMap = new Map();
+        const allIcons = visibleDock.querySelectorAll('.dock-item');
+        
+        allIcons.forEach(icon => {
+            let identifier = '';
+            
+            // Usar href como identificador principal
+            if (icon.href) {
+                const url = new URL(icon.href);
+                identifier = url.pathname.split('/').pop() || url.pathname;
+            }
+            
+            // Si no hay href, usar tooltip
+            if (!identifier) {
+                const tooltip = icon.querySelector('.tooltip');
+                if (tooltip) {
+                    identifier = tooltip.textContent.trim().toLowerCase().replace(/\s+/g, '-');
+                }
+            }
+            
+            // Si aún no hay identificador, usar ID
+            if (!identifier && icon.id) {
+                identifier = icon.id;
+            }
+            
+            if (identifier) {
+                iconMap.set(identifier, icon);
+                console.log('Mapeado icono:', identifier);
+            }
+        });
+        
+        // Crear array ordenado de iconos existentes
+        const orderedIcons = [];
+        
+        dockOrder.forEach((iconId, index) => {
+            const icon = iconMap.get(iconId);
+            if (icon) {
+                orderedIcons.push(icon);
+                console.log(`Reordenado icono ${iconId} a posición ${index}`);
+            } else {
+                console.log(`Icono ${iconId} no encontrado en el dock`);
+            }
+        });
+        
+        // Agregar iconos que no están en el orden guardado al final
+        allIcons.forEach(icon => {
+            if (!orderedIcons.includes(icon)) {
+                orderedIcons.push(icon);
+                console.log('Agregando icono no ordenado al final');
+            }
+        });
+        
+        // Reordenar los elementos DOM sin clonar (mantiene event listeners)
+        orderedIcons.forEach(icon => {
+            visibleDock.appendChild(icon);
+        });
+        
+        console.log('Orden de dock aplicado exitosamente');
+        
+    } catch (error) {
+        console.error('Error aplicando orden de dock guardado:', error);
+    }
+}
+
 // Inicializar estados de UI una vez que el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
@@ -3564,6 +3652,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             console.log('Ensured only dock-' + savedPosition + ' is visible');
         }
+        
+        // Aplicar orden de iconos guardado
+        applySavedDockOrder();
         
         // Solo actualizar los estados de UI sin cambiar la posición del dock
         // (la posición ya se aplicó inmediatamente arriba)
