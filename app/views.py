@@ -2293,10 +2293,16 @@ def generate_quote_pdf(request, pk):
 
 @login_required
 def exportar_oportunidades_csv(request):
-    from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-    from openpyxl.utils import get_column_letter
-    from datetime import date
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+        from datetime import date
+        OPENPYXL_AVAILABLE = True
+    except ImportError:
+        # Fallback to CSV if openpyxl is not available
+        OPENPYXL_AVAILABLE = False
+        from datetime import date
     
     # 1. Get the base queryset with cotizations
     if is_supervisor(request.user):
@@ -2347,60 +2353,72 @@ def exportar_oportunidades_csv(request):
         elif orden_probabilidad == 'prob_desc':
             items = items.order_by('-probabilidad_cierre')
 
-    # 4. Create Excel workbook
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Reporte Oportunidades"
-    
-    # 5. Define styles
-    header_font = Font(bold=True, color="FFFFFF")
-    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
-    header_alignment = Alignment(horizontal="center", vertical="center")
-    border = Border(
-        left=Side(style='thin'),
-        right=Side(style='thin'),
-        top=Side(style='thin'),
-        bottom=Side(style='thin')
-    )
-    
-    # 6. Define headers according to the format in the images
-    headers = [
-        'OPORTUNIDAD', 'AREA', 'CONTACTO', 'ZEBRA', 'PANDUIT', 'APC', 'AVIGILION', 
-        'GENETEC', 'AXIS', 'Desarrollo APP', 'ELLINEATE', 'POLIZA', 'CISCO'
-    ]
-    
-    # Add quarterly and monthly columns
-    quarterly_headers = ['Q1', 'Q2', 'Q3', 'Q4']
-    monthly_headers = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC']
-    
-    headers.extend(quarterly_headers)
-    headers.extend(monthly_headers)
-    
-    # 7. Write headers
-    for col, header in enumerate(headers, 1):
-        cell = ws.cell(row=1, column=col, value=header)
-        cell.font = header_font
-        cell.fill = header_fill
-        cell.alignment = header_alignment
-        cell.border = border
+    # 4. Create report based on available libraries
+    if OPENPYXL_AVAILABLE:
+        # Create Excel workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Reporte Oportunidades"
         
-    # 8. Write data rows
+        # Define styles
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center")
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # Define headers according to the format in the images
+        headers = [
+            'OPORTUNIDAD', 'AREA', 'CONTACTO', 'ZEBRA', 'PANDUIT', 'APC', 'AVIGILION', 
+            'GENETEC', 'AXIS', 'Desarrollo APP', 'ELLINEATE', 'POLIZA', 'CISCO'
+        ]
+        
+        # Add quarterly and monthly columns
+        quarterly_headers = ['Q1', 'Q2', 'Q3', 'Q4']
+        monthly_headers = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC']
+        
+        headers.extend(quarterly_headers)
+        headers.extend(monthly_headers)
+        
+        # Write headers
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+            cell.border = border
+    else:
+        # Fallback to CSV
+        headers = [
+            'OPORTUNIDAD', 'AREA', 'CONTACTO', 'ZEBRA', 'PANDUIT', 'APC', 'AVIGILION', 
+            'GENETEC', 'AXIS', 'Desarrollo APP', 'ELLINEATE', 'POLIZA', 'CISCO',
+            'Q1', 'Q2', 'Q3', 'Q4',
+            'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC'
+        ]
+        
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="reporte_cotizaciones_oportunidades.csv"'
+        
+        import csv
+        writer = csv.writer(response)
+        writer.writerow(headers)
+        
+    # Brand columns mapping
+    brand_columns = {
+        'ZEBRA': 4, 'PANDUIT': 5, 'APC': 6, 'AVIGILION': 7,
+        'GENETEC': 8, 'AXIS': 9, 'Desarrollo APP': 10,
+        'ELLINEATE': 11, 'POLIZA': 12, 'CISCO': 13
+    }
+        
+    # Write data rows
     row = 2
     for item in items:
         # Get cotization details for this opportunity
         cotizaciones = item.cotizaciones.all()
-        
-        # Basic info columns
-        ws.cell(row=row, column=1, value=item.oportunidad).border = border
-        ws.cell(row=row, column=2, value=item.get_area_display()).border = border
-        ws.cell(row=row, column=3, value=item.contacto or '').border = border
-        
-        # Brand columns mapping (columns 4-13)
-        brand_columns = {
-            'ZEBRA': 4, 'PANDUIT': 5, 'APC': 6, 'AVIGILION': 7,
-            'GENETEC': 8, 'AXIS': 9, 'Desarrollo APP': 10,
-            'ELLINEATE': 11, 'POLIZA': 12, 'CISCO': 13
-        }
         
         # Calculate totals by brand from cotization details
         brand_totals = {}
@@ -2423,68 +2441,77 @@ def exportar_oportunidades_csv(request):
                     brand_totals[marca] = brand_totals.get(marca, 0) + total_line
                     total_amount += total_line
         
-        # Fill brand columns with amounts
-        for brand, col in brand_columns.items():
-            amount = brand_totals.get(brand, 0)
-            if amount > 0:
-                cell = ws.cell(row=row, column=col, value=amount)
-                cell.number_format = '$#,##0.00'
-            else:
-                cell = ws.cell(row=row, column=col, value='')
-            cell.border = border
+        # Prepare row data
+        row_data = [
+            item.oportunidad,
+            item.get_area_display(),
+            item.contacto or ''
+        ]
         
-        # Quarter columns (14-17): Show probability for relevant quarter
-        quarter_col_start = 14
+        # Add brand amounts
+        for brand in ['ZEBRA', 'PANDUIT', 'APC', 'AVIGILION', 'GENETEC', 'AXIS', 'Desarrollo APP', 'ELLINEATE', 'POLIZA', 'CISCO']:
+            amount = brand_totals.get(brand, 0)
+            row_data.append(f"${amount:,.2f}" if amount > 0 else '')
+        
+        # Add quarterly data
+        quarters = ['', '', '', '']
         if item.mes_cierre:
             try:
                 mes = int(item.mes_cierre)
                 quarter = ((mes - 1) // 3) + 1  # Q1: 1-3, Q2: 4-6, Q3: 7-9, Q4: 10-12
                 if 1 <= quarter <= 4:
-                    quarter_col = quarter_col_start + quarter - 1
-                    prob_cell = ws.cell(row=row, column=quarter_col, value=f"{item.probabilidad_cierre}%" if item.probabilidad_cierre else "100%")
-                    prob_cell.border = border
+                    quarters[quarter - 1] = f"{item.probabilidad_cierre}%" if item.probabilidad_cierre else "100%"
             except (ValueError, TypeError):
                 pass
+        row_data.extend(quarters)
         
-        # Empty quarter columns
-        for q in range(4):
-            if not ws.cell(row=row, column=quarter_col_start + q).value:
-                ws.cell(row=row, column=quarter_col_start + q).border = border
-        
-        # Monthly columns (18-29): Show probability for the specific month
-        month_col_start = 18
+        # Add monthly data
+        months = [''] * 12
         if item.mes_cierre:
             try:
                 mes = int(item.mes_cierre)
                 if 1 <= mes <= 12:
-                    month_col = month_col_start + mes - 1
-                    month_cell = ws.cell(row=row, column=month_col, value=f"{item.probabilidad_cierre}%" if item.probabilidad_cierre else "100%")
-                    month_cell.border = border
+                    months[mes - 1] = f"{item.probabilidad_cierre}%" if item.probabilidad_cierre else "100%"
             except (ValueError, TypeError):
                 pass
+        row_data.extend(months)
         
-        # Empty month columns
-        for m in range(12):
-            if not ws.cell(row=row, column=month_col_start + m).value:
-                ws.cell(row=row, column=month_col_start + m).border = border
+        if OPENPYXL_AVAILABLE:
+            # Excel version
+            for col, value in enumerate(row_data, 1):
+                cell = ws.cell(row=row, column=col, value=value)
+                cell.border = border
+                # Format currency columns
+                if col >= 4 and col <= 13 and value and value != '':
+                    try:
+                        numeric_value = float(value.replace('$', '').replace(',', ''))
+                        cell.value = numeric_value
+                        cell.number_format = '$#,##0.00'
+                    except:
+                        pass
+        else:
+            # CSV version
+            writer.writerow(row_data)
         
         row += 1
     
-    # 9. Auto-adjust column widths
-    for col in range(1, len(headers) + 1):
-        column_letter = get_column_letter(col)
-        ws.column_dimensions[column_letter].width = 12
-        
-    # Make first column wider for opportunity names
-    ws.column_dimensions['A'].width = 30
+    if OPENPYXL_AVAILABLE:
+        # Auto-adjust column widths
+        for col in range(1, len(headers) + 1):
+            column_letter = get_column_letter(col)
+            ws.column_dimensions[column_letter].width = 12
+            
+        # Make first column wider for opportunity names
+        ws.column_dimensions['A'].width = 30
 
-    # 10. Create HTTP response
-    response = HttpResponse(
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-    response['Content-Disposition'] = 'attachment; filename="reporte_cotizaciones_oportunidades.xlsx"'
+        # Create HTTP response
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="reporte_cotizaciones_oportunidades.xlsx"'
+        
+        wb.save(response)
     
-    wb.save(response)
     return response
 
 @login_required
