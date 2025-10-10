@@ -301,12 +301,14 @@
 
 .filter-box {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 0.75rem;
-    padding: 1rem;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    padding: 1.5rem; /* Increased padding */
     border: 1px solid var(--apple-separator);
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px; /* Slightly larger radius */
+    background: rgba(28, 28, 30, 0.7); /* Darker background to match table */
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     flex-grow: 1;
 }
 
@@ -348,36 +350,48 @@
             </div>
             {% else %}
                         <div class="report-filters-container">
-                            <div class="filter-box">
-                                <div class="filter-group">
-                                    <input type="text" class="filter-input" id="filterOportunidad" placeholder="Buscar en Oportunidad...">
-                                </div>
-                                <div class="filter-group">
-                                    <select class="filter-input" id="filterCliente">
-                                        <option value="">Todos los clientes</option>
-                                        {% regroup items by cliente.nombre_empresa as clientes_grouped %}{% for cliente in clientes_grouped %}{% if cliente.grouper %}<option value="{{ cliente.grouper }}">{{ cliente.grouper }}</option>{% endif %}{% endfor %}
-                                    </select>
-                                </div>
-                                <div class="filter-group">
-                                    <input type="number" class="filter-input" id="filterMontoMin" placeholder="Monto min">
-                                </div>
-                                <div class="filter-group">
-                                    <input type="number" class="filter-input" id="filterMontoMax" placeholder="Monto max">
-                                </div>
-                                <div class="filter-group">
-                                    <select class="filter-input" id="filterMesCierre">
-                                        <option value="">Todos los meses</option>
-                                        {% regroup items by get_mes_cierre_display as meses_grouped %}{% for mes in meses_grouped %}{% if mes.grouper %}<option value="{{ mes.grouper }}">{{ mes.grouper }}</option>{% endif %}{% endfor %}
-                                    </select>
-                                </div>
-                                <div class="filter-group">
-                                    <input type="text" class="filter-input" id="filterContacto" placeholder="Contacto...">
-                                </div>
-                            </div>
-                            <div class="filter-actions">
+                                            <div class="filter-box">
+                                                <div class="filter-group">
+                                                    <label class="filter-label">Oportunidad</label>
+                                                    <input type="text" class="filter-input" id="filterOportunidad" placeholder="Buscar en Oportunidad...">
+                                                </div>
+                                                <div class="filter-group">
+                                                    <label class="filter-label">Cliente</label>
+                                                    <select class="filter-input" id="filterCliente">
+                                                        <option value="">Todos los clientes</option>
+                                                        {% regroup items by cliente.nombre_empresa as clientes_grouped %}{% for cliente in clientes_grouped %}{% if cliente.grouper %}<option value="{{ cliente.grouper }}">{{ cliente.grouper }}</option>{% endif %}{% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="filter-group">
+                                                    <label class="filter-label">Monto Mínimo</label>
+                                                    <input type="number" class="filter-input" id="filterMontoMin" placeholder="Monto min">
+                                                </div>
+                                                                    <div class="filter-group">
+                                                                        <label class="filter-label">Monto Máximo</label>
+                                                                        <input type="number" class="filter-input" id="filterMontoMax" placeholder="Monto max">
+                                                                    </div>
+                                                                    <div class="filter-group">
+                                                                        <label class="filter-label">Probabilidad Mínima</label>
+                                                                        <input type="number" class="filter-input" id="filterProbabilidadMin" placeholder="Prob. min">
+                                                                    </div>
+                                                                    <div class="filter-group">
+                                                                        <label class="filter-label">Probabilidad Máxima</label>
+                                                                        <input type="number" class="filter-input" id="filterProbabilidadMax" placeholder="Prob. max">
+                                                                    </div>                                                <div class="filter-group">
+                                                    <label class="filter-label">Mes Cierre</label>
+                                                    <select class="filter-input" id="filterMesCierre">
+                                                        <option value="">Todos los meses</option>
+                                                        {% regroup items by get_mes_cierre_display as meses_grouped %}{% for mes in meses_grouped %}{% if mes.grouper %}<option value="{{ mes.grouper }}">{{ mes.grouper }}</option>{% endif %}{% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="filter-group">
+                                                    <label class="filter-label">Contacto</label>
+                                                    <input type="text" class="filter-input" id="filterContacto" placeholder="Contacto...">
+                                                </div>
+                                            </div>                            <div class="filter-actions">
                                 <button class="filter-btn secondary" onclick="clearFilters()">Limpiar</button>
                                 <button class="filter-btn primary" onclick="applyFilters()">Filtrar</button>
-                                <button class="filter-btn primary" id="generate-report-btn">Generar Reporte</button>
+                                <button class="filter-btn primary" id="generate-report-btn" onclick="generarReporteCSV()">Generar Reporte</button>
                                 <a href="{% url 'todos' %}" class="filter-btn secondary">Salir</a>
                             </div>
                         </div>
@@ -483,6 +497,29 @@
 </div>
 
 <script>
+function generarReporteCSV() {
+    const oportunidad = document.getElementById('filterOportunidad').value.trim();
+    const cliente = document.getElementById('filterCliente').value.trim();
+    const montoMin = document.getElementById('filterMontoMin').value;
+    const montoMax = document.getElementById('filterMontoMax').value;
+    const probMin = document.getElementById('filterProbabilidadMin').value;
+    const probMax = document.getElementById('filterProbabilidadMax').value;
+    const mesCierre = document.getElementById('filterMesCierre').value.trim();
+    const contacto = document.getElementById('filterContacto').value.trim();
+
+    const url = new URL('{% url 'exportar_oportunidades_csv' %}', window.location.origin);
+    if (oportunidad) url.searchParams.set('filterOportunidad', oportunidad);
+    if (cliente) url.searchParams.set('filterCliente', cliente);
+    if (montoMin) url.searchParams.set('filterMontoMin', montoMin);
+    if (montoMax) url.searchParams.set('filterMontoMax', montoMax);
+    if (probMin) url.searchParams.set('filterProbabilidadMin', probMin);
+    if (probMax) url.searchParams.set('filterProbabilidadMax', probMax);
+    if (mesCierre) url.searchParams.set('filterMesCierre', mesCierre);
+    if (contacto) url.searchParams.set('filterContacto', contacto);
+
+    window.location.href = url.toString();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Animated Search Widget Logic
     const searchWidget = document.getElementById('search-widget');

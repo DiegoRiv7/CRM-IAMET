@@ -1676,6 +1676,65 @@ def todos (request):
     }
     return render (request, "todos.html", context)
 
+@login_required
+def exportar_oportunidades_csv(request):
+    if is_supervisor(request.user):
+        items = TodoItem.objects.select_related('usuario', 'cliente').all()
+    else:
+        items = TodoItem.objects.select_related('usuario', 'cliente').filter(usuario=request.user)
+
+    # Re-aplicar los filtros del request GET
+    oportunidad = request.GET.get('filterOportunidad', '').strip()
+    if oportunidad:
+        items = items.filter(oportunidad__icontains=oportunidad)
+
+    cliente = request.GET.get('filterCliente', '').strip()
+    if cliente:
+        items = items.filter(cliente__nombre_empresa__icontains=cliente)
+
+    monto_min = request.GET.get('filterMontoMin')
+    if monto_min:
+        items = items.filter(monto__gte=monto_min)
+
+    monto_max = request.GET.get('filterMontoMax')
+    if monto_max:
+        items = items.filter(monto__lte=monto_max)
+
+    probabilidad_min = request.GET.get('filterProbabilidadMin')
+    if probabilidad_min:
+        items = items.filter(probabilidad_cierre__gte=probabilidad_min)
+
+    probabilidad_max = request.GET.get('filterProbabilidadMax')
+    if probabilidad_max:
+        items = items.filter(probabilidad_cierre__lte=probabilidad_max)
+
+    mes_cierre = request.GET.get('filterMesCierre', '').strip()
+    if mes_cierre:
+        items = items.filter(mes_cierre=mes_cierre)
+        
+    contacto = request.GET.get('filterContacto', '').strip()
+    if contacto:
+        items = items.filter(contacto__icontains=contacto)
+
+    # Crear la respuesta CSV
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="reporte_oportunidades.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Oportunidad', 'Cliente', 'Monto', 'Probabilidad', 'Mes Cierre', 'Contacto'])
+
+    for item in items:
+        writer.writerow([
+            item.oportunidad,
+            item.cliente.nombre_empresa if item.cliente else 'N/A',
+            item.monto,
+            item.probabilidad_cierre,
+            item.get_mes_cierre_display(),
+            item.contacto
+        ])
+
+    return response
+
 from .bitrix_integration import get_or_create_bitrix_company, send_opportunity_to_bitrix, update_opportunity_in_bitrix, get_all_bitrix_companies, get_all_bitrix_contacts
 
 @login_required
@@ -8694,45 +8753,7 @@ def detectar_menciones_en_comentario(contenido, usuario_remitente, oportunidad, 
             pass
 
 
-@login_required
-def exportar_oportunidades_csv(request):
-    periodo = request.GET.get('periodo', 'todas')
-    
-    queryset = TodoItem.objects.all()
-    
-    if not is_supervisor(request.user):
-        queryset = queryset.filter(usuario=request.user)
 
-    today = date.today()
-    if periodo == 'mes':
-        queryset = queryset.filter(fecha_creacion__year=today.year, fecha_creacion__month=today.month)
-        filename = f"oportunidades_mes_{today.strftime('%Y_%m')}.csv"
-    elif periodo == 'ano':
-        queryset = queryset.filter(fecha_creacion__year=today.year)
-        filename = f"oportunidades_ano_{today.year}.csv"
-    else:
-        filename = "oportunidades_todas.csv"
-
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    
-    writer = csv.writer(response)
-    writer.writerow(['Oportunidad', 'Cliente', 'Monto', 'Probabilidad de Cierre', 'Mes de Cierre', 'Producto', 'Area', 'Usuario', 'Fecha Creacion'])
-    
-    for item in queryset:
-        writer.writerow([
-            item.oportunidad,
-            item.cliente.nombre_empresa if item.cliente else '',
-            item.monto,
-            item.probabilidad_cierre,
-            item.get_mes_cierre_display(),
-            item.get_producto_display(),
-            item.get_area_display(),
-            item.usuario.username,
-            item.fecha_creacion.strftime('%Y-%m-%d')
-        ])
-        
-    return response
 
 @login_required
 @require_http_methods(["POST"])

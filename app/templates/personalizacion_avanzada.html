@@ -666,6 +666,165 @@
             font-weight: 500;
         }
         
+        /* Dock Editor Styles */
+        .dock-editor-container {
+            background: rgba(var(--apple-background-secondary-rgb), 0.8);
+            border: 2px solid var(--apple-separator);
+            border-radius: 20px;
+            padding: 25px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        
+        .dock-editor {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 120px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: rgba(var(--apple-background-rgb), 0.6);
+            border-radius: 16px;
+            border: 1px solid var(--apple-separator);
+        }
+        
+        .dock-editor-dock {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 12px 20px;
+            background: rgba(29, 29, 31, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+            min-width: 400px;
+            max-width: 600px;
+        }
+        
+        .dock-editor-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            background: transparent;
+            cursor: grab;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative;
+            border: 2px solid transparent;
+        }
+        
+        .dock-editor-item:active {
+            cursor: grabbing;
+        }
+        
+        .dock-editor-item:hover {
+            transform: translateY(-3px) scale(1.05);
+            border-color: rgba(0, 122, 255, 0.4);
+            box-shadow: 0 8px 25px rgba(0, 122, 255, 0.2);
+        }
+        
+        .dock-editor-item.selected {
+            transform: translateY(-8px) scale(1.1);
+            border-color: rgba(0, 122, 255, 0.8) !important;
+            box-shadow: 0 12px 35px rgba(0, 122, 255, 0.4) !important;
+            background: rgba(0, 122, 255, 0.1) !important;
+        }
+        
+        .dock-editor-item.dragging {
+            opacity: 0.7;
+            transform: rotate(5deg) scale(1.1);
+            z-index: 1000;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+        
+        .dock-editor-item.drop-target {
+            border-color: rgba(0, 255, 0, 0.6);
+            background: rgba(0, 255, 0, 0.1);
+        }
+        
+        .dock-editor-item svg {
+            width: 28px;
+            height: 28px;
+            color: #EBEBF5;
+            pointer-events: none;
+        }
+        
+        .dock-editor-separator {
+            width: 2px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 1px;
+            margin: 0 8px;
+        }
+        
+        .dock-editor-controls {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+        }
+        
+        .btn-reset,
+        .btn-confirm {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-reset {
+            background: rgba(255, 59, 48, 0.1);
+            color: #FF3B30;
+            border: 1px solid rgba(255, 59, 48, 0.3);
+        }
+        
+        .btn-reset:hover {
+            background: rgba(255, 59, 48, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 59, 48, 0.2);
+        }
+        
+        .btn-confirm {
+            background: rgba(52, 199, 89, 0.1);
+            color: #34C759;
+            border: 1px solid rgba(52, 199, 89, 0.3);
+        }
+        
+        .btn-confirm:hover {
+            background: rgba(52, 199, 89, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(52, 199, 89, 0.2);
+        }
+        
+        .btn-confirm:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Animaciones */
+        @keyframes iconSelect {
+            0% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-5px) scale(1.05); }
+            100% { transform: translateY(-8px) scale(1.1); }
+        }
+        
+        @keyframes iconDeselect {
+            0% { transform: translateY(-8px) scale(1.1); }
+            100% { transform: translateY(0) scale(1); }
+        }
+        
         .dock-icons-preview {
             width: 80px;
             height: 50px;
@@ -1425,30 +1584,26 @@
                         <h4 style="color: var(--apple-label); font-size: 16px; margin-bottom: 15px;">
                             <i class="fas fa-icons" style="margin-right: 8px;"></i> Iconos del Dock
                         </h4>
-                        <div class="dock-icons-options">
-                            <div class="dock-icons-option active" data-icons="default" onclick="setDockIcons('default')">
-                                <div class="dock-icons-preview">
-                                    <div class="preview-icons default">
-                                        <span>🏠</span><span>📊</span><span>💼</span><span>⚙️</span>
-                                    </div>
+                        <p style="color: var(--apple-label-secondary); font-size: 14px; margin-bottom: 20px;">
+                            Arrastra los iconos para cambiar su posición en el dock
+                        </p>
+                        
+                        <!-- Vista previa del dock editable -->
+                        <div class="dock-editor-container">
+                            <div class="dock-editor" id="dock-editor">
+                                <div class="dock-editor-dock" id="editable-dock">
+                                    <!-- Los iconos se cargarán dinámicamente aquí -->
                                 </div>
-                                <span>Por defecto</span>
                             </div>
-                            <div class="dock-icons-option" data-icons="minimal" onclick="setDockIcons('minimal')">
-                                <div class="dock-icons-preview">
-                                    <div class="preview-icons minimal">
-                                        <span>●</span><span>●</span><span>●</span><span>●</span>
-                                    </div>
-                                </div>
-                                <span>Minimalista</span>
-                            </div>
-                            <div class="dock-icons-option" data-icons="modern" onclick="setDockIcons('modern')">
-                                <div class="dock-icons-preview">
-                                    <div class="preview-icons modern">
-                                        <span>◆</span><span>◆</span><span>◆</span><span>◆</span>
-                                    </div>
-                                </div>
-                                <span>Moderno</span>
+                            
+                            <!-- Controles de la configuración -->
+                            <div class="dock-editor-controls">
+                                <button class="btn-reset" onclick="resetDockOrder()">
+                                    <i class="fas fa-undo"></i> Restablecer
+                                </button>
+                                <button class="btn-confirm" onclick="saveDockOrder()">
+                                    <i class="fas fa-check"></i> Confirmar
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -2236,6 +2391,185 @@
                 'modern': 'Moderno'
             };
             showNotification(`Iconos del dock cambiados a ${iconsNames[icons] || icons}`, 'success');
+        }
+
+        // Dock Editor Functionality
+        let originalDockOrder = [];
+        let currentDockOrder = [];
+        let selectedIcon = null;
+        let isDockDragging = false;
+
+        // Initialize dock editor on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDockEditor();
+        });
+
+        // Define default dock structure based on user permissions
+        const isSuper = '{{ user.is_superuser }}' === 'True';
+        
+        const defaultDockOrder = [
+            { id: 'home', name: 'Home', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+            { id: 'todos', name: 'Oportunidades', icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' },
+            ...(isSuper ? [
+                { id: 'cotizaciones', name: 'Cotizaciones', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+                { id: 'cotizaciones_automaticas', name: 'Cotizaciones Automáticas', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+                { id: 'gestion_productos', name: 'Gestión de Productos', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M9 8l3-3 3 3' },
+                { id: 'gestion_catalogo_volumetria', name: 'Catálogo Volumetría', icon: 'M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z' },
+                { id: 'tareas_proyectos', name: 'Tareas y Proyectos', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2V7zm0 0a2 2 0 012-2h6l2 2h6a2 2 0 012 2v2H3V7z' },
+                { id: 'configuracion_avanzada', name: 'Configuración', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z' },
+                { id: 'incrementa', name: 'Incrementa', icon: 'M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z' },
+                { id: 'admin', name: 'Admin', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
+                { id: 'separator' }
+            ] : []),
+            { id: 'usuario', name: 'Usuario', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
+            { id: 'notifications', name: 'Notificaciones', icon: 'M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
+            ...(isSuper ? [{ id: 'assistant', name: 'Asistente Virtual', icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' }] : []),
+            { id: 'logout', name: 'Cerrar Sesión', icon: 'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1' }
+        ];
+
+        function initializeDockEditor() {
+            // Get current dock order from localStorage or use default
+            const savedOrder = localStorage.getItem('dockOrder');
+            if (savedOrder) {
+                currentDockOrder = JSON.parse(savedOrder);
+            } else {
+                currentDockOrder = [...defaultDockOrder];
+            }
+            
+            // Store original order
+            originalDockOrder = [...currentDockOrder];
+            
+            // Render dock editor
+            renderDockEditor();
+        }
+
+        function renderDockEditor() {
+            const dockEditor = document.getElementById('editable-dock');
+            if (!dockEditor) return;
+            
+            dockEditor.innerHTML = '';
+            
+            currentDockOrder.forEach((item, index) => {
+                if (item.id === 'separator') {
+                    const separator = document.createElement('div');
+                    separator.className = 'dock-editor-separator';
+                    separator.dataset.index = index;
+                    dockEditor.appendChild(separator);
+                } else {
+                    const iconElement = document.createElement('div');
+                    iconElement.className = 'dock-editor-item';
+                    iconElement.dataset.iconId = item.id;
+                    iconElement.dataset.index = index;
+                    iconElement.draggable = true;
+                    iconElement.title = item.name;
+                    
+                    iconElement.innerHTML = `
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${item.icon}"></path>
+                        </svg>
+                    `;
+                    
+                    // Add event listeners
+                    iconElement.addEventListener('click', () => selectIcon(iconElement));
+                    iconElement.addEventListener('dragstart', handleDragStart);
+                    iconElement.addEventListener('dragover', handleDragOver);
+                    iconElement.addEventListener('drop', handleDrop);
+                    iconElement.addEventListener('dragend', handleDragEnd);
+                    
+                    dockEditor.appendChild(iconElement);
+                }
+            });
+        }
+
+        function selectIcon(iconElement) {
+            // Deselect previous
+            if (selectedIcon) {
+                selectedIcon.classList.remove('selected');
+            }
+            
+            // Select new
+            selectedIcon = iconElement;
+            iconElement.classList.add('selected');
+            iconElement.style.animation = 'iconSelect 0.3s ease forwards';
+        }
+
+        function handleDragStart(e) {
+            isDockDragging = true;
+            e.dataTransfer.setData('text/plain', e.target.dataset.index);
+            e.target.classList.add('dragging');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            if (isDockDragging) {
+                e.target.classList.add('drop-target');
+            }
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            
+            const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
+            const targetIndex = parseInt(e.target.dataset.index);
+            
+            if (draggedIndex !== targetIndex) {
+                // Reorder array
+                const draggedItem = currentDockOrder[draggedIndex];
+                currentDockOrder.splice(draggedIndex, 1);
+                currentDockOrder.splice(targetIndex, 0, draggedItem);
+                
+                // Re-render
+                renderDockEditor();
+                
+                // Enable confirm button
+                document.querySelector('.btn-confirm').disabled = false;
+            }
+            
+            // Clean up
+            document.querySelectorAll('.drop-target').forEach(el => {
+                el.classList.remove('drop-target');
+            });
+        }
+
+        function handleDragEnd(e) {
+            isDockDragging = false;
+            e.target.classList.remove('dragging');
+            document.querySelectorAll('.drop-target').forEach(el => {
+                el.classList.remove('drop-target');
+            });
+        }
+
+        function resetDockOrder() {
+            currentDockOrder = [...originalDockOrder];
+            renderDockEditor();
+            selectedIcon = null;
+            document.querySelector('.btn-confirm').disabled = false;
+            showNotification('Orden del dock restablecido', 'info');
+        }
+
+        function saveDockOrder() {
+            // Save to localStorage
+            localStorage.setItem('dockOrder', JSON.stringify(currentDockOrder));
+            
+            // Update original order
+            originalDockOrder = [...currentDockOrder];
+            
+            // Disable confirm button
+            document.querySelector('.btn-confirm').disabled = true;
+            
+            // Apply changes to actual dock
+            applyDockOrder();
+            
+            showNotification('Orden del dock guardado correctamente', 'success');
+        }
+
+        function applyDockOrder() {
+            // This would require a page reload to fully apply the new order
+            // For now, we'll just save it and show a message
+            console.log('New dock order saved:', currentDockOrder);
+            
+            // Optionally, we could reload the page to apply changes
+            // setTimeout(() => location.reload(), 1000);
         }
 
         // User info functionality
