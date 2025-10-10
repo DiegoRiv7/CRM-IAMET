@@ -2466,10 +2466,16 @@
         function markDocksAsLoaded() {
             const visibleDocks = document.querySelectorAll('.macos-dock[style*="opacity: 1"]');
             visibleDocks.forEach(dock => {
+                // Primero agregar clase dock-ready para iniciar animación
+                if (dock.classList.contains('dock-compact')) {
+                    dock.classList.add('dock-ready');
+                }
+                
                 // Esperar a que termine la animación antes de marcar como cargado
                 setTimeout(() => {
                     dock.classList.add('dock-loaded');
-                }, 500);
+                    dock.classList.remove('dock-ready');
+                }, 600);
             });
         }
         

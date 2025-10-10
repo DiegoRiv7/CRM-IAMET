@@ -146,23 +146,36 @@
         transform: scale(1.2) translateX(5px);
     }
     
-    /* Evitar flash inicial - solo para docks visibles en modo compacto */
-    .macos-dock.dock-compact:not(.expanded)[style*="opacity: 1"] {
+    /* Forzar estado compacto desde el inicio - ANTES de que se aplique la clase */
+    .macos-dock {
+        /* Si está en localStorage como compacto, aplicar inmediatamente */
+        transition: none !important;
+    }
+
+    /* Estado compacto forzado desde CSS */
+    .macos-dock.dock-compact:not(.expanded) {
         width: 64px !important;
         height: 64px !important;
         border-radius: 50% !important;
-        
-        /* Forzar estado colapsado inmediatamente */
         min-width: 64px !important;
         min-height: 64px !important;
         max-width: 64px !important;
         max-height: 64px !important;
+        
+        /* Evitar transiciones durante el setup inicial */
+        transition: none !important;
     }
 
-    /* Asegurar que el dock compacto comience con animación suave solo si está visible */
-    .macos-dock.dock-compact:not(.expanded)[style*="opacity: 1"]:not(.dock-loaded) {
-        opacity: 0 !important;
-        animation: fadeInDock 0.3s ease-out 0.1s forwards;
+    /* Solo aplicar animación de entrada después del setup */
+    .macos-dock.dock-compact:not(.expanded).dock-ready {
+        opacity: 0;
+        animation: fadeInDock 0.4s ease-out 0.1s forwards;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    /* Dock ya cargado - permitir transiciones normales */
+    .macos-dock.dock-compact.dock-loaded {
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
     }
     
     /* Marcar como cargado después de la animación */
@@ -849,8 +862,8 @@
         transform: scale(1) !important;
         pointer-events: auto !important;
         position: relative !important;
-        width: 52px !important;
-        height: 52px !important;
+        width: 60px !important;
+        height: 60px !important;
         margin: 0 8px !important;
         transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.1s !important;
         animation: showIcon 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.2s both !important;
@@ -863,18 +876,18 @@
         transform: scale(1) !important;
         pointer-events: auto !important;
         position: relative !important;
-        width: 52px !important;
-        height: 52px !important;
+        width: 60px !important;
+        height: 60px !important;
         margin: 8px 0 !important;
         transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.1s !important;
         animation: showIcon 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.2s both !important;
     }
 
-    /* Animación para mostrar iconos uno por uno */
+    /* Animación para mostrar iconos uno por uno - Más sutil */
     @keyframes showIcon {
         0% {
             opacity: 0;
-            transform: scale(0.3) translateY(20px);
+            transform: scale(0.8) translateY(8px);
         }
         100% {
             opacity: 1;
@@ -885,24 +898,24 @@
     /* Reestablecer estilos del icono casa en modo expandido - TAMAÑO MEJORADO */
     nav.macos-dock#dock-bottom.dock-compact.expanded .dock-item.home-icon,
     nav.macos-dock#dock-top.dock-compact.expanded .dock-item.home-icon {
-        width: 52px !important;
-        height: 52px !important;
+        width: 60px !important;
+        height: 60px !important;
         border-radius: 12px !important;
         margin: 0 8px !important;
     }
     
     nav.macos-dock#dock-left.dock-compact.expanded .dock-item.home-icon,
     nav.macos-dock#dock-right.dock-compact.expanded .dock-item.home-icon {
-        width: 52px !important;
-        height: 52px !important;
+        width: 60px !important;
+        height: 60px !important;
         border-radius: 12px !important;
         margin: 8px 0 !important;
     }
     
     /* Tamaño de iconos SVG en dock expandido - MEJORADO */
     nav.macos-dock.dock-compact.expanded .dock-item .dock-icon {
-        width: 32px !important;
-        height: 32px !important;
+        width: 40px !important;
+        height: 40px !important;
         color: #EBEBF5 !important;
     }
 
@@ -1618,11 +1631,11 @@
         }
     }
     
-    /* Animación de iconos para móviles */
+    /* Animación de iconos para móviles - Más sutil */
     @keyframes showIconMobile {
         0% {
             opacity: 0;
-            transform: scale(0.5) translateY(20px);
+            transform: scale(0.8) translateY(8px);
         }
         100% {
             opacity: 1;
