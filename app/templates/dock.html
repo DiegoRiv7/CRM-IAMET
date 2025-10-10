@@ -2368,17 +2368,10 @@ window.addEventListener('error', function(e) {
         setInterval(loadNotifications, 30000);
     });
 
-    // === DOCK POSITION MANAGEMENT ===
-    // Inicializar la posición del dock en todas las páginas
-    document.addEventListener('DOMContentLoaded', function() {
-        // Get current dock position from localStorage or default to bottom
-        const currentPosition = localStorage.getItem('dockPosition') || 'bottom';
-        
-        // Aplicar estilos para mostrar solo el dock seleccionado
-        applyDockPosition(currentPosition);
-    });
+    // === DOCK POSITION MANAGEMENT (GLOBAL FUNCTIONS) ===
     
-    function applyDockPosition(position) {
+    // Funciones globales para el manejo del dock - disponibles en todas las páginas
+    window.applyDockPosition = function(position) {
         // Remover estilos anteriores si existen
         const existingStyle = document.getElementById('dock-position-style');
         if (existingStyle) {
@@ -2393,6 +2386,56 @@ window.addEventListener('error', function(e) {
             #dock-${position} { opacity: 1 !important; visibility: visible !important; }
         `;
         document.head.appendChild(style);
-    }
+    };
+
+    window.saveDockPosition = function(position) {
+        // Guardar en localStorage
+        localStorage.setItem('dockPosition', position);
+    };
+
+    window.setDockPosition = function(position) {
+        // Update active state for dock options
+        document.querySelectorAll('.dock-option').forEach(option => {
+            option.classList.remove('active');
+        });
+        
+        // Set active state for selected option
+        const selectedOption = document.querySelector(`[data-position="${position}"]`);
+        if (selectedOption) {
+            selectedOption.classList.add('active');
+        }
+        
+        // Apply dock position
+        window.applyDockPosition(position);
+        
+        // Save preference to localStorage
+        window.saveDockPosition(position);
+        
+        // Show notification if showNotification function exists
+        if (typeof showNotification === 'function') {
+            const positionNames = {
+                'bottom': 'Inferior',
+                'top': 'Superior', 
+                'left': 'Izquierda',
+                'right': 'Derecha'
+            };
+            showNotification(`Posición del dock cambiada a: ${positionNames[position]}`, 'success');
+        }
+    };
+    
+    // Inicializar la posición del dock en todas las páginas
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get current dock position from localStorage or default to bottom
+        const currentPosition = localStorage.getItem('dockPosition') || 'bottom';
+        
+        // Aplicar estilos para mostrar solo el dock seleccionado
+        window.applyDockPosition(currentPosition);
+        
+        // Set active option if we're on the config page
+        const currentOption = document.querySelector(`[data-position="${currentPosition}"]`);
+        if (currentOption) {
+            currentOption.classList.add('active');
+        }
+    });
 })();
 </script>

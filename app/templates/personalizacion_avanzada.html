@@ -2008,72 +2008,10 @@
             }
         }
 
-        // Dock position functionality
-        function setDockPosition(position) {
-            // Update active state for dock options
-            document.querySelectorAll('.dock-option').forEach(option => {
-                option.classList.remove('active');
-            });
-            
-            // Set active state for selected option
-            const selectedOption = document.querySelector(`[data-position="${position}"]`);
-            if (selectedOption) {
-                selectedOption.classList.add('active');
-            }
-            
-            // Apply dock position using the same method as dock.html
-            applyDockPosition(position);
-            
-            // Save preference to localStorage
-            saveDockPosition(position);
-            
-            // Show notification
-            const positionNames = {
-                'bottom': 'Inferior',
-                'top': 'Superior', 
-                'left': 'Izquierda',
-                'right': 'Derecha'
-            };
-            
-            showNotification(`Posición del dock cambiada a: ${positionNames[position]}`, 'success');
-        }
+        // Las funciones del dock ahora están definidas globalmente en dock.html
+        // No necesitamos redefinirlas aquí
         
-        function applyDockPosition(position) {
-            // Remover estilos anteriores si existen
-            const existingStyle = document.getElementById('dock-position-style');
-            if (existingStyle) {
-                existingStyle.remove();
-            }
-            
-            // Crear nuevo estilo para la posición del dock
-            const style = document.createElement('style');
-            style.id = 'dock-position-style';
-            style.textContent = `
-                .macos-dock { opacity: 0 !important; visibility: hidden !important; }
-                #dock-${position} { opacity: 1 !important; visibility: visible !important; }
-            `;
-            document.head.appendChild(style);
-        }
-        
-        function saveDockPosition(position) {
-            // Guardar en localStorage
-            localStorage.setItem('dockPosition', position);
-        }
-        
-        // Initialize dock position on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Get current dock position from localStorage or default to bottom
-            const currentPosition = localStorage.getItem('dockPosition') || 'bottom';
-            
-            // Set active option
-            const currentOption = document.querySelector(`[data-position="${currentPosition}"]`);
-            if (currentOption) {
-                currentOption.classList.add('active');
-            }
-            
-            // Apply dock position
-            applyDockPosition(currentPosition);
-        });
+        // La inicialización del dock ahora se maneja globalmente en dock.html
     </script>
 </body>
 </html>
