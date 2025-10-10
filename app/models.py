@@ -29,12 +29,20 @@ class UserProfile(models.Model):
         ('en', 'English'),
     ]
     
+    DOCK_POSITION_CHOICES = [
+        ('bottom', 'Inferior'),
+        ('top', 'Superior'),
+        ('left', 'Izquierda'),
+        ('right', 'Derecha'),
+    ]
+    
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bitrix_user_id = models.IntegerField(blank=True, null=True, verbose_name="ID de Usuario en Bitrix24")
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True, verbose_name="Avatar o Foto de Perfil")
     usar_animado = models.BooleanField(default=False, verbose_name="Usar avatar animado por defecto")
     avatar_tipo = models.CharField(max_length=20, choices=AVATAR_TIPO_CHOICES, default='1', verbose_name="Tipo de Avatar")
     language = models.CharField(max_length=2, choices=LANGUAGE_CHOICES, default='es', verbose_name="Idioma de preferencia")
+    dock_position = models.CharField(max_length=10, choices=DOCK_POSITION_CHOICES, default='bottom', verbose_name="Posición del Dock")
 
     def get_avatar_url(self):
         logger.info(f"get_avatar_url para usuario: {self.user.username}")

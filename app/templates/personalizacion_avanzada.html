@@ -2007,6 +2007,89 @@
                 window.location.href = '{% url "user_logout" %}';
             }
         }
+
+        // Dock position functionality
+        function setDockPosition(position) {
+            // Update active state for dock options
+            document.querySelectorAll('.dock-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            
+            // Set active state for selected option
+            const selectedOption = document.querySelector(`[data-position="${position}"]`);
+            if (selectedOption) {
+                selectedOption.classList.add('active');
+            }
+            
+            // Hide all docks first
+            const allDocks = ['dock-left', 'dock-right', 'dock-top', 'dock-bottom'];
+            allDocks.forEach(dockId => {
+                const dock = document.getElementById(dockId);
+                if (dock) {
+                    dock.style.display = 'none';
+                }
+            });
+            
+            // Show the selected dock
+            const targetDock = document.getElementById(`dock-${position}`);
+            if (targetDock) {
+                targetDock.style.display = 'flex';
+            }
+            
+            // Save preference to backend
+            saveDockPosition(position);
+            
+            // Show notification
+            const positionNames = {
+                'bottom': 'Inferior',
+                'top': 'Superior', 
+                'left': 'Izquierda',
+                'right': 'Derecha'
+            };
+            
+            showNotification(`Posición del dock cambiada a: ${positionNames[position]}`, 'success');
+        }
+        
+        function saveDockPosition(position) {
+            const formData = new FormData();
+            formData.append('dock_position', position);
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+            
+            fetch('{% url "configuracion_avanzada" %}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error('Error al guardar posición del dock:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error al guardar posición del dock:', error);
+            });
+        }
+        
+        // Initialize dock position on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get current dock position from user profile or default to bottom
+            const currentPosition = '{{ user_profile.dock_position|default:"bottom" }}';
+            
+            // Set active option
+            const currentOption = document.querySelector(`[data-position="${currentPosition}"]`);
+            if (currentOption) {
+                currentOption.classList.add('active');
+            }
+            
+            // Show only the current dock
+            const allDocks = ['dock-left', 'dock-right', 'dock-top', 'dock-bottom'];
+            allDocks.forEach(dockId => {
+                const dock = document.getElementById(dockId);
+                if (dock) {
+                    dock.style.display = dockId === `dock-${currentPosition}` ? 'flex' : 'none';
+                }
+            });
+        });
     </script>
 </body>
 </html>

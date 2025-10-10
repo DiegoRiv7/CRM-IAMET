@@ -6119,6 +6119,7 @@ def configuracion_avanzada(request):
             # Actualizar campos del perfil
             birthday = request.POST.get('birthday', '').strip()
             gender = request.POST.get('gender', '').strip()
+            dock_position = request.POST.get('dock_position', '').strip()
             
             if birthday:
                 try:
@@ -6129,6 +6130,9 @@ def configuracion_avanzada(request):
             
             if gender in ['M', 'F', 'O', 'N']:
                 user_profile.gender = gender
+            
+            if dock_position in ['bottom', 'top', 'left', 'right']:
+                user_profile.dock_position = dock_position
             
             user_profile.save()
             
