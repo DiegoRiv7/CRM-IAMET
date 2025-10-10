@@ -1,0 +1,198 @@
+{% extends 'base_generic.html' %}
+{% load static %}
+
+{% block title %}Oportunidades Perdidas - Bitrix24{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1>❌ Oportunidades Cerrado Perdido</h1>
+            <p class="text-muted">Gestiona las oportunidades marcadas como "Cerrado Perdido" en Bitrix24</p>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-danger">{{ total_lost }}</h3>
+                    <p class="card-text">Oportunidades Perdidas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="alert alert-info">
+                <h6><i class="fas fa-info-circle"></i> Información</h6>
+                <p class="mb-0">
+                    Estas oportunidades están marcadas como "Cerrado Perdido" en Bitrix24. 
+                    Puedes eliminarlas del sistema o reactivarlas si fueron marcadas por error.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Oportunidades Perdidas -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>📋 Lista de Oportunidades Perdidas</h5>
+                </div>
+                <div class="card-body">
+                    {% if lost_opportunities %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Oportunidad</th>
+                                        <th>Cliente</th>
+                                        <th>Vendedor</th>
+                                        <th>Monto</th>
+                                        <th>Área</th>
+                                        <th>Producto</th>
+                                        <th>Última Actualización</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for opportunity in lost_opportunities %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ opportunity.oportunidad }}</strong>
+                                            {% if opportunity.bitrix_deal_id %}
+                                                <br><small class="text-muted">Bitrix ID: {{ opportunity.bitrix_deal_id }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ opportunity.cliente.nombre_empresa|default:"Sin cliente" }}</td>
+                                        <td>{{ opportunity.usuario.get_full_name|default:opportunity.usuario.username }}</td>
+                                        <td>
+                                            {% if opportunity.monto %}
+                                                ${{ opportunity.monto|floatformat:2 }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ opportunity.get_area_display }}</td>
+                                        <td>{{ opportunity.get_producto_display }}</td>
+                                        <td>{{ opportunity.fecha_actualizacion|date:"d/m/Y H:i" }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <!-- Botón Reactivar -->
+                                                <form method="post" style="display: inline;" 
+                                                      onsubmit="return confirm('¿Reactivar esta oportunidad?')">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="action" value="reactivate">
+                                                    <input type="hidden" name="opportunity_id" value="{{ opportunity.id }}">
+                                                    <button type="submit" class="btn btn-sm btn-success" 
+                                                            title="Reactivar oportunidad">
+                                                        <i class="fas fa-undo"></i>
+                                                    </button>
+                                                </form>
+                                                
+                                                <!-- Botón Eliminar -->
+                                                <form method="post" style="display: inline;" 
+                                                      onsubmit="return confirm('¿Estás seguro de eliminar esta oportunidad? Esta acción no se puede deshacer.')">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="action" value="delete">
+                                                    <input type="hidden" name="opportunity_id" value="{{ opportunity.id }}">
+                                                    <button type="submit" class="btn btn-sm btn-danger" 
+                                                            title="Eliminar oportunidad">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-check-circle text-success" style="font-size: 48px;"></i>
+                            <h4 class="mt-3">¡Excelente!</h4>
+                            <p class="text-muted">No hay oportunidades marcadas como perdidas.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Masivas -->
+    {% if lost_opportunities %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>🔧 Acciones Masivas</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Próximamente: Funciones para eliminar o reactivar múltiples oportunidades a la vez.</p>
+                    <button class="btn btn-outline-secondary" disabled>
+                        <i class="fas fa-check-square"></i> Seleccionar Todo
+                    </button>
+                    <button class="btn btn-outline-danger" disabled>
+                        <i class="fas fa-trash"></i> Eliminar Seleccionadas
+                    </button>
+                    <button class="btn btn-outline-success" disabled>
+                        <i class="fas fa-undo"></i> Reactivar Seleccionadas
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Información de Estados -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>ℹ️ Estados de Bitrix24</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Estados Detectados:</h6>
+                            <ul class="list-unstyled">
+                                <li><span class="badge badge-danger">2</span> Cerrado Perdido</li>
+                                <li><span class="badge badge-warning">UC_YUQKW6</span> Cotizando</li>
+                                <li><span class="badge badge-info">UC_H8L1Z8</span> Cotización Enviada</li>
+                                <li><span class="badge badge-success">EXECUTING</span> Entregado</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Configuración Actual:</h6>
+                            <p><strong>Modo:</strong> Solo registrar en logs</p>
+                            <p><strong>Acción automática:</strong> Ninguna</p>
+                            <p class="text-muted small">
+                                Para cambiar el comportamiento automático, 
+                                modifica la función <code>handle_lost_opportunity</code> 
+                                en el código del webhook.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegación -->
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <a href="{% url 'bitrix-sync-admin' %}" class="btn btn-primary">
+                <i class="fas fa-arrow-left"></i> Volver a Administración Bitrix
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.btn-group form {
+    margin: 0 2px;
+}
+</style>
+{% endblock %}

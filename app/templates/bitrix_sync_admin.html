@@ -14,7 +14,7 @@
 
     <!-- Estadísticas -->
     <div class="row mb-4">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card">
                 <div class="card-body text-center">
                     <h3 class="text-primary">{{ total_opportunities }}</h3>
@@ -22,21 +22,41 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card">
                 <div class="card-body text-center">
-                    <h3 class="text-success">{{ bitrix_opportunities }}</h3>
+                    <h3 class="text-success">{{ active_opportunities }}</h3>
+                    <p class="card-text">Activas (En Tabla Principal)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-danger">{{ lost_opportunities }}</h3>
+                    <p class="card-text">Cerrado Perdido</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-info">{{ bitrix_opportunities }}</h3>
                     <p class="card-text">Sincronizadas con Bitrix24</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h3 class="text-warning">{{ local_opportunities }}</h3>
-                    <p class="card-text">Solo Locales</p>
-                </div>
-            </div>
+    </div>
+
+    <!-- Enlaces de Administración -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <a href="{% url 'bitrix-lost-opportunities' %}" class="btn btn-warning">
+                <i class="fas fa-exclamation-triangle"></i> Ver Oportunidades Perdidas
+                {% if lost_opportunities > 0 %}
+                    <span class="badge badge-light ml-2">{{ lost_opportunities }}</span>
+                {% endif %}
+            </a>
         </div>
     </div>
 
