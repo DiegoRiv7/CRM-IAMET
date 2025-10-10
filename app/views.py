@@ -1683,7 +1683,9 @@ def exportar_oportunidades_csv(request):
     else:
         items = TodoItem.objects.select_related('usuario', 'cliente').filter(usuario=request.user)
 
-    # Re-aplicar los filtros del request GET
+    logger.debug(f"Request GET: {request.GET}")
+    logger.debug(f"Initial items count: {items.count()}")
+
     oportunidad = request.GET.get('filterOportunidad', '').strip()
     if oportunidad:
         items = items.filter(oportunidad__icontains=oportunidad)
@@ -1692,13 +1694,16 @@ def exportar_oportunidades_csv(request):
     if cliente:
         items = items.filter(cliente__nombre_empresa__icontains=cliente)
 
-    monto_min = request.GET.get('filterMontoMin')
-    if monto_min:
-        items = items.filter(monto__gte=monto_min)
+    try:
+        monto_min = request.GET.get('filterMontoMin')
+        if monto_min:
+            items = items.filter(monto__gte=Decimal(monto_min))
 
-    monto_max = request.GET.get('filterMontoMax')
-    if monto_max:
-        items = items.filter(monto__lte=monto_max)
+        monto_max = request.GET.get('filterMontoMax')
+        if monto_max:
+            items = items.filter(monto__lte=Decimal(monto_max))
+    except (ValueError, TypeError, decimal.InvalidOperation):
+        pass # Ignorar si los valores de monto no son números válidos
 
     orden_probabilidad = request.GET.get('orden_probabilidad')
     if orden_probabilidad:
