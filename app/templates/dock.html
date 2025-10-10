@@ -332,19 +332,22 @@
         /* Uses default styles */
     }
     
-    /* Transparent dock - ultra high specificity */
+    /* Transparent dock - liquid glass effect */
     nav.macos-dock#dock-bottom.dock-transparent,
     nav.macos-dock#dock-top.dock-transparent,
     nav.macos-dock#dock-left.dock-transparent,
     nav.macos-dock#dock-right.dock-transparent,
     .macos-dock.dock-transparent {
-        background: rgba(29, 29, 31, 0.1) !important;
-        backdrop-filter: blur(10px) !important;
-        -webkit-backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-        opacity: 0.4 !important;
-        transition: all 0.3s ease !important;
+        background: rgba(29, 29, 31, 0.03) !important;
+        backdrop-filter: blur(20px) saturate(250%) contrast(120%) brightness(110%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(250%) contrast(120%) brightness(110%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        box-shadow: 
+            0 4px 20px rgba(0, 0, 0, 0.08) !important,
+            inset 0 1px 0 rgba(255, 255, 255, 0.03) !important,
+            inset 0 -1px 0 rgba(255, 255, 255, 0.02) !important;
+        opacity: 0.2 !important;
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
     
     nav.macos-dock#dock-bottom.dock-transparent:hover,
@@ -352,29 +355,34 @@
     nav.macos-dock#dock-left.dock-transparent:hover,
     nav.macos-dock#dock-right.dock-transparent:hover,
     .macos-dock.dock-transparent:hover {
-        background: rgba(29, 29, 31, 0.9) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border: 2px solid rgba(0, 122, 255, 0.8) !important;
+        background: rgba(29, 29, 31, 0.95) !important;
+        backdrop-filter: blur(30px) saturate(180%) contrast(110%) !important;
+        -webkit-backdrop-filter: blur(30px) saturate(180%) contrast(110%) !important;
+        border: 2px solid rgba(0, 122, 255, 0.9) !important;
         box-shadow: 
-            0 0 0 2px rgba(0, 122, 255, 0.4) !important,
-            0 8px 32px rgba(0, 0, 0, 0.3) !important;
+            0 0 0 3px rgba(0, 122, 255, 0.5) !important,
+            0 0 40px rgba(0, 122, 255, 0.3) !important,
+            0 8px 32px rgba(0, 0, 0, 0.4) !important,
+            inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
         opacity: 1 !important;
     }
     
-    /* Light theme transparent dock - ultra high specificity */
+    /* Light theme transparent dock - liquid glass effect */
     .light-theme nav.macos-dock#dock-bottom.dock-transparent,
     .light-theme nav.macos-dock#dock-top.dock-transparent,
     .light-theme nav.macos-dock#dock-left.dock-transparent,
     .light-theme nav.macos-dock#dock-right.dock-transparent,
     .light-theme .macos-dock.dock-transparent {
-        background: rgba(255, 255, 255, 0.15) !important;
-        backdrop-filter: blur(10px) !important;
-        -webkit-backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(255, 107, 157, 0.2) !important;
-        box-shadow: 0 2px 8px rgba(255, 107, 157, 0.1) !important;
-        opacity: 0.4 !important;
-        transition: all 0.3s ease !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(20px) saturate(250%) contrast(120%) brightness(110%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(250%) contrast(120%) brightness(110%) !important;
+        border: 1px solid rgba(255, 107, 157, 0.08) !important;
+        box-shadow: 
+            0 4px 20px rgba(255, 107, 157, 0.05) !important,
+            inset 0 1px 0 rgba(255, 255, 255, 0.15) !important,
+            inset 0 -1px 0 rgba(255, 107, 157, 0.05) !important;
+        opacity: 0.15 !important;
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
     
     .light-theme nav.macos-dock#dock-bottom.dock-transparent:hover,
@@ -382,13 +390,15 @@
     .light-theme nav.macos-dock#dock-left.dock-transparent:hover,
     .light-theme nav.macos-dock#dock-right.dock-transparent:hover,
     .light-theme .macos-dock.dock-transparent:hover {
-        background: rgba(255, 240, 245, 0.95) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border: 2px solid rgba(0, 122, 255, 0.8) !important;
+        background: rgba(255, 240, 245, 0.98) !important;
+        backdrop-filter: blur(30px) saturate(200%) contrast(110%) !important;
+        -webkit-backdrop-filter: blur(30px) saturate(200%) contrast(110%) !important;
+        border: 2px solid rgba(0, 122, 255, 0.9) !important;
         box-shadow: 
-            0 0 0 2px rgba(0, 122, 255, 0.4) !important,
-            0 8px 32px rgba(255, 107, 157, 0.3) !important;
+            0 0 0 3px rgba(0, 122, 255, 0.5) !important,
+            0 0 40px rgba(0, 122, 255, 0.3) !important,
+            0 8px 32px rgba(255, 107, 157, 0.4) !important,
+            inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
         opacity: 1 !important;
     }
     
