@@ -9214,6 +9214,36 @@ def bitrix_sync_admin(request):
             except Exception as e:
                 messages.error(request, f'Error durante la importación: {str(e)}')
         
+        elif action == 'sync_lost_opportunities':
+            # Ejecutar sincronización de oportunidades perdidas
+            try:
+                from django.core.management import call_command
+                from io import StringIO
+                
+                # Capturar la salida del comando
+                out = StringIO()
+                call_command('sync_lost_opportunities', stdout=out)
+                output = out.getvalue()
+                
+                # Extraer estadísticas del output
+                lines = output.split('\n')
+                stats_found = False
+                for line in lines:
+                    if 'Oportunidades perdidas encontradas:' in line:
+                        found_count = line.split(':')[-1].strip()
+                        messages.success(
+                            request, 
+                            f'Sincronización completada. Se encontraron {found_count} oportunidades perdidas que fueron actualizadas.'
+                        )
+                        stats_found = True
+                        break
+                
+                if not stats_found:
+                    messages.success(request, 'Sincronización de oportunidades perdidas completada')
+                    
+            except Exception as e:
+                messages.error(request, f'Error durante la sincronización: {str(e)}')
+        
         return redirect('bitrix-sync-admin')
     
     # GET request - mostrar estadísticas

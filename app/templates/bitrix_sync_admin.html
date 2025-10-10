@@ -62,7 +62,28 @@
 
     <!-- Acciones de Sincronización -->
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>❌ Sincronizar Oportunidades Perdidas</h5>
+                </div>
+                <div class="card-body">
+                    <p>Revisa todas las oportunidades y detecta cuáles están marcadas como perdidas en Bitrix24.</p>
+                    <p class="text-muted small">
+                        <strong>Recomendado:</strong> Ejecuta esto primero para limpiar oportunidades perdidas que no se detectaron antes.
+                    </p>
+                    <form method="post" onsubmit="return confirm('¿Sincronizar estados de oportunidades perdidas? Esto puede tomar varios minutos.')">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="sync_lost_opportunities">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-search"></i> Detectar Perdidas
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
                     <h5>🗑️ Sincronizar Eliminaciones</h5>
@@ -83,7 +104,7 @@
             </div>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
                     <h5>⬇️ Importar Todas las Oportunidades</h5>
@@ -130,6 +151,9 @@
                         
                         <p class="mt-2"><strong>Configurar webhooks:</strong></p>
                         <code>python manage.py setup_bitrix_webhooks --webhook-url https://tudominio.com/app/bitrix/webhook/ --bitrix-webhook https://tubitrix.bitrix24.mx/rest/123/abc123/</code>
+                        
+                        <p class="mt-2"><strong>Sincronizar oportunidades perdidas:</strong></p>
+                        <code>python manage.py sync_lost_opportunities</code>
                         
                         <p class="mt-2"><strong>Importar oportunidades:</strong></p>
                         <code>python manage.py import_bitrix_opportunities</code>
