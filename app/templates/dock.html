@@ -325,6 +325,69 @@
             inset 0 1px 0 rgba(255, 255, 255, 0.9);
     }
 
+    /* Dock Type Styles */
+    
+    /* Normal dock - default styles already applied */
+    .macos-dock.dock-normal {
+        /* Uses default styles */
+    }
+    
+    /* Transparent dock - macOS-like behavior */
+    .macos-dock.dock-transparent {
+        background: rgba(29, 29, 31, 0.1) !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+        opacity: 0.3 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .macos-dock.dock-transparent:hover {
+        background: rgba(29, 29, 31, 0.8) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border: 2px solid rgba(0, 122, 255, 0.6) !important;
+        box-shadow: 
+            0 0 0 2px rgba(0, 122, 255, 0.3) !important,
+            0 8px 32px rgba(0, 0, 0, 0.4) !important;
+        opacity: 1 !important;
+        transform: scale(1.02) !important;
+    }
+    
+    /* Light theme transparent dock */
+    .light-theme .macos-dock.dock-transparent {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border: 1px solid rgba(255, 107, 157, 0.1) !important;
+        box-shadow: 0 4px 16px rgba(255, 107, 157, 0.05) !important;
+    }
+    
+    .light-theme .macos-dock.dock-transparent:hover {
+        background: rgba(255, 240, 245, 0.95) !important;
+        border: 2px solid rgba(0, 122, 255, 0.6) !important;
+        box-shadow: 
+            0 0 0 2px rgba(0, 122, 255, 0.3) !important,
+            0 8px 32px rgba(255, 107, 157, 0.3) !important;
+    }
+    
+    /* Compact dock */
+    .macos-dock.dock-compact {
+        padding: 4px !important;
+        border-radius: 12px !important;
+        background: rgba(29, 29, 31, 0.9) !important;
+    }
+    
+    .macos-dock.dock-compact .dock-item {
+        width: 32px !important;
+        height: 32px !important;
+        margin: 0 2px !important;
+    }
+    
+    .macos-dock.dock-compact .dock-icon {
+        width: 20px !important;
+        height: 20px !important;
+    }
+
     .light-theme .design-panel {
         background: linear-gradient(135deg, 
             rgba(255, 228, 239, 0.9) 0%, 
@@ -2568,6 +2631,17 @@ document.addEventListener('DOMContentLoaded', function() {
             activeArrow.classList.add('active');
             console.log('Set active position arrow:', activeArrow);
         }
+        
+        // Apply saved dock type
+        const currentDockType = localStorage.getItem('dockType') || 'normal';
+        console.log('Applying saved dock type:', currentDockType);
+        
+        const dockElements = document.querySelectorAll('.macos-dock, nav.macos-dock');
+        dockElements.forEach(dock => {
+            dock.classList.remove('dock-normal', 'dock-transparent', 'dock-compact');
+            dock.classList.add(`dock-${currentDockType}`);
+            console.log('Applied dock type class:', `dock-${currentDockType}`);
+        });
     }, 100);
 });
 </script>

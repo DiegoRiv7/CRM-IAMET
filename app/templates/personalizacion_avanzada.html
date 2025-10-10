@@ -625,6 +625,90 @@
             height: 6px;
             background: linear-gradient(135deg, var(--apple-blue), #5AC8FA);
         }
+
+        /* Dock Icons Options Styles */
+        .dock-icons-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .dock-icons-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            border: 2px solid var(--apple-separator);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .dock-icons-option:hover {
+            border-color: var(--apple-blue-light);
+            transform: translateY(-2px);
+        }
+        
+        .dock-icons-option.active {
+            border-color: var(--apple-blue) !important;
+            background-color: rgba(0, 122, 255, 0.2) !important;
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3) !important;
+            transform: translateY(-2px) !important;
+        }
+        
+        .dock-icons-option span {
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--apple-label);
+            font-weight: 500;
+        }
+        
+        .dock-icons-preview {
+            width: 80px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(40, 40, 40, 0.8);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .preview-icons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .preview-icons span {
+            font-size: 12px;
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            text-align: center;
+            line-height: 12px;
+        }
+        
+        .preview-icons.default span {
+            opacity: 1;
+        }
+        
+        .preview-icons.minimal span {
+            background: var(--apple-blue);
+            border-radius: 50%;
+            color: transparent;
+        }
+        
+        .preview-icons.modern span {
+            background: linear-gradient(135deg, var(--apple-blue), #5AC8FA);
+            color: white;
+            border-radius: 2px;
+            font-size: 8px;
+        }
         
         .dock-option span {
             margin-top: 8px;
@@ -1306,12 +1390,12 @@
                 </div>
                 
                 <div class="design-section" style="margin-top: 30px;">
-                    <h3><i class="fas fa-th-large" style="margin-right: 8px;"></i> Posición del Dock</h3>
-                    <p>Elige dónde quieres que aparezca el menú de navegación</p>
+                    <h3><i class="fas fa-th-large" style="margin-right: 8px;"></i> Dock</h3>
+                    <p>Configura aquí tu dock</p>
                     
                     <!-- Tipo de Dock -->
-                    <div style="margin-top: 25px; margin-bottom: 20px;">
-                        <h4 style="color: var(--apple-label); font-size: 16px; margin-bottom: 10px;">
+                    <div style="margin-top: 25px; margin-bottom: 30px;">
+                        <h4 style="color: var(--apple-label); font-size: 16px; margin-bottom: 15px;">
                             <i class="fas fa-palette" style="margin-right: 8px;"></i> Tipo de Dock
                         </h4>
                         <div class="dock-type-options">
@@ -1334,6 +1418,46 @@
                                 <span>Compacto</span>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Iconos del Dock -->
+                    <div style="margin-bottom: 30px;">
+                        <h4 style="color: var(--apple-label); font-size: 16px; margin-bottom: 15px;">
+                            <i class="fas fa-icons" style="margin-right: 8px;"></i> Iconos del Dock
+                        </h4>
+                        <div class="dock-icons-options">
+                            <div class="dock-icons-option active" data-icons="default" onclick="setDockIcons('default')">
+                                <div class="dock-icons-preview">
+                                    <div class="preview-icons default">
+                                        <span>🏠</span><span>📊</span><span>💼</span><span>⚙️</span>
+                                    </div>
+                                </div>
+                                <span>Por defecto</span>
+                            </div>
+                            <div class="dock-icons-option" data-icons="minimal" onclick="setDockIcons('minimal')">
+                                <div class="dock-icons-preview">
+                                    <div class="preview-icons minimal">
+                                        <span>●</span><span>●</span><span>●</span><span>●</span>
+                                    </div>
+                                </div>
+                                <span>Minimalista</span>
+                            </div>
+                            <div class="dock-icons-option" data-icons="modern" onclick="setDockIcons('modern')">
+                                <div class="dock-icons-preview">
+                                    <div class="preview-icons modern">
+                                        <span>◆</span><span>◆</span><span>◆</span><span>◆</span>
+                                    </div>
+                                </div>
+                                <span>Moderno</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Posición del Dock -->
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="color: var(--apple-label); font-size: 16px; margin-bottom: 15px;">
+                            <i class="fas fa-arrows-alt" style="margin-right: 8px;"></i> Posición del Dock
+                        </h4>
                     </div>
                     <div class="dock-options">
                         <div class="dock-option" data-position="bottom" onclick="setDockPosition('bottom')">
@@ -2055,6 +2179,9 @@
                 }, 150);
             }
 
+            // Apply dock type to actual dock
+            applyDockTypeStyles(type);
+            
             // Save dock type to localStorage
             localStorage.setItem('dockType', type);
             console.log('Dock type saved to localStorage:', type);
@@ -2066,6 +2193,64 @@
                 'compact': 'Compacto'
             };
             showNotification(`Tipo de dock cambiado a ${typeNames[type] || type}`, 'success');
+        }
+
+        // Apply dock type styles to actual dock
+        function applyDockTypeStyles(type) {
+            console.log('Applying dock type styles:', type);
+            
+            // Find all dock elements
+            const dockElements = document.querySelectorAll('.macos-dock, nav.macos-dock');
+            
+            // Remove all dock type classes
+            dockElements.forEach(dock => {
+                dock.classList.remove('dock-normal', 'dock-transparent', 'dock-compact');
+                
+                // Add the new dock type class
+                dock.classList.add(`dock-${type}`);
+                console.log('Applied class dock-' + type + ' to dock element');
+            });
+        }
+
+        // Dock icons functionality
+        function setDockIcons(icons) {
+            console.log('setDockIcons called with:', icons);
+            
+            // Update active state for dock icons options
+            document.querySelectorAll('.dock-icons-option').forEach(option => {
+                option.classList.remove('active');
+                // Limpiar estilos inline previos
+                option.style.transform = '';
+                option.style.borderColor = '';
+                option.style.backgroundColor = '';
+                option.style.boxShadow = '';
+            });
+            
+            // Find and activate the selected dock icons option
+            const selectedOption = document.querySelector(`.dock-icons-option[data-icons="${icons}"]`);
+            if (selectedOption) {
+                selectedOption.classList.add('active');
+                console.log('Added active class to dock icons option:', selectedOption);
+                
+                // Forzar un pequeño efecto visual sin interferer con los CSS
+                selectedOption.style.transform = 'translateY(-2px) scale(1.05)';
+                setTimeout(() => {
+                    // Quitar el estilo inline para que use el CSS de la clase active
+                    selectedOption.style.transform = '';
+                }, 150);
+            }
+
+            // Save dock icons to localStorage
+            localStorage.setItem('dockIcons', icons);
+            console.log('Dock icons saved to localStorage:', icons);
+            
+            // Show notification
+            const iconsNames = {
+                'default': 'Por defecto',
+                'minimal': 'Minimalista',
+                'modern': 'Moderno'
+            };
+            showNotification(`Iconos del dock cambiados a ${iconsNames[icons] || icons}`, 'success');
         }
 
         // User info functionality
@@ -2183,6 +2368,10 @@
                 // Inicializar tipo de dock activo
                 const currentDockType = localStorage.getItem('dockType') || 'normal';
                 initializeActiveDockType(currentDockType);
+                
+                // Inicializar iconos de dock activos
+                const currentDockIcons = localStorage.getItem('dockIcons') || 'default';
+                initializeActiveDockIcons(currentDockIcons);
             }, 200);
         });
         
@@ -2208,6 +2397,15 @@
             document.querySelectorAll('.dock-type-option').forEach(option => {
                 option.classList.remove('active');
                 if (option.getAttribute('data-type') === type) {
+                    option.classList.add('active');
+                }
+            });
+        }
+
+        function initializeActiveDockIcons(icons) {
+            document.querySelectorAll('.dock-icons-option').forEach(option => {
+                option.classList.remove('active');
+                if (option.getAttribute('data-icons') === icons) {
                     option.classList.add('active');
                 }
             });
