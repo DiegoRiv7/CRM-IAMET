@@ -1509,39 +1509,59 @@
         }
 
         // Avatar functionality - original system
-        function uploadPhoto() {
-            const fileInput = document.getElementById('avatarUpload');
-            fileInput.onchange = function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(event) {
-                        const uploadedAvatar = document.getElementById('uploadedAvatar');
-                        const animGalleryPreview = document.getElementById('animGalleryPreview');
-                        
-                        // Hide the avatar gallery preview
-                        if (animGalleryPreview) {
-                            animGalleryPreview.style.display = 'none';
-                        }
-                        
-                        // Show the uploaded image
-                        if (uploadedAvatar) {
-                            uploadedAvatar.src = event.target.result;
-                            uploadedAvatar.style.display = 'block';
-                            
-                            // Mostrar notificación de éxito
-                            showNotification('Imagen cargada correctamente. Haz clic en Guardar Cambios para confirmar.', 'success');
-                        }
-                        
-                        // Set the avatar choice to empty to indicate a custom upload
-                        document.getElementById('avatarChoice').value = '';
-                    };
-                    reader.readAsDataURL(file);
+        // Función para aplicar los cambios de la imagen
+        function applyCrop() {
+            if (!selectedImageFile) {
+                showNotification('No hay ninguna imagen seleccionada', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('avatar', selectedImageFile);
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+            
+            // Mostrar indicador de carga
+            const applyButton = document.querySelector('button[onclick="applyCrop()"]');
+            const originalText = applyButton ? applyButton.innerHTML : '';
+            if (applyButton) {
+                applyButton.disabled = true;
+                applyButton.innerHTML = '<span>⏳</span> Guardando...';
+            }
+
+            fetch('{% url "actualizar_avatar" %}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Foto de perfil actualizada correctamente', 'success');
+                    // Recargar la página después de 1 segundo para ver los cambios
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    throw new Error(data.error || 'Error al guardar la imagen');
                 }
-            };
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Error al guardar la foto: ' + error.message, 'error');
+            })
+            .finally(() => {
+                if (applyButton) {
+                    applyButton.disabled = false;
+                    applyButton.innerHTML = originalText;
+                }
+            });
+        }
+        
+        function uploadPhoto() {
+            document.getElementById('avatarUpload').click();
         }
 
         // Avatar selection logic from original system
+        // Variable global para almacenar la imagen seleccionada
+        let selectedImageFile = null;
+        
         function initializeAvatarSystem() {
             console.log('Inicializando sistema de avatar...');
             const avatarChoices = document.querySelectorAll('.avatar-choice');
@@ -1549,9 +1569,27 @@
             const uploadedAvatar = document.getElementById('uploadedAvatar');
             const avatarUpload = document.getElementById('avatarUpload');
             
-            // Forzar visibilidad del botón de subir archivo
+            // Configurar el manejador de cambio de archivo
             if (avatarUpload) {
                 console.log('Elemento de carga de archivo encontrado');
+                avatarUpload.onchange = function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        selectedImageFile = file;
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            if (uploadedAvatar) {
+                                uploadedAvatar.src = event.target.result;
+                                uploadedAvatar.style.display = 'block';
+                                // Mostrar el botón de aplicar si está oculto
+                                const applyButton = document.querySelector('button[onclick="applyCrop()"]');
+                                if (applyButton) applyButton.style.display = 'inline-block';
+                            }
+                            showNotification('Imagen cargada. Haz clic en Aplicar para guardar los cambios.', 'info');
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                };
             } else {
                 console.error('No se encontró el elemento de carga de archivo');
             }

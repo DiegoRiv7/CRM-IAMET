@@ -216,6 +216,145 @@
         font-size: 0.9rem;
     }
 
+    /* Filter Modal Styles */
+    .filter-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(10px);
+        z-index: 1000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .filter-modal.show {
+        display: flex;
+    }
+    
+    .filter-modal-content {
+        background: rgba(28, 28, 30, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 20px;
+        border: 1px solid var(--apple-separator);
+        padding: 2rem;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    
+    .filter-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .filter-modal-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--apple-label);
+    }
+    
+    .filter-close-btn {
+        background: none;
+        border: none;
+        color: var(--apple-label-secondary);
+        font-size: 1.5rem;
+        cursor: pointer;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+    
+    .filter-close-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--apple-label);
+    }
+    
+    .filter-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .filter-label {
+        display: block;
+        font-weight: 600;
+        color: var(--apple-label);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .filter-input {
+        width: 100%;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--apple-separator);
+        border-radius: 12px;
+        color: var(--apple-label);
+        font-size: 1rem;
+        outline: none;
+        transition: all 0.2s ease;
+    }
+    
+    .filter-input:focus {
+        border-color: var(--apple-blue);
+        background: rgba(255, 255, 255, 0.12);
+    }
+    
+    .filter-input::placeholder {
+        color: var(--apple-label-secondary);
+    }
+    
+    .filter-range-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+    
+    .filter-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+    
+    .filter-btn {
+        flex: 1;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+        font-size: 1rem;
+    }
+    
+    .filter-btn.primary {
+        background: var(--apple-blue);
+        color: white;
+    }
+    
+    .filter-btn.primary:hover {
+        filter: brightness(1.1);
+    }
+    
+    .filter-btn.secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--apple-label);
+    }
+    
+    .filter-btn.secondary:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
 </style>
 
 <div class="todos-container">
@@ -238,6 +377,73 @@
                 </div>
                 <a href="{% url 'crear_cotizacion' %}" class="create-btn">+ Nueva Cotización</a>
                 <a href="{% url 'nueva_oportunidad' %}" class="create-btn secondary">+ Nueva Oportunidad</a>
+            </div>
+        </div>
+
+        <!-- Filter Modal -->
+        <div class="filter-modal" id="filterModal">
+            <div class="filter-modal-content">
+                <div class="filter-modal-header">
+                    <h3 class="filter-modal-title">Filtrar Oportunidades</h3>
+                    <button class="filter-close-btn" onclick="closeFilterModal()">×</button>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Buscar en Oportunidad</label>
+                    <input type="text" class="filter-input" id="filterOportunidad" placeholder="Nombre de la oportunidad...">
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Cliente</label>
+                    <select class="filter-input" id="filterCliente">
+                        <option value="">Todos los clientes</option>
+                        {% regroup items by cliente.nombre_empresa as clientes_grouped %}
+                        {% for cliente in clientes_grouped %}
+                            {% if cliente.grouper %}
+                                <option value="{{ cliente.grouper }}">{{ cliente.grouper }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Rango de Monto</label>
+                    <div class="filter-range-group">
+                        <input type="number" class="filter-input" id="filterMontoMin" placeholder="Monto mínimo">
+                        <input type="number" class="filter-input" id="filterMontoMax" placeholder="Monto máximo">
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Rango de Probabilidad (%)</label>
+                    <div class="filter-range-group">
+                        <input type="number" class="filter-input" id="filterProbabilidadMin" placeholder="Mín %" min="0" max="100">
+                        <input type="number" class="filter-input" id="filterProbabilidadMax" placeholder="Máx %" min="0" max="100">
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Mes de Cierre</label>
+                    <select class="filter-input" id="filterMesCierre">
+                        <option value="">Todos los meses</option>
+                        {% regroup items by get_mes_cierre_display as meses_grouped %}
+                        {% for mes in meses_grouped %}
+                            {% if mes.grouper %}
+                                <option value="{{ mes.grouper }}">{{ mes.grouper }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Contacto</label>
+                    <input type="text" class="filter-input" id="filterContacto" placeholder="Nombre del contacto...">
+                </div>
+                
+                <div class="filter-actions">
+                    <button class="filter-btn secondary" onclick="clearFilters()">Limpiar Filtros</button>
+                    <button class="filter-btn primary" onclick="applyFilters()">Aplicar Filtros</button>
+                </div>
             </div>
         </div>
 
@@ -386,6 +592,140 @@ document.addEventListener('DOMContentLoaded', function() {
             searchWidget.classList.remove('expanded');
         }
     });
+});
+
+// Filter Modal Functions
+function toggleFilterModal() {
+    const modal = document.getElementById('filterModal');
+    const filterIcon = document.getElementById('filter-icon');
+    
+    if (modal.classList.contains('show')) {
+        closeFilterModal();
+    } else {
+        modal.classList.add('show');
+        filterIcon.classList.add('active');
+    }
+}
+
+function closeFilterModal() {
+    const modal = document.getElementById('filterModal');
+    const filterIcon = document.getElementById('filter-icon');
+    
+    modal.classList.remove('show');
+    filterIcon.classList.remove('active');
+}
+
+function clearFilters() {
+    // Clear all filter inputs
+    document.getElementById('filterOportunidad').value = '';
+    document.getElementById('filterCliente').value = '';
+    document.getElementById('filterMontoMin').value = '';
+    document.getElementById('filterMontoMax').value = '';
+    document.getElementById('filterProbabilidadMin').value = '';
+    document.getElementById('filterProbabilidadMax').value = '';
+    document.getElementById('filterMesCierre').value = '';
+    document.getElementById('filterContacto').value = '';
+    
+    // Apply filters (which will show all rows since all filters are empty)
+    applyFilters();
+}
+
+function applyFilters() {
+    const oportunidad = document.getElementById('filterOportunidad').value.toLowerCase().trim();
+    const cliente = document.getElementById('filterCliente').value.toLowerCase().trim();
+    const montoMin = parseFloat(document.getElementById('filterMontoMin').value) || 0;
+    const montoMax = parseFloat(document.getElementById('filterMontoMax').value) || Infinity;
+    const probMin = parseFloat(document.getElementById('filterProbabilidadMin').value) || 0;
+    const probMax = parseFloat(document.getElementById('filterProbabilidadMax').value) || 100;
+    const mesCierre = document.getElementById('filterMesCierre').value.toLowerCase().trim();
+    const contacto = document.getElementById('filterContacto').value.toLowerCase().trim();
+    
+    const tableBody = document.getElementById('tablaOportunidades');
+    const rows = tableBody.getElementsByTagName('tr');
+    
+    let visibleCount = 0;
+    
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const cells = row.getElementsByTagName('td');
+        
+        if (cells.length === 0) continue; // Skip if no cells (header row)
+        
+        let showRow = true;
+        
+        // Filter by Oportunidad
+        if (oportunidad && !cells[0].textContent.toLowerCase().includes(oportunidad)) {
+            showRow = false;
+        }
+        
+        // Filter by Cliente
+        if (cliente && !cells[1].textContent.toLowerCase().includes(cliente)) {
+            showRow = false;
+        }
+        
+        // Filter by Monto
+        const montoText = cells[2].textContent.replace('$', '').replace(/,/g, '');
+        const montoValue = parseFloat(montoText) || 0;
+        if (montoValue < montoMin || montoValue > montoMax) {
+            showRow = false;
+        }
+        
+        // Filter by Probabilidad
+        const probText = cells[3].querySelector('span');
+        if (probText) {
+            const probValue = parseFloat(probText.textContent.replace('%', '')) || 0;
+            if (probValue < probMin || probValue > probMax) {
+                showRow = false;
+            }
+        }
+        
+        // Filter by Mes Cierre
+        if (mesCierre && !cells[4].textContent.toLowerCase().includes(mesCierre)) {
+            showRow = false;
+        }
+        
+        // Filter by Contacto
+        if (contacto && !cells[5].textContent.toLowerCase().includes(contacto)) {
+            showRow = false;
+        }
+        
+        row.style.display = showRow ? '' : 'none';
+        if (showRow) visibleCount++;
+    }
+    
+    // Show message if no results
+    updateNoResultsMessage(visibleCount, tableBody);
+    
+    // Close modal after applying filters
+    closeFilterModal();
+}
+
+function updateNoResultsMessage(visibleCount, tableBody) {
+    // Remove existing no-results message
+    const existingMessage = tableBody.querySelector('.no-results-row');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+    
+    // Add no-results message if needed
+    if (visibleCount === 0) {
+        const noResultsRow = document.createElement('tr');
+        noResultsRow.className = 'no-results-row';
+        noResultsRow.innerHTML = '<td colspan="6" class="text-center py-10 text-gray-400">No se encontraron oportunidades que coincidan con los filtros aplicados.</td>';
+        tableBody.appendChild(noResultsRow);
+    }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('filterModal');
+    const filterIcon = document.getElementById('filter-icon');
+    
+    if (modal.classList.contains('show') && 
+        !modal.querySelector('.filter-modal-content').contains(event.target) && 
+        !filterIcon.contains(event.target)) {
+        closeFilterModal();
+    }
 });
 </script>
 {% endblock %}
