@@ -2496,27 +2496,47 @@ def exportar_oportunidades_csv(request):
         
         # Convertir mes_cierre a índice (0-11) para el array de meses
         if mes_cierre_valor and mes_cierre_valor.strip():
-            try:
-                # mes_cierre viene como '01', '02', etc. - convertir a entero
-                mes = int(mes_cierre_valor.strip())
-                print(f"DEBUG: mes_cierre converted to int: {mes}")
+            # Crear mapeo de nombres de meses a números
+            mes_nombres_a_numeros = {
+                'Enero': 1, 'Febrero': 2, 'Marzo': 3, 'Abril': 4,
+                'Mayo': 5, 'Junio': 6, 'Julio': 7, 'Agosto': 8,
+                'Septiembre': 9, 'Octubre': 10, 'Noviembre': 11, 'Diciembre': 12
+            }
+            
+            mes_str = mes_cierre_valor.strip()
+            
+            # Intentar convertir usando el mapeo de nombres
+            if mes_str in mes_nombres_a_numeros:
+                mes = mes_nombres_a_numeros[mes_str]
+                print(f"DEBUG: mes_cierre '{mes_str}' mapped to int: {mes}")
                 
-                if 1 <= mes <= 12:
-                    # Formatear la probabilidad
-                    if probabilidad_valor is not None:
-                        probabilidad_str = f"{probabilidad_valor}%"
-                    else:
-                        probabilidad_str = "0%"  # Default si no hay probabilidad
-                    
-                    # Asignar al mes correspondiente (mes-1 porque el array es 0-indexed)
-                    month_names = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEPT','OCT','NOV','DIC']
-                    months[mes - 1] = probabilidad_str
-                    print(f"DEBUG: Setting month {mes} ({month_names[mes-1]}) to {probabilidad_str}")
+                # Formatear la probabilidad
+                if probabilidad_valor is not None:
+                    probabilidad_str = f"{probabilidad_valor}%"
                 else:
-                    print(f"DEBUG: mes_cierre {mes} is out of range (1-12)")
-                    
-            except (ValueError, TypeError) as e:
-                print(f"DEBUG: Error converting mes_cierre '{mes_cierre_valor}': {e}")
+                    probabilidad_str = "0%"  # Default si no hay probabilidad
+                
+                # Asignar al mes correspondiente (mes-1 porque el array es 0-indexed)
+                month_names = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEPT','OCT','NOV','DIC']
+                months[mes - 1] = probabilidad_str
+                print(f"DEBUG: Setting month {mes} ({month_names[mes-1]}) to {probabilidad_str}")
+            else:
+                # Intentar como número directo (fallback)
+                try:
+                    mes = int(mes_str)
+                    if 1 <= mes <= 12:
+                        if probabilidad_valor is not None:
+                            probabilidad_str = f"{probabilidad_valor}%"
+                        else:
+                            probabilidad_str = "0%"
+                        
+                        month_names = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEPT','OCT','NOV','DIC']
+                        months[mes - 1] = probabilidad_str
+                        print(f"DEBUG: Setting month {mes} ({month_names[mes-1]}) to {probabilidad_str}")
+                    else:
+                        print(f"DEBUG: mes_cierre {mes} is out of range (1-12)")
+                except (ValueError, TypeError):
+                    print(f"DEBUG: Unable to convert mes_cierre '{mes_str}' - not a recognized month name or number")
         else:
             print(f"DEBUG: mes_cierre is None, empty or whitespace: '{mes_cierre_valor}'")
         
