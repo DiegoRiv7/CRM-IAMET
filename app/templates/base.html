@@ -56,13 +56,51 @@
     <script type="text/javascript">
         (function() {
             try {
-                const saved = localStorage.getItem('designPreferences');
-                if (saved) {
-                    const preferences = JSON.parse(saved);
-                    // Check for the light mode flag. If isDarkMode is false, apply light-theme.
-                    const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
-                    if (!isDarkMode) {
+                // Check for theme in localStorage first
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme) {
+                    // Apply the saved theme
+                    if (savedTheme === 'pink') {
                         document.documentElement.classList.add('light-theme');
+                        document.documentElement.style.setProperty('--apple-background', '#ffebf0');
+                        document.documentElement.style.setProperty('--apple-background-secondary', '#fff5f8');
+                        document.documentElement.style.setProperty('--apple-background-tertiary', '#ffe0e6');
+                        document.documentElement.style.setProperty('--apple-label', '#d63384');
+                        document.documentElement.style.setProperty('--apple-label-secondary', '#c7366f');
+                        document.documentElement.style.setProperty('--apple-blue', '#ff6b9d');
+                        document.documentElement.style.setProperty('--apple-blue-light', '#ff8fab');
+                        document.documentElement.style.setProperty('--apple-blue-dark', '#e6396b');
+                    } else if (savedTheme === 'light') {
+                        document.documentElement.classList.add('light-theme');
+                    } else if (savedTheme === 'blue') {
+                        document.documentElement.classList.add('light-theme');
+                        document.documentElement.style.setProperty('--apple-background', '#f0f7ff');
+                        document.documentElement.style.setProperty('--apple-background-secondary', '#f5faff');
+                        document.documentElement.style.setProperty('--apple-background-tertiary', '#e6f3ff');
+                        document.documentElement.style.setProperty('--apple-label', '#0056b3');
+                        document.documentElement.style.setProperty('--apple-label-secondary', '#004085');
+                        document.documentElement.style.setProperty('--apple-blue', '#0056b3');
+                        document.documentElement.style.setProperty('--apple-blue-light', '#007bff');
+                        document.documentElement.style.setProperty('--apple-blue-dark', '#003d82');
+                    } else if (savedTheme === 'white') {
+                        document.documentElement.classList.add('light-theme');
+                        document.documentElement.style.setProperty('--apple-background', '#ffffff');
+                        document.documentElement.style.setProperty('--apple-background-secondary', '#f8f9fa');
+                        document.documentElement.style.setProperty('--apple-background-tertiary', '#f1f3f5');
+                        document.documentElement.style.setProperty('--apple-label', '#212529');
+                        document.documentElement.style.setProperty('--apple-label-secondary', '#343a40');
+                    }
+                    // For 'dark' theme, no additional classes needed as it's the default
+                } else {
+                    // Check for designPreferences (legacy)
+                    const saved = localStorage.getItem('designPreferences');
+                    if (saved) {
+                        const preferences = JSON.parse(saved);
+                        // Check for the light mode flag. If isDarkMode is false, apply light-theme.
+                        const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
+                        if (!isDarkMode) {
+                            document.documentElement.classList.add('light-theme');
+                        }
                     }
                 }
             } catch (error) {

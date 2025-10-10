@@ -1792,29 +1792,42 @@
         // Apply theme immediately to prevent flash
         (function() {
             try {
-                const saved = localStorage.getItem('designPreferences');
-                if (saved) {
-                    const preferences = JSON.parse(saved);
-                    const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
-                    
-                    if (!isDarkMode) {
-                        document.documentElement.classList.add('light-theme');
-                        document.body.classList.add('light-theme');
-                    }
-                    
-                    // Set active theme option when page loads
-                    setTimeout(() => {
-                        const themeOptions = document.querySelectorAll('.theme-option');
-                        themeOptions.forEach(option => option.classList.remove('active'));
+                // Check for theme in localStorage
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme) {
+                    // Apply the saved theme
+                    applyTheme(savedTheme);
+                } else {
+                    // Check for designPreferences (legacy)
+                    const saved = localStorage.getItem('designPreferences');
+                    if (saved) {
+                        const preferences = JSON.parse(saved);
+                        const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
                         
-                        const targetOption = document.querySelector(`[onclick="applyTheme(${isDarkMode})"]`);
-                        if (targetOption) {
-                            targetOption.classList.add('active');
+                        if (!isDarkMode) {
+                            document.documentElement.classList.add('light-theme');
+                            document.body.classList.add('light-theme');
                         }
-                    }, 100);
+                        
+                        // Set active theme option when page loads
+                        setTimeout(() => {
+                            const themeOptions = document.querySelectorAll('.theme-option');
+                            themeOptions.forEach(option => option.classList.remove('active'));
+                            
+                            const targetOption = document.querySelector(`[onclick="applyTheme(${isDarkMode})"]`);
+                            if (targetOption) {
+                                targetOption.classList.add('active');
+                            }
+                        }, 100);
+                    } else {
+                        // Default to dark theme
+                        applyTheme('dark');
+                    }
                 }
             } catch (error) {
                 console.log('Using default theme settings');
+                // Default to dark theme if there's an error
+                applyTheme('dark');
             }
         })();
 
@@ -2316,6 +2329,66 @@
                 // Guardar preferencia y aplicar el tema al documento
                 localStorage.setItem('theme', theme);
                 document.documentElement.setAttribute('data-theme', theme);
+                
+                // Aplicar cambios específicos para cada tema
+                if (theme === 'pink') {
+                    // Para el tema rosa, asegurarse de desactivar el modo oscuro
+                    document.documentElement.classList.remove('dark-theme');
+                    document.documentElement.classList.add('light-theme');
+                    document.body.classList.remove('dark-theme');
+                    document.body.classList.add('light-theme');
+                    
+                    // Aplicar colores específicos del tema rosa
+                    document.documentElement.style.setProperty('--apple-background', '#ffebf0');
+                    document.documentElement.style.setProperty('--apple-background-secondary', '#fff5f8');
+                    document.documentElement.style.setProperty('--apple-background-tertiary', '#ffe0e6');
+                    document.documentElement.style.setProperty('--apple-label', '#d63384');
+                    document.documentElement.style.setProperty('--apple-label-secondary', '#c7366f');
+                    document.documentElement.style.setProperty('--apple-blue', '#ff6b9d');
+                    document.documentElement.style.setProperty('--apple-blue-light', '#ff8fab');
+                    document.documentElement.style.setProperty('--apple-blue-dark', '#e6396b');
+                } else if (theme === 'light') {
+                    // Para el tema claro
+                    document.documentElement.classList.remove('dark-theme');
+                    document.documentElement.classList.add('light-theme');
+                    document.body.classList.remove('dark-theme');
+                    document.body.classList.add('light-theme');
+                } else if (theme === 'dark') {
+                    // Para el tema oscuro
+                    document.documentElement.classList.remove('light-theme');
+                    document.documentElement.classList.add('dark-theme');
+                    document.body.classList.remove('light-theme');
+                    document.body.classList.add('dark-theme');
+                } else if (theme === 'blue') {
+                    // Para el tema azul
+                    document.documentElement.classList.remove('dark-theme');
+                    document.documentElement.classList.add('light-theme');
+                    document.body.classList.remove('dark-theme');
+                    document.body.classList.add('light-theme');
+                    
+                    // Aplicar colores específicos del tema azul
+                    document.documentElement.style.setProperty('--apple-background', '#f0f7ff');
+                    document.documentElement.style.setProperty('--apple-background-secondary', '#f5faff');
+                    document.documentElement.style.setProperty('--apple-background-tertiary', '#e6f3ff');
+                    document.documentElement.style.setProperty('--apple-label', '#0056b3');
+                    document.documentElement.style.setProperty('--apple-label-secondary', '#004085');
+                    document.documentElement.style.setProperty('--apple-blue', '#0056b3');
+                    document.documentElement.style.setProperty('--apple-blue-light', '#007bff');
+                    document.documentElement.style.setProperty('--apple-blue-dark', '#003d82');
+                } else if (theme === 'white') {
+                    // Para el tema blanco
+                    document.documentElement.classList.remove('dark-theme');
+                    document.documentElement.classList.add('light-theme');
+                    document.body.classList.remove('dark-theme');
+                    document.body.classList.add('light-theme');
+                    
+                    // Aplicar colores específicos del tema blanco
+                    document.documentElement.style.setProperty('--apple-background', '#ffffff');
+                    document.documentElement.style.setProperty('--apple-background-secondary', '#f8f9fa');
+                    document.documentElement.style.setProperty('--apple-background-tertiary', '#f1f3f5');
+                    document.documentElement.style.setProperty('--apple-label', '#212529');
+                    document.documentElement.style.setProperty('--apple-label-secondary', '#343a40');
+                }
             }
 
             // Show notification
