@@ -386,10 +386,10 @@
     .macos-dock.dock-transparent .dock-item {
         opacity: 0 !important;
         visibility: hidden !important;
-        transform: scale(0.8) !important;
-        transition: opacity 0.4s cubic-bezier(0.23, 1, 0.32, 1), 
-                   visibility 0.4s cubic-bezier(0.23, 1, 0.32, 1),
-                   transform 0.4s cubic-bezier(0.23, 1, 0.32, 1) !important;
+        transform: scale(0.7) translateY(10px) !important;
+        transition: opacity 0.6s cubic-bezier(0.165, 0.84, 0.44, 1), 
+                   visibility 0.6s cubic-bezier(0.165, 0.84, 0.44, 1),
+                   transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
     }
     
     nav.macos-dock#dock-bottom.dock-transparent:hover,
@@ -407,7 +407,7 @@
             0 8px 32px rgba(0, 0, 0, 0.4) !important,
             inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
         opacity: 1 !important;
-        transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1) !important;
+        transition: all 0.7s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
     }
 
     /* Show icons when hovering transparent dock (only if not in no-hover state) */
@@ -476,6 +476,111 @@
         opacity: 0 !important;
         visibility: hidden !important;
         transition: all 0.3s ease !important;
+    }
+
+    /* Compact dock - solo muestra icono de casa */
+    nav.macos-dock#dock-bottom.dock-compact,
+    nav.macos-dock#dock-top.dock-compact,
+    nav.macos-dock#dock-left.dock-compact,
+    nav.macos-dock#dock-right.dock-compact,
+    .macos-dock.dock-compact {
+        background: rgba(29, 29, 31, 0.85) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3) !important;
+        padding: 8px !important;
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+        overflow: hidden !important;
+    }
+
+    /* Dock compacto colapsado - solo muestra el ancho del icono casa */
+    nav.macos-dock#dock-bottom.dock-compact:not(.expanded),
+    nav.macos-dock#dock-top.dock-compact:not(.expanded),
+    nav.macos-dock#dock-left.dock-compact:not(.expanded),
+    nav.macos-dock#dock-right.dock-compact:not(.expanded),
+    .macos-dock.dock-compact:not(.expanded) {
+        width: 60px !important;
+        height: 60px !important;
+    }
+
+    /* Para docks verticales compactos */
+    nav.macos-dock#dock-left.dock-compact:not(.expanded),
+    nav.macos-dock#dock-right.dock-compact:not(.expanded) {
+        width: 60px !important;
+        height: 60px !important;
+    }
+
+    /* Para docks horizontales compactos */
+    nav.macos-dock#dock-bottom.dock-compact:not(.expanded),
+    nav.macos-dock#dock-top.dock-compact:not(.expanded) {
+        width: 60px !important;
+        height: 60px !important;
+    }
+
+    /* Ocultar todos los iconos excepto el de casa en dock compacto */
+    nav.macos-dock#dock-bottom.dock-compact:not(.expanded) .dock-item:not(.home-icon),
+    nav.macos-dock#dock-top.dock-compact:not(.expanded) .dock-item:not(.home-icon),
+    nav.macos-dock#dock-left.dock-compact:not(.expanded) .dock-item:not(.home-icon),
+    nav.macos-dock#dock-right.dock-compact:not(.expanded) .dock-item:not(.home-icon),
+    .macos-dock.dock-compact:not(.expanded) .dock-item:not(.home-icon) {
+        opacity: 0 !important;
+        visibility: hidden !important;
+        transform: scale(0) !important;
+        pointer-events: none !important;
+        transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+    }
+
+    /* Mostrar solo el icono de casa en dock compacto */
+    nav.macos-dock#dock-bottom.dock-compact:not(.expanded) .dock-item.home-icon,
+    nav.macos-dock#dock-top.dock-compact:not(.expanded) .dock-item.home-icon,
+    nav.macos-dock#dock-left.dock-compact:not(.expanded) .dock-item.home-icon,
+    nav.macos-dock#dock-right.dock-compact:not(.expanded) .dock-item.home-icon,
+    .macos-dock.dock-compact:not(.expanded) .dock-item.home-icon {
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: scale(1) !important;
+        cursor: pointer !important;
+        transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+    }
+
+    /* Dock compacto expandido - muestra todos los iconos */
+    nav.macos-dock#dock-bottom.dock-compact.expanded,
+    nav.macos-dock#dock-top.dock-compact.expanded,
+    nav.macos-dock#dock-left.dock-compact.expanded,
+    nav.macos-dock#dock-right.dock-compact.expanded,
+    .macos-dock.dock-compact.expanded {
+        width: auto !important;
+        height: auto !important;
+        background: rgba(29, 29, 31, 0.95) !important;
+        border: 2px solid rgba(0, 122, 255, 0.6) !important;
+        box-shadow: 
+            0 0 0 2px rgba(0, 122, 255, 0.3) !important,
+            0 0 30px rgba(0, 122, 255, 0.2) !important,
+            0 12px 40px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    /* Mostrar todos los iconos cuando está expandido */
+    nav.macos-dock#dock-bottom.dock-compact.expanded .dock-item,
+    nav.macos-dock#dock-top.dock-compact.expanded .dock-item,
+    nav.macos-dock#dock-left.dock-compact.expanded .dock-item,
+    nav.macos-dock#dock-right.dock-compact.expanded .dock-item,
+    .macos-dock.dock-compact.expanded .dock-item {
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: scale(1) !important;
+        pointer-events: auto !important;
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+    }
+
+    /* Efecto hover en icono casa del dock compacto */
+    nav.macos-dock#dock-bottom.dock-compact:not(.expanded) .dock-item.home-icon:hover,
+    nav.macos-dock#dock-top.dock-compact:not(.expanded) .dock-item.home-icon:hover,
+    nav.macos-dock#dock-left.dock-compact:not(.expanded) .dock-item.home-icon:hover,
+    nav.macos-dock#dock-right.dock-compact:not(.expanded) .dock-item.home-icon:hover,
+    .macos-dock.dock-compact:not(.expanded) .dock-item.home-icon:hover {
+        transform: scale(1.1) !important;
+        box-shadow: 0 0 20px rgba(0, 122, 255, 0.4) !important;
     }
     
     .light-theme nav.macos-dock#dock-bottom.dock-transparent:hover,
@@ -1306,7 +1411,7 @@
 <!-- Dock Left -->
 <nav class="macos-dock" id="dock-left">
     <!-- Botones comunes para todos los roles -->
-    <a href="{% url 'home' %}" class="dock-item">
+    <a href="{% url 'home' %}" class="dock-item home-icon">
         <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
         <span class="tooltip">Home</span>
     </a>
@@ -1413,7 +1518,7 @@
 <!-- Dock Right -->
 <nav class="macos-dock" id="dock-right">
     <!-- Botones comunes para todos los roles -->
-    <a href="{% url 'home' %}" class="dock-item">
+    <a href="{% url 'home' %}" class="dock-item home-icon">
         <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
         <span class="tooltip">Home</span>
     </a>
@@ -1521,7 +1626,7 @@
 <!-- Dock Top -->
 <nav class="macos-dock" id="dock-top">
     <!-- Botones comunes para todos los roles -->
-    <a href="{% url 'home' %}" class="dock-item">
+    <a href="{% url 'home' %}" class="dock-item home-icon">
         <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
         <span class="tooltip">Home</span>
     </a>
@@ -1639,7 +1744,7 @@
 <!-- Dock Bottom -->
 <nav class="macos-dock" id="dock-bottom">
     <!-- Botones comunes para todos los roles -->
-    <a href="{% url 'home' %}" class="dock-item">
+    <a href="{% url 'home' %}" class="dock-item home-icon">
         <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
         <span class="tooltip">Home</span>
     </a>
@@ -2843,7 +2948,66 @@ window.applyDockTypeStyles = function(type) {
         dock.classList.add(`dock-${type}`);
         console.log('Applied class dock-' + type + ' to dock element:', dock);
     });
+    
+    // Set up compact dock functionality if type is compact
+    if (type === 'compact') {
+        setupCompactDockFunctionality();
+    }
 };
+
+// Compact dock functionality
+function setupCompactDockFunctionality() {
+    console.log('Setting up compact dock functionality');
+    
+    // Find all dock elements
+    const dockElements = document.querySelectorAll('.macos-dock, nav.macos-dock, #dock-bottom, #dock-top, #dock-left, #dock-right');
+    
+    dockElements.forEach(dock => {
+        // Find the home icon in this dock
+        const homeIcon = dock.querySelector('.home-icon');
+        
+        if (homeIcon) {
+            // Remove any existing event listeners to prevent duplicates
+            homeIcon.removeEventListener('click', toggleCompactDock);
+            
+            // Add click event listener to home icon
+            homeIcon.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('Home icon clicked, toggling dock expansion');
+                
+                // Toggle expanded class
+                if (dock.classList.contains('expanded')) {
+                    dock.classList.remove('expanded');
+                    console.log('Dock collapsed');
+                } else {
+                    dock.classList.add('expanded');
+                    console.log('Dock expanded');
+                }
+            });
+            
+            console.log('Added click listener to home icon in dock:', dock.id);
+        }
+        
+        // Add click outside to collapse functionality
+        document.addEventListener('click', function(e) {
+            // Check if dock is compact and expanded
+            if (dock.classList.contains('dock-compact') && dock.classList.contains('expanded')) {
+                // Check if click is outside the dock
+                if (!dock.contains(e.target)) {
+                    dock.classList.remove('expanded');
+                    console.log('Dock collapsed due to outside click');
+                }
+            }
+        });
+        
+        // Prevent dock clicks from bubbling up and causing collapse
+        dock.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+}
 
 // Center cursor on page load to prevent dock hover
 (function() {
