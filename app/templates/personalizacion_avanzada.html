@@ -2179,8 +2179,10 @@
                 }, 150);
             }
 
-            // Apply dock type to actual dock
-            applyDockTypeStyles(type);
+            // Apply dock type to actual dock using global function
+            if (window.applyDockTypeStyles) {
+                window.applyDockTypeStyles(type);
+            }
             
             // Save dock type to localStorage
             localStorage.setItem('dockType', type);
@@ -2193,16 +2195,6 @@
                 'compact': 'Compacto'
             };
             showNotification(`Tipo de dock cambiado a ${typeNames[type] || type}`, 'success');
-        }
-
-        // Apply dock type styles using global function from dock.html
-        function applyDockTypeStyles(type) {
-            // Use the global function defined in dock.html
-            if (window.applyDockTypeStyles) {
-                window.applyDockTypeStyles(type);
-            } else {
-                console.log('Global applyDockTypeStyles function not found, will be applied on page load');
-            }
         }
 
         // Dock icons functionality
