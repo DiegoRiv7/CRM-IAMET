@@ -1124,21 +1124,30 @@
                     
                     <div class="divider"></div>
                     
-                    <!-- Sección de subir foto personal -->
-                    <div class="avatar-section" style="width: 100%; box-sizing: border-box; margin: 20px 0; padding: 20px; background: rgba(255, 255, 255, 0.1); border-radius: 12px; border: 1px solid var(--apple-separator); position: relative; z-index: 10; padding-bottom: 40px;">
-                        <h3 style="margin: 0 0 10px 0; color: var(--apple-label); font-size: 18px; font-weight: 600;">Subir Foto Personal</h3>
+                    <!-- Sección de subir foto personal - Versión simplificada -->
+                    <div class="avatar-section" style="width: 100%; margin: 20px 0; padding: 20px; background: rgba(255, 255, 255, 0.1); border-radius: 12px; border: 1px solid var(--apple-separator);">
+                        <h3 style="margin: 0 0 15px 0; color: var(--apple-label); font-size: 18px; font-weight: 600;">Subir Foto Personal</h3>
                         
-                        <!-- Texto y botón de subir foto -->
-                        <div style="display: flex; align-items: center; gap: 15px; margin: 15px 0 20px 0; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px;">
-                            <p style="margin: 0; color: var(--apple-label-secondary); font-size: 14px; flex-grow: 1;">O sube tu propia foto de perfil</p>
+                        <!-- Botón de subir foto - Versión simple y visible -->
+                        <div style="margin: 15px 0; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px;">
+                            <p style="margin: 0 0 10px 0; color: var(--apple-label-secondary); font-size: 14px;">O sube tu propia foto de perfil</p>
                             
-                            <!-- Botón para seleccionar archivo - Integrado -->
-                            <div style="flex-shrink: 0;">
-                                <input type="file" id="avatarUpload" name="avatar" accept="image/*" style="display: none;">
-                                <button type="button" class="btn-primary" onclick="document.getElementById('avatarUpload').click()" style="padding: 8px 16px; font-size: 14px; font-weight: 500; border: none; border-radius: 8px; background: var(--apple-blue); color: white; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap;">
-                                    <span>📤</span> Subir Foto
-                                </button>
-                            </div>
+                            <input type="file" id="avatarUpload" name="avatar" accept="image/*" style="display: none;">
+                            <button type="button" 
+                                    onclick="document.getElementById('avatarUpload').click()" 
+                                    style="padding: 10px 20px; 
+                                           background: var(--apple-blue); 
+                                           color: white; 
+                                           border: none; 
+                                           border-radius: 8px; 
+                                           font-size: 14px; 
+                                           font-weight: 500; 
+                                           cursor: pointer;
+                                           display: inline-flex;
+                                           align-items: center;
+                                           gap: 8px;">
+                                <span>📤</span> Seleccionar archivo
+                            </button>
                         </div>
                         
                         <!-- Botón de guardar cambios - Fijo en la parte inferior -->
@@ -1534,10 +1543,28 @@
 
         // Avatar selection logic from original system
         function initializeAvatarSystem() {
+            console.log('Inicializando sistema de avatar...');
             const avatarChoices = document.querySelectorAll('.avatar-choice');
             const animGalleryPreview = document.getElementById('animGalleryPreview');
             const uploadedAvatar = document.getElementById('uploadedAvatar');
             const avatarUpload = document.getElementById('avatarUpload');
+            
+            // Forzar visibilidad del botón de subir archivo
+            if (avatarUpload) {
+                console.log('Elemento de carga de archivo encontrado');
+            } else {
+                console.error('No se encontró el elemento de carga de archivo');
+            }
+            
+            // Forzar visibilidad del botón de subir
+            const uploadButton = document.querySelector('.avatar-section button[onclick*="avatarUpload"]');
+            if (uploadButton) {
+                uploadButton.style.display = 'inline-flex';
+                uploadButton.style.visibility = 'visible';
+                uploadButton.style.opacity = '1';
+                console.log('Botón de subir forzado a ser visible');
+            }
+            
             let selectedAvatar = 'dinosaur';
 
             function setAnimPreview(idx) {
