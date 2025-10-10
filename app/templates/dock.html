@@ -145,6 +145,11 @@
     .dock-item:hover {
         transform: scale(1.2) translateX(5px);
     }
+    
+    /* Evitar movimiento en dock compacto */
+    .macos-dock.dock-compact .dock-item:hover {
+        transform: none !important;
+    }
 
     .dock-item:hover .tooltip {
         opacity: 1;
@@ -3017,6 +3022,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Apply saved dock type using the global function
         applyDockTypeStyles(currentDockType);
+        
+        // Ensure dock type persists
+        console.log('Dock type applied and should persist as:', currentDockType);
     }, 100);
 });
 
@@ -3025,7 +3033,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const savedDockType = localStorage.getItem('dockType') || 'normal';
     document.documentElement.setAttribute('data-dock-type', savedDockType);
     document.body?.setAttribute('data-dock-type', savedDockType);
+    
+    console.log('Immediate dock type application:', savedDockType);
 })();
+
+// Ensure dock type persists across page navigations
+window.addEventListener('beforeunload', function() {
+    const currentDockType = localStorage.getItem('dockType');
+    if (currentDockType) {
+        console.log('Preserving dock type on page unload:', currentDockType);
+        // This ensures the dock type is maintained
+        sessionStorage.setItem('preserveDockType', currentDockType);
+    }
+});
+
+window.addEventListener('load', function() {
+    const preservedDockType = sessionStorage.getItem('preserveDockType');
+    if (preservedDockType) {
+        localStorage.setItem('dockType', preservedDockType);
+        sessionStorage.removeItem('preserveDockType');
+        console.log('Restored dock type after navigation:', preservedDockType);
+    }
+});
 
 // Global function to apply dock type styles
 window.applyDockTypeStyles = function(type) {
@@ -3072,28 +3101,31 @@ function setupCompactDockFunctionality() {
             
             // Add click event listener to home icon
             homeIcon.addEventListener('click', function(e) {
-                // Prevent default navigation only when dock is compact and not expanded
-                if (dock.classList.contains('dock-compact') && !dock.classList.contains('expanded')) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    console.log('Home icon clicked in compact mode, expanding dock');
-                    
-                    // Expand the dock
-                    dock.classList.add('expanded');
-                    console.log('Dock expanded');
-                } else if (dock.classList.contains('dock-compact') && dock.classList.contains('expanded')) {
-                    // When expanded, allow normal navigation but collapse after short delay
-                    console.log('Home icon clicked in expanded mode, will navigate');
-                    
-                    // Collapse dock after navigation starts
-                    setTimeout(() => {
-                        dock.classList.remove('expanded');
-                        console.log('Dock collapsed after navigation');
-                    }, 100);
+                // Handle compact dock mode
+                if (dock.classList.contains('dock-compact')) {
+                    if (!dock.classList.contains('expanded')) {
+                        // First click: expand dock, prevent navigation
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        console.log('Home icon clicked in compact mode, expanding dock');
+                        dock.classList.add('expanded');
+                        console.log('Dock expanded');
+                        return false;
+                    } else {
+                        // Second click: allow navigation and collapse after
+                        console.log('Home icon clicked in expanded compact mode, will navigate');
+                        
+                        // Don't prevent default, allow navigation
+                        // Collapse dock after navigation starts
+                        setTimeout(() => {
+                            dock.classList.remove('expanded');
+                            console.log('Dock collapsed after navigation');
+                        }, 150);
+                    }
                 }
                 // If not compact mode, allow normal navigation
-            });
+            }, true); // Use capture phase to ensure we handle it first
             
             console.log('Added click listener to home icon in dock:', dock.id);
         }
