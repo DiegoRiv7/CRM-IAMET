@@ -2345,21 +2345,21 @@ def exportar_oportunidades_csv(request):
 
     writer = csv.writer(response)
     writer.writerow([
-        'Oportunidad', 'Cliente', 'Contacto', 'Vendedor', 'Área',
-        'Producto', 'Monto', 'Probabilidad', 'Mes Cierre'
+        'Oportunidad', 'Cliente', 'Monto', 'Probabilidad de Cierre', 'Mes de Cierre',
+        'Producto', 'Area', 'Usuario', 'Fecha Creacion'
     ])
 
     for item in items:
         writer.writerow([
             item.oportunidad,
             item.cliente.nombre_empresa if item.cliente else 'N/A',
-            item.contacto,
-            item.usuario.get_full_name() or item.usuario.username,
-            item.get_area_display(),
-            item.get_producto_display(),
             item.monto,
             item.probabilidad_cierre,
             item.get_mes_cierre_display(),
+            item.get_producto_display(),
+            item.get_area_display(),
+            item.usuario.get_full_name() or item.usuario.username,
+            item.fecha_creacion.strftime('%Y-%m-%d'),
         ])
 
     return response
