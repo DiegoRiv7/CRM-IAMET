@@ -2401,8 +2401,61 @@
 
         // Initialize dock editor on page load
         document.addEventListener('DOMContentLoaded', function() {
+            // Primero limpiar duplicados del dock
+            cleanDuplicateIcons();
+            // Luego inicializar editor
             initializeDockEditor();
         });
+        
+        // Función para limpiar iconos duplicados
+        function cleanDuplicateIcons() {
+            console.log('Limpiando iconos duplicados...');
+            
+            const docks = document.querySelectorAll('.macos-dock');
+            
+            docks.forEach(dock => {
+                const seenIds = new Set();
+                const items = Array.from(dock.querySelectorAll('.dock-item, .dock-separator'));
+                
+                items.forEach(item => {
+                    let itemId = '';
+                    
+                    if (item.classList.contains('home-icon')) {
+                        itemId = 'home';
+                    } else if (item.classList.contains('dock-separator')) {
+                        itemId = 'separator';
+                    } else {
+                        const tooltip = item.querySelector('.tooltip');
+                        const tooltipText = tooltip ? tooltip.textContent.trim() : '';
+                        
+                        if (tooltipText === 'Oportunidades') itemId = 'todos';
+                        else if (tooltipText === 'Cotizaciones' && !tooltipText.includes('Automáticas')) itemId = 'cotizaciones';
+                        else if (tooltipText === 'Cotizaciones Automáticas') itemId = 'cotizaciones_automaticas';
+                        else if (tooltipText === 'Gestión de Productos') itemId = 'gestion_productos';
+                        else if (tooltipText === 'Catálogo Volumetría') itemId = 'gestion_catalogo_volumetria';
+                        else if (tooltipText === 'Tareas y Proyectos') itemId = 'tareas_proyectos';
+                        else if (tooltipText === 'Configuración') itemId = 'configuracion_avanzada';
+                        else if (tooltipText === 'Incrementa') itemId = 'incrementa';
+                        else if (tooltipText === 'Admin') itemId = 'admin';
+                        else if (tooltipText === 'Usuario' || tooltipText === 'Profile') itemId = 'usuario';
+                        else if (tooltipText === 'Notificaciones') itemId = 'notifications';
+                        else if (tooltipText === 'Asistente Virtual') itemId = 'assistant';
+                        else if (tooltipText === 'Cerrar Sesión' || tooltipText === 'Logout') itemId = 'logout';
+                    }
+                    
+                    if (itemId) {
+                        if (seenIds.has(itemId)) {
+                            console.log(`Removiendo duplicado: ${itemId}`);
+                            item.remove();
+                        } else {
+                            seenIds.add(itemId);
+                        }
+                    }
+                });
+                
+                console.log(`Dock limpiado. IDs únicos: ${Array.from(seenIds).join(', ')}`);
+            });
+        }
 
         // Define default dock structure based on user permissions
         const isSuper = '{{ user.is_superuser }}' === 'True';
@@ -2569,7 +2622,22 @@
             // Buscar todos los docks en la página
             const docks = document.querySelectorAll('.macos-dock');
             
-            docks.forEach(dock => {
+            // Evitar ejecución múltiple
+            if (window.dockOrderApplying) {
+                console.log('ApplyDockOrder ya está ejecutándose, saltando...');
+                return;
+            }
+            
+            window.dockOrderApplying = true;
+            
+            docks.forEach((dock, dockIndex) => {
+                console.log(`Procesando dock ${dockIndex + 1} de ${docks.length}`);
+                
+                // Solo aplicar si el dock tiene elementos
+                if (dock.children.length === 0) {
+                    console.log(`Dock ${dockIndex + 1} está vacío, saltando...`);
+                    return;
+                }
                 // Obtener todos los items actuales del dock
                 const currentItems = Array.from(dock.querySelectorAll('.dock-item, .dock-separator'));
                 const itemsMap = new Map();
@@ -2628,6 +2696,10 @@
                     if (itemId && !itemsMap.has(itemId)) {
                         itemsMap.set(itemId, item);
                         console.log(`Mapeado: ${itemId} -> elemento`);
+                    } else if (itemId) {
+                        console.warn(`Elemento duplicado encontrado: ${itemId}, ignorando...`);
+                        // Remover el duplicado del DOM
+                        item.remove();
                     }
                 });
                 
@@ -2657,6 +2729,9 @@
                     console.error('No se pudieron reordenar los elementos - lista vacía');
                 }
             });
+            
+            // Limpiar bandera
+            window.dockOrderApplying = false;
             
             // Mostrar notificación de éxito
             showNotification('¡Orden del dock aplicado exitosamente!', 'success');

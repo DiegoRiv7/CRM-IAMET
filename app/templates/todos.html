@@ -628,12 +628,13 @@ function applyFilters() {
     const tableBody = document.getElementById('tablaOportunidades');
     const rows = Array.from(tableBody.getElementsByTagName('tr'));
     
-    let visibleCount = 0;
-    
-    // First, filter the rows
-    const filteredRows = rows.filter(row => {
+    let filteredRows = [];
+
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
         const cells = row.getElementsByTagName('td');
-        if (cells.length === 0) return false;
+        
+        if (cells.length < 6) continue; // Skip rows that don't have enough cells
 
         let showRow = true;
         
@@ -668,11 +669,10 @@ function applyFilters() {
             showRow = false;
         }
 
-        row.style.display = showRow ? '' : 'none';
-        if(showRow) visibleCount++;
-        
-        return showRow;
-    });
+        if (showRow) {
+            filteredRows.push(row);
+        }
+    }
 
     // Now, sort the filtered rows
     if (ordenMonto) {
