@@ -2474,11 +2474,22 @@ window.setDockPosition = function(position) {
         option.classList.remove('active');
     });
     
-    // Set active state for selected option
+    // Set active state for selected option with immediate visual feedback
     const selectedOption = document.querySelector(`[data-position="${position}"]`);
     if (selectedOption) {
         selectedOption.classList.add('active');
-        console.log('Added active class to:', selectedOption);
+        console.log('Added active class to dock option:', selectedOption);
+        
+        // Forzar repaint visual inmediato con mejor feedback
+        selectedOption.style.transform = 'translateY(-2px) scale(1.05)';
+        selectedOption.style.borderColor = 'var(--apple-blue)';
+        selectedOption.style.backgroundColor = 'rgba(0, 122, 255, 0.2)';
+        selectedOption.style.boxShadow = '0 0 0 2px rgba(0, 122, 255, 0.3)';
+        setTimeout(() => {
+            selectedOption.style.transform = 'translateY(-2px)';
+        }, 150);
+    } else {
+        console.log('No dock option found for position:', position);
     }
     
     // Update position arrows too

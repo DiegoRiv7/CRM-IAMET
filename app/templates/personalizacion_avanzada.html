@@ -1885,13 +1885,26 @@
 
         // Design functionality
         function applyTheme(theme) {
-            // Update active state using CSS classes
+            console.log('applyTheme called with:', theme);
+            
+            // Update active state using CSS classes with immediate visual feedback
             document.querySelectorAll('.theme-option').forEach(option => {
                 option.classList.remove('active');
-                if (option.getAttribute('onclick').includes(`'${theme}'`)) {
-                    option.classList.add('active');
-                }
             });
+            
+            // Find and activate the selected theme option
+            const selectedOption = document.querySelector(`.theme-option[onclick*="'${theme}'"]`);
+            if (selectedOption) {
+                selectedOption.classList.add('active');
+                console.log('Added active class to theme option:', selectedOption);
+                
+                // Force immediate visual feedback
+                selectedOption.style.transform = 'translateY(-2px) scale(1.05)';
+                selectedOption.style.borderColor = 'var(--apple-blue)';
+                setTimeout(() => {
+                    selectedOption.style.transform = 'translateY(-2px)';
+                }, 150);
+            }
 
             // Apply theme
             document.documentElement.setAttribute('data-theme', theme);
