@@ -2415,10 +2415,12 @@ def exportar_oportunidades_csv(request):
         # Show first item fields for debugging
         first_item = items.first()
         print(f"DEBUG: First item fields:")
-        print(f"  - oportunidad: {getattr(first_item, 'oportunidad', 'NOT_FOUND')}")
-        print(f"  - mes_cierre: {getattr(first_item, 'mes_cierre', 'NOT_FOUND')} (type: {type(getattr(first_item, 'mes_cierre', None))})")
-        print(f"  - probabilidad_cierre: {getattr(first_item, 'probabilidad_cierre', 'NOT_FOUND')} (type: {type(getattr(first_item, 'probabilidad_cierre', None))})")
-        print(f"  - monto: {getattr(first_item, 'monto', 'NOT_FOUND')}")
+        print(f"  - oportunidad: '{first_item.oportunidad}'")
+        print(f"  - mes_cierre: '{first_item.mes_cierre}' (type: {type(first_item.mes_cierre)})")
+        print(f"  - probabilidad_cierre: {first_item.probabilidad_cierre} (type: {type(first_item.probabilidad_cierre)})")
+        print(f"  - monto: {first_item.monto}")
+        print(f"  - area: '{first_item.area}'")
+        print(f"  - producto: '{first_item.producto}'")
     else:
         print("DEBUG: No items found - check your filters!")
     
@@ -2485,48 +2487,38 @@ def exportar_oportunidades_csv(request):
         # Add monthly data - LA PROBABILIDAD VA EN EL MES DE CIERRE
         months = [''] * 12
         
-        # Mejorar extracción de mes_cierre y probabilidad
-        mes_cierre_valor = getattr(item, 'mes_cierre', None)
-        probabilidad_valor = getattr(item, 'probabilidad_cierre', None)
+        # Extraer mes_cierre y probabilidad_cierre correctamente
+        mes_cierre_valor = item.mes_cierre  # CharField con valores como '01', '02', etc.
+        probabilidad_valor = item.probabilidad_cierre  # IntegerField
         
-        print(f"DEBUG: Raw mes_cierre: {mes_cierre_valor} (type: {type(mes_cierre_valor)})")
+        print(f"DEBUG: Raw mes_cierre: '{mes_cierre_valor}' (type: {type(mes_cierre_valor)})")
         print(f"DEBUG: Raw probabilidad_cierre: {probabilidad_valor} (type: {type(probabilidad_valor)})")
         
-        if mes_cierre_valor is not None:
+        # Convertir mes_cierre a índice (0-11) para el array de meses
+        if mes_cierre_valor and mes_cierre_valor.strip():
             try:
-                # Intentar convertir el mes_cierre a entero
-                if isinstance(mes_cierre_valor, str):
-                    mes = int(mes_cierre_valor.strip())
-                else:
-                    mes = int(mes_cierre_valor)
-                    
+                # mes_cierre viene como '01', '02', etc. - convertir a entero
+                mes = int(mes_cierre_valor.strip())
                 print(f"DEBUG: mes_cierre converted to int: {mes}")
                 
                 if 1 <= mes <= 12:
                     # Formatear la probabilidad
-                    if probabilidad_valor is not None and probabilidad_valor != '':
-                        if isinstance(probabilidad_valor, str):
-                            # Si ya viene con %, quitarlo primero
-                            prob_clean = probabilidad_valor.replace('%', '').strip()
-                            try:
-                                prob_num = float(prob_clean)
-                                probabilidad_str = f"{prob_num}%"
-                            except ValueError:
-                                probabilidad_str = f"{probabilidad_valor}%"
-                        else:
-                            probabilidad_str = f"{probabilidad_valor}%"
+                    if probabilidad_valor is not None:
+                        probabilidad_str = f"{probabilidad_valor}%"
                     else:
-                        probabilidad_str = "100%"  # Default
+                        probabilidad_str = "0%"  # Default si no hay probabilidad
                     
+                    # Asignar al mes correspondiente (mes-1 porque el array es 0-indexed)
+                    month_names = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEPT','OCT','NOV','DIC']
                     months[mes - 1] = probabilidad_str
-                    print(f"DEBUG: Setting month {mes} ({['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEPT','OCT','NOV','DIC'][mes-1]}) to {probabilidad_str}")
+                    print(f"DEBUG: Setting month {mes} ({month_names[mes-1]}) to {probabilidad_str}")
                 else:
                     print(f"DEBUG: mes_cierre {mes} is out of range (1-12)")
                     
             except (ValueError, TypeError) as e:
                 print(f"DEBUG: Error converting mes_cierre '{mes_cierre_valor}': {e}")
         else:
-            print(f"DEBUG: mes_cierre is None or empty")
+            print(f"DEBUG: mes_cierre is None, empty or whitespace: '{mes_cierre_valor}'")
         
         print(f"DEBUG: Final months array: {months}")
         row_data.extend(months)
