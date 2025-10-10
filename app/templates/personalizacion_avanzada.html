@@ -2051,29 +2051,14 @@
         }
         
         function saveDockPosition(position) {
-            const formData = new FormData();
-            formData.append('dock_position', position);
-            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-            
-            fetch('{% url "configuracion_avanzada" %}', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (!data.success) {
-                    console.error('Error al guardar posición del dock:', data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error al guardar posición del dock:', error);
-            });
+            // Guardar en localStorage
+            localStorage.setItem('dockPosition', position);
         }
         
         // Initialize dock position on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Get current dock position from user profile or default to bottom
-            const currentPosition = '{{ user_profile.dock_position|default:"bottom" }}';
+            // Get current dock position from localStorage or default to bottom
+            const currentPosition = localStorage.getItem('dockPosition') || 'bottom';
             
             // Set active option
             const currentOption = document.querySelector(`[data-position="${currentPosition}"]`);

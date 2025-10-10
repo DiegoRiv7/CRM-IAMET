@@ -2367,5 +2367,21 @@ window.addEventListener('error', function(e) {
         // Verificar notificaciones cada 30 segundos
         setInterval(loadNotifications, 30000);
     });
+
+    // === DOCK POSITION MANAGEMENT ===
+    // Inicializar la posición del dock en todas las páginas
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get current dock position from localStorage or default to bottom
+        const currentPosition = localStorage.getItem('dockPosition') || 'bottom';
+        
+        // Show only the current dock
+        const allDocks = ['dock-left', 'dock-right', 'dock-top', 'dock-bottom'];
+        allDocks.forEach(dockId => {
+            const dock = document.getElementById(dockId);
+            if (dock) {
+                dock.style.display = dockId === `dock-${currentPosition}` ? 'flex' : 'none';
+            }
+        });
+    });
 })();
 </script>
