@@ -357,7 +357,10 @@
     .macos-dock.dock-transparent .dock-item {
         opacity: 0 !important;
         visibility: hidden !important;
-        transition: all 0.3s ease !important;
+        transform: scale(0.8) !important;
+        transition: opacity 0.4s cubic-bezier(0.23, 1, 0.32, 1), 
+                   visibility 0.4s cubic-bezier(0.23, 1, 0.32, 1),
+                   transform 0.4s cubic-bezier(0.23, 1, 0.32, 1) !important;
     }
     
     nav.macos-dock#dock-bottom.dock-transparent:hover,
@@ -375,6 +378,7 @@
             0 8px 32px rgba(0, 0, 0, 0.4) !important,
             inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
         opacity: 1 !important;
+        transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1) !important;
     }
 
     /* Show icons when hovering transparent dock (only if not in no-hover state) */
@@ -385,7 +389,10 @@
     .macos-dock.dock-transparent:hover .dock-item {
         opacity: 1 !important;
         visibility: visible !important;
-        transition: all 0.4s ease 0.1s !important;
+        transform: scale(1) !important;
+        transition: opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1) 0.2s, 
+                   visibility 0.6s cubic-bezier(0.23, 1, 0.32, 1) 0.2s,
+                   transform 0.6s cubic-bezier(0.23, 1, 0.32, 1) 0.2s !important;
     }
 
     /* Disable hover effects when dock is in no-hover mode */
@@ -2798,42 +2805,60 @@ window.applyDockTypeStyles = function(type) {
     });
 };
 
-// Prevent dock from flickering on page navigation when cursor is over dock area
+// Advanced anti-flicker system for transparent dock
 (function() {
+    let pageLoadTime = Date.now();
     let mouseMovedAfterLoad = false;
-    let lastMousePosition = { x: 0, y: 0 };
+    let lastMousePosition = { x: -1, y: -1 };
+    let hoverTimeoutId = null;
+    let disableTimeoutId = null;
     
-    // Disable hover effects initially for transparent docks
+    // Disable hover effects for transparent docks
     function disableDockHover() {
         const transparentDocks = document.querySelectorAll('.dock-transparent');
         transparentDocks.forEach(dock => {
             dock.classList.add('no-hover');
         });
         mouseMovedAfterLoad = false;
+        console.log('Dock hover disabled - anti-flicker active');
     }
     
-    // Enable hover effects when mouse actually moves
+    // Enable hover effects when safe to do so
     function enableDockHover() {
-        const transparentDocks = document.querySelectorAll('.dock-transparent');
-        transparentDocks.forEach(dock => {
-            dock.classList.remove('no-hover');
-        });
-        mouseMovedAfterLoad = true;
+        if (hoverTimeoutId) {
+            clearTimeout(hoverTimeoutId);
+        }
+        
+        hoverTimeoutId = setTimeout(() => {
+            const transparentDocks = document.querySelectorAll('.dock-transparent');
+            transparentDocks.forEach(dock => {
+                dock.classList.remove('no-hover');
+            });
+            mouseMovedAfterLoad = true;
+            console.log('Dock hover enabled - safe to interact');
+        }, 200); // Extra delay for smooth transition
     }
     
-    // Track mouse movement to detect actual user movement (not just page load position)
+    // Track mouse movement with better logic
     function handleMouseMove(e) {
         const currentPosition = { x: e.clientX, y: e.clientY };
+        const timeSinceLoad = Date.now() - pageLoadTime;
         
-        // Check if mouse actually moved from initial position
-        if (!mouseMovedAfterLoad) {
+        // Don't enable hover too quickly after page load
+        if (timeSinceLoad < 800) {
+            lastMousePosition = currentPosition;
+            return;
+        }
+        
+        // Check if this is real movement (not initial position)
+        if (!mouseMovedAfterLoad && lastMousePosition.x !== -1) {
             const distance = Math.sqrt(
                 Math.pow(currentPosition.x - lastMousePosition.x, 2) + 
                 Math.pow(currentPosition.y - lastMousePosition.y, 2)
             );
             
-            // If mouse moved more than 10px, enable hover
-            if (distance > 10) {
+            // Require more movement and time to be sure
+            if (distance > 25 && timeSinceLoad > 1000) {
                 enableDockHover();
             }
         }
@@ -2841,44 +2866,78 @@ window.applyDockTypeStyles = function(type) {
         lastMousePosition = currentPosition;
     }
     
-    // Initialize on page load
+    // Handle page focus/blur for better navigation detection
+    function handleVisibilityChange() {
+        if (document.hidden) {
+            // Page is hidden, prepare for potential navigation
+            pageLoadTime = Date.now();
+            mouseMovedAfterLoad = false;
+        } else {
+            // Page is visible, disable hover temporarily
+            setTimeout(() => {
+                disableDockHover();
+                pageLoadTime = Date.now();
+            }, 100);
+        }
+    }
+    
+    // Initialize the system
     document.addEventListener('DOMContentLoaded', function() {
-        // Store initial mouse position
-        document.addEventListener('mousemove', function(e) {
+        pageLoadTime = Date.now();
+        
+        // Immediate disable with longer delay
+        disableDockHover();
+        
+        // Auto-enable after extended time if no movement detected
+        disableTimeoutId = setTimeout(() => {
             if (!mouseMovedAfterLoad) {
-                lastMousePosition = { x: e.clientX, y: e.clientY };
+                enableDockHover();
+                console.log('Auto-enabled hover after timeout');
             }
-        }, { once: true });
+        }, 3000);
         
-        // Disable hover initially
-        setTimeout(() => {
-            disableDockHover();
-        }, 100);
-        
-        // Add mouse move listener
+        // Mouse movement detection
         document.addEventListener('mousemove', handleMouseMove);
         
-        // Also enable on any click (user interaction)
-        document.addEventListener('click', enableDockHover);
+        // Click detection (immediate enable on user interaction)
+        document.addEventListener('click', function() {
+            if (Date.now() - pageLoadTime > 500) {
+                enableDockHover();
+            }
+        });
         
-        // Re-disable when navigation occurs
-        window.addEventListener('beforeunload', function() {
-            disableDockHover();
+        // Keyboard interaction (also immediate enable)
+        document.addEventListener('keydown', enableDockHover);
+        
+        // Page visibility changes (navigation detection)
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        
+        // Wheel/scroll detection
+        document.addEventListener('wheel', function() {
+            if (Date.now() - pageLoadTime > 800) {
+                enableDockHover();
+            }
         });
     });
     
-    // Re-apply no-hover when dock type changes to transparent
+    // Enhanced dock type change handling
     if (window.applyDockTypeStyles) {
         const originalApplyDockTypeStyles = window.applyDockTypeStyles;
         window.applyDockTypeStyles = function(type) {
             originalApplyDockTypeStyles(type);
             
             if (type === 'transparent') {
+                // Reset all timers and state
+                if (hoverTimeoutId) clearTimeout(hoverTimeoutId);
+                if (disableTimeoutId) clearTimeout(disableTimeoutId);
+                
+                pageLoadTime = Date.now();
+                mouseMovedAfterLoad = false;
+                lastMousePosition = { x: -1, y: -1 };
+                
                 setTimeout(() => {
                     disableDockHover();
-                    // Re-enable mouse tracking
-                    mouseMovedAfterLoad = false;
-                }, 50);
+                }, 100);
             }
         };
     }
