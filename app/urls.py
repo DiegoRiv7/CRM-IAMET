@@ -137,6 +137,7 @@ urlpatterns = [
     # Exportar oportunidades (restaurado)
     path("importar/", views.importar_oportunidades, name="importar_oportunidades"),
 
+    path('exportar/csv/', views.exportar_oportunidades_csv, name='exportar_oportunidades_csv'),
     # Pantalla fullscreen de ventas por mes
     path('dashboard/ventas_fullscreen/', views.ventas_fullscreen, name='ventas_fullscreen'),
 

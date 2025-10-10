@@ -2292,6 +2292,104 @@ def generate_quote_pdf(request, pk):
 # --- NEW/CORRECTED VIEWS ADDED ---
 
 @login_required
+def exportar_oportunidades_csv(request):
+    if is_supervisor(request.user):
+        items = TodoItem.objects.select_related('usuario', 'cliente').prefetch_related('cotizaciones').all()
+    else:
+        items = TodoItem.objects.select_related('usuario', 'cliente').prefetch_related('cotizaciones').filter(usuario=request.user)
+
+    # Re-aplicar los filtros del request GET
+    oportunidad_filter = request.GET.get('filterOportunidad', '').strip()
+    if oportunidad_filter:
+        items = items.filter(oportunidad__icontains=oportunidad_filter)
+
+    cliente_filter = request.GET.get('filterCliente', '').strip()
+    if cliente_filter:
+        items = items.filter(cliente__nombre_empresa__icontains=cliente_filter)
+
+    try:
+        monto_min = request.GET.get('filterMontoMin')
+        if monto_min:
+            items = items.filter(monto__gte=Decimal(monto_min))
+
+        monto_max = request.GET.get('filterMontoMax')
+        if monto_max:
+            items = items.filter(monto__lte=Decimal(monto_max))
+    except (ValueError, TypeError, decimal.InvalidOperation):
+        pass
+
+    mes_cierre_filter = request.GET.get('filterMesCierre', '').strip()
+    if mes_cierre_filter:
+        items = items.filter(mes_cierre=mes_cierre_filter)
+
+    area_filter = request.GET.get('filterArea', '').strip()
+    if area_filter:
+        items = items.filter(area=area_filter)
+
+    orden_monto = request.GET.get('orden_monto')
+    if orden_monto:
+        if orden_monto == 'monto_asc':
+            items = items.order_by('monto')
+        elif orden_monto == 'monto_desc':
+            items = items.order_by('-monto')
+
+    orden_probabilidad = request.GET.get('orden_probabilidad')
+    if orden_probabilidad:
+        if orden_probabilidad == 'prob_asc':
+            items = items.order_by('probabilidad_cierre')
+        elif orden_probabilidad == 'prob_desc':
+            items = items.order_by('-probabilidad_cierre')
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="reporte_detallado_oportunidades.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow([
+        'Oportunidad ID', 'Oportunidad', 'Cliente', 'Contacto', 'Vendedor', 'Área',
+        'Producto', 'Monto Oportunidad', 'Probabilidad', 'Mes Cierre Oportunidad',
+        'Comentarios Oportunidad', 'Cotización ID', 'Cotización Título', 'Cotización Total',
+        'Cotización Fecha'
+    ])
+
+    for item in items:
+        if item.cotizaciones.exists():
+            for cotizacion in item.cotizaciones.all():
+                writer.writerow([
+                    item.id,
+                    item.oportunidad,
+                    item.cliente.nombre_empresa if item.cliente else 'N/A',
+                    item.contacto,
+                    item.usuario.get_full_name() or item.usuario.username,
+                    item.get_area_display(),
+                    item.get_producto_display(),
+                    item.monto,
+                    item.probabilidad_cierre,
+                    item.get_mes_cierre_display(),
+                    item.comentarios,
+                    cotizacion.id,
+                    cotizacion.titulo,
+                    cotizacion.total,
+                    cotizacion.fecha_creacion.strftime('%Y-%m-%d')
+                ])
+        else:
+            writer.writerow([
+                item.id,
+                item.oportunidad,
+                item.cliente.nombre_empresa if item.cliente else 'N/A',
+                item.contacto,
+                item.usuario.get_full_name() or item.usuario.username,
+                item.get_area_display(),
+                item.get_producto_display(),
+                item.monto,
+                item.probabilidad_cierre,
+                item.get_mes_cierre_display(),
+                item.comentarios,
+                'N/A', 'N/A', 'N/A', 'N/A'
+            ])
+
+    return response
+
+@login_required
 def oportunidades_por_cliente_view(request, cliente_id):
     """
     View to display sales opportunities for a specific client.

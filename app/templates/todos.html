@@ -415,7 +415,7 @@
                                                                                             </div>                            <div class="filter-actions">
                                 <button class="filter-btn secondary" onclick="clearFilters()">Limpiar</button>
                                 <button class="filter-btn primary" onclick="applyFilters()">Filtrar</button>
-                                <button class="filter-btn primary" id="generate-report-btn" onclick="exportarTablaACsv()">Generar Reporte</button>
+                                <button class="filter-btn primary" id="generate-report-btn" onclick="generarReporteCSV()">Generar Reporte</button>
                                 <a href="{% url 'todos' %}" class="filter-btn secondary">Salir</a>
                             </div>
                         </div>
@@ -521,37 +521,27 @@
 </div>
 
 <script>
-function exportarTablaACsv() {
-    const tableBody = document.getElementById('tablaOportunidades');
-    const rows = tableBody.getElementsByTagName('tr');
-    let csvContent = "data:text/csv;charset=utf-8,";
-    
-    const headers = ["Oportunidad", "Cliente", "Monto", "Probabilidad", "Mes Cierre"];
-    csvContent += headers.join(",") + "\r\n";
+function generarReporteCSV() {
+    const oportunidad = document.getElementById('filterOportunidad').value.trim();
+    const cliente = document.getElementById('filterCliente').value.trim();
+    const montoMin = document.getElementById('filterMontoMin').value;
+    const montoMax = document.getElementById('filterMontoMax').value;
+    const mesCierre = document.getElementById('filterMesCierre').value.trim();
+    const area = document.getElementById('filterArea').value.trim();
+    const ordenMonto = document.getElementById('filterOrdenMonto').value;
+    const ordenProbabilidad = document.getElementById('filterOrdenProbabilidad').value;
 
-    for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        const cells = row.getElementsByTagName('td');
-        if (cells.length < 5) continue;
+    const url = new URL('{% url 'exportar_oportunidades_csv' %}', window.location.origin);
+    if (oportunidad) url.searchParams.set('filterOportunidad', oportunidad);
+    if (cliente) url.searchParams.set('filterCliente', cliente);
+    if (montoMin) url.searchParams.set('filterMontoMin', montoMin);
+    if (montoMax) url.searchParams.set('filterMontoMax', montoMax);
+    if (mesCierre) url.searchParams.set('filterMesCierre', mesCierre);
+    if (area) url.searchParams.set('filterArea', area);
+    if (ordenMonto) url.searchParams.set('orden_monto', ordenMonto);
+    if (ordenProbabilidad) url.searchParams.set('orden_probabilidad', ordenProbabilidad);
 
-        let rowData = [];
-        rowData.push(`"${cells[0].textContent.trim()}"`);
-        rowData.push(`"${cells[1].textContent.trim()}"`);
-        rowData.push(`"${cells[2].textContent.trim()}"`);
-        rowData.push(`"${cells[3].querySelector('span').textContent.trim()}"`);
-        rowData.push(`"${cells[4].textContent.trim()}"`);
-
-        csvContent += rowData.join(",") + "\r\n";
-    }
-
-    var encodedUri = encodeURI(csvContent);
-    var link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "reporte_oportunidades.csv");
-    document.body.appendChild(link);
-
-    link.click();
-    document.body.removeChild(link);
+    window.location.href = url.toString();
 }
 
 let originalRows = [];
