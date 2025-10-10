@@ -332,7 +332,7 @@
         /* Uses default styles */
     }
     
-    /* Transparent dock - ultra invisible liquid glass */
+    /* Transparent dock - ultra invisible liquid glass mirror */
     nav.macos-dock#dock-bottom.dock-transparent,
     nav.macos-dock#dock-top.dock-transparent,
     nav.macos-dock#dock-left.dock-transparent,
@@ -347,6 +347,17 @@
             inset 0 1px 0 rgba(255, 255, 255, 0.008) !important;
         opacity: 0.08 !important;
         transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    /* Hide all icons in transparent dock */
+    nav.macos-dock#dock-bottom.dock-transparent .dock-item,
+    nav.macos-dock#dock-top.dock-transparent .dock-item,
+    nav.macos-dock#dock-left.dock-transparent .dock-item,
+    nav.macos-dock#dock-right.dock-transparent .dock-item,
+    .macos-dock.dock-transparent .dock-item {
+        opacity: 0 !important;
+        visibility: hidden !important;
+        transition: all 0.3s ease !important;
     }
     
     nav.macos-dock#dock-bottom.dock-transparent:hover,
@@ -365,8 +376,19 @@
             inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
         opacity: 1 !important;
     }
+
+    /* Show icons when hovering transparent dock */
+    nav.macos-dock#dock-bottom.dock-transparent:hover .dock-item,
+    nav.macos-dock#dock-top.dock-transparent:hover .dock-item,
+    nav.macos-dock#dock-left.dock-transparent:hover .dock-item,
+    nav.macos-dock#dock-right.dock-transparent:hover .dock-item,
+    .macos-dock.dock-transparent:hover .dock-item {
+        opacity: 1 !important;
+        visibility: visible !important;
+        transition: all 0.4s ease 0.1s !important;
+    }
     
-    /* Light theme transparent dock - ultra invisible */
+    /* Light theme transparent dock - ultra invisible mirror */
     .light-theme nav.macos-dock#dock-bottom.dock-transparent,
     .light-theme nav.macos-dock#dock-top.dock-transparent,
     .light-theme nav.macos-dock#dock-left.dock-transparent,
@@ -381,6 +403,17 @@
             inset 0 1px 0 rgba(255, 255, 255, 0.01) !important;
         opacity: 0.06 !important;
         transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    /* Hide icons in light theme transparent dock */
+    .light-theme nav.macos-dock#dock-bottom.dock-transparent .dock-item,
+    .light-theme nav.macos-dock#dock-top.dock-transparent .dock-item,
+    .light-theme nav.macos-dock#dock-left.dock-transparent .dock-item,
+    .light-theme nav.macos-dock#dock-right.dock-transparent .dock-item,
+    .light-theme .macos-dock.dock-transparent .dock-item {
+        opacity: 0 !important;
+        visibility: hidden !important;
+        transition: all 0.3s ease !important;
     }
     
     .light-theme nav.macos-dock#dock-bottom.dock-transparent:hover,
@@ -398,6 +431,17 @@
             0 8px 32px rgba(255, 107, 157, 0.4) !important,
             inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
         opacity: 1 !important;
+    }
+
+    /* Show icons when hovering light theme transparent dock */
+    .light-theme nav.macos-dock#dock-bottom.dock-transparent:hover .dock-item,
+    .light-theme nav.macos-dock#dock-top.dock-transparent:hover .dock-item,
+    .light-theme nav.macos-dock#dock-left.dock-transparent:hover .dock-item,
+    .light-theme nav.macos-dock#dock-right.dock-transparent:hover .dock-item,
+    .light-theme .macos-dock.dock-transparent:hover .dock-item {
+        opacity: 1 !important;
+        visibility: visible !important;
+        transition: all 0.4s ease 0.1s !important;
     }
     
     /* Compact dock */
