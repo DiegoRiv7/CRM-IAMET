@@ -615,6 +615,21 @@ function clearFilters() {
 }
 
 function applyFilters() {
+    const monthMap = {
+        'enero': '01',
+        'febrero': '02',
+        'marzo': '03',
+        'abril': '04',
+        'mayo': '05',
+        'junio': '06',
+        'julio': '07',
+        'agosto': '08',
+        'septiembre': '09',
+        'octubre': '10',
+        'noviembre': '11',
+        'diciembre': '12'
+    };
+
     const oportunidad = document.getElementById('filterOportunidad').value.toLowerCase().trim();
     const cliente = document.getElementById('filterCliente').value.toLowerCase().trim();
     const montoMin = parseFloat(document.getElementById('filterMontoMin').value) || 0;
@@ -660,7 +675,8 @@ function applyFilters() {
             }
         }
         
-        if (mesCierre && !cells[4].textContent.toLowerCase().includes(mesCierre)) {
+        const mesCierreCell = cells[4].textContent.toLowerCase().trim();
+        if (mesCierre && monthMap[mesCierreCell] !== mesCierre) {
             showRow = false;
         }
 
