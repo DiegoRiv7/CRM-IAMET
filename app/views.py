@@ -2372,9 +2372,10 @@ def exportar_oportunidades_csv(request):
         )
         
         # Define headers according to the format in the images
+        # Usar solo las marcas que están realmente en PRODUCTO_CHOICES
         main_headers = [
             'OPORTUNIDAD', 'AREA', 'CONTACTO', 'ZEBRA', 'PANDUIT', 'APC', 'AVIGILION', 
-            'GENETEC', 'AXIS', 'Desarrollo APP', 'ELLINEATE', 'POLIZA', 'CISCO'
+            'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'PÓLIZA', 'CISCO'
         ]
         
         # Add quarterly headers (each quarter will have 3 month columns)
@@ -2407,7 +2408,7 @@ def exportar_oportunidades_csv(request):
         # Fallback to CSV - simplified structure
         headers = [
             'OPORTUNIDAD', 'AREA', 'CONTACTO', 'ZEBRA', 'PANDUIT', 'APC', 'AVIGILION', 
-            'GENETEC', 'AXIS', 'Desarrollo APP', 'ELLINEATE', 'POLIZA', 'CISCO',
+            'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'PÓLIZA', 'CISCO',
             'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC'
         ]
         
@@ -2418,11 +2419,11 @@ def exportar_oportunidades_csv(request):
         writer = csv.writer(response)
         writer.writerow(headers)
         
-    # Brand columns mapping
+    # Brand columns mapping - usar las marcas reales de PRODUCTO_CHOICES
     brand_columns = {
         'ZEBRA': 4, 'PANDUIT': 5, 'APC': 6, 'AVIGILION': 7,
-        'GENETEC': 8, 'AXIS': 9, 'Desarrollo APP': 10,
-        'ELLINEATE': 11, 'POLIZA': 12, 'CISCO': 13
+        'GENETEC': 8, 'AXIS': 9, 'SOFTWARE': 10, 'RUNRATE': 11, 
+        'PÓLIZA': 12, 'CISCO': 13
     }
         
     # Write data rows (start at row 3 for Excel due to double header, row 2 for CSV)
@@ -2457,9 +2458,9 @@ def exportar_oportunidades_csv(request):
                     'AVIGILION': ['AVIGILION', 'CCTV', 'CAMARA'],
                     'GENETEC': ['GENETEC', 'SEGURIDAD'],
                     'AXIS': ['AXIS'],
-                    'Desarrollo APP': ['APP', 'DESARROLLO', 'SOFTWARE'],
-                    'ELLINEATE': ['ELLINEATE', 'CABLEADO'],
-                    'POLIZA': ['POLIZA', 'SEGURO'],
+                    'SOFTWARE': ['SOFTWARE', 'APP', 'DESARROLLO'],
+                    'RUNRATE': ['RUNRATE', 'RUN RATE'],
+                    'PÓLIZA': ['PÓLIZA', 'POLIZA', 'SEGURO'],
                     'CISCO': ['CISCO', 'NETWORKING', 'RED']
                 }
                 
@@ -2479,8 +2480,8 @@ def exportar_oportunidades_csv(request):
             item.contacto or ''
         ]
         
-        # Add brand amounts
-        for brand in ['ZEBRA', 'PANDUIT', 'APC', 'AVIGILION', 'GENETEC', 'AXIS', 'Desarrollo APP', 'ELLINEATE', 'POLIZA', 'CISCO']:
+        # Add brand amounts - usar las marcas correctas
+        for brand in ['ZEBRA', 'PANDUIT', 'APC', 'AVIGILION', 'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'PÓLIZA', 'CISCO']:
             amount = brand_totals.get(brand, 0)
             row_data.append(f"${amount:,.2f}" if amount > 0 else '')
         
