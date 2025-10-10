@@ -38,19 +38,19 @@
             --apple-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif;
         }
         
-        /* Light Theme Variables */
+        /* Light Theme Variables - Tema Blanco */
         .light-theme {
-            --apple-background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%);
-            --apple-background-secondary: rgba(255, 240, 245, 0.8);
-            --apple-background-tertiary: rgba(255, 232, 239, 0.9);
-            --apple-background-quaternary: #FFEBF0;
-            --apple-label: #2D1B2E;
-            --apple-label-secondary: #4A2B4D;
-            --apple-label-tertiary: #6B4C6D;
-            --apple-blue: #FF6B9D;
-            --apple-blue-light: #FF8FB3;
-            --apple-blue-dark: #E55A87;
-            --apple-separator: rgba(229, 90, 135, 0.2);
+            --apple-background: #ffffff;
+            --apple-background-secondary: #f8f9fa;
+            --apple-background-tertiary: #f1f3f5;
+            --apple-background-quaternary: #e9ecef;
+            --apple-label: #212529;
+            --apple-label-secondary: #343a40;
+            --apple-label-tertiary: #495057;
+            --apple-blue: #007bff;
+            --apple-blue-light: #4da8ff;
+            --apple-blue-dark: #0056b3;
+            --apple-separator: rgba(0, 0, 0, 0.1);
         }
         
         * {
@@ -71,7 +71,7 @@
         }
         
         .light-theme body {
-            background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%) !important;
+            background: #ffffff !important;
             background-attachment: fixed;
         }
         
@@ -125,12 +125,9 @@
         }
         
         .light-theme .settings-card {
-            background: linear-gradient(135deg, 
-                rgba(255, 255, 255, 0.95) 0%, 
-                rgba(255, 248, 250, 0.9) 50%, 
-                rgba(255, 240, 245, 0.85) 100%);
-            border: 1px solid rgba(255, 107, 157, 0.2);
-            box-shadow: 0 8px 32px rgba(255, 107, 157, 0.15);
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
         
         .settings-card:hover {
@@ -140,7 +137,7 @@
         }
         
         .light-theme .settings-card:hover {
-            box-shadow: 0 20px 40px rgba(255, 107, 157, 0.25);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
             border-color: var(--apple-blue);
         }
         
@@ -157,7 +154,7 @@
         }
         
         .light-theme .card-icon {
-            box-shadow: 0 8px 24px rgba(255, 107, 157, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
         }
         
         .card-icon svg {
@@ -192,8 +189,8 @@
         }
         
         .light-theme .card-preview {
-            background: rgba(255, 255, 255, 0.6);
-            border: 1px solid rgba(255, 107, 157, 0.2);
+            background: rgba(248, 249, 250, 0.8);
+            border: 1px solid rgba(0, 0, 0, 0.1);
         }
         
         /* Avatar Preview */
@@ -344,8 +341,10 @@
             border-radius: 20px;
             max-width: 600px;
             width: 100%;
-            max-height: 80vh;
-            overflow-y: auto;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
             border: 1px solid var(--apple-separator);
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
         }
@@ -396,11 +395,17 @@
         
         .modal-body {
             padding: 0 28px 28px;
+            overflow-y: auto;
+            flex: 1;
         }
         
         /* Avatar Modal Styles */
         .avatar-section {
             margin-bottom: 24px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid var(--apple-separator);
         }
         
         .avatar-section h3 {
@@ -435,8 +440,8 @@
         }
         
         .light-theme .animal-option {
-            background: rgba(255, 255, 255, 0.6);
-            border: 1px solid rgba(255, 107, 157, 0.2);
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.1);
         }
         
         .animal-option:hover,
@@ -489,8 +494,8 @@
         }
         
         .light-theme .theme-option {
-            background: rgba(255, 255, 255, 0.6);
-            border: 2px solid rgba(255, 107, 157, 0.2);
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.1);
         }
         
         .theme-option:hover,
@@ -675,8 +680,8 @@
         }
         
         .light-theme .language-option {
-            background: rgba(255, 255, 255, 0.6);
-            border: 1px solid rgba(255, 107, 157, 0.2);
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.1);
         }
         
         .language-option:hover {
@@ -1403,7 +1408,33 @@
 
         // Avatar functionality - original system
         function uploadPhoto() {
-            document.getElementById('avatarUpload').click();
+            const fileInput = document.getElementById('avatarUpload');
+            fileInput.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const uploadedAvatar = document.getElementById('uploadedAvatar');
+                        const animGalleryPreview = document.getElementById('animGalleryPreview');
+                        
+                        // Hide the avatar gallery preview
+                        if (animGalleryPreview) {
+                            animGalleryPreview.style.display = 'none';
+                        }
+                        
+                        // Show the uploaded image
+                        if (uploadedAvatar) {
+                            uploadedAvatar.src = event.target.result;
+                            uploadedAvatar.style.display = 'block';
+                        }
+                        
+                        // Set the avatar choice to empty to indicate a custom upload
+                        document.getElementById('avatarChoice').value = '';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            fileInput.click();
         }
 
         // Avatar selection logic from original system
