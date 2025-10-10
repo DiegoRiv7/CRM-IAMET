@@ -377,7 +377,7 @@
         opacity: 1 !important;
     }
 
-    /* Show icons when hovering transparent dock */
+    /* Show icons when hovering transparent dock (only if not in no-hover state) */
     nav.macos-dock#dock-bottom.dock-transparent:hover .dock-item,
     nav.macos-dock#dock-top.dock-transparent:hover .dock-item,
     nav.macos-dock#dock-left.dock-transparent:hover .dock-item,
@@ -386,6 +386,32 @@
         opacity: 1 !important;
         visibility: visible !important;
         transition: all 0.4s ease 0.1s !important;
+    }
+
+    /* Disable hover effects when dock is in no-hover mode */
+    nav.macos-dock#dock-bottom.dock-transparent.no-hover:hover,
+    nav.macos-dock#dock-top.dock-transparent.no-hover:hover,
+    nav.macos-dock#dock-left.dock-transparent.no-hover:hover,
+    nav.macos-dock#dock-right.dock-transparent.no-hover:hover,
+    .macos-dock.dock-transparent.no-hover:hover {
+        background: rgba(255, 255, 255, 0.005) !important;
+        backdrop-filter: blur(35px) saturate(400%) contrast(150%) brightness(120%) hue-rotate(5deg) !important;
+        -webkit-backdrop-filter: blur(35px) saturate(400%) contrast(150%) brightness(120%) hue-rotate(5deg) !important;
+        border: 1px solid rgba(255, 255, 255, 0.01) !important;
+        box-shadow: 
+            0 0 0 0 transparent !important,
+            inset 0 1px 0 rgba(255, 255, 255, 0.008) !important;
+        opacity: 0.08 !important;
+    }
+
+    /* Keep icons hidden when in no-hover mode */
+    nav.macos-dock#dock-bottom.dock-transparent.no-hover:hover .dock-item,
+    nav.macos-dock#dock-top.dock-transparent.no-hover:hover .dock-item,
+    nav.macos-dock#dock-left.dock-transparent.no-hover:hover .dock-item,
+    nav.macos-dock#dock-right.dock-transparent.no-hover:hover .dock-item,
+    .macos-dock.dock-transparent.no-hover:hover .dock-item {
+        opacity: 0 !important;
+        visibility: hidden !important;
     }
     
     /* Light theme transparent dock - ultra invisible mirror */
@@ -442,6 +468,32 @@
         opacity: 1 !important;
         visibility: visible !important;
         transition: all 0.4s ease 0.1s !important;
+    }
+
+    /* Disable hover effects for light theme when in no-hover mode */
+    .light-theme nav.macos-dock#dock-bottom.dock-transparent.no-hover:hover,
+    .light-theme nav.macos-dock#dock-top.dock-transparent.no-hover:hover,
+    .light-theme nav.macos-dock#dock-left.dock-transparent.no-hover:hover,
+    .light-theme nav.macos-dock#dock-right.dock-transparent.no-hover:hover,
+    .light-theme .macos-dock.dock-transparent.no-hover:hover {
+        background: rgba(255, 255, 255, 0.003) !important;
+        backdrop-filter: blur(35px) saturate(400%) contrast(150%) brightness(130%) hue-rotate(-5deg) !important;
+        -webkit-backdrop-filter: blur(35px) saturate(400%) contrast(150%) brightness(130%) hue-rotate(-5deg) !important;
+        border: 1px solid rgba(255, 107, 157, 0.008) !important;
+        box-shadow: 
+            0 0 0 0 transparent !important,
+            inset 0 1px 0 rgba(255, 255, 255, 0.01) !important;
+        opacity: 0.06 !important;
+    }
+
+    /* Keep icons hidden in light theme no-hover mode */
+    .light-theme nav.macos-dock#dock-bottom.dock-transparent.no-hover:hover .dock-item,
+    .light-theme nav.macos-dock#dock-top.dock-transparent.no-hover:hover .dock-item,
+    .light-theme nav.macos-dock#dock-left.dock-transparent.no-hover:hover .dock-item,
+    .light-theme nav.macos-dock#dock-right.dock-transparent.no-hover:hover .dock-item,
+    .light-theme .macos-dock.dock-transparent.no-hover:hover .dock-item {
+        opacity: 0 !important;
+        visibility: hidden !important;
     }
     
     /* Compact dock */
@@ -2745,4 +2797,90 @@ window.applyDockTypeStyles = function(type) {
         console.log('Applied class dock-' + type + ' to dock element:', dock);
     });
 };
+
+// Prevent dock from flickering on page navigation when cursor is over dock area
+(function() {
+    let mouseMovedAfterLoad = false;
+    let lastMousePosition = { x: 0, y: 0 };
+    
+    // Disable hover effects initially for transparent docks
+    function disableDockHover() {
+        const transparentDocks = document.querySelectorAll('.dock-transparent');
+        transparentDocks.forEach(dock => {
+            dock.classList.add('no-hover');
+        });
+        mouseMovedAfterLoad = false;
+    }
+    
+    // Enable hover effects when mouse actually moves
+    function enableDockHover() {
+        const transparentDocks = document.querySelectorAll('.dock-transparent');
+        transparentDocks.forEach(dock => {
+            dock.classList.remove('no-hover');
+        });
+        mouseMovedAfterLoad = true;
+    }
+    
+    // Track mouse movement to detect actual user movement (not just page load position)
+    function handleMouseMove(e) {
+        const currentPosition = { x: e.clientX, y: e.clientY };
+        
+        // Check if mouse actually moved from initial position
+        if (!mouseMovedAfterLoad) {
+            const distance = Math.sqrt(
+                Math.pow(currentPosition.x - lastMousePosition.x, 2) + 
+                Math.pow(currentPosition.y - lastMousePosition.y, 2)
+            );
+            
+            // If mouse moved more than 10px, enable hover
+            if (distance > 10) {
+                enableDockHover();
+            }
+        }
+        
+        lastMousePosition = currentPosition;
+    }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Store initial mouse position
+        document.addEventListener('mousemove', function(e) {
+            if (!mouseMovedAfterLoad) {
+                lastMousePosition = { x: e.clientX, y: e.clientY };
+            }
+        }, { once: true });
+        
+        // Disable hover initially
+        setTimeout(() => {
+            disableDockHover();
+        }, 100);
+        
+        // Add mouse move listener
+        document.addEventListener('mousemove', handleMouseMove);
+        
+        // Also enable on any click (user interaction)
+        document.addEventListener('click', enableDockHover);
+        
+        // Re-disable when navigation occurs
+        window.addEventListener('beforeunload', function() {
+            disableDockHover();
+        });
+    });
+    
+    // Re-apply no-hover when dock type changes to transparent
+    if (window.applyDockTypeStyles) {
+        const originalApplyDockTypeStyles = window.applyDockTypeStyles;
+        window.applyDockTypeStyles = function(type) {
+            originalApplyDockTypeStyles(type);
+            
+            if (type === 'transparent') {
+                setTimeout(() => {
+                    disableDockHover();
+                    // Re-enable mouse tracking
+                    mouseMovedAfterLoad = false;
+                }, 50);
+            }
+        };
+    }
+})();
 </script>
