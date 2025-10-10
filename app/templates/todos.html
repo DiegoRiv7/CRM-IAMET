@@ -370,15 +370,7 @@
                                                                         <label class="filter-label">Monto Máximo</label>
                                                                         <input type="number" class="filter-input" id="filterMontoMax" placeholder="Monto max">
                                                                     </div>
-                                                                    <div class="filter-group">
-                                                                        <label class="filter-label">Probabilidad Mínima</label>
-                                                                        <input type="number" class="filter-input" id="filterProbabilidadMin" placeholder="Prob. min">
-                                                                    </div>
-                                                                                        <div class="filter-group">
-                                                                                            <label class="filter-label">Probabilidad Máxima</label>
-                                                                                            <input type="number" class="filter-input" id="filterProbabilidadMax" placeholder="Prob. max">
-                                                                                        </div>
-                                                                                        <div class="filter-group">
+                                                                                                                                                            <div class="filter-group">
                                                                                             <label class="filter-label">Ordenar por Monto</label>
                                                                                             <select class="filter-input" id="filterOrdenMonto">
                                                                                                 <option value="">Por defecto</option>
@@ -386,9 +378,16 @@
                                                                                                 <option value="monto_asc">Menor a mayor</option>
                                                                                             </select>
                                                                                         </div>
-                                                                                        <div class="filter-group">
-                                                                                            <label class="filter-label">Área</label>
-                                                                                            <select class="filter-input" id="filterArea">
+                                                                                                            <div class="filter-group">
+                                                                                                                <label class="filter-label">Ordenar por Probabilidad</label>
+                                                                                                                <select class="filter-input" id="filterOrdenProbabilidad">
+                                                                                                                    <option value="">Por defecto</option>
+                                                                                                                    <option value="prob_desc">Mayor a menor</option>
+                                                                                                                    <option value="prob_asc">Menor a mayor</option>
+                                                                                                                </select>
+                                                                                                            </div>
+                                                                                                            <div class="filter-group">
+                                                                                                                <label class="filter-label">Área</label>                                                                                            <select class="filter-input" id="filterArea">
                                                                                                 <option value="">Todas las áreas</option>
                                                                                                 {% for area_choice in filter_form.area.field.choices %}
                                                                                                     {% if area_choice.0 != "" %}
@@ -527,22 +526,20 @@ function generarReporteCSV() {
     const cliente = document.getElementById('filterCliente').value.trim();
     const montoMin = document.getElementById('filterMontoMin').value;
     const montoMax = document.getElementById('filterMontoMax').value;
-    const probMin = document.getElementById('filterProbabilidadMin').value;
-    const probMax = document.getElementById('filterProbabilidadMax').value;
     const mesCierre = document.getElementById('filterMesCierre').value.trim();
     const area = document.getElementById('filterArea').value.trim();
     const ordenMonto = document.getElementById('filterOrdenMonto').value;
+    const ordenProbabilidad = document.getElementById('filterOrdenProbabilidad').value;
 
     const url = new URL('{% url 'exportar_oportunidades_csv' %}', window.location.origin);
     if (oportunidad) url.searchParams.set('filterOportunidad', oportunidad);
     if (cliente) url.searchParams.set('filterCliente', cliente);
     if (montoMin) url.searchParams.set('filterMontoMin', montoMin);
     if (montoMax) url.searchParams.set('filterMontoMax', montoMax);
-    if (probMin) url.searchParams.set('filterProbabilidadMin', probMin);
-    if (probMax) url.searchParams.set('filterProbabilidadMax', probMax);
     if (mesCierre) url.searchParams.set('filterMesCierre', mesCierre);
     if (area) url.searchParams.set('filterArea', area);
     if (ordenMonto) url.searchParams.set('orden_monto', ordenMonto);
+    if (ordenProbabilidad) url.searchParams.set('orden_probabilidad', ordenProbabilidad);
 
     window.location.href = url.toString();
 }
@@ -607,17 +604,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 function clearFilters() {
-    // Clear all filter inputs
     document.getElementById('filterOportunidad').value = '';
     document.getElementById('filterCliente').value = '';
     document.getElementById('filterMontoMin').value = '';
     document.getElementById('filterMontoMax').value = '';
-    document.getElementById('filterProbabilidadMin').value = '';
-    document.getElementById('filterProbabilidadMax').value = '';
     document.getElementById('filterMesCierre').value = '';
-    document.getElementById('filterContacto').value = '';
+    document.getElementById('filterArea').value = '';
+    document.getElementById('filterOrdenMonto').value = '';
+    document.getElementById('filterOrdenProbabilidad').value = '';
     
-    // Apply filters (which will show all rows since all filters are empty)
     applyFilters();
 }
 
@@ -641,11 +636,12 @@ function applyFilters() {
     const cliente = document.getElementById('filterCliente').value.toLowerCase().trim();
     const montoMin = parseFloat(document.getElementById('filterMontoMin').value) || 0;
     const montoMax = parseFloat(document.getElementById('filterMontoMax').value) || Infinity;
-    const probMin = parseFloat(document.getElementById('filterProbabilidadMin').value) || 0;
-    const probMax = parseFloat(document.getElementById('filterProbabilidadMax').value) || 100;
+    const probMin = 0;
+    const probMax = 100;
     const mesCierre = document.getElementById('filterMesCierre').value.toLowerCase().trim();
     const area = document.getElementById('filterArea').value.toLowerCase().trim();
     const ordenMonto = document.getElementById('filterOrdenMonto').value;
+    const ordenProbabilidad = document.getElementById('filterOrdenProbabilidad').value;
     
     const tableBody = document.getElementById('tablaOportunidades');
     const rows = originalRows;
@@ -707,6 +703,17 @@ function applyFilters() {
                 return montoA - montoB;
             } else {
                 return montoB - montoA;
+            }
+        });
+    } else if (ordenProbabilidad) {
+        filteredRows.sort((a, b) => {
+            const probA = parseFloat(a.cells[3].querySelector('span').textContent.replace('%', '')) || 0;
+            const probB = parseFloat(b.cells[3].querySelector('span').textContent.replace('%', '')) || 0;
+
+            if (ordenProbabilidad === 'prob_asc') {
+                return probA - probB;
+            } else {
+                return probB - probA;
             }
         });
     }

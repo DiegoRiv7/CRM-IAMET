@@ -151,6 +151,53 @@
         /* Si está en localStorage como compacto, aplicar inmediatamente */
         transition: none !important;
     }
+    
+    /* Prevenir cualquier flash de dock normal antes de aplicar estado compacto */
+    [data-dock-type="compact"] .macos-dock:not(.dock-ready) {
+        width: 64px !important;
+        height: 64px !important;
+        border-radius: 50% !important;
+        background: rgba(29, 29, 31, 0.9) !important;
+        backdrop-filter: blur(20px) !important;
+        transition: none !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        padding: 0 !important;
+        border: 2px solid rgba(255, 255, 255, 0.2) !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+    }
+    
+    /* Ocultar todos los iconos excepto casa durante carga inicial */
+    [data-dock-type="compact"] .macos-dock:not(.dock-ready) .dock-item:not(.home-icon) {
+        opacity: 0 !important;
+        visibility: hidden !important;
+        transform: scale(0) !important;
+        transition: none !important;
+        position: absolute !important;
+    }
+    
+    /* Mostrar solo icono casa durante carga inicial */
+    [data-dock-type="compact"] .macos-dock:not(.dock-ready) .dock-item.home-icon {
+        opacity: 1 !important;
+        visibility: visible !important;
+        width: 64px !important;
+        height: 64px !important;
+        margin: 0 !important;
+        transition: none !important;
+        position: relative !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    /* Icono SVG casa durante carga inicial */
+    [data-dock-type="compact"] .macos-dock:not(.dock-ready) .dock-item.home-icon .dock-icon {
+        width: 30px !important;
+        height: 30px !important;
+        color: #EBEBF5 !important;
+        opacity: 0.95 !important;
+        transition: none !important;
+    }
 
     /* Estado compacto forzado desde CSS */
     .macos-dock.dock-compact:not(.expanded) {
@@ -3484,7 +3531,15 @@ window.checkDockVisibility = function() {
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
         const currentPosition = localStorage.getItem('dockPosition') || 'bottom';
-        console.log('Setting UI states for dock position:', currentPosition);
+        const currentType = localStorage.getItem('dockType') || 'normal';
+        console.log('Setting UI states for dock position:', currentPosition, 'type:', currentType);
+        
+        // Marcar docks como listos para habilitar transiciones normales
+        const allDocks = document.querySelectorAll('.macos-dock');
+        allDocks.forEach(dock => {
+            dock.classList.add('dock-ready');
+        });
+        console.log('Marked', allDocks.length, 'docks as ready');
         
         // Solo actualizar los estados de UI sin cambiar la posición del dock
         // (la posición ya se aplicó inmediatamente arriba)

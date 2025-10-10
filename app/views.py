@@ -1700,13 +1700,12 @@ def exportar_oportunidades_csv(request):
     if monto_max:
         items = items.filter(monto__lte=monto_max)
 
-    probabilidad_min = request.GET.get('filterProbabilidadMin')
-    if probabilidad_min:
-        items = items.filter(probabilidad_cierre__gte=probabilidad_min)
-
-    probabilidad_max = request.GET.get('filterProbabilidadMax')
-    if probabilidad_max:
-        items = items.filter(probabilidad_cierre__lte=probabilidad_max)
+    orden_probabilidad = request.GET.get('orden_probabilidad')
+    if orden_probabilidad:
+        if orden_probabilidad == 'prob_asc':
+            items = items.order_by('probabilidad_cierre')
+        elif orden_probabilidad == 'prob_desc':
+            items = items.order_by('-probabilidad_cierre')
 
     mes_cierre = request.GET.get('filterMesCierre', '').strip()
     if mes_cierre:
