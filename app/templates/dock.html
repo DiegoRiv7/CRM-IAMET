@@ -2377,16 +2377,30 @@ window.addEventListener('error', function(e) {
     // Obtener la posición guardada inmediatamente
     const savedPosition = localStorage.getItem('dockPosition') || 'bottom';
     
-    // Aplicar CSS inmediatamente para evitar animaciones no deseadas
+    // Aplicar CSS con máxima especificidad para evitar conflictos
     const style = document.createElement('style');
     style.id = 'initial-dock-position-style';
     style.textContent = `
-        .macos-dock { opacity: 0 !important; visibility: hidden !important; }
-        #dock-${savedPosition} { opacity: 1 !important; visibility: visible !important; }
+        /* Ocultar TODOS los docks con máxima prioridad */
+        nav.macos-dock#dock-left,
+        nav.macos-dock#dock-right, 
+        nav.macos-dock#dock-top,
+        nav.macos-dock#dock-bottom {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            display: none !important;
+        }
+        
+        /* Mostrar SOLO el dock seleccionado */
+        nav.macos-dock#dock-${savedPosition} {
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: flex !important;
+        }
     `;
     document.head.appendChild(style);
     
-    console.log('Applied initial dock position:', savedPosition);
+    console.log('Applied initial dock position with high specificity:', savedPosition);
 })();
 
 // Funciones globales para el manejo del dock - disponibles en todas las páginas
@@ -2402,12 +2416,26 @@ window.applyDockPosition = function(position) {
         initialStyle.remove();
     }
     
-    // Crear nuevo estilo para la posición del dock
+    // Crear nuevo estilo con alta especificidad
     const style = document.createElement('style');
     style.id = 'dock-position-style';
     style.textContent = `
-        .macos-dock { opacity: 0 !important; visibility: hidden !important; }
-        #dock-${position} { opacity: 1 !important; visibility: visible !important; }
+        /* Ocultar TODOS los docks con máxima prioridad */
+        nav.macos-dock#dock-left,
+        nav.macos-dock#dock-right, 
+        nav.macos-dock#dock-top,
+        nav.macos-dock#dock-bottom {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            display: none !important;
+        }
+        
+        /* Mostrar SOLO el dock seleccionado */
+        nav.macos-dock#dock-${position} {
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: flex !important;
+        }
     `;
     document.head.appendChild(style);
 };
