@@ -3765,6 +3765,15 @@ def bitrix_webhook_receiver(request):
                     # Obtener el estado de Bitrix24
                     bitrix_stage_id = deal_details.get('STAGE_ID')
                     print(f"BITRIX WEBHOOK: Raw STAGE_ID: {bitrix_stage_id}", flush=True)
+                    print(f"BITRIX WEBHOOK: STAGE_ID Type: {type(bitrix_stage_id)}", flush=True)
+                    
+                    # Log para capturar todos los stage_ids únicos
+                    import os
+                    log_file = '/tmp/bitrix_stage_ids.log'
+                    with open(log_file, 'a') as f:
+                        f.write(f"UPDATE - Deal: {existing_opportunity.oportunidad} | STAGE_ID: {bitrix_stage_id} | Timestamp: {timezone.now()}\n")
+                    
+                    print(f"BITRIX WEBHOOK: All Deal Details: {deal_details}", flush=True)
                     
                     # Verificar si la oportunidad está en "Cerrado Perdido"
                     # Formatos posibles: '2', 'C2:11', 'LOSE', etc.
@@ -3852,6 +3861,15 @@ def bitrix_webhook_receiver(request):
                     # Obtener el estado de Bitrix24
                     bitrix_stage_id = deal_details.get('STAGE_ID')
                     print(f"BITRIX WEBHOOK: Raw STAGE_ID for new opportunity: {bitrix_stage_id}", flush=True)
+                    print(f"BITRIX WEBHOOK: STAGE_ID Type for new: {type(bitrix_stage_id)}", flush=True)
+                    
+                    # Log para capturar todos los stage_ids únicos
+                    import os
+                    log_file = '/tmp/bitrix_stage_ids.log'
+                    with open(log_file, 'a') as f:
+                        f.write(f"NEW - Deal: {deal_details.get('TITLE')} | STAGE_ID: {bitrix_stage_id} | Timestamp: {timezone.now()}\n")
+                    
+                    print(f"BITRIX WEBHOOK: All Deal Details for new: {deal_details}", flush=True)
                     
                     # Verificar si la nueva oportunidad está en "Cerrado Perdido"
                     is_lost_status_new = is_lost_opportunity(bitrix_stage_id)
@@ -9251,6 +9269,18 @@ def handle_lost_opportunity(opportunity, action='log_only'):
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
+@login_required
+def debug_stage_ids(request):
+    """Vista temporal para ver todos los stage_ids capturados"""
+    try:
+        with open('/tmp/bitrix_stage_ids.log', 'r') as f:
+            log_content = f.read()
+    except FileNotFoundError:
+        log_content = "No hay logs aún"
+    
+    return HttpResponse(f"<pre>{log_content}</pre>", content_type='text/html')
+
+@login_required  
 def bitrix_lost_opportunities(request):
     """
     Vista para mostrar y gestionar oportunidades marcadas como "Cerrado Perdido"
