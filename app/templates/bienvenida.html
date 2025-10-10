@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load i18n %}
 {% load app_filters %}
 {% block title %}Bienvenida{% endblock %}
 {% block content %}
@@ -956,8 +957,8 @@
                 </div>
             {% endif %}
         </div>
-        <h1 class="apple-title-1 text-center mb-1" style="color: var(--apple-label);">¡Bienvenido, {{ user.first_name|default:user.username }}!</h1>
-        <p class="apple-body text-center mb-4" style="color: var(--apple-label-secondary); max-width: 500px;">¿En qué vamos a trabajar hoy?</p>
+        <h1 class="apple-title-1 text-center mb-1" style="color: var(--apple-label);">{% blocktrans %}¡Bienvenido, {{ user.first_name|default:user.username }}!{% endblocktrans %}</h1>
+        <p class="apple-body text-center mb-4" style="color: var(--apple-label-secondary); max-width: 500px;">{% trans "¿En qué vamos a trabajar hoy?" %}</p>
         
         <!-- Centered Search Bar -->
         <div class="central-search-container mb-4" id="main-search-container">
@@ -966,14 +967,14 @@
                     <circle cx="11" cy="11" r="8"/>
                     <path d="M21 21l-4.35-4.35"/>
                 </svg>
-                <span class="central-search-text">Buscar cotizaciones, clientes o productos...</span>
+                <span class="central-search-text">{% trans "Buscar cotizaciones, clientes o productos..." %}</span>
             </div>
         </div>
     </section>
     <!-- Apple Employee Cards Section -->
     <section class="w-full grid grid-cols-1 md:grid-cols-2 gap-6 py-4 max-w-4xl apple-fade-in" style="animation-delay:0.2s;">
         <div class="apple-card text-center apple-float" style="animation-delay: 0.1s;">
-            <h4 class="apple-title-3 mb-4">Empleado del Mes</h4>
+            <h4 class="apple-title-3 mb-4">{% trans "Empleado del Mes" %}</h4>
             {% if usuario_mes %}
                 {% if usuario_mes.avatar_url %}
                     <img src="{{ usuario_mes.avatar_url }}" 
