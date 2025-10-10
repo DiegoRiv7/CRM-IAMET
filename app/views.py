@@ -28,6 +28,25 @@ from django.utils import timezone
 from decimal import Decimal
 import decimal
 from django.utils.html import json_script
+
+# Helper function to detect lost opportunities
+def is_lost_opportunity(stage_id):
+    """
+    Detecta si una oportunidad está marcada como "Cerrado Perdido" en Bitrix24
+    Maneja múltiples formatos de stage_id:
+    - '2': Formato simple
+    - 'C2:XX': Formato con prefijo (ej: 'C2:11')
+    - 'LOSE': Formato texto
+    """
+    if not stage_id:
+        return False
+    
+    stage_id = str(stage_id)
+    return (
+        stage_id == '2' or  # Formato simple
+        stage_id.startswith('C2:') or  # Formato C2:XX
+        stage_id == 'LOSE'  # Posible formato texto
+    )
 import json
 from zoneinfo import ZoneInfo
 
@@ -1322,9 +1341,19 @@ def dashboard(request):
     # Base queryset for user-specific or all opportunities
     # EXCLUIR oportunidades marcadas como "Cerrado Perdido" (bitrix_stage_id='2')
     if is_supervisor(request.user):
-        base_opportunities = TodoItem.objects.exclude(bitrix_stage_id='2')
+        # Excluir oportunidades perdidas usando múltiples formatos
+        base_opportunities = TodoItem.objects.exclude(
+            Q(bitrix_stage_id='2') | 
+            Q(bitrix_stage_id__startswith='C2:') | 
+            Q(bitrix_stage_id='LOSE')
+        )
     else:
-        base_opportunities = TodoItem.objects.filter(usuario=request.user).exclude(bitrix_stage_id='2')
+        # Excluir oportunidades perdidas usando múltiples formatos
+        base_opportunities = TodoItem.objects.filter(usuario=request.user).exclude(
+            Q(bitrix_stage_id='2') | 
+            Q(bitrix_stage_id__startswith='C2:') | 
+            Q(bitrix_stage_id='LOSE')
+        )
 
     # --- Key Metrics ---
 
@@ -1610,9 +1639,19 @@ def todos (request):
     # Determinar si el usuario es un supervisor - Optimizar consultas con select_related
     # EXCLUIR oportunidades marcadas como "Cerrado Perdido" (bitrix_stage_id='2')
     if is_supervisor(request.user):
-        items = TodoItem.objects.select_related('usuario', 'cliente').exclude(bitrix_stage_id='2')
+        # Excluir oportunidades perdidas usando múltiples formatos
+        items = TodoItem.objects.select_related('usuario', 'cliente').exclude(
+            Q(bitrix_stage_id='2') | 
+            Q(bitrix_stage_id__startswith='C2:') | 
+            Q(bitrix_stage_id='LOSE')
+        )
     else:
-        items = TodoItem.objects.select_related('usuario', 'cliente').filter(usuario=request.user).exclude(bitrix_stage_id='2')
+        # Excluir oportunidades perdidas usando múltiples formatos
+        items = TodoItem.objects.select_related('usuario', 'cliente').filter(usuario=request.user).exclude(
+            Q(bitrix_stage_id='2') | 
+            Q(bitrix_stage_id__startswith='C2:') | 
+            Q(bitrix_stage_id='LOSE')
+        )
 
     filter_form = VentaFilterForm(request.GET)
 
@@ -2312,9 +2351,19 @@ def exportar_oportunidades_csv(request):
     # 1. Get the base queryset with cotizations
     # EXCLUIR oportunidades marcadas como "Cerrado Perdido" (bitrix_stage_id='2')
     if is_supervisor(request.user):
-        items = TodoItem.objects.select_related('usuario', 'cliente').prefetch_related('cotizaciones__detalles').exclude(bitrix_stage_id='2')
+        # Excluir oportunidades perdidas usando múltiples formatos
+        items = TodoItem.objects.select_related('usuario', 'cliente').prefetch_related('cotizaciones__detalles').exclude(
+            Q(bitrix_stage_id='2') | 
+            Q(bitrix_stage_id__startswith='C2:') | 
+            Q(bitrix_stage_id='LOSE')
+        )
     else:
-        items = TodoItem.objects.select_related('usuario', 'cliente').prefetch_related('cotizaciones__detalles').filter(usuario=request.user).exclude(bitrix_stage_id='2')
+        # Excluir oportunidades perdidas usando múltiples formatos
+        items = TodoItem.objects.select_related('usuario', 'cliente').prefetch_related('cotizaciones__detalles').filter(usuario=request.user).exclude(
+            Q(bitrix_stage_id='2') | 
+            Q(bitrix_stage_id__startswith='C2:') | 
+            Q(bitrix_stage_id='LOSE')
+        )
 
     # 2. Apply filters
     oportunidad_filter = request.GET.get('filterOportunidad', '').strip()
@@ -3715,10 +3764,13 @@ def bitrix_webhook_receiver(request):
                     print(f"BITRIX WEBHOOK: Raw STAGE_ID: {bitrix_stage_id}", flush=True)
                     
                     # Verificar si la oportunidad está en "Cerrado Perdido"
-                    if bitrix_stage_id == '2':  # '2' = Perdido según BITRIX_STAGE_CHOICES
-                        print(f"BITRIX WEBHOOK: 📋 Oportunidad '{existing_opportunity.oportunidad}' marcada como PERDIDA - Se moverá a sección perdidas", flush=True)
+                    # Formatos posibles: '2', 'C2:11', 'LOSE', etc.
+                    is_lost_status = is_lost_opportunity(bitrix_stage_id)
+                    
+                    if is_lost_status:
+                        print(f"BITRIX WEBHOOK: 📋 Oportunidad '{existing_opportunity.oportunidad}' marcada como PERDIDA (STAGE_ID: {bitrix_stage_id}) - Se moverá a sección perdidas", flush=True)
                         # No eliminar, solo actualizar el estado para que se filtre de la tabla principal
-                    elif existing_opportunity.bitrix_stage_id == '2' and bitrix_stage_id != '2':
+                    elif existing_opportunity.bitrix_stage_id and existing_opportunity.bitrix_stage_id.startswith('C2:') and not is_lost_status:
                         # La oportunidad estaba perdida pero ahora está activa de nuevo
                         print(f"BITRIX WEBHOOK: ♻️ Oportunidad '{existing_opportunity.oportunidad}' RESTAURADA de perdida a estado activo", flush=True)
                     
@@ -3799,8 +3851,10 @@ def bitrix_webhook_receiver(request):
                     print(f"BITRIX WEBHOOK: Raw STAGE_ID for new opportunity: {bitrix_stage_id}", flush=True)
                     
                     # Verificar si la nueva oportunidad está en "Cerrado Perdido"
-                    if bitrix_stage_id == '2':  # '2' = Perdido según BITRIX_STAGE_CHOICES
-                        print(f"BITRIX WEBHOOK: ⚠️ Nueva oportunidad '{deal_details.get('TITLE')}' está marcada como PERDIDA - No se creará", flush=True)
+                    is_lost_status_new = is_lost_opportunity(bitrix_stage_id)
+                    
+                    if is_lost_status_new:
+                        print(f"BITRIX WEBHOOK: ⚠️ Nueva oportunidad '{deal_details.get('TITLE')}' está marcada como PERDIDA (STAGE_ID: {bitrix_stage_id}) - No se creará", flush=True)
                         return JsonResponse({'status': 'success', 'message': 'Opportunity marked as lost - not created'})
                     
                     try:
@@ -9159,8 +9213,16 @@ def bitrix_sync_admin(request):
     # GET request - mostrar estadísticas
     context = {
         'total_opportunities': TodoItem.objects.count(),
-        'active_opportunities': TodoItem.objects.exclude(bitrix_stage_id='2').count(),
-        'lost_opportunities': TodoItem.objects.filter(bitrix_stage_id='2').count(),
+        'active_opportunities': TodoItem.objects.exclude(
+            Q(bitrix_stage_id='2') | 
+            Q(bitrix_stage_id__startswith='C2:') | 
+            Q(bitrix_stage_id='LOSE')
+        ).count(),
+        'lost_opportunities': TodoItem.objects.filter(
+            Q(bitrix_stage_id='2') | 
+            Q(bitrix_stage_id__startswith='C2:') | 
+            Q(bitrix_stage_id='LOSE')
+        ).count(),
         'bitrix_opportunities': TodoItem.objects.filter(bitrix_deal_id__isnull=False).count(),
         'local_opportunities': TodoItem.objects.filter(bitrix_deal_id__isnull=True).count(),
     }
@@ -9223,9 +9285,11 @@ def bitrix_lost_opportunities(request):
         
         return redirect('bitrix-lost-opportunities')
     
-    # Obtener oportunidades perdidas
+    # Obtener oportunidades perdidas usando múltiples formatos
     lost_opportunities = TodoItem.objects.filter(
-        bitrix_stage_id='2'  # '2' = Perdido
+        Q(bitrix_stage_id='2') | 
+        Q(bitrix_stage_id__startswith='C2:') | 
+        Q(bitrix_stage_id='LOSE')
     ).select_related('cliente', 'usuario').order_by('-fecha_actualizacion')
     
     context = {
