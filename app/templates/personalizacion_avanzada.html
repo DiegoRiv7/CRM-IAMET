@@ -1124,25 +1124,28 @@
                     
                     <div class="divider"></div>
                     
+                    <!-- Sección de subir foto personal -->
                     <div class="avatar-section" style="width: 100%; box-sizing: border-box; margin: 20px 0; padding: 20px; background: rgba(255, 255, 255, 0.1); border-radius: 12px; border: 1px solid var(--apple-separator); position: relative; z-index: 10;">
                         <h3 style="margin: 0 0 10px 0; color: var(--apple-label); font-size: 18px; font-weight: 600;">Subir Foto Personal</h3>
                         <p style="margin: 0 0 15px 0; color: var(--apple-label-secondary); font-size: 14px;">O sube tu propia foto de perfil</p>
-                        <div style="width: 100%; position: relative; z-index: 10;">
-                            <button type="button" class="btn-primary" onclick="uploadPhoto()" style="width: 100%; padding: 14px; font-size: 16px; font-weight: 500; border: none; border-radius: 10px; background: var(--apple-blue); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease; position: relative; z-index: 10;">
-                                <span>📸</span> Subir Foto
-                            </button>
+                        
+                        <!-- Botón para seleccionar archivo -->
+                        <div style="width: 100%; position: relative; z-index: 10; margin-bottom: 15px;">
                             <input type="file" id="avatarUpload" name="avatar" accept="image/*" style="display: none;">
-                            <input type="hidden" id="avatarChoice" name="avatar_choice" value="">
+                            <button type="button" class="btn-primary" onclick="document.getElementById('avatarUpload').click()" style="width: 100%; padding: 14px; font-size: 16px; font-weight: 500; border: none; border-radius: 10px; background: var(--apple-blue); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
+                                <span>📸</span> Seleccionar Foto
+                            </button>
                         </div>
+                        
+                        <!-- Botón de guardar cambios -->
+                        <div style="width: 100%; position: relative; z-index: 10;">
+                            <button type="submit" class="btn-primary" style="width: 100%; padding: 14px; font-size: 16px; font-weight: 600; border: none; border-radius: 10px; background: #34C759; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
+                                <span>💾</span> Guardar Cambios
+                            </button>
+                        </div>
+                        
+                        <input type="hidden" id="avatarChoice" name="avatar_choice" value="">
                     </div>
-                    
-                    <!-- Botón de guardar simplificado -->
-                    <div style="position: fixed; bottom: 20px; left: 0; right: 0; padding: 0 20px; z-index: 9999;">
-                        <button type="submit" class="btn-primary" style="width: 100%; max-width: 600px; margin: 0 auto; padding: 16px; font-size: 16px; font-weight: 600; border: none; border-radius: 12px; background: var(--apple-blue); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);">
-                            <span>💾</span> Guardar Cambios
-                        </button>
-                    </div>
-                    <div style="height: 80px;"></div> <!-- Espacio para el botón fijo -->
                 </form>
             </div>
         </div>
@@ -1507,6 +1510,9 @@
                         if (uploadedAvatar) {
                             uploadedAvatar.src = event.target.result;
                             uploadedAvatar.style.display = 'block';
+                            
+                            // Mostrar notificación de éxito
+                            showNotification('Imagen cargada correctamente. Haz clic en Guardar Cambios para confirmar.', 'success');
                         }
                         
                         // Set the avatar choice to empty to indicate a custom upload
@@ -1515,7 +1521,6 @@
                     reader.readAsDataURL(file);
                 }
             };
-            fileInput.click();
         }
 
         // Avatar selection logic from original system
