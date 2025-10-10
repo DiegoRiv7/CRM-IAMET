@@ -2480,22 +2480,16 @@ window.setDockPosition = function(position) {
     });
     
     // Set active state for selected option with immediate visual feedback
-    const selectedOption = document.querySelector(`[data-position="${position}"]`);
+    const selectedOption = document.querySelector(`.dock-option[data-position="${position}"]`);
     if (selectedOption) {
         selectedOption.classList.add('active');
         console.log('Added active class to dock option:', selectedOption);
         
-        // Forzar repaint visual inmediato con mejor feedback
+        // Forzar un pequeño efecto visual sin interferer con los CSS
         selectedOption.style.transform = 'translateY(-2px) scale(1.05)';
-        selectedOption.style.borderColor = 'var(--apple-blue)';
-        selectedOption.style.backgroundColor = 'rgba(0, 122, 255, 0.2)';
-        selectedOption.style.boxShadow = '0 0 0 2px rgba(0, 122, 255, 0.3)';
         setTimeout(() => {
-            // Mantener el color pero quitar solo la escala
-            selectedOption.style.transform = 'translateY(-2px)';
-            selectedOption.style.borderColor = 'var(--apple-blue)';
-            selectedOption.style.backgroundColor = 'rgba(0, 122, 255, 0.2)';
-            selectedOption.style.boxShadow = '0 0 0 2px rgba(0, 122, 255, 0.3)';
+            // Quitar el estilo inline para que use el CSS de la clase active
+            selectedOption.style.transform = '';
         }, 150);
     } else {
         console.log('No dock option found for position:', position);
