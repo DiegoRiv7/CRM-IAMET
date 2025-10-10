@@ -117,8 +117,8 @@
     }
 
     .dock-item .dock-icon {
-        width: 36px;
-        height: 36px;
+        width: 32px;
+        height: 32px;
         color: #EBEBF5;
         transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
@@ -901,7 +901,7 @@
         }
     }
 
-    /* Mostrar todos los iconos cuando está expandido - TAMAÑO MEJORADO */
+    /* Mostrar todos los iconos cuando está expandido - IGUAL AL DOCK NORMAL */
     nav.macos-dock#dock-bottom.dock-compact.expanded .dock-item,
     nav.macos-dock#dock-top.dock-compact.expanded .dock-item {
         opacity: 1 !important;
@@ -909,9 +909,9 @@
         transform: scale(1) !important;
         pointer-events: auto !important;
         position: relative !important;
-        width: 60px !important;
-        height: 60px !important;
-        margin: 0 8px !important;
+        width: 52px !important;
+        height: 52px !important;
+        margin: 0 6px !important;
         transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.1s !important;
         animation: showIcon 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.2s both !important;
     }
@@ -923,9 +923,9 @@
         transform: scale(1) !important;
         pointer-events: auto !important;
         position: relative !important;
-        width: 60px !important;
-        height: 60px !important;
-        margin: 8px 0 !important;
+        width: 52px !important;
+        height: 52px !important;
+        margin: 6px 0 !important;
         transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.1s !important;
         animation: showIcon 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.2s both !important;
     }
@@ -942,27 +942,27 @@
         }
     }
 
-    /* Reestablecer estilos del icono casa en modo expandido - TAMAÑO MEJORADO */
+    /* Reestablecer estilos del icono casa en modo expandido - IGUAL AL DOCK NORMAL */
     nav.macos-dock#dock-bottom.dock-compact.expanded .dock-item.home-icon,
     nav.macos-dock#dock-top.dock-compact.expanded .dock-item.home-icon {
-        width: 60px !important;
-        height: 60px !important;
+        width: 52px !important;
+        height: 52px !important;
         border-radius: 12px !important;
-        margin: 0 8px !important;
+        margin: 0 6px !important;
     }
     
     nav.macos-dock#dock-left.dock-compact.expanded .dock-item.home-icon,
     nav.macos-dock#dock-right.dock-compact.expanded .dock-item.home-icon {
-        width: 60px !important;
-        height: 60px !important;
+        width: 52px !important;
+        height: 52px !important;
         border-radius: 12px !important;
-        margin: 8px 0 !important;
+        margin: 6px 0 !important;
     }
     
-    /* Tamaño de iconos SVG en dock expandido - MEJORADO */
+    /* Tamaño de iconos SVG en dock expandido - IGUAL AL DOCK NORMAL */
     nav.macos-dock.dock-compact.expanded .dock-item .dock-icon {
-        width: 44px !important;
-        height: 44px !important;
+        width: 32px !important;
+        height: 32px !important;
         color: #EBEBF5 !important;
     }
 
@@ -995,8 +995,8 @@
         opacity: 1 !important;
         filter: drop-shadow(0 0 12px rgba(0, 122, 255, 0.8)) 
                drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4)) !important;
-        width: 34px !important;
-        height: 34px !important;
+        width: 32px !important;
+        height: 32px !important;
         transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
     }
     
