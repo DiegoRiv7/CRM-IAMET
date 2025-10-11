@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand
 from django.conf import settings
 from app.models import TodoItem, Cliente, Contacto, UserProfile
 from app.views import is_lost_opportunity
-from app.bitrix_integration import get_all_bitrix_deals, get_bitrix_companies_api, get_bitrix_contacts_api
+from app.bitrix_integration import get_all_bitrix_deals, get_bitrix_companies_api
 import requests
 import time
 from django.contrib.auth.models import User
