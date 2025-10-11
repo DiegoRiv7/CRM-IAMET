@@ -331,7 +331,17 @@ def get_bitrix_deal_details(deal_id, request=None):
 
     get_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "crm.deal.get.json")
     try:
-        response = requests.post(get_url, json={'id': deal_id})
+        response = requests.post(get_url, json={
+            'id': deal_id,
+            'select': [
+                'ID', 'TITLE', 'OPPORTUNITY', 'CURRENCY_ID', 'COMMENTS',
+                'COMPANY_ID', 'CONTACT_ID', 'ASSIGNED_BY_ID', 'STAGE_ID',
+                'UF_CRM_1752859685662',  # Producto
+                'UF_CRM_1752859525038',  # Área
+                'UF_CRM_1752859877756',  # Mes de Cobro
+                'UF_CRM_1752855787179',  # Probabilidad de cierre
+            ]
+        })
         response.raise_for_status()
         return response.json().get('result')
     except requests.exceptions.RequestException as e:
