@@ -1302,6 +1302,57 @@
         -webkit-backdrop-filter: blur(25px) saturate(150%) !important;
         transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
     }
+    
+    /* Pink theme for compact dock expanded */
+    html[data-theme="pink"] nav.macos-dock#dock-bottom.dock-compact.expanded,
+    html[data-theme="pink"] nav.macos-dock#dock-top.dock-compact.expanded,
+    html[data-theme="pink"] nav.macos-dock#dock-left.dock-compact.expanded,
+    html[data-theme="pink"] nav.macos-dock#dock-right.dock-compact.expanded,
+    body[data-theme="pink"] nav.macos-dock#dock-bottom.dock-compact.expanded,
+    body[data-theme="pink"] nav.macos-dock#dock-top.dock-compact.expanded,
+    body[data-theme="pink"] nav.macos-dock#dock-left.dock-compact.expanded,
+    body[data-theme="pink"] nav.macos-dock#dock-right.dock-compact.expanded,
+    html.light-theme[data-theme="pink"] nav.macos-dock#dock-bottom.dock-compact.expanded,
+    html.light-theme[data-theme="pink"] nav.macos-dock#dock-top.dock-compact.expanded,
+    html.light-theme[data-theme="pink"] nav.macos-dock#dock-left.dock-compact.expanded,
+    html.light-theme[data-theme="pink"] nav.macos-dock#dock-right.dock-compact.expanded,
+    .light-theme nav.macos-dock#dock-bottom.dock-compact.expanded,
+    .light-theme nav.macos-dock#dock-top.dock-compact.expanded,
+    .light-theme nav.macos-dock#dock-left.dock-compact.expanded,
+    .light-theme nav.macos-dock#dock-right.dock-compact.expanded,
+    html[data-theme="pink"] .macos-dock.dock-compact.expanded,
+    body[data-theme="pink"] .macos-dock.dock-compact.expanded,
+    html.light-theme[data-theme="pink"] .macos-dock.dock-compact.expanded,
+    .light-theme .macos-dock.dock-compact.expanded {
+        background: linear-gradient(135deg,
+            rgba(255, 240, 245, 0.95) 0%,
+            rgba(255, 232, 239, 0.9) 100%) !important;
+        border: 2px solid rgba(255, 107, 157, 0.6) !important;
+        box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.3) !important,
+                    0 0 40px rgba(255, 107, 157, 0.25) !important,
+                    0 15px 50px rgba(0, 0, 0, 0.5) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+    }
+    
+    /* Pink theme for mobile compact dock active state */
+    html[data-theme="pink"] body #dock-bottom:not(.expanded):active,
+    html[data-theme="pink"] body nav.macos-dock#dock-bottom:not(.expanded):active,
+    body[data-theme="pink"] body #dock-bottom:not(.expanded):active,
+    body[data-theme="pink"] body nav.macos-dock#dock-bottom:not(.expanded):active,
+    html.light-theme[data-theme="pink"] body #dock-bottom:not(.expanded):active,
+    html.light-theme[data-theme="pink"] body nav.macos-dock#dock-bottom:not(.expanded):active,
+    .light-theme body #dock-bottom:not(.expanded):active,
+    .light-theme body nav.macos-dock#dock-bottom:not(.expanded):active {
+        border: 2px solid rgba(255, 107, 157, 0.6) !important;
+        box-shadow:
+            0 0 0 3px rgba(255, 107, 157, 0.3) !important,
+            0 0 30px rgba(255, 107, 157, 0.4) !important,
+            0 10px 40px rgba(0, 0, 0, 0.5) !important;
+        background: linear-gradient(135deg,
+            rgba(255, 240, 245, 0.95) 0%,
+            rgba(255, 232, 239, 0.9) 100%) !important;
+    }
 
     /* Efecto hover en icono casa del dock compacto - Mejorado */
     nav.macos-dock#dock-bottom.dock-compact:not(.expanded):hover .dock-item.home-icon .dock-icon,

@@ -46,7 +46,9 @@ class Command(BaseCommand):
         all_opportunities = TodoItem.objects.filter(
             bitrix_deal_id__isnull=False
         ).exclude(
-            bitrix_deal_id__exact=''
+            bitrix_deal_id=''
+        ).exclude(
+            bitrix_deal_id=0
         ).order_by('id')
 
         total_opportunities = all_opportunities.count()
