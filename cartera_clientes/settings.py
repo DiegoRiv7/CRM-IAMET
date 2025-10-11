@@ -260,6 +260,9 @@ USE_THOUSAND_SEPARATOR = True
 DECIMAL_SEPARATOR = '.'
 THOUSAND_SEPARATOR = ','
 
+# Configuración de Bitrix24
+BITRIX_WEBHOOK_URL = os.environ.get('BITRIX_WEBHOOK_URL')
+
 # Configuración de logging para debug
 LOGGING = {
     'version': 1,
