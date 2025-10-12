@@ -111,7 +111,11 @@
         }
 
         /* Light Theme Styles - Original Summer Pink */
-        .light-theme {
+        .light-theme,
+        html[data-theme="pink"],
+        body[data-theme="pink"],
+        html.light-theme[data-theme="pink"],
+        body.pink-theme {
             --apple-background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%);
             --apple-background-secondary: rgba(255, 240, 245, 0.8);
             --apple-separator: rgba(255, 107, 157, 0.25);
@@ -121,53 +125,86 @@
             --apple-label-tertiary: #6B4C6D;
         }
 
-        .light-theme body {
-            background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%);
+        .light-theme body,
+        html[data-theme="pink"] body,
+        body[data-theme="pink"],
+        html.light-theme[data-theme="pink"] body,
+        body.pink-theme {
+            background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%) !important;
             background-attachment: fixed;
-            color: var(--apple-label);
+            color: #2D1B2E !important;
         }
 
-        .light-theme .apple-bg {
+        .light-theme .apple-bg,
+        html[data-theme="pink"] .apple-bg,
+        body[data-theme="pink"] .apple-bg,
+        html.light-theme[data-theme="pink"] .apple-bg,
+        body.pink-theme .apple-bg {
             background: 
                 radial-gradient(ellipse at top left, rgba(255, 107, 157, 0.08) 0%, transparent 50%),
                 radial-gradient(ellipse at bottom right, rgba(255, 192, 203, 0.06) 0%, transparent 50%),
-                linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%);
+                linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%) !important;
         }
 
-        .light-theme .page-title {
-            color: #000000 !important;
+        .light-theme .page-title,
+        html[data-theme="pink"] .page-title,
+        body[data-theme="pink"] .page-title,
+        html.light-theme[data-theme="pink"] .page-title,
+        body.pink-theme .page-title {
+            color: #E55A87 !important;
             text-shadow: none;
         }
 
-        .light-theme .login-field {
-            background: rgba(255, 240, 245, 0.8);
+        .light-theme .login-field,
+        html[data-theme="pink"] .login-field,
+        body[data-theme="pink"] .login-field,
+        html.light-theme[data-theme="pink"] .login-field,
+        body.pink-theme .login-field {
+            background: rgba(255, 240, 245, 0.8) !important;
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 107, 157, 0.3);
-            color: var(--apple-label);
+            border: 1px solid rgba(255, 107, 157, 0.3) !important;
+            color: #2D1B2E !important;
             box-shadow: 
                 0 4px 16px rgba(255, 107, 157, 0.1),
-                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+                inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
         }
 
-        .light-theme .login-field:focus {
-            border-color: var(--apple-blue);
-            box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.3);
+        .light-theme .login-field:focus,
+        html[data-theme="pink"] .login-field:focus,
+        body[data-theme="pink"] .login-field:focus,
+        html.light-theme[data-theme="pink"] .login-field:focus,
+        body.pink-theme .login-field:focus {
+            border-color: #FF6B9D !important;
+            box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.3) !important;
         }
 
-        .light-theme .login-field::placeholder {
-            color: var(--apple-label-secondary);
+        .light-theme .login-field::placeholder,
+        html[data-theme="pink"] .login-field::placeholder,
+        body[data-theme="pink"] .login-field::placeholder,
+        html.light-theme[data-theme="pink"] .login-field::placeholder,
+        body.pink-theme .login-field::placeholder {
+            color: #6B4C6D !important;
         }
 
-        .light-theme .login-button {
-            background: linear-gradient(135deg, #FF6B9D 0%, #FF91A4 100%);
+        .light-theme .login-button,
+        html[data-theme="pink"] .login-button,
+        body[data-theme="pink"] .login-button,
+        html.light-theme[data-theme="pink"] .login-button,
+        body.pink-theme .login-button {
+            background: linear-gradient(135deg, #FF6B9D 0%, #FF91A4 100%) !important;
+            color: white !important;
             box-shadow: 
                 0 6px 20px rgba(255, 107, 157, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+                inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
         }
 
-        .light-theme .login-button:hover {
-            background: linear-gradient(135deg, #E55A87 0%, #FF6B9D 100%);
+        .light-theme .login-button:hover,
+        html[data-theme="pink"] .login-button:hover,
+        body[data-theme="pink"] .login-button:hover,
+        html.light-theme[data-theme="pink"] .login-button:hover,
+        body.pink-theme .login-button:hover {
+            background: linear-gradient(135deg, #E55A87 0%, #FF6B9D 100%) !important;
             filter: none;
         }
     </style>
@@ -191,13 +228,35 @@
         // Apply saved theme preference on login page
         (function() {
             try {
+                // Check for new theme format first
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme === 'pink') {
+                    document.documentElement.classList.add('light-theme');
+                    document.body.classList.add('pink-theme');
+                    document.documentElement.setAttribute('data-theme', 'pink');
+                    document.body.setAttribute('data-theme', 'pink');
+                    return;
+                }
+                
+                // Check legacy format
                 const saved = localStorage.getItem('designPreferences');
                 if (saved) {
                     const preferences = JSON.parse(saved);
                     const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
                     
                     if (!isDarkMode) {
-                        document.documentElement.classList.add('light-theme');
+                        // Check if this is actually the pink theme
+                        const bodyDataTheme = document.body.getAttribute('data-theme');
+                        const htmlDataTheme = document.documentElement.getAttribute('data-theme');
+                        
+                        if (bodyDataTheme === 'pink' || htmlDataTheme === 'pink') {
+                            document.documentElement.classList.add('light-theme');
+                            document.body.classList.add('pink-theme');
+                            document.documentElement.setAttribute('data-theme', 'pink');
+                            document.body.setAttribute('data-theme', 'pink');
+                        } else {
+                            document.documentElement.classList.add('light-theme');
+                        }
                     }
                 }
             } catch (error) {
