@@ -1079,6 +1079,63 @@
         background: #FF6B9D !important;
     }
 
+    /* Estilos para el timeline en modo rosado */
+    .light-theme .timeline-content {
+        background: linear-gradient(135deg, 
+            rgba(139, 69, 95, 0.9) 0%, 
+            rgba(110, 55, 78, 0.85) 25%, 
+            rgba(88, 44, 63, 0.8) 50%, 
+            rgba(66, 33, 47, 0.9) 100%) !important;
+    }
+
+    /* Comentarios del creador (align-right) - fondo blanco con texto negro */
+    .light-theme .timeline-item.align-right .timeline-content-item {
+        background: linear-gradient(145deg, 
+            rgba(255, 255, 255, 0.95) 0%, 
+            rgba(248, 248, 248, 0.9) 100%) !important;
+        color: #2D1B2E !important;
+        border: 1px solid rgba(255, 107, 157, 0.3) !important;
+    }
+
+    .light-theme .timeline-item.align-right .timeline-content-item:hover {
+        background: linear-gradient(145deg, 
+            rgba(255, 255, 255, 0.98) 0%, 
+            rgba(245, 245, 245, 0.95) 100%) !important;
+        border-color: rgba(255, 107, 157, 0.5) !important;
+    }
+
+    /* Todos los elementos de texto dentro de comentarios del creador */
+    .light-theme .timeline-item.align-right .timeline-title-item,
+    .light-theme .timeline-item.align-right .timeline-time,
+    .light-theme .timeline-item.align-right .timeline-text,
+    .light-theme .timeline-item.align-right .comment-text {
+        color: #2D1B2E !important;
+    }
+
+    /* Comentarios de otros usuarios - fondo blanco */
+    .light-theme .timeline-item:not(.align-right) .timeline-content-item {
+        background: linear-gradient(145deg, 
+            rgba(255, 255, 255, 0.95) 0%, 
+            rgba(248, 248, 248, 0.9) 100%) !important;
+        color: #2D1B2E !important;
+        border: 1px solid rgba(255, 107, 157, 0.3) !important;
+    }
+
+    .light-theme .timeline-item:not(.align-right) .timeline-content-item:hover {
+        background: linear-gradient(145deg, 
+            rgba(255, 255, 255, 0.98) 0%, 
+            rgba(245, 245, 245, 0.95) 100%) !important;
+        border-color: rgba(255, 107, 157, 0.5) !important;
+    }
+
+    /* Todos los elementos de texto dentro de comentarios de otros usuarios */
+    .light-theme .timeline-item:not(.align-right) .timeline-title-item,
+    .light-theme .timeline-item:not(.align-right) .timeline-time,
+    .light-theme .timeline-item:not(.align-right) .timeline-text,
+    .light-theme .timeline-item:not(.align-right) .comment-text {
+        color: #2D1B2E !important;
+    }
+
 
 
 </style>
