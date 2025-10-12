@@ -2627,63 +2627,9 @@
                 } else if (theme === 'light') {
                     // Para el tema claro
                     document.documentElement.classList.remove('dark-theme', 'pink-theme');
-                    document.documentElement.classList.add('light-theme');
+                    document.documentElement.classList.add('light-theme', 'white-theme');
                     document.body.classList.remove('dark-theme', 'pink-theme');
-                    document.body.classList.add('light-theme');
-                    
-                    // Remover atributo de tema
-                    document.documentElement.removeAttribute('data-theme');
-                    
-                    // Restaurar variables CSS para tema claro
-                    document.documentElement.style.setProperty('--apple-background', '#ffffff');
-                    document.documentElement.style.setProperty('--apple-background-secondary', '#f8f9fa');
-                    document.documentElement.style.setProperty('--apple-background-tertiary', '#f1f3f5');
-                    document.documentElement.style.setProperty('--apple-background-quaternary', '#e9ecef');
-                    document.documentElement.style.setProperty('--apple-label', '#212529');
-                    document.documentElement.style.setProperty('--apple-label-secondary', '#343a40');
-                    document.documentElement.style.setProperty('--apple-label-tertiary', '#495057');
-                    document.documentElement.style.setProperty('--apple-blue', '#007bff');
-                    document.documentElement.style.setProperty('--apple-blue-light', '#4da8ff');
-                    document.documentElement.style.setProperty('--apple-blue-dark', '#0056b3');
-                    document.documentElement.style.setProperty('--apple-separator', 'rgba(0, 0, 0, 0.1)');
-                    
-                    // Aplicar fondo inmediato
-                    document.body.style.background = '#ffffff';
-                    document.body.style.backgroundAttachment = 'fixed';
-                    
-                } else if (theme === 'blue') {
-                    // Para el tema azul
-                    document.documentElement.classList.remove('dark-theme', 'pink-theme');
-                    document.documentElement.classList.add('light-theme');
-                    document.body.classList.remove('dark-theme', 'pink-theme');
-                    document.body.classList.add('light-theme');
-                    
-                    // Remover atributo de tema
-                    document.documentElement.removeAttribute('data-theme');
-                    
-                    // Aplicar colores específicos del tema azul inmediatamente
-                    document.documentElement.style.setProperty('--apple-background', '#f0f7ff');
-                    document.documentElement.style.setProperty('--apple-background-secondary', '#f5faff');
-                    document.documentElement.style.setProperty('--apple-background-tertiary', '#e6f3ff');
-                    document.documentElement.style.setProperty('--apple-background-quaternary', '#e1f0ff');
-                    document.documentElement.style.setProperty('--apple-label', '#0056b3');
-                    document.documentElement.style.setProperty('--apple-label-secondary', '#004085');
-                    document.documentElement.style.setProperty('--apple-label-tertiary', '#003366');
-                    document.documentElement.style.setProperty('--apple-blue', '#0056b3');
-                    document.documentElement.style.setProperty('--apple-blue-light', '#007bff');
-                    document.documentElement.style.setProperty('--apple-blue-dark', '#003d82');
-                    document.documentElement.style.setProperty('--apple-separator', 'rgba(0, 86, 179, 0.1)');
-                    
-                    // Aplicar fondo inmediato
-                    document.body.style.background = '#f0f7ff';
-                    document.body.style.backgroundAttachment = 'fixed';
-                    
-                } else if (theme === 'white') {
-                    // Para el tema blanco
-                    document.documentElement.classList.remove('dark-theme', 'pink-theme');
-                    document.documentElement.classList.add('light-theme');
-                    document.body.classList.remove('dark-theme', 'pink-theme');
-                    document.body.classList.add('light-theme');
+                    document.body.classList.add('light-theme', 'white-theme');
                     
                     // Remover atributo de tema
                     document.documentElement.removeAttribute('data-theme');
@@ -2704,6 +2650,33 @@
                     // Aplicar fondo inmediato
                     document.body.style.background = '#ffffff';
                     document.body.style.backgroundAttachment = 'fixed';
+                    
+                } else if (theme === 'coffee') {
+                    // Para el tema café
+                    document.documentElement.classList.remove('dark-theme', 'pink-theme');
+                    document.documentElement.classList.add('light-theme', 'coffee-theme');
+                    document.body.classList.remove('dark-theme', 'pink-theme');
+                    document.body.classList.add('light-theme', 'coffee-theme');
+                    
+                    // Remover atributo de tema
+                    document.documentElement.removeAttribute('data-theme');
+                    
+                    // Aplicar colores específicos del tema café inmediatamente
+                    document.documentElement.style.setProperty('--apple-background', '#f5e6d3');
+                    document.documentElement.style.setProperty('--apple-background-secondary', '#f0dcc7');
+                    document.documentElement.style.setProperty('--apple-background-tertiary', '#ebd4bb');
+                    document.documentElement.style.setProperty('--apple-background-quaternary', '#e6cca8');
+                    document.documentElement.style.setProperty('--apple-label', '#4a3020');
+                    document.documentElement.style.setProperty('--apple-label-secondary', '#5d3d2a');
+                    document.documentElement.style.setProperty('--apple-label-tertiary', '#7a5038');
+                    document.documentElement.style.setProperty('--apple-blue', '#8b6239');
+                    document.documentElement.style.setProperty('--apple-blue-light', '#a0724a');
+                    document.documentElement.style.setProperty('--apple-blue-dark', '#6b4a30');
+                    document.documentElement.style.setProperty('--apple-separator', 'rgba(139, 69, 19, 0.1)');
+                    
+                    // Aplicar fondo inmediato
+                    document.body.style.background = '#f5e6d3';
+                    document.body.style.backgroundAttachment = 'fixed';
                 }
             }
 
@@ -2723,6 +2696,49 @@
                 document.body.style.display = '';
                 console.log('Forced final repaint after theme change');
             }, 50);
+            
+            // Aplicar tema inmediatamente para evitar mezclas
+            setTimeout(() => {
+                // Aplicar el tema una segunda vez para asegurar consistencia
+                if (theme === 'dark') {
+                    document.documentElement.classList.remove('light-theme', 'pink-theme', 'white-theme', 'coffee-theme');
+                    document.documentElement.classList.add('dark-theme');
+                    document.body.classList.remove('light-theme', 'pink-theme', 'white-theme', 'coffee-theme');
+                    document.body.classList.add('dark-theme');
+                    document.documentElement.removeAttribute('data-theme');
+                    document.body.removeAttribute('data-theme');
+                    document.body.style.background = '#000000';
+                } else if (theme === 'pink') {
+                    document.documentElement.classList.remove('dark-theme', 'white-theme', 'coffee-theme');
+                    document.documentElement.classList.add('light-theme');
+                    document.body.classList.remove('dark-theme', 'white-theme', 'coffee-theme');
+                    document.body.classList.add('light-theme', 'pink-theme');
+                    document.documentElement.setAttribute('data-theme', 'pink');
+                    document.body.setAttribute('data-theme', 'pink');
+                    document.body.style.background = 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)';
+                } else if (theme === 'white') {
+                    document.documentElement.classList.remove('dark-theme', 'pink-theme', 'coffee-theme');
+                    document.documentElement.classList.add('light-theme', 'white-theme');
+                    document.body.classList.remove('dark-theme', 'pink-theme', 'coffee-theme');
+                    document.body.classList.add('light-theme', 'white-theme');
+                    document.documentElement.removeAttribute('data-theme');
+                    document.body.removeAttribute('data-theme');
+                    document.body.style.background = '#ffffff';
+                } else if (theme === 'coffee') {
+                    document.documentElement.classList.remove('dark-theme', 'pink-theme', 'white-theme');
+                    document.documentElement.classList.add('light-theme', 'coffee-theme');
+                    document.body.classList.remove('dark-theme', 'pink-theme', 'white-theme');
+                    document.body.classList.add('light-theme', 'coffee-theme');
+                    document.documentElement.removeAttribute('data-theme');
+                    document.body.removeAttribute('data-theme');
+                    document.body.style.background = '#f5e6d3';
+                }
+                
+                // Forzar un repaint final
+                document.body.style.display = 'none';
+                document.body.offsetHeight; // Force reflow
+                document.body.style.display = '';
+            }, 100);
         }
 
         // Dock type functionality
