@@ -1971,6 +1971,11 @@
         // Variable global para almacenar la imagen seleccionada
         let selectedImageFile = null;
         
+        // Variables globales para el estado del avatar - definidas por Django
+        const userHasCustomAvatar = {% if user_profile.avatar %}true{% else %}false{% endif %};
+        const userCustomAvatarUrl = '{{ user_profile.avatar.url|default:"" }}';
+        const userAvatarTipo = '{{ user_profile.avatar_tipo|default:"dinosaur" }}';
+        
         function initializeAvatarSystem() {
             console.log('Inicializando sistema de avatar...');
             const avatarChoices = document.querySelectorAll('.avatar-choice');
@@ -2071,15 +2076,54 @@
             });
 
             // Initialize with user's current avatar or default
-            const defaultAvatar = '{{ user_profile.avatar_tipo|default:"dinosaur" }}';
+            const defaultAvatar = userAvatarTipo;
             const initialAvatar = document.querySelector(`.avatar-choice[data-avatar="${defaultAvatar}"]`);
             
-            if (initialAvatar) {
-                initialAvatar.click();
+            // Check if user has a custom avatar photo
+            if (userHasCustomAvatar) {
+                // User has a custom photo, show it in the preview
+                console.log('Usuario tiene foto personalizada, mostrándola en la vista previa');
+                
+                // Create an image element to check if the custom avatar exists
+                const img = new Image();
+                img.onload = function() {
+                    // Image loaded successfully, show it in the preview
+                    console.log('Foto personalizada cargada correctamente');
+                    uploadedAvatar.src = userCustomAvatarUrl;
+                    uploadedAvatar.style.display = 'block';
+                    animGalleryPreview.style.display = 'none';
+                    
+                    // Clear any avatar selection
+                    avatarChoices.forEach(b => {
+                        b.classList.remove('selected');
+                        b.style.borderColor = 'transparent';
+                        b.style.boxShadow = 'none';
+                    });
+                    document.getElementById('avatarChoice').value = '';
+                };
+                img.onerror = function() {
+                    // Image failed to load, fall back to animated avatar
+                    console.log('Error al cargar foto personalizada, usando avatar animado');
+                    if (initialAvatar) {
+                        initialAvatar.click();
+                    } else {
+                        const defaultBtn = document.querySelector('.avatar-choice[data-avatar="dinosaur"]');
+                        if (defaultBtn) {
+                            defaultBtn.click();
+                        }
+                    }
+                };
+                img.src = userCustomAvatarUrl;
             } else {
-                const defaultBtn = document.querySelector('.avatar-choice[data-avatar="dinosaur"]');
-                if (defaultBtn) {
-                    defaultBtn.click();
+                // User doesn't have a custom photo, use the animated avatar
+                console.log('Usuario no tiene foto personalizada, usando avatar animado:', defaultAvatar);
+                if (initialAvatar) {
+                    initialAvatar.click();
+                } else {
+                    const defaultBtn = document.querySelector('.avatar-choice[data-avatar="dinosaur"]');
+                    if (defaultBtn) {
+                        defaultBtn.click();
+                    }
                 }
             }
 
