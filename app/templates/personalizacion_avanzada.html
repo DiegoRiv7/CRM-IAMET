@@ -124,10 +124,23 @@
             overflow: hidden;
         }
         
-        .light-theme .settings-card {
-            background: #ffffff;
-            border: 1px solid rgba(0, 0, 0, 0.1);
+        .light-theme .settings-card,
+        .white-theme .settings-card {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.05);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .pink-theme .settings-card {
+            background: rgba(255, 245, 248, 0.7);
+            border: 1px solid rgba(255, 107, 157, 0.1);
+            box-shadow: 0 4px 12px rgba(255, 107, 157, 0.05);
+        }
+        
+        .coffee-theme .settings-card {
+            background: rgba(245, 235, 225, 0.7);
+            border: 1px solid rgba(139, 69, 19, 0.1);
+            box-shadow: 0 4px 12px rgba(139, 69, 19, 0.05);
         }
         
         .settings-card:hover {
@@ -992,6 +1005,11 @@
             --preview-header: #f8f9fa;
         }
         
+        .coffee-preview {
+            --preview-bg: #f5e6d3;
+            --preview-header: #f0dcc7;
+        }
+        
         .theme-preview-large {
             width: 120px;
             height: 80px;
@@ -1194,9 +1212,23 @@
             background: linear-gradient(135deg, #E55A87 0%, #FF6B9D 100%) !important;
             color: white !important;
             border: 1px solid rgba(255, 107, 157, 0.3) !important;
-            box-shadow: 
+            box-shadow:
                 0 10px 30px rgba(255, 107, 157, 0.3),
                 0 4px 16px rgba(229, 90, 135, 0.2) !important;
+        }
+
+        /* Coffee Theme Notification Styles */
+        .light-theme .notification,
+        html[data-theme="coffee"] .notification,
+        body[data-theme="coffee"] .notification,
+        html.light-theme[data-theme="coffee"] .notification,
+        body.coffee-theme .notification {
+            background: linear-gradient(135deg, #8b6239 0%, #a0724a 100%) !important;
+            color: white !important;
+            border: 1px solid rgba(139, 98, 57, 0.3) !important;
+            box-shadow:
+                0 10px 30px rgba(139, 98, 57, 0.3),
+                0 4px 16px rgba(107, 74, 48, 0.2) !important;
         }
 
         .light-theme .notification.success,
@@ -1577,24 +1609,6 @@
                             </div>
                             <span>Rosa</span>
                         </div>
-                        <div class="theme-option" onclick="applyTheme('light')">
-                            <div class="theme-preview-large light-preview">
-                                <div class="preview-header"></div>
-                                <div class="preview-content">
-                                    <div class="preview-dock bottom"></div>
-                                </div>
-                            </div>
-                            <span>Claro</span>
-                        </div>
-                        <div class="theme-option" onclick="applyTheme('blue')">
-                            <div class="theme-preview-large blue-preview">
-                                <div class="preview-header"></div>
-                                <div class="preview-content">
-                                    <div class="preview-dock bottom"></div>
-                                </div>
-                            </div>
-                            <span>Azul</span>
-                        </div>
                         <div class="theme-option" onclick="applyTheme('white')">
                             <div class="theme-preview-large white-preview">
                                 <div class="preview-header"></div>
@@ -1603,6 +1617,15 @@
                                 </div>
                             </div>
                             <span>Blanco</span>
+                        </div>
+                        <div class="theme-option" onclick="applyTheme('coffee')">
+                            <div class="theme-preview-large coffee-preview">
+                                <div class="preview-header"></div>
+                                <div class="preview-content">
+                                    <div class="preview-dock bottom"></div>
+                                </div>
+                            </div>
+                            <span>Café</span>
                         </div>
                     </div>
                 </div>
@@ -2687,10 +2710,9 @@
             // Show notification
             const themeNames = {
                 'dark': 'Oscuro',
-                'light': 'Claro',
                 'pink': 'Rosa',
-                'blue': 'Azul',
-                'white': 'Blanco'
+                'white': 'Blanco',
+                'coffee': 'Café'
             };
             showNotification(`Tema cambiado a ${themeNames[theme] || theme}`, 'success');
             

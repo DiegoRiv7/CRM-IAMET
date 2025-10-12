@@ -98,52 +98,10 @@
                         document.body.style.background = 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)';
                         document.body.style.backgroundAttachment = 'fixed';
                         
-                    } else if (theme === 'light') {
-                        // Para el tema claro
-                        document.documentElement.classList.add('light-theme');
-                        document.body.classList.add('light-theme');
-                        
-                        // Restaurar variables CSS para tema claro
-                        document.documentElement.style.setProperty('--apple-background', '#ffffff');
-                        document.documentElement.style.setProperty('--apple-background-secondary', '#f8f9fa');
-                        document.documentElement.style.setProperty('--apple-background-tertiary', '#f1f3f5');
-                        document.documentElement.style.setProperty('--apple-background-quaternary', '#e9ecef');
-                        document.documentElement.style.setProperty('--apple-label', '#212529');
-                        document.documentElement.style.setProperty('--apple-label-secondary', '#343a40');
-                        document.documentElement.style.setProperty('--apple-label-tertiary', '#495057');
-                        document.documentElement.style.setProperty('--apple-blue', '#007bff');
-                        document.documentElement.style.setProperty('--apple-blue-light', '#4da8ff');
-                        document.documentElement.style.setProperty('--apple-blue-dark', '#0056b3');
-                        document.documentElement.style.setProperty('--apple-separator', 'rgba(0, 0, 0, 0.1)');
-                        
-                        document.body.style.background = '#ffffff';
-                        document.body.style.backgroundAttachment = 'fixed';
-                        
-                    } else if (theme === 'blue') {
-                        // Para el tema azul
-                        document.documentElement.classList.add('light-theme');
-                        document.body.classList.add('light-theme');
-                        
-                        // Aplicar colores específicos del tema azul
-                        document.documentElement.style.setProperty('--apple-background', '#f0f7ff');
-                        document.documentElement.style.setProperty('--apple-background-secondary', '#f5faff');
-                        document.documentElement.style.setProperty('--apple-background-tertiary', '#e6f3ff');
-                        document.documentElement.style.setProperty('--apple-background-quaternary', '#e1f0ff');
-                        document.documentElement.style.setProperty('--apple-label', '#0056b3');
-                        document.documentElement.style.setProperty('--apple-label-secondary', '#004085');
-                        document.documentElement.style.setProperty('--apple-label-tertiary', '#003366');
-                        document.documentElement.style.setProperty('--apple-blue', '#0056b3');
-                        document.documentElement.style.setProperty('--apple-blue-light', '#007bff');
-                        document.documentElement.style.setProperty('--apple-blue-dark', '#003d82');
-                        document.documentElement.style.setProperty('--apple-separator', 'rgba(0, 86, 179, 0.1)');
-                        
-                        document.body.style.background = '#f0f7ff';
-                        document.body.style.backgroundAttachment = 'fixed';
-                        
                     } else if (theme === 'white') {
                         // Para el tema blanco
-                        document.documentElement.classList.add('light-theme');
-                        document.body.classList.add('light-theme');
+                        document.documentElement.classList.add('light-theme', 'white-theme');
+                        document.body.classList.add('light-theme', 'white-theme');
                         
                         // Aplicar colores específicos del tema blanco
                         document.documentElement.style.setProperty('--apple-background', '#ffffff');
@@ -159,6 +117,27 @@
                         document.documentElement.style.setProperty('--apple-separator', 'rgba(0, 0, 0, 0.1)');
                         
                         document.body.style.background = '#ffffff';
+                        document.body.style.backgroundAttachment = 'fixed';
+                        
+                    } else if (theme === 'coffee') {
+                        // Para el tema café
+                        document.documentElement.classList.add('light-theme', 'coffee-theme');
+                        document.body.classList.add('light-theme', 'coffee-theme');
+                        
+                        // Aplicar colores específicos del tema café
+                        document.documentElement.style.setProperty('--apple-background', '#f5e6d3');
+                        document.documentElement.style.setProperty('--apple-background-secondary', '#f0dcc7');
+                        document.documentElement.style.setProperty('--apple-background-tertiary', '#ebd4bb');
+                        document.documentElement.style.setProperty('--apple-background-quaternary', '#e6cca8');
+                        document.documentElement.style.setProperty('--apple-label', '#4a3020');
+                        document.documentElement.style.setProperty('--apple-label-secondary', '#5d3d2a');
+                        document.documentElement.style.setProperty('--apple-label-tertiary', '#7a5038');
+                        document.documentElement.style.setProperty('--apple-blue', '#8b6239');
+                        document.documentElement.style.setProperty('--apple-blue-light', '#a0724a');
+                        document.documentElement.style.setProperty('--apple-blue-dark', '#6b4a30');
+                        document.documentElement.style.setProperty('--apple-separator', 'rgba(139, 69, 19, 0.1)');
+                        
+                        document.body.style.background = '#f5e6d3';
                         document.body.style.backgroundAttachment = 'fixed';
                         
                     } else {
@@ -202,7 +181,7 @@
                         // Check for the light mode flag. If isDarkMode is false, apply light-theme.
                         const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
                         if (!isDarkMode) {
-                            applyThemeImmediate('light');
+                            applyThemeImmediate('white');
                         } else {
                             applyThemeImmediate('dark');
                         }
@@ -756,31 +735,86 @@
         }
 
         /* Light Theme Responsive Glass Effects */
-        .light-theme .glass-card {
-            background: rgba(235, 245, 255, 0.6);
+        .light-theme .glass-card,
+        .white-theme .glass-card {
+            background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(29, 53, 87, 0.15);
-            box-shadow: 
-                0 8px 32px rgba(0, 122, 255, 0.15),
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+        
+        .pink-theme .glass-card {
+            background: rgba(255, 245, 248, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 107, 157, 0.1);
+            box-shadow:
+                0 8px 32px rgba(255, 107, 157, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+        
+        .coffee-theme .glass-card {
+            background: rgba(245, 235, 225, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(139, 69, 19, 0.1);
+            box-shadow:
+                0 8px 32px rgba(139, 69, 19, 0.05),
                 inset 0 1px 0 rgba(255, 255, 255, 0.8);
         }
         
         @media (max-width: 768px) {
-            .light-theme .glass-card {
-                background: rgba(235, 245, 255, 0.8);
+            .light-theme .glass-card,
+            .white-theme .glass-card {
+                background: rgba(255, 255, 255, 0.8);
+                backdrop-filter: blur(15px);
+                -webkit-backdrop-filter: blur(15px);
+            }
+            
+            .pink-theme .glass-card {
+                background: rgba(255, 245, 248, 0.8);
+                backdrop-filter: blur(15px);
+                -webkit-backdrop-filter: blur(15px);
+            }
+            
+            .coffee-theme .glass-card {
+                background: rgba(245, 235, 225, 0.8);
                 backdrop-filter: blur(15px);
                 -webkit-backdrop-filter: blur(15px);
             }
         }
 
-        .light-theme .glass-table {
-            background: rgba(235, 245, 255, 0.4);
+        .light-theme .glass-table,
+        .white-theme .glass-table {
+            background: rgba(255, 255, 255, 0.4);
             backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(29, 53, 87, 0.1);
-            box-shadow: 
-                0 8px 32px rgba(0, 122, 255, 0.12),
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        }
+        
+        .pink-theme .glass-table {
+            background: rgba(255, 245, 248, 0.4);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 107, 157, 0.1);
+            box-shadow:
+                0 8px 32px rgba(255, 107, 157, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        }
+        
+        .coffee-theme .glass-table {
+            background: rgba(245, 235, 225, 0.4);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(139, 69, 19, 0.1);
+            box-shadow:
+                0 8px 32px rgba(139, 69, 19, 0.05),
                 inset 0 1px 0 rgba(255, 255, 255, 0.9);
         }
         /* Form responsiveness */
@@ -1071,6 +1105,114 @@
         body[data-theme="pink"] .spotlight-backdrop,
         html[data-theme="pink"] body .spotlight-backdrop {
             background: rgba(255, 107, 157, 0.15) !important;
+            backdrop-filter: blur(12px) saturate(120%);
+        }
+        
+        /* Coffee theme for spotlight search */
+        .light-theme .spotlight-container,
+        body[data-theme="coffee"] .spotlight-container,
+        html[data-theme="coffee"] body .spotlight-container {
+            background: linear-gradient(135deg,
+                rgba(245, 235, 225, 0.95) 0%,
+                rgba(240, 220, 199, 0.9) 25%,
+                rgba(235, 210, 187, 0.85) 50%,
+                rgba(230, 200, 175, 0.8) 75%,
+                rgba(225, 190, 163, 0.75) 100%) !important;
+            border: 1px solid rgba(139, 69, 19, 0.2) !important;
+            color: var(--apple-label, #4a3020) !important;
+            box-shadow:
+                0 20px 40px rgba(139, 69, 19, 0.2),
+                0 8px 16px rgba(139, 69, 19, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+        }
+        
+        .light-theme .spotlight-search-box,
+        body[data-theme="coffee"] .spotlight-search-box,
+        html[data-theme="coffee"] body .spotlight-search-box {
+            border-bottom: 1px solid rgba(139, 69, 19, 0.15) !important;
+        }
+        
+        .light-theme .spotlight-icon,
+        body[data-theme="coffee"] .spotlight-icon,
+        html[data-theme="coffee"] body .spotlight-icon {
+            color: var(--apple-label-secondary, #5d3d2a) !important;
+        }
+        
+        .light-theme .spotlight-shortcut,
+        body[data-theme="coffee"] .spotlight-shortcut,
+        html[data-theme="coffee"] body .spotlight-shortcut {
+            background: rgba(139, 69, 19, 0.1) !important;
+            color: var(--apple-label-secondary, #5d3d2a) !important;
+            border: 1px solid rgba(139, 69, 19, 0.15);
+        }
+        
+        .light-theme #spotlight-input,
+        body[data-theme="coffee"] #spotlight-input,
+        html[data-theme="coffee"] body #spotlight-input {
+            color: var(--apple-label, #4a3020) !important;
+        }
+        
+        .light-theme #spotlight-input::placeholder,
+        body[data-theme="coffee"] #spotlight-input::placeholder,
+        html[data-theme="coffee"] body #spotlight-input::placeholder {
+            color: var(--apple-label-tertiary, #7a5038) !important;
+        }
+        
+        .light-theme .spotlight-empty,
+        body[data-theme="coffee"] .spotlight-empty,
+        html[data-theme="coffee"] body .spotlight-empty {
+            color: var(--apple-label-secondary, #5d3d2a) !important;
+        }
+        
+        .light-theme .spotlight-item,
+        body[data-theme="coffee"] .spotlight-item,
+        html[data-theme="coffee"] body .spotlight-item {
+            border-bottom: 1px solid rgba(139, 69, 19, 0.1) !important;
+        }
+        
+        .light-theme .spotlight-item:hover,
+        .light-theme .spotlight-item.selected,
+        body[data-theme="coffee"] .spotlight-item:hover,
+        body[data-theme="coffee"] .spotlight-item.selected,
+        html[data-theme="coffee"] body .spotlight-item:hover,
+        html[data-theme="coffee"] body .spotlight-item.selected {
+            background: rgba(139, 69, 19, 0.1) !important;
+        }
+        
+        .light-theme .spotlight-item-title,
+        body[data-theme="coffee"] .spotlight-item-title,
+        html[data-theme="coffee"] body .spotlight-item-title {
+            color: var(--apple-label, #4a3020) !important;
+        }
+        
+        .light-theme .spotlight-item-subtitle,
+        body[data-theme="coffee"] .spotlight-item-subtitle,
+        html[data-theme="coffee"] body .spotlight-item-subtitle {
+            color: var(--apple-label-secondary, #5d3d2a) !important;
+        }
+        
+        .light-theme .spotlight-loading,
+        body[data-theme="coffee"] .spotlight-loading,
+        html[data-theme="coffee"] body .spotlight-loading {
+            color: var(--apple-label-secondary, #5d3d2a) !important;
+        }
+        
+        .light-theme .spotlight-item-icon,
+        body[data-theme="coffee"] .spotlight-item-icon,
+        html[data-theme="coffee"] body .spotlight-item-icon {
+            background: var(--apple-blue, #8b6239) !important;
+        }
+        
+        .light-theme .spotlight-item-icon.oportunidad,
+        body[data-theme="coffee"] .spotlight-item-icon.oportunidad,
+        html[data-theme="coffee"] body .spotlight-item-icon.oportunidad {
+            background: var(--apple-blue-light, #a0724a) !important;
+        }
+        
+        .light-theme .spotlight-backdrop,
+        body[data-theme="coffee"] .spotlight-backdrop,
+        html[data-theme="coffee"] body .spotlight-backdrop {
+            background: rgba(139, 69, 19, 0.1) !important;
             backdrop-filter: blur(12px) saturate(120%);
         }
         
