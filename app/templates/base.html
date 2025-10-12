@@ -52,151 +52,77 @@
     <!-- PWA Support -->
     <link rel="manifest" href="{% static 'manifest.json' %}">
 
-    <!-- THEME-SWITCHING SCRIPT to prevent flash of incorrect theme - Improved version -->
+    <!-- THEME-SWITCHING SCRIPT to prevent flash of incorrect theme - Optimized version -->
     <script type="text/javascript">
         (function() {
             try {
-                console.log('Base theme initialization starting...');
-                
                 // Check for theme in localStorage first
                 const savedTheme = localStorage.getItem('theme');
-                console.log('Found saved theme:', savedTheme);
                 
-                // Function to apply theme immediately and completely
-                function applyThemeImmediate(theme) {
-                    console.log('Applying theme immediately:', theme);
+                // Apply theme inline to prevent flash
+                if (savedTheme === 'pink') {
+                    // Apply pink theme inline immediately
+                    document.documentElement.setAttribute('data-theme', 'pink');
+                    document.documentElement.classList.add('light-theme');
                     
-                    // First, clear all theme classes and attributes
-                    document.documentElement.classList.remove('dark-theme', 'light-theme', 'pink-theme');
-                    document.documentElement.removeAttribute('data-theme');
-                    document.body.classList.remove('dark-theme', 'light-theme', 'pink-theme');
-                    document.body.removeAttribute('data-theme');
+                    // Set inline styles for immediate effect
+                    document.documentElement.style.setProperty('--apple-background', '#ffebf0');
+                    document.documentElement.style.setProperty('--apple-label', '#2d1b2e');
+                    document.documentElement.style.setProperty('--apple-blue', '#ff6b9d');
+                    document.body.style.background = 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)';
+                    document.body.style.backgroundAttachment = 'fixed';
+                } else if (savedTheme === 'white') {
+                    // Apply white theme inline immediately
+                    document.documentElement.classList.add('light-theme', 'white-theme');
                     
-                    // Apply the specific theme
-                    if (theme === 'pink') {
-                        // Para el tema rosa
-                        document.documentElement.classList.add('light-theme');
-                        document.documentElement.setAttribute('data-theme', 'pink');
-                        document.body.setAttribute('data-theme', 'pink');
-                        document.body.classList.add('pink-theme');
-                        
-                        // Aplicar colores específicos del tema rosa
-                        document.documentElement.style.setProperty('--apple-background', '#ffebf0');
-                        document.documentElement.style.setProperty('--apple-background-secondary', '#fff5f8');
-                        document.documentElement.style.setProperty('--apple-background-tertiary', '#ffe0e6');
-                        document.documentElement.style.setProperty('--apple-background-quaternary', '#ffd1dc');
-                        document.documentElement.style.setProperty('--apple-label', '#2d1b2e');
-                        document.documentElement.style.setProperty('--apple-label-secondary', '#5d2f47');
-                        document.documentElement.style.setProperty('--apple-label-tertiary', '#8b4d6b');
-                        document.documentElement.style.setProperty('--apple-label-quaternary', '#b96d8f');
-                        document.documentElement.style.setProperty('--apple-blue', '#ff6b9d');
-                        document.documentElement.style.setProperty('--apple-blue-light', '#ff8fab');
-                        document.documentElement.style.setProperty('--apple-blue-dark', '#e6396b');
-                        document.documentElement.style.setProperty('--apple-separator', 'rgba(229, 90, 135, 0.2)');
-                        
-                        // Aplicar fondo gradiente
-                        document.body.style.background = 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)';
-                        document.body.style.backgroundAttachment = 'fixed';
-                        
-                    } else if (theme === 'white') {
-                        // Para el tema blanco
-                        document.documentElement.classList.add('light-theme', 'white-theme');
-                        document.body.classList.add('light-theme', 'white-theme');
-                        
-                        // Aplicar colores específicos del tema blanco
-                        document.documentElement.style.setProperty('--apple-background', '#ffffff');
-                        document.documentElement.style.setProperty('--apple-background-secondary', '#f8f9fa');
-                        document.documentElement.style.setProperty('--apple-background-tertiary', '#f1f3f5');
-                        document.documentElement.style.setProperty('--apple-background-quaternary', '#e9ecef');
-                        document.documentElement.style.setProperty('--apple-label', '#212529');
-                        document.documentElement.style.setProperty('--apple-label-secondary', '#343a40');
-                        document.documentElement.style.setProperty('--apple-label-tertiary', '#495057');
-                        document.documentElement.style.setProperty('--apple-blue', '#007bff');
-                        document.documentElement.style.setProperty('--apple-blue-light', '#4da8ff');
-                        document.documentElement.style.setProperty('--apple-blue-dark', '#0056b3');
-                        document.documentElement.style.setProperty('--apple-separator', 'rgba(0, 0, 0, 0.1)');
-                        
-                        document.body.style.background = '#ffffff';
-                        document.body.style.backgroundAttachment = 'fixed';
-                        
-                    } else if (theme === 'coffee') {
-                        // Para el tema café
-                        document.documentElement.classList.add('light-theme', 'coffee-theme');
-                        document.body.classList.add('light-theme', 'coffee-theme');
-                        
-                        // Aplicar colores específicos del tema café
-                        document.documentElement.style.setProperty('--apple-background', '#f5e6d3');
-                        document.documentElement.style.setProperty('--apple-background-secondary', '#f0dcc7');
-                        document.documentElement.style.setProperty('--apple-background-tertiary', '#ebd4bb');
-                        document.documentElement.style.setProperty('--apple-background-quaternary', '#e6cca8');
-                        document.documentElement.style.setProperty('--apple-label', '#4a3020');
-                        document.documentElement.style.setProperty('--apple-label-secondary', '#5d3d2a');
-                        document.documentElement.style.setProperty('--apple-label-tertiary', '#7a5038');
-                        document.documentElement.style.setProperty('--apple-blue', '#8b6239');
-                        document.documentElement.style.setProperty('--apple-blue-light', '#a0724a');
-                        document.documentElement.style.setProperty('--apple-blue-dark', '#6b4a30');
-                        document.documentElement.style.setProperty('--apple-separator', 'rgba(139, 69, 19, 0.1)');
-                        
-                        document.body.style.background = '#f5e6d3';
-                        document.body.style.backgroundAttachment = 'fixed';
-                        
-                    } else {
-                        // Dark theme (default)
-                        document.documentElement.classList.add('dark-theme');
-                        document.body.classList.add('dark-theme');
-                        
-                        // Restaurar variables CSS originales para tema oscuro
-                        document.documentElement.style.setProperty('--apple-background', '#000000');
-                        document.documentElement.style.setProperty('--apple-background-secondary', '#1D1D1F');
-                        document.documentElement.style.setProperty('--apple-background-tertiary', '#2C2C2E');
-                        document.documentElement.style.setProperty('--apple-background-quaternary', '#3A3A3C');
-                        document.documentElement.style.setProperty('--apple-label', '#FFFFFF');
-                        document.documentElement.style.setProperty('--apple-label-secondary', '#EBEBF5');
-                        document.documentElement.style.setProperty('--apple-label-tertiary', '#EBEBF599');
-                        document.documentElement.style.setProperty('--apple-label-quaternary', '#EBEBF54D');
-                        document.documentElement.style.setProperty('--apple-blue', '#007AFF');
-                        document.documentElement.style.setProperty('--apple-blue-light', '#4DA8FF');
-                        document.documentElement.style.setProperty('--apple-blue-dark', '#0056CC');
-                        document.documentElement.style.setProperty('--apple-separator', '#38383A');
-                        
-                        document.body.style.background = '#000000';
-                    }
+                    // Set inline styles for immediate effect
+                    document.documentElement.style.setProperty('--apple-background', '#ffffff');
+                    document.documentElement.style.setProperty('--apple-label', '#212529');
+                    document.documentElement.style.setProperty('--apple-blue', '#007bff');
+                    document.body.style.background = '#ffffff';
+                    document.body.style.backgroundAttachment = 'fixed';
+                } else if (savedTheme === 'coffee') {
+                    // Apply coffee theme inline immediately
+                    document.documentElement.classList.add('light-theme', 'coffee-theme');
                     
-                    // Forzar un repaint para asegurar que los estilos se apliquen
-                    document.body.style.display = 'none';
-                    document.body.offsetHeight; // Force reflow
-                    document.body.style.display = '';
-                    
-                    console.log('Theme applied successfully:', theme);
-                }
-                
-                if (savedTheme) {
-                    // Apply the saved theme immediately
-                    applyThemeImmediate(savedTheme);
+                    // Set inline styles for immediate effect
+                    document.documentElement.style.setProperty('--apple-background', '#f5e6d3');
+                    document.documentElement.style.setProperty('--apple-label', '#4a3020');
+                    document.documentElement.style.setProperty('--apple-blue', '#8b6239');
+                    document.body.style.background = '#f5e6d3';
+                    document.body.style.backgroundAttachment = 'fixed';
                 } else {
-                    // Check for designPreferences (legacy)
-                    const saved = localStorage.getItem('designPreferences');
-                    if (saved) {
-                        const preferences = JSON.parse(saved);
-                        // Check for the light mode flag. If isDarkMode is false, apply light-theme.
-                        const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
-                        if (!isDarkMode) {
-                            applyThemeImmediate('white');
-                        } else {
-                            applyThemeImmediate('dark');
-                        }
-                    } else {
-                        // Default to dark theme
-                        applyThemeImmediate('dark');
+                    // Default to dark theme
+                    document.documentElement.classList.add('dark-theme');
+                    document.body.classList.add('dark-theme');
+                    
+                    // Set inline styles for immediate effect
+                    document.documentElement.style.setProperty('--apple-background', '#000000');
+                    document.documentElement.style.setProperty('--apple-label', '#FFFFFF');
+                    document.documentElement.style.setProperty('--apple-blue', '#007AFF');
+                    document.body.style.background = '#000000';
+                    
+                    // Save default if not set
+                    if (!savedTheme) {
                         localStorage.setItem('theme', 'dark');
                     }
                 }
                 
-                console.log('Base theme initialization completed');
+                // Hide body initially to prevent flash
+                document.body.style.opacity = '0';
+                
+                // Show body after a short delay to ensure theme is applied
+                window.addEventListener('load', function() {
+                    setTimeout(function() {
+                        document.body.style.transition = 'opacity 0.3s ease-in-out';
+                        document.body.style.opacity = '1';
+                    }, 50);
+                });
                 
             } catch (error) {
-                // If something goes wrong, do nothing and let the default theme apply.
-                console.error('Could not apply theme from localStorage:', error);
+                console.error('Theme initialization error:', error);
+                // Ensure body is visible even if theme fails
+                document.body.style.opacity = '1';
             }
         })();
     </script>
@@ -1723,8 +1649,8 @@
                 
             } else if (theme === 'white') {
                 // Para el tema blanco
-                document.documentElement.classList.add('light-theme');
-                document.body.classList.add('light-theme');
+                document.documentElement.classList.add('light-theme', 'white-theme');
+                document.body.classList.add('light-theme', 'white-theme');
                 
                 // Aplicar colores específicos del tema blanco
                 document.documentElement.style.setProperty('--apple-background', '#ffffff');
@@ -1740,6 +1666,27 @@
                 document.documentElement.style.setProperty('--apple-separator', 'rgba(0, 0, 0, 0.1)');
                 
                 document.body.style.background = '#ffffff';
+                document.body.style.backgroundAttachment = 'fixed';
+                
+            } else if (theme === 'coffee') {
+                // Para el tema café
+                document.documentElement.classList.add('light-theme', 'coffee-theme');
+                document.body.classList.add('light-theme', 'coffee-theme');
+                
+                // Aplicar colores específicos del tema café
+                document.documentElement.style.setProperty('--apple-background', '#f5e6d3');
+                document.documentElement.style.setProperty('--apple-background-secondary', '#f0dcc7');
+                document.documentElement.style.setProperty('--apple-background-tertiary', '#ebd4bb');
+                document.documentElement.style.setProperty('--apple-background-quaternary', '#e6cca8');
+                document.documentElement.style.setProperty('--apple-label', '#4a3020');
+                document.documentElement.style.setProperty('--apple-label-secondary', '#5d3d2a');
+                document.documentElement.style.setProperty('--apple-label-tertiary', '#7a5038');
+                document.documentElement.style.setProperty('--apple-blue', '#8b6239');
+                document.documentElement.style.setProperty('--apple-blue-light', '#a0724a');
+                document.documentElement.style.setProperty('--apple-blue-dark', '#6b4a30');
+                document.documentElement.style.setProperty('--apple-separator', 'rgba(139, 69, 19, 0.1)');
+                
+                document.body.style.background = '#f5e6d3';
                 document.body.style.backgroundAttachment = 'fixed';
             }
             
