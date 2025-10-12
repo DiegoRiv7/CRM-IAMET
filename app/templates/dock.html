@@ -4092,12 +4092,40 @@ const originalSetDockPosition = window.setDockPosition || (typeof setDockPositio
 window.setDockPosition = function(position) {
     console.log('setDockPosition called with:', position);
     
+    // Aplicar cambios CSS con máxima especificidad para efecto inmediato
+    const existingStyle = document.getElementById('dock-position-style');
+    const initialStyle = document.getElementById('initial-dock-position-style');
+    
+    if (existingStyle) {
+        existingStyle.remove();
+    }
+    if (initialStyle) {
+        initialStyle.remove();
+    }
+    
+    // Crear nuevo estilo con alta especificidad
+    const style = document.createElement('style');
+    style.id = 'dock-position-style';
+    style.textContent = `
+        nav.macos-dock#dock-left,
+        nav.macos-dock#dock-right,
+        nav.macos-dock#dock-top,
+        nav.macos-dock#dock-bottom {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            display: none !important;
+        }
+        nav.macos-dock#dock-${position} {
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: flex !important;
+        }
+    `;
+    document.head.appendChild(style);
+    
     // Llamar a la función original si existe
     if (typeof originalSetDockPosition === 'function') {
         originalSetDockPosition(position);
-    } else {
-        // Si no existe la función original, usar nuestro método básico
-        window.applyDockPosition(position);
     }
     
     // Update active state for dock options (para el modal de configuración)
@@ -4143,7 +4171,7 @@ window.setDockPosition = function(position) {
     if (typeof showNotification === 'function') {
         const positionNames = {
             'bottom': 'Inferior',
-            'top': 'Superior', 
+            'top': 'Superior',
             'left': 'Izquierda',
             'right': 'Derecha'
         };
