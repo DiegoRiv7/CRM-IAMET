@@ -1231,6 +1231,40 @@
                 0 4px 16px rgba(107, 74, 48, 0.2) !important;
         }
 
+        /* Modal text color fixes for all themes */
+        .modal-content {
+            transition: color 0.3s ease !important;
+        }
+        
+        /* Dark theme modal text */
+        .dark-theme .modal-content,
+        html.dark-theme .modal-content {
+            color: #FFFFFF !important;
+        }
+        
+        /* Pink theme modal text */
+        .pink-theme .modal-content,
+        html[data-theme="pink"] .modal-content,
+        body[data-theme="pink"] .modal-content,
+        html.light-theme[data-theme="pink"] .modal-content,
+        body.pink-theme .modal-content {
+            color: #2d1b2e !important;
+        }
+        
+        /* White theme modal text */
+        .white-theme .modal-content,
+        html.light-theme.white-theme .modal-content,
+        body.light-theme.white-theme .modal-content {
+            color: #212529 !important;
+        }
+        
+        /* Coffee theme modal text */
+        .coffee-theme .modal-content,
+        html.light-theme.coffee-theme .modal-content,
+        body.light-theme.coffee-theme .modal-content {
+            color: #4a3020 !important;
+        }
+
         .light-theme .notification.success,
         html[data-theme="pink"] .notification.success,
         body[data-theme="pink"] .notification.success,
@@ -2708,6 +2742,12 @@
                     document.documentElement.removeAttribute('data-theme');
                     document.body.removeAttribute('data-theme');
                     document.body.style.background = '#000000';
+                    
+                    // Asegurar que el modal tenga texto blanco en tema oscuro
+                    const modalContent = document.querySelector('.modal-content');
+                    if (modalContent) {
+                        modalContent.style.color = '#FFFFFF';
+                    }
                 } else if (theme === 'pink') {
                     document.documentElement.classList.remove('dark-theme', 'white-theme', 'coffee-theme');
                     document.documentElement.classList.add('light-theme');
@@ -2716,6 +2756,12 @@
                     document.documentElement.setAttribute('data-theme', 'pink');
                     document.body.setAttribute('data-theme', 'pink');
                     document.body.style.background = 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)';
+                    
+                    // Asegurar que el modal tenga texto oscuro en tema rosa
+                    const modalContent = document.querySelector('.modal-content');
+                    if (modalContent) {
+                        modalContent.style.color = '#2d1b2e';
+                    }
                 } else if (theme === 'white') {
                     document.documentElement.classList.remove('dark-theme', 'pink-theme', 'coffee-theme');
                     document.documentElement.classList.add('light-theme', 'white-theme');
@@ -2724,6 +2770,12 @@
                     document.documentElement.removeAttribute('data-theme');
                     document.body.removeAttribute('data-theme');
                     document.body.style.background = '#ffffff';
+                    
+                    // Asegurar que el modal tenga texto oscuro en tema blanco
+                    const modalContent = document.querySelector('.modal-content');
+                    if (modalContent) {
+                        modalContent.style.color = '#212529';
+                    }
                 } else if (theme === 'coffee') {
                     document.documentElement.classList.remove('dark-theme', 'pink-theme', 'white-theme');
                     document.documentElement.classList.add('light-theme', 'coffee-theme');
@@ -2732,6 +2784,12 @@
                     document.documentElement.removeAttribute('data-theme');
                     document.body.removeAttribute('data-theme');
                     document.body.style.background = '#f5e6d3';
+                    
+                    // Asegurar que el modal tenga texto oscuro en tema café
+                    const modalContent = document.querySelector('.modal-content');
+                    if (modalContent) {
+                        modalContent.style.color = '#4a3020';
+                    }
                 }
                 
                 // Forzar un repaint final
