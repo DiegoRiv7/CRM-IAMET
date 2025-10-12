@@ -1291,7 +1291,7 @@
         }
     </style>
 </head>
-<body>
+<body data-avatar-config='{ "hasCustomAvatar": {% if user_profile.avatar and user_profile.avatar.name %}true{% else %}false{% endif %}, "customAvatarUrl": {% if user_profile.avatar and user_profile.avatar.name %}"{{ user_profile.avatar.url }}"{% else %}""{% endif %}, "avatarTipo": "{{ user_profile.avatar_tipo|default:"dinosaur" }}" }'>
     <div class="main-container">
         <!-- Close Button -->
         <button class="close-btn" onclick="closeSettings()">
@@ -1826,16 +1826,20 @@
         </div>
     </div>
 
+    <!-- Script para configurar variables del avatar usando Django -->
     <script>
         // Variables globales para el estado del avatar - definidas por Django
-        /*{% if user_profile.avatar and user_profile.avatar.name %}*/
-        var userHasCustomAvatar = true;
-        var userCustomAvatarUrl = '{{ user_profile.avatar.url }}';
-        /*{% else %}*/
-        var userHasCustomAvatar = false;
-        var userCustomAvatarUrl = '';
-        /*{% endif %}*/
-        var userAvatarTipo = '{{ user_profile.avatar_tipo|default:"dinosaur" }}';
+        try {
+            var avatarConfigData = JSON.parse(document.body.getAttribute('data-avatar-config'));
+            window.avatarConfig = avatarConfigData;
+        } catch (e) {
+            // Fallback en caso de error
+            window.avatarConfig = {
+                hasCustomAvatar: false,
+                customAvatarUrl: '',
+                avatarTipo: 'dinosaur'
+            };
+        }
     </script>
     
     <script>
@@ -2069,9 +2073,9 @@
         let selectedImageFile = null;
         
         // Variables globales para el estado del avatar - definidas por Django
-        const userHasCustomAvatar = {% if user_profile.avatar and user_profile.avatar.name %}true{% else %}false{% endif %};
-        const userCustomAvatarUrl = {% if user_profile.avatar and user_profile.avatar.name %}'{{ user_profile.avatar.url }}'{% else %}''{% endif %};
-        const userAvatarTipo = '{{ user_profile.avatar_tipo|default:"dinosaur" }}';
+        var userHasCustomAvatar = window.avatarConfig.hasCustomAvatar;
+        var userCustomAvatarUrl = window.avatarConfig.customAvatarUrl;
+        var userAvatarTipo = window.avatarConfig.avatarTipo;
         
         function initializeAvatarSystem() {
             console.log('Inicializando sistema de avatar...');
@@ -2176,41 +2180,23 @@
             const defaultAvatar = userAvatarTipo;
             const initialAvatar = document.querySelector(`.avatar-choice[data-avatar="${defaultAvatar}"]`);
             
-            // Check if user has a custom avatar photo
-            if (userHasCustomAvatar) {
+            // Check if user has a custom avatar photo using the JavaScript variables we defined
+            if (userHasCustomAvatar && userCustomAvatarUrl) {
                 // User has a custom photo, show it in the preview
                 console.log('Usuario tiene foto personalizada, mostrándola en la vista previa');
                 
-                // Create an image element to check if the custom avatar exists
-                const img = new Image();
-                img.onload = function() {
-                    // Image loaded successfully, show it in the preview
-                    console.log('Foto personalizada cargada correctamente');
-                    uploadedAvatar.src = userCustomAvatarUrl;
-                    uploadedAvatar.style.display = 'block';
-                    animGalleryPreview.style.display = 'none';
-                    
-                    // Clear any avatar selection
-                    avatarChoices.forEach(b => {
-                        b.classList.remove('selected');
-                        b.style.borderColor = 'transparent';
-                        b.style.boxShadow = 'none';
-                    });
-                    document.getElementById('avatarChoice').value = '';
-                };
-                img.onerror = function() {
-                    // Image failed to load, fall back to animated avatar
-                    console.log('Error al cargar foto personalizada, usando avatar animado');
-                    if (initialAvatar) {
-                        initialAvatar.click();
-                    } else {
-                        const defaultBtn = document.querySelector('.avatar-choice[data-avatar="dinosaur"]');
-                        if (defaultBtn) {
-                            defaultBtn.click();
-                        }
-                    }
-                };
-                img.src = userCustomAvatarUrl;
+                // Show the custom avatar directly
+                uploadedAvatar.src = userCustomAvatarUrl;
+                uploadedAvatar.style.display = 'block';
+                animGalleryPreview.style.display = 'none';
+                
+                // Clear any avatar selection
+                avatarChoices.forEach(b => {
+                    b.classList.remove('selected');
+                    b.style.borderColor = 'transparent';
+                    b.style.boxShadow = 'none';
+                });
+                document.getElementById('avatarChoice').value = '';
             } else {
                 // User doesn't have a custom photo, use the animated avatar
                 console.log('Usuario no tiene foto personalizada, usando avatar animado:', defaultAvatar);

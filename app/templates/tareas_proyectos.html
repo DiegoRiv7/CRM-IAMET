@@ -105,11 +105,13 @@
     html[data-theme="pink"] .tab-selector,
     body[data-theme="pink"] .tab-selector,
     html.light-theme[data-theme="pink"] .tab-selector {
-        background: linear-gradient(135deg, #E55A87 0%, #FFFFFF 100%) !important;
-        border: 1px solid #D63384 !important;
-        box-shadow: none !important;
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
+        background: rgba(255, 255, 255, 0.1) !important;
+        backdrop-filter: blur(20px) saturate(150%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        box-shadow: 
+            0 8px 32px rgba(255, 255, 255, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
     }
 
     html[data-theme="pink"] .tab-slider,
@@ -121,16 +123,34 @@
     html[data-theme="pink"] .tab-option,
     body[data-theme="pink"] .tab-option,
     html.light-theme[data-theme="pink"] .tab-option {
-        color: #000000 !important;
+        color: rgba(45, 27, 46, 0.7) !important;
         font-weight: 500 !important;
+        background: transparent !important;
+        border-radius: 8px !important;
+        transition: all 0.3s ease !important;
     }
 
     html[data-theme="pink"] .tab-option.active,
     body[data-theme="pink"] .tab-option.active,
     html.light-theme[data-theme="pink"] .tab-option.active {
-        color: #FFFFFF !important;
+        color: #2D1B2E !important;
         font-weight: 600 !important;
         text-shadow: none !important;
+        background: rgba(255, 255, 255, 0.8) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        box-shadow: 
+            0 4px 16px rgba(255, 255, 255, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+    }
+
+    html[data-theme="pink"] .tab-option:not(.active):hover,
+    body[data-theme="pink"] .tab-option:not(.active):hover,
+    html.light-theme[data-theme="pink"] .tab-option:not(.active):hover {
+        color: #2D1B2E !important;
+        background: rgba(255, 255, 255, 0.4) !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
     }
 
     html[data-theme="pink"] .tab-option:not(.active):hover,
@@ -1129,6 +1149,117 @@
         border-radius: 12px;
         font-weight: 600;
         font-size: 0.9rem;
+    }
+
+    /* Estilos adicionales para tema rosa en tareas */
+    html[data-theme="pink"] .page-title,
+    body[data-theme="pink"] .page-title,
+    html.light-theme[data-theme="pink"] .page-title {
+        color: #E55A87 !important;
+    }
+
+    html[data-theme="pink"] .stats-grid .stat-card,
+    body[data-theme="pink"] .stats-grid .stat-card,
+    html.light-theme[data-theme="pink"] .stats-grid .stat-card,
+    html[data-theme="pink"] .project-card,
+    body[data-theme="pink"] .project-card,
+    html.light-theme[data-theme="pink"] .project-card,
+    html[data-theme="pink"] .task-item,
+    body[data-theme="pink"] .task-item,
+    html.light-theme[data-theme="pink"] .task-item {
+        background: linear-gradient(135deg,
+            rgba(255, 240, 245, 0.9) 0%,
+            rgba(255, 232, 239, 0.85) 100%) !important;
+        border: 1px solid rgba(255, 107, 157, 0.3) !important;
+        color: #2D1B2E !important;
+    }
+
+    html[data-theme="pink"] .btn-create,
+    body[data-theme="pink"] .btn-create,
+    html.light-theme[data-theme="pink"] .btn-create,
+    html[data-theme="pink"] .btn-primary,
+    body[data-theme="pink"] .btn-primary,
+    html.light-theme[data-theme="pink"] .btn-primary {
+        background: #E55A87 !important;
+        color: white !important;
+        border: 1px solid #D63384 !important;
+    }
+
+    html[data-theme="pink"] .btn-create:hover,
+    body[data-theme="pink"] .btn-create:hover,
+    html.light-theme[data-theme="pink"] .btn-create:hover,
+    html[data-theme="pink"] .btn-primary:hover,
+    body[data-theme="pink"] .btn-primary:hover,
+    html.light-theme[data-theme="pink"] .btn-primary:hover {
+        background: #C93A73 !important;
+    }
+
+    html[data-theme="pink"] .search-input,
+    body[data-theme="pink"] .search-input,
+    html.light-theme[data-theme="pink"] .search-input {
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.9) 0%,
+            rgba(255, 248, 250, 0.85) 100%) !important;
+        border: 1px solid rgba(255, 107, 157, 0.3) !important;
+        color: #2D1B2E !important;
+    }
+
+    html[data-theme="pink"] .search-input:focus,
+    body[data-theme="pink"] .search-input:focus,
+    html.light-theme[data-theme="pink"] .search-input:focus {
+        border-color: #FF6B9D !important;
+        box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.2) !important;
+    }
+
+    html[data-theme="pink"] .modal-backdrop,
+    body[data-theme="pink"] .modal-backdrop,
+    html.light-theme[data-theme="pink"] .modal-backdrop {
+        background: rgba(255, 107, 157, 0.15) !important;
+    }
+
+    html[data-theme="pink"] .modal-content,
+    body[data-theme="pink"] .modal-content,
+    html.light-theme[data-theme="pink"] .modal-content {
+        background: linear-gradient(135deg,
+            rgba(255, 245, 248, 0.95) 0%,
+            rgba(255, 232, 239, 0.9) 100%) !important;
+        border: 1px solid rgba(255, 107, 157, 0.3) !important;
+        color: #2D1B2E !important;
+    }
+
+    html[data-theme="pink"] .modal-title,
+    body[data-theme="pink"] .modal-title,
+    html.light-theme[data-theme="pink"] .modal-title {
+        color: #E55A87 !important;
+    }
+
+    html[data-theme="pink"] .form-input,
+    body[data-theme="pink"] .form-input,
+    html.light-theme[data-theme="pink"] .form-input,
+    html[data-theme="pink"] .form-textarea,
+    body[data-theme="pink"] .form-textarea,
+    html.light-theme[data-theme="pink"] .form-textarea,
+    html[data-theme="pink"] .form-select,
+    body[data-theme="pink"] .form-select,
+    html.light-theme[data-theme="pink"] .form-select {
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.9) 0%,
+            rgba(255, 248, 250, 0.85) 100%) !important;
+        border: 1px solid rgba(255, 107, 157, 0.3) !important;
+        color: #2D1B2E !important;
+    }
+
+    html[data-theme="pink"] .form-input:focus,
+    body[data-theme="pink"] .form-input:focus,
+    html.light-theme[data-theme="pink"] .form-input:focus,
+    html[data-theme="pink"] .form-textarea:focus,
+    body[data-theme="pink"] .form-textarea:focus,
+    html.light-theme[data-theme="pink"] .form-textarea:focus,
+    html[data-theme="pink"] .form-select:focus,
+    body[data-theme="pink"] .form-select:focus,
+    html.light-theme[data-theme="pink"] .form-select:focus {
+        border-color: #FF6B9D !important;
+        box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.2) !important;
     }
 </style>
 

@@ -2298,6 +2298,76 @@
         color: white !important;
         border: 1px solid #D63384 !important;
     }
+
+    /* Fix para áreas grises en detalles de proyecto */
+    html[data-theme="pink"] .nuevo-comentario-modal,
+    body[data-theme="pink"] .nuevo-comentario-modal,
+    html.light-theme[data-theme="pink"] .nuevo-comentario-modal,
+    .light-theme .nuevo-comentario-modal {
+        background: linear-gradient(135deg,
+            rgba(255, 240, 245, 0.6) 0%,
+            rgba(255, 232, 239, 0.5) 100%) !important;
+        border: 1px solid rgba(255, 107, 157, 0.2) !important;
+    }
+
+    html[data-theme="pink"] .feed-container,
+    body[data-theme="pink"] .feed-container,
+    html.light-theme[data-theme="pink"] .feed-container,
+    .light-theme .feed-container,
+    html[data-theme="pink"] .tasks-container,
+    body[data-theme="pink"] .tasks-container,
+    html.light-theme[data-theme="pink"] .tasks-container,
+    .light-theme .tasks-container,
+    html[data-theme="pink"] .folders-container,
+    body[data-theme="pink"] .folders-container,
+    html.light-theme[data-theme="pink"] .folders-container,
+    .light-theme .folders-container {
+        background: transparent !important;
+    }
+
+    html[data-theme="pink"] .btn-nuevo-comentario,
+    body[data-theme="pink"] .btn-nuevo-comentario,
+    html.light-theme[data-theme="pink"] .btn-nuevo-comentario,
+    .light-theme .btn-nuevo-comentario {
+        background: #E55A87 !important;
+        color: white !important;
+        border: 1px solid #D63384 !important;
+    }
+
+    html[data-theme="pink"] .btn-nuevo-comentario:hover,
+    body[data-theme="pink"] .btn-nuevo-comentario:hover,
+    html.light-theme[data-theme="pink"] .btn-nuevo-comentario:hover,
+    .light-theme .btn-nuevo-comentario:hover {
+        background: #C93A73 !important;
+    }
+
+    html[data-theme="pink"] .btn-enviar,
+    body[data-theme="pink"] .btn-enviar,
+    html.light-theme[data-theme="pink"] .btn-enviar,
+    .light-theme .btn-enviar {
+        background: linear-gradient(135deg, #E55A87, #FF6B9D) !important;
+        color: white !important;
+        border: 1px solid #D63384 !important;
+    }
+
+    html[data-theme="pink"] #comentarioInput,
+    body[data-theme="pink"] #comentarioInput,
+    html.light-theme[data-theme="pink"] #comentarioInput,
+    .light-theme #comentarioInput {
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.9) 0%,
+            rgba(255, 248, 250, 0.85) 100%) !important;
+        border: 1px solid rgba(255, 107, 157, 0.3) !important;
+        color: #2D1B2E !important;
+    }
+
+    html[data-theme="pink"] #comentarioInput:focus,
+    body[data-theme="pink"] #comentarioInput:focus,
+    html.light-theme[data-theme="pink"] #comentarioInput:focus,
+    .light-theme #comentarioInput:focus {
+        border-color: #FF6B9D !important;
+        box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.2) !important;
+    }
 </style>
 
 <div class="proyecto-container">
