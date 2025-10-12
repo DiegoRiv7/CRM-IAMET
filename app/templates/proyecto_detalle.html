@@ -2368,6 +2368,65 @@
         border-color: #FF6B9D !important;
         box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.2) !important;
     }
+
+    /* Arreglar tabla gris/oscura en detalles de proyecto */
+    html[data-theme="pink"] .tasks-table,
+    body[data-theme="pink"] .tasks-table,
+    html.light-theme[data-theme="pink"] .tasks-table,
+    .light-theme .tasks-table,
+    html[data-theme="pink"] .tasks-container,
+    body[data-theme="pink"] .tasks-container,
+    html.light-theme[data-theme="pink"] .tasks-container,
+    .light-theme .tasks-container,
+    html[data-theme="pink"] .table-container,
+    body[data-theme="pink"] .table-container,
+    html.light-theme[data-theme="pink"] .table-container,
+    .light-theme .table-container,
+    html[data-theme="pink"] table,
+    body[data-theme="pink"] table,
+    html.light-theme[data-theme="pink"] table,
+    .light-theme table {
+        background: linear-gradient(135deg,
+            rgba(255, 240, 245, 0.9) 0%,
+            rgba(255, 232, 239, 0.85) 100%) !important;
+        border: 1px solid rgba(255, 107, 157, 0.3) !important;
+        color: #2D1B2E !important;
+    }
+
+    html[data-theme="pink"] .table-header,
+    body[data-theme="pink"] .table-header,
+    html.light-theme[data-theme="pink"] .table-header,
+    .light-theme .table-header,
+    html[data-theme="pink"] th,
+    body[data-theme="pink"] th,
+    html.light-theme[data-theme="pink"] th,
+    .light-theme th {
+        background: linear-gradient(135deg,
+            rgba(255, 232, 239, 0.9) 0%,
+            rgba(255, 218, 230, 0.85) 100%) !important;
+        color: #E55A87 !important;
+        border-color: rgba(255, 107, 157, 0.3) !important;
+    }
+
+    html[data-theme="pink"] td,
+    body[data-theme="pink"] td,
+    html.light-theme[data-theme="pink"] td,
+    .light-theme td,
+    html[data-theme="pink"] .task-row,
+    body[data-theme="pink"] .task-row,
+    html.light-theme[data-theme="pink"] .task-row,
+    .light-theme .task-row {
+        background: transparent !important;
+        color: #2D1B2E !important;
+        border-color: rgba(255, 107, 157, 0.2) !important;
+    }
+
+    html[data-theme="pink"] .task-row:hover,
+    body[data-theme="pink"] .task-row:hover,
+    html.light-theme[data-theme="pink"] .task-row:hover,
+    .light-theme .task-row:hover {
+        background: rgba(255, 107, 157, 0.1) !important;
+    }
 </style>
 
 <div class="proyecto-container">
