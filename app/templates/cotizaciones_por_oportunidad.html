@@ -1080,7 +1080,10 @@
     }
 
     /* Estilos para el timeline en modo rosado */
-    .light-theme .timeline-content {
+    .light-theme .timeline-content,
+    body[data-theme="pink"] .timeline-content,
+    html[data-theme="pink"] body .timeline-content,
+    html.light-theme[data-theme="pink"] body .timeline-content {
         background: linear-gradient(135deg,
             rgba(255, 208, 220, 0.6) 0%,
             rgba(255, 192, 203, 0.55) 50%,
@@ -1088,7 +1091,10 @@
     }
 
     /* Comentarios del creador (align-right) - fondo blanco con texto negro */
-    .light-theme .timeline-item.align-right .timeline-content-item {
+    .light-theme .timeline-item.align-right .timeline-content-item,
+    body[data-theme="pink"] .timeline-item.align-right .timeline-content-item,
+    html[data-theme="pink"] body .timeline-item.align-right .timeline-content-item,
+    html.light-theme[data-theme="pink"] body .timeline-item.align-right .timeline-content-item {
         background: linear-gradient(145deg, 
             rgba(255, 255, 255, 0.95) 0%, 
             rgba(248, 248, 248, 0.9) 100%) !important;
@@ -1096,7 +1102,10 @@
         border: 1px solid rgba(255, 107, 157, 0.3) !important;
     }
 
-    .light-theme .timeline-item.align-right .timeline-content-item:hover {
+    .light-theme .timeline-item.align-right .timeline-content-item:hover,
+    body[data-theme="pink"] .timeline-item.align-right .timeline-content-item:hover,
+    html[data-theme="pink"] body .timeline-item.align-right .timeline-content-item:hover,
+    html.light-theme[data-theme="pink"] body .timeline-item.align-right .timeline-content-item:hover {
         background: linear-gradient(145deg, 
             rgba(255, 255, 255, 0.98) 0%, 
             rgba(245, 245, 245, 0.95) 100%) !important;
@@ -1107,12 +1116,27 @@
     .light-theme .timeline-item.align-right .timeline-title-item,
     .light-theme .timeline-item.align-right .timeline-time,
     .light-theme .timeline-item.align-right .timeline-text,
-    .light-theme .timeline-item.align-right .comment-text {
+    .light-theme .timeline-item.align-right .comment-text,
+    body[data-theme="pink"] .timeline-item.align-right .timeline-title-item,
+    body[data-theme="pink"] .timeline-item.align-right .timeline-time,
+    body[data-theme="pink"] .timeline-item.align-right .timeline-text,
+    body[data-theme="pink"] .timeline-item.align-right .comment-text,
+    html[data-theme="pink"] body .timeline-item.align-right .timeline-title-item,
+    html[data-theme="pink"] body .timeline-item.align-right .timeline-time,
+    html[data-theme="pink"] body .timeline-item.align-right .timeline-text,
+    html[data-theme="pink"] body .timeline-item.align-right .comment-text,
+    html.light-theme[data-theme="pink"] body .timeline-item.align-right .timeline-title-item,
+    html.light-theme[data-theme="pink"] body .timeline-item.align-right .timeline-time,
+    html.light-theme[data-theme="pink"] body .timeline-item.align-right .timeline-text,
+    html.light-theme[data-theme="pink"] body .timeline-item.align-right .comment-text {
         color: #2D1B2E !important;
     }
 
     /* Comentarios de otros usuarios - fondo blanco */
-    .light-theme .timeline-item:not(.align-right) .timeline-content-item {
+    .light-theme .timeline-item:not(.align-right) .timeline-content-item,
+    body[data-theme="pink"] .timeline-item:not(.align-right) .timeline-content-item,
+    html[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-content-item,
+    html.light-theme[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-content-item {
         background: linear-gradient(145deg, 
             rgba(255, 255, 255, 0.95) 0%, 
             rgba(248, 248, 248, 0.9) 100%) !important;
@@ -1120,7 +1144,10 @@
         border: 1px solid rgba(255, 107, 157, 0.3) !important;
     }
 
-    .light-theme .timeline-item:not(.align-right) .timeline-content-item:hover {
+    .light-theme .timeline-item:not(.align-right) .timeline-content-item:hover,
+    body[data-theme="pink"] .timeline-item:not(.align-right) .timeline-content-item:hover,
+    html[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-content-item:hover,
+    html.light-theme[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-content-item:hover {
         background: linear-gradient(145deg, 
             rgba(255, 255, 255, 0.98) 0%, 
             rgba(245, 245, 245, 0.95) 100%) !important;
@@ -1131,7 +1158,19 @@
     .light-theme .timeline-item:not(.align-right) .timeline-title-item,
     .light-theme .timeline-item:not(.align-right) .timeline-time,
     .light-theme .timeline-item:not(.align-right) .timeline-text,
-    .light-theme .timeline-item:not(.align-right) .comment-text {
+    .light-theme .timeline-item:not(.align-right) .comment-text,
+    body[data-theme="pink"] .timeline-item:not(.align-right) .timeline-title-item,
+    body[data-theme="pink"] .timeline-item:not(.align-right) .timeline-time,
+    body[data-theme="pink"] .timeline-item:not(.align-right) .timeline-text,
+    body[data-theme="pink"] .timeline-item:not(.align-right) .comment-text,
+    html[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-title-item,
+    html[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-time,
+    html[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-text,
+    html[data-theme="pink"] body .timeline-item:not(.align-right) .comment-text,
+    html.light-theme[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-title-item,
+    html.light-theme[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-time,
+    html.light-theme[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-text,
+    html.light-theme[data-theme="pink"] body .timeline-item:not(.align-right) .comment-text {
         color: #2D1B2E !important;
     }
 
