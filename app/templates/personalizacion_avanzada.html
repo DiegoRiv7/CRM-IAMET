@@ -1873,13 +1873,23 @@
         // Immediate theme application without animations to prevent flash
         function applyThemeImmediate(theme) {
             if (theme === 'pink') {
-                // Para el tema rosa, asegurarse de desactivar otros temas
-                document.documentElement.classList.remove('dark-theme', 'light-theme');
-                document.body.classList.remove('dark-theme', 'light-theme');
+                // Aplicar fondo INMEDIATAMENTE antes que cualquier otra cosa
+                document.body.style.background = 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)';
+                document.body.style.backgroundAttachment = 'fixed';
+                document.body.style.color = '#2d1b2e';
                 
-                // Agregar clase y atributo de tema rosa
+                // Forzar repaint inmediato
+                document.body.offsetHeight;
+                
+                // Para el tema rosa, asegurarse de desactivar otros temas
+                document.documentElement.classList.remove('dark-theme');
+                document.documentElement.classList.add('light-theme');
+                document.body.classList.remove('dark-theme', 'light-theme');
                 document.body.classList.add('pink-theme');
+                
+                // Agregar atributos de tema rosa
                 document.documentElement.setAttribute('data-theme', 'pink');
+                document.body.setAttribute('data-theme', 'pink');
                 
                 // Aplicar colores específicos del tema rosa inmediatamente
                 document.documentElement.style.setProperty('--apple-background', '#ffebf0');
@@ -1894,10 +1904,6 @@
                 document.documentElement.style.setProperty('--apple-blue-light', '#ff8fab');
                 document.documentElement.style.setProperty('--apple-blue-dark', '#e6396b');
                 document.documentElement.style.setProperty('--apple-separator', 'rgba(229, 90, 135, 0.2)');
-                
-                // Aplicar fondo gradiente inmediato
-                document.body.style.background = 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)';
-                document.body.style.backgroundAttachment = 'fixed';
             } else if (theme === 'light') {
                 // Para el tema claro
                 document.documentElement.classList.remove('dark-theme', 'pink-theme');

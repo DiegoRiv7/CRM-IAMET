@@ -105,13 +105,15 @@
     html[data-theme="pink"] .tab-selector,
     body[data-theme="pink"] .tab-selector,
     html.light-theme[data-theme="pink"] .tab-selector {
-        background: rgba(255, 255, 255, 0.95) !important;
+        background: linear-gradient(135deg,
+            rgba(255, 218, 230, 0.8) 0%,
+            rgba(255, 200, 213, 0.75) 100%) !important;
         backdrop-filter: blur(20px) saturate(150%) !important;
         -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
-        border: 1px solid rgba(255, 255, 255, 0.8) !important;
+        border: 1px solid rgba(255, 182, 193, 0.4) !important;
         box-shadow: 
-            0 8px 32px rgba(0, 0, 0, 0.1),
-            inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+            0 8px 32px rgba(255, 107, 157, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
     }
 
     html[data-theme="pink"] .tab-slider,
@@ -123,7 +125,7 @@
     html[data-theme="pink"] .tab-option,
     body[data-theme="pink"] .tab-option,
     html.light-theme[data-theme="pink"] .tab-option {
-        color: #666666 !important;
+        color: #2D1B2E !important;
         font-weight: 500 !important;
         background: transparent !important;
         border-radius: 8px !important;
@@ -133,22 +135,22 @@
     html[data-theme="pink"] .tab-option.active,
     body[data-theme="pink"] .tab-option.active,
     html.light-theme[data-theme="pink"] .tab-option.active {
-        color: #333333 !important;
+        color: #2D1B2E !important;
         font-weight: 600 !important;
         text-shadow: none !important;
-        background: rgba(255, 255, 255, 1) !important;
+        background: rgba(255, 182, 193, 0.4) !important;
         backdrop-filter: blur(10px) !important;
         -webkit-backdrop-filter: blur(10px) !important;
         box-shadow: 
-            0 4px 16px rgba(0, 0, 0, 0.1),
-            inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+            0 4px 16px rgba(255, 107, 157, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
     }
 
     html[data-theme="pink"] .tab-option:not(.active):hover,
     body[data-theme="pink"] .tab-option:not(.active):hover,
     html.light-theme[data-theme="pink"] .tab-option:not(.active):hover {
-        color: #333333 !important;
-        background: rgba(255, 255, 255, 0.7) !important;
+        color: #2D1B2E !important;
+        background: rgba(255, 182, 193, 0.2) !important;
         backdrop-filter: blur(8px) !important;
         -webkit-backdrop-filter: blur(8px) !important;
     }
