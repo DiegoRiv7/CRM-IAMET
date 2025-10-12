@@ -513,7 +513,6 @@
             border: 1px solid rgba(0, 0, 0, 0.1);
         }
         .theme-option:hover,
-        .theme-option.active,
         .dock-option:hover,
         .dock-option.active {
             border-color: var(--apple-blue) !important;
@@ -522,18 +521,25 @@
             transition: all 0.2s ease;
         }
         
-        /* Estilo específico para el tema activo */
+        /* Estilo específico para el tema activo - solo este debe tener el borde y sombra */
         .theme-option.active {
             border-color: var(--apple-blue) !important;
             box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.5) !important;
+            transform: translateY(-2px) !important;
             position: relative;
+            background: rgba(0, 122, 255, 0.05) !important;
         }
         
-        /* Estilo para el tema oscuro por defecto */
-        .theme-option[onclick*="'dark'"] {
-            border-color: var(--apple-blue);
-            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.5);
-            background: rgba(0, 0, 0, 0.1);
+        /* Asegurarse que los temas no activos no tengan bordes ni sombras */
+        .theme-option:not(.active) {
+            border-color: transparent !important;
+            box-shadow: none !important;
+            transform: none !important;
+        }
+        
+        /* Estilo para el tema oscuro por defecto - solo si tiene la clase active */
+        .theme-option.active[onclick*="'dark'"] {
+            background: rgba(0, 0, 0, 0.1) !important;
         }
         
         /* Dock Options Styles */
@@ -1553,7 +1559,7 @@
                     <h3><i class="fas fa-palette" style="margin-right: 8px;"></i> Tema de Color</h3>
                     <p>Personaliza los colores de la aplicación</p>
                     <div class="theme-options">
-                        <div class="theme-option active" data-theme="dark" onclick="applyTheme('dark')">
+                        <div class="theme-option" data-theme="dark" onclick="applyTheme('dark')">
                             <div class="theme-preview-large dark-preview">
                                 <div class="preview-header"></div>
                                 <div class="preview-content">
@@ -1852,44 +1858,15 @@
                     // Apply the saved theme immediately without animations
                     applyThemeImmediate(savedTheme);
                 } else {
-                    // Check for designPreferences (legacy)
-                    const saved = localStorage.getItem('designPreferences');
-                    if (saved) {
-                        const preferences = JSON.parse(saved);
-                        const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
-                        
-                        if (!isDarkMode) {
-                            // Check if this is actually the pink theme
-                            const bodyDataTheme = document.body.getAttribute('data-theme');
-                            const htmlDataTheme = document.documentElement.getAttribute('data-theme');
-                            
-                            if (bodyDataTheme === 'pink' || htmlDataTheme === 'pink') {
-                                applyThemeImmediate('pink');
-                            } else {
-                                document.documentElement.classList.add('light-theme');
-                                document.body.classList.add('light-theme');
-                            }
-                        }
-                        
-                        // Set active theme option when page loads
-                        setTimeout(() => {
-                            const themeOptions = document.querySelectorAll('.theme-option');
-                            themeOptions.forEach(option => option.classList.remove('active'));
-                            
-                            const targetOption = document.querySelector(`[onclick="applyTheme(${isDarkMode})"]`);
-                            if (targetOption) {
-                                targetOption.classList.add('active');
-                            }
-                        }, 100);
-                    } else {
-                        // Default to dark theme
-                        applyThemeImmediate('dark');
-                    }
+                    // Default to dark theme
+                    applyThemeImmediate('dark');
+                    localStorage.setItem('theme', 'dark');
                 }
             } catch (error) {
                 console.log('Using default theme settings');
                 // Default to dark theme if there's an error
                 applyThemeImmediate('dark');
+                localStorage.setItem('theme', 'dark');
             }
         })();
 
@@ -2434,8 +2411,10 @@
                 option.style.transform = '';
                 option.style.backgroundColor = '';
                 
-                // Si el tema ya tenía estilos en línea, limpiarlos
-                option.removeAttribute('style');
+                // Forzar la eliminación de estilos calculados
+                option.style.setProperty('border-color', '', 'important');
+                option.style.setProperty('box-shadow', '', 'important');
+                option.style.setProperty('transform', '', 'important');
             });
             
             // Encontrar y activar el tema seleccionado
@@ -2444,12 +2423,10 @@
                 // Agregar clase activa
                 selectedOption.classList.add('active');
                 
-                // Aplicar estilos directamente al elemento
-                selectedOption.style.borderColor = 'var(--apple-blue)';
-                selectedOption.style.boxShadow = '0 0 0 2px rgba(0, 122, 255, 0.5)';
-                
-                // Efecto de animación sutil
-                selectedOption.style.transform = 'translateY(-2px)';
+                // Aplicar estilos directamente al elemento con !important para asegurar que prevalezcan
+                selectedOption.style.setProperty('border-color', 'var(--apple-blue)', 'important');
+                selectedOption.style.setProperty('box-shadow', '0 0 0 2px rgba(0, 122, 255, 0.5)', 'important');
+                selectedOption.style.setProperty('transform', 'translateY(-2px)', 'important');
                 
                 console.log('Tema seleccionado:', theme, selectedOption);
                 
@@ -3164,7 +3141,11 @@
                 currentTheme = 'dark';
                 localStorage.setItem('theme', 'dark');
             }
-            initializeActiveTheme(currentTheme);
+            
+            // Esperar un poco para que el DOM esté completamente cargado
+            setTimeout(() => {
+                initializeActiveTheme(currentTheme);
+            }, 100);
             
             // Inicializar dock activo (ya se maneja en dock.html, pero asegurar estado visual)
             setTimeout(function() {
@@ -3188,17 +3169,26 @@
                 localStorage.setItem('theme', 'dark');
             }
             
+            // Primero limpiar todos los temas
             document.querySelectorAll('.theme-option').forEach(option => {
                 option.classList.remove('active');
-                if (option.getAttribute('onclick').includes(`'${theme}'`)) {
+                // Limpiar todos los estilos inline
+                option.style.borderColor = '';
+                option.style.boxShadow = '';
+                option.style.transform = '';
+                // Forzar la eliminación de estilos calculados
+                option.style.setProperty('border-color', '', 'important');
+                option.style.setProperty('box-shadow', '', 'important');
+                option.style.setProperty('transform', '', 'important');
+            });
+            
+            // Luego activar solo el tema seleccionado
+            document.querySelectorAll('.theme-option').forEach(option => {
+                if (option.getAttribute('onclick') && option.getAttribute('onclick').includes(`'${theme}'`)) {
                     option.classList.add('active');
-                    // Aplicar estilos de selección
-                    option.style.borderColor = 'var(--apple-blue)';
-                    option.style.boxShadow = '0 0 0 2px rgba(0, 122, 255, 0.5)';
-                } else {
-                    // Limpiar estilos de los otros temas
-                    option.style.borderColor = '';
-                    option.style.boxShadow = '';
+                    // Aplicar estilos de selección con !important
+                    option.style.setProperty('border-color', 'var(--apple-blue)', 'important');
+                    option.style.setProperty('box-shadow', '0 0 0 2px rgba(0, 122, 255, 0.5)', 'important');
                 }
             });
         }
