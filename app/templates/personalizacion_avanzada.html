@@ -1849,21 +1849,34 @@
     </script>
     
     <script>
-        // Apply theme immediately to prevent flash
+        // Apply theme immediately to prevent flash - Improved version
         (function() {
             try {
                 // Check for theme in localStorage
                 const savedTheme = localStorage.getItem('theme');
+                console.log('Initial theme check - savedTheme:', savedTheme);
+                
                 if (savedTheme) {
                     // Apply the saved theme immediately without animations
                     applyThemeImmediate(savedTheme);
+                    console.log('Applied saved theme:', savedTheme);
                 } else {
                     // Default to dark theme
                     applyThemeImmediate('dark');
                     localStorage.setItem('theme', 'dark');
+                    console.log('Applied default dark theme');
                 }
+                
+                // Force a complete repaint to ensure theme is fully applied
+                setTimeout(() => {
+                    document.body.style.display = 'none';
+                    document.body.offsetHeight; // Force reflow
+                    document.body.style.display = '';
+                    console.log('Forced complete repaint after initial theme application');
+                }, 50);
+                
             } catch (error) {
-                console.log('Using default theme settings');
+                console.log('Using default theme settings due to error:', error);
                 // Default to dark theme if there's an error
                 applyThemeImmediate('dark');
                 localStorage.setItem('theme', 'dark');
@@ -2495,7 +2508,10 @@
         function applyTheme(theme) {
             console.log('applyTheme called with:', theme);
             
-            // Primero, deseleccionar todos los temas
+            // Primero, aplicar el tema inmediatamente usando la función inmediata
+            applyThemeImmediate(theme);
+            
+            // Luego, deseleccionar todos los temas
             const allThemeOptions = document.querySelectorAll('.theme-option');
             allThemeOptions.forEach(option => {
                 // Remover clase activa
@@ -2677,6 +2693,14 @@
                 'white': 'Blanco'
             };
             showNotification(`Tema cambiado a ${themeNames[theme] || theme}`, 'success');
+            
+            // Forzar un repaint final para asegurar que todos los elementos se actualicen
+            setTimeout(() => {
+                document.body.style.display = 'none';
+                document.body.offsetHeight; // Force reflow
+                document.body.style.display = '';
+                console.log('Forced final repaint after theme change');
+            }, 50);
         }
 
         // Dock type functionality
@@ -3296,9 +3320,20 @@
                 localStorage.setItem('theme', 'dark');
             }
             
+            console.log('DOMContentLoaded - currentTheme:', currentTheme);
+            
+            // Aplicar tema inmediatamente antes de cualquier otra inicialización
+            applyThemeImmediate(currentTheme);
+            
             // Esperar un poco para que el DOM esté completamente cargado
             setTimeout(() => {
                 initializeActiveTheme(currentTheme);
+                
+                // Forzar una segunda aplicación del tema para asegurar consistencia
+                setTimeout(() => {
+                    applyThemeImmediate(currentTheme);
+                    console.log('Second theme application completed');
+                }, 100);
             }, 100);
             
             // Inicializar dock activo (ya se maneja en dock.html, pero asegurar estado visual)
