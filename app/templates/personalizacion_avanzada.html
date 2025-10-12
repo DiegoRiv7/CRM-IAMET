@@ -1179,6 +1179,44 @@
             font-size: 16px;
         }
 
+        /* Pink Theme Notification Styles */
+        .light-theme .notification,
+        html[data-theme="pink"] .notification,
+        body[data-theme="pink"] .notification,
+        html.light-theme[data-theme="pink"] .notification,
+        body.pink-theme .notification {
+            background: linear-gradient(135deg, #E55A87 0%, #FF6B9D 100%) !important;
+            color: white !important;
+            border: 1px solid rgba(255, 107, 157, 0.3) !important;
+            box-shadow: 
+                0 10px 30px rgba(255, 107, 157, 0.3),
+                0 4px 16px rgba(229, 90, 135, 0.2) !important;
+        }
+
+        .light-theme .notification.success,
+        html[data-theme="pink"] .notification.success,
+        body[data-theme="pink"] .notification.success,
+        html.light-theme[data-theme="pink"] .notification.success,
+        body.pink-theme .notification.success {
+            background: linear-gradient(135deg, #FF6B9D 0%, #30D158 100%) !important;
+        }
+
+        .light-theme .notification.error,
+        html[data-theme="pink"] .notification.error,
+        body[data-theme="pink"] .notification.error,
+        html.light-theme[data-theme="pink"] .notification.error,
+        body.pink-theme .notification.error {
+            background: linear-gradient(135deg, #FF3B30 0%, #E55A87 100%) !important;
+        }
+
+        .light-theme .notification.warning,
+        html[data-theme="pink"] .notification.warning,
+        body[data-theme="pink"] .notification.warning,
+        html.light-theme[data-theme="pink"] .notification.warning,
+        body.pink-theme .notification.warning {
+            background: linear-gradient(135deg, #FF9F0A 0%, #E55A87 100%) !important;
+        }
+
         .btn-danger {
             padding: 12px 24px;
             border: none;
@@ -1789,14 +1827,26 @@
     </div>
 
     <script>
+        // Variables globales para el estado del avatar - definidas por Django
+        /*{% if user_profile.avatar and user_profile.avatar.name %}*/
+        var userHasCustomAvatar = true;
+        var userCustomAvatarUrl = '{{ user_profile.avatar.url }}';
+        /*{% else %}*/
+        var userHasCustomAvatar = false;
+        var userCustomAvatarUrl = '';
+        /*{% endif %}*/
+        var userAvatarTipo = '{{ user_profile.avatar_tipo|default:"dinosaur" }}';
+    </script>
+    
+    <script>
         // Apply theme immediately to prevent flash
         (function() {
             try {
                 // Check for theme in localStorage
                 const savedTheme = localStorage.getItem('theme');
                 if (savedTheme) {
-                    // Apply the saved theme
-                    applyTheme(savedTheme);
+                    // Apply the saved theme immediately without animations
+                    applyThemeImmediate(savedTheme);
                 } else {
                     // Check for designPreferences (legacy)
                     const saved = localStorage.getItem('designPreferences');
@@ -1805,8 +1855,16 @@
                         const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
                         
                         if (!isDarkMode) {
-                            document.documentElement.classList.add('light-theme');
-                            document.body.classList.add('light-theme');
+                            // Check if this is actually the pink theme
+                            const bodyDataTheme = document.body.getAttribute('data-theme');
+                            const htmlDataTheme = document.documentElement.getAttribute('data-theme');
+                            
+                            if (bodyDataTheme === 'pink' || htmlDataTheme === 'pink') {
+                                applyThemeImmediate('pink');
+                            } else {
+                                document.documentElement.classList.add('light-theme');
+                                document.body.classList.add('light-theme');
+                            }
                         }
                         
                         // Set active theme option when page loads
@@ -1821,15 +1879,54 @@
                         }, 100);
                     } else {
                         // Default to dark theme
-                        applyTheme('dark');
+                        applyThemeImmediate('dark');
                     }
                 }
             } catch (error) {
                 console.log('Using default theme settings');
                 // Default to dark theme if there's an error
-                applyTheme('dark');
+                applyThemeImmediate('dark');
             }
         })();
+
+        // Immediate theme application without animations to prevent flash
+        function applyThemeImmediate(theme) {
+            if (theme === 'pink') {
+                document.documentElement.classList.remove('dark-theme', 'light-theme');
+                document.body.classList.remove('dark-theme', 'light-theme');
+                document.body.classList.add('pink-theme');
+                document.documentElement.setAttribute('data-theme', 'pink');
+                
+                // Apply pink theme styles immediately
+                document.documentElement.style.setProperty('--apple-background', '#ffebf0');
+                document.documentElement.style.setProperty('--apple-background-secondary', '#fff5f8');
+                document.documentElement.style.setProperty('--apple-background-tertiary', '#ffe0e6');
+                document.documentElement.style.setProperty('--apple-background-quaternary', '#ffd1dc');
+                document.documentElement.style.setProperty('--apple-label', '#2d1b2e');
+                
+                // Set background immediately
+                document.body.style.background = 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)';
+                document.body.style.backgroundAttachment = 'fixed';
+            } else if (theme === 'light') {
+                document.documentElement.classList.remove('dark-theme');
+                document.documentElement.classList.add('light-theme');
+                document.body.classList.remove('dark-theme', 'pink-theme');
+                document.body.classList.add('light-theme');
+                document.documentElement.removeAttribute('data-theme');
+                
+                document.body.style.background = '#ffffff';
+                document.body.style.backgroundAttachment = 'fixed';
+            } else {
+                // Dark theme (default)
+                document.documentElement.classList.remove('light-theme');
+                document.documentElement.classList.add('dark-theme');
+                document.body.classList.remove('light-theme', 'pink-theme');
+                document.body.classList.add('dark-theme');
+                document.documentElement.removeAttribute('data-theme');
+                
+                document.body.style.background = '#000000';
+            }
+        }
 
         function closeSettings() {
             // Redirect back to home or close modal
@@ -1972,8 +2069,8 @@
         let selectedImageFile = null;
         
         // Variables globales para el estado del avatar - definidas por Django
-        const userHasCustomAvatar = {% if user_profile.avatar %}true{% else %}false{% endif %};
-        const userCustomAvatarUrl = '{{ user_profile.avatar.url|default:"" }}';
+        const userHasCustomAvatar = {% if user_profile.avatar and user_profile.avatar.name %}true{% else %}false{% endif %};
+        const userCustomAvatarUrl = {% if user_profile.avatar and user_profile.avatar.name %}'{{ user_profile.avatar.url }}'{% else %}''{% endif %};
         const userAvatarTipo = '{{ user_profile.avatar_tipo|default:"dinosaur" }}';
         
         function initializeAvatarSystem() {
