@@ -2471,9 +2471,9 @@ def exportar_oportunidades_csv(request):
         
         # Define all headers (brands + months)
         all_headers = [
-            'OPORTUNIDAD', 'AREA', 'CONTACTO', 'ZEBRA', 'PANDUIT', 'APC', 'AVIGILON', 
+            'OPORTUNIDAD', 'CLIENTE', 'AREA', 'CONTACTO', 'ZEBRA', 'PANDUIT', 'APC', 'AVIGILON', 
             'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'PÓLIZA', 'CISCO',
-            'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC'
+            'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC', 'EMPLEADO'
         ]
         
         # Write all headers in a single row (starting at row 5)
@@ -2487,9 +2487,9 @@ def exportar_oportunidades_csv(request):
     else:
         # Fallback to CSV - simplified structure
         headers = [
-            'OPORTUNIDAD', 'AREA', 'CONTACTO', 'ZEBRA', 'PANDUIT', 'APC', 'AVIGILION', 
+            'OPORTUNIDAD', 'CLIENTE', 'AREA', 'CONTACTO', 'ZEBRA', 'PANDUIT', 'APC', 'AVIGILON', 
             'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'PÓLIZA', 'CISCO',
-            'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC'
+            'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC', 'EMPLEADO'
         ]
         
         response = HttpResponse(content_type='text/csv; charset=utf-8')
@@ -2501,9 +2501,9 @@ def exportar_oportunidades_csv(request):
         
     # Brand columns mapping - usar las marcas reales de PRODUCTO_CHOICES
     brand_columns = {
-        'ZEBRA': 4, 'PANDUIT': 5, 'APC': 6, 'AVIGILION': 7,
-        'GENETEC': 8, 'AXIS': 9, 'SOFTWARE': 10, 'RUNRATE': 11, 
-        'PÓLIZA': 12, 'CISCO': 13
+        'ZEBRA': 5, 'PANDUIT': 6, 'APC': 7, 'AVIGILON': 8,
+        'GENETEC': 9, 'AXIS': 10, 'SOFTWARE': 11, 'RUNRATE': 12, 
+        'PÓLIZA': 13, 'CISCO': 14
     }
         
     # Debug: Print item count and sample data
@@ -2574,6 +2574,7 @@ def exportar_oportunidades_csv(request):
         # Prepare row data
         row_data = [
             item.oportunidad,
+            item.cliente.nombre_empresa if item.cliente else '',
             item.get_area_display(),
             str(item.contacto) if item.contacto else ''
         ]
@@ -2641,6 +2642,7 @@ def exportar_oportunidades_csv(request):
         
         print(f"DEBUG: Final months array: {months}")
         row_data.extend(months)
+        row_data.append(item.usuario.get_full_name() or item.usuario.username if item.usuario else '')
         
         if OPENPYXL_AVAILABLE:
             # Excel version
