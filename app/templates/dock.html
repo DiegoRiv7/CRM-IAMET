@@ -3570,6 +3570,11 @@ window.addEventListener('error', function(e) {
             // Update panel positions
             updatePanelPositions(position);
             
+            // Reattach event listeners to dock items after position change
+            setTimeout(() => {
+                reattachDockEventListeners(position);
+            }, 100);
+            
             currentDockPosition = position;
         }
 
@@ -3588,6 +3593,69 @@ window.addEventListener('error', function(e) {
             designPanel.classList.add(`position-${position}`);
             positionControls.classList.add(`position-${position}`);
         }
+        
+        function reattachDockEventListeners(position) {
+            // Get the newly visible dock
+            const activeDock = document.getElementById(`dock-${position}`);
+            if (!activeDock) return;
+            
+            // Get all dock items in the active dock
+            const dockItems = activeDock.querySelectorAll('.dock-item');
+            
+            // Reattach click event listeners to dock items
+            dockItems.forEach(item => {
+                // Clone the node to remove all event listeners
+                const newItem = item.cloneNode(true);
+                
+                // Replace the original item with the clone
+                item.parentNode.replaceChild(newItem, item);
+                
+                // Reattach the click event listener
+                newItem.addEventListener('click', function(e) {
+                    // For compact dock, handle the special click behavior
+                    if (activeDock.classList.contains('dock-compact') && newItem.classList.contains('home-icon')) {
+                        if (!activeDock.classList.contains('expanded')) {
+                            // First click: expand dock, prevent navigation
+                            e.preventDefault();
+                            e.stopPropagation();
+                            activeDock.classList.add('expanded');
+                            return false;
+                        } else {
+                            // Second click: allow navigation and collapse after
+                            setTimeout(() => {
+                                activeDock.classList.remove('expanded');
+                            }, 150);
+                        }
+                    }
+                    // For all other items, allow normal navigation
+                });
+                
+                // Reattach hover event listeners for tooltips
+                newItem.addEventListener('mouseenter', function() {
+                    const tooltip = this.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.style.opacity = '1';
+                        tooltip.style.visibility = 'visible';
+                    }
+                });
+                
+                newItem.addEventListener('mouseleave', function() {
+                    const tooltip = this.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.style.opacity = '0';
+                        tooltip.style.visibility = 'hidden';
+                    }
+                });
+            });
+            
+            // Reattach compact dock functionality if needed
+            if (activeDock.classList.contains('dock-compact')) {
+                setupCompactDockFunctionality();
+            }
+        }
+        
+        // Make reattachDockEventListeners globally available
+        window.reattachDockEventListeners = reattachDockEventListeners;
 
         function enterEditMode() {
             isEditMode = true;
@@ -4162,6 +4230,15 @@ window.setDockPosition = function(position) {
     if (activeArrow) {
         activeArrow.classList.add('active');
     }
+    
+    // Reattach event listeners after position change
+    setTimeout(() => {
+        if (typeof reattachDockEventListeners === 'function') {
+            reattachDockEventListeners(position);
+        } else {
+            console.log('reattachDockEventListeners function not found');
+        }
+    }, 100);
     
     // Save preference to localStorage
     window.saveDockPosition(position);
