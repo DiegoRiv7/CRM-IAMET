@@ -1241,7 +1241,7 @@
         }
         
         .mini-header {
-            height: 24px;
+            height: 16px;
             display: flex;
             align-items: center;
             padding: 0 8px;
@@ -1267,18 +1267,7 @@
         }
         
         .mini-nav {
-            flex: 1;
-            display: flex;
-            justify-content: flex-end;
-            gap: 6px;
-        }
-        
-        .mini-nav-btn {
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: var(--apple-background-tertiary);
-            border: 1px solid var(--apple-separator);
+            display: none; /* Ocultar los botones de navegación */
         }
         
         .mini-content {
@@ -1322,7 +1311,8 @@
             border-radius: 14px;
             background: var(--apple-background-secondary);
             border: 1px solid var(--apple-separator);
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            margin-top: 5px;
             display: flex;
             align-items: center;
             padding: 0 14px;
@@ -1404,6 +1394,72 @@
         }
         
         .dark-theme .mini-search svg {
+            color: rgba(255, 255, 255, 0.7) !important;
+        }
+        
+        /* Asegurar que el tema oscuro no se vea afectado por otros temas */
+        .mini-page.dark-theme,
+        .dark-preview .mini-page,
+        .theme-option[onclick*="'dark'"] .mini-page {
+            background: linear-gradient(135deg, #000000 0%, #1D1D1F 100%) !important;
+        }
+        
+        .mini-page.dark-theme *,
+        .dark-preview .mini-page *,
+        .theme-option[onclick*="'dark'"] .mini-page * {
+            background-color: rgba(0, 0, 0, 0.8) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+            color: #FFFFFF !important;
+        }
+        
+        .mini-page.dark-theme .mini-logo,
+        .dark-preview .mini-page .mini-logo,
+        .theme-option[onclick*="'dark'"] .mini-page .mini-logo {
+            background: #007AFF !important;
+        }
+        
+        .mini-page.dark-theme .mini-title,
+        .dark-preview .mini-page .mini-title,
+        .theme-option[onclick*="'dark'"] .mini-page .mini-title {
+            color: #FFFFFF !important;
+        }
+        
+        .mini-page.dark-theme .mini-subtitle,
+        .dark-preview .mini-page .mini-subtitle,
+        .theme-option[onclick*="'dark'"] .mini-page .mini-subtitle {
+            color: #EBEBF5 !important;
+        }
+        
+        .mini-page.dark-theme .mini-avatar,
+        .dark-preview .mini-page .mini-avatar,
+        .theme-option[onclick*="'dark'"] .mini-page .mini-avatar {
+            border-color: #007AFF !important;
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+        
+        .mini-page.dark-theme .mini-search,
+        .dark-preview .mini-page .mini-search,
+        .theme-option[onclick*="'dark'"] .mini-page .mini-search {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+        }
+        
+        .mini-page.dark-theme .mini-card,
+        .dark-preview .mini-page .mini-card,
+        .theme-option[onclick*="'dark'"] .mini-page .mini-card {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+        }
+        
+        .mini-page.dark-theme .mini-card-avatar,
+        .dark-preview .mini-page .mini-card-avatar,
+        .theme-option[onclick*="'dark'"] .mini-page .mini-card-avatar {
+            background: rgba(255, 255, 255, 0.2) !important;
+        }
+        
+        .mini-page.dark-theme .mini-search svg,
+        .dark-preview .mini-page .mini-search svg,
+        .theme-option[onclick*="'dark'"] .mini-page .mini-search svg {
             color: rgba(255, 255, 255, 0.7) !important;
         }
         
@@ -2148,11 +2204,7 @@
                                                 <polyline points="9,22 9,12 15,12 15,22"></polyline>
                                             </svg>
                                         </div>
-                                        <div class="mini-nav">
-                                            <div class="mini-nav-btn"></div>
-                                            <div class="mini-nav-btn"></div>
-                                            <div class="mini-nav-btn"></div>
-                                        </div>
+                                        <div class="mini-nav"></div>
                                     </div>
                                     <div class="mini-content">
                                         <div class="mini-welcome">
@@ -2189,11 +2241,7 @@
                                                 <polyline points="9,22 9,12 15,12 15,22"></polyline>
                                             </svg>
                                         </div>
-                                        <div class="mini-nav">
-                                            <div class="mini-nav-btn"></div>
-                                            <div class="mini-nav-btn"></div>
-                                            <div class="mini-nav-btn"></div>
-                                        </div>
+                                        <div class="mini-nav"></div>
                                     </div>
                                     <div class="mini-content">
                                         <div class="mini-welcome">
@@ -2230,11 +2278,7 @@
                                                 <polyline points="9,22 9,12 15,12 15,22"></polyline>
                                             </svg>
                                         </div>
-                                        <div class="mini-nav">
-                                            <div class="mini-nav-btn"></div>
-                                            <div class="mini-nav-btn"></div>
-                                            <div class="mini-nav-btn"></div>
-                                        </div>
+                                        <div class="mini-nav"></div>
                                     </div>
                                     <div class="mini-content">
                                         <div class="mini-welcome">
@@ -2271,11 +2315,7 @@
                                                 <polyline points="9,22 9,12 15,12 15,22"></polyline>
                                             </svg>
                                         </div>
-                                        <div class="mini-nav">
-                                            <div class="mini-nav-btn"></div>
-                                            <div class="mini-nav-btn"></div>
-                                            <div class="mini-nav-btn"></div>
-                                        </div>
+                                        <div class="mini-nav"></div>
                                     </div>
                                     <div class="mini-content">
                                         <div class="mini-welcome">

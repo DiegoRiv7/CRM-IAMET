@@ -1,0 +1,501 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Feed de Actividad{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <!-- Encabezado del Feed -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-white">Actividad Reciente</h1>
+            <p class="text-gray-400">Mantente al día con las últimas actualizaciones</p>
+        </div>
+        <button onclick="window.history.back()" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+            </svg>
+            Volver
+        </button>
+    </div>
+
+    <!-- Nuevo Comentario -->
+    <div class="nuevo-comentario-modal mb-8">
+        <div class="modal-comentario-header">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center">
+                    <span class="text-gray-300 font-semibold">{{ user.first_name|first|upper }}{{ user.last_name|first|upper|default:'' }}</span>
+                </div>
+                <div>
+                    <h4 class="font-medium text-white">{{ user.get_full_name|default:user.username }}</h4>
+                    <p class="text-xs text-gray-400">¿En qué estás pensando?</p>
+                </div>
+            </div>
+            <textarea id="nuevoComentario" class="w-full mt-4 p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Escribe tu mensaje aquí..." rows="3"></textarea>
+            <div class="flex justify-between items-center mt-3">
+                <div class="flex gap-2">
+                    <button type="button" class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-full" title="Agregar imagen">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </button>
+                    <button type="button" class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-full" title="Agregar archivo">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </button>
+                </div>
+                <button type="button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
+                    Publicar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feed de Actividad -->
+    <div class="feed-container" id="feedContainer">
+        <div class="feed-loading" id="feedLoading">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+            Cargando actividad reciente...
+        </div>
+        
+        <div class="feed-items" id="feedItems">
+            <!-- Los elementos del feed se cargarán aquí dinámicamente -->
+        </div>
+        
+        <div class="feed-empty" id="feedEmpty" style="display: none;">
+            <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.14.166 1.69.267A6.73 6.73 0 018.25 15.75c1.105 0 2.172.18 3.158.51.6.18 1.23.349 1.87.5.24.058.487.113.74.162 1.29.2 2.611.302 3.942.302 1.33 0 2.65-.102 3.942-.302.253-.05.5-.104.74-.162.64-.151 1.27-.32 1.87-.5a6.737 6.737 0 002.158-.51m-12.5-8.25h.008v.008h-.008V8.25zm3 0h.008v.008h-.008V8.25z" />
+            </svg>
+            <h3>No hay actividad reciente</h3>
+            <p>Cuando haya actualizaciones, aparecerán aquí.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Plantilla para los elementos del feed -->
+<template id="feedItemTemplate">
+    <div class="feed-item">
+        <div class="feed-item-header">
+            <div class="feed-user-info">
+                <div class="feed-avatar">
+                    <img src="" alt="" class="user-avatar" onerror="this.style.display='none';">
+                    <span class="avatar-fallback"></span>
+                </div>
+                <div class="feed-user-details">
+                    <h4 class="user-name"></h4>
+                    <div class="feed-date"></div>
+                </div>
+            </div>
+            <div class="feed-item-actions">
+                <button class="action-btn" title="Más opciones">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="feed-content"></div>
+        <div class="feed-actions">
+            <button class="action-btn">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"/>
+                </svg>
+                <span>Me gusta</span>
+            </button>
+            <button class="action-btn">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z"/>
+                </svg>
+                <span>Comentar</span>
+            </button>
+            <button class="action-btn">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 0zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368 0z"/>
+                </svg>
+                <span>Compartir</span>
+            </button>
+        </div>
+    </div>
+</template>
+
+<style>
+/* Estilos del feed */
+.feed-container {
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.feed-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    color: var(--apple-label-secondary);
+    font-size: 0.9rem;
+}
+
+.feed-loading svg {
+    animation: spin 1s linear infinite;
+    margin-right: 0.5rem;
+}
+
+.feed-empty {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--apple-label-secondary);
+}
+
+.feed-empty svg {
+    margin-bottom: 1rem;
+    opacity: 0.5;
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 1rem;
+}
+
+.feed-empty h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--apple-label);
+    font-size: 1.1rem;
+}
+
+.feed-empty p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.feed-item {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.feed-item:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+    box-shadow:
+        0 10px 15px -3px rgba(0, 0, 0, 0.1),
+        0 4px 6px -2px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.feed-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.feed-user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.feed-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--apple-background-tertiary);
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.feed-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--apple-blue);
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.feed-user-details h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--apple-label);
+}
+
+.feed-user-details .feed-date {
+    margin: 0.15rem 0 0 0;
+    font-size: 0.75rem;
+    color: var(--apple-label-secondary);
+}
+
+.feed-item-actions {
+    display: flex;
+    gap: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.feed-item:hover .feed-item-actions {
+    opacity: 1;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    color: var(--apple-label-secondary);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--apple-label);
+}
+
+.action-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.feed-content {
+    color: var(--apple-label);
+    line-height: 1.6;
+    font-size: 0.95rem;
+    margin-bottom: 0.75rem;
+}
+
+.feed-actions {
+    display: flex;
+    gap: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Estilos para el área de nuevo comentario */
+.nuevo-comentario-modal {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.modal-comentario-header {
+    margin-bottom: 0;
+}
+
+/* Animación de carga */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Estilos para temas */
+.light-theme .feed-item,
+html[data-theme="light"] .feed-item,
+body[data-theme="light"] .feed-item {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.light-theme .feed-item:hover,
+html[data-theme="light"] .feed-item:hover,
+body[data-theme="light"] .feed-item:hover {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+.light-theme .feed-content,
+html[data-theme="light"] .feed-content,
+body[data-theme="light"] .feed-content {
+    color: #333;
+}
+
+.light-theme .feed-date,
+html[data-theme="light"] .feed-date,
+body[data-theme="light"] .feed-date {
+    color: #666;
+}
+
+.light-theme .action-btn,
+html[data-theme="light"] .action-btn,
+body[data-theme="light"] .action-btn {
+    color: #666;
+}
+
+.light-theme .action-btn:hover,
+html[data-theme="light"] .action-btn:hover,
+body[data-theme="light"] .action-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #000;
+}
+
+.light-theme .nuevo-comentario-modal,
+html[data-theme="light"] .nuevo-comentario-modal,
+body[data-theme="light"] .nuevo-comentario-modal {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const feedContainer = document.getElementById('feedContainer');
+    const feedItems = document.getElementById('feedItems');
+    const feedLoading = document.getElementById('feedLoading');
+    const feedEmpty = document.getElementById('feedEmpty');
+    const feedItemTemplate = document.getElementById('feedItemTemplate');
+    
+    // Simular carga de datos (reemplazar con llamada a la API real)
+    function loadFeed() {
+        showLoadingState();
+        
+        // Simular retraso de red
+        setTimeout(() => {
+            // Datos de ejemplo (reemplazar con datos reales de la API)
+            const exampleData = [
+                {
+                    id: 1,
+                    userName: 'María García',
+                    userInitials: 'MG',
+                    userAvatar: '',
+                    date: 'Hace 2 horas',
+                    content: 'He actualizado el estado del proyecto a "En progreso". Vamos por buen camino con las tareas pendientes.'
+                },
+                {
+                    id: 2,
+                    userName: 'Carlos López',
+                    userInitials: 'CL',
+                    userAvatar: '',
+                    date: 'Ayer',
+                    content: 'Reunión con el cliente programada para el próximo lunes a las 10:00 AM. Por favor, confirmen su asistencia.'
+                },
+                {
+                    id: 3,
+                    userName: 'Ana Martínez',
+                    userInitials: 'AM',
+                    userAvatar: '',
+                    date: 'Ayer',
+                    content: 'He subido los nuevos diseños de la interfaz al repositorio. Por favor, revisen y envíen sus comentarios.'
+                }
+            ];
+            
+            displayFeed(exampleData);
+        }, 1000);
+    }
+    
+    function displayFeed(items) {
+        // Limpiar contenedor
+        feedItems.innerHTML = '';
+        
+        if (items.length === 0) {
+            showEmptyState();
+            return;
+        }
+        
+        // Ocultar estados de carga/vacío
+        feedLoading.style.display = 'none';
+        feedEmpty.style.display = 'none';
+        
+        // Agregar cada elemento al feed
+        items.forEach(item => {
+            const feedItem = createFeedItem(item);
+            feedItems.appendChild(feedItem);
+        });
+    }
+    
+    function createFeedItem(data) {
+        const template = document.importNode(feedItemTemplate.content, true);
+        const feedItem = template.querySelector('.feed-item');
+        
+        // Configurar avatar
+        const avatarImg = feedItem.querySelector('.user-avatar');
+        const avatarFallback = feedItem.querySelector('.avatar-fallback');
+        
+        if (data.userAvatar) {
+            avatarImg.src = data.userAvatar;
+            avatarImg.alt = data.userName;
+        } else {
+            avatarFallback.textContent = data.userInitials;
+        }
+        
+        // Configurar nombre de usuario y fecha
+        feedItem.querySelector('.user-name').textContent = data.userName;
+        feedItem.querySelector('.feed-date').textContent = data.date;
+        
+        // Configurar contenido
+        feedItem.querySelector('.feed-content').textContent = data.content;
+        
+        return feedItem;
+    }
+    
+    function showLoadingState() {
+        feedLoading.style.display = 'flex';
+        feedEmpty.style.display = 'none';
+        feedItems.innerHTML = '';
+    }
+    
+    function showEmptyState() {
+        feedLoading.style.display = 'none';
+        feedEmpty.style.display = 'block';
+        feedItems.innerHTML = '';
+    }
+    
+    // Inicializar el feed
+    loadFeed();
+    
+    // Configurar el botón de publicar
+    const publishButton = document.querySelector('.nuevo-comentario-modal button[type="button"]');
+    const commentTextarea = document.getElementById('nuevoComentario');
+    
+    if (publishButton && commentTextarea) {
+        publishButton.addEventListener('click', function() {
+            const content = commentTextarea.value.trim();
+            if (content) {
+                // Aquí iría la lógica para publicar el comentario
+                console.log('Publicando comentario:', content);
+                
+                // Limpiar el área de texto
+                commentTextarea.value = '';
+                
+                // Mostrar mensaje de éxito
+                alert('¡Tu publicación ha sido compartida!');
+                
+                // Recargar el feed
+                loadFeed();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

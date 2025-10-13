@@ -2058,7 +2058,6 @@ function generarReporteCSV() {
     const cliente = clienteSelect.getValue();
     const empleado = empleadoSelect.getValue();
     const mesCierre = document.getElementById('filterMesCierre').value.trim();
-    const area = document.getElementById('filterArea').value.trim();
     const ordenMonto = document.getElementById('filterOrdenMonto').value;
     const ordenProbabilidad = document.getElementById('filterOrdenProbabilidad').value;
 
@@ -2069,7 +2068,6 @@ function generarReporteCSV() {
     if (cliente) url.searchParams.set('filterCliente', cliente);
     if (empleado) url.searchParams.set('empleado', empleado);
     if (mesCierre) url.searchParams.set('filterMesCierre', mesCierre);
-    if (area) url.searchParams.set('filterArea', area);
     if (ordenMonto) url.searchParams.set('orden_monto', ordenMonto);
     if (ordenProbabilidad) url.searchParams.set('orden_probabilidad', ordenProbabilidad);
 
@@ -2140,7 +2138,6 @@ function clearFilters() {
     clienteSelect.clear();
     empleadoSelect.clear();
     document.getElementById('filterMesCierre').value = '';
-    document.getElementById('filterArea').value = '';
     document.getElementById('filterOrdenMonto').value = '';
     document.getElementById('filterOrdenProbabilidad').value = '';
     
@@ -2167,7 +2164,6 @@ function applyFilters() {
     const cliente = clienteSelect.getValue().toLowerCase().trim();
     const empleado = empleadoSelect.getValue();
     const mesCierre = document.getElementById('filterMesCierre').value.toLowerCase().trim();
-    const area = document.getElementById('filterArea').value.toLowerCase().trim();
     const ordenMonto = document.getElementById('filterOrdenMonto').value;
     const ordenProbabilidad = document.getElementById('filterOrdenProbabilidad').value;
     
@@ -2198,11 +2194,6 @@ function applyFilters() {
         
         const mesCierreCell = cells[4].textContent.toLowerCase().trim();
         if (mesCierre && monthMap[mesCierreCell] !== mesCierre) {
-            showRow = false;
-        }
-
-        const rowArea = row.dataset.area.toLowerCase();
-        if (area && rowArea !== area) {
             showRow = false;
         }
 
