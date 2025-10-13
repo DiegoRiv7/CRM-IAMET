@@ -3604,45 +3604,59 @@ window.addEventListener('error', function(e) {
             // Get all dock items in the active dock
             const dockItems = activeDock.querySelectorAll('.dock-item');
             
-            // Instead of cloning, we'll use event delegation
-            // Remove any existing dock click handlers
-            if (activeDock._dockClickHandler) {
-                activeDock.removeEventListener('click', activeDock._dockClickHandler, true);
-            }
-            
-            // Create a new click handler using event delegation
-            activeDock._dockClickHandler = function(e) {
-                // Find the closest dock item
-                const dockItem = e.target.closest('.dock-item');
-                if (!dockItem) return;
-                
-                console.log('Dock item clicked:', dockItem);
-                
-                // For compact dock, handle the special click behavior
-                if (activeDock.classList.contains('dock-compact') && dockItem.classList.contains('home-icon')) {
-                    if (!activeDock.classList.contains('expanded')) {
-                        // First click: expand dock, prevent navigation
-                        e.preventDefault();
-                        e.stopPropagation();
-                        activeDock.classList.add('expanded');
-                        console.log('Dock expanded');
-                        return false;
-                    } else {
-                        // Second click: allow navigation and collapse after
-                        console.log('Dock will navigate and collapse');
-                        setTimeout(() => {
-                            activeDock.classList.remove('expanded');
-                        }, 150);
-                    }
-                }
-                // For all other items, allow normal navigation
-            };
-            
-            // Add the click handler to the dock
-            activeDock.addEventListener('click', activeDock._dockClickHandler, true);
-            
-            // Handle hover events for tooltips
+            // For each dock item, ensure the href is working
             dockItems.forEach(item => {
+                // Get the original href
+                const originalHref = item.getAttribute('data-href') || item.href;
+                
+                // Store the original href as a data attribute if not already stored
+                if (!item.getAttribute('data-href') && originalHref) {
+                    item.setAttribute('data-href', originalHref);
+                }
+                
+                // Remove any existing click handlers
+                if (item._clickHandler) {
+                    item.removeEventListener('click', item._clickHandler);
+                }
+                
+                // Create a new click handler
+                item._clickHandler = function(e) {
+                    console.log('Dock item clicked:', this);
+                    
+                    // For compact dock, handle the special click behavior
+                    if (activeDock.classList.contains('dock-compact') && this.classList.contains('home-icon')) {
+                        if (!activeDock.classList.contains('expanded')) {
+                            // First click: expand dock, prevent navigation
+                            e.preventDefault();
+                            e.stopPropagation();
+                            activeDock.classList.add('expanded');
+                            console.log('Dock expanded');
+                            return false;
+                        } else {
+                            // Second click: allow navigation and collapse after
+                            console.log('Dock will navigate and collapse');
+                            setTimeout(() => {
+                                activeDock.classList.remove('expanded');
+                            }, 150);
+                            
+                            // Manually navigate to the href
+                            const href = this.getAttribute('data-href') || this.href;
+                            if (href) {
+                                window.location.href = href;
+                            }
+                        }
+                    } else {
+                        // For all other items, navigate to the href
+                        const href = this.getAttribute('data-href') || this.href;
+                        if (href) {
+                            window.location.href = href;
+                        }
+                    }
+                };
+                
+                // Add the click handler to the item
+                item.addEventListener('click', item._clickHandler);
+                
                 // Remove existing hover listeners if any
                 if (item._hoverHandlers) {
                     item.removeEventListener('mouseenter', item._hoverHandlers.enter);
