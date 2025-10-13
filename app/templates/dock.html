@@ -3599,59 +3599,85 @@ window.addEventListener('error', function(e) {
             const activeDock = document.getElementById(`dock-${position}`);
             if (!activeDock) return;
             
+            console.log('Reattaching event listeners for dock:', position);
+            
             // Get all dock items in the active dock
             const dockItems = activeDock.querySelectorAll('.dock-item');
             
-            // Reattach click event listeners to dock items
+            // Instead of cloning, we'll use event delegation
+            // Remove any existing dock click handlers
+            if (activeDock._dockClickHandler) {
+                activeDock.removeEventListener('click', activeDock._dockClickHandler, true);
+            }
+            
+            // Create a new click handler using event delegation
+            activeDock._dockClickHandler = function(e) {
+                // Find the closest dock item
+                const dockItem = e.target.closest('.dock-item');
+                if (!dockItem) return;
+                
+                console.log('Dock item clicked:', dockItem);
+                
+                // For compact dock, handle the special click behavior
+                if (activeDock.classList.contains('dock-compact') && dockItem.classList.contains('home-icon')) {
+                    if (!activeDock.classList.contains('expanded')) {
+                        // First click: expand dock, prevent navigation
+                        e.preventDefault();
+                        e.stopPropagation();
+                        activeDock.classList.add('expanded');
+                        console.log('Dock expanded');
+                        return false;
+                    } else {
+                        // Second click: allow navigation and collapse after
+                        console.log('Dock will navigate and collapse');
+                        setTimeout(() => {
+                            activeDock.classList.remove('expanded');
+                        }, 150);
+                    }
+                }
+                // For all other items, allow normal navigation
+            };
+            
+            // Add the click handler to the dock
+            activeDock.addEventListener('click', activeDock._dockClickHandler, true);
+            
+            // Handle hover events for tooltips
             dockItems.forEach(item => {
-                // Clone the node to remove all event listeners
-                const newItem = item.cloneNode(true);
+                // Remove existing hover listeners if any
+                if (item._hoverHandlers) {
+                    item.removeEventListener('mouseenter', item._hoverHandlers.enter);
+                    item.removeEventListener('mouseleave', item._hoverHandlers.leave);
+                }
                 
-                // Replace the original item with the clone
-                item.parentNode.replaceChild(newItem, item);
-                
-                // Reattach the click event listener
-                newItem.addEventListener('click', function(e) {
-                    // For compact dock, handle the special click behavior
-                    if (activeDock.classList.contains('dock-compact') && newItem.classList.contains('home-icon')) {
-                        if (!activeDock.classList.contains('expanded')) {
-                            // First click: expand dock, prevent navigation
-                            e.preventDefault();
-                            e.stopPropagation();
-                            activeDock.classList.add('expanded');
-                            return false;
-                        } else {
-                            // Second click: allow navigation and collapse after
-                            setTimeout(() => {
-                                activeDock.classList.remove('expanded');
-                            }, 150);
+                // Create new hover handlers
+                item._hoverHandlers = {
+                    enter: function() {
+                        const tooltip = this.querySelector('.tooltip');
+                        if (tooltip) {
+                            tooltip.style.opacity = '1';
+                            tooltip.style.visibility = 'visible';
+                        }
+                    },
+                    leave: function() {
+                        const tooltip = this.querySelector('.tooltip');
+                        if (tooltip) {
+                            tooltip.style.opacity = '0';
+                            tooltip.style.visibility = 'hidden';
                         }
                     }
-                    // For all other items, allow normal navigation
-                });
+                };
                 
-                // Reattach hover event listeners for tooltips
-                newItem.addEventListener('mouseenter', function() {
-                    const tooltip = this.querySelector('.tooltip');
-                    if (tooltip) {
-                        tooltip.style.opacity = '1';
-                        tooltip.style.visibility = 'visible';
-                    }
-                });
-                
-                newItem.addEventListener('mouseleave', function() {
-                    const tooltip = this.querySelector('.tooltip');
-                    if (tooltip) {
-                        tooltip.style.opacity = '0';
-                        tooltip.style.visibility = 'hidden';
-                    }
-                });
+                // Add the new hover listeners
+                item.addEventListener('mouseenter', item._hoverHandlers.enter);
+                item.addEventListener('mouseleave', item._hoverHandlers.leave);
             });
             
             // Reattach compact dock functionality if needed
             if (activeDock.classList.contains('dock-compact')) {
                 setupCompactDockFunctionality();
             }
+            
+            console.log('Event listeners reattached successfully');
         }
         
         // Make reattachDockEventListeners globally available
@@ -4160,36 +4186,34 @@ const originalSetDockPosition = window.setDockPosition || (typeof setDockPositio
 window.setDockPosition = function(position) {
     console.log('setDockPosition called with:', position);
     
-    // Aplicar cambios CSS con máxima especificidad para efecto inmediato
-    const existingStyle = document.getElementById('dock-position-style');
-    const initialStyle = document.getElementById('initial-dock-position-style');
+    // Get all dock elements
+    const allDocks = [
+        document.getElementById('dock-left'),
+        document.getElementById('dock-right'),
+        document.getElementById('dock-top'),
+        document.getElementById('dock-bottom')
+    ];
     
-    if (existingStyle) {
-        existingStyle.remove();
-    }
-    if (initialStyle) {
-        initialStyle.remove();
-    }
-    
-    // Crear nuevo estilo con alta especificidad
-    const style = document.createElement('style');
-    style.id = 'dock-position-style';
-    style.textContent = `
-        nav.macos-dock#dock-left,
-        nav.macos-dock#dock-right,
-        nav.macos-dock#dock-top,
-        nav.macos-dock#dock-bottom {
-            opacity: 0 !important;
-            visibility: hidden !important;
-            display: none !important;
+    // Hide all docks except the selected one without removing them from DOM
+    allDocks.forEach(dock => {
+        if (dock) {
+            if (dock.id === `dock-${position}`) {
+                // Show the selected dock
+                dock.style.opacity = '1';
+                dock.style.visibility = 'visible';
+                dock.style.display = 'flex';
+                dock.style.pointerEvents = 'auto';
+                dock.style.zIndex = '1500';
+            } else {
+                // Hide other docks
+                dock.style.opacity = '0';
+                dock.style.visibility = 'hidden';
+                dock.style.display = 'none';
+                dock.style.pointerEvents = 'none';
+                dock.style.zIndex = '-1';
+            }
         }
-        nav.macos-dock#dock-${position} {
-            opacity: 1 !important;
-            visibility: visible !important;
-            display: flex !important;
-        }
-    `;
-    document.head.appendChild(style);
+    });
     
     // Llamar a la función original si existe
     if (typeof originalSetDockPosition === 'function') {
@@ -4230,15 +4254,6 @@ window.setDockPosition = function(position) {
     if (activeArrow) {
         activeArrow.classList.add('active');
     }
-    
-    // Reattach event listeners after position change
-    setTimeout(() => {
-        if (typeof reattachDockEventListeners === 'function') {
-            reattachDockEventListeners(position);
-        } else {
-            console.log('reattachDockEventListeners function not found');
-        }
-    }, 100);
     
     // Save preference to localStorage
     window.saveDockPosition(position);
