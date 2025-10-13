@@ -2406,8 +2406,41 @@
                         </div>
                     </div>
 
-                    <!-- Iconos del Dock -->
+                    <!-- Posición del Dock -->
                     <div style="margin-bottom: 30px;">
+                        <h4 style="color: var(--apple-label); font-size: 16px; margin-bottom: 15px;">
+                            <i class="fas fa-arrows-alt" style="margin-right: 8px;"></i> Posición del Dock
+                        </h4>
+                        <div class="dock-options">
+                            <div class="dock-option" data-position="bottom" onclick="setDockPosition('bottom')">
+                                <div class="dock-preview bottom">
+                                    <div class="preview-dock bottom"></div>
+                                </div>
+                                <span>Inferior</span>
+                            </div>
+                            <div class="dock-option" data-position="top" onclick="setDockPosition('top')">
+                                <div class="dock-preview top">
+                                    <div class="preview-dock top"></div>
+                                </div>
+                                <span>Superior</span>
+                            </div>
+                            <div class="dock-option" data-position="left" onclick="setDockPosition('left')">
+                                <div class="dock-preview left">
+                                    <div class="preview-dock left"></div>
+                                </div>
+                                <span>Izquierda</span>
+                            </div>
+                            <div class="dock-option" data-position="right" onclick="setDockPosition('right')">
+                                <div class="dock-preview right">
+                                    <div class="preview-dock right"></div>
+                                </div>
+                                <span>Derecha</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Iconos del Dock -->
+                    <div style="margin-bottom: 20px;">
                         <h4 style="color: var(--apple-label); font-size: 16px; margin-bottom: 15px;">
                             <i class="fas fa-icons" style="margin-right: 8px;"></i> Iconos del Dock
                         </h4>
@@ -2432,39 +2465,6 @@
                                     <i class="fas fa-check"></i> Confirmar
                                 </button>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Posición del Dock -->
-                    <div style="margin-bottom: 20px;">
-                        <h4 style="color: var(--apple-label); font-size: 16px; margin-bottom: 15px;">
-                            <i class="fas fa-arrows-alt" style="margin-right: 8px;"></i> Posición del Dock
-                        </h4>
-                    </div>
-                    <div class="dock-options">
-                        <div class="dock-option" data-position="bottom" onclick="setDockPosition('bottom')">
-                            <div class="dock-preview bottom">
-                                <div class="preview-dock bottom"></div>
-                            </div>
-                            <span>Inferior</span>
-                        </div>
-                        <div class="dock-option" data-position="top" onclick="setDockPosition('top')">
-                            <div class="dock-preview top">
-                                <div class="preview-dock top"></div>
-                            </div>
-                            <span>Superior</span>
-                        </div>
-                        <div class="dock-option" data-position="left" onclick="setDockPosition('left')">
-                            <div class="dock-preview left">
-                                <div class="preview-dock left"></div>
-                            </div>
-                            <span>Izquierda</span>
-                        </div>
-                        <div class="dock-option" data-position="right" onclick="setDockPosition('right')">
-                            <div class="dock-preview right">
-                                <div class="preview-dock right"></div>
-                            </div>
-                            <span>Derecha</span>
                         </div>
                     </div>
                 </div>
