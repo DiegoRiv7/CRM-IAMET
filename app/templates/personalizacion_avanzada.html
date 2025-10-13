@@ -731,14 +731,14 @@
             position: absolute;
             width: 6px;
             height: 6px;
-            background: var(--apple-blue);
+            background: #FFFFFF;
             border-radius: 50%;
             left: 8px;
             box-shadow:
-                12px 0 0 #5AC8FA,
-                24px 0 0 #FF6B9D,
-                36px 0 0 #34C759,
-                48px 0 0 #FF9500;
+                12px 0 0 #FFFFFF,
+                24px 0 0 #FFFFFF,
+                36px 0 0 #FFFFFF,
+                48px 0 0 #FFFFFF;
         }
         
         /* Vista previa del dock transparente */
@@ -796,14 +796,14 @@
             position: absolute;
             width: 6px;
             height: 6px;
-            background: rgba(0, 122, 255, 0.7);
+            background: rgba(255, 255, 255, 0.8);
             border-radius: 50%;
             left: 8px;
             box-shadow:
-                12px 0 0 rgba(90, 200, 250, 0.7),
-                24px 0 0 rgba(255, 107, 157, 0.7),
-                36px 0 0 rgba(52, 199, 89, 0.7),
-                48px 0 0 rgba(255, 149, 0, 0.7);
+                12px 0 0 rgba(255, 255, 255, 0.8),
+                24px 0 0 rgba(255, 255, 255, 0.8),
+                36px 0 0 rgba(255, 255, 255, 0.8),
+                48px 0 0 rgba(255, 255, 255, 0.8);
             z-index: 1;
         }
         
@@ -815,12 +815,12 @@
         }
         
         .dock-type-option:hover .preview-type.transparent::after {
-            background: rgba(0, 122, 255, 0.9);
+            background: rgba(255, 255, 255, 0.9);
             box-shadow:
-                12px 0 0 rgba(90, 200, 250, 0.9),
-                24px 0 0 rgba(255, 107, 157, 0.9),
-                36px 0 0 rgba(52, 199, 89, 0.9),
-                48px 0 0 rgba(255, 149, 0, 0.9);
+                12px 0 0 rgba(255, 255, 255, 0.9),
+                24px 0 0 rgba(255, 255, 255, 0.9),
+                36px 0 0 rgba(255, 255, 255, 0.9),
+                48px 0 0 rgba(255, 255, 255, 0.9);
         }
         
         /* Vista previa del dock compacto */
@@ -849,9 +849,8 @@
             content: '';
             width: 10px;
             height: 10px;
-            background: var(--apple-blue);
-            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'/%3E%3C/svg%3E") center/contain no-repeat;
-            -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'/%3E%3C/svg%3E") center/contain no-repeat;
+            background: #FFFFFF;
+            border-radius: 50%;
         }
         
         .dock-type-option:hover .preview-type.compact {
@@ -861,53 +860,8 @@
                 inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
         
-        /* Efecto de expansión para el dock compacto */
-        .preview-type.compact::after {
-            content: '';
-            position: absolute;
-            width: 60px;
-            height: 12px;
-            background: rgba(29, 29, 31, 0.9);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 8px;
-            opacity: 0;
-            transform: scale(0.8) translateY(5px);
-            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            bottom: -8px;
-            z-index: -1;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-        }
-        
-        /* Iconos del dock expandido */
-        .preview-type.compact::after::before {
-            content: '';
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            background: var(--apple-blue);
-            border-radius: 50%;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            box-shadow:
-                8px 0 0 #5AC8FA,
-                16px 0 0 #FF6B9D,
-                24px 0 0 #34C759,
-                32px 0 0 #FF9500;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        }
-        
-        .dock-type-option:hover .preview-type.compact::after {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-        }
-        
-        .dock-type-option:hover .preview-type.compact::after::before {
-            opacity: 0.8;
-        }
+        /* Eliminado el efecto de expansión para el dock compacto */
+        /* Solo se mantiene la bolita blanca */
 
         /* Dock Icons Options Styles */
         .dock-icons-options {

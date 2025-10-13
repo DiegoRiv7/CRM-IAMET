@@ -249,4 +249,7 @@ urlpatterns = [
     
     # API para actualizar avatar de usuario
     path('api/actualizar-avatar/', views.actualizar_avatar, name='actualizar_avatar'),
+    
+    # Feed de actividad
+    path('feed/', views.feed, name='feed'),
 ]

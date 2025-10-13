@@ -369,6 +369,30 @@ def bienvenida(request):
 
 
 @login_required
+def feed(request):
+    """
+    Vista para el feed de actividad que muestra las actualizaciones recientes
+    y publicaciones de los usuarios.
+    """
+    try:
+        # Obtener el perfil del usuario actual
+        user_profile = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        # Si no existe, crear uno con valores predeterminados
+        user_profile = UserProfile.objects.create(
+            user=request.user,
+            language='es',
+            avatar_tipo='dinosaur'
+        )
+    
+    context = {
+        'user_profile': user_profile,
+    }
+    
+    return render(request, 'feed.html', context)
+
+
+@login_required
 def tareas_proyectos(request):
     """
     Vista para la sección de Tareas y Proyectos (solo superusuarios)
