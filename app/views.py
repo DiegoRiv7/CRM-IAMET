@@ -1669,8 +1669,7 @@ def todos (request):
         area = filter_form.cleaned_data.get('area')
         producto = filter_form.cleaned_data.get('producto')
         orden_monto = filter_form.cleaned_data.get('orden_monto')
-        probabilidad_min = filter_form.cleaned_data.get('probabilidad_min')
-        probabilidad_max = filter_form.cleaned_data.get('probabilidad_max')
+        empleado = filter_form.cleaned_data.get('empleado')
         mes_cierre = filter_form.cleaned_data.get('mes_cierre')
 
         if area:
@@ -1678,10 +1677,8 @@ def todos (request):
         if producto:
             # Modificación aquí: hacer la búsqueda del producto insensible a mayúsculas/minúsculas
             items = items.filter(producto__iexact=producto) # Usa icontains o iexact para insensibilidad
-        if probabilidad_min is not None:
-            items = items.filter(probabilidad_cierre__gte=probabilidad_min)
-        if probabilidad_max is not None:
-            items = items.filter(probabilidad_cierre__lte=probabilidad_max)
+        if empleado:
+            items = items.filter(usuario=empleado)
         if mes_cierre:
             items = items.filter(mes_cierre=mes_cierre)
 
@@ -2380,16 +2377,9 @@ def exportar_oportunidades_csv(request):
     if cliente_filter:
         items = items.filter(cliente__nombre_empresa__icontains=cliente_filter)
 
-    try:
-        monto_min = request.GET.get('filterMontoMin')
-        if monto_min:
-            items = items.filter(monto__gte=Decimal(monto_min))
-
-        monto_max = request.GET.get('filterMontoMax')
-        if monto_max:
-            items = items.filter(monto__lte=Decimal(monto_max))
-    except (ValueError, TypeError, decimal.InvalidOperation):
-        pass
+    empleado_filter = request.GET.get('empleado', '').strip()
+    if empleado_filter:
+        items = items.filter(usuario__id=empleado_filter)
 
     mes_cierre_filter = request.GET.get('filterMesCierre', '').strip()
     if mes_cierre_filter:
@@ -2438,13 +2428,13 @@ def exportar_oportunidades_csv(request):
         ws['A3'] = "Filtros aplicados:"
         ws['A3'].font = bold_font
         
-        monto_min = request.GET.get('filterMontoMin')
-        monto_max = request.GET.get('filterMontoMax')
-
         filters_applied = []
-        if monto_min or monto_max:
-            monto_str = f"Monto: {monto_min or 'N/A'} - {monto_max or 'N/A'}"
-            filters_applied.append(monto_str)
+        if empleado_filter:
+            try:
+                empleado = User.objects.get(id=empleado_filter)
+                filters_applied.append(f"Empleado: {empleado.get_full_name() or empleado.username}")
+            except User.DoesNotExist:
+                pass
         if area_filter:
             filters_applied.append(f"Área: {area_filter}")
         if mes_cierre_filter:

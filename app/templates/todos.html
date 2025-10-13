@@ -1851,13 +1851,9 @@
                                                     </select>
                                                 </div>
                                                 <div class="filter-group">
-                                                    <label class="filter-label">Monto Mínimo</label>
-                                                    <input type="number" class="filter-input" id="filterMontoMin" placeholder="Monto min">
+                                                    <label class="filter-label">Empleado</label>
+                                                    {{ filter_form.empleado }}
                                                 </div>
-                                                                    <div class="filter-group">
-                                                                        <label class="filter-label">Monto Máximo</label>
-                                                                        <input type="number" class="filter-input" id="filterMontoMax" placeholder="Monto max">
-                                                                    </div>
                                                                                                                                                             <div class="filter-group">
                                                                                             <label class="filter-label">Ordenar por Monto</label>
                                                                                             <select class="filter-input" id="filterOrdenMonto">
@@ -1926,7 +1922,7 @@
                 </thead>
                 <tbody id="tablaOportunidades">
                     {% for item in items %}
-                    <tr data-area="{{ item.area }}">
+                    <tr data-area="{{ item.area }}" data-usuario-id="{{ item.usuario.id }}">
                         <td data-label="Oportunidad">
                             <a href="{% url 'cotizaciones_por_oportunidad' item.id %}" class="font-semibold text-blue-400 hover:underline">
                                 {{ item.oportunidad }}
@@ -2012,8 +2008,7 @@
 function generarReporteCSV() {
     const oportunidad = document.getElementById('filterOportunidad').value.trim();
     const cliente = document.getElementById('filterCliente').value.trim();
-    const montoMin = document.getElementById('filterMontoMin').value;
-    const montoMax = document.getElementById('filterMontoMax').value;
+    const empleado = document.getElementById('id_empleado').value;
     const mesCierre = document.getElementById('filterMesCierre').value.trim();
     const area = document.getElementById('filterArea').value.trim();
     const ordenMonto = document.getElementById('filterOrdenMonto').value;
@@ -2022,8 +2017,7 @@ function generarReporteCSV() {
     const url = new URL('{% url 'exportar_oportunidades_csv' %}', window.location.origin);
     if (oportunidad) url.searchParams.set('filterOportunidad', oportunidad);
     if (cliente) url.searchParams.set('filterCliente', cliente);
-    if (montoMin) url.searchParams.set('filterMontoMin', montoMin);
-    if (montoMax) url.searchParams.set('filterMontoMax', montoMax);
+    if (empleado) url.searchParams.set('empleado', empleado);
     if (mesCierre) url.searchParams.set('filterMesCierre', mesCierre);
     if (area) url.searchParams.set('filterArea', area);
     if (ordenMonto) url.searchParams.set('orden_monto', ordenMonto);
@@ -2094,8 +2088,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function clearFilters() {
     document.getElementById('filterOportunidad').value = '';
     document.getElementById('filterCliente').value = '';
-    document.getElementById('filterMontoMin').value = '';
-    document.getElementById('filterMontoMax').value = '';
+    document.getElementById('id_empleado').value = '';
     document.getElementById('filterMesCierre').value = '';
     document.getElementById('filterArea').value = '';
     document.getElementById('filterOrdenMonto').value = '';
@@ -2122,10 +2115,7 @@ function applyFilters() {
 
     const oportunidad = document.getElementById('filterOportunidad').value.toLowerCase().trim();
     const cliente = document.getElementById('filterCliente').value.toLowerCase().trim();
-    const montoMin = parseFloat(document.getElementById('filterMontoMin').value) || 0;
-    const montoMax = parseFloat(document.getElementById('filterMontoMax').value) || Infinity;
-    const probMin = 0;
-    const probMax = 100;
+    const empleado = document.getElementById('id_empleado').value;
     const mesCierre = document.getElementById('filterMesCierre').value.toLowerCase().trim();
     const area = document.getElementById('filterArea').value.toLowerCase().trim();
     const ordenMonto = document.getElementById('filterOrdenMonto').value;
@@ -2152,18 +2142,8 @@ function applyFilters() {
             showRow = false;
         }
         
-        const montoText = cells[2].textContent.replace('$', '').replace(/,/g, '');
-        const montoValue = parseFloat(montoText) || 0;
-        if (montoValue < montoMin || montoValue > montoMax) {
+        if (empleado && row.dataset.usuarioId !== empleado) {
             showRow = false;
-        }
-        
-        const probText = cells[3].querySelector('span');
-        if (probText) {
-            const probValue = parseFloat(probText.textContent.replace('%', '')) || 0;
-            if (probValue < probMin || probValue > probMax) {
-                showRow = false;
-            }
         }
         
         const mesCierreCell = cells[4].textContent.toLowerCase().trim();

@@ -194,8 +194,7 @@ class VentaFilterForm(forms.Form):
 
     area = forms.ChoiceField(choices=AREA_CHOICES, required=False, label="Filtrar por Área")
     producto = forms.ChoiceField(choices=PRODUCTO_CHOICES, required=False, label="Filtrar por Producto")
-    probabilidad_min = forms.IntegerField(required=False, label="Prob. Mínima (%)", min_value=0, max_value=100)
-    probabilidad_max = forms.IntegerField(required=False, label="Prob. Máxima (%)", min_value=0, max_value=100)
+    empleado = forms.ModelChoiceField(queryset=User.objects.all(), required=False, label="Filtrar por Empleado")
     mes_cierre = forms.ChoiceField(choices=MES_CHOICES, required=False, label="Filtrar por Mes de Cierre")
     orden_monto = forms.ChoiceField(
         choices=[
