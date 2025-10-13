@@ -829,9 +829,9 @@
             bottom: 12px;
             left: 50%;
             transform: translateX(-50%);
-            width: 24px;
-            height: 24px;
-            background: rgba(29, 29, 31, 0.9);
+            width: 32px;
+            height: 32px;
+            background: var(--apple-blue);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.15);
@@ -847,10 +847,9 @@
         
         .preview-type.compact::before {
             content: '';
-            width: 10px;
-            height: 10px;
-            background: #FFFFFF;
-            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'%3E%3C/path%3E%3Cpolyline points='9,22 9,12 15,12 15,22'%3E%3C/polyline%3E%3C/svg%3E") center/contain no-repeat;
         }
         
         .dock-type-option:hover .preview-type.compact {
@@ -861,7 +860,7 @@
         }
         
         /* Eliminado el efecto de expansión para el dock compacto */
-        /* Solo se mantiene la bolita blanca */
+        /* Solo se mantiene la bolita con icono de casa */
 
         /* Dock Icons Options Styles */
         .dock-icons-options {
