@@ -1230,7 +1230,7 @@
             overflow: hidden;
         }
         
-        /* Miniature page structure */
+        /* Miniature page structure simplificado */
         .mini-page {
             width: 100%;
             height: 100%;
@@ -1292,197 +1292,257 @@
         
         .mini-welcome {
             text-align: center;
-            margin-bottom: 4px;
+            margin-bottom: 8px;
         }
         
         .mini-avatar {
-            width: 24px;
-            height: 24px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
-            margin: 0 auto 4px;
-            border: 1px solid var(--apple-blue);
+            margin: 0 auto 10px;
+            border: 3px solid var(--apple-blue);
             background: var(--apple-background-secondary);
         }
         
         .mini-title {
-            font-size: 8px;
+            font-size: 16px;
             font-weight: 600;
-            margin-bottom: 2px;
+            margin-bottom: 5px;
             color: var(--apple-label);
         }
         
         .mini-subtitle {
-            font-size: 6px;
+            font-size: 12px;
             color: var(--apple-label-secondary);
-            margin-bottom: 6px;
+            margin-bottom: 20px;
         }
         
         .mini-search {
-            height: 12px;
-            border-radius: 6px;
+            height: 28px;
+            border-radius: 14px;
             background: var(--apple-background-secondary);
             border: 1px solid var(--apple-separator);
-            margin-bottom: 8px;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
-            padding: 0 6px;
+            padding: 0 14px;
         }
         
         .mini-search svg {
-            width: 6px;
-            height: 6px;
+            width: 14px;
+            height: 14px;
             color: var(--apple-gray);
         }
         
         .mini-cards {
             display: flex;
-            gap: 4px;
-            margin-bottom: 6px;
+            gap: 16px;
+            margin-bottom: 16px;
         }
         
         .mini-card {
             flex: 1;
-            height: 20px;
-            border-radius: 4px;
+            height: 54px;
+            border-radius: 10px;
             background: var(--apple-background-secondary);
             border: 1px solid var(--apple-separator);
-            padding: 2px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
         
         .mini-card-avatar {
-            width: 8px;
-            height: 8px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             background: var(--apple-background-tertiary);
-            margin-bottom: 2px;
+            margin-bottom: 8px;
         }
         
-        .mini-table {
-            width: 100%;
-            height: 16px;
-            border-radius: 4px;
-            background: var(--apple-background-secondary);
-            border: 1px solid var(--apple-separator);
-            overflow: hidden;
-        }
-        
-        .mini-table-row {
-            display: flex;
-            height: 6px;
-            border-bottom: 1px solid var(--apple-separator);
-        }
-        
-        .mini-table-cell {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 4px;
-            color: var(--apple-label-secondary);
-        }
-        
-        /* Theme specific miniature styles */
+        /* Theme specific miniature styles con colores fijos */
         .dark-theme .mini-page {
-            background: linear-gradient(135deg, #000000 0%, #1D1D1F 100%);
+            background: linear-gradient(135deg, #000000 0%, #1D1D1F 100%) !important;
         }
         
         .dark-theme .mini-page,
         .dark-theme .mini-header,
         .dark-theme .mini-content,
-        .dark-theme .mini-card,
-        .dark-theme .mini-table {
-            background: rgba(0, 0, 0, 0.8);
+        .dark-theme .mini-card {
+            background: rgba(0, 0, 0, 0.8) !important;
         }
         
         .dark-theme .mini-logo {
-            background: #007AFF;
+            background: #007AFF !important;
         }
         
-        .dark-theme .mini-title,
-        .dark-theme .mini-table-cell {
-            color: #FFFFFF;
+        .dark-theme .mini-title {
+            color: #FFFFFF !important;
         }
         
         .dark-theme .mini-subtitle {
-            color: #EBEBF5;
+            color: #EBEBF5 !important;
+        }
+        
+        .dark-theme .mini-avatar {
+            border-color: #007AFF !important;
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+        
+        .dark-theme .mini-search {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+        }
+        
+        .dark-theme .mini-card {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+        }
+        
+        .dark-theme .mini-card-avatar {
+            background: rgba(255, 255, 255, 0.2) !important;
+        }
+        
+        .dark-theme .mini-search svg {
+            color: rgba(255, 255, 255, 0.7) !important;
         }
         
         .pink-theme .mini-page {
-            background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%);
+            background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%) !important;
         }
         
         .pink-theme .mini-page,
         .pink-theme .mini-header,
         .pink-theme .mini-content,
-        .pink-theme .mini-card,
-        .pink-theme .mini-table {
-            background: rgba(255, 245, 248, 0.9);
+        .pink-theme .mini-card {
+            background: rgba(255, 245, 248, 0.9) !important;
         }
         
         .pink-theme .mini-logo {
-            background: #FF6B9D;
+            background: #FF6B9D !important;
         }
         
-        .pink-theme .mini-title,
-        .pink-theme .mini-table-cell {
-            color: #2D1B2E;
+        .pink-theme .mini-title {
+            color: #2D1B2E !important;
         }
         
         .pink-theme .mini-subtitle {
-            color: #4A2B4D;
+            color: #4A2B4D !important;
+        }
+        
+        .pink-theme .mini-avatar {
+            border-color: #FF6B9D !important;
+            background: rgba(255, 107, 157, 0.1) !important;
+        }
+        
+        .pink-theme .mini-search {
+            background: rgba(255, 255, 255, 0.7) !important;
+            border-color: rgba(255, 107, 157, 0.3) !important;
+        }
+        
+        .pink-theme .mini-card {
+            background: rgba(255, 255, 255, 0.7) !important;
+            border-color: rgba(255, 107, 157, 0.3) !important;
+        }
+        
+        .pink-theme .mini-card-avatar {
+            background: rgba(255, 107, 157, 0.2) !important;
+        }
+        
+        .pink-theme .mini-search svg {
+            color: rgba(255, 107, 157, 0.7) !important;
         }
         
         .white-theme .mini-page {
-            background: #ffffff;
+            background: #ffffff !important;
         }
         
         .white-theme .mini-page,
         .white-theme .mini-header,
         .white-theme .mini-content,
-        .white-theme .mini-card,
-        .white-theme .mini-table {
-            background: rgba(255, 255, 255, 0.9);
+        .white-theme .mini-card {
+            background: rgba(255, 255, 255, 0.9) !important;
         }
         
         .white-theme .mini-logo {
-            background: #007bff;
+            background: #007bff !important;
         }
         
-        .white-theme .mini-title,
-        .white-theme .mini-table-cell {
-            color: #212529;
+        .white-theme .mini-title {
+            color: #212529 !important;
         }
         
         .white-theme .mini-subtitle {
-            color: #343a40;
+            color: #343a40 !important;
+        }
+        
+        .white-theme .mini-avatar {
+            border-color: #007bff !important;
+            background: rgba(0, 123, 255, 0.1) !important;
+        }
+        
+        .white-theme .mini-search {
+            background: rgba(0, 0, 0, 0.05) !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        .white-theme .mini-card {
+            background: rgba(0, 0, 0, 0.05) !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        .white-theme .mini-card-avatar {
+            background: rgba(0, 123, 255, 0.2) !important;
+        }
+        
+        .white-theme .mini-search svg {
+            color: rgba(0, 0, 0, 0.5) !important;
         }
         
         .coffee-theme .mini-page {
-            background: linear-gradient(135deg, #f5e6d3 0%, #f0dcc7 100%);
+            background: linear-gradient(135deg, #f5e6d3 0%, #f0dcc7 100%) !important;
         }
         
         .coffee-theme .mini-page,
         .coffee-theme .mini-header,
         .coffee-theme .mini-content,
-        .coffee-theme .mini-card,
-        .coffee-theme .mini-table {
-            background: rgba(245, 230, 211, 0.9);
+        .coffee-theme .mini-card {
+            background: rgba(245, 230, 211, 0.9) !important;
         }
         
         .coffee-theme .mini-logo {
-            background: #8b6239;
+            background: #8b6239 !important;
         }
         
-        .coffee-theme .mini-title,
-        .coffee-theme .mini-table-cell {
-            color: #4a3020;
+        .coffee-theme .mini-title {
+            color: #4a3020 !important;
         }
         
         .coffee-theme .mini-subtitle {
-            color: #5d3d2a;
+            color: #5d3d2a !important;
+        }
+        
+        .coffee-theme .mini-avatar {
+            border-color: #8b6239 !important;
+            background: rgba(139, 69, 19, 0.1) !important;
+        }
+        
+        .coffee-theme .mini-search {
+            background: rgba(139, 69, 19, 0.1) !important;
+            border-color: rgba(139, 69, 19, 0.2) !important;
+        }
+        
+        .coffee-theme .mini-card {
+            background: rgba(139, 69, 19, 0.1) !important;
+            border-color: rgba(139, 69, 19, 0.2) !important;
+        }
+        
+        .coffee-theme .mini-card-avatar {
+            background: rgba(139, 69, 19, 0.2) !important;
+        }
+        
+        .coffee-theme .mini-search svg {
+            color: rgba(139, 69, 19, 0.7) !important;
         }
         
         /* Language Modal Styles */
@@ -2114,16 +2174,6 @@
                                                 <div class="mini-card-avatar"></div>
                                             </div>
                                         </div>
-                                        <div class="mini-table">
-                                            <div class="mini-table-row">
-                                                <div class="mini-table-cell">Proyecto A</div>
-                                                <div class="mini-table-cell">$5,000</div>
-                                            </div>
-                                            <div class="mini-table-row">
-                                                <div class="mini-table-cell">Proyecto B</div>
-                                                <div class="mini-table-cell">$3,500</div>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2163,16 +2213,6 @@
                                             </div>
                                             <div class="mini-card">
                                                 <div class="mini-card-avatar"></div>
-                                            </div>
-                                        </div>
-                                        <div class="mini-table">
-                                            <div class="mini-table-row">
-                                                <div class="mini-table-cell">Proyecto A</div>
-                                                <div class="mini-table-cell">$5,000</div>
-                                            </div>
-                                            <div class="mini-table-row">
-                                                <div class="mini-table-cell">Proyecto B</div>
-                                                <div class="mini-table-cell">$3,500</div>
                                             </div>
                                         </div>
                                     </div>
@@ -2216,16 +2256,6 @@
                                                 <div class="mini-card-avatar"></div>
                                             </div>
                                         </div>
-                                        <div class="mini-table">
-                                            <div class="mini-table-row">
-                                                <div class="mini-table-cell">Proyecto A</div>
-                                                <div class="mini-table-cell">$5,000</div>
-                                            </div>
-                                            <div class="mini-table-row">
-                                                <div class="mini-table-cell">Proyecto B</div>
-                                                <div class="mini-table-cell">$3,500</div>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2265,16 +2295,6 @@
                                             </div>
                                             <div class="mini-card">
                                                 <div class="mini-card-avatar"></div>
-                                            </div>
-                                        </div>
-                                        <div class="mini-table">
-                                            <div class="mini-table-row">
-                                                <div class="mini-table-cell">Proyecto A</div>
-                                                <div class="mini-table-cell">$5,000</div>
-                                            </div>
-                                            <div class="mini-table-row">
-                                                <div class="mini-table-cell">Proyecto B</div>
-                                                <div class="mini-table-cell">$3,500</div>
                                             </div>
                                         </div>
                                     </div>
