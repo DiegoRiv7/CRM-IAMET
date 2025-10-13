@@ -1994,6 +1994,26 @@
     </div>
 </div>
 
+<!-- Generar datos de clientes para JavaScript -->
+<script>
+// Preparar lista de clientes únicos
+var clientesOptions = [
+    {value: '', text: 'Todos los clientes'}
+];
+</script>
+
+{% regroup items by cliente.nombre_empresa as cliente_list %}
+{% for cliente in cliente_list %}
+    {% if cliente.grouper %}
+        <script>
+        clientesOptions.push({
+            value: "{{ cliente.grouper|escapejs }}",
+            text: "{{ cliente.grouper|escapejs }}"
+        });
+        </script>
+    {% endif %}
+{% endfor %}
+
 <script>
 const clienteSelect = new TomSelect('#filterCliente',{
     create: true,
@@ -2001,26 +2021,36 @@ const clienteSelect = new TomSelect('#filterCliente',{
         field: "text",
         direction: "asc"
     },
-    options: [
-        {value: '', text: 'Todos los clientes'},
-        {% for cliente in items|group_by:"cliente.nombre_empresa" %}
-            {value: '{{ cliente.grouper }}', text: '{{ cliente.grouper }}'},
-        {% endfor %}
-    ]
+    options: clientesOptions
 });
 
+</script>
+
+<!-- Generar datos de empleados para JavaScript -->
+<script>
+// Preparar lista de empleados
+var empleadosOptions = [
+    {value: '', text: 'Todos los empleados'}
+];
+</script>
+
+{% for user in users %}
+<script>
+empleadosOptions.push({
+    value: '{{ user.id }}',
+    text: '{{ user.get_full_name|default:user.username|escapejs }}'
+});
+</script>
+{% endfor %}
+
+<script>
 const empleadoSelect = new TomSelect('#filterEmpleado',{
     create: true,
     sortField: {
         field: "text",
         direction: "asc"
     },
-    options: [
-        {value: '', text: 'Todos los empleados'},
-        {% for user in users %}
-            {value: '{{ user.id }}', text: '{{ user.get_full_name|default:user.username }}'},
-        {% endfor %}
-    ]
+    options: empleadosOptions
 });
 
 function generarReporteCSV() {
@@ -2032,7 +2062,9 @@ function generarReporteCSV() {
     const ordenMonto = document.getElementById('filterOrdenMonto').value;
     const ordenProbabilidad = document.getElementById('filterOrdenProbabilidad').value;
 
-    const url = new URL('{% url 'exportar_oportunidades_csv' %}', window.location.origin);
+    // URL para exportar CSV
+    var csvPath = '{% url "exportar_oportunidades_csv" %}';
+    const url = new URL(window.location.origin + csvPath);
     if (oportunidad) url.searchParams.set('filterOportunidad', oportunidad);
     if (cliente) url.searchParams.set('filterCliente', cliente);
     if (empleado) url.searchParams.set('empleado', empleado);
