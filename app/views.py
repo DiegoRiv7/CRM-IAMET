@@ -2537,7 +2537,7 @@ def exportar_oportunidades_csv(request):
         row_data = [
             item.oportunidad,
             item.get_area_display(),
-            item.contacto or ''
+            str(item.contacto) if item.contacto else ''
         ]
         
         # Add brand amounts - usar las marcas correctas
