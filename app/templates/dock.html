@@ -4186,86 +4186,56 @@ const originalSetDockPosition = window.setDockPosition || (typeof setDockPositio
 window.setDockPosition = function(position) {
     console.log('setDockPosition called with:', position);
     
-    // Get all dock elements
-    const dockLeft = document.getElementById('dock-left');
-    const dockRight = document.getElementById('dock-right');
-    const dockTop = document.getElementById('dock-top');
-    const dockBottom = document.getElementById('dock-bottom');
-    
-    // Instead of hiding all docks, we'll just move them off-screen
-    // This preserves the event listeners
-    if (dockLeft) {
-        if (position === 'left') {
-            dockLeft.style.left = '12px';
-            dockLeft.style.top = '50%';
-            dockLeft.style.transform = 'translateY(-50%)';
-            dockLeft.style.opacity = '1';
-            dockLeft.style.visibility = 'visible';
-            dockLeft.style.pointerEvents = 'auto';
-            dockLeft.style.zIndex = '1500';
-        } else {
-            dockLeft.style.left = '-500px';
-            dockLeft.style.opacity = '0';
-            dockLeft.style.visibility = 'hidden';
-            dockLeft.style.pointerEvents = 'none';
-        }
+    // Remove any existing position styles to avoid conflicts
+    const existingStyle = document.getElementById('dock-position-style');
+    if (existingStyle) {
+        existingStyle.remove();
     }
     
-    if (dockRight) {
-        if (position === 'right') {
-            dockRight.style.right = '12px';
-            dockRight.style.top = '50%';
-            dockRight.style.transform = 'translateY(-50%)';
-            dockRight.style.opacity = '1';
-            dockRight.style.visibility = 'visible';
-            dockRight.style.pointerEvents = 'auto';
-            dockRight.style.zIndex = '1500';
-        } else {
-            dockRight.style.right = '-500px';
-            dockRight.style.opacity = '0';
-            dockRight.style.visibility = 'hidden';
-            dockRight.style.pointerEvents = 'none';
+    // Create a new style element with high specificity
+    const style = document.createElement('style');
+    style.id = 'dock-position-style';
+    style.textContent = `
+        /* Hide all docks by default */
+        nav.macos-dock#dock-left,
+        nav.macos-dock#dock-right,
+        nav.macos-dock#dock-top,
+        nav.macos-dock#dock-bottom {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            display: none !important;
+            pointer-events: none !important;
+            z-index: -1 !important;
         }
-    }
+        
+        /* Show only the selected dock */
+        nav.macos-dock#dock-${position} {
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: flex !important;
+            pointer-events: auto !important;
+            z-index: 1500 !important;
+        }
+    `;
+    document.head.appendChild(style);
     
-    if (dockTop) {
-        if (position === 'top') {
-            dockTop.style.top = '12px';
-            dockTop.style.left = '50%';
-            dockTop.style.transform = 'translateX(-50%)';
-            dockTop.style.opacity = '1';
-            dockTop.style.visibility = 'visible';
-            dockTop.style.pointerEvents = 'auto';
-            dockTop.style.zIndex = '1500';
-        } else {
-            dockTop.style.top = '-500px';
-            dockTop.style.opacity = '0';
-            dockTop.style.visibility = 'hidden';
-            dockTop.style.pointerEvents = 'none';
-        }
-    }
-    
-    if (dockBottom) {
-        if (position === 'bottom') {
-            dockBottom.style.bottom = '12px';
-            dockBottom.style.left = '50%';
-            dockBottom.style.transform = 'translateX(-50%)';
-            dockBottom.style.opacity = '1';
-            dockBottom.style.visibility = 'visible';
-            dockBottom.style.pointerEvents = 'auto';
-            dockBottom.style.zIndex = '1500';
-        } else {
-            dockBottom.style.bottom = '-500px';
-            dockBottom.style.opacity = '0';
-            dockBottom.style.visibility = 'hidden';
-            dockBottom.style.pointerEvents = 'none';
-        }
-    }
+    // Force a reflow to ensure the style is applied
+    document.body.offsetHeight;
     
     // Add a data attribute to the body for CSS targeting
     document.body.setAttribute('data-dock-position', position);
     
     console.log('Dock position changed to:', position);
+    
+    // Reattach event listeners after position change
+    setTimeout(() => {
+        console.log('Attempting to reattach event listeners for position:', position);
+        if (typeof reattachDockEventListeners === 'function') {
+            reattachDockEventListeners(position);
+        } else {
+            console.log('reattachDockEventListeners function not found');
+        }
+    }, 100);
     
     // Llamar a la función original si existe
     if (typeof originalSetDockPosition === 'function') {
