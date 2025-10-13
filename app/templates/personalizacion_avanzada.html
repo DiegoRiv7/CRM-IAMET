@@ -1192,116 +1192,48 @@
             flex-direction: column;
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
             overflow: hidden;
-        }
-        
-        .mini-header {
-            height: 16px;
-            display: flex;
-            align-items: center;
-            padding: 0 8px;
-            gap: 4px;
-            flex-shrink: 0;
-        }
-        
-        .mini-logo {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: var(--apple-blue);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        
-        .mini-logo svg {
-            width: 10px;
-            height: 10px;
-            color: white;
-        }
-        
-        .mini-nav {
-            display: none; /* Ocultar los botones de navegación */
-        }
-        
-        .mini-content {
-            flex: 1;
-            padding: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            overflow: hidden;
+            background-size: 100% 100%;
+            background-position: center;
+            background-repeat: no-repeat;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
         }
         
         .mini-welcome {
             text-align: center;
-            margin-bottom: 8px;
-        }
-        
-        .mini-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            margin: 0 auto 10px;
-            border: 3px solid var(--apple-blue);
-            background: var(--apple-background-secondary);
-        }
-        
-        .mini-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: var(--apple-label);
-        }
-        
-        .mini-subtitle {
-            font-size: 12px;
-            color: var(--apple-label-secondary);
-            margin-bottom: 20px;
-        }
-        
-        .mini-search {
-            height: 28px;
-            border-radius: 14px;
-            background: var(--apple-background-secondary);
-            border: 1px solid var(--apple-separator);
-            margin-bottom: 15px;
-            margin-top: 5px;
-            display: flex;
-            align-items: center;
-            padding: 0 14px;
-        }
-        
-        .mini-search svg {
-            width: 14px;
-            height: 14px;
-            color: var(--apple-gray);
-        }
-        
-        .mini-cards {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 16px;
-        }
-        
-        .mini-card {
-            flex: 1;
-            height: 54px;
-            border-radius: 10px;
-            background: var(--apple-background-secondary);
-            border: 1px solid var(--apple-separator);
-            padding: 12px;
+            padding: 20px 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
+            height: 100%;
         }
         
-        .mini-card-avatar {
-            width: 24px;
-            height: 24px;
+        .mini-avatar {
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
-            background: var(--apple-background-tertiary);
+            margin: 0 auto 15px;
+            border: 3px solid var(--apple-blue);
+            background: var(--apple-background-secondary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+        
+        .mini-title {
+            font-size: 18px;
+            font-weight: 600;
             margin-bottom: 8px;
+            color: var(--apple-label);
+            line-height: 1.2;
+        }
+        
+        .mini-subtitle {
+            font-size: 14px;
+            color: var(--apple-label-secondary);
+            line-height: 1.4;
         }
         
         /* Theme specific miniature styles con colores fijos */
@@ -2151,35 +2083,15 @@
                         <div class="theme-option" data-theme="dark" onclick="applyTheme('dark')">
                             <div class="theme-preview-large dark-preview">
                                 <div class="mini-page dark-theme">
-                                    <div class="mini-header">
-                                        <div class="mini-logo">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                                                <polyline points="9,22 9,12 15,12 15,22"></polyline>
+                                    <div class="mini-welcome">
+                                        <div class="mini-avatar" style="background: linear-gradient(135deg, #007AFF 0%, #0056CC 100%); display: flex; align-items: center; justify-content: center;">
+                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                                <circle cx="12" cy="7" r="4"></circle>
                                             </svg>
                                         </div>
-                                        <div class="mini-nav"></div>
-                                    </div>
-                                    <div class="mini-content">
-                                        <div class="mini-welcome">
-                                            <div class="mini-avatar"></div>
-                                            <div class="mini-title">¡Bienvenido!</div>
-                                            <div class="mini-subtitle">¿En qué vamos a trabajar hoy?</div>
-                                        </div>
-                                        <div class="mini-search">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <circle cx="11" cy="11" r="8"/>
-                                                <path d="M21 21l-4.35-4.35"/>
-                                            </svg>
-                                        </div>
-                                        <div class="mini-cards">
-                                            <div class="mini-card">
-                                                <div class="mini-card-avatar"></div>
-                                            </div>
-                                            <div class="mini-card">
-                                                <div class="mini-card-avatar"></div>
-                                            </div>
-                                        </div>
+                                        <div class="mini-title">¡Bienvenido!</div>
+                                        <div class="mini-subtitle">¿En qué vamos a trabajar hoy?</div>
                                     </div>
                                 </div>
                             </div>
@@ -2188,35 +2100,15 @@
                         <div class="theme-option" data-theme="pink" onclick="applyTheme('pink')">
                             <div class="theme-preview-large pink-preview">
                                 <div class="mini-page pink-theme">
-                                    <div class="mini-header">
-                                        <div class="mini-logo">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                                                <polyline points="9,22 9,12 15,12 15,22"></polyline>
+                                    <div class="mini-welcome">
+                                        <div class="mini-avatar" style="background: linear-gradient(135deg, #FF6B9D 0%, #E55A87 100%); display: flex; align-items: center; justify-content: center;">
+                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                                <circle cx="12" cy="7" r="4"></circle>
                                             </svg>
                                         </div>
-                                        <div class="mini-nav"></div>
-                                    </div>
-                                    <div class="mini-content">
-                                        <div class="mini-welcome">
-                                            <div class="mini-avatar"></div>
-                                            <div class="mini-title">¡Bienvenido!</div>
-                                            <div class="mini-subtitle">¿En qué vamos a trabajar hoy?</div>
-                                        </div>
-                                        <div class="mini-search">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <circle cx="11" cy="11" r="8"/>
-                                                <path d="M21 21l-4.35-4.35"/>
-                                            </svg>
-                                        </div>
-                                        <div class="mini-cards">
-                                            <div class="mini-card">
-                                                <div class="mini-card-avatar"></div>
-                                            </div>
-                                            <div class="mini-card">
-                                                <div class="mini-card-avatar"></div>
-                                            </div>
-                                        </div>
+                                        <div class="mini-title">¡Bienvenido!</div>
+                                        <div class="mini-subtitle">¿En qué vamos a trabajar hoy?</div>
                                     </div>
                                 </div>
                             </div>
@@ -2225,35 +2117,15 @@
                         <div class="theme-option" data-theme="white" onclick="applyTheme('white')">
                             <div class="theme-preview-large white-preview">
                                 <div class="mini-page white-theme">
-                                    <div class="mini-header">
-                                        <div class="mini-logo">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                                                <polyline points="9,22 9,12 15,12 15,22"></polyline>
+                                    <div class="mini-welcome">
+                                        <div class="mini-avatar" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); display: flex; align-items: center; justify-content: center;">
+                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                                <circle cx="12" cy="7" r="4"></circle>
                                             </svg>
                                         </div>
-                                        <div class="mini-nav"></div>
-                                    </div>
-                                    <div class="mini-content">
-                                        <div class="mini-welcome">
-                                            <div class="mini-avatar"></div>
-                                            <div class="mini-title">¡Bienvenido!</div>
-                                            <div class="mini-subtitle">¿En qué vamos a trabajar hoy?</div>
-                                        </div>
-                                        <div class="mini-search">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <circle cx="11" cy="11" r="8"/>
-                                                <path d="M21 21l-4.35-4.35"/>
-                                            </svg>
-                                        </div>
-                                        <div class="mini-cards">
-                                            <div class="mini-card">
-                                                <div class="mini-card-avatar"></div>
-                                            </div>
-                                            <div class="mini-card">
-                                                <div class="mini-card-avatar"></div>
-                                            </div>
-                                        </div>
+                                        <div class="mini-title">¡Bienvenido!</div>
+                                        <div class="mini-subtitle">¿En qué vamos a trabajar hoy?</div>
                                     </div>
                                 </div>
                             </div>
@@ -2262,35 +2134,15 @@
                         <div class="theme-option" data-theme="coffee" onclick="applyTheme('coffee')">
                             <div class="theme-preview-large coffee-preview">
                                 <div class="mini-page coffee-theme">
-                                    <div class="mini-header">
-                                        <div class="mini-logo">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                                                <polyline points="9,22 9,12 15,12 15,22"></polyline>
+                                    <div class="mini-welcome">
+                                        <div class="mini-avatar" style="background: linear-gradient(135deg, #8b6239 0%, #6b4a30 100%); display: flex; align-items: center; justify-content: center;">
+                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                                <circle cx="12" cy="7" r="4"></circle>
                                             </svg>
                                         </div>
-                                        <div class="mini-nav"></div>
-                                    </div>
-                                    <div class="mini-content">
-                                        <div class="mini-welcome">
-                                            <div class="mini-avatar"></div>
-                                            <div class="mini-title">¡Bienvenido!</div>
-                                            <div class="mini-subtitle">¿En qué vamos a trabajar hoy?</div>
-                                        </div>
-                                        <div class="mini-search">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <circle cx="11" cy="11" r="8"/>
-                                                <path d="M21 21l-4.35-4.35"/>
-                                            </svg>
-                                        </div>
-                                        <div class="mini-cards">
-                                            <div class="mini-card">
-                                                <div class="mini-card-avatar"></div>
-                                            </div>
-                                            <div class="mini-card">
-                                                <div class="mini-card-avatar"></div>
-                                            </div>
-                                        </div>
+                                        <div class="mini-title">¡Bienvenido!</div>
+                                        <div class="mini-subtitle">¿En qué vamos a trabajar hoy?</div>
                                     </div>
                                 </div>
                             </div>
