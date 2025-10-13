@@ -4200,61 +4200,25 @@ const originalSetDockPosition = window.setDockPosition || (typeof setDockPositio
 window.setDockPosition = function(position) {
     console.log('setDockPosition called with:', position);
     
-    // Remove any existing position styles to avoid conflicts
-    const existingStyle = document.getElementById('dock-position-style');
-    if (existingStyle) {
-        existingStyle.remove();
+    // Save the position to localStorage first
+    window.saveDockPosition(position);
+    console.log('Dock position saved to localStorage:', position);
+    
+    // Show notification if showNotification function exists
+    if (typeof showNotification === 'function') {
+        const positionNames = {
+            'bottom': 'Inferior',
+            'top': 'Superior',
+            'left': 'Izquierda',
+            'right': 'Derecha'
+        };
+        showNotification(`Posición del dock cambiada a: ${positionNames[position]}. Recargando...`, 'success');
     }
     
-    // Create a new style element with high specificity
-    const style = document.createElement('style');
-    style.id = 'dock-position-style';
-    style.textContent = `
-        /* Hide all docks by default */
-        nav.macos-dock#dock-left,
-        nav.macos-dock#dock-right,
-        nav.macos-dock#dock-top,
-        nav.macos-dock#dock-bottom {
-            opacity: 0 !important;
-            visibility: hidden !important;
-            display: none !important;
-            pointer-events: none !important;
-            z-index: -1 !important;
-        }
-        
-        /* Show only the selected dock */
-        nav.macos-dock#dock-${position} {
-            opacity: 1 !important;
-            visibility: visible !important;
-            display: flex !important;
-            pointer-events: auto !important;
-            z-index: 1500 !important;
-        }
-    `;
-    document.head.appendChild(style);
-    
-    // Force a reflow to ensure the style is applied
-    document.body.offsetHeight;
-    
-    // Add a data attribute to the body for CSS targeting
-    document.body.setAttribute('data-dock-position', position);
-    
-    console.log('Dock position changed to:', position);
-    
-    // Reattach event listeners after position change
+    // Force a page reload with a small delay to show the notification
     setTimeout(() => {
-        console.log('Attempting to reattach event listeners for position:', position);
-        if (typeof reattachDockEventListeners === 'function') {
-            reattachDockEventListeners(position);
-        } else {
-            console.log('reattachDockEventListeners function not found');
-        }
-    }, 100);
-    
-    // Llamar a la función original si existe
-    if (typeof originalSetDockPosition === 'function') {
-        originalSetDockPosition(position);
-    }
+        window.location.reload();
+    }, 500);
     
     // Update active state for dock options (para el modal de configuración)
     document.querySelectorAll('.dock-option').forEach(option => {
@@ -4289,21 +4253,6 @@ window.setDockPosition = function(position) {
     const activeArrow = document.querySelector(`#position-${position}`);
     if (activeArrow) {
         activeArrow.classList.add('active');
-    }
-    
-    // Save preference to localStorage
-    window.saveDockPosition(position);
-    console.log('Dock position saved to localStorage:', position);
-    
-    // Show notification if showNotification function exists
-    if (typeof showNotification === 'function') {
-        const positionNames = {
-            'bottom': 'Inferior',
-            'top': 'Superior',
-            'left': 'Izquierda',
-            'right': 'Derecha'
-        };
-        showNotification(`Posición del dock cambiada a: ${positionNames[position]}`, 'success');
     }
 };
     
