@@ -1191,48 +1191,98 @@
             flex-direction: column;
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
             overflow: hidden;
-            background-size: 100% 100%;
-            background-position: center;
-            background-repeat: no-repeat;
-            image-rendering: -webkit-optimize-contrast;
-            image-rendering: crisp-edges;
-            image-rendering: pixelated;
+        }
+        
+        .mini-header {
+            height: 16px;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        
+        .mini-logo {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--apple-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .mini-logo svg {
+            width: 10px;
+            height: 10px;
+            color: white;
+        }
+        
+        .mini-nav {
+            display: none; /* Ocultar los botones de navegación */
+        }
+        
+        .mini-content {
+            flex: 1;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            overflow: hidden;
         }
         
         .mini-welcome {
             text-align: center;
-            padding: 20px 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
+            margin-bottom: 8px;
         }
         
         .mini-avatar {
-            width: 60px;
-            height: 60px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
-            margin: 0 auto 15px;
+            margin: 0 auto 10px;
             border: 3px solid var(--apple-blue);
             background: var(--apple-background-secondary);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            image-rendering: -webkit-optimize-contrast;
-            image-rendering: crisp-edges;
         }
         
         .mini-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
             color: var(--apple-label);
-            line-height: 1.2;
         }
         
         .mini-subtitle {
-            font-size: 14px;
+            font-size: 12px;
             color: var(--apple-label-secondary);
-            line-height: 1.4;
+            margin-bottom: 20px;
+        }
+        
+        .mini-cards {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .mini-card {
+            flex: 1;
+            height: 54px;
+            border-radius: 10px;
+            background: var(--apple-background-secondary);
+            border: 1px solid var(--apple-separator);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .mini-card-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--apple-background-tertiary);
+            margin-bottom: 8px;
         }
         
         /* Theme specific miniature styles con colores fijos */
