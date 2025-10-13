@@ -4250,6 +4250,16 @@ window.setDockPosition = function(position) {
     // Force a reflow to ensure the style is applied
     document.body.offsetHeight;
     
+    // Reattach event listeners after position change
+    setTimeout(() => {
+        console.log('Attempting to reattach event listeners for position:', position);
+        if (typeof reattachDockEventListeners === 'function') {
+            reattachDockEventListeners(position);
+        } else {
+            console.log('reattachDockEventListeners function not found');
+        }
+    }, 100);
+    
     // Llamar a la función original si existe
     if (typeof originalSetDockPosition === 'function') {
         originalSetDockPosition(position);
