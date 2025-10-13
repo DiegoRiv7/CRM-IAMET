@@ -1838,65 +1838,55 @@
             </div>
             {% else %}
                         <div class="report-filters-container">
-                                            <div class="filter-box">
-                                                <div class="filter-group">
-                                                    <label class="filter-label">Oportunidad</label>
-                                                    <input type="text" class="filter-input" id="filterOportunidad" placeholder="Buscar en Oportunidad...">
-                                                </div>
-                                                <div class="filter-group">
-                                                    <label class="filter-label">Cliente</label>
-                                                    <select class="filter-input" id="filterCliente">
-                                                        <option value="">Todos los clientes</option>
-                                                        {% regroup items by cliente.nombre_empresa as clientes_grouped %}{% for cliente in clientes_grouped %}{% if cliente.grouper %}<option value="{{ cliente.grouper }}">{{ cliente.grouper }}</option>{% endif %}{% endfor %}
-                                                    </select>
-                                                </div>
-                                                <div class="filter-group">
-                                                    <label class="filter-label">Empleado</label>
-                                                    {{ filter_form.empleado }}
-                                                </div>
-                                                                                                                                                            <div class="filter-group">
-                                                                                            <label class="filter-label">Ordenar por Monto</label>
-                                                                                            <select class="filter-input" id="filterOrdenMonto">
-                                                                                                <option value="">Por defecto</option>
-                                                                                                <option value="monto_desc">Mayor a menor</option>
-                                                                                                <option value="monto_asc">Menor a mayor</option>
-                                                                                            </select>
-                                                                                        </div>
-                                                                                                            <div class="filter-group">
-                                                                                                                <label class="filter-label">Ordenar por Probabilidad</label>
-                                                                                                                <select class="filter-input" id="filterOrdenProbabilidad">
-                                                                                                                    <option value="">Por defecto</option>
-                                                                                                                    <option value="prob_desc">Mayor a menor</option>
-                                                                                                                    <option value="prob_asc">Menor a mayor</option>
-                                                                                                                </select>
-                                                                                                            </div>
-                                                                                                            <div class="filter-group">
-                                                                                                                <label class="filter-label">Área</label>                                                                                            <select class="filter-input" id="filterArea">
-                                                                                                <option value="">Todas las áreas</option>
-                                                                                                {% for area_choice in filter_form.area.field.choices %}
-                                                                                                    {% if area_choice.0 != "" %}
-                                                                                                        <option value="{{ area_choice.0 }}">{{ area_choice.1 }}</option>
-                                                                                                    {% endif %}
-                                                                                                {% endfor %}
-                                                                                            </select>
-                                                                                        </div>                                                <div class="filter-group">
-                                                    <label class="filter-label">Mes Cierre</label>
-                                                                            <select class="filter-input" id="filterMesCierre">
-                                                                                <option value="">Todos los meses</option>
-                                                                                <option value="01">Enero</option>
-                                                                                <option value="02">Febrero</option>
-                                                                                <option value="03">Marzo</option>
-                                                                                <option value="04">Abril</option>
-                                                                                <option value="05">Mayo</option>
-                                                                                <option value="06">Junio</option>
-                                                                                <option value="07">Julio</option>
-                                                                                <option value="08">Agosto</option>
-                                                                                <option value="09">Septiembre</option>
-                                                                                <option value="10">Octubre</option>
-                                                                                <option value="11">Noviembre</option>
-                                                                                <option value="12">Diciembre</option>
-                                                                            </select>                                                </div>
-                                                                                            </div>                            <div class="filter-actions">
+                            <div class="filter-box">
+                                <div class="filter-group">
+                                    <label class="filter-label">Oportunidad</label>
+                                    <input type="text" class="filter-input" id="filterOportunidad" placeholder="Buscar en Oportunidad...">
+                                </div>
+                                <div class="filter-group">
+                                    <label class="filter-label">Cliente</label>
+                                    <select id="filterCliente" placeholder="Buscar cliente..."></select>
+                                </div>
+                                <div class="filter-group">
+                                    <label class="filter-label">Empleado</label>
+                                    <select id="filterEmpleado" placeholder="Buscar empleado..."></select>
+                                </div>
+                                <div class="filter-group">
+                                    <label class="filter-label">Mes Cierre</label>
+                                    <select class="filter-input" id="filterMesCierre">
+                                        <option value="">Todos los meses</option>
+                                        <option value="01">Enero</option>
+                                        <option value="02">Febrero</option>
+                                        <option value="03">Marzo</option>
+                                        <option value="04">Abril</option>
+                                        <option value="05">Mayo</option>
+                                        <option value="06">Junio</option>
+                                        <option value="07">Julio</option>
+                                        <option value="08">Agosto</option>
+                                        <option value="09">Septiembre</option>
+                                        <option value="10">Octubre</option>
+                                        <option value="11">Noviembre</option>
+                                        <option value="12">Diciembre</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label class="filter-label">Ordenar por Monto</label>
+                                    <select class="filter-input" id="filterOrdenMonto">
+                                        <option value="">Por defecto</option>
+                                        <option value="monto_desc">Mayor a menor</option>
+                                        <option value="monto_asc">Menor a mayor</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label class="filter-label">Ordenar por Probabilidad</label>
+                                    <select class="filter-input" id="filterOrdenProbabilidad">
+                                        <option value="">Por defecto</option>
+                                        <option value="prob_desc">Mayor a menor</option>
+                                        <option value="prob_asc">Menor a mayor</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="filter-actions">
                                 <button class="filter-btn secondary" onclick="clearFilters()">Limpiar</button>
                                 <button class="filter-btn primary" onclick="applyFilters()">Filtrar</button>
                                 <button class="filter-btn primary" id="generate-report-btn" onclick="generarReporteCSV()">Generar Reporte</button>
@@ -2005,10 +1995,38 @@
 </div>
 
 <script>
+const clienteSelect = new TomSelect('#filterCliente',{
+    create: true,
+    sortField: {
+        field: "text",
+        direction: "asc"
+    },
+    options: [
+        {value: '', text: 'Todos los clientes'},
+        {% for cliente in items|group_by:"cliente.nombre_empresa" %}
+            {value: '{{ cliente.grouper }}', text: '{{ cliente.grouper }}'},
+        {% endfor %}
+    ]
+});
+
+const empleadoSelect = new TomSelect('#filterEmpleado',{
+    create: true,
+    sortField: {
+        field: "text",
+        direction: "asc"
+    },
+    options: [
+        {value: '', text: 'Todos los empleados'},
+        {% for user in users %}
+            {value: '{{ user.id }}', text: '{{ user.get_full_name|default:user.username }}'},
+        {% endfor %}
+    ]
+});
+
 function generarReporteCSV() {
     const oportunidad = document.getElementById('filterOportunidad').value.trim();
-    const cliente = document.getElementById('filterCliente').value.trim();
-    const empleado = document.getElementById('id_empleado').value;
+    const cliente = clienteSelect.getValue();
+    const empleado = empleadoSelect.getValue();
     const mesCierre = document.getElementById('filterMesCierre').value.trim();
     const area = document.getElementById('filterArea').value.trim();
     const ordenMonto = document.getElementById('filterOrdenMonto').value;
@@ -2087,8 +2105,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function clearFilters() {
     document.getElementById('filterOportunidad').value = '';
-    document.getElementById('filterCliente').value = '';
-    document.getElementById('id_empleado').value = '';
+    clienteSelect.clear();
+    empleadoSelect.clear();
     document.getElementById('filterMesCierre').value = '';
     document.getElementById('filterArea').value = '';
     document.getElementById('filterOrdenMonto').value = '';
@@ -2114,8 +2132,8 @@ function applyFilters() {
     };
 
     const oportunidad = document.getElementById('filterOportunidad').value.toLowerCase().trim();
-    const cliente = document.getElementById('filterCliente').value.toLowerCase().trim();
-    const empleado = document.getElementById('id_empleado').value;
+    const cliente = clienteSelect.getValue().toLowerCase().trim();
+    const empleado = empleadoSelect.getValue();
     const mesCierre = document.getElementById('filterMesCierre').value.toLowerCase().trim();
     const area = document.getElementById('filterArea').value.toLowerCase().trim();
     const ordenMonto = document.getElementById('filterOrdenMonto').value;

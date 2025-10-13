@@ -603,61 +603,310 @@
             border-radius: 12px;
             background: rgba(255, 255, 255, 0.05);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Efecto de brillo en el hover */
+        .dock-type-option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .dock-type-option:hover::before {
+            left: 100%;
         }
         
         .dock-type-option:hover {
             border-color: var(--apple-blue-light);
-            transform: translateY(-2px);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(0, 122, 255, 0.2);
         }
         
         .dock-type-option.active {
             border-color: var(--apple-blue) !important;
-            background-color: rgba(0, 122, 255, 0.2) !important;
-            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3) !important;
-            transform: translateY(-2px) !important;
+            background-color: rgba(0, 122, 255, 0.15) !important;
+            box-shadow:
+                0 0 0 2px rgba(0, 122, 255, 0.3),
+                0 8px 25px rgba(0, 122, 255, 0.25) !important;
+            transform: translateY(-4px) scale(1.02) !important;
+        }
+        
+        /* Indicador de activo mejorado */
+        .dock-type-option.active::after {
+            content: '';
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 8px;
+            height: 8px;
+            background: var(--apple-blue);
+            border-radius: 50%;
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+            }
+            100% {
+                box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
+            }
         }
         
         .dock-type-option span {
-            margin-top: 8px;
+            margin-top: 12px;
             font-size: 13px;
             color: var(--apple-label);
-            font-weight: 500;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+        
+        .dock-type-option.active span {
+            color: var(--apple-blue);
         }
         
         .dock-type-preview {
-            width: 80px;
-            height: 50px;
+            width: 100px;
+            height: 70px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(40, 40, 40, 0.8);
-            border-radius: 8px;
+            background: linear-gradient(135deg, #2a2a2e 0%, #1a1a1c 100%);
+            border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
         }
         
-        .preview-type {
-            width: 60px;
-            height: 8px;
-            border-radius: 6px;
-            background: linear-gradient(135deg, var(--apple-blue), #5AC8FA);
+        /* Simulación de escritorio para la vista previa */
+        .dock-type-preview::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 122, 255, 0.05) 0%, transparent 50%);
+            pointer-events: none;
         }
         
+        /* Vista previa del dock normal */
         .preview-type.normal {
-            background: linear-gradient(135deg, var(--apple-blue), #5AC8FA);
-            opacity: 1;
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 85%;
+            height: 12px;
+            background: rgba(29, 29, 31, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            padding: 0 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
         
-        .preview-type.transparent {
-            background: linear-gradient(135deg, rgba(0, 122, 255, 0.6), rgba(90, 200, 250, 0.6));
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-        
-        .preview-type.compact {
-            width: 45px;
+        .preview-type.normal::before {
+            content: '';
+            position: absolute;
+            width: 6px;
             height: 6px;
-            background: linear-gradient(135deg, var(--apple-blue), #5AC8FA);
+            background: var(--apple-blue);
+            border-radius: 50%;
+            left: 8px;
+            box-shadow:
+                12px 0 0 #5AC8FA,
+                24px 0 0 #FF6B9D,
+                36px 0 0 #34C759,
+                48px 0 0 #FF9500;
+        }
+        
+        /* Vista previa del dock transparente */
+        .preview-type.transparent {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 85%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.01);
+            backdrop-filter: blur(40px) saturate(500%) contrast(180%) brightness(140%);
+            -webkit-backdrop-filter: blur(40px) saturate(500%) contrast(180%) brightness(140%);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            padding: 0 8px;
+            opacity: 0.2;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        
+        /* Efecto de brillo translúcido */
+        .preview-type.transparent::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.1) 50%,
+                transparent 100%
+            );
+            border-radius: 8px;
+            opacity: 0.6;
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .preview-type.transparent::after {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: rgba(0, 122, 255, 0.7);
+            border-radius: 50%;
+            left: 8px;
+            box-shadow:
+                12px 0 0 rgba(90, 200, 250, 0.7),
+                24px 0 0 rgba(255, 107, 157, 0.7),
+                36px 0 0 rgba(52, 199, 89, 0.7),
+                48px 0 0 rgba(255, 149, 0, 0.7);
+            z-index: 1;
+        }
+        
+        .dock-type-option:hover .preview-type.transparent {
+            opacity: 0.35;
+            transform: translateX(-50%) translateY(-2px);
+            background: rgba(255, 255, 255, 0.02);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .dock-type-option:hover .preview-type.transparent::after {
+            background: rgba(0, 122, 255, 0.9);
+            box-shadow:
+                12px 0 0 rgba(90, 200, 250, 0.9),
+                24px 0 0 rgba(255, 107, 157, 0.9),
+                36px 0 0 rgba(52, 199, 89, 0.9),
+                48px 0 0 rgba(255, 149, 0, 0.9);
+        }
+        
+        /* Vista previa del dock compacto */
+        .preview-type.compact {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24px;
+            height: 24px;
+            background: rgba(29, 29, 31, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .preview-type.compact::before {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background: var(--apple-blue);
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'/%3E%3C/svg%3E") center/contain no-repeat;
+            -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'/%3E%3C/svg%3E") center/contain no-repeat;
+        }
+        
+        .dock-type-option:hover .preview-type.compact {
+            transform: translateX(-50%) translateY(-2px) scale(1.1);
+            box-shadow:
+                0 12px 40px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Efecto de expansión para el dock compacto */
+        .preview-type.compact::after {
+            content: '';
+            position: absolute;
+            width: 60px;
+            height: 12px;
+            background: rgba(29, 29, 31, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            opacity: 0;
+            transform: scale(0.8) translateY(5px);
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            bottom: -8px;
+            z-index: -1;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Iconos del dock expandido */
+        .preview-type.compact::after::before {
+            content: '';
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--apple-blue);
+            border-radius: 50%;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            box-shadow:
+                8px 0 0 #5AC8FA,
+                16px 0 0 #FF6B9D,
+                24px 0 0 #34C759,
+                32px 0 0 #FF9500;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .dock-type-option:hover .preview-type.compact::after {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+        
+        .dock-type-option:hover .preview-type.compact::after::before {
+            opacity: 0.8;
         }
 
         /* Dock Icons Options Styles */
@@ -956,80 +1205,284 @@
             border-radius: 4px;
         }
         
-        /* Theme Preview Styles */
+        /* Enhanced Theme Preview Styles */
         .theme-preview-large {
             width: 100%;
-            height: 120px;
-            border-radius: 8px;
+            height: 180px;
+            border-radius: 12px;
             overflow: hidden;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             position: relative;
+            border: 2px solid var(--apple-separator);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+        
+        .theme-preview-large:hover {
+            transform: scale(1.02);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+        }
+        
+        .preview-miniature {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Miniature page structure */
+        .mini-page {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+            overflow: hidden;
+        }
+        
+        .mini-header {
+            height: 24px;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        
+        .mini-logo {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--apple-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .mini-logo svg {
+            width: 10px;
+            height: 10px;
+            color: white;
+        }
+        
+        .mini-nav {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+        
+        .mini-nav-btn {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--apple-background-tertiary);
             border: 1px solid var(--apple-separator);
         }
         
-        .preview-header {
+        .mini-content {
+            flex: 1;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            overflow: hidden;
+        }
+        
+        .mini-welcome {
+            text-align: center;
+            margin-bottom: 4px;
+        }
+        
+        .mini-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            margin: 0 auto 4px;
+            border: 1px solid var(--apple-blue);
+            background: var(--apple-background-secondary);
+        }
+        
+        .mini-title {
+            font-size: 8px;
+            font-weight: 600;
+            margin-bottom: 2px;
+            color: var(--apple-label);
+        }
+        
+        .mini-subtitle {
+            font-size: 6px;
+            color: var(--apple-label-secondary);
+            margin-bottom: 6px;
+        }
+        
+        .mini-search {
+            height: 12px;
+            border-radius: 6px;
+            background: var(--apple-background-secondary);
+            border: 1px solid var(--apple-separator);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            padding: 0 6px;
+        }
+        
+        .mini-search svg {
+            width: 6px;
+            height: 6px;
+            color: var(--apple-gray);
+        }
+        
+        .mini-cards {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 6px;
+        }
+        
+        .mini-card {
+            flex: 1;
             height: 20px;
+            border-radius: 4px;
+            background: var(--apple-background-secondary);
+            border: 1px solid var(--apple-separator);
+            padding: 2px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .mini-card-avatar {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
             background: var(--apple-background-tertiary);
+            margin-bottom: 2px;
+        }
+        
+        .mini-table {
+            width: 100%;
+            height: 16px;
+            border-radius: 4px;
+            background: var(--apple-background-secondary);
+            border: 1px solid var(--apple-separator);
+            overflow: hidden;
+        }
+        
+        .mini-table-row {
+            display: flex;
+            height: 6px;
             border-bottom: 1px solid var(--apple-separator);
         }
         
-        .preview-content {
-            height: calc(100% - 21px);
-            background: var(--apple-background);
-            position: relative;
+        .mini-table-cell {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4px;
+            color: var(--apple-label-secondary);
         }
         
-        /* Theme Specific Styles */
-        .dark-preview {
-            --preview-bg: #1c1c1e;
-            --preview-header: #2c2c2e;
+        /* Theme specific miniature styles */
+        .dark-theme .mini-page {
+            background: linear-gradient(135deg, #000000 0%, #1D1D1F 100%);
         }
         
-        .light-preview {
-            --preview-bg: #f2f2f7;
-            --preview-header: #ffffff;
+        .dark-theme .mini-page,
+        .dark-theme .mini-header,
+        .dark-theme .mini-content,
+        .dark-theme .mini-card,
+        .dark-theme .mini-table {
+            background: rgba(0, 0, 0, 0.8);
         }
         
-        .pink-preview {
-            --preview-bg: #ffebf0;
-            --preview-header: #fff5f8;
+        .dark-theme .mini-logo {
+            background: #007AFF;
         }
         
-        .blue-preview {
-            --preview-bg: #f0f7ff;
-            --preview-header: #f5faff;
+        .dark-theme .mini-title,
+        .dark-theme .mini-table-cell {
+            color: #FFFFFF;
         }
         
-        .white-preview {
-            --preview-bg: #ffffff;
-            --preview-header: #f8f9fa;
+        .dark-theme .mini-subtitle {
+            color: #EBEBF5;
         }
         
-        .coffee-preview {
-            --preview-bg: #f5e6d3;
-            --preview-header: #f0dcc7;
+        .pink-theme .mini-page {
+            background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%);
         }
         
-        .theme-preview-large {
-            width: 120px;
-            height: 80px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .preview-header {
-            height: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 8px;
-            border-radius: 4px;
+        .pink-theme .mini-page,
+        .pink-theme .mini-header,
+        .pink-theme .mini-content,
+        .pink-theme .mini-card,
+        .pink-theme .mini-table {
+            background: rgba(255, 245, 248, 0.9);
         }
         
-        .preview-content {
-            height: 30px;
-            background: rgba(255, 255, 255, 0.05);
-            margin: 8px;
-            border-radius: 4px;
+        .pink-theme .mini-logo {
+            background: #FF6B9D;
+        }
+        
+        .pink-theme .mini-title,
+        .pink-theme .mini-table-cell {
+            color: #2D1B2E;
+        }
+        
+        .pink-theme .mini-subtitle {
+            color: #4A2B4D;
+        }
+        
+        .white-theme .mini-page {
+            background: #ffffff;
+        }
+        
+        .white-theme .mini-page,
+        .white-theme .mini-header,
+        .white-theme .mini-content,
+        .white-theme .mini-card,
+        .white-theme .mini-table {
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        .white-theme .mini-logo {
+            background: #007bff;
+        }
+        
+        .white-theme .mini-title,
+        .white-theme .mini-table-cell {
+            color: #212529;
+        }
+        
+        .white-theme .mini-subtitle {
+            color: #343a40;
+        }
+        
+        .coffee-theme .mini-page {
+            background: linear-gradient(135deg, #f5e6d3 0%, #f0dcc7 100%);
+        }
+        
+        .coffee-theme .mini-page,
+        .coffee-theme .mini-header,
+        .coffee-theme .mini-content,
+        .coffee-theme .mini-card,
+        .coffee-theme .mini-table {
+            background: rgba(245, 230, 211, 0.9);
+        }
+        
+        .coffee-theme .mini-logo {
+            background: #8b6239;
+        }
+        
+        .coffee-theme .mini-title,
+        .coffee-theme .mini-table-cell {
+            color: #4a3020;
+        }
+        
+        .coffee-theme .mini-subtitle {
+            color: #5d3d2a;
         }
         
         /* Language Modal Styles */
@@ -1627,36 +2080,204 @@
                     <div class="theme-options">
                         <div class="theme-option" data-theme="dark" onclick="applyTheme('dark')">
                             <div class="theme-preview-large dark-preview">
-                                <div class="preview-header"></div>
-                                <div class="preview-content">
-                                    <div class="paint-splash"></div>
+                                <div class="mini-page dark-theme">
+                                    <div class="mini-header">
+                                        <div class="mini-logo">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                                <polyline points="9,22 9,12 15,12 15,22"></polyline>
+                                            </svg>
+                                        </div>
+                                        <div class="mini-nav">
+                                            <div class="mini-nav-btn"></div>
+                                            <div class="mini-nav-btn"></div>
+                                            <div class="mini-nav-btn"></div>
+                                        </div>
+                                    </div>
+                                    <div class="mini-content">
+                                        <div class="mini-welcome">
+                                            <div class="mini-avatar"></div>
+                                            <div class="mini-title">¡Bienvenido!</div>
+                                            <div class="mini-subtitle">¿En qué vamos a trabajar hoy?</div>
+                                        </div>
+                                        <div class="mini-search">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="11" cy="11" r="8"/>
+                                                <path d="M21 21l-4.35-4.35"/>
+                                            </svg>
+                                        </div>
+                                        <div class="mini-cards">
+                                            <div class="mini-card">
+                                                <div class="mini-card-avatar"></div>
+                                            </div>
+                                            <div class="mini-card">
+                                                <div class="mini-card-avatar"></div>
+                                            </div>
+                                        </div>
+                                        <div class="mini-table">
+                                            <div class="mini-table-row">
+                                                <div class="mini-table-cell">Proyecto A</div>
+                                                <div class="mini-table-cell">$5,000</div>
+                                            </div>
+                                            <div class="mini-table-row">
+                                                <div class="mini-table-cell">Proyecto B</div>
+                                                <div class="mini-table-cell">$3,500</div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <span>Oscuro</span>
                         </div>
-                        <div class="theme-option" onclick="applyTheme('pink')">
+                        <div class="theme-option" data-theme="pink" onclick="applyTheme('pink')">
                             <div class="theme-preview-large pink-preview">
-                                <div class="preview-header"></div>
-                                <div class="preview-content">
-                                    <div class="paint-splash"></div>
+                                <div class="mini-page pink-theme">
+                                    <div class="mini-header">
+                                        <div class="mini-logo">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                                <polyline points="9,22 9,12 15,12 15,22"></polyline>
+                                            </svg>
+                                        </div>
+                                        <div class="mini-nav">
+                                            <div class="mini-nav-btn"></div>
+                                            <div class="mini-nav-btn"></div>
+                                            <div class="mini-nav-btn"></div>
+                                        </div>
+                                    </div>
+                                    <div class="mini-content">
+                                        <div class="mini-welcome">
+                                            <div class="mini-avatar"></div>
+                                            <div class="mini-title">¡Bienvenido!</div>
+                                            <div class="mini-subtitle">¿En qué vamos a trabajar hoy?</div>
+                                        </div>
+                                        <div class="mini-search">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="11" cy="11" r="8"/>
+                                                <path d="M21 21l-4.35-4.35"/>
+                                            </svg>
+                                        </div>
+                                        <div class="mini-cards">
+                                            <div class="mini-card">
+                                                <div class="mini-card-avatar"></div>
+                                            </div>
+                                            <div class="mini-card">
+                                                <div class="mini-card-avatar"></div>
+                                            </div>
+                                        </div>
+                                        <div class="mini-table">
+                                            <div class="mini-table-row">
+                                                <div class="mini-table-cell">Proyecto A</div>
+                                                <div class="mini-table-cell">$5,000</div>
+                                            </div>
+                                            <div class="mini-table-row">
+                                                <div class="mini-table-cell">Proyecto B</div>
+                                                <div class="mini-table-cell">$3,500</div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <span>Rosa</span>
                         </div>
-                        <div class="theme-option" onclick="applyTheme('white')">
+                        <div class="theme-option" data-theme="white" onclick="applyTheme('white')">
                             <div class="theme-preview-large white-preview">
-                                <div class="preview-header"></div>
-                                <div class="preview-content">
-                                    <div class="paint-splash"></div>
+                                <div class="mini-page white-theme">
+                                    <div class="mini-header">
+                                        <div class="mini-logo">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                                <polyline points="9,22 9,12 15,12 15,22"></polyline>
+                                            </svg>
+                                        </div>
+                                        <div class="mini-nav">
+                                            <div class="mini-nav-btn"></div>
+                                            <div class="mini-nav-btn"></div>
+                                            <div class="mini-nav-btn"></div>
+                                        </div>
+                                    </div>
+                                    <div class="mini-content">
+                                        <div class="mini-welcome">
+                                            <div class="mini-avatar"></div>
+                                            <div class="mini-title">¡Bienvenido!</div>
+                                            <div class="mini-subtitle">¿En qué vamos a trabajar hoy?</div>
+                                        </div>
+                                        <div class="mini-search">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="11" cy="11" r="8"/>
+                                                <path d="M21 21l-4.35-4.35"/>
+                                            </svg>
+                                        </div>
+                                        <div class="mini-cards">
+                                            <div class="mini-card">
+                                                <div class="mini-card-avatar"></div>
+                                            </div>
+                                            <div class="mini-card">
+                                                <div class="mini-card-avatar"></div>
+                                            </div>
+                                        </div>
+                                        <div class="mini-table">
+                                            <div class="mini-table-row">
+                                                <div class="mini-table-cell">Proyecto A</div>
+                                                <div class="mini-table-cell">$5,000</div>
+                                            </div>
+                                            <div class="mini-table-row">
+                                                <div class="mini-table-cell">Proyecto B</div>
+                                                <div class="mini-table-cell">$3,500</div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <span>Blanco</span>
                         </div>
-                        <div class="theme-option" onclick="applyTheme('coffee')">
+                        <div class="theme-option" data-theme="coffee" onclick="applyTheme('coffee')">
                             <div class="theme-preview-large coffee-preview">
-                                <div class="preview-header"></div>
-                                <div class="preview-content">
-                                    <div class="paint-splash"></div>
+                                <div class="mini-page coffee-theme">
+                                    <div class="mini-header">
+                                        <div class="mini-logo">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                                <polyline points="9,22 9,12 15,12 15,22"></polyline>
+                                            </svg>
+                                        </div>
+                                        <div class="mini-nav">
+                                            <div class="mini-nav-btn"></div>
+                                            <div class="mini-nav-btn"></div>
+                                            <div class="mini-nav-btn"></div>
+                                        </div>
+                                    </div>
+                                    <div class="mini-content">
+                                        <div class="mini-welcome">
+                                            <div class="mini-avatar"></div>
+                                            <div class="mini-title">¡Bienvenido!</div>
+                                            <div class="mini-subtitle">¿En qué vamos a trabajar hoy?</div>
+                                        </div>
+                                        <div class="mini-search">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="11" cy="11" r="8"/>
+                                                <path d="M21 21l-4.35-4.35"/>
+                                            </svg>
+                                        </div>
+                                        <div class="mini-cards">
+                                            <div class="mini-card">
+                                                <div class="mini-card-avatar"></div>
+                                            </div>
+                                            <div class="mini-card">
+                                                <div class="mini-card-avatar"></div>
+                                            </div>
+                                        </div>
+                                        <div class="mini-table">
+                                            <div class="mini-table-row">
+                                                <div class="mini-table-cell">Proyecto A</div>
+                                                <div class="mini-table-cell">$5,000</div>
+                                            </div>
+                                            <div class="mini-table-row">
+                                                <div class="mini-table-cell">Proyecto B</div>
+                                                <div class="mini-table-cell">$3,500</div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <span>Café</span>

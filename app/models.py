@@ -1835,3 +1835,18 @@ class Tarea(models.Model):
             'cancelada': '#dc3545'
         }
         return colors.get(self.estado, '#6c757d')
+
+class EmpleadoDelMes(models.Model):
+    """Modelo para almacenar al empleado del mes."""
+    usuario = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Usuario")
+    mes = models.PositiveIntegerField(verbose_name="Mes")
+    ano = models.PositiveIntegerField(verbose_name="Año")
+    monto_total = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Monto Total de Oportunidades")
+
+    class Meta:
+        verbose_name = "Empleado del Mes"
+        verbose_name_plural = "Empleados del Mes"
+        ordering = ['-ano', '-mes']
+
+    def __str__(self):
+        return f"{self.usuario.get_full_name() or self.usuario.username} - {self.mes}/{self.ano}"
