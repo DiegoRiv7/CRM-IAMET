@@ -4187,43 +4187,68 @@ window.setDockPosition = function(position) {
     console.log('setDockPosition called with:', position);
     
     // Get all dock elements
-    const allDocks = [
-        document.getElementById('dock-left'),
-        document.getElementById('dock-right'),
-        document.getElementById('dock-top'),
-        document.getElementById('dock-bottom')
-    ];
+    const dockLeft = document.getElementById('dock-left');
+    const dockRight = document.getElementById('dock-right');
+    const dockTop = document.getElementById('dock-top');
+    const dockBottom = document.getElementById('dock-bottom');
     
-    // Hide all docks first
-    allDocks.forEach(dock => {
-        if (dock) {
-            dock.style.opacity = '0';
-            dock.style.visibility = 'hidden';
-            dock.style.pointerEvents = 'none';
-            dock.style.transition = 'opacity 0.3s ease, visibility 0.3s ease';
-        }
-    });
+    // Hide all docks with the most aggressive approach
+    if (dockLeft) {
+        dockLeft.style.cssText = 'opacity: 0 !important; visibility: hidden !important; display: none !important; pointer-events: none !important; z-index: -1 !important;';
+    }
+    if (dockRight) {
+        dockRight.style.cssText = 'opacity: 0 !important; visibility: hidden !important; display: none !important; pointer-events: none !important; z-index: -1 !important;';
+    }
+    if (dockTop) {
+        dockTop.style.cssText = 'opacity: 0 !important; visibility: hidden !important; display: none !important; pointer-events: none !important; z-index: -1 !important;';
+    }
+    if (dockBottom) {
+        dockBottom.style.cssText = 'opacity: 0 !important; visibility: hidden !important; display: none !important; pointer-events: none !important; z-index: -1 !important;';
+    }
     
-    // Show the selected dock after a brief delay
-    setTimeout(() => {
-        const selectedDock = document.getElementById(`dock-${position}`);
-        if (selectedDock) {
-            // Force the dock to be visible with inline styles
-            selectedDock.style.opacity = '1';
-            selectedDock.style.visibility = 'visible';
-            selectedDock.style.pointerEvents = 'auto';
-            selectedDock.style.display = 'flex';
-            selectedDock.style.zIndex = '1500';
-            
-            // Force a reflow
-            selectedDock.offsetHeight;
-            
-            // Add a class to the body for additional CSS targeting
-            document.body.setAttribute('data-dock-position', position);
-            
-            console.log('Dock position changed to:', position);
+    // Show the selected dock with the most aggressive approach
+    const selectedDock = document.getElementById(`dock-${position}`);
+    if (selectedDock) {
+        // Force the dock to be visible with inline styles
+        selectedDock.style.cssText = 'opacity: 1 !important; visibility: visible !important; display: flex !important; pointer-events: auto !important; z-index: 1500 !important;';
+        
+        // Add a data attribute to the body for CSS targeting
+        document.body.setAttribute('data-dock-position', position);
+        
+        console.log('Dock position changed to:', position);
+    }
+    
+    // Remove any existing position styles to avoid conflicts
+    const existingStyle = document.getElementById('dock-position-style');
+    if (existingStyle) {
+        existingStyle.remove();
+    }
+    
+    // Create a new style element with high specificity as a backup
+    const style = document.createElement('style');
+    style.id = 'dock-position-style';
+    style.textContent = `
+        /* Hide all docks */
+        .macos-dock {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            display: none !important;
+            pointer-events: none !important;
         }
-    }, 50);
+        
+        /* Show only the selected dock */
+        #dock-${position} {
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: flex !important;
+            pointer-events: auto !important;
+            z-index: 1500 !important;
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Force a reflow to ensure the style is applied
+    document.body.offsetHeight;
     
     // Llamar a la función original si existe
     if (typeof originalSetDockPosition === 'function') {
