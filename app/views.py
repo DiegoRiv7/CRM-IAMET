@@ -2421,6 +2421,43 @@ def exportar_oportunidades_csv(request):
         ws = wb.active
         ws.title = "Reporte Oportunidades"
         
+        # --- START: Add Report Metadata ---
+        bold_font = Font(bold=True)
+        
+        # Row 1: Report Author
+        ws['A1'] = "Reporte generado por:"
+        ws['A1'].font = bold_font
+        ws['B1'] = request.user.get_full_name() or request.user.username
+        
+        # Row 2: Generation Date
+        ws['A2'] = "Fecha de generación:"
+        ws['A2'].font = bold_font
+        ws['B2'] = date.today().strftime("%d/%m/%Y")
+        
+        # Row 3: Applied Filters
+        ws['A3'] = "Filtros aplicados:"
+        ws['A3'].font = bold_font
+        
+        monto_min = request.GET.get('filterMontoMin')
+        monto_max = request.GET.get('filterMontoMax')
+
+        filters_applied = []
+        if monto_min or monto_max:
+            monto_str = f"Monto: {monto_min or 'N/A'} - {monto_max or 'N/A'}"
+            filters_applied.append(monto_str)
+        if area_filter:
+            filters_applied.append(f"Área: {area_filter}")
+        if mes_cierre_filter:
+            mes_display = dict(TodoItem.MES_CHOICES).get(mes_cierre_filter, mes_cierre_filter)
+            filters_applied.append(f"Mes de Cierre: {mes_display}")
+        
+        if filters_applied:
+            ws['B3'] = ", ".join(filters_applied)
+        else:
+            ws['B3'] = "Ninguno"
+            
+        # --- END: Add Report Metadata ---
+
         # Define styles
         header_font = Font(bold=True, color="FFFFFF")
         header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
@@ -2434,14 +2471,15 @@ def exportar_oportunidades_csv(request):
         
         # Define all headers (brands + months)
         all_headers = [
-            'OPORTUNIDAD', 'AREA', 'CONTACTO', 'ZEBRA', 'PANDUIT', 'APC', 'AVIGILION', 
+            'OPORTUNIDAD', 'AREA', 'CONTACTO', 'ZEBRA', 'PANDUIT', 'APC', 'AVIGILON', 
             'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'PÓLIZA', 'CISCO',
             'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC'
         ]
         
-        # Write all headers in a single row
+        # Write all headers in a single row (starting at row 5)
+        header_row_num = 5
         for col, header in enumerate(all_headers, 1):
-            cell = ws.cell(row=1, column=col, value=header)
+            cell = ws.cell(row=header_row_num, column=col, value=header)
             cell.font = header_font
             cell.fill = header_fill
             cell.alignment = header_alignment
@@ -2485,8 +2523,8 @@ def exportar_oportunidades_csv(request):
     else:
         print("DEBUG: No items found - check your filters!")
     
-    # Write data rows (start at row 2 for Excel since we now have single header, row 2 for CSV)
-    row = 2
+    # Write data rows (start at row 6 for Excel since we now have metadata headers)
+    row = 6
     for item in items:
         print(f"DEBUG: Processing item: {item.oportunidad}")
         # Get cotization details for this opportunity
