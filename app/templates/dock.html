@@ -4194,26 +4194,36 @@ window.setDockPosition = function(position) {
         document.getElementById('dock-bottom')
     ];
     
-    // Hide all docks except the selected one without removing them from DOM
+    // Hide all docks first
     allDocks.forEach(dock => {
         if (dock) {
-            if (dock.id === `dock-${position}`) {
-                // Show the selected dock
-                dock.style.opacity = '1';
-                dock.style.visibility = 'visible';
-                dock.style.display = 'flex';
-                dock.style.pointerEvents = 'auto';
-                dock.style.zIndex = '1500';
-            } else {
-                // Hide other docks
-                dock.style.opacity = '0';
-                dock.style.visibility = 'hidden';
-                dock.style.display = 'none';
-                dock.style.pointerEvents = 'none';
-                dock.style.zIndex = '-1';
-            }
+            dock.style.opacity = '0';
+            dock.style.visibility = 'hidden';
+            dock.style.pointerEvents = 'none';
+            dock.style.transition = 'opacity 0.3s ease, visibility 0.3s ease';
         }
     });
+    
+    // Show the selected dock after a brief delay
+    setTimeout(() => {
+        const selectedDock = document.getElementById(`dock-${position}`);
+        if (selectedDock) {
+            // Force the dock to be visible with inline styles
+            selectedDock.style.opacity = '1';
+            selectedDock.style.visibility = 'visible';
+            selectedDock.style.pointerEvents = 'auto';
+            selectedDock.style.display = 'flex';
+            selectedDock.style.zIndex = '1500';
+            
+            // Force a reflow
+            selectedDock.offsetHeight;
+            
+            // Add a class to the body for additional CSS targeting
+            document.body.setAttribute('data-dock-position', position);
+            
+            console.log('Dock position changed to:', position);
+        }
+    }, 50);
     
     // Llamar a la función original si existe
     if (typeof originalSetDockPosition === 'function') {
