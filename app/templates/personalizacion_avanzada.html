@@ -831,7 +831,7 @@
             transform: translateX(-50%);
             width: 32px;
             height: 32px;
-            background: var(--apple-gray);
+            background: rgba(29, 29, 31, 0.9);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.15);
@@ -1191,20 +1191,30 @@
             flex-direction: column;
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
             overflow: hidden;
+            position: relative;
+        }
+        
+        .mini-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
         }
         
         .mini-header {
-            height: 16px;
+            height: 20px;
             display: flex;
             align-items: center;
-            padding: 0 8px;
-            gap: 4px;
+            padding: 0 10px;
+            gap: 8px;
             flex-shrink: 0;
         }
         
         .mini-logo {
-            width: 16px;
-            height: 16px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             background: var(--apple-blue);
             display: flex;
@@ -1214,8 +1224,8 @@
         }
         
         .mini-logo svg {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             color: white;
         }
         
@@ -1225,56 +1235,88 @@
         
         .mini-content {
             flex: 1;
-            padding: 8px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            align-items: center;
+            gap: 15px;
             overflow: hidden;
         }
         
         .mini-welcome {
             text-align: center;
-            margin-bottom: 8px;
+            width: 100%;
         }
         
         .mini-avatar {
-            width: 48px;
-            height: 48px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
-            margin: 0 auto 10px;
+            margin: 0 auto 15px;
             border: 3px solid var(--apple-blue);
             background: var(--apple-background-secondary);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
         }
         
         .mini-title {
-            font-size: 16px;
+            font-size: 20px;
             font-weight: 600;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             color: var(--apple-label);
+            line-height: 1.2;
         }
         
         .mini-subtitle {
-            font-size: 12px;
+            font-size: 14px;
             color: var(--apple-label-secondary);
             margin-bottom: 20px;
+            line-height: 1.4;
+        }
+        
+        .mini-search {
+            width: 100%;
+            height: 36px;
+            border-radius: 18px;
+            background: var(--apple-background-secondary);
+            border: 1px solid var(--apple-separator);
+            display: flex;
+            align-items: center;
+            padding: 0 18px;
+            margin-bottom: 15px;
+        }
+        
+        .mini-search svg {
+            width: 16px;
+            height: 16px;
+            color: var(--apple-gray);
+            margin-right: 10px;
+        }
+        
+        .mini-search-text {
+            font-size: 14px;
+            color: var(--apple-gray);
         }
         
         .mini-cards {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 16px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            width: 100%;
         }
         
         .mini-card {
-            flex: 1;
-            height: 54px;
-            border-radius: 10px;
-            background: var(--apple-background-secondary);
-            border: 1px solid var(--apple-separator);
+            height: 60px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
             padding: 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
         }
         
         .mini-card-avatar {
@@ -1282,23 +1324,20 @@
             height: 24px;
             border-radius: 50%;
             background: var(--apple-background-tertiary);
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+        }
+        
+        .mini-card-title {
+            font-size: 10px;
+            color: var(--apple-label-secondary);
+            text-align: center;
         }
         
         /* Theme specific miniature styles con colores fijos */
+        
+        /* Tema oscuro - ya está bien definido arriba */
         .dark-theme .mini-page {
-            background: linear-gradient(135deg, #000000 0%, #1D1D1F 100%) !important;
-        }
-        
-        .dark-theme .mini-page,
-        .dark-theme .mini-header,
-        .dark-theme .mini-content,
-        .dark-theme .mini-card {
-            background: rgba(0, 0, 0, 0.8) !important;
-        }
-        
-        .dark-theme .mini-logo {
-            background: #007AFF !important;
+            background: #000000 !important;
         }
         
         .dark-theme .mini-title {
@@ -1309,93 +1348,119 @@
             color: #EBEBF5 !important;
         }
         
-        .dark-theme .mini-avatar {
-            border-color: #007AFF !important;
-            background: rgba(255, 255, 255, 0.1) !important;
-        }
-        
         .dark-theme .mini-search {
             background: rgba(255, 255, 255, 0.1) !important;
             border-color: rgba(255, 255, 255, 0.2) !important;
-        }
-        
-        .dark-theme .mini-card {
-            background: rgba(255, 255, 255, 0.1) !important;
-            border-color: rgba(255, 255, 255, 0.2) !important;
-        }
-        
-        .dark-theme .mini-card-avatar {
-            background: rgba(255, 255, 255, 0.2) !important;
         }
         
         .dark-theme .mini-search svg {
             color: rgba(255, 255, 255, 0.7) !important;
         }
         
-        /* Asegurar que el tema oscuro no se vea afectado por otros temas */
-        .mini-page.dark-theme,
-        .dark-preview .mini-page,
-        .theme-option[onclick*="'dark'"] .mini-page {
-            background: linear-gradient(135deg, #000000 0%, #1D1D1F 100%) !important;
+        .dark-theme .mini-search-text {
+            color: rgba(255, 255, 255, 0.7) !important;
         }
         
-        .mini-page.dark-theme *,
-        .dark-preview .mini-page *,
-        .theme-option[onclick*="'dark'"] .mini-page * {
-            background-color: rgba(0, 0, 0, 0.8) !important;
-            border-color: rgba(255, 255, 255, 0.2) !important;
-            color: #FFFFFF !important;
+        .dark-theme .mini-card {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
         }
         
-        .mini-page.dark-theme .mini-logo,
-        .dark-preview .mini-page .mini-logo,
-        .theme-option[onclick*="'dark'"] .mini-page .mini-logo {
-            background: #007AFF !important;
-        }
-        
-        .mini-page.dark-theme .mini-title,
-        .dark-preview .mini-page .mini-title,
-        .theme-option[onclick*="'dark'"] .mini-page .mini-title {
-            color: #FFFFFF !important;
-        }
-        
-        .mini-page.dark-theme .mini-subtitle,
-        .dark-preview .mini-page .mini-subtitle,
-        .theme-option[onclick*="'dark'"] .mini-page .mini-subtitle {
+        .dark-theme .mini-card-title {
             color: #EBEBF5 !important;
         }
         
-        .mini-page.dark-theme .mini-avatar,
-        .dark-preview .mini-page .mini-avatar,
-        .theme-option[onclick*="'dark'"] .mini-page .mini-avatar {
-            border-color: #007AFF !important;
-            background: rgba(255, 255, 255, 0.1) !important;
+        /* Tema rosa */
+        .pink-theme .mini-title {
+            color: #2d1b2e !important;
         }
         
-        .mini-page.dark-theme .mini-search,
-        .dark-preview .mini-page .mini-search,
-        .theme-option[onclick*="'dark'"] .mini-page .mini-search {
-            background: rgba(255, 255, 255, 0.1) !important;
-            border-color: rgba(255, 255, 255, 0.2) !important;
+        .pink-theme .mini-subtitle {
+            color: #5d2f47 !important;
         }
         
-        .mini-page.dark-theme .mini-card,
-        .dark-preview .mini-page .mini-card,
-        .theme-option[onclick*="'dark'"] .mini-page .mini-card {
-            background: rgba(255, 255, 255, 0.1) !important;
-            border-color: rgba(255, 255, 255, 0.2) !important;
+        .pink-theme .mini-search {
+            background: rgba(255, 240, 245, 0.9) !important;
+            border-color: rgba(229, 90, 135, 0.3) !important;
         }
         
-        .mini-page.dark-theme .mini-card-avatar,
-        .dark-preview .mini-page .mini-card-avatar,
-        .theme-option[onclick*="'dark'"] .mini-page .mini-card-avatar {
-            background: rgba(255, 255, 255, 0.2) !important;
+        .pink-theme .mini-search svg {
+            color: #E55A87 !important;
         }
         
-        .mini-page.dark-theme .mini-search svg,
-        .dark-preview .mini-page .mini-search svg,
-        .theme-option[onclick*="'dark'"] .mini-page .mini-search svg {
-            color: rgba(255, 255, 255, 0.7) !important;
+        .pink-theme .mini-search-text {
+            color: #6B4C6D !important;
+        }
+        
+        .pink-theme .mini-card {
+            background: rgba(255, 228, 239, 0.7) !important;
+            border-color: rgba(255, 107, 157, 0.2) !important;
+        }
+        
+        .pink-theme .mini-card-title {
+            color: #5d2f47 !important;
+        }
+        
+        /* Tema blanco */
+        .white-theme .mini-title {
+            color: #212529 !important;
+        }
+        
+        .white-theme .mini-subtitle {
+            color: #343a40 !important;
+        }
+        
+        .white-theme .mini-search {
+            background: rgba(233, 236, 239, 0.9) !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        .white-theme .mini-search svg {
+            color: #6c757d !important;
+        }
+        
+        .white-theme .mini-search-text {
+            color: #6c757d !important;
+        }
+        
+        .white-theme .mini-card {
+            background: rgba(233, 236, 239, 0.7) !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        .white-theme .mini-card-title {
+            color: #343a40 !important;
+        }
+        
+        /* Tema café */
+        .coffee-theme .mini-title {
+            color: #4a3020 !important;
+        }
+        
+        .coffee-theme .mini-subtitle {
+            color: #5d3d2a !important;
+        }
+        
+        .coffee-theme .mini-search {
+            background: rgba(239, 230, 219, 0.9) !important;
+            border-color: rgba(139, 69, 19, 0.1) !important;
+        }
+        
+        .coffee-theme .mini-search svg {
+            color: #8b6239 !important;
+        }
+        
+        .coffee-theme .mini-search-text {
+            color: #8b6239 !important;
+        }
+        
+        .coffee-theme .mini-card {
+            background: rgba(239, 230, 219, 0.7) !important;
+            border-color: rgba(139, 69, 19, 0.1) !important;
+        }
+        
+        .coffee-theme .mini-card-title {
+            color: #5d3d2a !important;
         }
         
         .pink-theme .mini-page {
