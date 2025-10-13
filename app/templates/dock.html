@@ -3259,6 +3259,26 @@ window.handleElementConfusion = window.handleElementConfusion || function() { re
             const designPanel = document.getElementById('design-panel');
             const positionControls = document.getElementById('position-controls');
             
+            // Restore design panel state if it was saved
+            const savedPanelState = localStorage.getItem('designPanelState');
+            if (savedPanelState) {
+                try {
+                    const panelState = JSON.parse(savedPanelState);
+                    
+                    if (panelState.isDesignPanelOpen && designPanel) {
+                        designPanel.classList.add('active');
+                        console.log('Restored design panel open state');
+                    }
+                    
+                    if (panelState.isPositionPanelOpen && positionControls) {
+                        positionControls.classList.add('active');
+                        console.log('Restored position controls open state');
+                    }
+                } catch (error) {
+                    console.error('Error restoring panel state:', error);
+                }
+            }
+            
             if (designPanel) {
                 designPanel.classList.add('position-' + dockPosition);
             }
@@ -4203,6 +4223,18 @@ window.setDockPosition = function(position) {
     // Save the position to localStorage first
     window.saveDockPosition(position);
     console.log('Dock position saved to localStorage:', position);
+    
+    // Save the state of the design panel before reloading
+    const designPanel = document.getElementById('design-panel');
+    const positionControls = document.getElementById('position-controls');
+    const isDesignPanelOpen = designPanel && designPanel.classList.contains('active');
+    const isPositionPanelOpen = positionControls && positionControls.classList.contains('active');
+    
+    // Save panel states to localStorage
+    localStorage.setItem('designPanelState', JSON.stringify({
+        isDesignPanelOpen: isDesignPanelOpen,
+        isPositionPanelOpen: isPositionPanelOpen
+    }));
     
     // Show notification if showNotification function exists
     if (typeof showNotification === 'function') {
