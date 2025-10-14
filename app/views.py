@@ -4149,15 +4149,23 @@ def cotizaciones_por_oportunidad_view(request, oportunidad_id):
         except Exception as e:
             print(f"❌ Error en detección de cotizaciones nuevas: {e}")
     
-    context = {
-        'oportunidad': oportunidad,
-        'cotizaciones': cotizaciones,
-        'volumetrias': volumetrias,
-        'tiene_cotizaciones': cotizaciones.exists(),
-        'tiene_volumetrias': volumetrias.exists(),
-        'tipo_contenido': tipo_contenido,
-        
-    }
+        context = {
+    
+            'oportunidad': oportunidad,
+    
+            'cotizaciones': cotizaciones,
+    
+            'volumetrias': volumetrias,
+    
+            'tiene_cotizaciones': cotizaciones.exists(),
+    
+            'tiene_volumetrias': volumetrias.exists(),
+    
+            'tipo_contenido': tipo_contenido,
+    
+            'is_engineer': True,
+    
+        }
     
     return render(request, 'cotizaciones_por_oportunidad.html', context)
 
