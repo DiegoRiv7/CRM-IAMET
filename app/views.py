@@ -4171,6 +4171,10 @@ def cotizaciones_por_oportunidad_view(request, oportunidad_id):
     if 'context' not in locals():
         context = {}
     
+    # Verificar que la oportunidad esté en el contexto
+    if 'oportunidad' not in context:
+        context['oportunidad'] = oportunidad
+    
     return render(request, 'cotizaciones_por_oportunidad.html', context)
 
 @login_required
