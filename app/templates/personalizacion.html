@@ -1063,12 +1063,12 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         const savedTheme = localStorage.getItem('theme') || 'dark';
         console.log('Tema guardado encontrado:', savedTheme);
         
-        // Aplicar el tema guardado usando la función applyTheme de base.html
-        if (typeof applyTheme === 'function') {
-            applyTheme(savedTheme);
+        // Aplicar el tema guardado usando la función applyThemeImmediate de dock.html
+        if (typeof applyThemeImmediate === 'function') {
+            applyThemeImmediate(savedTheme);
         } else {
             // Fallback si la función no está disponible
-            console.log('applyTheme no está disponible, aplicando tema manualmente');
+            console.log('applyThemeImmediate no está disponible, aplicando tema manualmente');
             
             // Aplicar tema basado en la lógica original
             if (savedTheme === 'light' || savedTheme === 'white') {
@@ -1111,8 +1111,8 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             
             darkModeToggle.addEventListener('change', function() {
                 const theme = this.checked ? 'light' : 'dark';
-                if (typeof applyTheme === 'function') {
-                    applyTheme(theme);
+                if (typeof applyThemeImmediate === 'function') {
+                    applyThemeImmediate(theme);
                 }
             });
         }
@@ -1131,8 +1131,8 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
                     theme = 'light';
                 }
                 
-                // Aplicar el tema usando la función applyTheme de base.html
-                applyTheme(theme);
+                // Aplicar el tema usando la función applyThemeImmediate de dock.html
+                applyThemeImmediate(theme);
                 
                 // Actualizar la selección visual
                 colorOptions.forEach(opt => opt.classList.remove('selected'));
