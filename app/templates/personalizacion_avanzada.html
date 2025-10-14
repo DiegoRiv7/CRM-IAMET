@@ -2827,12 +2827,27 @@
         function openDesignSettings() {
             showModal('designModal');
             
-            // Inicializar el tema activo inmediatamente, sin retraso
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme) {
-                initializeActiveTheme(savedTheme);
-                initializeThemeDots(savedTheme);
-            }
+            // Inicializar el tema activo con un pequeño retraso para asegurar que el DOM esté listo
+            setTimeout(() => {
+                const savedTheme = localStorage.getItem('theme');
+                console.log('openDesignSettings - savedTheme:', savedTheme);
+                if (savedTheme) {
+                    initializeActiveTheme(savedTheme);
+                    initializeThemeDots(savedTheme);
+                    
+                    // Verificar que se aplicó correctamente
+                    setTimeout(() => {
+                        const selectedThemeOption = document.querySelector(`.theme-option[onclick*="'${savedTheme}'"]`);
+                        if (selectedThemeOption) {
+                            console.log('Tema activo inicializado correctamente:', savedTheme);
+                        } else {
+                            console.warn('No se encontró el tema activo:', savedTheme);
+                        }
+                    }, 50);
+                } else {
+                    console.log('No hay tema guardado en localStorage');
+                }
+            }, 100);
         }
 
         function openLanguageSettings() {
@@ -3406,6 +3421,7 @@
                 
                 // Guardar preferencia y aplicar el tema al documento
                 localStorage.setItem('theme', theme);
+                console.log('Theme saved to localStorage:', theme);
                 
                 // Aplicar cambios específicos para cada tema de forma inmediata
                 if (theme === 'dark') {
@@ -4309,6 +4325,8 @@
         
         // Inicializar estados activos al cargar la página
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded started');
+            
             // Obtener tema guardado sin forzar uno por defecto
             let currentTheme = localStorage.getItem('theme');
             
@@ -4330,6 +4348,14 @@
                     setTimeout(() => {
                         applyThemeImmediate(currentTheme);
                         console.log('Second theme application completed');
+                        
+                        // Verificar que el tema se aplicó correctamente
+                        const selectedOption = document.querySelector(`.theme-option[onclick*="'${currentTheme}'"]`);
+                        if (selectedOption && selectedOption.classList.contains('active')) {
+                            console.log('Theme successfully initialized as active:', currentTheme);
+                        } else {
+                            console.warn('Theme option not properly activated:', currentTheme);
+                        }
                     }, 100);
                 }, 100);
             } else {
@@ -4358,6 +4384,8 @@
                 return;
             }
             
+            console.log('initializeActiveTheme called with:', theme);
+            
             // Primero limpiar todos los temas
             document.querySelectorAll('.theme-option').forEach(option => {
                 option.classList.remove('active');
@@ -4372,17 +4400,28 @@
             });
             
             // Luego activar solo el tema seleccionado
+            let foundTheme = false;
             document.querySelectorAll('.theme-option').forEach(option => {
-                if (option.getAttribute('onclick') && option.getAttribute('onclick').includes(`'${theme}'`)) {
+                const onclickAttr = option.getAttribute('onclick');
+                if (onclickAttr && onclickAttr.includes(`'${theme}'`)) {
                     option.classList.add('active');
                     // Aplicar estilos de selección con !important
                     option.style.setProperty('border-color', 'var(--apple-blue)', 'important');
                     option.style.setProperty('box-shadow', '0 0 0 2px rgba(0, 122, 255, 0.5)', 'important');
+                    option.style.setProperty('transform', 'translateY(-2px)', 'important');
+                    foundTheme = true;
+                    console.log('Theme option activated:', theme, option);
                 }
             });
+            
+            if (!foundTheme) {
+                console.warn('No theme option found for:', theme);
+            }
         }
         
         function initializeThemeDots(theme) {
+            console.log('initializeThemeDots called with:', theme);
+            
             // Limpiar todas las iluminaciones de los puntos de tema
             document.querySelectorAll('.theme-dot').forEach(dot => {
                 dot.style.boxShadow = '';
@@ -4403,7 +4442,12 @@
                     } else if (theme === 'coffee') {
                         dot.style.boxShadow = '0 0 0 3px rgba(139, 98, 57, 0.5), 0 0 15px rgba(139, 98, 57, 0.7)';
                     }
+                    console.log('Theme dot illuminated for theme:', theme);
+                } else {
+                    console.warn('Theme dot element not found in container:', selectedDot);
                 }
+            } else {
+                console.warn('Theme dot container not found for theme:', theme);
             }
         }
         
