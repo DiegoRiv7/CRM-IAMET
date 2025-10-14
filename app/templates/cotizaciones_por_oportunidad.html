@@ -1776,9 +1776,7 @@
         let clickHandler = '';
 
         // ALIGNMENT: Align right if the activity user is the opportunity owner
-        if (activity.usuario_id && activity.usuario_id === OPPORTUNITY_OWNER_ID) {
-            alignmentClass = 'align-right';
-        }
+        
 
         switch (activity.tipo) {
             case 'creacion':
