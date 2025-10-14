@@ -79,24 +79,74 @@
     }
     .search-icon-container:hover { background: rgba(255, 255, 255, 0.15); transform: scale(1.05); }
     
-    /* Filter Widget */
+    /* Filter Widget - Enhanced Apple Design */
     .filter-icon-container {
-        width: 40px; height: 40px; border-radius: 50%;
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        width: 44px; height: 44px; border-radius: 12px;
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
         display: flex; align-items: center; justify-content: center;
-        cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow:
+            0 1px 3px rgba(0,0,0,0.12),
+            0 1px 2px rgba(0,0,0,0.24),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
         color: var(--apple-label);
+        position: relative;
+        overflow: hidden;
     }
-    .filter-icon-container:hover { 
-        background: rgba(255, 255, 255, 0.15); 
-        transform: scale(1.05); 
+    
+    .filter-icon-container::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
     }
+    
+    .filter-icon-container:hover {
+        background: rgba(255, 255, 255, 0.12);
+        transform: scale(1.05) translateY(-1px);
+        border-color: rgba(255, 255, 255, 0.25);
+        box-shadow:
+            0 4px 12px rgba(0,0,0,0.15),
+            0 2px 4px rgba(0,0,0,0.12),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+    
+    .filter-icon-container:hover::before {
+        opacity: 1;
+    }
+    
     .filter-icon-container.active {
-        background: var(--apple-blue);
+        background: linear-gradient(135deg, var(--apple-blue) 0%, #0077ED 100%);
         color: white;
+        border-color: rgba(10, 132, 255, 0.5);
+        box-shadow:
+            0 4px 12px rgba(10, 132, 255, 0.4),
+            0 2px 4px rgba(10, 132, 255, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        transform: scale(1.02);
+    }
+    
+    .filter-icon-container.active::before {
+        background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
+        opacity: 1;
+    }
+    
+    /* Enhanced icon animation */
+    .filter-icon-container svg {
+        transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+    
+    .filter-icon-container:hover svg {
+        transform: rotate(90deg) scale(1.1);
+    }
+    
+    .filter-icon-container.active svg {
+        transform: rotate(180deg);
     }
     
     .search-input {
@@ -220,35 +270,60 @@
     
     .filter-group {
         margin-bottom: 1.5rem;
+        position: relative;
     }
     
     .filter-label {
         display: block;
         font-weight: 600;
         color: var(--apple-label);
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.75rem;
         font-size: 0.9rem;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        opacity: 0.8;
     }
     
     .filter-input {
         width: 100%;
-        padding: 12px 16px;
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid var(--apple-separator);
-        border-radius: 12px;
+        padding: 14px 18px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
         color: var(--apple-label);
-        font-size: 1rem;
+        font-size: 0.95rem;
         outline: none;
-        transition: all 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        box-shadow:
+            0 1px 3px rgba(0, 0, 0, 0.12),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
     
     .filter-input:focus {
         border-color: var(--apple-blue);
-        background: rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.1);
+        box-shadow:
+            0 0 0 3px rgba(10, 132, 255, 0.15),
+            0 4px 12px rgba(0, 0, 0, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transform: translateY(-1px);
     }
     
     .filter-input::placeholder {
         color: var(--apple-label-secondary);
+        opacity: 0.7;
+    }
+    
+    /* Enhanced select styling */
+    select.filter-input {
+        appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F2F2F7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 20px;
+        padding-right: 40px;
     }
     
     .filter-range-group {
@@ -265,63 +340,140 @@
     
     .filter-btn {
         flex: 1;
-        padding: 12px 24px;
-        border-radius: 12px;
+        padding: 14px 24px;
+        border-radius: 14px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         border: none;
-        font-size: 1rem;
+        font-size: 0.95rem;
+        letter-spacing: 0.3px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .filter-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .filter-btn:hover::before {
+        left: 100%;
     }
     
     .filter-btn.primary {
-        background: var(--apple-blue);
+        background: linear-gradient(135deg, var(--apple-blue) 0%, #0077ED 100%);
         color: white;
+        box-shadow:
+            0 4px 12px rgba(10, 132, 255, 0.3),
+            0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
     .filter-btn.primary:hover {
-        filter: brightness(1.1);
+        transform: translateY(-2px);
+        box-shadow:
+            0 6px 16px rgba(10, 132, 255, 0.4),
+            0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    .filter-btn.primary:active {
+        transform: translateY(0);
     }
     
     .filter-btn.secondary {
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.08);
         color: var(--apple-label);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
     }
     
     .filter-btn.secondary:hover {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.12);
+        transform: translateY(-1px);
+        border-color: rgba(255, 255, 255, 0.25);
     }
 
 .report-filters-container {
     display: flex;
-    gap: 1rem;
-    align-items: stretch; /* To make the items have the same height */
+    gap: 1.5rem;
+    align-items: stretch;
     width: 100%;
+    animation: slideDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .filter-box {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-    padding: 1.5rem; /* Increased padding */
+    gap: 1.5rem;
+    padding: 2rem;
     border: 1px solid var(--apple-separator);
-    border-radius: 16px; /* Slightly larger radius */
-    background: rgba(28, 28, 30, 0.7); /* Darker background to match table */
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+    background: rgba(28, 28, 30, 0.8);
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
     flex-grow: 1;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        0 4px 12px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.filter-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.2) 50%,
+        transparent 100%);
 }
 
 .report-filters-container .filter-group {
     margin-bottom: 0;
+    position: relative;
+}
+
+.report-filters-container .filter-group::after {
+    content: '';
+    position: absolute;
+    bottom: -0.75rem;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--apple-separator);
+    opacity: 0.3;
 }
 
 .report-filters-container .filter-actions {
     margin-top: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.75rem;
     flex-shrink: 0;
+    justify-content: center;
 }
 
     .light-theme .data-table-container {
@@ -2101,19 +2253,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (searchIcon && searchWidget && searchInput) {
-        searchIcon.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const isExpanded = searchWidget.classList.contains('expanded');
+        // Agregamos el evento click al search-icon-container
+        const searchIconContainer = searchIcon.closest('.search-icon-container');
+        if (searchIconContainer) {
+            searchIconContainer.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isExpanded = searchWidget.classList.contains('expanded');
 
-            if (isExpanded) {
-                performSearch();
-            } else {
-                searchWidget.classList.add('expanded');
-                searchInput.focus();
-                const end = searchInput.value.length;
-                searchInput.setSelectionRange(end, end);
-            }
-        });
+                if (isExpanded) {
+                    performSearch();
+                } else {
+                    searchWidget.classList.add('expanded');
+                    searchInput.focus();
+                    const end = searchInput.value.length;
+                    searchInput.setSelectionRange(end, end);
+                }
+            });
+        }
 
         searchInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {

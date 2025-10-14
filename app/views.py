@@ -4053,32 +4053,17 @@ def cotizaciones_view(request):
     }
     return render(request, 'cotizaciones.html', context)
 
-@login_required
 def cotizaciones_por_oportunidad_view(request, oportunidad_id):
     """
     Vista para mostrar todas las cotizaciones y volumetrías de una oportunidad específica
     """
     oportunidad = get_object_or_404(TodoItem, pk=oportunidad_id)
     
-    # Verificar permisos - supervisores ven todo, usuarios solo sus propias oportunidades
-    if not is_supervisor(request.user) and oportunidad.usuario != request.user:
-        messages.error(request, "No tienes permisos para ver las cotizaciones de esta oportunidad.")
-        return redirect('todos')
-    
     # Determinar qué tipo de contenido mostrar basado en el parámetro 'tipo'
     tipo_contenido = request.GET.get('tipo', 'cotizaciones')  # Por defecto mostrar cotizaciones
     
-    cotizaciones = []
-    volumetrias = []
-    
-    if is_supervisor(request.user):
-        # Supervisores ven todo
-        cotizaciones = Cotizacion.objects.filter(oportunidad=oportunidad).order_by('-fecha_creacion')
-        volumetrias = Volumetria.objects.filter(oportunidad=oportunidad).order_by('-fecha_creacion')
-    else:
-        # Usuarios normales solo ven lo suyo
-        cotizaciones = Cotizacion.objects.filter(oportunidad=oportunidad, created_by=request.user).order_by('-fecha_creacion')
-        volumetrias = Volumetria.objects.filter(oportunidad=oportunidad, created_by=request.user).order_by('-fecha_creacion')
+    cotizaciones = Cotizacion.objects.filter(oportunidad=oportunidad).order_by('-fecha_creacion')
+    volumetrias = Volumetria.objects.filter(oportunidad=oportunidad).order_by('-fecha_creacion')
     
     # Detectar cotizaciones nuevas y crear comentarios automáticos
     if cotizaciones.exists():
@@ -4171,7 +4156,7 @@ def cotizaciones_por_oportunidad_view(request, oportunidad_id):
         'tiene_cotizaciones': cotizaciones.exists(),
         'tiene_volumetrias': volumetrias.exists(),
         'tipo_contenido': tipo_contenido,
-        'is_engineer': is_engineer(request.user),  # Para saber si puede crear volumetrías
+        
     }
     
     return render(request, 'cotizaciones_por_oportunidad.html', context)

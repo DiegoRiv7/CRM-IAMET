@@ -64,8 +64,8 @@
 {% block title %}{{ oportunidad.oportunidad }}{% endblock %}
 
 {% block content %}
-{% csrf_token %}
-{% if user.is_superuser %}
+
+
 <!-- CRM AVANZADO SOLO PARA SUPERUSUARIOS -->
 <style>
     :root {
@@ -1225,9 +1225,7 @@
             <a href="{% url 'todos' %}" class="apple-button apple-button-secondary">← Volver</a>
             <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="apple-button">+ Nueva Cotización</a>
             <a href="#" class="apple-button apple-button-proyecto" onclick="mostrarMensajeProyecto()">🏗️ Crear Proyecto</a>
-            {% if is_engineer %}
-            <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="apple-button apple-button-volumetria">📊 Nueva Volumetría</a>
-            {% endif %}
+
         </div>
     </div>
 
@@ -1366,7 +1364,7 @@
             </div>
 
             <!-- VOLUMETRÍAS -->
-            {% if volumetrias or is_engineer %}
+            {% if volumetrias %}
             <div class="info-section">
                 <div class="section-title">Volumetrías ({{ volumetrias.count }})</div>
                 <div class="volumetrias-lista">
@@ -1387,20 +1385,16 @@
                             <a href="{% url 'download_volumetria_pdf' volumetria.id %}" class="accion-btn download" title="Descargar">
                                 ⬇️
                             </a>
-                            {% if user.is_superuser or user == volumetria.created_by %}
                             <button onclick="eliminarVolumetria({{ volumetria.id }}, '{{ volumetria.titulo|escapejs }}')" class="accion-btn delete" title="Eliminar">
                                 🗑️
                             </button>
-                            {% endif %}
                         </div>
                     </div>
                     {% empty %}
-                    {% if is_engineer %}
                     <div class="no-items-message-simple">
                         <div class="no-items-icon">📊</div>
                         <div class="no-items-text">Sin volumetrías aún</div>
                     </div>
-                    {% endif %}
                     {% endfor %}
                 </div>
             </div>
@@ -1471,8 +1465,8 @@
 
 <script>
     const OPORTUNIDAD_ID = parseInt("{{ oportunidad.id }}".replace(/[,\s]/g, ''));
-    const OPPORTUNITY_OWNER_ID = {{ oportunidad.usuario.id }};
-    const CURRENT_USER_ID = {{ user.id }};
+    
+    const CURRENT_USER_ID = null;
     
     // Control de estados en header
     function toggleEstadoDropdownHeader() {
@@ -2361,76 +2355,7 @@
     });
 </script>
 
-{% else %}
-<!-- VISTA NORMAL PARA USUARIOS NO SUPERUSUARIOS -->
-<div style="padding: 2rem; text-align: center;">
-    <h2 style="color: var(--apple-label); margin-bottom: 1rem;">{{ oportunidad.oportunidad }}</h2>
-    <p style="color: var(--apple-label-secondary); margin-bottom: 2rem;">
-        Esta vista avanzada está disponible solo para administradores.
-    </p>
-    
-    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-        <a href="{% url 'todos' %}" class="apple-button apple-button-secondary">← Volver</a>
-        <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="apple-button">+ Nueva Cotización</a>
-        <a href="#" class="apple-button apple-button-proyecto" onclick="mostrarMensajeProyecto()">🏗️ Crear Proyecto</a>
-        {% if is_engineer %}
-        <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="apple-button">📊 Nueva Volumetría</a>
-        {% endif %}
-    </div>
-    
-    <!-- Lista simple de cotizaciones -->
-    {% if cotizaciones %}
-    <div style="margin-top: 2rem; max-width: 600px; margin-left: auto; margin-right: auto;">
-        <h3 style="color: var(--apple-label); margin-bottom: 1rem;">Cotizaciones</h3>
-        {% for cotizacion in cotizaciones %}
-        <div style="background: var(--apple-background-secondary); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <div style="font-weight: 500; color: var(--apple-label);">{{ cotizacion.titulo }}</div>
-                <div style="font-size: 0.9rem; color: var(--apple-label-secondary);">${{ cotizacion.total|floatformat:2 }} • {{ cotizacion.fecha_creacion|tijuana_time:"d/m/Y" }}</div>
-            </div>
-            <div style="display: flex; gap: 0.5rem;">
-                <a href="{% url 'view_cotizacion_pdf' cotizacion.id %}" target="_blank" class="apple-button apple-button-small">Ver</a>
-                <a href="{% url 'editar_cotizacion' cotizacion.id %}" class="apple-button apple-button-small">Editar</a>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-</div>
 
-<style>
-    .apple-button {
-        background: var(--apple-blue);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 0.5rem 1rem;
-        font-size: 0.9rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .apple-button:hover {
-        filter: brightness(1.1);
-        transform: translateY(-1px);
-    }
-
-    .apple-button-secondary {
-        background: var(--apple-separator);
-        color: var(--apple-label);
-    }
-
-    .apple-button-small {
-        padding: 0.4rem 0.8rem;
-        font-size: 0.8rem;
-    }
-</style>
-{% endif %}
 
 <script>
 // Activar modo cotizaciones INMEDIATAMENTE para ocultar dock
