@@ -1564,7 +1564,7 @@
         });
         
         // Global theme function to ensure consistency across all pages
-        function applyTheme(theme) {
+        window.applyTheme = function applyTheme(theme) {
             console.log('applyTheme called with:', theme);
             
             // First, clear all theme classes and attributes

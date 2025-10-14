@@ -3323,8 +3323,15 @@
             
             // Después de la animación de salida, cambiar los colores y hacer animación de entrada
             setTimeout(() => {
-                // Aplicar el tema
-                applyTheme(theme);
+                // Aplicar el tema usando la función global
+                if (typeof window.applyTheme === 'function') {
+                    window.applyTheme(theme);
+                } else {
+                    console.error('Global applyTheme function not found');
+                }
+                
+                // Actualizar la UI de selección de temas
+                updateThemeSelectionUI(theme);
                 
                 // Colores específicos para cada tema en el render
                 if (theme === 'dark') {
@@ -3400,14 +3407,33 @@
             }, 300);
         }
 
-        // Design functionality
+        // Design functionality - Usar la función global applyTheme de base.html
         function applyTheme(theme) {
             console.log('applyTheme called with:', theme);
             
-            // Primero, aplicar el tema inmediatamente usando la función inmediata
-            applyThemeImmediate(theme);
+            // Usar la función global applyTheme definida en base.html
+            if (typeof window.applyTheme === 'function') {
+                window.applyTheme(theme);
+            } else {
+                console.error('Global applyTheme function not found');
+            }
             
-            // Luego, deseleccionar todos los temas
+            // Actualizar la UI de selección de temas
+            updateThemeSelectionUI(theme);
+            
+            // Show notification
+            const themeNames = {
+                'dark': 'Oscuro',
+                'pink': 'Rosa',
+                'white': 'Blanco',
+                'coffee': 'Café'
+            };
+            showNotification(`Tema cambiado a ${themeNames[theme] || theme}`, 'success');
+        }
+        
+        // Función auxiliar para actualizar la UI de selección de temas
+        function updateThemeSelectionUI(theme) {
+            // Deseleccionar todos los temas
             const allThemeOptions = document.querySelectorAll('.theme-option');
             allThemeOptions.forEach(option => {
                 // Remover clase activa
@@ -3437,220 +3463,7 @@
                 selectedOption.style.setProperty('transform', 'translateY(-2px)', 'important');
                 
                 console.log('Tema seleccionado:', theme, selectedOption);
-                
-                // Guardar preferencia y aplicar el tema al documento
-                localStorage.setItem('theme', theme);
-                console.log('Theme saved to localStorage:', theme);
-                
-                // Verificar que el tema se guardó correctamente
-                const savedTheme = localStorage.getItem('theme');
-                console.log('Verification - Theme in localStorage after save:', savedTheme);
-                
-                if (savedTheme !== theme) {
-                    console.error('Theme was not saved correctly! Expected:', theme, 'Got:', savedTheme);
-                    // Intentar guardar de nuevo
-                    localStorage.setItem('theme', theme);
-                    console.log('Retrying to save theme:', theme);
-                }
-                
-                // Aplicar cambios específicos para cada tema de forma inmediata
-                if (theme === 'dark') {
-                    // Para el tema oscuro
-                    document.documentElement.classList.remove('light-theme', 'pink-theme');
-                    document.documentElement.classList.add('dark-theme');
-                    document.body.classList.remove('light-theme', 'pink-theme');
-                    document.body.classList.add('dark-theme');
-                    
-                    // Remover atributo de tema
-                    document.documentElement.removeAttribute('data-theme');
-                    
-                    // Restaurar variables CSS originales para tema oscuro
-                    document.documentElement.style.setProperty('--apple-background', '#000000');
-                    document.documentElement.style.setProperty('--apple-background-secondary', '#1D1D1F');
-                    document.documentElement.style.setProperty('--apple-background-tertiary', '#2C2C2E');
-                    document.documentElement.style.setProperty('--apple-background-quaternary', '#3A3A3C');
-                    document.documentElement.style.setProperty('--apple-label', '#FFFFFF');
-                    document.documentElement.style.setProperty('--apple-label-secondary', '#EBEBF5');
-                    document.documentElement.style.setProperty('--apple-label-tertiary', '#EBEBF599');
-                    document.documentElement.style.setProperty('--apple-label-quaternary', '#EBEBF54D');
-                    document.documentElement.style.setProperty('--apple-blue', '#007AFF');
-                    document.documentElement.style.setProperty('--apple-blue-light', '#4DA8FF');
-                    document.documentElement.style.setProperty('--apple-blue-dark', '#0056CC');
-                    document.documentElement.style.setProperty('--apple-separator', '#38383A');
-                    
-                    // Aplicar fondo inmediato
-                    document.body.style.background = '#000000';
-                    document.body.style.backgroundAttachment = 'fixed';
-                    
-                } else if (theme === 'pink') {
-                    // Para el tema rosa, asegurarse de desactivar otros temas
-                    document.documentElement.classList.remove('dark-theme', 'light-theme');
-                    document.body.classList.remove('dark-theme', 'light-theme');
-                    
-                    // Agregar clase y atributo de tema rosa
-                    document.body.classList.add('pink-theme');
-                    document.documentElement.setAttribute('data-theme', 'pink');
-                    
-                    // Aplicar colores específicos del tema rosa inmediatamente
-                    document.documentElement.style.setProperty('--apple-background', '#ffebf0');
-                    document.documentElement.style.setProperty('--apple-background-secondary', '#fff5f8');
-                    document.documentElement.style.setProperty('--apple-background-tertiary', '#ffe0e6');
-                    document.documentElement.style.setProperty('--apple-background-quaternary', '#ffd1dc');
-                    document.documentElement.style.setProperty('--apple-label', '#2d1b2e');
-                    document.documentElement.style.setProperty('--apple-label-secondary', '#5d2f47');
-                    document.documentElement.style.setProperty('--apple-label-tertiary', '#8b4d6b');
-                    document.documentElement.style.setProperty('--apple-label-quaternary', '#b96d8f');
-                    document.documentElement.style.setProperty('--apple-blue', '#ff6b9d');
-                    document.documentElement.style.setProperty('--apple-blue-light', '#ff8fab');
-                    document.documentElement.style.setProperty('--apple-blue-dark', '#e6396b');
-                    document.documentElement.style.setProperty('--apple-separator', 'rgba(229, 90, 135, 0.2)');
-                    
-                    // Aplicar fondo gradiente inmediato
-                    document.body.style.background = 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)';
-                    document.body.style.backgroundAttachment = 'fixed';
-                    
-                } else if (theme === 'light') {
-                    // Para el tema claro
-                    document.documentElement.classList.remove('dark-theme', 'pink-theme');
-                    document.documentElement.classList.add('light-theme', 'white-theme');
-                    document.body.classList.remove('dark-theme', 'pink-theme');
-                    document.body.classList.add('light-theme', 'white-theme');
-                    
-                    // Remover atributo de tema
-                    document.documentElement.removeAttribute('data-theme');
-                    
-                    // Aplicar colores específicos del tema blanco inmediatamente
-                    document.documentElement.style.setProperty('--apple-background', '#ffffff');
-                    document.documentElement.style.setProperty('--apple-background-secondary', '#f8f9fa');
-                    document.documentElement.style.setProperty('--apple-background-tertiary', '#f1f3f5');
-                    document.documentElement.style.setProperty('--apple-background-quaternary', '#e9ecef');
-                    document.documentElement.style.setProperty('--apple-label', '#212529');
-                    document.documentElement.style.setProperty('--apple-label-secondary', '#343a40');
-                    document.documentElement.style.setProperty('--apple-label-tertiary', '#495057');
-                    document.documentElement.style.setProperty('--apple-blue', '#007bff');
-                    document.documentElement.style.setProperty('--apple-blue-light', '#4da8ff');
-                    document.documentElement.style.setProperty('--apple-blue-dark', '#0056b3');
-                    document.documentElement.style.setProperty('--apple-separator', 'rgba(0, 0, 0, 0.1)');
-                    
-                    // Aplicar fondo inmediato
-                    document.body.style.background = '#ffffff';
-                    document.body.style.backgroundAttachment = 'fixed';
-                    
-                } else if (theme === 'coffee') {
-                    // Para el tema café
-                    document.documentElement.classList.remove('dark-theme', 'pink-theme');
-                    document.documentElement.classList.add('light-theme', 'coffee-theme');
-                    document.body.classList.remove('dark-theme', 'pink-theme');
-                    document.body.classList.add('light-theme', 'coffee-theme');
-                    
-                    // Remover atributo de tema
-                    document.documentElement.removeAttribute('data-theme');
-                    
-                    // Aplicar colores específicos del tema café inmediatamente
-                    document.documentElement.style.setProperty('--apple-background', '#f5e6d3');
-                    document.documentElement.style.setProperty('--apple-background-secondary', '#f0dcc7');
-                    document.documentElement.style.setProperty('--apple-background-tertiary', '#ebd4bb');
-                    document.documentElement.style.setProperty('--apple-background-quaternary', '#e6cca8');
-                    document.documentElement.style.setProperty('--apple-label', '#4a3020');
-                    document.documentElement.style.setProperty('--apple-label-secondary', '#5d3d2a');
-                    document.documentElement.style.setProperty('--apple-label-tertiary', '#7a5038');
-                    document.documentElement.style.setProperty('--apple-blue', '#8b6239');
-                    document.documentElement.style.setProperty('--apple-blue-light', '#a0724a');
-                    document.documentElement.style.setProperty('--apple-blue-dark', '#6b4a30');
-                    document.documentElement.style.setProperty('--apple-separator', 'rgba(139, 69, 19, 0.1)');
-                    
-                    // Aplicar fondo inmediato
-                    document.body.style.background = '#f5e6d3';
-                    document.body.style.backgroundAttachment = 'fixed';
-                }
             }
-
-            // Show notification
-            const themeNames = {
-                'dark': 'Oscuro',
-                'pink': 'Rosa',
-                'white': 'Blanco',
-                'coffee': 'Café'
-            };
-            showNotification(`Tema cambiado a ${themeNames[theme] || theme}`, 'success');
-            
-            // Forzar un repaint final para asegurar que todos los elementos se actualicen
-            setTimeout(() => {
-                document.body.style.display = 'none';
-                document.body.offsetHeight; // Force reflow
-                document.body.style.display = '';
-                console.log('Forced final repaint after theme change');
-            }, 50);
-            
-            // Confirmar que el tema se guardó correctamente
-            console.log('Theme saved to localStorage:', localStorage.getItem('theme'));
-            
-            // Aplicar tema inmediatamente para evitar mezclas
-            setTimeout(() => {
-                // Aplicar el tema una segunda vez para asegurar consistencia
-                if (theme === 'dark') {
-                    document.documentElement.classList.remove('light-theme', 'pink-theme', 'white-theme', 'coffee-theme');
-                    document.documentElement.classList.add('dark-theme');
-                    document.body.classList.remove('light-theme', 'pink-theme', 'white-theme', 'coffee-theme');
-                    document.body.classList.add('dark-theme');
-                    document.documentElement.removeAttribute('data-theme');
-                    document.body.removeAttribute('data-theme');
-                    document.body.style.background = '#000000';
-                    
-                    // Asegurar que el modal tenga texto blanco en tema oscuro
-                    const modalContent = document.querySelector('.modal-content');
-                    if (modalContent) {
-                        modalContent.style.color = '#FFFFFF';
-                    }
-                } else if (theme === 'pink') {
-                    document.documentElement.classList.remove('dark-theme', 'white-theme', 'coffee-theme');
-                    document.documentElement.classList.add('light-theme');
-                    document.body.classList.remove('dark-theme', 'white-theme', 'coffee-theme');
-                    document.body.classList.add('light-theme', 'pink-theme');
-                    document.documentElement.setAttribute('data-theme', 'pink');
-                    document.body.setAttribute('data-theme', 'pink');
-                    document.body.style.background = 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)';
-                    
-                    // Asegurar que el modal tenga texto oscuro en tema rosa
-                    const modalContent = document.querySelector('.modal-content');
-                    if (modalContent) {
-                        modalContent.style.color = '#2d1b2e';
-                    }
-                } else if (theme === 'white') {
-                    document.documentElement.classList.remove('dark-theme', 'pink-theme', 'coffee-theme');
-                    document.documentElement.classList.add('light-theme', 'white-theme');
-                    document.body.classList.remove('dark-theme', 'pink-theme', 'coffee-theme');
-                    document.body.classList.add('light-theme', 'white-theme');
-                    document.documentElement.removeAttribute('data-theme');
-                    document.body.removeAttribute('data-theme');
-                    document.body.style.background = '#ffffff';
-                    
-                    // Asegurar que el modal tenga texto oscuro en tema blanco
-                    const modalContent = document.querySelector('.modal-content');
-                    if (modalContent) {
-                        modalContent.style.color = '#212529';
-                    }
-                } else if (theme === 'coffee') {
-                    document.documentElement.classList.remove('dark-theme', 'pink-theme', 'white-theme');
-                    document.documentElement.classList.add('light-theme', 'coffee-theme');
-                    document.body.classList.remove('dark-theme', 'pink-theme', 'white-theme');
-                    document.body.classList.add('light-theme', 'coffee-theme');
-                    document.documentElement.removeAttribute('data-theme');
-                    document.body.removeAttribute('data-theme');
-                    document.body.style.background = '#f5e6d3';
-                    
-                    // Asegurar que el modal tenga texto oscuro en tema café
-                    const modalContent = document.querySelector('.modal-content');
-                    if (modalContent) {
-                        modalContent.style.color = '#4a3020';
-                    }
-                }
-                
-                // Forzar un repaint final
-                document.body.style.display = 'none';
-                document.body.offsetHeight; // Force reflow
-                document.body.style.display = '';
-            }, 100);
         }
 
         // Dock type functionality with animation
