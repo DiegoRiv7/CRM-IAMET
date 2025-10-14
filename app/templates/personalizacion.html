@@ -558,6 +558,99 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         </div>
     </div>
     <script>
+    // Función para aplicar temas inmediatamente
+    window.applyThemeImmediate = function(theme) {
+        try {
+            console.log('Aplicando tema inmediatamente:', theme);
+            
+            // Guardar el tema en localStorage
+            localStorage.setItem('theme', theme);
+            localStorage.setItem('preservedTheme', theme);
+            
+            // Aplicar clases de tema al documento
+            if (theme === 'pink' || theme === 'light') {
+                document.documentElement.classList.add('light-theme');
+                document.documentElement.setAttribute('data-theme', 'pink');
+                
+                // Para el tema rosa, aplicar variables CSS específicas
+                if (theme === 'pink') {
+                    document.documentElement.style.setProperty('--apple-background', 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)');
+                    document.documentElement.style.setProperty('--apple-blue', '#FF6B9D');
+                    document.documentElement.style.setProperty('--apple-label', '#2D1B2E');
+                    document.documentElement.style.setProperty('--apple-pink-gradient', 'linear-gradient(135deg, #FF6B9D 0%, #FFB6C1 50%, #FFC0CB 100%)');
+                }
+            } else {
+                // Modo oscuro (tema por defecto)
+                document.documentElement.classList.remove('light-theme');
+                document.documentElement.removeAttribute('data-theme');
+                
+                // Restaurar variables CSS del tema oscuro
+                document.documentElement.style.setProperty('--apple-background', '#000000');
+                document.documentElement.style.setProperty('--apple-blue', '#007AFF');
+                document.documentElement.style.setProperty('--apple-label', '#EBEBF5');
+            }
+            
+            // Mostrar notificación si la función está disponible
+            if (typeof showNotification === 'function') {
+                const themeNames = {
+                    'dark': 'Modo Oscuro',
+                    'light': 'Modo Claro',
+                    'pink': 'Tema Rosa'
+                };
+                showNotification(`Tema cambiado a: ${themeNames[theme] || theme}`, 'success');
+            }
+            
+            console.log('Tema aplicado exitosamente:', theme);
+            return true;
+            
+        } catch (error) {
+            console.error('Error al aplicar el tema:', error);
+            return false;
+        }
+    };
+    
+    // Función para mostrar notificaciones
+    window.showNotification = function(message, type = 'info') {
+        // Crear el elemento de notificación
+        const notification = document.createElement('div');
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#4ade80' : type === 'error' ? '#ef4444' : '#3b82f6'};
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 9999;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+        `;
+        
+        // Agregar al DOM
+        document.body.appendChild(notification);
+        
+        // Animar entrada
+        setTimeout(() => {
+            notification.style.opacity = '1';
+            notification.style.transform = 'translateY(0)';
+        }, 10);
+        
+        // Eliminar después de 3 segundos
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateY(-20px)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
+    };
+    
     // Selección y vista previa de avatar animado
     const avatarGallery = document.getElementById('avatarGallery');
     const avatarChoices = document.querySelectorAll('.avatar-choice');
@@ -1015,6 +1108,51 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     // Inicializar los botones de idioma cuando el documento esté listo
     document.addEventListener('DOMContentLoaded', function() {
         updateLanguageButtons();
+        
+        // Manejar el toggle de modo oscuro
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        if (darkModeToggle) {
+            // Establecer estado inicial basado en el tema actual
+            const currentTheme = localStorage.getItem('theme') || 'dark';
+            darkModeToggle.checked = currentTheme !== 'dark';
+            
+            darkModeToggle.addEventListener('change', function() {
+                const theme = this.checked ? 'light' : 'dark';
+                applyThemeImmediate(theme);
+            });
+        }
+        
+        // Manejar las opciones de color
+        const colorOptions = document.querySelectorAll('.color-option');
+        colorOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                const color = this.getAttribute('data-color');
+                
+                // Determinar el tema basado en el color seleccionado
+                let theme = 'dark';
+                if (color === '#f472b6') {
+                    theme = 'pink';
+                } else if (color === '#f59e0b') {
+                    theme = 'light';
+                }
+                
+                // Aplicar el tema
+                applyThemeImmediate(theme);
+                
+                // Actualizar la selección visual
+                colorOptions.forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+        });
+        
+        // Manejar el botón de aplicar cambios de diseño
+        const applyDesignBtn = document.querySelector('.config-section:nth-child(2) .save-button');
+        if (applyDesignBtn) {
+            applyDesignBtn.addEventListener('click', function() {
+                // Mostrar notificación de éxito
+                showNotification('Cambios de diseño aplicados correctamente', 'success');
+            });
+        }
     });
     </script>
     </body>
