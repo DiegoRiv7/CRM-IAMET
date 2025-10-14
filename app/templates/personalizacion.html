@@ -1119,31 +1119,42 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
         const savedTheme = localStorage.getItem('theme') || 'dark';
         console.log('Tema guardado encontrado:', savedTheme);
         
-        // Aplicar el tema guardado
-        if (typeof applyThemeImmediate === 'function') {
+        // Aplicar el tema guardado usando la misma lógica que applyTheme
+        if (typeof applyTheme === 'function') {
+            applyTheme(savedTheme);
+        } else if (typeof applyThemeImmediate === 'function') {
             applyThemeImmediate(savedTheme);
         } else {
             // Fallback si la función no está disponible
-            console.log('applyThemeImmediate no está disponible, aplicando tema manualmente');
+            console.log('applyTheme y applyThemeImmediate no están disponibles, aplicando tema manualmente');
             
-            // Aplicar clases de tema al documento
-            if (savedTheme === 'pink' || savedTheme === 'light') {
+            // Aplicar tema basado en la lógica original
+            if (savedTheme === 'light' || savedTheme === 'white') {
+                document.documentElement.classList.add('light-theme');
+                document.body.classList.add('light-theme');
+            } else {
+                document.documentElement.classList.remove('light-theme');
+                document.body.classList.remove('light-theme');
+            }
+            
+            // Aplicar variables CSS específicas según el tema
+            if (savedTheme === 'pink') {
                 document.documentElement.classList.add('light-theme');
                 document.documentElement.setAttribute('data-theme', 'pink');
-                
-                // Para el tema rosa, aplicar variables CSS específicas
-                if (savedTheme === 'pink') {
-                    document.documentElement.style.setProperty('--apple-background', 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)');
-                    document.documentElement.style.setProperty('--apple-blue', '#FF6B9D');
-                    document.documentElement.style.setProperty('--apple-label', '#2D1B2E');
-                    document.documentElement.style.setProperty('--apple-pink-gradient', 'linear-gradient(135deg, #FF6B9D 0%, #FFB6C1 50%, #FFC0CB 100%)');
-                }
+                document.documentElement.style.setProperty('--apple-background', 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)');
+                document.documentElement.style.setProperty('--apple-blue', '#FF6B9D');
+                document.documentElement.style.setProperty('--apple-label', '#2D1B2E');
+                document.documentElement.style.setProperty('--apple-pink-gradient', 'linear-gradient(135deg, #FF6B9D 0%, #FFB6C1 50%, #FFC0CB 100%)');
+            } else if (savedTheme === 'blue') {
+                document.documentElement.style.setProperty('--apple-blue', '#007AFF');
+                document.documentElement.style.setProperty('--apple-background', '#f0f7ff');
+            } else if (savedTheme === 'light' || savedTheme === 'white') {
+                document.documentElement.style.setProperty('--apple-background', '#ffffff');
+                document.documentElement.style.setProperty('--apple-label', '#212529');
             } else {
                 // Modo oscuro (tema por defecto)
                 document.documentElement.classList.remove('light-theme');
                 document.documentElement.removeAttribute('data-theme');
-                
-                // Restaurar variables CSS del tema oscuro
                 document.documentElement.style.setProperty('--apple-background', '#000000');
                 document.documentElement.style.setProperty('--apple-blue', '#007AFF');
                 document.documentElement.style.setProperty('--apple-label', '#EBEBF5');
@@ -1158,7 +1169,11 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
             
             darkModeToggle.addEventListener('change', function() {
                 const theme = this.checked ? 'light' : 'dark';
-                applyThemeImmediate(theme);
+                if (typeof applyTheme === 'function') {
+                    applyTheme(theme);
+                } else if (typeof applyThemeImmediate === 'function') {
+                    applyThemeImmediate(theme);
+                }
             });
         }
         
@@ -1176,52 +1191,84 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
                     theme = 'light';
                 }
                 
-                // Aplicar el tema inmediatamente
-                if (typeof applyThemeImmediate === 'function') {
-                    applyThemeImmediate(theme);
-                } else {
-                    // Fallback si la función no está disponible
-                    console.log('applyThemeImmediate no está disponible, aplicando tema manualmente');
-                    
-                    // Guardar el tema en localStorage
-                    localStorage.setItem('theme', theme);
-                    localStorage.setItem('preservedTheme', theme);
-                    
-                    // Aplicar clases de tema al documento
-                    if (theme === 'pink' || theme === 'light') {
-                        document.documentElement.classList.add('light-theme');
-                        document.documentElement.setAttribute('data-theme', 'pink');
-                        
-                        // Para el tema rosa, aplicar variables CSS específicas
-                        if (theme === 'pink') {
-                            document.documentElement.style.setProperty('--apple-background', 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)');
-                            document.documentElement.style.setProperty('--apple-blue', '#FF6B9D');
-                            document.documentElement.style.setProperty('--apple-label', '#2D1B2E');
-                            document.documentElement.style.setProperty('--apple-pink-gradient', 'linear-gradient(135deg, #FF6B9D 0%, #FFB6C1 50%, #FFC0CB 100%)');
-                        }
-                    } else {
-                        // Modo oscuro (tema por defecto)
-                        document.documentElement.classList.remove('light-theme');
-                        document.documentElement.removeAttribute('data-theme');
-                        
-                        // Restaurar variables CSS del tema oscuro
-                        document.documentElement.style.setProperty('--apple-background', '#000000');
-                        document.documentElement.style.setProperty('--apple-blue', '#007AFF');
-                        document.documentElement.style.setProperty('--apple-label', '#EBEBF5');
-                    }
-                    
-                    // Actualizar el estado del botón de tema si existe
-                    const darkModeToggle = document.getElementById('darkModeToggle');
-                    if (darkModeToggle) {
-                        darkModeToggle.checked = theme !== 'dark';
-                    }
-                }
+                // Aplicar el tema inmediatamente usando la función applyTheme del código original
+                applyTheme(theme);
                 
                 // Actualizar la selección visual
                 colorOptions.forEach(opt => opt.classList.remove('selected'));
                 this.classList.add('selected');
             });
         });
+        
+        // Función applyTheme del código original que funcionaba
+        function applyTheme(theme) {
+            // Update active state
+            document.querySelectorAll('.theme-option').forEach(option => {
+                if (option.getAttribute('onclick').includes(`'${theme}'`)) {
+                    option.classList.add('active');
+                    option.style.border = '2px solid var(--apple-blue)';
+                } else {
+                    option.classList.remove('active');
+                    option.style.border = '1px solid var(--apple-separator)';
+                }
+            });
+
+            // Apply theme based on the original logic
+            if (theme === 'light' || theme === 'white') {
+                document.documentElement.classList.add('light-theme');
+                document.body.classList.add('light-theme');
+            } else {
+                document.documentElement.classList.remove('light-theme');
+                document.body.classList.remove('light-theme');
+            }
+            
+            // Guardar el tema en localStorage
+            localStorage.setItem('theme', theme);
+            localStorage.setItem('preservedTheme', theme);
+            
+            // Aplicar variables CSS específicas según el tema
+            if (theme === 'pink') {
+                document.documentElement.classList.add('light-theme');
+                document.documentElement.setAttribute('data-theme', 'pink');
+                document.documentElement.style.setProperty('--apple-background', 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)');
+                document.documentElement.style.setProperty('--apple-blue', '#FF6B9D');
+                document.documentElement.style.setProperty('--apple-label', '#2D1B2E');
+                document.documentElement.style.setProperty('--apple-pink-gradient', 'linear-gradient(135deg, #FF6B9D 0%, #FFB6C1 50%, #FFC0CB 100%)');
+            } else if (theme === 'blue') {
+                document.documentElement.style.setProperty('--apple-blue', '#007AFF');
+                document.documentElement.style.setProperty('--apple-background', '#f0f7ff');
+            } else if (theme === 'light' || theme === 'white') {
+                document.documentElement.style.setProperty('--apple-background', '#ffffff');
+                document.documentElement.style.setProperty('--apple-label', '#212529');
+            } else {
+                // Modo oscuro (tema por defecto)
+                document.documentElement.classList.remove('light-theme');
+                document.documentElement.removeAttribute('data-theme');
+                document.documentElement.style.setProperty('--apple-background', '#000000');
+                document.documentElement.style.setProperty('--apple-blue', '#007AFF');
+                document.documentElement.style.setProperty('--apple-label', '#EBEBF5');
+            }
+            
+            // Actualizar el estado del botón de tema si existe
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            if (darkModeToggle) {
+                darkModeToggle.checked = theme !== 'dark';
+            }
+            
+            // Mostrar notificación si la función está disponible
+            if (typeof showNotification === 'function') {
+                const themeNames = {
+                    'dark': 'Modo Oscuro',
+                    'light': 'Modo Claro',
+                    'pink': 'Tema Rosa',
+                    'blue': 'Tema Azul',
+                    'white': 'Tema Blanco'
+                };
+                showNotification(`Tema cambiado a: ${themeNames[theme] || theme}`, 'success');
+            }
+            
+            console.log('Tema aplicado exitosamente:', theme);
+        }
         
         // Manejar el botón de aplicar cambios de diseño
         const applyDesignBtn = document.querySelector('.config-section:nth-child(2) .save-button');

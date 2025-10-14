@@ -3233,28 +3233,37 @@ window.applyThemeImmediate = function(theme) {
     try {
         console.log('Aplicando tema inmediatamente:', theme);
         
+        // Aplicar tema basado en la lógica original
+        if (theme === 'light' || theme === 'white') {
+            document.documentElement.classList.add('light-theme');
+            document.body.classList.add('light-theme');
+        } else {
+            document.documentElement.classList.remove('light-theme');
+            document.body.classList.remove('light-theme');
+        }
+        
         // Guardar el tema en localStorage
         localStorage.setItem('theme', theme);
         localStorage.setItem('preservedTheme', theme);
         
-        // Aplicar clases de tema al documento
-        if (theme === 'pink' || theme === 'light') {
+        // Aplicar variables CSS específicas según el tema
+        if (theme === 'pink') {
             document.documentElement.classList.add('light-theme');
             document.documentElement.setAttribute('data-theme', 'pink');
-            
-            // Para el tema rosa, aplicar variables CSS específicas
-            if (theme === 'pink') {
-                document.documentElement.style.setProperty('--apple-background', 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)');
-                document.documentElement.style.setProperty('--apple-blue', '#FF6B9D');
-                document.documentElement.style.setProperty('--apple-label', '#2D1B2E');
-                document.documentElement.style.setProperty('--apple-pink-gradient', 'linear-gradient(135deg, #FF6B9D 0%, #FFB6C1 50%, #FFC0CB 100%)');
-            }
+            document.documentElement.style.setProperty('--apple-background', 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)');
+            document.documentElement.style.setProperty('--apple-blue', '#FF6B9D');
+            document.documentElement.style.setProperty('--apple-label', '#2D1B2E');
+            document.documentElement.style.setProperty('--apple-pink-gradient', 'linear-gradient(135deg, #FF6B9D 0%, #FFB6C1 50%, #FFC0CB 100%)');
+        } else if (theme === 'blue') {
+            document.documentElement.style.setProperty('--apple-blue', '#007AFF');
+            document.documentElement.style.setProperty('--apple-background', '#f0f7ff');
+        } else if (theme === 'light' || theme === 'white') {
+            document.documentElement.style.setProperty('--apple-background', '#ffffff');
+            document.documentElement.style.setProperty('--apple-label', '#212529');
         } else {
             // Modo oscuro (tema por defecto)
             document.documentElement.classList.remove('light-theme');
             document.documentElement.removeAttribute('data-theme');
-            
-            // Restaurar variables CSS del tema oscuro
             document.documentElement.style.setProperty('--apple-background', '#000000');
             document.documentElement.style.setProperty('--apple-blue', '#007AFF');
             document.documentElement.style.setProperty('--apple-label', '#EBEBF5');
@@ -3284,7 +3293,9 @@ window.applyThemeImmediate = function(theme) {
             const themeNames = {
                 'dark': 'Modo Oscuro',
                 'light': 'Modo Claro',
-                'pink': 'Tema Rosa'
+                'pink': 'Tema Rosa',
+                'blue': 'Tema Azul',
+                'white': 'Tema Blanco'
             };
             showNotification(`Tema cambiado a: ${themeNames[theme] || theme}`, 'success');
         }
@@ -3301,27 +3312,38 @@ window.applyThemeImmediate = function(theme) {
 // Immediate theme and dock position application to prevent flash
 (function() {
     try {
-        // Apply saved theme immediately
+        // Apply saved theme immediately using the same logic as applyTheme
         const savedTheme = localStorage.getItem('theme') || 'dark';
         const preservedTheme = localStorage.getItem('preservedTheme') || savedTheme;
         console.log('Applying saved theme immediately:', preservedTheme);
         
-        // Apply theme classes immediately
-        if (preservedTheme === 'pink' || preservedTheme === 'light') {
+        // Apply theme based on the original logic
+        if (preservedTheme === 'light' || preservedTheme === 'white') {
             document.documentElement.classList.add('light-theme');
-            document.documentElement.setAttribute('data-theme', 'pink');
-            
-            // Apply theme-specific CSS variables
-            if (preservedTheme === 'pink') {
-                document.documentElement.style.setProperty('--apple-background', 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)');
-                document.documentElement.style.setProperty('--apple-blue', '#FF6B9D');
-                document.documentElement.style.setProperty('--apple-label', '#2D1B2E');
-                document.documentElement.style.setProperty('--apple-pink-gradient', 'linear-gradient(135deg, #FF6B9D 0%, #FFB6C1 50%, #FFC0CB 100%)');
-            }
+            document.body.classList.add('light-theme');
         } else {
             document.documentElement.classList.remove('light-theme');
+            document.body.classList.remove('light-theme');
+        }
+        
+        // Apply theme-specific CSS variables
+        if (preservedTheme === 'pink') {
+            document.documentElement.classList.add('light-theme');
+            document.documentElement.setAttribute('data-theme', 'pink');
+            document.documentElement.style.setProperty('--apple-background', 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)');
+            document.documentElement.style.setProperty('--apple-blue', '#FF6B9D');
+            document.documentElement.style.setProperty('--apple-label', '#2D1B2E');
+            document.documentElement.style.setProperty('--apple-pink-gradient', 'linear-gradient(135deg, #FF6B9D 0%, #FFB6C1 50%, #FFC0CB 100%)');
+        } else if (preservedTheme === 'blue') {
+            document.documentElement.style.setProperty('--apple-blue', '#007AFF');
+            document.documentElement.style.setProperty('--apple-background', '#f0f7ff');
+        } else if (preservedTheme === 'light' || preservedTheme === 'white') {
+            document.documentElement.style.setProperty('--apple-background', '#ffffff');
+            document.documentElement.style.setProperty('--apple-label', '#212529');
+        } else {
+            // Modo oscuro (tema por defecto)
+            document.documentElement.classList.remove('light-theme');
             document.documentElement.removeAttribute('data-theme');
-            
             document.documentElement.style.setProperty('--apple-background', '#000000');
             document.documentElement.style.setProperty('--apple-blue', '#007AFF');
             document.documentElement.style.setProperty('--apple-label', '#EBEBF5');
