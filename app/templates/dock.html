@@ -3273,6 +3273,12 @@ window.applyThemeImmediate = function(theme) {
             }
         }
         
+        // También actualizar el botón en personalizacion.html si está disponible
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        if (darkModeToggle) {
+            darkModeToggle.checked = theme !== 'dark';
+        }
+        
         // Mostrar notificación si la función está disponible
         if (typeof showNotification === 'function') {
             const themeNames = {
@@ -3295,6 +3301,32 @@ window.applyThemeImmediate = function(theme) {
 // Immediate theme and dock position application to prevent flash
 (function() {
     try {
+        // Apply saved theme immediately
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        const preservedTheme = localStorage.getItem('preservedTheme') || savedTheme;
+        console.log('Applying saved theme immediately:', preservedTheme);
+        
+        // Apply theme classes immediately
+        if (preservedTheme === 'pink' || preservedTheme === 'light') {
+            document.documentElement.classList.add('light-theme');
+            document.documentElement.setAttribute('data-theme', 'pink');
+            
+            // Apply theme-specific CSS variables
+            if (preservedTheme === 'pink') {
+                document.documentElement.style.setProperty('--apple-background', 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)');
+                document.documentElement.style.setProperty('--apple-blue', '#FF6B9D');
+                document.documentElement.style.setProperty('--apple-label', '#2D1B2E');
+                document.documentElement.style.setProperty('--apple-pink-gradient', 'linear-gradient(135deg, #FF6B9D 0%, #FFB6C1 50%, #FFC0CB 100%)');
+            }
+        } else {
+            document.documentElement.classList.remove('light-theme');
+            document.documentElement.removeAttribute('data-theme');
+            
+            document.documentElement.style.setProperty('--apple-background', '#000000');
+            document.documentElement.style.setProperty('--apple-blue', '#007AFF');
+            document.documentElement.style.setProperty('--apple-label', '#EBEBF5');
+        }
+        
         const saved = localStorage.getItem('designPreferences');
         let dockPosition = 'left'; // default
         

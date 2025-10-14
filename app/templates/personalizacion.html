@@ -590,6 +590,12 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
                 document.documentElement.style.setProperty('--apple-label', '#EBEBF5');
             }
             
+            // Actualizar el estado del botón de tema si existe
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            if (darkModeToggle) {
+                darkModeToggle.checked = theme !== 'dark';
+            }
+            
             // Mostrar notificación si la función está disponible
             if (typeof showNotification === 'function') {
                 const themeNames = {
@@ -1109,12 +1115,46 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
     document.addEventListener('DOMContentLoaded', function() {
         updateLanguageButtons();
         
+        // Cargar el tema guardado al iniciar la página
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        console.log('Tema guardado encontrado:', savedTheme);
+        
+        // Aplicar el tema guardado
+        if (typeof applyThemeImmediate === 'function') {
+            applyThemeImmediate(savedTheme);
+        } else {
+            // Fallback si la función no está disponible
+            console.log('applyThemeImmediate no está disponible, aplicando tema manualmente');
+            
+            // Aplicar clases de tema al documento
+            if (savedTheme === 'pink' || savedTheme === 'light') {
+                document.documentElement.classList.add('light-theme');
+                document.documentElement.setAttribute('data-theme', 'pink');
+                
+                // Para el tema rosa, aplicar variables CSS específicas
+                if (savedTheme === 'pink') {
+                    document.documentElement.style.setProperty('--apple-background', 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)');
+                    document.documentElement.style.setProperty('--apple-blue', '#FF6B9D');
+                    document.documentElement.style.setProperty('--apple-label', '#2D1B2E');
+                    document.documentElement.style.setProperty('--apple-pink-gradient', 'linear-gradient(135deg, #FF6B9D 0%, #FFB6C1 50%, #FFC0CB 100%)');
+                }
+            } else {
+                // Modo oscuro (tema por defecto)
+                document.documentElement.classList.remove('light-theme');
+                document.documentElement.removeAttribute('data-theme');
+                
+                // Restaurar variables CSS del tema oscuro
+                document.documentElement.style.setProperty('--apple-background', '#000000');
+                document.documentElement.style.setProperty('--apple-blue', '#007AFF');
+                document.documentElement.style.setProperty('--apple-label', '#EBEBF5');
+            }
+        }
+        
         // Manejar el toggle de modo oscuro
         const darkModeToggle = document.getElementById('darkModeToggle');
         if (darkModeToggle) {
             // Establecer estado inicial basado en el tema actual
-            const currentTheme = localStorage.getItem('theme') || 'dark';
-            darkModeToggle.checked = currentTheme !== 'dark';
+            darkModeToggle.checked = savedTheme !== 'dark';
             
             darkModeToggle.addEventListener('change', function() {
                 const theme = this.checked ? 'light' : 'dark';
@@ -1136,8 +1176,46 @@ Propósito: Página para que el usuario pueda personalizar el diseño de la web 
                     theme = 'light';
                 }
                 
-                // Aplicar el tema
-                applyThemeImmediate(theme);
+                // Aplicar el tema inmediatamente
+                if (typeof applyThemeImmediate === 'function') {
+                    applyThemeImmediate(theme);
+                } else {
+                    // Fallback si la función no está disponible
+                    console.log('applyThemeImmediate no está disponible, aplicando tema manualmente');
+                    
+                    // Guardar el tema en localStorage
+                    localStorage.setItem('theme', theme);
+                    localStorage.setItem('preservedTheme', theme);
+                    
+                    // Aplicar clases de tema al documento
+                    if (theme === 'pink' || theme === 'light') {
+                        document.documentElement.classList.add('light-theme');
+                        document.documentElement.setAttribute('data-theme', 'pink');
+                        
+                        // Para el tema rosa, aplicar variables CSS específicas
+                        if (theme === 'pink') {
+                            document.documentElement.style.setProperty('--apple-background', 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)');
+                            document.documentElement.style.setProperty('--apple-blue', '#FF6B9D');
+                            document.documentElement.style.setProperty('--apple-label', '#2D1B2E');
+                            document.documentElement.style.setProperty('--apple-pink-gradient', 'linear-gradient(135deg, #FF6B9D 0%, #FFB6C1 50%, #FFC0CB 100%)');
+                        }
+                    } else {
+                        // Modo oscuro (tema por defecto)
+                        document.documentElement.classList.remove('light-theme');
+                        document.documentElement.removeAttribute('data-theme');
+                        
+                        // Restaurar variables CSS del tema oscuro
+                        document.documentElement.style.setProperty('--apple-background', '#000000');
+                        document.documentElement.style.setProperty('--apple-blue', '#007AFF');
+                        document.documentElement.style.setProperty('--apple-label', '#EBEBF5');
+                    }
+                    
+                    // Actualizar el estado del botón de tema si existe
+                    const darkModeToggle = document.getElementById('darkModeToggle');
+                    if (darkModeToggle) {
+                        darkModeToggle.checked = theme !== 'dark';
+                    }
+                }
                 
                 // Actualizar la selección visual
                 colorOptions.forEach(opt => opt.classList.remove('selected'));
