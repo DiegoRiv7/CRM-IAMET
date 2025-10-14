@@ -1568,9 +1568,9 @@
             console.log('applyTheme called with:', theme);
             
             // First, clear all theme classes and attributes
-            document.documentElement.classList.remove('dark-theme', 'light-theme', 'pink-theme');
+            document.documentElement.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme');
             document.documentElement.removeAttribute('data-theme');
-            document.body.classList.remove('dark-theme', 'light-theme', 'pink-theme');
+            document.body.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme');
             document.body.removeAttribute('data-theme');
             
             // Apply the specific theme
@@ -1705,8 +1705,41 @@
                 document.body.style.backgroundAttachment = 'fixed';
             }
             
-            // Save theme preference
+            // Save theme preference with enhanced preservation mechanism
+            // First remove any existing values to avoid conflicts
+            localStorage.removeItem('theme');
+            localStorage.removeItem('preservedTheme');
+            
+            // Save the new theme
             localStorage.setItem('theme', theme);
+            localStorage.setItem('preservedTheme', theme);
+            
+            // Force the writing to localStorage
+            try {
+                // Force a storage event to ensure it's saved
+                window.dispatchEvent(new StorageEvent('storage', {
+                    key: 'theme',
+                    newValue: theme,
+                    oldValue: null,
+                    storageArea: localStorage
+                }));
+            } catch (e) {
+                console.log('Could not dispatch storage event:', e);
+            }
+            
+            console.log('Theme saved to localStorage with enhanced mechanism:', theme);
+            
+            // Verify that the theme was saved correctly
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme !== theme) {
+                console.error('Theme was not saved correctly! Expected:', theme, 'Got:', savedTheme);
+                // Try to save again with enhanced mechanism
+                localStorage.removeItem('theme');
+                localStorage.removeItem('preservedTheme');
+                localStorage.setItem('theme', theme);
+                localStorage.setItem('preservedTheme', theme);
+                console.log('Retrying to save theme with enhanced mechanism:', theme);
+            }
             
             // Forzar un repaint para asegurar que los estilos se apliquen completamente
             setTimeout(() => {
@@ -1719,9 +1752,24 @@
         
         // Apply saved theme on page load
         document.addEventListener('DOMContentLoaded', function() {
+            // Check for preserved theme first (in case of page reload)
+            const preservedTheme = localStorage.getItem('preservedTheme');
+            if (preservedTheme) {
+                console.log('Using preserved theme:', preservedTheme);
+                applyTheme(preservedTheme);
+                localStorage.removeItem('preservedTheme'); // Clean up after use
+                return;
+            }
+            
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme) {
+                console.log('Using saved theme:', savedTheme);
+                // Apply theme regardless of value (including "auto")
                 applyTheme(savedTheme);
+            } else {
+                console.log('No saved theme found, using default theme');
+                // Apply default dark theme
+                applyTheme('dark');
             }
         });
     </script>

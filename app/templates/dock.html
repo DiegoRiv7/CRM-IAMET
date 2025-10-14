@@ -3474,14 +3474,70 @@ window.addEventListener('error', function(e) {
             isDarkMode = !isDarkMode;
             themeToggle.classList.toggle('active', isDarkMode);
             
+            // Enhanced theme preservation mechanism
+            const currentTheme = localStorage.getItem('theme');
+            const specificTheme = localStorage.getItem('preservedTheme') || currentTheme;
+            
             if (isDarkMode) {
                 document.documentElement.classList.remove('light-theme');
                 // Update theme toggle icon to moon (dark mode) - Apple style
                 themeToggle.innerHTML = '<svg fill="currentColor" viewBox="0 0 24 24"><path d="M17.75 4.09 15.22 6.03l-.46-.9L16.05 3H17.75V4.09ZM21.25 11L20.24 8.45l.96-.55L22.75 10.09L21.25 11ZM18.97 15.95c-.32.96-.5 1.93-.5 2.94 0 1.06.18 2.05.5 3 .32-.95.5-1.94.5-3s-.18-2.06-.5-2.94ZM12.5 22c-5.71-.47-10-5.05-10-10.5s4.29-10.03 10-10.5c-1.18.86-2 2.24-2 3.75 0 2.62 2.13 4.75 4.75 4.75 1.51 0 2.89-.82 3.75-2 .47 5.71-4.78 10.03-10.5 10.5Z"/></svg>';
+                
+                // Preserve the specific theme (pink, white, coffee) even in dark mode
+                if (specificTheme && specificTheme !== 'auto') {
+                    // First remove any existing values to avoid conflicts
+                    localStorage.removeItem('theme');
+                    localStorage.removeItem('preservedTheme');
+                    
+                    // Save the specific theme
+                    localStorage.setItem('theme', specificTheme);
+                    localStorage.setItem('preservedTheme', specificTheme);
+                    
+                    // Force the writing to localStorage
+                    try {
+                        // Force a storage event to ensure it's saved
+                        window.dispatchEvent(new StorageEvent('storage', {
+                            key: 'theme',
+                            newValue: specificTheme,
+                            oldValue: null,
+                            storageArea: localStorage
+                        }));
+                    } catch (e) {
+                        console.log('Could not dispatch storage event:', e);
+                    }
+                    
+                    console.log('Preserving specific theme in dark mode:', specificTheme);
+                }
             } else {
                 document.documentElement.classList.add('light-theme');
                 // Update theme toggle icon to sun (light mode) - Apple style
                 themeToggle.innerHTML = '<svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 18.5A6.5 6.5 0 1 1 18.5 12 6.508 6.508 0 0 1 12 18.5ZM12 7a5 5 0 1 0 5 5A5.006 5.006 0 0 0 12 7Z"/><path d="M12 6a.75.75 0 0 1-.75-.75V3a.75.75 0 0 1 1.5 0v2.25A.75.75 0 0 1 12 6ZM12 21a.75.75 0 0 1-.75-.75v-2.25a.75.75 0 0 1 1.5 0V20.25A.75.75 0 0 1 12 21ZM21 12.75h-2.25a.75.75 0 0 1 0-1.5H21a.75.75 0 0 1 0 1.5ZM5.25 12.75H3a.75.75 0 0 1 0-1.5h2.25a.75.75 0 0 1 0 1.5ZM18.364 6.386a.75.75 0 0 1-1.061-1.061l1.591-1.591a.75.75 0 1 1 1.061 1.061l-1.591 1.591ZM6.697 18.303a.75.75 0 0 1-1.061-1.061l1.591-1.591a.75.75 0 1 1 1.061 1.061l-1.591 1.591ZM18.364 17.614a.75.75 0 0 1 0 1.061l-1.591 1.591a.75.75 0 1 1-1.061-1.061l1.591-1.591a.75.75 0 0 1 1.061 0ZM6.697 5.697a.75.75 0 0 1 0 1.061l-1.591 1.591a.75.75 0 1 1-1.061-1.061l1.591-1.591a.75.75 0 0 1 1.061 0Z"/></svg>';
+                
+                // Preserve the specific theme (pink, white, coffee) even in light mode
+                if (specificTheme && specificTheme !== 'auto') {
+                    // First remove any existing values to avoid conflicts
+                    localStorage.removeItem('theme');
+                    localStorage.removeItem('preservedTheme');
+                    
+                    // Save the specific theme
+                    localStorage.setItem('theme', specificTheme);
+                    localStorage.setItem('preservedTheme', specificTheme);
+                    
+                    // Force the writing to localStorage
+                    try {
+                        // Force a storage event to ensure it's saved
+                        window.dispatchEvent(new StorageEvent('storage', {
+                            key: 'theme',
+                            newValue: specificTheme,
+                            oldValue: null,
+                            storageArea: localStorage
+                        }));
+                    } catch (e) {
+                        console.log('Could not dispatch storage event:', e);
+                    }
+                    
+                    console.log('Preserving specific theme in light mode:', specificTheme);
+                }
             }
             
             savePreferences();
@@ -3567,6 +3623,33 @@ window.addEventListener('error', function(e) {
 
         // Functions
         function setDockPosition(position) {
+            // Save the current theme to prevent it from being reset to "auto"
+            const currentTheme = localStorage.getItem('theme');
+            if (currentTheme && currentTheme !== 'auto') {
+                // First remove any existing values to avoid conflicts
+                localStorage.removeItem('theme');
+                localStorage.removeItem('preservedTheme');
+                
+                // Save the new theme
+                localStorage.setItem('theme', currentTheme);
+                localStorage.setItem('preservedTheme', currentTheme);
+                
+                // Force the writing to localStorage
+                try {
+                    // Force a storage event to ensure it's saved
+                    window.dispatchEvent(new StorageEvent('storage', {
+                        key: 'theme',
+                        newValue: currentTheme,
+                        oldValue: null,
+                        storageArea: localStorage
+                    }));
+                } catch (e) {
+                    console.log('Could not dispatch storage event:', e);
+                }
+                
+                console.log('Preserving current theme with enhanced mechanism:', currentTheme);
+            }
+            
             // Remove both existing styles to avoid conflicts
             const existingStyle = document.getElementById('dock-position-style');
             const initialStyle = document.getElementById('initial-dock-position-style');
@@ -4223,6 +4306,35 @@ window.setDockPosition = function(position) {
     // Save the position to localStorage first
     window.saveDockPosition(position);
     console.log('Dock position saved to localStorage:', position);
+    
+    // Enhanced theme preservation mechanism
+    const currentTheme = localStorage.getItem('theme');
+    const specificTheme = localStorage.getItem('preservedTheme') || currentTheme;
+    
+    if (specificTheme && specificTheme !== 'auto') {
+        // First remove any existing values to avoid conflicts
+        localStorage.removeItem('theme');
+        localStorage.removeItem('preservedTheme');
+        
+        // Save the specific theme
+        localStorage.setItem('theme', specificTheme);
+        localStorage.setItem('preservedTheme', specificTheme);
+        
+        // Force the writing to localStorage
+        try {
+            // Force a storage event to ensure it's saved
+            window.dispatchEvent(new StorageEvent('storage', {
+                key: 'theme',
+                newValue: specificTheme,
+                oldValue: null,
+                storageArea: localStorage
+            }));
+        } catch (e) {
+            console.log('Could not dispatch storage event:', e);
+        }
+        
+        console.log('Preserving specific theme in setDockPosition:', specificTheme);
+    }
     
     // Save the state of the design panel before reloading
     const designPanel = document.getElementById('design-panel');

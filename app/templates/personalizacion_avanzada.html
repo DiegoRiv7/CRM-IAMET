@@ -3404,6 +3404,14 @@
         function applyTheme(theme) {
             console.log('applyTheme called with:', theme);
             
+            // Validar que el tema sea uno de los permitidos
+            const validThemes = ['dark', 'pink', 'light', 'white', 'coffee'];
+            if (!validThemes.includes(theme)) {
+                console.error('Invalid theme provided:', theme);
+                // Usar tema por defecto si se proporciona un tema inválido
+                theme = 'dark';
+            }
+            
             // Primero, aplicar el tema inmediatamente usando la función inmediata
             applyThemeImmediate(theme);
             
@@ -3439,7 +3447,28 @@
                 console.log('Tema seleccionado:', theme, selectedOption);
                 
                 // Guardar preferencia y aplicar el tema al documento
+                // Primero eliminar cualquier valor anterior para asegurar que no haya conflictos
+                localStorage.removeItem('theme');
+                localStorage.removeItem('preservedTheme');
+                
+                // Guardar el tema nuevo
                 localStorage.setItem('theme', theme);
+                // También guardarlo como tema preservado para evitar que se sobrescriba
+                localStorage.setItem('preservedTheme', theme);
+                
+                // Forzar la escritura en el almacenamiento local
+                try {
+                    // Forzar un evento de almacenamiento para asegurar que se guarde
+                    window.dispatchEvent(new StorageEvent('storage', {
+                        key: 'theme',
+                        newValue: theme,
+                        oldValue: null,
+                        storageArea: localStorage
+                    }));
+                } catch (e) {
+                    console.log('Could not dispatch storage event:', e);
+                }
+                
                 console.log('Theme saved to localStorage:', theme);
                 
                 // Verificar que el tema se guardó correctamente
@@ -3450,7 +3479,12 @@
                     console.error('Theme was not saved correctly! Expected:', theme, 'Got:', savedTheme);
                     // Intentar guardar de nuevo
                     localStorage.setItem('theme', theme);
+                    localStorage.setItem('preservedTheme', theme);
                     console.log('Retrying to save theme:', theme);
+                    
+                    // Verificar nuevamente
+                    const retryTheme = localStorage.getItem('theme');
+                    console.log('Verification after retry - Theme in localStorage:', retryTheme);
                 }
                 
                 // Aplicar cambios específicos para cada tema de forma inmediata
