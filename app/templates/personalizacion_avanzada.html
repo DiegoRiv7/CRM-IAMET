@@ -3529,6 +3529,9 @@
                 console.log('Forced final repaint after theme change');
             }, 50);
             
+            // Confirmar que el tema se guardó correctamente
+            console.log('Theme saved to localStorage:', localStorage.getItem('theme'));
+            
             // Aplicar tema inmediatamente para evitar mezclas
             setTimeout(() => {
                 // Aplicar el tema una segunda vez para asegurar consistencia
@@ -4299,31 +4302,32 @@
         
         // Inicializar estados activos al cargar la página
         document.addEventListener('DOMContentLoaded', function() {
-            // Inicializar tema activo - forzar tema oscuro por defecto si no hay preferencia guardada
+            // Obtener tema guardado sin forzar uno por defecto
             let currentTheme = localStorage.getItem('theme');
-            if (!currentTheme) {
-                currentTheme = 'dark';
-                localStorage.setItem('theme', 'dark');
-            }
             
             console.log('DOMContentLoaded - currentTheme:', currentTheme);
             
-            // Aplicar tema inmediatamente antes de cualquier otra inicialización
-            applyThemeImmediate(currentTheme);
-            
-            // Esperar un poco para que el DOM esté completamente cargado
-            setTimeout(() => {
-                initializeActiveTheme(currentTheme);
+            // Solo aplicar tema si existe uno guardado
+            if (currentTheme) {
+                // Aplicar tema inmediatamente antes de cualquier otra inicialización
+                applyThemeImmediate(currentTheme);
                 
-                // Inicializar los puntos de tema también
-                initializeThemeDots(currentTheme);
-                
-                // Forzar una segunda aplicación del tema para asegurar consistencia
+                // Esperar un poco para que el DOM esté completamente cargado
                 setTimeout(() => {
-                    applyThemeImmediate(currentTheme);
-                    console.log('Second theme application completed');
+                    initializeActiveTheme(currentTheme);
+                    
+                    // Inicializar los puntos de tema también
+                    initializeThemeDots(currentTheme);
+                    
+                    // Forzar una segunda aplicación del tema para asegurar consistencia
+                    setTimeout(() => {
+                        applyThemeImmediate(currentTheme);
+                        console.log('Second theme application completed');
+                    }, 100);
                 }, 100);
-            }, 100);
+            } else {
+                console.log('No saved theme found, will use default from base.html');
+            }
             
             // Inicializar dock activo (ya se maneja en dock.html, pero asegurar estado visual)
             setTimeout(function() {
@@ -4341,10 +4345,10 @@
         });
         
         function initializeActiveTheme(theme) {
-            // Asegurarse de que el tema oscuro sea el predeterminado si no hay tema guardado
-            if (!localStorage.getItem('theme')) {
-                theme = 'dark';
-                localStorage.setItem('theme', 'dark');
+            // Solo procesar si se proporciona un tema válido
+            if (!theme) {
+                console.log('No theme provided to initializeActiveTheme, skipping');
+                return;
             }
             
             // Primero limpiar todos los temas
