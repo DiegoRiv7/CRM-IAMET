@@ -2826,6 +2826,13 @@
 
         function openDesignSettings() {
             showModal('designModal');
+            
+            // Inicializar el tema activo inmediatamente, sin retraso
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                initializeActiveTheme(savedTheme);
+                initializeThemeDots(savedTheme);
+            }
         }
 
         function openLanguageSettings() {
