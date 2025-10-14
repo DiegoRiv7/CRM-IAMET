@@ -4315,6 +4315,9 @@
             setTimeout(() => {
                 initializeActiveTheme(currentTheme);
                 
+                // Inicializar los puntos de tema también
+                initializeThemeDots(currentTheme);
+                
                 // Forzar una segunda aplicación del tema para asegurar consistencia
                 setTimeout(() => {
                     applyThemeImmediate(currentTheme);
@@ -4366,6 +4369,31 @@
                     option.style.setProperty('box-shadow', '0 0 0 2px rgba(0, 122, 255, 0.5)', 'important');
                 }
             });
+        }
+        
+        function initializeThemeDots(theme) {
+            // Limpiar todas las iluminaciones de los puntos de tema
+            document.querySelectorAll('.theme-dot').forEach(dot => {
+                dot.style.boxShadow = '';
+            });
+            
+            // Aplicar iluminación al punto de tema seleccionado
+            const selectedDot = document.getElementById(`${theme}-theme-dot`);
+            if (selectedDot) {
+                const dot = selectedDot.querySelector('.theme-dot');
+                if (dot) {
+                    // Aplicar iluminación según el tema
+                    if (theme === 'dark') {
+                        dot.style.boxShadow = '0 0 0 3px rgba(0, 122, 255, 0.5), 0 0 15px rgba(0, 122, 255, 0.7)';
+                    } else if (theme === 'pink') {
+                        dot.style.boxShadow = '0 0 0 3px rgba(255, 107, 157, 0.5), 0 0 15px rgba(255, 107, 157, 0.7)';
+                    } else if (theme === 'white') {
+                        dot.style.boxShadow = '0 0 0 3px rgba(0, 123, 255, 0.5), 0 0 15px rgba(0, 123, 255, 0.7)';
+                    } else if (theme === 'coffee') {
+                        dot.style.boxShadow = '0 0 0 3px rgba(139, 98, 57, 0.5), 0 0 15px rgba(139, 98, 57, 0.7)';
+                    }
+                }
+            }
         }
         
         function initializeActiveDockOption(position) {
