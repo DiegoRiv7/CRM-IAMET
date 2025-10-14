@@ -2831,7 +2831,12 @@
             setTimeout(() => {
                 const savedTheme = localStorage.getItem('theme');
                 console.log('openDesignSettings - savedTheme:', savedTheme);
+                
                 if (savedTheme) {
+                    // Aplicar el tema inmediatamente antes de inicializar la UI
+                    applyThemeImmediate(savedTheme);
+                    
+                    // Inicializar el tema activo en la UI
                     initializeActiveTheme(savedTheme);
                     initializeThemeDots(savedTheme);
                     
@@ -2840,12 +2845,26 @@
                         const selectedThemeOption = document.querySelector(`.theme-option[onclick*="'${savedTheme}'"]`);
                         if (selectedThemeOption) {
                             console.log('Tema activo inicializado correctamente:', savedTheme);
+                            
+                            // Verificar que el tema se guardó correctamente en localStorage
+                            const currentTheme = localStorage.getItem('theme');
+                            if (currentTheme !== savedTheme) {
+                                console.error('El tema cambió inesperadamente! Era:', savedTheme, 'Ahora es:', currentTheme);
+                                // Restaurar el tema correcto
+                                localStorage.setItem('theme', savedTheme);
+                            }
                         } else {
                             console.warn('No se encontró el tema activo:', savedTheme);
                         }
                     }, 50);
                 } else {
-                    console.log('No hay tema guardado en localStorage');
+                    console.log('No hay tema guardado en localStorage, usando tema por defecto');
+                    // Si no hay tema guardado, usar el tema oscuro por defecto
+                    const defaultTheme = 'dark';
+                    applyThemeImmediate(defaultTheme);
+                    initializeActiveTheme(defaultTheme);
+                    initializeThemeDots(defaultTheme);
+                    localStorage.setItem('theme', defaultTheme);
                 }
             }, 100);
         }
@@ -3422,6 +3441,17 @@
                 // Guardar preferencia y aplicar el tema al documento
                 localStorage.setItem('theme', theme);
                 console.log('Theme saved to localStorage:', theme);
+                
+                // Verificar que el tema se guardó correctamente
+                const savedTheme = localStorage.getItem('theme');
+                console.log('Verification - Theme in localStorage after save:', savedTheme);
+                
+                if (savedTheme !== theme) {
+                    console.error('Theme was not saved correctly! Expected:', theme, 'Got:', savedTheme);
+                    // Intentar guardar de nuevo
+                    localStorage.setItem('theme', theme);
+                    console.log('Retrying to save theme:', theme);
+                }
                 
                 // Aplicar cambios específicos para cada tema de forma inmediata
                 if (theme === 'dark') {
@@ -4356,6 +4386,15 @@
                         } else {
                             console.warn('Theme option not properly activated:', currentTheme);
                         }
+                        
+                        // Verificación final del tema en localStorage
+                        const savedTheme = localStorage.getItem('theme');
+                        if (savedTheme !== currentTheme) {
+                            console.error('Theme changed unexpectedly during initialization! Was:', currentTheme, 'Now:', savedTheme);
+                            // Restaurar el tema correcto
+                            localStorage.setItem('theme', currentTheme);
+                            console.log('Restored correct theme:', currentTheme);
+                        }
                     }, 100);
                 }, 100);
             } else {
@@ -4411,11 +4450,23 @@
                     option.style.setProperty('transform', 'translateY(-2px)', 'important');
                     foundTheme = true;
                     console.log('Theme option activated:', theme, option);
+                    
+                    // Forzar un repaint para asegurar que los estilos se apliquen
+                    option.offsetHeight;
                 }
             });
             
             if (!foundTheme) {
                 console.warn('No theme option found for:', theme);
+            } else {
+                // Verificar que el tema se guardó correctamente
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme !== theme) {
+                    console.warn('Theme mismatch in localStorage! Expected:', theme, 'Got:', savedTheme);
+                    // Corregir el tema en localStorage
+                    localStorage.setItem('theme', theme);
+                    console.log('Corrected theme in localStorage to:', theme);
+                }
             }
         }
         
