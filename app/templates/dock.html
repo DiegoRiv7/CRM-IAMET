@@ -3227,6 +3227,71 @@
 // Override any external script interference immediately
 window.handleElementConfusion = window.handleElementConfusion || function() { return true; };
 
+// Función global para aplicar temas inmediatamente
+// Utilizada en personalizacion.html para aplicar cambios de tema sin recargar la página
+window.applyThemeImmediate = function(theme) {
+    try {
+        console.log('Aplicando tema inmediatamente:', theme);
+        
+        // Guardar el tema en localStorage
+        localStorage.setItem('theme', theme);
+        localStorage.setItem('preservedTheme', theme);
+        
+        // Aplicar clases de tema al documento
+        if (theme === 'pink' || theme === 'light') {
+            document.documentElement.classList.add('light-theme');
+            document.documentElement.setAttribute('data-theme', 'pink');
+            
+            // Para el tema rosa, aplicar variables CSS específicas
+            if (theme === 'pink') {
+                document.documentElement.style.setProperty('--apple-background', 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)');
+                document.documentElement.style.setProperty('--apple-blue', '#FF6B9D');
+                document.documentElement.style.setProperty('--apple-label', '#2D1B2E');
+                document.documentElement.style.setProperty('--apple-pink-gradient', 'linear-gradient(135deg, #FF6B9D 0%, #FFB6C1 50%, #FFC0CB 100%)');
+            }
+        } else {
+            // Modo oscuro (tema por defecto)
+            document.documentElement.classList.remove('light-theme');
+            document.documentElement.removeAttribute('data-theme');
+            
+            // Restaurar variables CSS del tema oscuro
+            document.documentElement.style.setProperty('--apple-background', '#000000');
+            document.documentElement.style.setProperty('--apple-blue', '#007AFF');
+            document.documentElement.style.setProperty('--apple-label', '#EBEBF5');
+        }
+        
+        // Actualizar el estado del botón de tema si existe
+        const themeToggle = document.getElementById('theme-toggle');
+        if (themeToggle) {
+            const isDarkMode = theme !== 'pink' && theme !== 'light';
+            themeToggle.classList.toggle('active', isDarkMode);
+            
+            if (isDarkMode) {
+                themeToggle.innerHTML = '<svg fill="currentColor" viewBox="0 0 24 24"><path d="M17.75 4.09 15.22 6.03l-.46-.9L16.05 3H17.75V4.09ZM21.25 11L20.24 8.45l.96-.55L22.75 10.09L21.25 11ZM18.97 15.95c-.32.96-.5 1.93-.5 2.94 0 1.06.18 2.05.5 3 .32-.95.5-1.94.5-3s-.18-2.06-.5-2.94ZM12.5 22c-5.71-.47-10-5.05-10-10.5s4.29-10.03 10-10.5c-1.18.86-2 2.24-2 3.75 0 2.62 2.13 4.75 4.75 4.75 1.51 0 2.89-.82 3.75-2 .47 5.71-4.78 10.03-10.5 10.5Z"/></svg>';
+            } else {
+                themeToggle.innerHTML = '<svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 18.5A6.5 6.5 0 1 1 18.5 12 6.508 6.508 0 0 1 12 18.5ZM12 7a5 5 0 1 0 5 5A5.006 5.006 0 0 0 12 7Z"/><path d="M12 6a.75.75 0 0 1-.75-.75V3a.75.75 0 0 1 1.5 0v2.25A.75.75 0 0 1 12 6ZM12 21a.75.75 0 0 1-.75-.75v-2.25a.75.75 0 0 1 1.5 0V20.25A.75.75 0 0 1 12 21ZM21 12.75h-2.25a.75.75 0 0 1 0-1.5H21a.75.75 0 0 1 0 1.5ZM5.25 12.75H3a.75.75 0 0 1 0-1.5h2.25a.75.75 0 0 1 0 1.5ZM18.364 6.386a.75.75 0 0 1-1.061-1.061l1.591-1.591a.75.75 0 1 1 1.061 1.061l-1.591 1.591ZM6.697 18.303a.75.75 0 0 1-1.061-1.061l1.591-1.591a.75.75 0 1 1 1.061 1.061l-1.591 1.591ZM18.364 17.614a.75.75 0 0 1 0 1.061l-1.591 1.591a.75.75 0 1 1-1.061-1.061l1.591-1.591a.75.75 0 0 1 1.061 0ZM6.697 5.697a.75.75 0 0 1 0 1.061l-1.591 1.591a.75.75 0 1 1-1.061-1.061l1.591-1.591a.75.75 0 0 1 1.061 0Z"/></svg>';
+            }
+        }
+        
+        // Mostrar notificación si la función está disponible
+        if (typeof showNotification === 'function') {
+            const themeNames = {
+                'dark': 'Modo Oscuro',
+                'light': 'Modo Claro',
+                'pink': 'Tema Rosa'
+            };
+            showNotification(`Tema cambiado a: ${themeNames[theme] || theme}`, 'success');
+        }
+        
+        console.log('Tema aplicado exitosamente:', theme);
+        return true;
+        
+    } catch (error) {
+        console.error('Error al aplicar el tema:', error);
+        return false;
+    }
+};
+
 // Immediate theme and dock position application to prevent flash
 (function() {
     try {
