@@ -703,6 +703,16 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                 <button type="button" class="btn-secondary" onclick="window.history.back()">Regresar</button>
                 <button type="submit" class="btn-primary" data-intro="✅ Una vez completado todo, haz clic aquí para generar la cotización y su PDF automáticamente." data-step="11">{% if editing_mode %}Crear Nueva Cotización{% else %}Crear Cotización{% endif %}</button>
             </div>
+            
+            <!-- Mensaje de validación para campos vacíos -->
+            <div id="validation-error-message" class="hidden mt-4 p-4 bg-red-600 bg-opacity-20 border border-red-500 rounded-lg">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-red-300" id="validation-error-text"></span>
+                </div>
+            </div>
         </form>
     </div>
 
@@ -878,11 +888,11 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                 <td style="display: none;"><input type="text" id="marca_${newRowNumber}" name="productos[${newRowNumber}][marca]" class="input-field" placeholder="Marca" value="${marca}"></td>
                 <td><input type="text" id="no_parte_${newRowNumber}" name="productos[${newRowNumber}][no_parte]" class="input-field" placeholder="No. Parte" value="${noParte}"></td>
                 <td>
-                    <textarea id="descripcion_producto_${newRowNumber}" name="productos[${newRowNumber}][descripcion]" class="textarea-field" placeholder="Descripción detallada del producto" oninput="calculateTotals()">${description}</textarea>
+                    <textarea id="descripcion_producto_${newRowNumber}" name="productos[${newRowNumber}][descripcion]" class="textarea-field" placeholder="Descripción detallada del producto" oninput="calculateTotals(); hideValidationError()">${description}</textarea>
                     <input type="hidden" id="nombre_producto_${newRowNumber}" name="productos[${newRowNumber}][nombre_producto]" value="${nombre_producto}">
                 </td>
-                <td><input type="number" id="cantidad_${newRowNumber}" name="productos[${newRowNumber}][cantidad]" class="input-field" value="${quantity}" min="1" oninput="calculateTotals()"></td>
-                <td><input type="number" id="precio_${newRowNumber}" name="productos[${newRowNumber}][precio]" class="input-field" value="${price}" min="0" step="0.01" oninput="calculateTotals()"></td>
+                <td><input type="number" id="cantidad_${newRowNumber}" name="productos[${newRowNumber}][cantidad]" class="input-field" value="${quantity}" min="1" oninput="calculateTotals(); hideValidationError()"></td>
+                <td><input type="number" id="precio_${newRowNumber}" name="productos[${newRowNumber}][precio]" class="input-field" value="${price}" min="0" step="0.01" oninput="calculateTotals(); hideValidationError()"></td>
                 <td class="descuento-cell"><input type="number" id="descuento_${newRowNumber}" name="productos[${newRowNumber}][descuento]" class="input-field" style="width:60px; min-width:40px; font-size:0.9rem; padding:0.3rem 0.4rem; text-align:center;" value="${discount}" min="0" max="100" oninput="calculateTotals()"></td>
                 <td><input type="text" id="total_producto_${newRowNumber}" class="input-field bg-gray-800" style="font-size:1.2rem; font-weight:600; width:130px; min-width:100px; text-align:right;" value="0.00" readonly></td>
                 <td class="text-center">
@@ -1837,8 +1847,60 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
 
             const cotizacionForm = document.getElementById('cotizacion-form');
             const loadingModal = document.getElementById('loading-modal');
+            const validationErrorMessage = document.getElementById('validation-error-message');
+            const validationErrorText = document.getElementById('validation-error-text');
+
+            // Función para validar campos de cantidad y precio
+            function validateProductFields() {
+                const productRows = document.querySelectorAll('#productos-tbody tr.product-row');
+                const emptyFields = [];
+                
+                productRows.forEach((row, index) => {
+                    const rowNumber = index + 1;
+                    const cantidadInput = row.querySelector('input[name*="[cantidad]"]');
+                    const precioInput = row.querySelector('input[name*="[precio]"]');
+                    const descripcionInput = row.querySelector('textarea[name*="[descripcion]"]');
+                    
+                    // Solo validar si la fila tiene descripción (no está vacía)
+                    if (descripcionInput && descripcionInput.value.trim() !== '') {
+                        if (cantidadInput && (cantidadInput.value === '' || parseFloat(cantidadInput.value) <= 0)) {
+                            emptyFields.push(`Partida ${rowNumber}: Falta agregar cantidad`);
+                        }
+                        
+                        if (precioInput && (precioInput.value === '' || parseFloat(precioInput.value) <= 0)) {
+                            emptyFields.push(`Partida ${rowNumber}: Falta agregar precio unitario`);
+                        }
+                    }
+                });
+                
+                return emptyFields;
+            }
 
             cotizacionForm.addEventListener('submit', (event) => {
+                // Validar campos antes de enviar
+                const emptyFields = validateProductFields();
+                
+                if (emptyFields.length > 0) {
+                    event.preventDefault(); // Prevenir el envío del formulario
+                    
+                    // Mostrar mensaje de error
+                    validationErrorText.textContent = 'Por favor, completa los siguientes campos obligatorios: ' + emptyFields.join(', ');
+                    validationErrorMessage.classList.remove('hidden');
+                    
+                    // Scroll hacia el mensaje de error
+                    validationErrorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Ocultar el mensaje después de 5 segundos
+                    setTimeout(() => {
+                        validationErrorMessage.classList.add('hidden');
+                    }, 5000);
+                    
+                    return;
+                }
+                
+                // Ocultar mensaje de error si existe
+                validationErrorMessage.classList.add('hidden');
+                
                 // Asegurar que las posiciones de títulos estén actualizadas antes de enviar
                 updateRowNumbers();
                 console.log('🔄 Title positions updated before form submission');
@@ -1855,6 +1917,18 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
             window.addEventListener('beforeunload', () => {
                 loadingModal.classList.add('hidden');
             });
+            
+            // Función para ocultar el mensaje de validación cuando el usuario corrige los campos
+            function hideValidationError() {
+                const validationErrorMessage = document.getElementById('validation-error-message');
+                if (validationErrorMessage && !validationErrorMessage.classList.contains('hidden')) {
+                    // Verificar si ya no hay campos vacíos
+                    const emptyFields = validateProductFields();
+                    if (emptyFields.length === 0) {
+                        validationErrorMessage.classList.add('hidden');
+                    }
+                }
+            }
             
             // Final check: Ensure all rows have drag handles (for any existing content)
             setTimeout(() => {
