@@ -3451,7 +3451,7 @@
                 localStorage.removeItem('theme');
                 localStorage.removeItem('preservedTheme');
                 
-                // Guardar el tema nuevo
+                // Guardar el tema nuevo - CORRECCIÓN: Guardar el nombre real del tema, no "auto"
                 localStorage.setItem('theme', theme);
                 // También guardarlo como tema preservado para evitar que se sobrescriba
                 localStorage.setItem('preservedTheme', theme);

@@ -6,11 +6,12 @@
             mode = "auto";
         }
         document.documentElement.dataset.theme = mode;
-        localStorage.setItem("theme", mode);
+        // Use a different localStorage key to avoid conflicts with the main theme system
+        localStorage.setItem("adminTheme", mode);
     }
 
     function cycleTheme() {
-        const currentTheme = localStorage.getItem("theme") || "auto";
+        const currentTheme = localStorage.getItem("adminTheme") || "auto";
         const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
         if (prefersDark) {
@@ -36,7 +37,7 @@
 
     function initTheme() {
         // set theme defined in localStorage if there is one, or fallback to auto mode
-        const currentTheme = localStorage.getItem("theme");
+        const currentTheme = localStorage.getItem("adminTheme");
         currentTheme ? setTheme(currentTheme) : setTheme("auto");
     }
 

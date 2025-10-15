@@ -1710,7 +1710,7 @@
             localStorage.removeItem('theme');
             localStorage.removeItem('preservedTheme');
             
-            // Save the new theme
+            // Save the new theme - Ensure we're saving the actual theme name, not "auto"
             localStorage.setItem('theme', theme);
             localStorage.setItem('preservedTheme', theme);
             
