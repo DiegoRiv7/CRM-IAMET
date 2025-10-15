@@ -1831,7 +1831,6 @@ class Tarea(models.Model):
     proyecto = models.ForeignKey(
         'Proyecto',
         on_delete=models.CASCADE,
-        related_name='tareas',
         verbose_name="Proyecto",
         related_name='tareas'
     )
