@@ -1232,6 +1232,62 @@ def api_comentarios_proyecto(request, proyecto_id):
 
 
 @login_required
+def api_comentarios_tarea(request, tarea_id):
+    """
+    API para obtener comentarios de una tarea
+    """
+    try:
+        tarea = get_object_or_404(Tarea, id=tarea_id)
+        
+        # Verificar permisos: solo miembros del proyecto o el creador/asignado de la tarea
+        if request.user != tarea.creado_por and request.user != tarea.asignado_a and request.user not in tarea.proyecto.miembros.all():
+            return JsonResponse({'error': 'Sin permisos'}, status=403)
+        
+        comentarios = TareaComentario.objects.filter(tarea=tarea).order_by('-fecha_creacion')
+        
+        comentarios_data = []
+        for comentario in comentarios:
+            archivos_data = []
+            for archivo in comentario.archivos.all():
+                archivos_data.append({
+                    'id': archivo.id,
+                    'nombre': archivo.nombre_original,
+                    'tamaño': archivo.get_tamaño_legible(),
+                    'icono': archivo.get_icono(), # Asumiendo que TareaArchivo tiene get_icono
+                    'url': archivo.archivo.url,
+                    'tipo': archivo.tipo_contenido
+                })
+            
+            comentarios_data.append({
+                'id': comentario.id,
+                'contenido': comentario.get_contenido_con_menciones(),
+                'contenido_raw': comentario.contenido,
+                'usuario': {
+                    'id': comentario.usuario.id,
+                    'nombre': comentario.usuario.get_full_name() or comentario.usuario.username,
+                    'username': comentario.usuario.username,
+                    'iniciales': ''.join([palabra[0].upper() for palabra in (comentario.usuario.get_full_name() or comentario.usuario.username).split()[:2]]),
+                    'avatar_url': getattr(comentario.usuario.userprofile, 'get_avatar_url', lambda: None)() if hasattr(comentario.usuario, 'userprofile') else None
+                },
+                'fecha': comentario.fecha_creacion.strftime('%d de %b, %Y - %H:%M'),
+                'fecha_edicion': comentario.fecha_edicion.strftime('%d de %b, %Y - %H:%M') if comentario.fecha_edicion else None,
+                'editado': comentario.editado,
+                'archivos': archivos_data,
+                'puede_editar': comentario.usuario == request.user,
+                'puede_eliminar': comentario.usuario == request.user or tarea.creado_por == request.user or tarea.asignado_a == request.user
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'comentarios': comentarios_data
+        })
+        
+    except Exception as e:
+        print(f"Error obteniendo comentarios de tarea: {e}")
+        return JsonResponse({'error': 'Error interno'}, status=500)
+
+
+@login_required
 def api_agregar_comentario_proyecto(request, proyecto_id):
     """
     API para agregar un comentario a un proyecto
@@ -1322,6 +1378,99 @@ def api_agregar_comentario_proyecto(request, proyecto_id):
 
 
 @login_required
+def api_agregar_comentario_tarea(request, tarea_id):
+    """
+    API para agregar un comentario a una tarea
+    """
+    print(f"🔍 api_agregar_comentario_tarea - Usuario: {request.user.username}, Tarea ID: {tarea_id}")
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        tarea = get_object_or_404(Tarea, id=tarea_id)
+        print(f"✅ Tarea encontrada: {tarea.titulo}")
+        
+        # Verificar permisos: solo miembros del proyecto o el creador/asignado de la tarea
+        if request.user != tarea.creado_por and request.user != tarea.asignado_a and request.user not in tarea.proyecto.miembros.all():
+            return JsonResponse({'error': 'Sin permisos'}, status=403)
+        
+        contenido = request.POST.get('contenido', '').strip()
+        
+        # Procesar archivos adjuntos
+        archivos_keys = [key for key in request.FILES.keys() if key.startswith('archivos')]
+        
+        if not contenido and not archivos_keys:
+            return JsonResponse({'error': 'Debe proporcionar contenido o archivos'}, status=400)
+        
+        # Crear el comentario
+        comentario = TareaComentario.objects.create(
+            tarea=tarea,
+            usuario=request.user,
+            contenido=contenido
+        )
+        
+        archivos_data = []
+        for key in archivos_keys:
+            file = request.FILES[key]
+            archivo = TareaArchivo.objects.create(
+                comentario=comentario,
+                archivo=file,
+                nombre_original=file.name,
+                tamaño=file.size,
+                tipo_contenido=file.content_type or ''
+            )
+            archivos_data.append({
+                'id': archivo.id,
+                'nombre': archivo.nombre_original,
+                'tamaño': archivo.get_tamaño_legible(),
+                'icono': archivo.get_icono(),
+                'url': archivo.archivo.url,
+                'tipo': archivo.tipo_contenido
+            })
+        
+        # Enviar notificaciones a usuarios mencionados (si se implementa en TareaComentario)
+        if hasattr(comentario, 'extraer_menciones'):
+            usuarios_mencionados = comentario.extraer_menciones()
+            for usuario_mencionado in usuarios_mencionados:
+                if usuario_mencionado != request.user:
+                    crear_notificacion(
+                        usuario_destinatario=usuario_mencionado,
+                        tipo='mencion',
+                        titulo=f"Te mencionaron en la tarea: {tarea.titulo}",
+                        mensaje=f"{request.user.get_full_name() or request.user.username} te mencionó en la tarea '{tarea.titulo}': {contenido[:100]}...",
+                        usuario_remitente=request.user,
+                        proyecto_id=tarea.proyecto.id,
+                        proyecto_nombre=tarea.proyecto.nombre
+                    )
+        
+        return JsonResponse({
+            'success': True,
+            'comentario': {
+                'id': comentario.id,
+                'contenido': comentario.get_contenido_con_menciones(),
+                'contenido_raw': comentario.contenido,
+                'usuario': {
+                    'id': comentario.usuario.id,
+                    'nombre': comentario.usuario.get_full_name() or comentario.usuario.username,
+                    'username': comentario.usuario.username,
+                    'iniciales': ''.join([palabra[0].upper() for palabra in (comentario.usuario.get_full_name() or comentario.usuario.username).split()[:2]])
+                },
+                'fecha': comentario.fecha_creacion.strftime('%d de %b, %Y - %H:%M'),
+                'fecha_edicion': None,
+                'editado': False,
+                'archivos': archivos_data,
+                'puede_editar': True,
+                'puede_eliminar': True
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error agregando comentario a tarea: {e}")
+        return JsonResponse({'error': 'Error interno'}, status=500)
+
+
+@login_required
 def api_editar_comentario_proyecto(request, comentario_id):
     """
     API para editar un comentario de proyecto
@@ -1355,6 +1504,39 @@ def api_editar_comentario_proyecto(request, comentario_id):
 
 
 @login_required
+def api_editar_comentario_tarea(request, comentario_id):
+    """
+    API para editar un comentario de tarea
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        comentario = get_object_or_404(TareaComentario, id=comentario_id)
+        
+        # Verificar permisos
+        if comentario.usuario != request.user:
+            return JsonResponse({'error': 'Sin permisos'}, status=403)
+        
+        contenido = request.POST.get('contenido', '').strip()
+        if not contenido:
+            return JsonResponse({'error': 'El comentario no puede estar vacío'}, status=400)
+        
+        comentario.contenido = contenido
+        comentario.save()
+        
+        return JsonResponse({
+            'success': True,
+            'contenido': comentario.get_contenido_con_menciones(),
+            'fecha_edicion': comentario.fecha_edicion.strftime('%d de %b, %Y - %H:%M')
+        })
+        
+    except Exception as e:
+        print(f"Error editando comentario de tarea: {e}")
+        return JsonResponse({'error': 'Error interno'}, status=500)
+
+
+@login_required
 def api_eliminar_comentario_proyecto(request, comentario_id):
     """
     API para eliminar un comentario de proyecto
@@ -1375,6 +1557,54 @@ def api_eliminar_comentario_proyecto(request, comentario_id):
         
     except Exception as e:
         print(f"Error eliminando comentario: {e}")
+        return JsonResponse({'error': 'Error interno'}, status=500)
+
+
+@login_required
+def api_eliminar_comentario_proyecto(request, comentario_id):
+    """
+    API para eliminar un comentario de proyecto
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        comentario = get_object_or_404(ProyectoComentario, id=comentario_id)
+        
+        # Verificar permisos (autor del comentario o creador del proyecto)
+        if comentario.usuario != request.user and comentario.proyecto.creado_por != request.user:
+            return JsonResponse({'error': 'Sin permisos'}, status=403)
+        
+        comentario.delete()
+        
+        return JsonResponse({'success': True})
+        
+    except Exception as e:
+        print(f"Error eliminando comentario: {e}")
+        return JsonResponse({'error': 'Error interno'}, status=500)
+
+
+@login_required
+def api_eliminar_comentario_tarea(request, comentario_id):
+    """
+    API para eliminar un comentario de tarea
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        comentario = get_object_or_404(TareaComentario, id=comentario_id)
+        
+        # Verificar permisos (autor del comentario, creador de la tarea o asignado a la tarea)
+        if comentario.usuario != request.user and comentario.tarea.creado_por != request.user and comentario.tarea.asignado_a != request.user:
+            return JsonResponse({'error': 'Sin permisos'}, status=403)
+        
+        comentario.delete()
+        
+        return JsonResponse({'success': True})
+        
+    except Exception as e:
+        print(f"Error eliminando comentario de tarea: {e}")
         return JsonResponse({'error': 'Error interno'}, status=500)
 
 

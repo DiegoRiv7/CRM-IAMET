@@ -5059,60 +5059,7 @@ function createTaskTimelineItem(activity) {
         `;
     }
     
-    if (activity.tipo === 'comentario') {
-        const clickHandler = isCurrentUser ? 
-            `onclick="mostrarModalEditarComentarioTarea(${activity.id}, '${activity.contenido.replace(/'/g, '\\\'')}')"` : 
-            `onclick="responderComentarioTarea(${activity.id}, '${activity.usuario}')"`;
-        
-        return `
-            <div class="timeline-item comment-bubble ${isCurrentUser ? 'align-right' : 'align-left'}" id="task-timeline-item-${activity.id}" ${clickHandler} style="cursor: pointer; margin-bottom: 1rem;">
-                <div class="comment-wrapper" style="display: flex; ${isCurrentUser ? 'justify-content: flex-end;' : 'justify-content: flex-start;'}">
-                    <div class="comment-content" style="max-width: 70%; background: ${isCurrentUser ? 'var(--apple-blue)' : 'rgba(255,255,255,0.1)'}; border-radius: 18px; padding: 0.75rem 1rem; position: relative;">
-                        <div class="comment-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
-                            <div class="user-info" style="display: flex; align-items: center; gap: 0.5rem;">
-                                <span class="user-name" style="font-weight: 600; font-size: 0.85rem; color: ${isCurrentUser ? 'rgba(255,255,255,0.9)' : 'var(--apple-label)'};">${activity.usuario}</span>
-                                <span class="comment-time" style="font-size: 0.75rem; color: ${isCurrentUser ? 'rgba(255,255,255,0.7)' : 'var(--apple-label-secondary)'};">${activity.fecha}</span>
-                            </div>
-                        </div>
-                        <div class="comment-text" id="comment-text-${activity.id}" style="color: ${isCurrentUser ? 'white' : 'var(--apple-label)'}; line-height: 1.4;">
-                            ${processTaskMentions(activity.contenido)}
-                        </div>
-                        ${archivosHTML}
-                    </div>
-                </div>
-            </div>
-        `;
-    } else {
-        // Otros tipos de actividad (sistema, etc.)
-        let icon = '📝';
-        let title = 'Actividad del Sistema';
-        
-        switch(activity.tipo) {
-            case 'creacion':
-                icon = '✨';
-                title = `${activity.usuario} creó la tarea`;
-                break;
-            case 'cambio_estado':
-                icon = '🔄';
-                title = 'Estado actualizado';
-                break;
-            case 'subtarea':
-                icon = '📋';
-                title = `${activity.usuario} creó una subtarea`;
-                break;
-        }
-        
-        return `
-            <div class="timeline-item system-activity" id="task-timeline-item-${activity.id}" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0; opacity: 0.7;">
-                <div class="system-icon" style="font-size: 1.2rem;">${icon}</div>
-                <div class="system-content">
-                    <div class="system-title" style="font-size: 0.85rem; color: var(--apple-label); margin-bottom: 0.25rem;">${title}</div>
-                    <div class="system-time" style="font-size: 0.75rem; color: var(--apple-label-secondary);">${activity.fecha}</div>
-                </div>
-            </div>
-        `;
-    }
-}
+    if (activity.tipo === \'comentario\') {\n        const clickHandler = activity.puede_editar ? \n            `onclick=\"mostrarModalEditarComentarioTarea(${activity.id}, \`${activity.contenido_raw.replace(/`/g, \'\\\\`\')}\`)\"` : \n            `onclick=\"responderComentarioTarea(${activity.id}, \'${activity.usuario}\')\"`;\n        \n        return `\n            <div class=\"timeline-item comment-bubble ${activity.usuario_id === CURRENT_USER_ID ? \'align-right\' : \'align-left\'}\" id=\"task-timeline-item-${activity.id}\" ${clickHandler} style=\"cursor: pointer; margin-bottom: 1rem;\">\n                <div class=\"comment-wrapper\" style=\"display: flex; ${activity.usuario_id === CURRENT_USER_ID ? \'justify-content: flex-end;\' : \'justify-content: flex-start;\'}\">\n                    <div class=\"comment-content\" style=\"max-width: 70%; background: ${activity.usuario_id === CURRENT_USER_ID ? \'var(--apple-blue)\' : \'rgba(255,255,255,0.1)\'}; border-radius: 18px; padding: 0.75rem 1rem; position: relative;\">\n                        <div class=\"comment-header\" style=\"display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;\">\n                            <div class=\"user-info\" style=\"display: flex; align-items: center; gap: 0.5rem;\">\n                                <span class=\"user-name\" style=\"font-weight: 600; font-size: 0.85rem; color: ${activity.usuario_id === CURRENT_USER_ID ? \'rgba(255,255,255,0.9)\' : \'var(--apple-label)\'};\">${activity.usuario}</span>\n                                <span class=\"comment-time\" style=\"font-size: 0.75rem; color: ${activity.usuario_id === CURRENT_USER_ID ? \'rgba(255,255,255,0.7)\' : \'var(--apple-label-secondary)\'};\">${activity.fecha}</span>\n                            </div>\n                        </div>\n                        <div class=\"comment-text\" id=\"comment-text-${activity.id}\" style=\"color: ${activity.usuario_id === CURRENT_USER_ID ? \'white\' : \'var(--apple-label)\'}; line-height: 1.4;\">\n                            ${activity.contenido}\n                        </div>\n                        ${archivosHTML}\n                    </div>\n                </div>\n            </div>\n        `;\n    } else {\n        // Otros tipos de actividad (sistema, etc.)\n        let icon = \'📝\';\n        let title = \'Actividad del Sistema\';\n        \n        switch(activity.tipo) {\n            case \'creacion\':\n                icon = \'✨\';\n                title = `${activity.usuario} creó la tarea`;\n                break;\n            case \'cambio_estado\':\n                icon = \'🔄\';\n                title = \'Estado actualizado\';\n                break;\n            case \'subtarea\':\n                icon = \'📋\';\n                title = `${activity.usuario} creó una subtarea`;\n                break;\n        }\n        \n        return `\n            <div class=\"timeline-item system-activity\" id=\"task-timeline-item-${activity.id}\" style=\"display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0; opacity: 0.7;\">\n                <div class=\"system-icon\" style=\"font-size: 1.2rem;\">${icon}</div>\n                <div class=\"system-content\">\n                    <div class=\"system-title\" style=\"font-size: 0.85rem; color: var(--apple-label); margin-bottom: 0.25rem;\">${title}</div>\n                    <div class=\"system-time\" style=\"font-size: 0.75rem; color: var(--apple-label-secondary);\">${activity.fecha}</div>\n                </div>\n            </div>\n        `;\n    }\n}
 
 // Funciones auxiliares para comentarios
 function formatFileSize(bytes) {
@@ -5900,7 +5847,7 @@ function cancelarEdicionComentarioTarea(event, comentarioId) {
 async function guardarEdicionComentarioTarea(event, comentarioId) {
     event.stopPropagation();
     
-    const textarea = document.getElementById(`edit-textarea-${comentarioId}`);
+    const textarea = document.getElementById(`taskEditCommentTextarea`);
     const newContent = textarea ? textarea.value.trim() : '';
     
     if (!newContent) {
@@ -5909,45 +5856,86 @@ async function guardarEdicionComentarioTarea(event, comentarioId) {
     }
     
     try {
-        // TODO: Implementar llamada real a API para actualizar comentario
-        await simulateTaskCommentEdit(comentarioId, newContent);
+        const formData = new FormData();
+        formData.append('contenido', newContent);
         
-        // Actualizar datos locales
-        const currentTimeline = getCurrentTaskTimeline();
-        const commentIndex = currentTimeline.findIndex(item => item.id === comentarioId);
-        if (commentIndex !== -1) {
-            currentTimeline[commentIndex].contenido = newContent;
+        const response = await fetch(`/app/api/comentario-tarea/${comentarioId}/editar/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        // Actualizar interfaz
-        const textElement = document.getElementById(`comment-text-${comentarioId}`);
-        if (textElement) {
-            textElement.innerHTML = processTaskMentions(newContent);
+        const data = await response.json();
+        
+        if (data.success) {
+            // Actualizar datos locales
+            const currentTimeline = getCurrentTaskTimeline();
+            const commentIndex = currentTimeline.findIndex(item => item.id === comentarioId);
+            if (commentIndex !== -1) {
+                currentTimeline[commentIndex].contenido = data.contenido; // Usar contenido procesado del backend
+            }
+            
+            // Actualizar interfaz
+            const textElement = document.getElementById(`comment-text-${comentarioId}`);
+            if (textElement) {
+                textElement.innerHTML = data.contenido; // Usar contenido procesado del backend
+            }
+            
+            // Actualizar fecha de edición si se devuelve
+            const feedItem = document.getElementById(`task-timeline-item-${comentarioId}`);
+            if (feedItem && data.fecha_edicion) {
+                const dateSpan = feedItem.querySelector('.comment-time');
+                if (dateSpan) {
+                    dateSpan.textContent = `${dateSpan.textContent.split(' • ')[0]} • Editado ${data.fecha_edicion}`;
+                }
+            }
+            
+            cerrarModalEditarComentarioTarea();
+            console.log('Comentario de tarea actualizado:', comentarioId, newContent);
+            
+        } else {
+            alert('Error: ' + (data.error || 'No se pudo guardar la edición'));
         }
-        
-        // Ocultar formulario de edición
-        cancelarEdicionComentarioTarea(null, comentarioId);
-        
-        console.log('Comentario actualizado:', comentarioId, newContent);
         
     } catch (error) {
-        console.error('Error actualizando comentario:', error);
-        alert('Error al actualizar comentario: ' + (error.message || 'Error desconocido'));
+        console.error('Error actualizando comentario de tarea:', error);
+        alert('Error al actualizar comentario de tarea: ' + (error.message || 'Error desconocido'));
     }
 }
 
 // Simular actualización de comentario
 async function simulateTaskCommentEdit(comentarioId, newContent) {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    // TODO: Reemplazar con llamada real a API
-    // const response = await fetch(`/app/api/tareas/comentarios/${comentarioId}/`, {
-    //     method: 'PUT',
-    //     headers: {
-    //         'Content-Type': 'application/json',
-    //         'X-CSRFToken': getCookie('csrftoken')
-    //     },
-    //     body: JSON.stringify({ contenido: newContent })
-    // });
+    try {
+        const formData = new FormData();
+        formData.append('contenido', newContent);
+        
+        const response = await fetch(`/app/api/comentario-tarea/${comentarioId}/editar/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.error || 'Error al guardar comentario');
+        }
+        return data;
+    } catch (error) {
+        console.error('Error en simulateTaskCommentEdit:', error);
+        throw error;
+    }
 }
 
 // Eliminar comentario de tarea
@@ -5960,8 +5948,22 @@ async function eliminarComentarioTarea(comentarioId) {
     }
     
     try {
-        // TODO: Implementar llamada real a API para eliminar comentario
-        await simulateTaskCommentDelete(comentarioId);
+        // Implementar llamada real a API para eliminar comentario
+        const response = await fetch(`/app/api/comentario-tarea/${comentarioId}/eliminar/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.error || 'Error al eliminar comentario');
+        }
         
         // Remover de datos locales
         const currentTimeline = getCurrentTaskTimeline();
@@ -5991,13 +5993,11 @@ async function eliminarComentarioTarea(comentarioId) {
 
 // Simular eliminación de comentario
 async function simulateTaskCommentDelete(comentarioId) {
+    // Esta función ya no es necesaria si eliminarComentarioTarea llama directamente a la API
+    // Se mantiene como placeholder si se necesita una simulación en otro contexto
     await new Promise(resolve => setTimeout(resolve, 500));
-    // TODO: Reemplazar con llamada real a API
-    // const response = await fetch(`/app/api/tareas/comentarios/${comentarioId}/`, {
-    //     method: 'DELETE',
-    //     headers: {
-    //         'X-CSRFToken': getCookie('csrftoken')
-    //     }
+    console.log('Simulando eliminación de comentario:', comentarioId);
+}
     // });
 }
 
@@ -6010,40 +6010,60 @@ function procesarMencionesEnTiempoReal(textarea) {
     // Buscar la última @ antes del cursor
     const lastAtIndex = beforeCursor.lastIndexOf('@');
     
-    if (lastAtIndex === -1) return;
+    if (lastAtIndex === -1) {
+        hideAutocomplete();
+        return;
+    }
     
     const searchText = beforeCursor.substring(lastAtIndex + 1);
     
     // Si hay espacios o saltos de línea, no mostrar autocompletado
-    if (searchText.includes(' ') || searchText.includes('\n')) return;
+    if (searchText.includes(' ') || searchText.includes('\n')) {
+        hideAutocomplete();
+        return;
+    }
     
     // Si hay texto después de @, buscar usuarios
     if (searchText.length > 0) {
-        mostrarAutocompletadoUsuarios(searchText, textarea, lastAtIndex);
+        // Debounce la búsqueda
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(async () => {
+            try {
+                const response = await fetch(`/app/api/buscar-usuarios/?q=${encodeURIComponent(searchText)}`);
+                const data = await response.json();
+                
+                if (data.success && data.usuarios.length > 0) {
+                    currentUsers = data.usuarios;
+                    mostrarAutocomplete(currentUsers, textarea);
+                } else {
+                    hideAutocomplete();
+                }
+            } catch (error) {
+                console.error('Error buscando usuarios para menciones:', error);
+                hideAutocomplete();
+            }
+        }, 200);
+    } else {
+        hideAutocomplete();
     }
 }
 
 // Mostrar autocompletado de usuarios (simulado)
-function mostrarAutocompletadoUsuarios(searchText, textarea, startPos) {
-    // TODO: Implementar autocompletado real con la API de usuarios
-    // Por ahora mostrar en consola
-    console.log('Buscando usuarios que coincidan con:', searchText);
-    
-    // Lista simulada de usuarios
-    const usuarios = [
-        { id: 1, nombre: 'juan', nombre_completo: 'Juan Pérez' },
-        { id: 2, nombre: 'maria', nombre_completo: 'María González' },
-        { id: 3, nombre: 'carlos', nombre_completo: 'Carlos Rodríguez' }
-    ];
-    
-    const coincidencias = usuarios.filter(u => 
-        u.nombre.toLowerCase().includes(searchText.toLowerCase()) ||
-        u.nombre_completo.toLowerCase().includes(searchText.toLowerCase())
-    );
-    
-    if (coincidencias.length > 0) {
-        console.log('Usuarios encontrados:', coincidencias);
-        // TODO: Mostrar dropdown de autocompletado
+async function mostrarAutocompletadoUsuarios(searchText, textarea, startPos) {
+    try {
+        const response = await fetch(`/app/api/buscar-usuarios/?q=${encodeURIComponent(searchText)}`);
+        const data = await response.json();
+        
+        if (data.success && data.usuarios.length > 0) {
+            currentUsers = data.usuarios;
+            mostrarAutocomplete(currentUsers, textarea);
+        } else {
+            hideAutocomplete();
+        }
+        
+    } catch (error) {
+        console.error('Error buscando usuarios para autocompletado:', error);
+        hideAutocomplete();
     }
 }
 

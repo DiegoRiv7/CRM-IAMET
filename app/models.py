@@ -1763,6 +1763,46 @@ class TareaComentario(models.Model):
     
     def __str__(self):
         return f"{self.usuario.username} - {self.tarea.titulo} - {self.fecha_creacion.strftime('%Y-%m-%d %H:%M')}"
+    
+    def get_contenido_con_menciones(self):
+        """Convierte las menciones @usuario en enlaces"""
+        import re
+        contenido = self.contenido
+        
+        # Buscar patrones @usuario
+        def reemplazar_mencion(match):
+            username = match.group(1)
+            try:
+                usuario = User.objects.get(username=username)
+                return f'<span class="mencion" data-user-id="{usuario.id}">@{username}</span>'
+            except User.DoesNotExist:
+                return match.group(0)
+        
+        contenido = re.sub(r'@(\w+)', reemplazar_mencion, contenido)
+        return contenido
+    
+    def extraer_menciones(self):
+        """Extrae los usuarios mencionados del contenido"""
+        import re
+        menciones = re.findall(r'@(\w+)', self.contenido)
+        usuarios_mencionados = []
+        
+        for username in menciones:
+            try:
+                usuario = User.objects.get(username=username)
+                usuarios_mencionados.append(usuario)
+            except User.DoesNotExist:
+                continue
+        
+        return usuarios_mencionados
+    
+    def save(self, *args, **kwargs):
+        # Si se está editando (no es creación), marcar como editado
+        if self.pk:
+            self.editado = True
+            self.fecha_edicion = timezone.now()
+        
+        super().save(*args, **kwargs)
 
 class TareaArchivo(models.Model):
     """Modelo para archivos adjuntos en comentarios de tarea"""

@@ -30,6 +30,12 @@ urlpatterns = [
     path("api/comentario-proyecto/<int:comentario_id>/editar/", views.api_editar_comentario_proyecto, name="api_editar_comentario_proyecto"),
     path("api/comentario-proyecto/<int:comentario_id>/eliminar/", views.api_eliminar_comentario_proyecto, name="api_eliminar_comentario_proyecto"),
     
+    # APIs para Comentarios de Tarea
+    path("api/tarea/<int:tarea_id>/comentarios/", views.api_comentarios_tarea, name="api_comentarios_tarea"),
+    path("api/tarea/<int:tarea_id>/comentarios/agregar/", views.api_agregar_comentario_tarea, name="api_agregar_comentario_tarea"),
+    path("api/comentario-tarea/<int:comentario_id>/editar/", views.api_editar_comentario_tarea, name="api_editar_comentario_tarea"),
+    path("api/comentario-tarea/<int:comentario_id>/eliminar/", views.api_eliminar_comentario_tarea, name="api_eliminar_comentario_tarea"),
+    
     # APIs para Tareas y Proyectos
     path("api/proyectos/", views.api_proyectos, name="api_proyectos"),
     path("api/tareas/", views.api_tareas, name="api_tareas"),
