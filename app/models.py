@@ -1725,6 +1725,84 @@ class ProyectoArchivo(models.Model):
             return f"{self.tamaño / (1024 * 1024 * 1024):.1f} GB"
 
 
+class TareaComentario(models.Model):
+    """Modelo para los comentarios del feed de una tarea"""
+    
+    tarea = models.ForeignKey(
+        'Tarea',
+        on_delete=models.CASCADE,
+        related_name='comentarios',
+        verbose_name="Tarea"
+    )
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name="Usuario"
+    )
+    contenido = models.TextField(
+        verbose_name="Contenido"
+    )
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de Creación"
+    )
+    fecha_edicion = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Última Edición"
+    )
+    editado = models.BooleanField(
+        default=False,
+        verbose_name="Editado"
+    )
+    
+    class Meta:
+        verbose_name = "Comentario de Tarea"
+        verbose_name_plural = "Comentarios de Tarea"
+        ordering = ['fecha_creacion']
+    
+    def __str__(self):
+        return f"{self.usuario.username} - {self.tarea.titulo} - {self.fecha_creacion.strftime('%Y-%m-%d %H:%M')}"
+
+class TareaArchivo(models.Model):
+    """Modelo para archivos adjuntos en comentarios de tarea"""
+    
+    comentario = models.ForeignKey(
+        TareaComentario,
+        on_delete=models.CASCADE,
+        related_name='archivos',
+        verbose_name="Comentario"
+    )
+    archivo = models.FileField(
+        upload_to='tareas/archivos/%Y/%m/',
+        verbose_name="Archivo"
+    )
+    nombre_original = models.CharField(
+        max_length=255,
+        verbose_name="Nombre Original"
+    )
+    tamaño = models.PositiveIntegerField(
+        verbose_name="Tamaño en bytes"
+    )
+    tipo_contenido = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Tipo de Contenido"
+    )
+    fecha_subida = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de Subida"
+    )
+    
+    class Meta:
+        verbose_name = "Archivo de Tarea"
+        verbose_name_plural = "Archivos de Tarea"
+        ordering = ['fecha_subida']
+    
+    def __str__(self):
+        return f"{self.nombre_original} - {self.comentario.tarea.titulo}"
+
+
 class Tarea(models.Model):
     """
     Modelo para representar tareas dentro de proyectos
@@ -1754,7 +1832,8 @@ class Tarea(models.Model):
         'Proyecto',
         on_delete=models.CASCADE,
         related_name='tareas',
-        verbose_name="Proyecto"
+        verbose_name="Proyecto",
+        related_name='tareas'
     )
     creado_por = models.ForeignKey(
         User,
