@@ -1231,6 +1231,60 @@ def api_comentarios_proyecto(request, proyecto_id):
         return JsonResponse({'error': 'Error interno'}, status=500)
 
 
+@login_required
+def debug_tarea(request, tarea_id):
+    """Vista de debug para investigar problemas con tareas"""
+    debug_info = []
+    
+    try:
+        # Verificar si existen los modelos
+        try:
+            from .models import Tarea, TareaComentario
+            debug_info.append("✅ Modelos importados correctamente")
+        except Exception as e:
+            debug_info.append(f"❌ Error importando modelos: {e}")
+            return JsonResponse({'debug': debug_info}, status=500)
+        
+        # Verificar tareas existentes
+        try:
+            total_tareas = Tarea.objects.count()
+            debug_info.append(f"📊 Total de tareas en BD: {total_tareas}")
+            
+            if total_tareas > 0:
+                primeras_tareas = list(Tarea.objects.values('id', 'titulo')[:5])
+                debug_info.append(f"📋 Primeras 5 tareas: {primeras_tareas}")
+        except Exception as e:
+            debug_info.append(f"❌ Error consultando tareas: {e}")
+        
+        # Verificar tarea específica
+        try:
+            tarea = Tarea.objects.get(id=tarea_id)
+            debug_info.append(f"✅ Tarea {tarea_id} encontrada: {tarea.titulo}")
+            debug_info.append(f"📍 Proyecto: {tarea.proyecto}")
+            debug_info.append(f"👤 Creado por: {tarea.creado_por}")
+            debug_info.append(f"👤 Asignado a: {tarea.asignado_a}")
+        except Tarea.DoesNotExist:
+            debug_info.append(f"❌ Tarea {tarea_id} NO EXISTE")
+        except Exception as e:
+            debug_info.append(f"❌ Error consultando tarea {tarea_id}: {e}")
+        
+        # Verificar comentarios
+        try:
+            total_comentarios = TareaComentario.objects.count()
+            debug_info.append(f"💬 Total comentarios de tareas: {total_comentarios}")
+        except Exception as e:
+            debug_info.append(f"❌ Error consultando comentarios: {e}")
+        
+        return JsonResponse({
+            'debug': debug_info,
+            'user': str(request.user),
+            'tarea_id_solicitada': tarea_id
+        })
+        
+    except Exception as e:
+        debug_info.append(f"❌ Error general: {e}")
+        return JsonResponse({'debug': debug_info}, status=500)
+
 def get_safe_file_info(archivo):
     """Helper function para obtener información segura de archivos"""
     try:

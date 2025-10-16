@@ -32,6 +32,7 @@ urlpatterns = [
     
     # APIs para Comentarios de Tarea
     path("api/tarea/<int:tarea_id>/comentarios/", views.api_comentarios_tarea, name="api_comentarios_tarea"),
+    path("api/tarea/debug/<int:tarea_id>/", views.debug_tarea, name="debug_tarea"),
     path("api/tarea/<int:tarea_id>/comentarios/agregar/", views.api_agregar_comentario_tarea, name="api_agregar_comentario_tarea"),
     path("api/comentario-tarea/<int:comentario_id>/editar/", views.api_editar_comentario_tarea, name="api_editar_comentario_tarea"),
     path("api/comentario-tarea/<int:comentario_id>/eliminar/", views.api_eliminar_comentario_tarea, name="api_eliminar_comentario_tarea"),

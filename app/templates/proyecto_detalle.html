@@ -4987,6 +4987,17 @@ async function loadTaskTimeline(tareaId) {
 async function loadRealTaskTimelineData(tareaId) {
     try {
         console.log('🔄 Cargando comentarios de tarea desde API:', tareaId);
+        
+        // Primero hacer debug
+        try {
+            console.log('🔍 Ejecutando debug de tarea...');
+            const debugResponse = await fetch(`/app/api/tarea/debug/${tareaId}/`);
+            const debugData = await debugResponse.json();
+            console.log('🔍 Debug de tarea:', debugData);
+        } catch (debugError) {
+            console.error('❌ Error en debug:', debugError);
+        }
+        
         const response = await fetch(`/app/api/tarea/${tareaId}/comentarios/`);
         
         if (!response.ok) {
