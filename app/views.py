@@ -1285,6 +1285,52 @@ def debug_tarea(request, tarea_id):
         debug_info.append(f"❌ Error general: {e}")
         return JsonResponse({'debug': debug_info}, status=500)
 
+@login_required
+def crear_tarea_prueba(request):
+    """Vista para crear una tarea de prueba"""
+    try:
+        from .models import Tarea, Proyecto
+        
+        # Buscar un proyecto existente (proyecto ID 4 basado en los logs)
+        try:
+            proyecto = Proyecto.objects.get(id=4)
+        except Proyecto.DoesNotExist:
+            # Si no existe el proyecto 4, tomar el primero disponible
+            proyecto = Proyecto.objects.first()
+            if not proyecto:
+                return JsonResponse({'error': 'No hay proyectos en la base de datos'}, status=400)
+        
+        # Crear tarea de prueba
+        tarea = Tarea.objects.create(
+            titulo="Tarea de Prueba para Timeline",
+            descripcion="Esta es una tarea creada automáticamente para probar el timeline de comentarios.",
+            proyecto=proyecto,
+            creado_por=request.user,
+            asignado_a=request.user,
+            estado='pendiente',
+            prioridad='media'
+        )
+        
+        # Crear un comentario de prueba
+        from .models import TareaComentario
+        comentario = TareaComentario.objects.create(
+            tarea=tarea,
+            usuario=request.user,
+            contenido="Este es un comentario de prueba para verificar que el timeline funciona correctamente."
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'tarea_id': tarea.id,
+            'tarea_titulo': tarea.titulo,
+            'proyecto': proyecto.nombre,
+            'comentario_id': comentario.id,
+            'mensaje': f'Tarea creada exitosamente con ID: {tarea.id}'
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': f'Error creando tarea: {str(e)}'}, status=500)
+
 def get_safe_file_info(archivo):
     """Helper function para obtener información segura de archivos"""
     try:
