@@ -5061,8 +5061,8 @@ function createTaskTimelineItem(activity) {
     
     if (activity.tipo === 'comentario') {
         const clickHandler = activity.puede_editar ? 
-            "onclick=\"mostrarModalEditarComentarioTarea(" + activity.id + ", '" + activity.contenido_raw.replace(/'/g, "\\'") + "')\""  : 
-            `onclick="responderComentarioTarea(${activity.id}, '${activity.usuario}')"`;
+            'onclick="mostrarModalEditarComentarioTarea(' + activity.id + ', \'' + activity.contenido_raw.replace(/\'/g, "\\\'") + '\')"' : 
+            'onclick="responderComentarioTarea(' + activity.id + ', \'' + activity.usuario + '\')"';
         
         return `
             <div class="timeline-item comment-bubble ${activity.usuario_id === CURRENT_USER_ID ? 'align-right' : 'align-left'}" id="task-timeline-item-${activity.id}" ${clickHandler} style="cursor: pointer; margin-bottom: 1rem;">
