@@ -1839,6 +1839,34 @@ class TareaArchivo(models.Model):
         verbose_name_plural = "Archivos de Tarea"
         ordering = ['fecha_subida']
     
+    def get_icono(self):
+        """Devuelve el icono apropiado según el tipo de archivo"""
+        if self.tipo_contenido:
+            if self.tipo_contenido.startswith('image/'):
+                return '🖼️'
+            elif self.tipo_contenido.startswith('video/'):
+                return '🎥'
+            elif 'pdf' in self.tipo_contenido:
+                return '📄'
+            elif any(ext in self.tipo_contenido for ext in ['word', 'document']):
+                return '📝'
+            elif any(ext in self.tipo_contenido for ext in ['excel', 'spreadsheet']):
+                return '📊'
+            elif any(ext in self.tipo_contenido for ext in ['powerpoint', 'presentation']):
+                return '📽️'
+        return '📎'  # Icono por defecto
+    
+    def get_tamaño_legible(self):
+        """Convierte el tamaño en bytes a formato legible"""
+        if self.tamaño < 1024:
+            return f"{self.tamaño} B"
+        elif self.tamaño < 1024 * 1024:
+            return f"{self.tamaño / 1024:.1f} KB"
+        elif self.tamaño < 1024 * 1024 * 1024:
+            return f"{self.tamaño / (1024 * 1024):.1f} MB"
+        else:
+            return f"{self.tamaño / (1024 * 1024 * 1024):.1f} GB"
+
     def __str__(self):
         return f"{self.nombre_original} - {self.comentario.tarea.titulo}"
 

@@ -1283,8 +1283,10 @@ def api_comentarios_tarea(request, tarea_id):
         })
         
     except Exception as e:
+        import traceback
         print(f"Error obteniendo comentarios de tarea: {e}")
-        return JsonResponse({'error': 'Error interno'}, status=500)
+        print(f"Traceback: {traceback.format_exc()}")
+        return JsonResponse({'error': f'Error interno: {str(e)}'}, status=500)
 
 
 @login_required
