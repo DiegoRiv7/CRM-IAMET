@@ -5059,7 +5059,60 @@ function createTaskTimelineItem(activity) {
         `;
     }
     
-    if (activity.tipo === \'comentario\') {\n        const clickHandler = activity.puede_editar ? \n            `onclick=\"mostrarModalEditarComentarioTarea(${activity.id}, \`${activity.contenido_raw.replace(/`/g, \'\\\\`\')}\`)\"` : \n            `onclick=\"responderComentarioTarea(${activity.id}, \'${activity.usuario}\')\"`;\n        \n        return `\n            <div class=\"timeline-item comment-bubble ${activity.usuario_id === CURRENT_USER_ID ? \'align-right\' : \'align-left\'}\" id=\"task-timeline-item-${activity.id}\" ${clickHandler} style=\"cursor: pointer; margin-bottom: 1rem;\">\n                <div class=\"comment-wrapper\" style=\"display: flex; ${activity.usuario_id === CURRENT_USER_ID ? \'justify-content: flex-end;\' : \'justify-content: flex-start;\'}\">\n                    <div class=\"comment-content\" style=\"max-width: 70%; background: ${activity.usuario_id === CURRENT_USER_ID ? \'var(--apple-blue)\' : \'rgba(255,255,255,0.1)\'}; border-radius: 18px; padding: 0.75rem 1rem; position: relative;\">\n                        <div class=\"comment-header\" style=\"display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;\">\n                            <div class=\"user-info\" style=\"display: flex; align-items: center; gap: 0.5rem;\">\n                                <span class=\"user-name\" style=\"font-weight: 600; font-size: 0.85rem; color: ${activity.usuario_id === CURRENT_USER_ID ? \'rgba(255,255,255,0.9)\' : \'var(--apple-label)\'};\">${activity.usuario}</span>\n                                <span class=\"comment-time\" style=\"font-size: 0.75rem; color: ${activity.usuario_id === CURRENT_USER_ID ? \'rgba(255,255,255,0.7)\' : \'var(--apple-label-secondary)\'};\">${activity.fecha}</span>\n                            </div>\n                        </div>\n                        <div class=\"comment-text\" id=\"comment-text-${activity.id}\" style=\"color: ${activity.usuario_id === CURRENT_USER_ID ? \'white\' : \'var(--apple-label)\'}; line-height: 1.4;\">\n                            ${activity.contenido}\n                        </div>\n                        ${archivosHTML}\n                    </div>\n                </div>\n            </div>\n        `;\n    } else {\n        // Otros tipos de actividad (sistema, etc.)\n        let icon = \'📝\';\n        let title = \'Actividad del Sistema\';\n        \n        switch(activity.tipo) {\n            case \'creacion\':\n                icon = \'✨\';\n                title = `${activity.usuario} creó la tarea`;\n                break;\n            case \'cambio_estado\':\n                icon = \'🔄\';\n                title = \'Estado actualizado\';\n                break;\n            case \'subtarea\':\n                icon = \'📋\';\n                title = `${activity.usuario} creó una subtarea`;\n                break;\n        }\n        \n        return `\n            <div class=\"timeline-item system-activity\" id=\"task-timeline-item-${activity.id}\" style=\"display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0; opacity: 0.7;\">\n                <div class=\"system-icon\" style=\"font-size: 1.2rem;\">${icon}</div>\n                <div class=\"system-content\">\n                    <div class=\"system-title\" style=\"font-size: 0.85rem; color: var(--apple-label); margin-bottom: 0.25rem;\">${title}</div>\n                    <div class=\"system-time\" style=\"font-size: 0.75rem; color: var(--apple-label-secondary);\">${activity.fecha}</div>\n                </div>\n            </div>\n        `;\n    }\n}
+    if (activity.tipo === 'comentario') {
+        const clickHandler = activity.puede_editar ? 
+            `onclick="mostrarModalEditarComentarioTarea(${activity.id}, \`${activity.contenido_raw.replace(/`/g, '\\\\`')}\`)"` : 
+            `onclick="responderComentarioTarea(${activity.id}, '${activity.usuario}')"`;
+        
+        return `
+            <div class="timeline-item comment-bubble ${activity.usuario_id === CURRENT_USER_ID ? 'align-right' : 'align-left'}" id="task-timeline-item-${activity.id}" ${clickHandler} style="cursor: pointer; margin-bottom: 1rem;">
+                <div class="comment-wrapper" style="display: flex; ${activity.usuario_id === CURRENT_USER_ID ? 'justify-content: flex-end;' : 'justify-content: flex-start;'}">
+                    <div class="comment-content" style="max-width: 70%; background: ${activity.usuario_id === CURRENT_USER_ID ? 'var(--apple-blue)' : 'rgba(255,255,255,0.1)'}; border-radius: 18px; padding: 0.75rem 1rem; position: relative;">
+                        <div class="comment-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
+                            <div class="user-info" style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span class="user-name" style="font-weight: 600; font-size: 0.85rem; color: ${activity.usuario_id === CURRENT_USER_ID ? 'rgba(255,255,255,0.9)' : 'var(--apple-label)'};">${activity.usuario}</span>
+                                <span class="comment-time" style="font-size: 0.75rem; color: ${activity.usuario_id === CURRENT_USER_ID ? 'rgba(255,255,255,0.7)' : 'var(--apple-label-secondary)'};">${activity.fecha}</span>
+                            </div>
+                        </div>
+                        <div class="comment-text" id="comment-text-${activity.id}" style="color: ${activity.usuario_id === CURRENT_USER_ID ? 'white' : 'var(--apple-label)'}; line-height: 1.4;">
+                            ${activity.contenido}
+                        </div>
+                        ${archivosHTML}
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        // Otros tipos de actividad (sistema, etc.)
+        let icon = '📝';
+        let title = 'Actividad del Sistema';
+        
+        switch(activity.tipo) {
+            case 'creacion':
+                icon = '✨';
+                title = `${activity.usuario} creó la tarea`;
+                break;
+            case 'cambio_estado':
+                icon = '🔄';
+                title = 'Estado actualizado';
+                break;
+            case 'subtarea':
+                icon = '📋';
+                title = `${activity.usuario} creó una subtarea`;
+                break;
+        }
+        
+        return `
+            <div class="timeline-item system-activity" id="task-timeline-item-${activity.id}" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0; opacity: 0.7;">
+                <div class="system-icon" style="font-size: 1.2rem;">${icon}</div>
+                <div class="system-content">
+                    <div class="system-title" style="font-size: 0.85rem; color: var(--apple-label); margin-bottom: 0.25rem;">${title}</div>
+                    <div class="system-time" style="font-size: 0.75rem; color: var(--apple-label-secondary);">${activity.fecha}</div>
+                </div>
+            </div>
+        `;
+    }
+}
 
 // Funciones auxiliares para comentarios
 function formatFileSize(bytes) {
