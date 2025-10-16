@@ -4996,20 +4996,41 @@ async function loadRealTaskTimelineData(tareaId) {
         const data = await response.json();
         console.log('📝 Comentarios recibidos:', data);
         
+        // Debug adicional
+        if (data.debug) {
+            console.log('🔍 Debug de la API:', data.debug);
+        }
+        if (data.error) {
+            console.error('❌ Error de la API:', data.error);
+        }
+        
         if (data.success && data.comentarios) {
-            // Convertir comentarios al formato del timeline
-            TASK_TIMELINES[tareaId] = data.comentarios.map(comentario => ({
-                id: comentario.id,
-                tipo: 'comentario',
-                contenido: comentario.contenido,
-                usuario: comentario.usuario_nombre || comentario.usuario,
-                usuario_id: comentario.usuario_id,
-                fecha: comentario.fecha_creacion,
-                archivos: comentario.archivos || [],
-                puede_editar: comentario.puede_editar,
-                puede_eliminar: comentario.puede_eliminar
-            }));
+            try {
+                // Convertir comentarios al formato del timeline
+                TASK_TIMELINES[tareaId] = data.comentarios.map((comentario, index) => {
+                    console.log(`📋 Procesando comentario ${index}:`, comentario);
+                    return {
+                        id: comentario.id,
+                        tipo: 'comentario',
+                        contenido: comentario.contenido,
+                        contenido_raw: comentario.contenido_raw,
+                        usuario: comentario.usuario?.nombre || comentario.usuario?.username || 'Usuario desconocido',
+                        usuario_id: comentario.usuario?.id || 0,
+                        fecha: comentario.fecha,
+                        fecha_edicion: comentario.fecha_edicion,
+                        editado: comentario.editado,
+                        archivos: comentario.archivos || [],
+                        puede_editar: comentario.puede_editar,
+                        puede_eliminar: comentario.puede_eliminar
+                    };
+                });
+                console.log('✅ Timeline procesado correctamente:', TASK_TIMELINES[tareaId]);
+            } catch (mappingError) {
+                console.error('❌ Error mapeando comentarios:', mappingError);
+                TASK_TIMELINES[tareaId] = [];
+            }
         } else {
+            console.log('⚠️ No hay comentarios o data.success es false');
             TASK_TIMELINES[tareaId] = [];
         }
         
