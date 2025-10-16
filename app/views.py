@@ -1258,49 +1258,127 @@ def api_comentarios_tarea(request, tarea_id):
     API para obtener comentarios de una tarea
     """
     try:
-        tarea = get_object_or_404(Tarea, id=tarea_id)
+        # Debug paso por paso
+        debug_info = []
+        debug_info.append(f"Buscando tarea con ID: {tarea_id}")
+        
+        # Verificar si existe el modelo Tarea
+        try:
+            from .models import Tarea
+            debug_info.append("Modelo Tarea importado correctamente")
+        except Exception as e:
+            debug_info.append(f"Error importando modelo Tarea: {e}")
+            return JsonResponse({'error': 'Error en modelo Tarea', 'debug': debug_info}, status=500)
+        
+        # Buscar la tarea
+        try:
+            tarea = Tarea.objects.get(id=tarea_id)
+            debug_info.append(f"Tarea encontrada: {tarea}")
+        except Tarea.DoesNotExist:
+            debug_info.append("Tarea no existe")
+            return JsonResponse({'error': 'Tarea no encontrada', 'debug': debug_info}, status=404)
+        except Exception as e:
+            debug_info.append(f"Error buscando tarea: {e}")
+            return JsonResponse({'error': 'Error en consulta de tarea', 'debug': debug_info}, status=500)
+        
+        # Verificar relación con proyecto
+        try:
+            proyecto = tarea.proyecto
+            debug_info.append(f"Proyecto relacionado: {proyecto}")
+        except Exception as e:
+            debug_info.append(f"Error accediendo al proyecto: {e}")
+            return JsonResponse({'error': 'Error en relación proyecto', 'debug': debug_info}, status=500)
         
         # Verificar permisos: solo miembros del proyecto o el creador/asignado de la tarea
-        if request.user != tarea.creado_por and request.user != tarea.asignado_a and request.user not in tarea.proyecto.miembros.all():
-            return JsonResponse({'error': 'Sin permisos'}, status=403)
-        
-        comentarios = TareaComentario.objects.filter(tarea=tarea).order_by('-fecha_creacion')
-        
-        comentarios_data = []
-        for comentario in comentarios:
-            archivos_data = []
-            for archivo in comentario.archivos.all():
-                archivos_data.append(get_safe_file_info(archivo))
+        try:
+            debug_info.append(f"Usuario actual: {request.user}")
+            debug_info.append(f"Creado por: {tarea.creado_por}")
+            debug_info.append(f"Asignado a: {tarea.asignado_a}")
             
-            comentarios_data.append({
-                'id': comentario.id,
-                'contenido': getattr(comentario, 'get_contenido_con_menciones', lambda: comentario.contenido)(),
-                'contenido_raw': comentario.contenido,
-                'usuario': {
-                    'id': comentario.usuario.id,
-                    'nombre': comentario.usuario.get_full_name() or comentario.usuario.username,
-                    'username': comentario.usuario.username,
-                    'iniciales': ''.join([palabra[0].upper() for palabra in (comentario.usuario.get_full_name() or comentario.usuario.username).split()[:2]]),
-                    'avatar_url': getattr(comentario.usuario.userprofile, 'get_avatar_url', lambda: None)() if hasattr(comentario.usuario, 'userprofile') else None
-                },
-                'fecha': comentario.fecha_creacion.strftime('%d de %b, %Y - %H:%M'),
-                'fecha_edicion': comentario.fecha_edicion.strftime('%d de %b, %Y - %H:%M') if comentario.fecha_edicion else None,
-                'editado': comentario.editado,
-                'archivos': archivos_data,
-                'puede_editar': comentario.usuario == request.user,
-                'puede_eliminar': comentario.usuario == request.user or tarea.creado_por == request.user or tarea.asignado_a == request.user
-            })
+            if request.user != tarea.creado_por and request.user != tarea.asignado_a and request.user not in tarea.proyecto.miembros.all():
+                return JsonResponse({'error': 'Sin permisos'}, status=403)
+            debug_info.append("Permisos verificados correctamente")
+        except Exception as e:
+            debug_info.append(f"Error verificando permisos: {e}")
+            return JsonResponse({'error': 'Error en verificación de permisos', 'debug': debug_info}, status=500)
         
-        return JsonResponse({
-            'success': True,
-            'comentarios': comentarios_data
-        })
+        # Buscar comentarios
+        try:
+            from .models import TareaComentario
+            debug_info.append("Modelo TareaComentario importado correctamente")
+            comentarios = TareaComentario.objects.filter(tarea=tarea).order_by('-fecha_creacion')
+            debug_info.append(f"Comentarios encontrados: {comentarios.count()}")
+        except Exception as e:
+            debug_info.append(f"Error buscando comentarios: {e}")
+            return JsonResponse({'error': 'Error en consulta de comentarios', 'debug': debug_info}, status=500)
+        
+        # Procesar comentarios con debug detallado
+        try:
+            comentarios_data = []
+            debug_info.append(f"Procesando {comentarios.count()} comentarios")
+            
+            for i, comentario in enumerate(comentarios):
+                debug_info.append(f"Procesando comentario {i+1}: {comentario.id}")
+                
+                try:
+                    # Procesar archivos de forma segura
+                    archivos_data = []
+                    try:
+                        for archivo in comentario.archivos.all():
+                            archivos_data.append(get_safe_file_info(archivo))
+                        debug_info.append(f"Archivos procesados para comentario {i+1}: {len(archivos_data)}")
+                    except Exception as e:
+                        debug_info.append(f"Error procesando archivos del comentario {i+1}: {e}")
+                        archivos_data = []
+                    
+                    comentarios_data.append({
+                        'id': comentario.id,
+                        'contenido': getattr(comentario, 'get_contenido_con_menciones', lambda: comentario.contenido)(),
+                        'contenido_raw': comentario.contenido,
+                        'usuario': {
+                            'id': comentario.usuario.id,
+                            'nombre': comentario.usuario.get_full_name() or comentario.usuario.username,
+                            'username': comentario.usuario.username,
+                            'iniciales': ''.join([palabra[0].upper() for palabra in (comentario.usuario.get_full_name() or comentario.usuario.username).split()[:2]]),
+                            'avatar_url': getattr(comentario.usuario.userprofile, 'get_avatar_url', lambda: None)() if hasattr(comentario.usuario, 'userprofile') else None
+                        },
+                        'fecha': comentario.fecha_creacion.strftime('%d de %b, %Y - %H:%M'),
+                        'fecha_edicion': comentario.fecha_edicion.strftime('%d de %b, %Y - %H:%M') if comentario.fecha_edicion else None,
+                        'editado': comentario.editado,
+                        'archivos': archivos_data,
+                        'puede_editar': comentario.usuario == request.user,
+                        'puede_eliminar': comentario.usuario == request.user or tarea.creado_por == request.user or tarea.asignado_a == request.user
+                    })
+                    debug_info.append(f"Comentario {i+1} procesado correctamente")
+                    
+                except Exception as e:
+                    debug_info.append(f"Error procesando comentario {i+1}: {e}")
+                    # Continuar con el siguiente comentario
+                    continue
+            
+            debug_info.append("Todos los comentarios procesados correctamente")
+            
+            return JsonResponse({
+                'success': True,
+                'comentarios': comentarios_data,
+                'debug': debug_info
+            })
+            
+        except Exception as e:
+            debug_info.append(f"Error general procesando comentarios: {e}")
+            return JsonResponse({'error': 'Error procesando comentarios', 'debug': debug_info}, status=500)
         
     except Exception as e:
         import traceback
         print(f"Error obteniendo comentarios de tarea: {e}")
         print(f"Traceback: {traceback.format_exc()}")
-        return JsonResponse({'error': f'Error interno: {str(e)}'}, status=500)
+        
+        # Incluir debug_info si existe
+        error_response = {'error': f'Error interno: {str(e)}'}
+        if 'debug_info' in locals():
+            error_response['debug'] = debug_info
+            
+        return JsonResponse(error_response, status=500)
 
 
 @login_required
