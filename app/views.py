@@ -1204,7 +1204,7 @@ def api_comentarios_proyecto(request, proyecto_id):
             
             comentarios_data.append({
                 'id': comentario.id,
-                'contenido': comentario.get_contenido_con_menciones(),
+                'contenido': getattr(comentario, 'get_contenido_con_menciones', lambda: comentario.contenido)(),
                 'contenido_raw': comentario.contenido,
                 'usuario': {
                     'id': comentario.usuario.id,
@@ -1231,6 +1231,27 @@ def api_comentarios_proyecto(request, proyecto_id):
         return JsonResponse({'error': 'Error interno'}, status=500)
 
 
+def get_safe_file_info(archivo):
+    """Helper function para obtener información segura de archivos"""
+    try:
+        tamaño = archivo.get_tamaño_legible() if hasattr(archivo, 'get_tamaño_legible') else f"{archivo.tamaño} bytes"
+    except:
+        tamaño = f"{archivo.tamaño} bytes"
+    
+    try:
+        icono = archivo.get_icono() if hasattr(archivo, 'get_icono') else '📎'
+    except:
+        icono = '📎'
+    
+    return {
+        'id': archivo.id,
+        'nombre': archivo.nombre_original,
+        'tamaño': tamaño,
+        'icono': icono,
+        'url': archivo.archivo.url,
+        'tipo': archivo.tipo_contenido
+    }
+
 @login_required
 def api_comentarios_tarea(request, tarea_id):
     """
@@ -1249,18 +1270,11 @@ def api_comentarios_tarea(request, tarea_id):
         for comentario in comentarios:
             archivos_data = []
             for archivo in comentario.archivos.all():
-                archivos_data.append({
-                    'id': archivo.id,
-                    'nombre': archivo.nombre_original,
-                    'tamaño': archivo.get_tamaño_legible(),
-                    'icono': archivo.get_icono(), # Asumiendo que TareaArchivo tiene get_icono
-                    'url': archivo.archivo.url,
-                    'tipo': archivo.tipo_contenido
-                })
+                archivos_data.append(get_safe_file_info(archivo))
             
             comentarios_data.append({
                 'id': comentario.id,
-                'contenido': comentario.get_contenido_con_menciones(),
+                'contenido': getattr(comentario, 'get_contenido_con_menciones', lambda: comentario.contenido)(),
                 'contenido_raw': comentario.contenido,
                 'usuario': {
                     'id': comentario.usuario.id,
@@ -1357,7 +1371,7 @@ def api_agregar_comentario_proyecto(request, proyecto_id):
             'success': True,
             'comentario': {
                 'id': comentario.id,
-                'contenido': comentario.get_contenido_con_menciones(),
+                'contenido': getattr(comentario, 'get_contenido_con_menciones', lambda: comentario.contenido)(),
                 'contenido_raw': comentario.contenido,
                 'usuario': {
                     'id': comentario.usuario.id,
@@ -1450,7 +1464,7 @@ def api_agregar_comentario_tarea(request, tarea_id):
             'success': True,
             'comentario': {
                 'id': comentario.id,
-                'contenido': comentario.get_contenido_con_menciones(),
+                'contenido': getattr(comentario, 'get_contenido_con_menciones', lambda: comentario.contenido)(),
                 'contenido_raw': comentario.contenido,
                 'usuario': {
                     'id': comentario.usuario.id,
