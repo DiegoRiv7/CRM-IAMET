@@ -193,6 +193,12 @@ def _get_bitrix_mapped_data(opportunity_data, request=None):
         100: '142',
     }
 
+    # Mapeo para tipos de negociación (CATEGORY_ID en Bitrix24)
+    tipo_negociacion_map = {
+        'runrate': '1',    # ID del pipeline de Runrate en Bitrix24
+        'proyecto': '2',   # ID del pipeline de Proyecto en Bitrix24
+    }
+
     bitrix_company_id = opportunity_data.get('bitrix_company_id')
     if not bitrix_company_id and opportunity_data.get('cliente'):
         bitrix_company_id = get_or_create_bitrix_company(opportunity_data['cliente'], request=request)
@@ -212,6 +218,10 @@ def _get_bitrix_mapped_data(opportunity_data, request=None):
     probabilidad_value = opportunity_data.get('probabilidad_cierre')
     bitrix_probabilidad_id = probabilidad_map.get(probabilidad_value)
     print(f"DEBUG Bitrix: Valor de probabilidad recibido: '{probabilidad_value}', Mapeado a ID: '{bitrix_probabilidad_id}'")
+
+    tipo_negociacion_value = opportunity_data.get('tipo_negociacion')
+    bitrix_category_id = tipo_negociacion_map.get(tipo_negociacion_value)
+    print(f"DEBUG Bitrix: Valor de tipo de negociación recibido: '{tipo_negociacion_value}', Mapeado a CATEGORY_ID: '{bitrix_category_id}'")
 
     # Agregar indicador Nethive a los comentarios para mayor visibilidad
     comentarios_originales = opportunity_data.get('comentarios', '')
@@ -247,6 +257,9 @@ def _get_bitrix_mapped_data(opportunity_data, request=None):
 
     if bitrix_probabilidad_id:
         fields["UF_CRM_1752855787179"] = bitrix_probabilidad_id
+
+    if bitrix_category_id:
+        fields["CATEGORY_ID"] = bitrix_category_id
 
     if opportunity_data.get('bitrix_stage_id'):
         fields["STAGE_ID"] = opportunity_data.get('bitrix_stage_id')
@@ -335,7 +348,7 @@ def get_bitrix_deal_details(deal_id, request=None):
             'id': deal_id,
             'select': [
                 'ID', 'TITLE', 'OPPORTUNITY', 'CURRENCY_ID', 'COMMENTS',
-                'COMPANY_ID', 'CONTACT_ID', 'ASSIGNED_BY_ID', 'STAGE_ID',
+                'COMPANY_ID', 'CONTACT_ID', 'ASSIGNED_BY_ID', 'STAGE_ID', 'CATEGORY_ID',
                 'UF_CRM_1752859685662',  # Producto
                 'UF_CRM_1752859525038',  # Área
                 'UF_CRM_1752859877756',  # Mes de Cobro
@@ -462,7 +475,7 @@ def get_all_bitrix_deals(request=None):
             response = requests.post(list_url, json={
                 'select': [
                     'ID', 'TITLE', 'OPPORTUNITY', 'CURRENCY_ID', 'COMMENTS',
-                    'COMPANY_ID', 'CONTACT_ID', 'ASSIGNED_BY_ID', 'STAGE_ID',
+                    'COMPANY_ID', 'CONTACT_ID', 'ASSIGNED_BY_ID', 'STAGE_ID', 'CATEGORY_ID',
                     'UF_CRM_1752859685662', # Producto
                     'UF_CRM_1752859525038',  # Área
                     'UF_CRM_1752859877756',  # Mes de Cobro
@@ -855,3 +868,16 @@ def delete_opportunity_from_bitrix(bitrix_deal_id, request=None):
     except requests.exceptions.RequestException as e:
         print(f"DEBUG Bitrix: Error al eliminar oportunidad {bitrix_deal_id} de Bitrix24: {e}")
         return False
+
+def map_bitrix_category_to_tipo_negociacion(category_id):
+    """
+    Mapea el CATEGORY_ID de Bitrix24 al tipo_negociacion local
+    """
+    category_map_reverse = {
+        '1': 'runrate',    # Pipeline de Runrate en Bitrix24
+        '2': 'proyecto',   # Pipeline de Proyecto en Bitrix24
+    }
+    
+    mapped_value = category_map_reverse.get(str(category_id), 'runrate')  # Default a runrate
+    print(f"DEBUG Bitrix: CATEGORY_ID {category_id} mapeado a tipo_negociacion: {mapped_value}")
+    return mapped_value

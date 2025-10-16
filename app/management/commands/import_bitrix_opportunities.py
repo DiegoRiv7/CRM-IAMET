@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand, CommandError
 from app.models import TodoItem, Cliente, UserProfile, Contacto
 from django.contrib.auth.models import User
-from app.bitrix_integration import get_all_bitrix_deals, get_bitrix_company_details, get_bitrix_user_details, get_bitrix_contact_details
+from app.bitrix_integration import get_all_bitrix_deals, get_bitrix_company_details, get_bitrix_user_details, get_bitrix_contact_details, map_bitrix_category_to_tipo_negociacion
 from decimal import Decimal
 import json
 
@@ -136,11 +136,13 @@ class Command(BaseCommand):
                 area_bitrix_id = deal.get('UF_CRM_1752859525038')
                 mes_cierre_bitrix_id = deal.get('UF_CRM_1752859877756')
                 probabilidad_bitrix_id = deal.get('UF_CRM_1752855787179')
+                category_id = deal.get('CATEGORY_ID')
                 
                 self.stdout.write(f'  Bitrix raw product ID: {producto_bitrix_id}')
                 self.stdout.write(f'  Bitrix raw area ID: {area_bitrix_id}')
                 self.stdout.write(f'  Bitrix raw mes_cierre ID: {mes_cierre_bitrix_id}')
                 self.stdout.write(f'  Bitrix raw probabilidad ID: {probabilidad_bitrix_id}')
+                self.stdout.write(f'  Bitrix raw category ID: {category_id}')
 
                 # Mapeos de Bitrix ID a Django Value
                 PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE = {
@@ -171,6 +173,9 @@ class Command(BaseCommand):
                 producto = PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE.get(str(producto_bitrix_id), 'SOFTWARE') # Default
                 area = AREA_BITRIX_ID_TO_DJANGO_VALUE.get(str(area_bitrix_id), 'SISTEMAS') # Default
                 mes_cierre = MES_COBRO_BITRIX_ID_TO_DJANGO_VALUE.get(str(mes_cierre_bitrix_id), 'Enero') # Default to January
+                
+                # Mapear tipo de negociación desde CATEGORY_ID
+                tipo_negociacion = map_bitrix_category_to_tipo_negociacion(category_id)
                 
                 probabilidad_cierre = 0 # Default value
                 if probabilidad_bitrix_id is not None:
@@ -204,6 +209,7 @@ class Command(BaseCommand):
                         'producto': producto or 'SOFTWARE',  # Default value
                         'area': area or 'SISTEMAS',  # Default value
                         'mes_cierre': mes_cierre or 'Enero',  # Default value
+                        'tipo_negociacion': tipo_negociacion,  # Nuevo campo
                         'probabilidad_cierre': probabilidad_cierre,
                         'comentarios': deal.get('COMMENTS', ''),
                         'bitrix_company_id': bitrix_company_id,
@@ -244,6 +250,7 @@ class Command(BaseCommand):
                             'producto': 'SOFTWARE',
                             'area': 'SISTEMAS',
                             'mes_cierre': 'Enero',
+                            'tipo_negociacion': 'runrate',  # Default para importación mínima
                             'probabilidad_cierre': 0,
                             'comentarios': deal.get('COMMENTS', ''),
                             'bitrix_company_id': deal.get('COMPANY_ID'),

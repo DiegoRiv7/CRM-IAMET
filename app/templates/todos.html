@@ -1964,6 +1964,40 @@
         color: #2D1B2E !important;
     }
 
+    /* Estilos para badges de tipo de negociación */
+    .tipo-negociacion-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .tipo-runrate {
+        background: rgba(0, 122, 255, 0.1);
+        color: #007AFF;
+        border: 1px solid rgba(0, 122, 255, 0.2);
+    }
+
+    .tipo-proyecto {
+        background: rgba(50, 215, 75, 0.1);
+        color: #32D74B;
+        border: 1px solid rgba(50, 215, 75, 0.2);
+    }
+
+    /* Tema claro */
+    .light-theme .tipo-runrate {
+        background: rgba(0, 122, 255, 0.15);
+        color: #0066CC;
+    }
+
+    .light-theme .tipo-proyecto {
+        background: rgba(40, 167, 69, 0.15);
+        color: #28A745;
+    }
+
 </style>
 
 <div class="todos-container">
@@ -2056,6 +2090,7 @@
                     <tr>
                         <th>Oportunidad</th>
                         <th>Cliente</th>
+                        <th>Tipo</th>
                         <th>Monto</th>
                         <th>Probabilidad</th>
                         <th>Mes Cierre</th>
@@ -2071,6 +2106,11 @@
                             </a>
                         </td>
                         <td data-label="Cliente">{% if item.cliente %}{{ item.cliente.nombre_empresa }}{% else %}N/A{% endif %}</td>
+                        <td data-label="Tipo">
+                            <span class="tipo-negociacion-badge {% if item.tipo_negociacion == 'runrate' %}tipo-runrate{% else %}tipo-proyecto{% endif %}">
+                                {{ item.get_tipo_negociacion_display }}
+                            </span>
+                        </td>
                         <td data-label="Monto">${{ item.monto|format_currency_es }}</td>
                         <td data-label="Probabilidad">
                             <div class="flex items-center gap-3">
@@ -2096,7 +2136,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center py-10 text-gray-400">No hay oportunidades registradas.</td>
+                        <td colspan="7" class="text-center py-10 text-gray-400">No hay oportunidades registradas.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -2401,7 +2441,7 @@ function updateNoResultsMessage(visibleCount, tableBody) {
     if (visibleCount === 0) {
         const noResultsRow = document.createElement('tr');
         noResultsRow.className = 'no-results-row';
-        noResultsRow.innerHTML = '<td colspan="6" class="text-center py-10 text-gray-400">No se encontraron oportunidades que coincidan con los filtros aplicados.</td>';
+        noResultsRow.innerHTML = '<td colspan="7" class="text-center py-10 text-gray-400">No se encontraron oportunidades que coincidan con los filtros aplicados.</td>';
         tableBody.appendChild(noResultsRow);
     }
 }

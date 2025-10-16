@@ -3989,7 +3989,7 @@ def perfil_usuario(request, usuario_id):
 
 
 from django.views.decorators.csrf import csrf_exempt
-from .bitrix_integration import get_bitrix_company_details, get_bitrix_deal_details, BITRIX_WEBHOOK_URL
+from .bitrix_integration import get_bitrix_company_details, get_bitrix_deal_details, BITRIX_WEBHOOK_URL, map_bitrix_category_to_tipo_negociacion
 from django.contrib.auth.models import User
 import requests
 import traceback
@@ -4063,7 +4063,18 @@ def bitrix_webhook_receiver(request):
             if BITRIX_WEBHOOK_URL:
                 try:
                     get_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "crm.deal.get.json")
-                    response = requests.post(get_url, json={'id': deal_id}, timeout=5)
+                    response = requests.post(get_url, json={
+                        'id': deal_id,
+                        'select': [
+                            'ID', 'TITLE', 'OPPORTUNITY', 'CURRENCY_ID', 'COMMENTS',
+                            'COMPANY_ID', 'CONTACT_ID', 'ASSIGNED_BY_ID', 'STAGE_ID', 'CATEGORY_ID',
+                            'UF_CRM_1752859685662',  # Producto
+                            'UF_CRM_1752859525038',  # Área
+                            'UF_CRM_1752859877756',  # Mes de Cobro
+                            'UF_CRM_1752855787179',  # Probabilidad de cierre
+                            'UF_CRM_1755615484859',  # Utilidad
+                        ]
+                    }, timeout=5)
                     if response.status_code == 200:
                         deal_data = response.json()
                         if 'result' in deal_data and deal_data['result']:
@@ -4190,17 +4201,22 @@ def bitrix_webhook_receiver(request):
             mes_cierre_bitrix_id = deal_details.get('UF_CRM_1752859877756')
             probabilidad_bitrix_id = deal_details.get('UF_CRM_1752855787179')
             utilidad_bitrix_id = deal_details.get('UF_CRM_1755615484859')
+            category_id = deal_details.get('CATEGORY_ID')
 
             print(f"BITRIX WEBHOOK: Raw product ID: {producto_bitrix_id}", flush=True)
             print(f"BITRIX WEBHOOK: Raw area ID: {area_bitrix_id}", flush=True)
             print(f"BITRIX WEBHOOK: Raw mes_cierre ID: {mes_cierre_bitrix_id}", flush=True)
             print(f"BITRIX WEBHOOK: Raw probabilidad ID: {probabilidad_bitrix_id}", flush=True)
             print(f"BITRIX WEBHOOK: Raw utilidad ID: {utilidad_bitrix_id}", flush=True)
+            print(f"BITRIX WEBHOOK: Raw category ID: {category_id}", flush=True)
 
             # Aplicar conversiones de mapeo
             producto = PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE.get(str(producto_bitrix_id), 'SOFTWARE') # Default
             area = AREA_BITRIX_ID_TO_DJANGO_VALUE.get(str(area_bitrix_id), 'SISTEMAS') # Default
             mes_cierre = MES_COBRO_BITRIX_ID_TO_DJANGO_VALUE.get(str(mes_cierre_bitrix_id), 'Enero') # Default
+            
+            # Mapear tipo de negociación desde CATEGORY_ID
+            tipo_negociacion = map_bitrix_category_to_tipo_negociacion(category_id)
 
             probabilidad_cierre = 0 # Default value
             if probabilidad_bitrix_id is not None:
@@ -4266,6 +4282,7 @@ def bitrix_webhook_receiver(request):
                     existing_opportunity.producto = producto
                     existing_opportunity.area = area
                     existing_opportunity.mes_cierre = mes_cierre
+                    existing_opportunity.tipo_negociacion = tipo_negociacion  # Nuevo campo
                     existing_opportunity.probabilidad_cierre = probabilidad_cierre
                     existing_opportunity.bitrix_stage_id = bitrix_stage_id  # Guardar el estado
                     existing_opportunity.save()
@@ -4351,6 +4368,7 @@ def bitrix_webhook_receiver(request):
                             producto=producto,
                             area=area,
                             mes_cierre=mes_cierre,
+                            tipo_negociacion=tipo_negociacion,  # Nuevo campo
                             probabilidad_cierre=probabilidad_cierre,
                             bitrix_stage_id=bitrix_stage_id,  # Guardar el estado
                         )

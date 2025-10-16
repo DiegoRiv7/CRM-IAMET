@@ -57,7 +57,7 @@ class VentaForm(forms.ModelForm):
         model = TodoItem
         fields = [
             'oportunidad', 'usuario', 'contacto', 'monto',
-            'probabilidad_cierre', 'mes_cierre', 'area', 'producto',
+            'probabilidad_cierre', 'mes_cierre', 'area', 'producto', 'tipo_negociacion',
             'comentarios', 'bitrix_deal_id', 'bitrix_company_id', 'bitrix_stage_id'
         ]
         widgets = {
@@ -191,11 +191,13 @@ class VentaFilterForm(forms.Form):
     AREA_CHOICES = [('', 'Todas las Áreas')] + list(TodoItem.AREA_CHOICES)
     PRODUCTO_CHOICES = [('', 'Todos los Productos')] + list(TodoItem.PRODUCTO_CHOICES)
     MES_CHOICES = [('', 'Todos los Meses')] + list(TodoItem.MES_CHOICES)
+    TIPO_NEGOCIACION_CHOICES = [('', 'Todos los Tipos')] + list(TodoItem.TIPO_NEGOCIACION_CHOICES)
 
     area = forms.ChoiceField(choices=AREA_CHOICES, required=False, label="Filtrar por Área")
     producto = forms.ChoiceField(choices=PRODUCTO_CHOICES, required=False, label="Filtrar por Producto")
     empleado = forms.ModelChoiceField(queryset=User.objects.all(), required=False, label="Filtrar por Empleado")
     mes_cierre = forms.ChoiceField(choices=MES_CHOICES, required=False, label="Filtrar por Mes de Cierre")
+    tipo_negociacion = forms.ChoiceField(choices=TIPO_NEGOCIACION_CHOICES, required=False, label="Filtrar por Tipo")
     orden_monto = forms.ChoiceField(
         choices=[
             ('', 'Sin Orden'),
@@ -377,7 +379,7 @@ class NuevaOportunidadForm(forms.ModelForm):
         model = TodoItem
         fields = [
             'oportunidad', 'monto', 'probabilidad_cierre', 
-            'mes_cierre', 'area', 'producto', 'comentarios'
+            'mes_cierre', 'area', 'producto', 'tipo_negociacion', 'comentarios'
         ]
         widgets = {
             'probabilidad_cierre': forms.NumberInput(attrs={
@@ -390,6 +392,7 @@ class NuevaOportunidadForm(forms.ModelForm):
             'mes_cierre': forms.Select(attrs={'class': 'form-control'}),
             'area': forms.Select(attrs={'class': 'form-control'}),
             'producto': forms.Select(attrs={'class': 'form-control'}),
+            'tipo_negociacion': forms.Select(attrs={'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):

@@ -217,6 +217,12 @@ class TodoItem(models.Model):
         ('09', 'Septiembre'), ('10', 'Octubre'), ('11', 'Noviembre'), ('12', 'Diciembre'),
     ]
 
+    # Opciones para el tipo de negociación
+    TIPO_NEGOCIACION_CHOICES = [
+        ('runrate', 'Runrate'),
+        ('proyecto', 'Proyecto'),
+    ]
+
     # 'usuario' es el campo que vincula la oportunidad con el usuario que la creó/posee
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='oportunidades')
     oportunidad = models.CharField(max_length=200, verbose_name="Oportunidad de Venta")
@@ -234,6 +240,7 @@ class TodoItem(models.Model):
     probabilidad_cierre = models.IntegerField(verbose_name="Probabilidad de Cierre (%)", default=5)
     mes_cierre = models.CharField(max_length=50, choices=MES_CHOICES, verbose_name="Mes de Cierre Esperado", default='01')
     area = models.CharField(max_length=50, choices=AREA_CHOICES, verbose_name="Área")
+    tipo_negociacion = models.CharField(max_length=20, choices=TIPO_NEGOCIACION_CHOICES, verbose_name="Tipo de Negociación", default='runrate')
     comentarios = models.TextField(blank=True, null=True, verbose_name="Comentarios")
     bitrix_deal_id = models.IntegerField(blank=True, null=True, verbose_name="ID de Oportunidad en Bitrix24")
     bitrix_company_id = models.IntegerField(blank=True, null=True, verbose_name="ID de Compañía en Bitrix24")
