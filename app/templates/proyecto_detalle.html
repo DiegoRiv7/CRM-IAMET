@@ -5083,7 +5083,7 @@ function createTaskTimelineItem(activity) {
     
     if (activity.tipo === 'comentario') {
         const clickHandler = activity.puede_editar ? 
-            'onclick="mostrarModalEditarComentarioTarea(' + activity.id + ', \'' + activity.contenido_raw.replace(/\'/g, "\\\'") + '\')"' : 
+            'onclick="mostrarModalEditarComentarioTarea(' + activity.id + ', \'' + activity.contenido_raw.replace(/\'/g, "\\'") + '\')"' : 
             'onclick="responderComentarioTarea(' + activity.id + ', \'' + activity.usuario + '\')"';
         
         return `
@@ -6072,9 +6072,7 @@ async function simulateTaskCommentDelete(comentarioId) {
     // Se mantiene como placeholder si se necesita una simulación en otro contexto
     await new Promise(resolve => setTimeout(resolve, 500));
     console.log('Simulando eliminación de comentario:', comentarioId);
-}
     // });
-}
 
 // Procesar menciones en tiempo real para autocompletado
 function procesarMencionesEnTiempoReal(textarea) {
