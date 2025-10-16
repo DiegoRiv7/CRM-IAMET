@@ -2987,22 +2987,44 @@ async function cargarComentarios() {
         feedItems.style.display = 'none';
         feedEmpty.style.display = 'none';
         
+        console.log('Cargando comentarios para proyecto:', PROYECTO_ID);
         const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/comentarios/`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
+        console.log('Respuesta del servidor:', data);
         
         feedLoading.style.display = 'none';
         
-        if (data.success && data.comentarios.length > 0) {
+        if (data.success && data.comentarios && data.comentarios.length > 0) {
             feedItems.style.display = 'block';
             renderizarComentarios(data.comentarios);
         } else {
             feedEmpty.style.display = 'block';
+            console.log('No hay comentarios o data.success es false');
         }
         
     } catch (error) {
         console.error('Error cargando comentarios:', error);
         feedLoading.style.display = 'none';
         feedEmpty.style.display = 'block';
+        
+        // Mostrar el error al usuario
+        if (feedEmpty) {
+            feedEmpty.innerHTML = `
+                <div class="empty-state-content">
+                    <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                        <path d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+                    </svg>
+                    <h3>Error cargando comentarios</h3>
+                    <p>No se pudieron cargar los comentarios del proyecto.</p>
+                    <p style="font-size: 0.8em; color: var(--apple-label-secondary);">${error.message}</p>
+                </div>
+            `;
+        }
     }
 }
 
