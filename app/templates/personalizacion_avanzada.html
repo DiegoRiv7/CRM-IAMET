@@ -2279,19 +2279,8 @@
                         
                         <!-- Render único del dock actualizado -->
                         <div class="dock-preview-container" style="margin: 20px 0; height: 150px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                            <div id="dockPreview" class="dock-preview" style="position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);">
-
-                                <!-- Dock normal -->
-                                <div id="dockPreviewNormal" class="dock-preview-type macos-dock" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; background: rgba(29, 29, 31, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3); min-width: 280px;">
-                                </div>
-
-                                <!-- Dock transparente -->
-                                <div id="dockPreviewTransparent" class="dock-preview-type macos-dock dock-transparent" style="display: none; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; background: rgba(255, 255, 255, 0.01); backdrop-filter: blur(40px) saturate(500%) contrast(180%) brightness(140%); -webkit-backdrop-filter: blur(40px) saturate(500%) contrast(180%) brightness(140%); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 rgba(255, 255, 255, 0.05); min-width: 280px;">
-                                </div>
-
-                                <!-- Dock compacto -->
-                                <div id="dockPreviewCompact" class="dock-preview-type macos-dock dock-compact" style="display: none; align-items: center; justify-content: center; gap: 8px; padding: 10px; background: rgba(29, 29, 31, 0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 50%; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);">
-                                </div>
+                            <div id="dockPreview" class="dock-preview" style="position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease-in-out;">
+                                <!-- El dock se generará aquí con JavaScript -->
                             </div>
                         </div>
                         
@@ -2756,139 +2745,103 @@
             }, 100);
         }
 
-        function initializeDockPreview() {
-            const dockPreviewNormal = document.getElementById('dockPreviewNormal');
-            const dockPreviewTransparent = document.getElementById('dockPreviewTransparent');
-            const dockPreviewCompact = document.getElementById('dockPreviewCompact');
-
-            if (!dockPreviewNormal || !dockPreviewTransparent || !dockPreviewCompact) return;
-
-            // Clear previous icons
-            dockPreviewNormal.innerHTML = '';
-            dockPreviewTransparent.innerHTML = '';
-            dockPreviewCompact.innerHTML = '';
-
-            // Populate normal and transparent docks
-            defaultDockOrder.slice(0, 5).forEach(item => {
-                if (item.id === 'separator') return;
-
-                const iconElement = document.createElement('div');
-                iconElement.className = 'dock-item';
-                iconElement.style.width = '48px';
-                iconElement.style.height = '48px';
-                iconElement.style.borderRadius = '12px';
-                iconElement.style.display = 'flex';
-                iconElement.style.alignItems = 'center';
-                iconElement.style.justifyContent = 'center';
-                iconElement.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="${item.icon}"></path></svg>`;
-                
-                const normalIcon = iconElement.cloneNode(true);
-                normalIcon.style.background = 'rgba(0, 122, 255, 0.8)';
-                dockPreviewNormal.appendChild(normalIcon);
-
-                const transparentIcon = iconElement.cloneNode(true);
-                transparentIcon.style.background = 'rgba(255, 255, 255, 0.2)';
-                dockPreviewTransparent.appendChild(transparentIcon);
-            });
-
-            // Populate compact dock
-            const compactIcon = document.createElement('div');
-            compactIcon.className = 'dock-item';
-            compactIcon.style.width = '48px';
-            compactIcon.style.height = '48px';
-            compactIcon.style.borderRadius = '50%';
-            compactIcon.style.display = 'flex';
-            compactIcon.style.alignItems = 'center';
-            compactIcon.style.justifyContent = 'center';
-            compactIcon.style.background = 'rgba(0, 122, 255, 0.8)';
-            compactIcon.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9,22 9,12 15,12 15,22"></polyline></svg>`;
-            dockPreviewCompact.appendChild(compactIcon);
-
-            // Set initial visibility
-            const currentDockType = localStorage.getItem('dockType') || 'normal';
-            setDockTypeWithAnimation(currentDockType, false); // false to prevent animation on init
-        }
-
         function setDockTypeWithAnimation(type, animate = true) {
-            const dockPreviewNormal = document.getElementById('dockPreviewNormal');
-            const dockPreviewTransparent = document.getElementById('dockPreviewTransparent');
-            const dockPreviewCompact = document.getElementById('dockPreviewCompact');
-            const previews = [dockPreviewNormal, dockPreviewTransparent, dockPreviewCompact];
+            const dockPreview = document.getElementById('dockPreview');
+            if (!dockPreview) return;
 
-            const showPreview = (previewToShow) => {
-                previews.forEach(p => {
-                    p.style.display = 'none';
-                });
-                previewToShow.style.display = 'flex';
+            const generateDock = (isTransparent, isCompact) => {
+                const dock = document.createElement('div');
+                dock.className = 'macos-dock';
+                dock.style.display = 'flex';
+                dock.style.gap = '8px';
+                dock.style.padding = '10px';
+                dock.style.borderRadius = '16px';
+                dock.style.transition = 'all 0.3s ease';
+
+                if (isCompact) {
+                    dock.style.borderRadius = '50%';
+                    dock.style.width = '60px';
+                    dock.style.height = '60px';
+                    dock.style.justifyContent = 'center';
+                    dock.style.alignItems = 'center';
+                    const compactIcon = document.createElement('div');
+                    compactIcon.className = 'dock-item';
+                    compactIcon.style.width = '48px';
+                    compactIcon.style.height = '48px';
+                    compactIcon.style.borderRadius = '50%';
+                    compactIcon.style.display = 'flex';
+                    compactIcon.style.alignItems = 'center';
+                    compactIcon.style.justifyContent = 'center';
+                    compactIcon.style.background = 'rgba(0, 122, 255, 0.8)';
+                    compactIcon.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9,22 9,12 15,12 15,22"></polyline></svg>`;
+                    dock.appendChild(compactIcon);
+                } else {
+                    dock.style.padding = '10px 20px';
+                    defaultDockOrder.slice(0, 5).forEach(item => {
+                        if (item.id === 'separator') return;
+                        const iconElement = document.createElement('div');
+                        iconElement.className = 'dock-item';
+                        iconElement.style.width = '48px';
+                        iconElement.style.height = '48px';
+                        iconElement.style.borderRadius = '12px';
+                        iconElement.style.display = 'flex';
+                        iconElement.style.alignItems = 'center';
+                        iconElement.style.justifyContent = 'center';
+                        iconElement.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="${item.icon}"></path></svg>`;
+                        iconElement.style.background = isTransparent ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 122, 255, 0.8)';
+                        dock.appendChild(iconElement);
+                    });
+                }
+
+                if (isTransparent) {
+                    dock.style.background = 'rgba(255, 255, 255, 0.01)';
+                    dock.style.backdropFilter = 'blur(40px) saturate(500%) contrast(180%) brightness(140%)';
+                    dock.style.webkitBackdropFilter = 'blur(40px) saturate(500%) contrast(180%) brightness(140%)';
+                    dock.style.border = '1px solid rgba(255, 255, 255, 0.05)';
+                } else {
+                    dock.style.background = 'rgba(29, 29, 31, 0.85)';
+                    dock.style.border = '1px solid rgba(255, 255, 255, 0.15)';
+                }
+
+                return dock;
             };
 
             if (animate) {
-                const dockPreview = document.getElementById('dockPreview');
-                dockPreview.style.transform = 'scale(0.95)';
+                dockPreview.style.transform = 'scale(0.9)';
                 dockPreview.style.opacity = '0';
-                dockPreview.style.transition = 'all 0.2s ease-out';
-
                 setTimeout(() => {
-                    if (type === 'normal') showPreview(dockPreviewNormal);
-                    else if (type === 'transparent') showPreview(dockPreviewTransparent);
-                    else if (type === 'compact') showPreview(dockPreviewCompact);
-                    
+                    dockPreview.innerHTML = '';
+                    let newDock;
+                    if (type === 'normal') newDock = generateDock(false, false);
+                    else if (type === 'transparent') newDock = generateDock(true, false);
+                    else if (type === 'compact') newDock = generateDock(false, true);
+                    dockPreview.appendChild(newDock);
                     dockPreview.style.transform = 'scale(1)';
                     dockPreview.style.opacity = '1';
-                    dockPreview.style.transition = 'all 0.2s ease-in';
                 }, 200);
             } else {
-                if (type === 'normal') showPreview(dockPreviewNormal);
-                else if (type === 'transparent') showPreview(dockPreviewTransparent);
-                else if (type === 'compact') showPreview(dockPreviewCompact);
+                dockPreview.innerHTML = '';
+                let newDock;
+                if (type === 'normal') newDock = generateDock(false, false);
+                else if (type === 'transparent') newDock = generateDock(true, false);
+                else if (type === 'compact') newDock = generateDock(false, true);
+                dockPreview.appendChild(newDock);
             }
-            
+
             setDockType(type);
         }
 
         function openDesignSettings() {
             showModal('designModal');
             
-            // Inicializar el tema activo con un pequeño retraso para asegurar que el DOM esté listo
             setTimeout(() => {
-                const savedTheme = localStorage.getItem('theme');
-                console.log('openDesignSettings - savedTheme:', savedTheme);
-                
-                if (savedTheme) {
-                    // Aplicar el tema inmediatamente antes de inicializar la UI
-                    applyThemeImmediate(savedTheme);
-                    
-                    // Inicializar el tema activo en la UI
-                    initializeActiveTheme(savedTheme);
-                    initializeThemeDots(savedTheme);
-                    
-                    // Verificar que se aplicó correctamente
-                    setTimeout(() => {
-                        const selectedThemeOption = document.querySelector(`.theme-option[onclick*="'${savedTheme}'"]`);
-                        if (selectedThemeOption) {
-                            console.log('Tema activo inicializado correctamente:', savedTheme);
-                            
-                            // Verificar que el tema se guardó correctamente en localStorage
-                            const currentTheme = localStorage.getItem('theme');
-                            if (currentTheme !== savedTheme) {
-                                console.error('El tema cambió inesperadamente! Era:', savedTheme, 'Ahora es:', currentTheme);
-                                // Restaurar el tema correcto
-                                localStorage.setItem('theme', savedTheme);
-                            }
-                        } else {
-                            console.warn('No se encontró el tema activo:', savedTheme);
-                        }
-                    }, 50);
-                } else {
-                    console.log('No hay tema guardado en localStorage, usando tema por defecto');
-                    // Si no hay tema guardado, usar el tema oscuro por defecto
-                    const defaultTheme = 'dark';
-                    applyThemeImmediate(defaultTheme);
-                    initializeActiveTheme(defaultTheme);
-                    initializeThemeDots(defaultTheme);
-                    localStorage.setItem('theme', defaultTheme);
-                }
-                initializeDockPreview();
+                const savedTheme = localStorage.getItem('theme') || 'dark';
+                applyTheme(savedTheme);
+                initializeActiveTheme(savedTheme);
+                initializeThemeDots(savedTheme);
+
+                const savedDockType = localStorage.getItem('dockType') || 'normal';
+                setDockTypeWithAnimation(savedDockType, false);
             }, 100);
         }
 
