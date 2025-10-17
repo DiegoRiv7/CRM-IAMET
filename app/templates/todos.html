@@ -2007,7 +2007,7 @@
     /* Estilos para badges de etapas */
     .etapa-badge {
         display: inline-block;
-        padding: 4px 10px;
+        padding: 4px 12px;
         border-radius: 16px;
         font-size: 11px;
         font-weight: 600;
@@ -2015,11 +2015,12 @@
         letter-spacing: 0.3px;
         cursor: pointer;
         transition: all 0.3s ease;
-        max-width: 120px;
+        max-width: 140px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         user-select: none;
+        min-width: 80px;
     }
 
     .etapa-badge:hover {
@@ -2034,6 +2035,30 @@
         letter-spacing: normal;
         font-size: 12px;
         padding: 6px 12px;
+    }
+
+    /* Badge no expandible - cursor normal */
+    .etapa-badge.no-expand {
+        cursor: default !important;
+    }
+
+    .etapa-badge.no-expand:hover {
+        transform: none !important;
+        opacity: 1 !important;
+    }
+
+    /* Badge expandible - cursor pointer con indicador */
+    .etapa-badge.expandable {
+        cursor: pointer !important;
+        position: relative;
+    }
+
+    .etapa-badge.expandible::after {
+        content: '...';
+        position: absolute;
+        right: 4px;
+        opacity: 0.7;
+        font-weight: normal;
     }
 
 </style>
@@ -2610,33 +2635,55 @@ function updateNoResultsMessage(visibleCount, tableBody) {
     }
 }
 
-// Función para expandir/contraer etapas
+// Función para expandir/contraer etapas con lógica inteligente
 function toggleEtapaExpanded(element) {
-    element.classList.toggle('expanded');
+    const originalText = element.getAttribute('data-original-text') || element.textContent.trim();
+    const fullText = element.getAttribute('title') || originalText;
     
-    if (element.classList.contains('expanded')) {
-        // Mostrar nombre completo
-        element.textContent = element.getAttribute('title');
+    // Solo expandir si el texto completo es diferente del texto corto
+    if (originalText === fullText) {
+        console.log('🎯 Etapa completa ya cabe, no expandir:', originalText);
+        return; // No hacer nada si ya está completo
+    }
+    
+    const isExpanded = element.classList.contains('expanded');
+    
+    if (!isExpanded) {
+        console.log('🎯 Expandiendo etapa:', originalText, '->', fullText);
+        element.classList.add('expanded');
+        element.textContent = fullText;
     } else {
-        // Mostrar nombre corto (original)
-        const originalText = element.getAttribute('data-original-text');
-        if (originalText) {
-            element.textContent = originalText;
-        } else {
-            // Guardar el texto original para futuras contracciones
-            const shortText = element.textContent;
-            element.setAttribute('data-original-text', shortText);
-            element.textContent = element.getAttribute('title');
-        }
+        console.log('🎯 Contrayendo etapa:', fullText, '->', originalText);
+        element.classList.remove('expanded');
+        element.textContent = originalText;
     }
 }
 
-// Guardar textos originales al cargar la página
+// Guardar textos originales y configurar expandibilidad al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
     const etapaBadges = document.querySelectorAll('.etapa-badge');
     etapaBadges.forEach(badge => {
+        const originalText = badge.textContent.trim();
+        const fullText = badge.getAttribute('title') || originalText;
+        
+        // Guardar texto original si no existe
         if (!badge.getAttribute('data-original-text')) {
-            badge.setAttribute('data-original-text', badge.textContent.trim());
+            badge.setAttribute('data-original-text', originalText);
+        }
+        
+        // Determinar si es expandible
+        const isExpandable = originalText !== fullText && fullText.length > originalText.length;
+        
+        if (isExpandable) {
+            console.log('🎯 Badge expandible:', originalText, '->', fullText);
+            badge.classList.add('expandable');
+            badge.classList.remove('no-expand');
+        } else {
+            console.log('🎯 Badge NO expandible:', originalText);
+            badge.classList.add('no-expand');
+            badge.classList.remove('expandable');
+            // Remover el onclick si no es expandible
+            badge.removeAttribute('onclick');
         }
     });
 });
