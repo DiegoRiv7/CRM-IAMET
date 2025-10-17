@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand, CommandError
 from app.models import TodoItem, Cliente, UserProfile, Contacto
 from django.contrib.auth.models import User
-from app.bitrix_integration import get_all_bitrix_deals, get_bitrix_company_details, get_bitrix_user_details, get_bitrix_contact_details, map_bitrix_category_to_tipo_negociacion, get_producto_from_bitrix_deal
+from app.bitrix_integration import get_all_bitrix_deals, get_bitrix_company_details, get_bitrix_user_details, get_bitrix_contact_details, map_bitrix_category_to_tipo_negociacion, get_producto_from_bitrix_deal, get_etapa_from_bitrix_stage
 from decimal import Decimal
 import json
 
@@ -179,6 +179,10 @@ class Command(BaseCommand):
                 # Mapear producto/solución según el tipo de negociación
                 producto = get_producto_from_bitrix_deal(deal, tipo_negociacion)
                 
+                # Mapear etapa usando el STAGE_ID y tipo de negociación
+                stage_id = deal.get('STAGE_ID')
+                etapa_corta, etapa_completa, etapa_color = get_etapa_from_bitrix_stage(stage_id, tipo_negociacion)
+                
                 probabilidad_cierre = 0 # Default value
                 if probabilidad_bitrix_id is not None:
                     prob_str = PROBABILIDAD_BITRIX_ID_TO_VALUE_STRING.get(str(probabilidad_bitrix_id))
@@ -212,6 +216,9 @@ class Command(BaseCommand):
                         'area': area or 'SISTEMAS',  # Default value
                         'mes_cierre': mes_cierre or 'Enero',  # Default value
                         'tipo_negociacion': tipo_negociacion,  # Nuevo campo
+                        'etapa_corta': etapa_corta,  # Nuevo campo
+                        'etapa_completa': etapa_completa,  # Nuevo campo
+                        'etapa_color': etapa_color,  # Nuevo campo
                         'probabilidad_cierre': probabilidad_cierre,
                         'comentarios': deal.get('COMMENTS', ''),
                         'bitrix_company_id': bitrix_company_id,
@@ -242,6 +249,10 @@ class Command(BaseCommand):
                         defaults={'first_name': 'Usuario', 'last_name': 'Desconocido', 'is_active': True}
                     )
                     
+                    # Mapear etapa para importación mínima
+                    minimal_stage_id = deal.get('STAGE_ID')
+                    minimal_etapa_corta, minimal_etapa_completa, minimal_etapa_color = get_etapa_from_bitrix_stage(minimal_stage_id, 'runrate')
+                    
                     opportunity, created = TodoItem.objects.update_or_create(
                         bitrix_deal_id=bitrix_deal_id,
                         defaults={
@@ -253,6 +264,9 @@ class Command(BaseCommand):
                             'area': 'SISTEMAS',
                             'mes_cierre': 'Enero',
                             'tipo_negociacion': 'runrate',  # Default para importación mínima
+                            'etapa_corta': minimal_etapa_corta,
+                            'etapa_completa': minimal_etapa_completa,
+                            'etapa_color': minimal_etapa_color,
                             'probabilidad_cierre': 0,
                             'comentarios': deal.get('COMMENTS', ''),
                             'bitrix_company_id': deal.get('COMPANY_ID'),

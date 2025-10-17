@@ -2315,23 +2315,60 @@ document.addEventListener('DOMContentLoaded', function() {
         originalRows = Array.from(tableBody.getElementsByTagName('tr'));
     }
     
-    // Debugging function
-    function debugSearchElements() {
-        console.log('🔍 DOM Ready - Debugging search elements...');
-        console.log('🔍 search-widget element:', document.getElementById('search-widget'));
-        console.log('🔍 search-icon element:', document.getElementById('search-icon'));
-        console.log('🔍 searchOportunidad element:', document.getElementById('searchOportunidad'));
-        console.log('🔍 All elements with search-widget-container class:', document.querySelectorAll('.search-widget-container'));
-        console.log('🔍 All elements with search-icon-container class:', document.querySelectorAll('.search-icon-container'));
-    }
+    // SIMPLIFIED SEARCH APPROACH - Direct and immediate
+    console.log('🔍 Starting search initialization...');
     
-    // Call debug function
-    debugSearchElements();
-    
-    // Animated Search Widget Logic
-    const searchWidget = document.getElementById('search-widget');
-    const searchIcon = document.getElementById('search-icon');
-    const searchInput = document.getElementById('searchOportunidad');
+    // Use setTimeout to ensure DOM is fully loaded
+    setTimeout(() => {
+        const searchWidget = document.getElementById('search-widget');
+        const searchIcon = document.getElementById('search-icon');
+        const searchInput = document.getElementById('searchOportunidad');
+        
+        console.log('🔍 Search elements:', {
+            widget: !!searchWidget,
+            icon: !!searchIcon, 
+            input: !!searchInput
+        });
+        
+        if (searchIcon) {
+            console.log('🔍 Adding click event to search icon');
+            searchIcon.onclick = function(e) {
+                console.log('🔍 CLICK DETECTED!');
+                e.preventDefault();
+                e.stopPropagation();
+                
+                if (searchWidget && searchInput) {
+                    const isExpanded = searchWidget.classList.contains('expanded');
+                    console.log('🔍 Is expanded:', isExpanded);
+                    
+                    if (!isExpanded) {
+                        console.log('🔍 Expanding...');
+                        searchWidget.classList.add('expanded');
+                        setTimeout(() => {
+                            searchInput.focus();
+                        }, 100);
+                    } else {
+                        console.log('🔍 Searching...');
+                        performSearch();
+                    }
+                }
+            };
+            
+            // Also try with addEventListener as backup
+            searchIcon.addEventListener('click', function(e) {
+                console.log('🔍 addEventListener CLICK DETECTED!');
+            });
+        }
+        
+        if (searchInput) {
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    performSearch();
+                }
+            });
+        }
+    }, 100);
 
     function performSearch() {
         const searchValue = searchInput.value.trim();
@@ -2346,82 +2383,12 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = url.toString();
     }
 
-    function initializeSearchWidget() {
-        if (searchIcon && searchWidget && searchInput) {
-            console.log('🔍 Search elements found:', { searchIcon, searchWidget, searchInput });
-            
-            // El searchIcon ya ES el search-icon-container
-            searchIcon.addEventListener('click', (e) => {
-                e.stopPropagation();
-                console.log('🔍 Search icon clicked!');
-                
-                const isExpanded = searchWidget.classList.contains('expanded');
-                console.log('🔍 Is expanded:', isExpanded);
-
-                if (isExpanded) {
-                    console.log('🔍 Performing search...');
-                    performSearch();
-                } else {
-                    console.log('🔍 Expanding search widget...');
-                    searchWidget.classList.add('expanded');
-                    console.log('🔍 Added expanded class, classList:', searchWidget.classList.toString());
-                    
-                    // Pequeño delay para asegurar que el CSS se aplique
-                    setTimeout(() => {
-                        searchInput.focus();
-                        const end = searchInput.value.length;
-                        searchInput.setSelectionRange(end, end);
-                        console.log('🔍 Input focused');
-                    }, 50);
-                }
-            });
-
-            searchInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    performSearch();
-                }
-            });
-            
-            return true;
-        } else {
-            console.warn('🔍 Some search elements not found:', { 
-                searchIcon: !!searchIcon, 
-                searchWidget: !!searchWidget, 
-                searchInput: !!searchInput 
-            });
-            return false;
-        }
-    }
-    
-    // Try to initialize immediately
-    if (!initializeSearchWidget()) {
-        // If it fails, try again after a short delay
-        console.log('🔍 Retrying search widget initialization in 100ms...');
-        setTimeout(() => {
-            const retrySearchWidget = document.getElementById('search-widget');
-            const retrySearchIcon = document.getElementById('search-icon');
-            const retrySearchInput = document.getElementById('searchOportunidad');
-            
-            if (retrySearchWidget && retrySearchIcon && retrySearchInput) {
-                console.log('🔍 Retry successful, initializing search widget...');
-                // Re-assign variables and try again
-                Object.assign(window, {
-                    searchWidget: retrySearchWidget,
-                    searchIcon: retrySearchIcon,
-                    searchInput: retrySearchInput
-                });
-                initializeSearchWidget();
-            } else {
-                console.error('🔍 Failed to initialize search widget after retry');
-            }
-        }, 100);
-    }
 
     // Close on ANY outside click
     document.addEventListener('click', (e) => {
-        if (searchWidget && !searchWidget.contains(e.target)) {
-            searchWidget.classList.remove('expanded');
+        const widget = document.getElementById('search-widget');
+        if (widget && !widget.contains(e.target)) {
+            widget.classList.remove('expanded');
         }
     });
 });
