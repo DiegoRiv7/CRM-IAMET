@@ -481,6 +481,49 @@
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Estilos específicos para TomSelect en filtros */
+.compact-filters-container .ts-control {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 12px !important;
+    color: var(--apple-label) !important;
+    min-height: 42px !important;
+}
+
+.compact-filters-container .ts-control:focus {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: var(--apple-blue) !important;
+    box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2) !important;
+}
+
+.compact-filters-container .ts-control.single .ts-control-input {
+    color: var(--apple-label) !important;
+}
+
+.compact-filters-container .ts-control .ts-item {
+    background: rgba(10, 132, 255, 0.8) !important;
+    color: white !important;
+    border-radius: 8px !important;
+}
+
+.compact-filters-container .ts-dropdown {
+    background: rgba(28, 28, 30, 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 12px !important;
+    backdrop-filter: blur(20px) !important;
+}
+
+.compact-filters-container .ts-dropdown .ts-option {
+    color: var(--apple-label) !important;
+    background: transparent !important;
+}
+
+.compact-filters-container .ts-dropdown .ts-option:hover,
+.compact-filters-container .ts-dropdown .ts-option.active {
+    background: rgba(10, 132, 255, 0.3) !important;
+    color: var(--apple-label) !important;
+}
+
 .report-filters-container {
     display: flex;
     gap: 1.5rem;
@@ -2181,21 +2224,15 @@
                                     <label class="filter-label">Estado</label>
                                     <select class="filter-input" id="filterEtapa">
                                         <option value="">Todas las oportunidades</option>
-                                        <option value="vigentes">Solo vigentes (excluir cerradas)</option>
+                                        <option value="vigentes">Solo vigentes</option>
                                         <option value="ganadas">Solo cerradas ganadas</option>
                                         <option value="perdidas">Solo cerradas perdidas</option>
-                                        <option value="cerradas">Todas las cerradas</option>
-                                        <option value="solicitud">En Solicitud</option>
-                                        <option value="cotizando">Cotizando</option>
-                                        <option value="enviada">Enviada</option>
-                                        <option value="seguimiento">Seguimiento</option>
-                                        <option value="vendido">Vendido</option>
                                     </select>
                                 </div>
                                 
                                 <div class="filter-group">
                                     <label class="filter-label">Cliente</label>
-                                    <select id="filterCliente" placeholder="Buscar cliente..."></select>
+                                    <select class="filter-input" id="filterCliente" placeholder="Buscar cliente..."></select>
                                 </div>
                                 
                                 <div class="filter-group">
@@ -2779,8 +2816,11 @@ function applyFilters() {
         }
         
         // Filtro de empleado
-        if (empleado && row.dataset.usuarioId !== empleado) {
-            showRow = false;
+        if (empleado && row.dataset.usuarioId) {
+            console.log('Filtro empleado:', empleado, 'vs dataset:', row.dataset.usuarioId);
+            if (row.dataset.usuarioId !== empleado) {
+                showRow = false;
+            }
         }
 
         // Filtro de tipo
@@ -2815,24 +2855,8 @@ function applyFilters() {
                         // Solo cerradas perdidas
                         etapaMatch = etapaText.includes('perdido');
                         break;
-                    case 'cerradas':
-                        // Todas las cerradas (ganadas y perdidas)
-                        etapaMatch = etapaText.includes('ganado') || etapaText.includes('perdido');
-                        break;
-                    case 'solicitud':
-                        etapaMatch = etapaText.includes('solicitud') || etapaText.includes('en solicitud');
-                        break;
-                    case 'cotizando':
-                        etapaMatch = etapaText.includes('cotizando');
-                        break;
-                    case 'enviada':
-                        etapaMatch = etapaText.includes('enviada');
-                        break;
-                    case 'seguimiento':
-                        etapaMatch = etapaText.includes('seguimiento');
-                        break;
-                    case 'vendido':
-                        etapaMatch = etapaText.includes('vendido');
+                    default:
+                        etapaMatch = true; // Si no hay filtro específico, mostrar todo
                         break;
                 }
                 
@@ -2841,8 +2865,9 @@ function applyFilters() {
         }
         
         // Filtro de mes de cierre
-        if (mesCierre && cells.length > 4) {
-            const mesCierreCell = cells[4].textContent.toLowerCase().trim();
+        if (mesCierre && cells.length > 9) {
+            const mesCierreCell = cells[9].textContent.toLowerCase().trim();
+            console.log('Comparando mes:', mesCierreCell, 'con filtro:', mesCierre, 'mapeado:', monthMap[mesCierreCell]);
             if (monthMap[mesCierreCell] !== mesCierre) {
                 showRow = false;
             }
