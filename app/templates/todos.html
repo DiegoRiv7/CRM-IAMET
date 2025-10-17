@@ -524,6 +524,151 @@
     color: var(--apple-label) !important;
 }
 
+/* Estilos mejorados para TomSelect múltiple */
+.compact-filters-container .ts-control {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    border-radius: 16px !important;
+    min-height: 48px !important;
+    padding: 8px 12px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+.compact-filters-container .ts-control:focus,
+.compact-filters-container .ts-control:focus-within {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%) !important;
+    border-color: #007AFF !important;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15), 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+    transform: translateY(-2px) !important;
+}
+
+.compact-filters-container .ts-control .ts-item {
+    background: linear-gradient(135deg, #007AFF 0%, #0056CC 100%) !important;
+    color: white !important;
+    border-radius: 12px !important;
+    padding: 8px 12px !important;
+    margin: 3px 6px 3px 0 !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 6px rgba(0, 122, 255, 0.3) !important;
+    border: none !important;
+    transition: all 0.2s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+.compact-filters-container .ts-control .ts-item:hover {
+    background: linear-gradient(135deg, #0056CC 0%, #003D99 100%) !important;
+    transform: translateY(-1px) scale(1.02) !important;
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4) !important;
+}
+
+.compact-filters-container .ts-control .ts-item .remove {
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-weight: bold !important;
+    font-size: 14px !important;
+    width: 16px !important;
+    height: 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    transition: all 0.2s ease !important;
+    margin-left: 2px !important;
+}
+
+.compact-filters-container .ts-control .ts-item .remove:hover {
+    color: white !important;
+    background: rgba(255, 255, 255, 0.3) !important;
+    transform: scale(1.1) !important;
+}
+
+.compact-filters-container .ts-dropdown {
+    background: rgba(15, 15, 17, 0.98) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 16px !important;
+    backdrop-filter: blur(25px) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7) !important;
+    margin-top: 6px !important;
+    overflow: hidden !important;
+    animation: dropdownSlide 0.2s ease-out !important;
+}
+
+@keyframes dropdownSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.compact-filters-container .ts-dropdown .ts-option {
+    color: rgba(255, 255, 255, 0.9) !important;
+    background: transparent !important;
+    padding: 14px 18px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.compact-filters-container .ts-dropdown .ts-option:last-child {
+    border-bottom: none !important;
+}
+
+.compact-filters-container .ts-dropdown .ts-option:hover {
+    background: linear-gradient(135deg, rgba(0, 122, 255, 0.2) 0%, rgba(0, 122, 255, 0.1) 100%) !important;
+    color: #4FC3F7 !important;
+    transform: translateX(6px) !important;
+    font-weight: 600 !important;
+}
+
+.compact-filters-container .ts-dropdown .ts-option.active,
+.compact-filters-container .ts-dropdown .ts-option.selected {
+    background: linear-gradient(135deg, rgba(0, 122, 255, 0.3) 0%, rgba(0, 122, 255, 0.2) 100%) !important;
+    color: #007AFF !important;
+    font-weight: 700 !important;
+    position: relative !important;
+}
+
+.compact-filters-container .ts-dropdown .ts-option.active::before,
+.compact-filters-container .ts-dropdown .ts-option.selected::before {
+    content: '✓' !important;
+    position: absolute !important;
+    right: 18px !important;
+    color: #007AFF !important;
+    font-weight: bold !important;
+    font-size: 16px !important;
+}
+
+.compact-filters-container .ts-control.multi .ts-control-input {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+.compact-filters-container .ts-control.multi .ts-control-input input {
+    color: rgba(255, 255, 255, 0.9) !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+}
+
+.compact-filters-container .ts-control.multi .ts-control-input input::placeholder {
+    color: rgba(255, 255, 255, 0.4) !important;
+    font-style: italic !important;
+    font-weight: 400 !important;
+}
+
 .report-filters-container {
     display: flex;
     gap: 1.5rem;
