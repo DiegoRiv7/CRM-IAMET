@@ -2774,8 +2774,8 @@
         }
 
         function closeSettings() {
-            // Redirect back to home or close modal
-            window.location.href = '{% url "home" %}';
+            // Reload the page to apply theme
+            location.reload();
         }
 
         function openAvatarSettings() {
@@ -3302,41 +3302,124 @@
 
 
 
+        function updateThemePreview(theme) {
+            const welcomePreview = document.getElementById('welcomePreview');
+            if (!welcomePreview) return;
+
+            const appleBg = welcomePreview.querySelector('.apple-bg');
+            const userAvatar = welcomePreview.querySelector('.user-avatar-preview');
+            const welcomeTitle = welcomePreview.querySelector('h1');
+            const welcomeText = welcomePreview.querySelector('p');
+            const searchBar = welcomePreview.querySelector('.central-search-bar');
+            const searchIcon = searchBar.querySelector('svg');
+            const searchText = searchBar.querySelector('span');
+
+            // Remove all theme classes from preview
+            welcomePreview.classList.remove('dark-preview', 'pink-preview', 'white-preview', 'coffee-preview');
+
+            // Add the new theme class
+            welcomePreview.classList.add(`${theme}-preview`);
+
+            // Animate the change
+            welcomePreview.style.transform = 'scale(0.95)';
+            welcomePreview.style.opacity = '0.7';
+            welcomePreview.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+
+            setTimeout(() => {
+                // Colores específicos para cada tema en el render
+                if (theme === 'dark') {
+                    // Tema espacial (oscuro)
+                    welcomePreview.style.background = '#000000';
+                    appleBg.style.background = 'radial-gradient(ellipse at top left, rgba(0, 122, 255, 0.1) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(0, 122, 255, 0.05) 0%, transparent 50%), linear-gradient(180deg, #000000 0%, #1D1D1F 100%)';
+                    userAvatar.style.borderColor = '#007AFF';
+                    userAvatar.style.boxShadow = '0 4px 16px rgba(0, 122, 255, 0.3)';
+                    welcomeTitle.style.color = '#FFFFFF';
+                    welcomeText.style.color = '#EBEBF5';
+                    searchBar.style.background = 'rgba(28, 28, 30, 0.8)';
+                    searchBar.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                    searchIcon.style.color = '#8E8E93';
+                    searchText.style.color = '#8E8E93';
+                } else if (theme === 'pink') {
+                    // Tema Sakura (rosa)
+                    welcomePreview.style.background = 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)';
+                    appleBg.style.background = 'radial-gradient(ellipse at top left, rgba(255, 107, 157, 0.1) 0%, transparent 60%), radial-gradient(ellipse at bottom right, rgba(255, 182, 193, 0.08) 0%, transparent 60%), linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)';
+                    userAvatar.style.borderColor = '#FF6B9D';
+                    userAvatar.style.boxShadow = '0 4px 16px rgba(255, 107, 157, 0.3)';
+                    welcomeTitle.style.color = '#2D1B2E';
+                    welcomeText.style.color = '#4A2B4D';
+                    searchBar.style.background = 'linear-gradient(135deg, rgba(255, 245, 248, 0.9) 0%, rgba(255, 232, 239, 0.85) 50%, rgba(255, 218, 230, 0.8) 100%)';
+                    searchBar.style.borderColor = 'rgba(255, 107, 157, 0.3)';
+                    searchIcon.style.color = '#E55A87';
+                    searchText.style.color = '#6B4C6D';
+                } else if (theme === 'white') {
+                    // Tema Perla (blanco)
+                    welcomePreview.style.background = '#ffffff';
+                    appleBg.style.background = 'radial-gradient(ellipse at top left, rgba(0, 123, 255, 0.05) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(0, 123, 255, 0.03) 0%, transparent 50%), linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%)';
+                    userAvatar.style.borderColor = '#007bff';
+                    userAvatar.style.boxShadow = '0 4px 16px rgba(0, 123, 255, 0.2)';
+                    welcomeTitle.style.color = '#212529';
+                    welcomeText.style.color = '#343a40';
+                    searchBar.style.background = 'rgba(248, 249, 250, 0.8)';
+                    searchBar.style.borderColor = 'rgba(0, 0, 0, 0.1)';
+                    searchIcon.style.color = '#6c757d';
+                    searchText.style.color = '#6c757d';
+                } else if (theme === 'coffee') {
+                    // Tema Duna (café)
+                    welcomePreview.style.background = 'linear-gradient(135deg, #f5e6d3 0%, #f0dcc7 100%)';
+                    appleBg.style.background = 'radial-gradient(ellipse at top left, rgba(139, 69, 19, 0.05) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(139, 98, 57, 0.03) 0%, transparent 50%), linear-gradient(135deg, #f5e6d3 0%, #f0dcc7 100%)';
+                    userAvatar.style.borderColor = '#8b6239';
+                    userAvatar.style.boxShadow = '0 4px 16px rgba(139, 98, 57, 0.2)';
+                    welcomeTitle.style.color = '#4a3020';
+                    welcomeText.style.color = '#5d3d2a';
+                    searchBar.style.background = 'rgba(139, 69, 19, 0.1)';
+                    searchBar.style.borderColor = 'rgba(139, 69, 19, 0.2)';
+                    searchIcon.style.color = '#8b6239';
+                    searchText.style.color = '#8b6239';
+                }
+                
+                // Animación de zoom y fade in
+                welcomePreview.style.transform = 'scale(1.05)';
+                welcomePreview.style.opacity = '1';
+                
+                // Volver al estado normal
+                setTimeout(() => {
+                    welcomePreview.style.transform = 'scale(1)';
+                }, 200);
+            }, 300);
+        }
+
         // Design functionality
         function applyTheme(theme) {
             console.log('applyTheme called with:', theme);
             
-            // Validar que el tema sea uno de los permitidos
             const validThemes = ['dark', 'pink', 'light', 'white', 'coffee'];
             if (!validThemes.includes(theme)) {
                 console.error('Invalid theme provided:', theme);
-                // Usar tema por defecto si se proporciona un tema inválido
                 theme = 'dark';
             }
             
-            // Aplicar el tema inmediatamente
-            applyThemeImmediate(theme);
+            // Update the preview
+            updateThemePreview(theme);
             
-            // Actualizar la UI para reflejar el tema activo
-            document.querySelectorAll('.theme-option').forEach(option => {
-                option.classList.remove('active');
+            // Update active dot
+            document.querySelectorAll('.theme-dot-container').forEach(container => {
+                container.querySelector('.theme-dot').style.boxShadow = '';
             });
-            const selectedOption = document.querySelector(`.theme-option[onclick*="'${theme}'"]`);
-            if (selectedOption) {
-                selectedOption.classList.add('active');
+            const selectedDot = document.getElementById(`${theme}-theme-dot`);
+            if (selectedDot) {
+                selectedDot.querySelector('.theme-dot').style.boxShadow = '0 0 0 3px rgba(0, 122, 255, 0.5), 0 0 15px rgba(0, 122, 255, 0.7)';
             }
-            
-            // Guardar el tema en localStorage
+
+            // Save the theme to localStorage
             localStorage.setItem('theme', theme);
             
-            // Mostrar notificación
             const themeNames = {
                 'dark': 'Oscuro',
                 'pink': 'Rosa',
                 'white': 'Blanco',
                 'coffee': 'Café'
             };
-            showNotification(`Tema cambiado a ${themeNames[theme] || theme}`, 'success');
+            showNotification(`Tema cambiado a ${themeNames[theme] || theme}. Se aplicará al salir.`, 'success');
         }
 
         // Dock type functionality with animation
