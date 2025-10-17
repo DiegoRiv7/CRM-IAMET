@@ -173,14 +173,14 @@
     }
 
     .search-widget-container.expanded .search-input {
-        width: 280px;
-        opacity: 1;
-        pointer-events: auto;
-        padding: 0 20px;
-        color: var(--apple-label);
+        width: 280px !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        padding: 0 20px !important;
+        color: var(--apple-label) !important;
     }
     .search-widget-container.expanded .search-input::placeholder {
-        color: var(--apple-label-secondary);
+        color: var(--apple-label-secondary) !important;
     }
 
     .search-widget-container.expanded .search-icon-container {
@@ -2315,6 +2315,19 @@ document.addEventListener('DOMContentLoaded', function() {
         originalRows = Array.from(tableBody.getElementsByTagName('tr'));
     }
     
+    // Debugging function
+    function debugSearchElements() {
+        console.log('🔍 DOM Ready - Debugging search elements...');
+        console.log('🔍 search-widget element:', document.getElementById('search-widget'));
+        console.log('🔍 search-icon element:', document.getElementById('search-icon'));
+        console.log('🔍 searchOportunidad element:', document.getElementById('searchOportunidad'));
+        console.log('🔍 All elements with search-widget-container class:', document.querySelectorAll('.search-widget-container'));
+        console.log('🔍 All elements with search-icon-container class:', document.querySelectorAll('.search-icon-container'));
+    }
+    
+    // Call debug function
+    debugSearchElements();
+    
     // Animated Search Widget Logic
     const searchWidget = document.getElementById('search-widget');
     const searchIcon = document.getElementById('search-icon');
@@ -2333,31 +2346,76 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = url.toString();
     }
 
-    if (searchIcon && searchWidget && searchInput) {
-        // Agregamos el evento click al search-icon-container
-        const searchIconContainer = searchIcon.closest('.search-icon-container');
-        if (searchIconContainer) {
-            searchIconContainer.addEventListener('click', (e) => {
+    function initializeSearchWidget() {
+        if (searchIcon && searchWidget && searchInput) {
+            console.log('🔍 Search elements found:', { searchIcon, searchWidget, searchInput });
+            
+            // El searchIcon ya ES el search-icon-container
+            searchIcon.addEventListener('click', (e) => {
                 e.stopPropagation();
+                console.log('🔍 Search icon clicked!');
+                
                 const isExpanded = searchWidget.classList.contains('expanded');
+                console.log('🔍 Is expanded:', isExpanded);
 
                 if (isExpanded) {
+                    console.log('🔍 Performing search...');
                     performSearch();
                 } else {
+                    console.log('🔍 Expanding search widget...');
                     searchWidget.classList.add('expanded');
-                    searchInput.focus();
-                    const end = searchInput.value.length;
-                    searchInput.setSelectionRange(end, end);
+                    console.log('🔍 Added expanded class, classList:', searchWidget.classList.toString());
+                    
+                    // Pequeño delay para asegurar que el CSS se aplique
+                    setTimeout(() => {
+                        searchInput.focus();
+                        const end = searchInput.value.length;
+                        searchInput.setSelectionRange(end, end);
+                        console.log('🔍 Input focused');
+                    }, 50);
                 }
             });
-        }
 
-        searchInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                performSearch();
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    performSearch();
+                }
+            });
+            
+            return true;
+        } else {
+            console.warn('🔍 Some search elements not found:', { 
+                searchIcon: !!searchIcon, 
+                searchWidget: !!searchWidget, 
+                searchInput: !!searchInput 
+            });
+            return false;
+        }
+    }
+    
+    // Try to initialize immediately
+    if (!initializeSearchWidget()) {
+        // If it fails, try again after a short delay
+        console.log('🔍 Retrying search widget initialization in 100ms...');
+        setTimeout(() => {
+            const retrySearchWidget = document.getElementById('search-widget');
+            const retrySearchIcon = document.getElementById('search-icon');
+            const retrySearchInput = document.getElementById('searchOportunidad');
+            
+            if (retrySearchWidget && retrySearchIcon && retrySearchInput) {
+                console.log('🔍 Retry successful, initializing search widget...');
+                // Re-assign variables and try again
+                Object.assign(window, {
+                    searchWidget: retrySearchWidget,
+                    searchIcon: retrySearchIcon,
+                    searchInput: retrySearchInput
+                });
+                initializeSearchWidget();
+            } else {
+                console.error('🔍 Failed to initialize search widget after retry');
             }
-        });
+        }, 100);
     }
 
     // Close on ANY outside click
