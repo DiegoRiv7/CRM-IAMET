@@ -415,6 +415,8 @@
     padding: 1.5rem;
     margin-bottom: 1.5rem;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 100;
 }
 
 .filters-grid {
@@ -479,6 +481,8 @@
     align-items: center;
     padding-top: 1rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    z-index: 50;
 }
 
 /* Estilos específicos para TomSelect en filtros */
@@ -596,6 +600,8 @@
     margin-top: 6px !important;
     overflow: hidden !important;
     animation: dropdownSlide 0.2s ease-out !important;
+    z-index: 9999 !important;
+    position: absolute !important;
 }
 
 @keyframes dropdownSlide {
@@ -2562,14 +2568,7 @@ if (filterClienteElement) {
             direction: "asc"
         },
         options: clientesOptions,
-        render: {
-            dropdown: function() {
-                return '<div class="ts-dropdown" style="background: rgb(28, 28, 30) !important; border: 1px solid rgba(255, 255, 255, 0.4) !important; border-radius: 12px !important; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8) !important;"></div>';
-            },
-            option: function(data, escape) {
-                return '<div class="option" style="color: rgb(255, 255, 255) !important; background: transparent !important; padding: 12px 16px !important;">' + escape(data.text) + '</div>';
-            }
-        }
+        placeholder: 'Buscar cliente...'
     });
 } else {
     console.log('🔍 filterCliente not found, skipping TomSelect initialization');
@@ -2587,45 +2586,21 @@ const filterMesCierreElement = document.getElementById('filterMesCierre');
 if (filterEtapaElement) {
     etapaSelect = new TomSelect('#filterEtapa', {
         plugins: ['remove_button'],
-        placeholder: 'Seleccionar estados...',
-        render: {
-            dropdown: function() {
-                return '<div class="ts-dropdown" style="background: rgb(28, 28, 30) !important; border: 1px solid rgba(255, 255, 255, 0.4) !important; border-radius: 12px !important; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8) !important;"></div>';
-            },
-            option: function(data, escape) {
-                return '<div class="option" style="color: rgb(255, 255, 255) !important; background: transparent !important; padding: 12px 16px !important;">' + escape(data.text) + '</div>';
-            }
-        }
+        placeholder: 'Seleccionar estados...'
     });
 }
 
 if (filterEmpleadoElement) {
     empleadoSelect = new TomSelect('#filterEmpleado', {
         plugins: ['remove_button'],
-        placeholder: 'Seleccionar empleados...',
-        render: {
-            dropdown: function() {
-                return '<div class="ts-dropdown" style="background: rgb(28, 28, 30) !important; border: 1px solid rgba(255, 255, 255, 0.4) !important; border-radius: 12px !important; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8) !important;"></div>';
-            },
-            option: function(data, escape) {
-                return '<div class="option" style="color: rgb(255, 255, 255) !important; background: transparent !important; padding: 12px 16px !important;">' + escape(data.text) + '</div>';
-            }
-        }
+        placeholder: 'Seleccionar empleados...'
     });
 }
 
 if (filterMesCierreElement) {
     mesCierreSelect = new TomSelect('#filterMesCierre', {
         plugins: ['remove_button'],
-        placeholder: 'Seleccionar meses...',
-        render: {
-            dropdown: function() {
-                return '<div class="ts-dropdown" style="background: rgb(28, 28, 30) !important; border: 1px solid rgba(255, 255, 255, 0.4) !important; border-radius: 12px !important; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8) !important;"></div>';
-            },
-            option: function(data, escape) {
-                return '<div class="option" style="color: rgb(255, 255, 255) !important; background: transparent !important; padding: 12px 16px !important;">' + escape(data.text) + '</div>';
-            }
-        }
+        placeholder: 'Seleccionar meses...'
     });
 }
 
