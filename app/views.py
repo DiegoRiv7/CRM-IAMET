@@ -1805,17 +1805,10 @@ def api_eliminar_comentario_tarea(request, comentario_id):
 @login_required
 def dashboard(request):
     # Base queryset for user-specific or all opportunities
-    # EXCLUIR oportunidades marcadas como "Cerrado Perdido" (bitrix_stage_id='2')
     if is_supervisor(request.user):
-        # Obtener todos los objetos y filtrar manualmente para detectar perdidos correctamente
-        all_opportunities = TodoItem.objects.all()
-        lost_ids = [item.id for item in all_opportunities if is_lost_opportunity(item.bitrix_stage_id)]
-        base_opportunities = TodoItem.objects.exclude(id__in=lost_ids)
+        base_opportunities = TodoItem.objects.all()
     else:
-        # Obtener todos los objetos del usuario y filtrar manualmente para detectar perdidos correctamente
-        all_user_opportunities = TodoItem.objects.filter(usuario=request.user)
-        lost_ids = [item.id for item in all_user_opportunities if is_lost_opportunity(item.bitrix_stage_id)]
-        base_opportunities = TodoItem.objects.filter(usuario=request.user).exclude(id__in=lost_ids)
+        base_opportunities = TodoItem.objects.filter(usuario=request.user)
 
     # --- Key Metrics ---
 
@@ -2099,17 +2092,10 @@ def view_cotizacion_pdf(request, cotizacion_id):
 @login_required
 def todos (request):
     # Determinar si el usuario es un supervisor - Optimizar consultas con select_related
-    # EXCLUIR oportunidades marcadas como "Cerrado Perdido" (bitrix_stage_id='2')
     if is_supervisor(request.user):
-        # Obtener todos los objetos y filtrar manualmente para detectar perdidos correctamente
-        all_items = TodoItem.objects.select_related('usuario', 'cliente').all()
-        lost_ids = [item.id for item in all_items if is_lost_opportunity(item.bitrix_stage_id)]
-        items = TodoItem.objects.select_related('usuario', 'cliente').exclude(id__in=lost_ids)
+        items = TodoItem.objects.select_related('usuario', 'cliente').all()
     else:
-        # Obtener todos los objetos del usuario y filtrar manualmente para detectar perdidos correctamente
-        all_user_items = TodoItem.objects.select_related('usuario', 'cliente').filter(usuario=request.user)
-        lost_ids = [item.id for item in all_user_items if is_lost_opportunity(item.bitrix_stage_id)]
-        items = TodoItem.objects.select_related('usuario', 'cliente').filter(usuario=request.user).exclude(id__in=lost_ids)
+        items = TodoItem.objects.select_related('usuario', 'cliente').filter(usuario=request.user)
 
     filter_form = VentaFilterForm(request.GET)
 
@@ -2804,17 +2790,10 @@ def exportar_oportunidades_csv(request):
         from datetime import date
     
     # 1. Get the base queryset with cotizations
-    # EXCLUIR oportunidades marcadas como "Cerrado Perdido" (bitrix_stage_id='2')
     if is_supervisor(request.user):
-        # Obtener todos los objetos y filtrar manualmente para detectar perdidos correctamente
-        all_items = TodoItem.objects.select_related('usuario', 'cliente').prefetch_related('cotizaciones__detalles').all()
-        lost_ids = [item.id for item in all_items if is_lost_opportunity(item.bitrix_stage_id)]
-        items = TodoItem.objects.select_related('usuario', 'cliente').prefetch_related('cotizaciones__detalles').exclude(id__in=lost_ids)
+        items = TodoItem.objects.select_related('usuario', 'cliente').prefetch_related('cotizaciones__detalles').all()
     else:
-        # Obtener todos los objetos del usuario y filtrar manualmente para detectar perdidos correctamente
-        all_user_items = TodoItem.objects.select_related('usuario', 'cliente').prefetch_related('cotizaciones__detalles').filter(usuario=request.user)
-        lost_ids = [item.id for item in all_user_items if is_lost_opportunity(item.bitrix_stage_id)]
-        items = TodoItem.objects.select_related('usuario', 'cliente').prefetch_related('cotizaciones__detalles').filter(usuario=request.user).exclude(id__in=lost_ids)
+        items = TodoItem.objects.select_related('usuario', 'cliente').prefetch_related('cotizaciones__detalles').filter(usuario=request.user)
 
     # 2. Apply filters
     oportunidad_filter = request.GET.get('filterOportunidad', '').strip()
@@ -4304,17 +4283,6 @@ def bitrix_webhook_receiver(request):
                     bitrix_stage_id = deal_details.get('STAGE_ID')
                     print(f"BITRIX WEBHOOK: Raw STAGE_ID: {bitrix_stage_id}", flush=True)
                     
-                    # Verificar si la oportunidad está en "Cerrado Perdido"
-                    # Formatos posibles: '2', 'C2:11', 'LOSE', etc.
-                    is_lost_status = is_lost_opportunity(bitrix_stage_id)
-                    
-                    if is_lost_status:
-                        print(f"BITRIX WEBHOOK: 📋 Oportunidad '{existing_opportunity.oportunidad}' marcada como PERDIDA (STAGE_ID: {bitrix_stage_id}) - Se moverá a sección perdidas", flush=True)
-                        # No eliminar, solo actualizar el estado para que se filtre de la tabla principal
-                    elif existing_opportunity.bitrix_stage_id and existing_opportunity.bitrix_stage_id.startswith('C2:') and not is_lost_status:
-                        # La oportunidad estaba perdida pero ahora está activa de nuevo
-                        print(f"BITRIX WEBHOOK: ♻️ Oportunidad '{existing_opportunity.oportunidad}' RESTAURADA de perdida a estado activo", flush=True)
-                    
                     # Actualizar oportunidad existente
                     existing_opportunity.oportunidad = deal_details.get('TITLE', existing_opportunity.oportunidad)
                     existing_opportunity.monto = deal_details.get('OPPORTUNITY', existing_opportunity.monto) or existing_opportunity.monto
@@ -4395,13 +4363,6 @@ def bitrix_webhook_receiver(request):
                     # Obtener el estado de Bitrix24
                     bitrix_stage_id = deal_details.get('STAGE_ID')
                     print(f"BITRIX WEBHOOK: Raw STAGE_ID for new opportunity: {bitrix_stage_id}", flush=True)
-                    
-                    # Verificar si la nueva oportunidad está en "Cerrado Perdido"
-                    is_lost_status_new = is_lost_opportunity(bitrix_stage_id)
-                    
-                    if is_lost_status_new:
-                        print(f"BITRIX WEBHOOK: ⚠️ Nueva oportunidad '{deal_details.get('TITLE')}' está marcada como PERDIDA (STAGE_ID: {bitrix_stage_id}) - No se creará", flush=True)
-                        return JsonResponse({'status': 'success', 'message': 'Opportunity marked as lost - not created'})
                     
                     try:
                         new_opportunity = TodoItem.objects.create(
