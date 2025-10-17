@@ -2222,8 +2222,7 @@
                                 
                                 <div class="filter-group">
                                     <label class="filter-label">Estado</label>
-                                    <select class="filter-input" id="filterEtapa">
-                                        <option value="">Todas las oportunidades</option>
+                                    <select class="filter-input" id="filterEtapa" multiple>
                                         <option value="vigentes">Solo vigentes</option>
                                         <option value="ganadas">Solo cerradas ganadas</option>
                                         <option value="perdidas">Solo cerradas perdidas</option>
@@ -2237,8 +2236,7 @@
                                 
                                 <div class="filter-group">
                                     <label class="filter-label">Empleado</label>
-                                    <select class="filter-input" id="filterEmpleado">
-                                        <option value="">Todos</option>
+                                    <select class="filter-input" id="filterEmpleado" multiple>
                                         {% for user in empleados %}
                                         <option value="{{ user.id }}">{{ user.first_name }} {{ user.last_name }}</option>
                                         {% endfor %}
@@ -2247,8 +2245,7 @@
                                 
                                 <div class="filter-group">
                                     <label class="filter-label">Mes Cierre</label>
-                                    <select class="filter-input" id="filterMesCierre">
-                                        <option value="">Todos</option>
+                                    <select class="filter-input" id="filterMesCierre" multiple>
                                         <option value="01">Enero</option>
                                         <option value="02">Febrero</option>
                                         <option value="03">Marzo</option>
@@ -2433,6 +2430,60 @@ if (filterClienteElement) {
     console.log('🔍 filterCliente not found, skipping TomSelect initialization');
 }
 
+// Inicializar TomSelect para filtros múltiples si están en modo reporte
+let etapaSelect = null;
+let empleadoSelect = null; 
+let mesCierreSelect = null;
+
+const filterEtapaElement = document.getElementById('filterEtapa');
+const filterEmpleadoElement = document.getElementById('filterEmpleado');
+const filterMesCierreElement = document.getElementById('filterMesCierre');
+
+if (filterEtapaElement) {
+    etapaSelect = new TomSelect('#filterEtapa', {
+        plugins: ['remove_button'],
+        placeholder: 'Seleccionar estados...',
+        render: {
+            dropdown: function() {
+                return '<div class="ts-dropdown" style="background: rgb(28, 28, 30) !important; border: 1px solid rgba(255, 255, 255, 0.4) !important; border-radius: 12px !important; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8) !important;"></div>';
+            },
+            option: function(data, escape) {
+                return '<div class="option" style="color: rgb(255, 255, 255) !important; background: transparent !important; padding: 12px 16px !important;">' + escape(data.text) + '</div>';
+            }
+        }
+    });
+}
+
+if (filterEmpleadoElement) {
+    empleadoSelect = new TomSelect('#filterEmpleado', {
+        plugins: ['remove_button'],
+        placeholder: 'Seleccionar empleados...',
+        render: {
+            dropdown: function() {
+                return '<div class="ts-dropdown" style="background: rgb(28, 28, 30) !important; border: 1px solid rgba(255, 255, 255, 0.4) !important; border-radius: 12px !important; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8) !important;"></div>';
+            },
+            option: function(data, escape) {
+                return '<div class="option" style="color: rgb(255, 255, 255) !important; background: transparent !important; padding: 12px 16px !important;">' + escape(data.text) + '</div>';
+            }
+        }
+    });
+}
+
+if (filterMesCierreElement) {
+    mesCierreSelect = new TomSelect('#filterMesCierre', {
+        plugins: ['remove_button'],
+        placeholder: 'Seleccionar meses...',
+        render: {
+            dropdown: function() {
+                return '<div class="ts-dropdown" style="background: rgb(28, 28, 30) !important; border: 1px solid rgba(255, 255, 255, 0.4) !important; border-radius: 12px !important; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8) !important;"></div>';
+            },
+            option: function(data, escape) {
+                return '<div class="option" style="color: rgb(255, 255, 255) !important; background: transparent !important; padding: 12px 16px !important;">' + escape(data.text) + '</div>';
+            }
+        }
+    });
+}
+
 </script>
 
 <!-- Generar datos de empleados para JavaScript -->
@@ -2459,20 +2510,20 @@ console.log('🔍 Empleado filter is a normal select, no TomSelect needed');
 function generarReporteCSV() {
     const oportunidad = document.getElementById('filterOportunidad') ? document.getElementById('filterOportunidad').value.trim() : '';
     const tipo = document.getElementById('filterTipo') ? document.getElementById('filterTipo').value.trim() : '';
-    const etapa = document.getElementById('filterEtapa') ? document.getElementById('filterEtapa').value.trim() : '';
+    const etapas = etapaSelect ? etapaSelect.getValue() : [];
     const cliente = clienteSelect ? clienteSelect.getValue() : '';
-    const empleado = document.getElementById('filterEmpleado') ? document.getElementById('filterEmpleado').value : '';
-    const mesCierre = document.getElementById('filterMesCierre') ? document.getElementById('filterMesCierre').value.trim() : '';
+    const empleados = empleadoSelect ? empleadoSelect.getValue() : [];
+    const mesesCierre = mesCierreSelect ? mesCierreSelect.getValue() : [];
 
     // URL para exportar CSV
     var csvPath = '{% url "exportar_oportunidades_csv" %}';
     const url = new URL(window.location.origin + csvPath);
     if (oportunidad) url.searchParams.set('filterOportunidad', oportunidad);
     if (tipo) url.searchParams.set('filterTipo', tipo);
-    if (etapa) url.searchParams.set('filterEtapa', etapa);
+    if (etapas.length > 0) url.searchParams.set('filterEtapa', etapas.join(','));
     if (cliente) url.searchParams.set('filterCliente', cliente);
-    if (empleado) url.searchParams.set('empleado', empleado);
-    if (mesCierre) url.searchParams.set('filterMesCierre', mesCierre);
+    if (empleados.length > 0) url.searchParams.set('empleado', empleados.join(','));
+    if (mesesCierre.length > 0) url.searchParams.set('filterMesCierre', mesesCierre.join(','));
 
     window.location.href = url.toString();
 }
@@ -2658,14 +2709,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function clearFilters() {
     // Limpiar campos básicos
-    const inputs = ['filterOportunidad', 'filterTipo', 'filterEtapa', 'filterMesCierre', 'filterEmpleado'];
+    const inputs = ['filterOportunidad', 'filterTipo'];
     inputs.forEach(id => {
         const input = document.getElementById(id);
         if (input) input.value = '';
     });
     
-    // Limpiar selectores especiales
+    // Limpiar todos los TomSelect
     if (clienteSelect) clienteSelect.clear();
+    if (etapaSelect) etapaSelect.clear();
+    if (empleadoSelect) empleadoSelect.clear();
+    if (mesCierreSelect) mesCierreSelect.clear();
     
     // Mostrar todas las filas
     const tableBody = document.getElementById('tablaOportunidades');
@@ -2795,18 +2849,18 @@ function applyFilters() {
 
     const oportunidad = document.getElementById('filterOportunidad')?.value?.toLowerCase().trim() || '';
     const tipo = document.getElementById('filterTipo')?.value?.trim() || '';
-    const etapa = document.getElementById('filterEtapa')?.value?.trim() || '';
+    const etapas = etapaSelect ? etapaSelect.getValue() : []; // Array de estados seleccionados
     const cliente = (clienteSelect?.getValue() || '').toLowerCase().trim();
-    const empleado = document.getElementById('filterEmpleado')?.value?.trim() || '';
-    const mesCierre = document.getElementById('filterMesCierre')?.value?.trim() || '';
+    const empleados = empleadoSelect ? empleadoSelect.getValue() : []; // Array de empleados seleccionados
+    const mesesCierre = mesCierreSelect ? mesCierreSelect.getValue() : []; // Array de meses seleccionados
     
     console.log('🔧 Valores de filtros:', {
         oportunidad,
         tipo, 
-        etapa,
+        etapas,
         cliente,
-        empleado,
-        mesCierre
+        empleados,
+        mesesCierre
     });
     
     const tableBody = document.getElementById('tablaOportunidades');
@@ -2831,10 +2885,10 @@ function applyFilters() {
             showRow = false;
         }
         
-        // Filtro de empleado
-        if (empleado && row.dataset.usuarioId) {
-            console.log('🔧 Filtro empleado:', empleado, 'vs dataset:', row.dataset.usuarioId);
-            if (row.dataset.usuarioId !== empleado) {
+        // Filtro de empleado (múltiple)
+        if (empleados.length > 0 && row.dataset.usuarioId) {
+            console.log('🔧 Filtro empleados:', empleados, 'vs dataset:', row.dataset.usuarioId);
+            if (!empleados.includes(row.dataset.usuarioId)) {
                 showRow = false;
             }
         }
@@ -2853,50 +2907,58 @@ function applyFilters() {
             }
         }
 
-        // Filtro de estado/etapa (columna 3)
-        if (etapa && cells.length > 3) {
+        // Filtro de estado/etapa múltiple (columna 3)
+        if (etapas.length > 0 && cells.length > 3) {
             const etapaCell = cells[3];
             const etapaBadge = etapaCell.querySelector('.etapa-badge');
             if (etapaBadge) {
                 const etapaText = etapaBadge.textContent.toLowerCase().trim();
-                console.log('🔧 Comparando etapa:', etapa, 'con texto:', etapaText);
+                console.log('🔧 Comparando etapas:', etapas, 'con texto:', etapaText);
                 let etapaMatch = false;
                 
-                switch(etapa) {
-                    case 'vigentes':
-                        // Excluir cerradas (ganadas y perdidas)
-                        etapaMatch = !etapaText.includes('ganado') && !etapaText.includes('perdido');
-                        break;
-                    case 'ganadas':
-                        // Solo cerradas ganadas, incluir pagado
-                        etapaMatch = etapaText.includes('ganado') || etapaText.includes('pagado');
-                        break;
-                    case 'perdidas':
-                        // Solo cerradas perdidas
-                        etapaMatch = etapaText.includes('perdido');
-                        break;
-                    default:
-                        etapaMatch = true; // Si no hay filtro específico, mostrar todo
-                        break;
+                // Verificar si coincide con alguna de las etapas seleccionadas
+                for (const etapaSeleccionada of etapas) {
+                    switch(etapaSeleccionada) {
+                        case 'vigentes':
+                            // Excluir cerradas (ganadas y perdidas)
+                            if (!etapaText.includes('ganado') && !etapaText.includes('perdido') && !etapaText.includes('pagado')) {
+                                etapaMatch = true;
+                            }
+                            break;
+                        case 'ganadas':
+                            // Solo cerradas ganadas, incluir pagado
+                            if (etapaText.includes('ganado') || etapaText.includes('pagado')) {
+                                etapaMatch = true;
+                            }
+                            break;
+                        case 'perdidas':
+                            // Solo cerradas perdidas
+                            if (etapaText.includes('perdido')) {
+                                etapaMatch = true;
+                            }
+                            break;
+                    }
+                    if (etapaMatch) break; // Si ya encontró una coincidencia, salir del loop
                 }
                 
                 if (!etapaMatch) showRow = false;
             }
         }
         
-        // Filtro de mes de cierre (columna 6)
-        if (mesCierre && cells.length > 6) {
+        // Filtro de mes de cierre múltiple (columna 6)
+        if (mesesCierre.length > 0 && cells.length > 6) {
             const mesCierreCell = cells[6].textContent.toLowerCase().trim();
-            console.log('🔧 Debug mes cierre - Cell text:', mesCierreCell, 'Filter value:', mesCierre);
-            console.log('🔧 Month map lookup:', monthMap[mesCierreCell]);
+            console.log('🔧 Debug meses cierre - Cell text:', mesCierreCell, 'Filter values:', mesesCierre);
             
             // Comparar tanto por nombre del mes como por número
             const cellAsNumber = monthMap[mesCierreCell]; // nombre -> número
-            const filterAsNumber = mesCierre; // ya debería ser número
+            console.log('🔧 Month map lookup:', cellAsNumber);
             
-            console.log('🔧 Comparing:', cellAsNumber, 'vs', filterAsNumber);
+            // Verificar si el mes de la celda coincide con alguno de los seleccionados
+            const mesMatch = mesesCierre.includes(cellAsNumber) || mesesCierre.includes(mesCierreCell);
+            console.log('🔧 Month match:', mesMatch);
             
-            if (cellAsNumber !== filterAsNumber && mesCierreCell !== mesCierre) {
+            if (!mesMatch) {
                 showRow = false;
             }
         }
