@@ -1178,7 +1178,62 @@
         color: #2D1B2E !important;
     }
 
+    /* Estilos para badges de tipo de negociación */
+    .tipo-negociacion-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
 
+    .tipo-runrate {
+        background: rgba(0, 122, 255, 0.1);
+        color: #007AFF;
+        border: 1px solid rgba(0, 122, 255, 0.2);
+    }
+
+    .tipo-proyecto {
+        background: rgba(50, 215, 75, 0.1);
+        color: #32D74B;
+        border: 1px solid rgba(50, 215, 75, 0.2);
+    }
+
+    /* Tema claro */
+    .light-theme .tipo-runrate {
+        background: rgba(0, 122, 255, 0.15);
+        color: #0066CC;
+    }
+
+    .light-theme .tipo-proyecto {
+        background: rgba(40, 167, 69, 0.15);
+        color: #28A745;
+    }
+
+    /* Estilos para badges de etapas */
+    .etapa-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 16px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        max-width: 120px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        user-select: none;
+    }
+
+    .etapa-badge:hover {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
 
 </style>
 
@@ -1273,6 +1328,28 @@
                             <option value="Mantenimiento" {% if oportunidad.area == 'Mantenimiento' %}selected{% endif %}>Mantenimiento</option>
                             <option value="Almacén" {% if oportunidad.area == 'Almacén' %}selected{% endif %}>Almacén</option>
                         </select>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Tipo</div>
+                        <div class="info-value view-mode" data-field="tipo_negociacion">
+                            <span class="tipo-negociacion-badge {% if oportunidad.tipo_negociacion == 'runrate' %}tipo-runrate{% else %}tipo-proyecto{% endif %}">
+                                {{ oportunidad.get_tipo_negociacion_display }}
+                            </span>
+                        </div>
+                        <select class="info-edit edit-mode" data-field="tipo_negociacion" style="display: none;">
+                            <option value="runrate" {% if oportunidad.tipo_negociacion == 'runrate' %}selected{% endif %}>Runrate</option>
+                            <option value="proyecto" {% if oportunidad.tipo_negociacion == 'proyecto' %}selected{% endif %}>Proyecto</option>
+                        </select>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Etapa</div>
+                        <div class="info-value view-mode" data-field="etapa">
+                            <span class="etapa-badge" 
+                                  style="background-color: {{ oportunidad.etapa_color|default:'#CCCCCC' }}33; border: 1px solid {{ oportunidad.etapa_color|default:'#CCCCCC' }}; color: {{ oportunidad.etapa_color|default:'#666666' }};"
+                                  title="{{ oportunidad.etapa_completa|default:'Etapa no definida' }}">
+                                {{ oportunidad.etapa_corta|default:'N/A' }}
+                            </span>
+                        </div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">Producto</div>
@@ -2290,7 +2367,20 @@
             if (data.success) {
                 for (const [field, newValue] of Object.entries(data.updated_values)) {
                     const viewElement = document.querySelector(`.view-mode[data-field="${field}"]`);
-                    if (viewElement) viewElement.textContent = newValue;
+                    if (viewElement) {
+                        if (field === 'tipo_negociacion') {
+                            // Manejo especial para el badge de tipo de negociación
+                            const badge = viewElement.querySelector('.tipo-negociacion-badge');
+                            if (badge) {
+                                badge.textContent = newValue;
+                                // Actualizar las clases CSS basado en el valor
+                                const selectValue = document.querySelector('.edit-mode[data-field="tipo_negociacion"]').value;
+                                badge.className = `tipo-negociacion-badge ${selectValue === 'runrate' ? 'tipo-runrate' : 'tipo-proyecto'}`;
+                            }
+                        } else {
+                            viewElement.textContent = newValue;
+                        }
+                    }
                 }
                 isEditing = false;
                 document.body.classList.remove('editing-opportunity');

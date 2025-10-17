@@ -4663,6 +4663,14 @@ def editar_oportunidad_api(request, oportunidad_id):
             oportunidad.area = request.POST['area']
             updated_values['area'] = oportunidad.get_area_display()
         
+        # Actualizar tipo de negociación
+        if 'tipo_negociacion' in request.POST and request.POST['tipo_negociacion']:
+            if request.POST['tipo_negociacion'] in ['runrate', 'proyecto']:
+                oportunidad.tipo_negociacion = request.POST['tipo_negociacion']
+                updated_values['tipo_negociacion'] = oportunidad.get_tipo_negociacion_display()
+            else:
+                return JsonResponse({'success': False, 'error': 'Tipo de negociación inválido'})
+        
         # Actualizar producto
         if 'producto' in request.POST and request.POST['producto']:
             oportunidad.producto = request.POST['producto']
