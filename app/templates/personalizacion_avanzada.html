@@ -2763,37 +2763,46 @@
 
             if (!dockPreviewNormal || !dockPreviewTransparent || !dockPreviewCompact) return;
 
-            // Find the visible dock on the page
-            const visibleDock = document.querySelector('.macos-dock[style*="opacity: 1"]');
-            if (!visibleDock) {
-                console.error("No visible dock found on the page to clone for preview.");
-                return;
-            }
-
-            // Clone the visible dock for each preview type
-            const normalPreview = visibleDock.cloneNode(true);
-            const transparentPreview = visibleDock.cloneNode(true);
-            const compactPreview = visibleDock.cloneNode(true);
-
-            // Clear previous content
+            // Clear previous icons
             dockPreviewNormal.innerHTML = '';
             dockPreviewTransparent.innerHTML = '';
             dockPreviewCompact.innerHTML = '';
 
-            // Append clones to the preview containers
-            dockPreviewNormal.appendChild(normalPreview);
-            dockPreviewTransparent.appendChild(transparentPreview);
-            dockPreviewCompact.appendChild(compactPreview);
+            // Populate normal and transparent docks
+            defaultDockOrder.slice(0, 5).forEach(item => {
+                if (item.id === 'separator') return;
 
-            // Style the previews
-            [normalPreview, transparentPreview, compactPreview].forEach(preview => {
-                preview.style.position = 'static';
-                preview.style.transform = 'scale(0.5)'; // Scale down to fit
-                preview.style.margin = '0';
+                const iconElement = document.createElement('div');
+                iconElement.className = 'dock-item';
+                iconElement.style.width = '48px';
+                iconElement.style.height = '48px';
+                iconElement.style.borderRadius = '12px';
+                iconElement.style.display = 'flex';
+                iconElement.style.alignItems = 'center';
+                iconElement.style.justifyContent = 'center';
+                iconElement.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="${item.icon}"></path></svg>`;
+                
+                const normalIcon = iconElement.cloneNode(true);
+                normalIcon.style.background = 'rgba(0, 122, 255, 0.8)';
+                dockPreviewNormal.appendChild(normalIcon);
+
+                const transparentIcon = iconElement.cloneNode(true);
+                transparentIcon.style.background = 'rgba(255, 255, 255, 0.2)';
+                dockPreviewTransparent.appendChild(transparentIcon);
             });
 
-            transparentPreview.classList.add('dock-transparent');
-            compactPreview.classList.add('dock-compact');
+            // Populate compact dock
+            const compactIcon = document.createElement('div');
+            compactIcon.className = 'dock-item';
+            compactIcon.style.width = '48px';
+            compactIcon.style.height = '48px';
+            compactIcon.style.borderRadius = '50%';
+            compactIcon.style.display = 'flex';
+            compactIcon.style.alignItems = 'center';
+            compactIcon.style.justifyContent = 'center';
+            compactIcon.style.background = 'rgba(0, 122, 255, 0.8)';
+            compactIcon.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9,22 9,12 15,12 15,22"></polyline></svg>`;
+            dockPreviewCompact.appendChild(compactIcon);
         }
 
         function setDockTypeWithAnimation(type) {
