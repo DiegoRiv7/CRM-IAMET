@@ -2891,20 +2891,68 @@ def exportar_oportunidades_csv(request):
         ws['A3'].font = bold_font
         
         filters_applied = []
+        
+        # Filtro de oportunidad
+        if oportunidad_filter:
+            filters_applied.append(f"Oportunidad: {oportunidad_filter}")
+            
+        # Filtro de cliente
+        if cliente_filter:
+            filters_applied.append(f"Cliente: {cliente_filter}")
+            
+        # Filtro de tipo
+        if tipo_filter:
+            tipo_display = "Runrate" if tipo_filter == "runrate" else "Proyecto"
+            filters_applied.append(f"Tipo: {tipo_display}")
+            
+        # Filtro de empleado múltiple
         if empleado_filter:
-            try:
-                empleado = User.objects.get(id=empleado_filter)
-                filters_applied.append(f"Empleado: {empleado.get_full_name() or empleado.username}")
-            except User.DoesNotExist:
-                pass
+            empleado_ids = [e.strip() for e in empleado_filter.split(',') if e.strip()]
+            empleado_nombres = []
+            for emp_id in empleado_ids:
+                try:
+                    from django.contrib.auth.models import User
+                    empleado = User.objects.get(id=emp_id)
+                    empleado_nombres.append(empleado.get_full_name() or empleado.username)
+                except User.DoesNotExist:
+                    empleado_nombres.append(f"ID:{emp_id}")
+            if empleado_nombres:
+                filters_applied.append(f"Empleado(s): {', '.join(empleado_nombres)}")
+                
+        # Filtro de mes de cierre múltiple
+        if mes_cierre_filter:
+            meses = [m.strip() for m in mes_cierre_filter.split(',') if m.strip()]
+            mes_nombres = []
+            mes_map = {
+                '01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril',
+                '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto',
+                '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'
+            }
+            for mes in meses:
+                mes_nombres.append(mes_map.get(mes, mes))
+            if mes_nombres:
+                filters_applied.append(f"Mes(es) de Cierre: {', '.join(mes_nombres)}")
+                
+        # Filtro de etapa múltiple
+        if etapa_filter:
+            etapas = [e.strip() for e in etapa_filter.split(',') if e.strip()]
+            etapa_nombres = []
+            etapa_map = {
+                'vigentes': 'Solo vigentes',
+                'ganadas': 'Solo cerradas ganadas', 
+                'perdidas': 'Solo cerradas perdidas'
+            }
+            for etapa in etapas:
+                etapa_nombres.append(etapa_map.get(etapa, etapa))
+            if etapa_nombres:
+                filters_applied.append(f"Estado(s): {', '.join(etapa_nombres)}")
+                
+        # Filtro de área
         if area_filter:
             filters_applied.append(f"Área: {area_filter}")
-        if mes_cierre_filter:
-            mes_display = dict(TodoItem.MES_CHOICES).get(mes_cierre_filter, mes_cierre_filter)
-            filters_applied.append(f"Mes de Cierre: {mes_display}")
         
         if filters_applied:
-            ws['B3'] = ", ".join(filters_applied)
+            ws['B3'] = "; ".join(filters_applied)
         else:
             ws['B3'] = "Ninguno"
             
