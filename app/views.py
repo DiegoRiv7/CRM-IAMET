@@ -3989,7 +3989,7 @@ def perfil_usuario(request, usuario_id):
 
 
 from django.views.decorators.csrf import csrf_exempt
-from .bitrix_integration import get_bitrix_company_details, get_bitrix_deal_details, BITRIX_WEBHOOK_URL, map_bitrix_category_to_tipo_negociacion
+from .bitrix_integration import get_bitrix_company_details, get_bitrix_deal_details, BITRIX_WEBHOOK_URL, map_bitrix_category_to_tipo_negociacion, get_producto_from_bitrix_deal
 from django.contrib.auth.models import User
 import requests
 import traceback
@@ -4068,7 +4068,8 @@ def bitrix_webhook_receiver(request):
                         'select': [
                             'ID', 'TITLE', 'OPPORTUNITY', 'CURRENCY_ID', 'COMMENTS',
                             'COMPANY_ID', 'CONTACT_ID', 'ASSIGNED_BY_ID', 'STAGE_ID', 'CATEGORY_ID',
-                            'UF_CRM_1752859685662',  # Producto
+                            'UF_CRM_1752859685662',  # Producto (Runrate)
+                            'UF_CRM_1750723256972',  # Solución (Proyectos)
                             'UF_CRM_1752859525038',  # Área
                             'UF_CRM_1752859877756',  # Mes de Cobro
                             'UF_CRM_1752855787179',  # Probabilidad de cierre
@@ -4141,6 +4142,42 @@ def bitrix_webhook_receiver(request):
             else:
                 print("BITRIX WEBHOOK: Deal has no assigned user.", flush=True)
             
+            # --- Find or Create the Contact ---
+            contact_id = deal_details.get('CONTACT_ID')
+            contacto_obj = None
+            
+            if contact_id:
+                try:
+                    # Buscar contacto existente por bitrix_contact_id
+                    contacto_obj = Contacto.objects.filter(bitrix_contact_id=contact_id).first()
+                    if contacto_obj:
+                        print(f"BITRIX WEBHOOK: Found existing contact '{contacto_obj.nombre} {contacto_obj.apellido}' for Contact ID: {contact_id}", flush=True)
+                    else:
+                        print(f"BITRIX WEBHOOK: Contact with ID {contact_id} not found locally. Fetching from Bitrix24...", flush=True)
+                        # Obtener detalles del contacto desde Bitrix24
+                        from .bitrix_integration import get_bitrix_contact_details
+                        contact_details = get_bitrix_contact_details(contact_id, request=request)
+                        if contact_details:
+                            try:
+                                contacto_obj = Contacto.objects.create(
+                                    nombre=contact_details.get('NAME', 'Sin nombre'),
+                                    apellido=contact_details.get('LAST_NAME', ''),
+                                    bitrix_contact_id=contact_id,
+                                    company_id=contact_details.get('COMPANY_ID'),
+                                    cliente=cliente  # Asociar con el cliente
+                                )
+                                print(f"BITRIX WEBHOOK: Created new contact '{contacto_obj.nombre} {contacto_obj.apellido}'", flush=True)
+                            except Exception as e:
+                                print(f"BITRIX WEBHOOK: Error creating contact: {e}", flush=True)
+                                contacto_obj = None
+                        else:
+                            print(f"BITRIX WEBHOOK: Could not fetch contact details from Bitrix24 for ID {contact_id}", flush=True)
+                except Exception as e:
+                    print(f"BITRIX WEBHOOK: Error processing contact ID {contact_id}: {e}", flush=True)
+                    contacto_obj = None
+            else:
+                print("BITRIX WEBHOOK: Deal has no associated Contact ID.", flush=True)
+
             print(f"BITRIX WEBHOOK: DEBUG - After user assignment. is_update={locals().get('is_update', 'NOT_DEFINED')}, existing_opportunity={locals().get('existing_opportunity', 'NOT_DEFINED')}", flush=True)
 
             # --- Create the Opportunity (TodoItem) ---
@@ -4196,27 +4233,27 @@ def bitrix_webhook_receiver(request):
             }
 
             # Obtener valores raw de Bitrix
-            producto_bitrix_id = deal_details.get('UF_CRM_1752859685662')
             area_bitrix_id = deal_details.get('UF_CRM_1752859525038')
             mes_cierre_bitrix_id = deal_details.get('UF_CRM_1752859877756')
             probabilidad_bitrix_id = deal_details.get('UF_CRM_1752855787179')
             utilidad_bitrix_id = deal_details.get('UF_CRM_1755615484859')
             category_id = deal_details.get('CATEGORY_ID')
 
-            print(f"BITRIX WEBHOOK: Raw product ID: {producto_bitrix_id}", flush=True)
             print(f"BITRIX WEBHOOK: Raw area ID: {area_bitrix_id}", flush=True)
             print(f"BITRIX WEBHOOK: Raw mes_cierre ID: {mes_cierre_bitrix_id}", flush=True)
             print(f"BITRIX WEBHOOK: Raw probabilidad ID: {probabilidad_bitrix_id}", flush=True)
             print(f"BITRIX WEBHOOK: Raw utilidad ID: {utilidad_bitrix_id}", flush=True)
             print(f"BITRIX WEBHOOK: Raw category ID: {category_id}", flush=True)
 
+            # Mapear tipo de negociación desde CATEGORY_ID
+            tipo_negociacion = map_bitrix_category_to_tipo_negociacion(category_id)
+            
             # Aplicar conversiones de mapeo
-            producto = PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE.get(str(producto_bitrix_id), 'SOFTWARE') # Default
             area = AREA_BITRIX_ID_TO_DJANGO_VALUE.get(str(area_bitrix_id), 'SISTEMAS') # Default
             mes_cierre = MES_COBRO_BITRIX_ID_TO_DJANGO_VALUE.get(str(mes_cierre_bitrix_id), 'Enero') # Default
             
-            # Mapear tipo de negociación desde CATEGORY_ID
-            tipo_negociacion = map_bitrix_category_to_tipo_negociacion(category_id)
+            # Mapear producto/solución según el tipo de negociación
+            producto = get_producto_from_bitrix_deal(deal_details, tipo_negociacion)
 
             probabilidad_cierre = 0 # Default value
             if probabilidad_bitrix_id is not None:
@@ -4285,6 +4322,7 @@ def bitrix_webhook_receiver(request):
                     existing_opportunity.tipo_negociacion = tipo_negociacion  # Nuevo campo
                     existing_opportunity.probabilidad_cierre = probabilidad_cierre
                     existing_opportunity.bitrix_stage_id = bitrix_stage_id  # Guardar el estado
+                    existing_opportunity.contacto = contacto_obj  # Asignar contacto
                     existing_opportunity.save()
                     print(f"BITRIX WEBHOOK: Successfully updated opportunity '{existing_opportunity.oportunidad}' with ID {existing_opportunity.id}", flush=True)
                     
@@ -4371,6 +4409,7 @@ def bitrix_webhook_receiver(request):
                             tipo_negociacion=tipo_negociacion,  # Nuevo campo
                             probabilidad_cierre=probabilidad_cierre,
                             bitrix_stage_id=bitrix_stage_id,  # Guardar el estado
+                            contacto=contacto_obj,  # Asignar contacto
                         )
                         print(f"BITRIX WEBHOOK: Successfully created new opportunity '{new_opportunity.oportunidad}' with ID {new_opportunity.id}", flush=True)
                         

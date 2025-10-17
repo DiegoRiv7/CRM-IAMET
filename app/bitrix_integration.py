@@ -349,7 +349,8 @@ def get_bitrix_deal_details(deal_id, request=None):
             'select': [
                 'ID', 'TITLE', 'OPPORTUNITY', 'CURRENCY_ID', 'COMMENTS',
                 'COMPANY_ID', 'CONTACT_ID', 'ASSIGNED_BY_ID', 'STAGE_ID', 'CATEGORY_ID',
-                'UF_CRM_1752859685662',  # Producto
+                'UF_CRM_1752859685662',  # Producto (Runrate)
+                'UF_CRM_1750723256972',  # Solución (Proyectos)
                 'UF_CRM_1752859525038',  # Área
                 'UF_CRM_1752859877756',  # Mes de Cobro
                 'UF_CRM_1752855787179',  # Probabilidad de cierre
@@ -476,7 +477,8 @@ def get_all_bitrix_deals(request=None):
                 'select': [
                     'ID', 'TITLE', 'OPPORTUNITY', 'CURRENCY_ID', 'COMMENTS',
                     'COMPANY_ID', 'CONTACT_ID', 'ASSIGNED_BY_ID', 'STAGE_ID', 'CATEGORY_ID',
-                    'UF_CRM_1752859685662', # Producto
+                    'UF_CRM_1752859685662', # Producto (Runrate)
+                    'UF_CRM_1750723256972', # Solución (Proyectos)
                     'UF_CRM_1752859525038',  # Área
                     'UF_CRM_1752859877756',  # Mes de Cobro
                     'UF_CRM_1752855787179',  # Probabilidad de cierre
@@ -881,3 +883,30 @@ def map_bitrix_category_to_tipo_negociacion(category_id):
     mapped_value = category_map_reverse.get(str(category_id), 'runrate')  # Default a runrate
     print(f"DEBUG Bitrix: CATEGORY_ID {category_id} mapeado a tipo_negociacion: {mapped_value}")
     return mapped_value
+
+def get_producto_from_bitrix_deal(deal_details, tipo_negociacion):
+    """
+    Extrae el producto/solución según el tipo de negociación
+    """
+    PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE = {
+        "176": "ZEBRA", "178": "PANDUIT", "180": "APC", "182": "AVIGILION",
+        "184": "GENETEC", "186": "AXIS", "188": "SOFTWARE", "190": "RUNRATE",
+        "192": "PÓLIZA", "194": "CISCO", "374": "RFID", "376": "CONSUMIBLE",
+        "378": "IMPRESORA INDUSTRIAL", "380": "SCANNER", "382": "TABLETA",
+        "582": "SERVICIO",
+    }
+    
+    if tipo_negociacion == 'proyecto':
+        # Para proyectos, usar el campo "Solución"
+        solucion_bitrix_id = deal_details.get('UF_CRM_1750723256972')
+        print(f"DEBUG Bitrix: Proyecto - Raw solución ID: {solucion_bitrix_id}")
+        producto = PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE.get(str(solucion_bitrix_id), 'SOFTWARE')
+        print(f"DEBUG Bitrix: Proyecto - Solución mapeada: {producto}")
+    else:
+        # Para runrate, usar el campo "Producto"
+        producto_bitrix_id = deal_details.get('UF_CRM_1752859685662')
+        print(f"DEBUG Bitrix: Runrate - Raw producto ID: {producto_bitrix_id}")
+        producto = PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE.get(str(producto_bitrix_id), 'SOFTWARE')
+        print(f"DEBUG Bitrix: Runrate - Producto mapeado: {producto}")
+    
+    return producto

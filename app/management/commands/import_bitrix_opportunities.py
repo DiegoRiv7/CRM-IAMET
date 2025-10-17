@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand, CommandError
 from app.models import TodoItem, Cliente, UserProfile, Contacto
 from django.contrib.auth.models import User
-from app.bitrix_integration import get_all_bitrix_deals, get_bitrix_company_details, get_bitrix_user_details, get_bitrix_contact_details, map_bitrix_category_to_tipo_negociacion
+from app.bitrix_integration import get_all_bitrix_deals, get_bitrix_company_details, get_bitrix_user_details, get_bitrix_contact_details, map_bitrix_category_to_tipo_negociacion, get_producto_from_bitrix_deal
 from decimal import Decimal
 import json
 
@@ -170,12 +170,14 @@ class Command(BaseCommand):
                     "138": "80%", "140": "90%", "142": "100%",
                 }
 
-                producto = PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE.get(str(producto_bitrix_id), 'SOFTWARE') # Default
                 area = AREA_BITRIX_ID_TO_DJANGO_VALUE.get(str(area_bitrix_id), 'SISTEMAS') # Default
                 mes_cierre = MES_COBRO_BITRIX_ID_TO_DJANGO_VALUE.get(str(mes_cierre_bitrix_id), 'Enero') # Default to January
                 
                 # Mapear tipo de negociación desde CATEGORY_ID
                 tipo_negociacion = map_bitrix_category_to_tipo_negociacion(category_id)
+                
+                # Mapear producto/solución según el tipo de negociación
+                producto = get_producto_from_bitrix_deal(deal, tipo_negociacion)
                 
                 probabilidad_cierre = 0 # Default value
                 if probabilidad_bitrix_id is not None:
