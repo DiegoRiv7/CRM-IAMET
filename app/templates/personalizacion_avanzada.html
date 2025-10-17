@@ -3377,7 +3377,6 @@
         }
 
         function setDockTypeWithAnimation(type, animate = true) {
-            console.log('setDockTypeWithAnimation called with type:', type, 'and animate:', animate);
             const dockPreview = document.getElementById('dockPreview');
             if (!dockPreview) {
                 console.error('dockPreview element not found!');
@@ -3385,7 +3384,6 @@
             }
 
             const generateDock = (isTransparent, isCompact) => {
-                console.log('generateDock called with isTransparent:', isTransparent, 'isCompact:', isCompact);
                 const dock = document.createElement('div');
                 dock.className = 'macos-dock';
                 dock.style.display = 'flex';
@@ -3438,7 +3436,7 @@
                     dock.style.background = 'rgba(29, 29, 31, 0.85)';
                     dock.style.border = '1px solid rgba(255, 255, 255, 0.15)';
                 }
-                console.log('Generated dock:', dock);
+
                 return dock;
             };
 
@@ -3452,7 +3450,6 @@
                     else if (type === 'transparent') newDock = generateDock(true, false);
                     else if (type === 'compact') newDock = generateDock(false, true);
                     dockPreview.appendChild(newDock);
-                    console.log('Appended new dock to preview:', newDock);
                     dockPreview.style.transform = 'scale(1)';
                     dockPreview.style.opacity = '1';
                 }, 200);
@@ -3463,7 +3460,6 @@
                 else if (type === 'transparent') newDock = generateDock(true, false);
                 else if (type === 'compact') newDock = generateDock(false, true);
                 dockPreview.appendChild(newDock);
-                console.log('Appended new dock to preview (no animation):', newDock);
             }
 
             setDockType(type);

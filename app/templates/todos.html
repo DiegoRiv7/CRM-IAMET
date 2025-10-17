@@ -2445,21 +2445,8 @@ empleadosOptions.push({
 {% endfor %}
 
 <script>
-// Solo inicializar TomSelect si el elemento existe (modo reporte)
-const filterEmpleadoElement = document.getElementById('filterEmpleado');
-let empleadoSelect = null;
-if (filterEmpleadoElement) {
-    empleadoSelect = new TomSelect('#filterEmpleado',{
-        create: true,
-        sortField: {
-            field: "text",
-            direction: "asc"
-        },
-        options: empleadosOptions
-    });
-} else {
-    console.log('🔍 filterEmpleado not found, skipping TomSelect initialization');
-}
+// El empleado es un select normal, no necesita TomSelect
+console.log('🔍 Empleado filter is a normal select, no TomSelect needed');
 
 function generarReporteCSV() {
     const oportunidad = document.getElementById('filterOportunidad') ? document.getElementById('filterOportunidad').value.trim() : '';
@@ -2660,7 +2647,6 @@ function clearFilters() {
     
     // Limpiar selectores especiales
     if (clienteSelect) clienteSelect.clear();
-    if (empleadoSelect) empleadoSelect.clear();
     
     // Mostrar todas las filas
     const tableBody = document.getElementById('tablaOportunidades');
@@ -2780,18 +2766,29 @@ function updateNoResultsMessage(visibleCount, tableBody) {
 
 // Actualizar función applyFilters para incluir nuevos campos
 function applyFilters() {
+    console.log('🔧 Iniciando applyFilters...');
+    
     const monthMap = {
         'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
         'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
         'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12'
     };
 
-    const oportunidad = document.getElementById('filterOportunidad') ? document.getElementById('filterOportunidad').value.toLowerCase().trim() : '';
-    const tipo = document.getElementById('filterTipo') ? document.getElementById('filterTipo').value.toLowerCase().trim() : '';
-    const etapa = document.getElementById('filterEtapa') ? document.getElementById('filterEtapa').value.toLowerCase().trim() : '';
-    const cliente = (clienteSelect ? clienteSelect.getValue() : '').toLowerCase().trim();
-    const empleado = document.getElementById('filterEmpleado') ? document.getElementById('filterEmpleado').value : '';
-    const mesCierre = document.getElementById('filterMesCierre') ? document.getElementById('filterMesCierre').value.toLowerCase().trim() : '';
+    const oportunidad = document.getElementById('filterOportunidad')?.value?.toLowerCase().trim() || '';
+    const tipo = document.getElementById('filterTipo')?.value?.trim() || '';
+    const etapa = document.getElementById('filterEtapa')?.value?.trim() || '';
+    const cliente = (clienteSelect?.getValue() || '').toLowerCase().trim();
+    const empleado = document.getElementById('filterEmpleado')?.value?.trim() || '';
+    const mesCierre = document.getElementById('filterMesCierre')?.value?.trim() || '';
+    
+    console.log('🔧 Valores de filtros:', {
+        oportunidad,
+        tipo, 
+        etapa,
+        cliente,
+        empleado,
+        mesCierre
+    });
     
     const tableBody = document.getElementById('tablaOportunidades');
     const rows = originalRows;
@@ -2817,29 +2814,33 @@ function applyFilters() {
         
         // Filtro de empleado
         if (empleado && row.dataset.usuarioId) {
-            console.log('Filtro empleado:', empleado, 'vs dataset:', row.dataset.usuarioId);
+            console.log('🔧 Filtro empleado:', empleado, 'vs dataset:', row.dataset.usuarioId);
             if (row.dataset.usuarioId !== empleado) {
                 showRow = false;
             }
         }
 
-        // Filtro de tipo
-        if (tipo && cells.length > 5) {
-            const tipoCell = cells[5];
+        // Filtro de tipo (columna 2)
+        if (tipo && cells.length > 2) {
+            const tipoCell = cells[2];
             const tipoBadge = tipoCell.querySelector('.tipo-negociacion-badge');
             if (tipoBadge) {
                 const tipoText = tipoBadge.textContent.toLowerCase().trim();
-                if (tipo === 'runrate' && !tipoText.includes('runrate')) showRow = false;
-                if (tipo === 'proyecto' && !tipoText.includes('proyecto')) showRow = false;
+                console.log('🔧 Comparando tipo:', tipo, 'con texto:', tipoText);
+                let tipoMatch = false;
+                if (tipo === 'runrate' && tipoText.includes('runrate')) tipoMatch = true;
+                if (tipo === 'proyecto' && tipoText.includes('proyecto')) tipoMatch = true;
+                if (!tipoMatch) showRow = false;
             }
         }
 
-        // Filtro de estado/etapa
-        if (etapa && cells.length > 6) {
-            const etapaCell = cells[6];
+        // Filtro de estado/etapa (columna 3)
+        if (etapa && cells.length > 3) {
+            const etapaCell = cells[3];
             const etapaBadge = etapaCell.querySelector('.etapa-badge');
             if (etapaBadge) {
                 const etapaText = etapaBadge.textContent.toLowerCase().trim();
+                console.log('🔧 Comparando etapa:', etapa, 'con texto:', etapaText);
                 let etapaMatch = false;
                 
                 switch(etapa) {
@@ -2864,10 +2865,10 @@ function applyFilters() {
             }
         }
         
-        // Filtro de mes de cierre
-        if (mesCierre && cells.length > 9) {
-            const mesCierreCell = cells[9].textContent.toLowerCase().trim();
-            console.log('Comparando mes:', mesCierreCell, 'con filtro:', mesCierre, 'mapeado:', monthMap[mesCierreCell]);
+        // Filtro de mes de cierre (columna 6)
+        if (mesCierre && cells.length > 6) {
+            const mesCierreCell = cells[6].textContent.toLowerCase().trim();
+            console.log('🔧 Comparando mes:', mesCierreCell, 'con filtro:', mesCierre, 'mapeado:', monthMap[mesCierreCell]);
             if (monthMap[mesCierreCell] !== mesCierre) {
                 showRow = false;
             }
@@ -2882,6 +2883,7 @@ function applyFilters() {
     tableBody.innerHTML = '';
     filteredRows.forEach(row => tableBody.appendChild(row));
     
+    console.log('🔧 Filtros aplicados:', filteredRows.length, 'de', rows.length, 'filas');
     updateNoResultsMessage(filteredRows.length, tableBody);
 }
 
