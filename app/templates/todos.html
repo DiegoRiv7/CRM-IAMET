@@ -1998,6 +1998,38 @@
         color: #28A745;
     }
 
+    /* Estilos para badges de etapas */
+    .etapa-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 16px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        max-width: 120px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        user-select: none;
+    }
+
+    .etapa-badge:hover {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
+
+    .etapa-badge.expanded {
+        max-width: none;
+        white-space: normal;
+        text-transform: none;
+        letter-spacing: normal;
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+
 </style>
 
 <div class="todos-container">
@@ -2091,6 +2123,7 @@
                         <th>Oportunidad</th>
                         <th>Cliente</th>
                         <th>Tipo</th>
+                        <th>Etapa</th>
                         <th>Monto</th>
                         <th>Probabilidad</th>
                         <th>Mes Cierre</th>
@@ -2109,6 +2142,14 @@
                         <td data-label="Tipo">
                             <span class="tipo-negociacion-badge {% if item.tipo_negociacion == 'runrate' %}tipo-runrate{% else %}tipo-proyecto{% endif %}">
                                 {{ item.get_tipo_negociacion_display }}
+                            </span>
+                        </td>
+                        <td data-label="Etapa">
+                            <span class="etapa-badge" 
+                                  style="background-color: {{ item.etapa_color|default:'#CCCCCC' }}33; border: 1px solid {{ item.etapa_color|default:'#CCCCCC' }}; color: {{ item.etapa_color|default:'#666666' }};"
+                                  title="{{ item.etapa_completa|default:'Etapa no definida' }}"
+                                  onclick="toggleEtapaExpanded(this)">
+                                {{ item.etapa_corta|default:'N/A' }}
                             </span>
                         </td>
                         <td data-label="Monto">${{ item.monto|format_currency_es }}</td>
@@ -2136,7 +2177,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="text-center py-10 text-gray-400">No hay oportunidades registradas.</td>
+                        <td colspan="8" class="text-center py-10 text-gray-400">No hay oportunidades registradas.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -2441,9 +2482,40 @@ function updateNoResultsMessage(visibleCount, tableBody) {
     if (visibleCount === 0) {
         const noResultsRow = document.createElement('tr');
         noResultsRow.className = 'no-results-row';
-        noResultsRow.innerHTML = '<td colspan="7" class="text-center py-10 text-gray-400">No se encontraron oportunidades que coincidan con los filtros aplicados.</td>';
+        noResultsRow.innerHTML = '<td colspan="8" class="text-center py-10 text-gray-400">No se encontraron oportunidades que coincidan con los filtros aplicados.</td>';
         tableBody.appendChild(noResultsRow);
     }
 }
+
+// Función para expandir/contraer etapas
+function toggleEtapaExpanded(element) {
+    element.classList.toggle('expanded');
+    
+    if (element.classList.contains('expanded')) {
+        // Mostrar nombre completo
+        element.textContent = element.getAttribute('title');
+    } else {
+        // Mostrar nombre corto (original)
+        const originalText = element.getAttribute('data-original-text');
+        if (originalText) {
+            element.textContent = originalText;
+        } else {
+            // Guardar el texto original para futuras contracciones
+            const shortText = element.textContent;
+            element.setAttribute('data-original-text', shortText);
+            element.textContent = element.getAttribute('title');
+        }
+    }
+}
+
+// Guardar textos originales al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    const etapaBadges = document.querySelectorAll('.etapa-badge');
+    etapaBadges.forEach(badge => {
+        if (!badge.getAttribute('data-original-text')) {
+            badge.setAttribute('data-original-text', badge.textContent.trim());
+        }
+    });
+});
 </script>
 {% endblock %}

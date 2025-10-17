@@ -3989,7 +3989,7 @@ def perfil_usuario(request, usuario_id):
 
 
 from django.views.decorators.csrf import csrf_exempt
-from .bitrix_integration import get_bitrix_company_details, get_bitrix_deal_details, BITRIX_WEBHOOK_URL, map_bitrix_category_to_tipo_negociacion, get_producto_from_bitrix_deal
+from .bitrix_integration import get_bitrix_company_details, get_bitrix_deal_details, BITRIX_WEBHOOK_URL, map_bitrix_category_to_tipo_negociacion, get_producto_from_bitrix_deal, get_etapa_from_bitrix_stage
 from django.contrib.auth.models import User
 import requests
 import traceback
@@ -4254,6 +4254,10 @@ def bitrix_webhook_receiver(request):
             
             # Mapear producto/solución según el tipo de negociación
             producto = get_producto_from_bitrix_deal(deal_details, tipo_negociacion)
+            
+            # Mapear etapa según el tipo de negociación
+            stage_id = deal_details.get('STAGE_ID')
+            etapa_corta, etapa_completa, etapa_color = get_etapa_from_bitrix_stage(stage_id, tipo_negociacion)
 
             probabilidad_cierre = 0 # Default value
             if probabilidad_bitrix_id is not None:
@@ -4320,6 +4324,9 @@ def bitrix_webhook_receiver(request):
                     existing_opportunity.area = area
                     existing_opportunity.mes_cierre = mes_cierre
                     existing_opportunity.tipo_negociacion = tipo_negociacion  # Nuevo campo
+                    existing_opportunity.etapa_corta = etapa_corta
+                    existing_opportunity.etapa_completa = etapa_completa
+                    existing_opportunity.etapa_color = etapa_color
                     existing_opportunity.probabilidad_cierre = probabilidad_cierre
                     existing_opportunity.bitrix_stage_id = bitrix_stage_id  # Guardar el estado
                     existing_opportunity.contacto = contacto_obj  # Asignar contacto
@@ -4407,6 +4414,9 @@ def bitrix_webhook_receiver(request):
                             area=area,
                             mes_cierre=mes_cierre,
                             tipo_negociacion=tipo_negociacion,  # Nuevo campo
+                            etapa_corta=etapa_corta,
+                            etapa_completa=etapa_completa,
+                            etapa_color=etapa_color,
                             probabilidad_cierre=probabilidad_cierre,
                             bitrix_stage_id=bitrix_stage_id,  # Guardar el estado
                             contacto=contacto_obj,  # Asignar contacto

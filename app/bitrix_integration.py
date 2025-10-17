@@ -918,3 +918,59 @@ def get_producto_from_bitrix_deal(deal_details, tipo_negociacion):
         print(f"DEBUG Bitrix: Runrate - Producto mapeado: {producto}")
     
     return producto
+
+def get_etapa_from_bitrix_stage(stage_id, tipo_negociacion):
+    """
+    Mapea el STAGE_ID de Bitrix24 a etapa legible según el tipo de negociación
+    Retorna tupla: (etapa_corta, etapa_completa, color)
+    """
+    
+    # Mapeo para Runrate
+    RUNRATE_STAGES = {
+        "NEW": ("Inicial", "Solicitud de Cotizacion", "#FFFFFF"),
+        "UC_YUQKW6": ("Cotizando", "Cotizando", "#FFEB3B"),
+        "UC_H8L1Z8": ("Enviada", "Cotización Enviada", "#2196F3"),
+        "UC_RFMQC1": ("Seguimiento", "Seguimiento de Cotización", "#FF9800"),
+        "UC_J7Q5HD": ("Vendido s/PO", "Vendido sin PO", "#9C27B0"),
+        "UC_AO5AY3": ("Vendido c/PO", "Vendido con PO", "#9C27B0"),
+        "PREPARATION": ("En Tránsito", "Vendido en Transito con Proveedor", "#673AB7"),
+        "PREPAYMENT_INVOICE": ("Facturado", "Facturado", "#00BCD4"),
+        "1": ("Programado", "Programado para entrega", "#03DAC6"),
+        "EXECUTING": ("Entregado", "Entregado", "#4CAF50"),
+        "FINAL_INVOICE": ("Esperando Pago", "Esperando Pago", "#8BC34A"),
+        "4": ("Sin Respuesta", "Sin respuesta", "#607D8B"),
+        "WON": ("Ganado", "Cerrado Ganado", "#4CAF50"),
+        "LOSE": ("Perdido", "Cerrado Perdido", "#F44336"),
+    }
+    
+    # Mapeo para Proyectos
+    PROYECTO_STAGES = {
+        "C2:NEW": ("Oportunidad", "Oportunidad", "#FFFFFF"),
+        "C2:PREPARATION": ("Levantamiento", "Levantamiento", "#FF5C5A"),
+        "C2:PREPAYMENT_INVOICE": ("Base Cotización", "Generando Base para cotizacion", "#55D0E0"),
+        "C2:EXECUTING": ("Cotizando", "Cotizando", "#2fc6f6"),
+        "C2:FINAL_INVOICE": ("Enviada", "Cotización Enviada", "#2FC6F6"),
+        "C2:1": ("Seguimiento", "En seguimiento", "#39A8EF"),
+        "C2:2": ("Vendido s/PO", "Vendido sin PO", "#FF00FF"),
+        "C2:3": ("Vendido c/PO", "Vendido con PO", "#FF00FF"),
+        "C2:UC_WC03GH": ("Cotiz. Proveedor", "Cotizando con Proveedor", "#a861ab"),
+        "C2:4": ("Comprando", "Comprando Materiales", "#2FC6F6"),
+        "C2:UC_6OQCDL": ("Nombre", "Nombre", "#ace9fb"),
+        "C2:5": ("En Tránsito", "Materiales en Transito", "#2FC6F6"),
+        "C2:6": ("Ejecutando", "En Ejecución", "#FFFF00"),
+        "C2:7": ("Entregado", "Proyecto Entregado", "#2FC6F6"),
+        "C2:8": ("Facturado", "Facturado", "#55D0E0"),
+        "C2:9": ("Reportes", "Reportes y Certificaciones", "#47E4C2"),
+        "C2:11": ("Perdido", "Perdido", "#FF0000"),
+        "C2:WON": ("Pagado", "Pagado", "#7BD500"),
+        "C2:LOSE": ("Perdido", "Cerrado Perdido", "#FF5752"),
+    }
+    
+    if tipo_negociacion == 'proyecto':
+        stage_info = PROYECTO_STAGES.get(stage_id, ("Desconocido", "Etapa desconocida", "#CCCCCC"))
+        print(f"DEBUG Bitrix: Proyecto - STAGE_ID {stage_id} mapeado a: {stage_info[0]} ({stage_info[1]})")
+    else:
+        stage_info = RUNRATE_STAGES.get(stage_id, ("Desconocido", "Etapa desconocida", "#CCCCCC"))
+        print(f"DEBUG Bitrix: Runrate - STAGE_ID {stage_id} mapeado a: {stage_info[0]} ({stage_info[1]})")
+    
+    return stage_info
