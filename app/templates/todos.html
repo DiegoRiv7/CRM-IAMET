@@ -419,9 +419,27 @@
 
 .filters-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(6, 1fr);
     gap: 1rem;
     margin-bottom: 1rem;
+}
+
+@media (max-width: 1200px) {
+    .filters-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .filters-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .filters-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .filter-group {
@@ -2160,15 +2178,18 @@
                                 </div>
                                 
                                 <div class="filter-group">
-                                    <label class="filter-label">Etapa</label>
+                                    <label class="filter-label">Estado</label>
                                     <select class="filter-input" id="filterEtapa">
-                                        <option value="">Todas</option>
+                                        <option value="">Todas las oportunidades</option>
+                                        <option value="vigentes">Solo vigentes (excluir cerradas)</option>
+                                        <option value="ganadas">Solo cerradas ganadas</option>
+                                        <option value="perdidas">Solo cerradas perdidas</option>
+                                        <option value="cerradas">Todas las cerradas</option>
                                         <option value="solicitud">En Solicitud</option>
                                         <option value="cotizando">Cotizando</option>
                                         <option value="enviada">Enviada</option>
                                         <option value="seguimiento">Seguimiento</option>
                                         <option value="vendido">Vendido</option>
-                                        <option value="ganado">Ganado</option>
                                     </select>
                                 </div>
                                 
@@ -2773,7 +2794,7 @@ function applyFilters() {
             }
         }
 
-        // Filtro de etapa
+        // Filtro de estado/etapa
         if (etapa && cells.length > 6) {
             const etapaCell = cells[6];
             const etapaBadge = etapaCell.querySelector('.etapa-badge');
@@ -2782,6 +2803,22 @@ function applyFilters() {
                 let etapaMatch = false;
                 
                 switch(etapa) {
+                    case 'vigentes':
+                        // Excluir cerradas (ganadas y perdidas)
+                        etapaMatch = !etapaText.includes('ganado') && !etapaText.includes('perdido');
+                        break;
+                    case 'ganadas':
+                        // Solo cerradas ganadas
+                        etapaMatch = etapaText.includes('ganado');
+                        break;
+                    case 'perdidas':
+                        // Solo cerradas perdidas
+                        etapaMatch = etapaText.includes('perdido');
+                        break;
+                    case 'cerradas':
+                        // Todas las cerradas (ganadas y perdidas)
+                        etapaMatch = etapaText.includes('ganado') || etapaText.includes('perdido');
+                        break;
                     case 'solicitud':
                         etapaMatch = etapaText.includes('solicitud') || etapaText.includes('en solicitud');
                         break;
@@ -2796,9 +2833,6 @@ function applyFilters() {
                         break;
                     case 'vendido':
                         etapaMatch = etapaText.includes('vendido');
-                        break;
-                    case 'ganado':
-                        etapaMatch = etapaText.includes('ganado');
                         break;
                 }
                 
