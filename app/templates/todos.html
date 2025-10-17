@@ -2186,7 +2186,7 @@
         <div class="ipados-header">
             <div style="display: flex; align-items: center; gap: 1rem;">
                 <h1 class="page-title">Oportunidades</h1>
-                <div class="filter-icon-container {% if reporte_activo %}active{% endif %}" id="filter-icon" onclick="window.location.href='{% if reporte_activo %}{% url 'todos' %}{% else %}?reporte=true{% endif %}'">
+                <div class="filter-icon-container {% if reporte_activo %}active{% endif %}" id="filter-icon">
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
                     </svg>
@@ -2419,7 +2419,12 @@ if (filterClienteElement) {
             field: "text",
             direction: "asc"
         },
-        options: clientesOptions
+        options: clientesOptions,
+        render: {
+            dropdown: function() {
+                return '<div class="ts-dropdown" style="background: rgba(28, 28, 30, 0.95) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 12px !important; backdrop-filter: blur(20px) !important;"></div>';
+            }
+        }
     });
 } else {
     console.log('🔍 filterCliente not found, skipping TomSelect initialization');
@@ -2477,6 +2482,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const tableBody = document.getElementById('tablaOportunidades');
     if (tableBody) {
         originalRows = Array.from(tableBody.getElementsByTagName('tr'));
+    }
+    
+    // Handle filter icon click
+    const filterIcon = document.getElementById('filter-icon');
+    if (filterIcon) {
+        filterIcon.addEventListener('click', function(e) {
+            e.preventDefault();
+            const isActive = filterIcon.classList.contains('active');
+            const url = isActive ? '{% url "todos" %}' : '?reporte=true';
+            window.location.href = url;
+        });
     }
     
     // Los filtros básicos ya funcionan con la función applyFilters() existente
@@ -2849,8 +2865,8 @@ function applyFilters() {
                         etapaMatch = !etapaText.includes('ganado') && !etapaText.includes('perdido');
                         break;
                     case 'ganadas':
-                        // Solo cerradas ganadas
-                        etapaMatch = etapaText.includes('ganado');
+                        // Solo cerradas ganadas, excluir pagado
+                        etapaMatch = etapaText.includes('ganado') && !etapaText.includes('pagado');
                         break;
                     case 'perdidas':
                         // Solo cerradas perdidas
