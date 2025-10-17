@@ -406,426 +406,61 @@
         border-color: rgba(255, 255, 255, 0.25);
     }
 
-/* ========== SISTEMA DE FILTROS MODERNO ========== */
-.modern-filters-container {
-    width: 100%;
-    padding: 2rem;
-    background: rgba(28, 28, 30, 0.95);
-    backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
-    border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 
-        0 20px 60px rgba(0, 0, 0, 0.4),
-        0 8px 32px rgba(0, 0, 0, 0.25),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    animation: modernSlideIn 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-    margin-bottom: 2rem;
-}
-
-@keyframes modernSlideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-30px) scale(0.95);
-        filter: blur(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-        filter: blur(0);
-    }
-}
-
-/* Secciones principales */
-.quick-filters-section,
-.advanced-filters-section {
-    margin-bottom: 2rem;
-}
-
-.section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+/* ========== FILTROS COMPACTOS ========== */
+.compact-filters-container {
+    background: rgba(28, 28, 30, 0.9);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
     margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-.section-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--apple-label);
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.section-title::before {
-    content: '●';
-    color: var(--apple-blue);
-    font-size: 0.8rem;
-}
-
-.filters-counter {
-    font-size: 0.85rem;
-    color: var(--apple-label-secondary);
-    background: rgba(255, 255, 255, 0.08);
-    padding: 0.4rem 0.8rem;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    transition: all 0.3s ease;
-}
-
-/* Filtros Rápidos - Pills */
-.quick-filters-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.filter-pill-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.8rem;
-}
-
-.pill-group-label {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--apple-label-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin: 0;
-}
-
-.filter-pills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.8rem;
-    align-items: center;
-}
-
-.filter-pill {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1rem;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1.5px solid rgba(255, 255, 255, 0.12);
-    border-radius: 18px;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    user-select: none;
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--apple-label);
-    position: relative;
-    overflow: hidden;
-}
-
-.filter-pill::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-    transform: translateX(-100%);
-    transition: transform 0.6s ease;
-}
-
-.filter-pill:hover::before {
-    transform: translateX(100%);
-}
-
-.filter-pill:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-}
-
-.filter-pill.active {
-    background: linear-gradient(135deg, var(--apple-blue) 0%, #0056CC 100%);
-    border-color: var(--apple-blue);
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 
-        0 8px 25px rgba(10, 132, 255, 0.4),
-        0 4px 12px rgba(10, 132, 255, 0.3);
-}
-
-.pill-text {
-    font-weight: 600;
-}
-
-.pill-icon {
-    font-size: 1rem;
-}
-
-.pill-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-/* Filtros Avanzados */
-.collapse-btn {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 12px;
-    padding: 0.5rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    color: var(--apple-label-secondary);
-}
-
-.collapse-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: var(--apple-label);
-    transform: scale(1.05);
-}
-
-.advanced-filters-grid {
+.filters-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
 }
 
-.advanced-filters-grid.collapsed {
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    transform: translateY(-20px);
-}
-
-.modern-filter-group {
+.filter-group {
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
+    gap: 0.5rem;
 }
 
-.modern-filter-label {
+.filter-label {
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--apple-label);
     margin: 0;
 }
 
-.modern-input-container,
-.modern-select-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.modern-filter-input,
-.modern-filter-select {
-    width: 100%;
-    padding: 0.8rem 1rem;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1.5px solid rgba(255, 255, 255, 0.12);
-    border-radius: 16px;
-    color: var(--apple-label);
-    font-size: 0.9rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    outline: none;
-}
-
-.modern-filter-input:focus,
-.modern-filter-select:focus {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: var(--apple-blue);
-    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
-    transform: translateY(-1px);
-}
-
-.input-icon {
-    position: absolute;
-    right: 1rem;
-    color: var(--apple-label-secondary);
-    pointer-events: none;
-}
-
-.select-arrow {
-    position: absolute;
-    right: 1rem;
-    color: var(--apple-label-secondary);
-    pointer-events: none;
-    font-size: 0.8rem;
-}
-
-/* Rangos */
-.range-inputs {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-}
-
-.range-input {
-    flex: 1;
-    min-width: 0;
-}
-
-.range-separator {
-    color: var(--apple-label-secondary);
-    font-weight: 600;
-}
-
-/* Slider de Probabilidad */
-.probability-slider-container {
-    display: flex;
-    flex-direction: column;
-    gap: 0.8rem;
-}
-
-.probability-slider {
-    width: 100%;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.12);
-    border-radius: 3px;
-    outline: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.probability-slider::-webkit-slider-thumb {
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    background: linear-gradient(135deg, var(--apple-blue) 0%, #0056CC 100%);
-    border-radius: 50%;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(10, 132, 255, 0.4);
-    transition: all 0.3s ease;
-}
-
-.probability-slider::-webkit-slider-thumb:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(10, 132, 255, 0.6);
-}
-
-.probability-labels {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.8rem;
-    color: var(--apple-label-secondary);
-}
-
-/* Acciones de Filtro */
-.filter-actions-modern {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 2rem;
-    padding-top: 2rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    gap: 1rem;
-}
-
-.action-group-left,
-.action-group-right {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.results-counter {
-    font-size: 0.9rem;
-    color: var(--apple-label-secondary);
-    background: rgba(255, 255, 255, 0.06);
-    padding: 0.6rem 1rem;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.modern-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.8rem 1.2rem;
-    border-radius: 16px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    text-decoration: none;
-    border: none;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-}
-
-.modern-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-    transform: translateX(-100%);
-    transition: transform 0.6s ease;
-}
-
-.modern-btn:hover::before {
-    transform: translateX(100%);
-}
-
-.modern-btn.primary {
-    background: linear-gradient(135deg, var(--apple-blue) 0%, #0056CC 100%);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.modern-btn.primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(10, 132, 255, 0.4);
-}
-
-.modern-btn.accent {
-    background: linear-gradient(135deg, var(--apple-purple) 0%, #9F3BFF 100%);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.modern-btn.accent:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(191, 90, 242, 0.4);
-}
-
-.modern-btn.secondary {
+.filter-input {
+    padding: 0.7rem;
     background: rgba(255, 255, 255, 0.08);
-    color: var(--apple-label);
     border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    color: var(--apple-label);
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    outline: none;
 }
 
-.modern-btn.secondary:hover {
-    background: rgba(255, 255, 255, 0.15);
-    transform: translateY(-1px);
+.filter-input:focus {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--apple-blue);
+    box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2);
 }
 
-.btn-icon {
-    font-size: 1rem;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .modern-filters-container {
-        padding: 1.5rem;
-    }
-    
-    .advanced-filters-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .filter-actions-modern {
-        flex-direction: column;
-        gap: 1rem;
-    }
-    
-    .action-group-left,
-    .action-group-right {
-        width: 100%;
-        justify-content: center;
-    }
+.filter-actions {
+    display: flex;
+    gap: 0.8rem;
+    justify-content: flex-end;
+    align-items: center;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .report-filters-container {
@@ -2508,190 +2143,75 @@
                 <a href="{% url 'nueva_oportunidad' %}" class="create-btn secondary">+ Nueva Oportunidad</a>
             </div>
             {% else %}
-                        <div class="modern-filters-container" id="modernFilters">
-                            <!-- Filtros Rápidos -->
-                            <div class="quick-filters-section">
-                                <div class="section-header">
-                                    <h3 class="section-title">Filtros Rápidos</h3>
-                                    <div class="filters-counter" id="filtersCounter">0 filtros activos</div>
+                        <div class="compact-filters-container">
+                            <div class="filters-grid">
+                                <div class="filter-group">
+                                    <label class="filter-label">Búsqueda</label>
+                                    <input type="text" class="filter-input" id="filterOportunidad" placeholder="Buscar oportunidad...">
                                 </div>
-                                <div class="quick-filters-grid">
-                                    <!-- Tipo de Negociación -->
-                                    <div class="filter-pill-group">
-                                        <label class="pill-group-label">Tipo</label>
-                                        <div class="filter-pills">
-                                            <div class="filter-pill" data-filter="tipo" data-value="runrate">
-                                                <span class="pill-text">Runrate</span>
-                                                <span class="pill-icon">⚡</span>
-                                            </div>
-                                            <div class="filter-pill" data-filter="tipo" data-value="proyecto">
-                                                <span class="pill-text">Proyecto</span>
-                                                <span class="pill-icon">🏗️</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Etapas -->
-                                    <div class="filter-pill-group">
-                                        <label class="pill-group-label">Etapa</label>
-                                        <div class="filter-pills">
-                                            <div class="filter-pill" data-filter="etapa" data-value="inicial">
-                                                <span class="pill-text">En Solicitud</span>
-                                                <span class="pill-dot" style="background: #FFFFFF;"></span>
-                                            </div>
-                                            <div class="filter-pill" data-filter="etapa" data-value="cotizando">
-                                                <span class="pill-text">Cotizando</span>
-                                                <span class="pill-dot" style="background: #FFEB3B;"></span>
-                                            </div>
-                                            <div class="filter-pill" data-filter="etapa" data-value="enviada">
-                                                <span class="pill-text">Enviada</span>
-                                                <span class="pill-dot" style="background: #2196F3;"></span>
-                                            </div>
-                                            <div class="filter-pill" data-filter="etapa" data-value="seguimiento">
-                                                <span class="pill-text">Seguimiento</span>
-                                                <span class="pill-dot" style="background: #FF9800;"></span>
-                                            </div>
-                                            <div class="filter-pill" data-filter="etapa" data-value="vendido">
-                                                <span class="pill-text">Vendido</span>
-                                                <span class="pill-dot" style="background: #9C27B0;"></span>
-                                            </div>
-                                            <div class="filter-pill" data-filter="etapa" data-value="ganado">
-                                                <span class="pill-text">Ganado</span>
-                                                <span class="pill-dot" style="background: #4CAF50;"></span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Productos -->
-                                    <div class="filter-pill-group">
-                                        <label class="pill-group-label">Producto</label>
-                                        <div class="filter-pills">
-                                            <div class="filter-pill" data-filter="producto" data-value="SOFTWARE">
-                                                <span class="pill-text">Software</span>
-                                            </div>
-                                            <div class="filter-pill" data-filter="producto" data-value="ZEBRA">
-                                                <span class="pill-text">Zebra</span>
-                                            </div>
-                                            <div class="filter-pill" data-filter="producto" data-value="CISCO">
-                                                <span class="pill-text">Cisco</span>
-                                            </div>
-                                            <div class="filter-pill" data-filter="producto" data-value="PANDUIT">
-                                                <span class="pill-text">Panduit</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                
+                                <div class="filter-group">
+                                    <label class="filter-label">Tipo</label>
+                                    <select class="filter-input" id="filterTipo">
+                                        <option value="">Todos</option>
+                                        <option value="runrate">Runrate</option>
+                                        <option value="proyecto">Proyecto</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="filter-group">
+                                    <label class="filter-label">Etapa</label>
+                                    <select class="filter-input" id="filterEtapa">
+                                        <option value="">Todas</option>
+                                        <option value="solicitud">En Solicitud</option>
+                                        <option value="cotizando">Cotizando</option>
+                                        <option value="enviada">Enviada</option>
+                                        <option value="seguimiento">Seguimiento</option>
+                                        <option value="vendido">Vendido</option>
+                                        <option value="ganado">Ganado</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="filter-group">
+                                    <label class="filter-label">Cliente</label>
+                                    <select id="filterCliente" placeholder="Buscar cliente..."></select>
+                                </div>
+                                
+                                <div class="filter-group">
+                                    <label class="filter-label">Empleado</label>
+                                    <select class="filter-input" id="filterEmpleado">
+                                        <option value="">Todos</option>
+                                        {% for user in empleados %}
+                                        <option value="{{ user.id }}">{{ user.first_name }} {{ user.last_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="filter-group">
+                                    <label class="filter-label">Mes Cierre</label>
+                                    <select class="filter-input" id="filterMesCierre">
+                                        <option value="">Todos</option>
+                                        <option value="01">Enero</option>
+                                        <option value="02">Febrero</option>
+                                        <option value="03">Marzo</option>
+                                        <option value="04">Abril</option>
+                                        <option value="05">Mayo</option>
+                                        <option value="06">Junio</option>
+                                        <option value="07">Julio</option>
+                                        <option value="08">Agosto</option>
+                                        <option value="09">Septiembre</option>
+                                        <option value="10">Octubre</option>
+                                        <option value="11">Noviembre</option>
+                                        <option value="12">Diciembre</option>
+                                    </select>
                                 </div>
                             </div>
                             
-                            <!-- Filtros Avanzados -->
-                            <div class="advanced-filters-section">
-                                <div class="section-header">
-                                    <h3 class="section-title">Filtros Avanzados</h3>
-                                    <button class="collapse-btn" id="collapseAdvanced" onclick="toggleAdvancedFilters()">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <polyline points="6,9 12,15 18,9"></polyline>
-                                        </svg>
-                                    </button>
-                                </div>
-                                <div class="advanced-filters-grid" id="advancedFiltersGrid">
-                                    <div class="modern-filter-group">
-                                        <label class="modern-filter-label">Búsqueda</label>
-                                        <div class="modern-input-container">
-                                            <input type="text" class="modern-filter-input" id="filterOportunidad" placeholder="Buscar oportunidad...">
-                                            <div class="input-icon">🔍</div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="modern-filter-group">
-                                        <label class="modern-filter-label">Cliente</label>
-                                        <div class="modern-select-container">
-                                            <select class="modern-filter-select" id="filterCliente">
-                                                <option value="">Todos los clientes</option>
-                                            </select>
-                                            <div class="select-arrow">▼</div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="modern-filter-group">
-                                        <label class="modern-filter-label">Empleado</label>
-                                        <div class="modern-select-container">
-                                            <select class="modern-filter-select" id="filterEmpleado">
-                                                <option value="">Todos los empleados</option>
-                                            </select>
-                                            <div class="select-arrow">▼</div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="modern-filter-group">
-                                        <label class="modern-filter-label">Mes de Cierre</label>
-                                        <div class="modern-select-container">
-                                            <select class="modern-filter-select" id="filterMesCierre">
-                                                <option value="">Todos los meses</option>
-                                                <option value="01">Enero</option>
-                                                <option value="02">Febrero</option>
-                                                <option value="03">Marzo</option>
-                                                <option value="04">Abril</option>
-                                                <option value="05">Mayo</option>
-                                                <option value="06">Junio</option>
-                                                <option value="07">Julio</option>
-                                                <option value="08">Agosto</option>
-                                                <option value="09">Septiembre</option>
-                                                <option value="10">Octubre</option>
-                                                <option value="11">Noviembre</option>
-                                                <option value="12">Diciembre</option>
-                                            </select>
-                                            <div class="select-arrow">▼</div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="modern-filter-group">
-                                        <label class="modern-filter-label">Rango de Monto</label>
-                                        <div class="range-inputs">
-                                            <input type="number" class="modern-filter-input range-input" id="filterMontoMin" placeholder="Mín">
-                                            <span class="range-separator">—</span>
-                                            <input type="number" class="modern-filter-input range-input" id="filterMontoMax" placeholder="Máx">
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="modern-filter-group">
-                                        <label class="modern-filter-label">Probabilidad Mínima</label>
-                                        <div class="probability-slider-container">
-                                            <input type="range" class="probability-slider" id="filterProbabilidad" min="0" max="100" value="0">
-                                            <div class="probability-labels">
-                                                <span>0%</span>
-                                                <span id="probabilityValue">0%</span>
-                                                <span>100%</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Acciones de Filtro -->
-                            <div class="filter-actions-modern">
-                                <div class="action-group-left">
-                                    <button class="modern-btn secondary" onclick="clearAllFilters()">
-                                        <span class="btn-icon">🗑️</span>
-                                        Limpiar Todo
-                                    </button>
-                                    <div class="results-counter" id="resultsCounter">
-                                        Mostrando {{ oportunidades|length }} oportunidades
-                                    </div>
-                                </div>
-                                <div class="action-group-right">
-                                    <button class="modern-btn accent" onclick="applyModernFilters()">
-                                        <span class="btn-icon">✨</span>
-                                        Aplicar Filtros
-                                    </button>
-                                    <button class="modern-btn primary" onclick="generarReporteCSV()">
-                                        <span class="btn-icon">📊</span>
-                                        Generar Reporte
-                                    </button>
-                                    <a href="{% url 'todos' %}" class="modern-btn secondary">
-                                        <span class="btn-icon">✕</span>
-                                        Salir
-                                    </a>
-                                </div>
+                            <div class="filter-actions">
+                                <button class="filter-btn secondary" onclick="clearFilters()">Limpiar</button>
+                                <button class="filter-btn primary" onclick="applyFilters()">Filtrar</button>
+                                <button class="filter-btn primary" onclick="generarReporteCSV()">Generar Reporte</button>
+                                <a href="{% url 'todos' %}" class="filter-btn secondary">Salir</a>
                             </div>
                         </div>
             {% endif %}
@@ -2884,22 +2404,22 @@ if (filterEmpleadoElement) {
 }
 
 function generarReporteCSV() {
-    const oportunidad = document.getElementById('filterOportunidad').value.trim();
+    const oportunidad = document.getElementById('filterOportunidad') ? document.getElementById('filterOportunidad').value.trim() : '';
+    const tipo = document.getElementById('filterTipo') ? document.getElementById('filterTipo').value.trim() : '';
+    const etapa = document.getElementById('filterEtapa') ? document.getElementById('filterEtapa').value.trim() : '';
     const cliente = clienteSelect ? clienteSelect.getValue() : '';
-    const empleado = empleadoSelect ? empleadoSelect.getValue() : '';
-    const mesCierre = document.getElementById('filterMesCierre').value.trim();
-    const ordenMonto = document.getElementById('filterOrdenMonto').value;
-    const ordenProbabilidad = document.getElementById('filterOrdenProbabilidad').value;
+    const empleado = document.getElementById('filterEmpleado') ? document.getElementById('filterEmpleado').value : '';
+    const mesCierre = document.getElementById('filterMesCierre') ? document.getElementById('filterMesCierre').value.trim() : '';
 
     // URL para exportar CSV
     var csvPath = '{% url "exportar_oportunidades_csv" %}';
     const url = new URL(window.location.origin + csvPath);
     if (oportunidad) url.searchParams.set('filterOportunidad', oportunidad);
+    if (tipo) url.searchParams.set('filterTipo', tipo);
+    if (etapa) url.searchParams.set('filterEtapa', etapa);
     if (cliente) url.searchParams.set('filterCliente', cliente);
     if (empleado) url.searchParams.set('empleado', empleado);
     if (mesCierre) url.searchParams.set('filterMesCierre', mesCierre);
-    if (ordenMonto) url.searchParams.set('orden_monto', ordenMonto);
-    if (ordenProbabilidad) url.searchParams.set('orden_probabilidad', ordenProbabilidad);
 
     window.location.href = url.toString();
 }
@@ -2914,14 +2434,7 @@ document.addEventListener('DOMContentLoaded', function() {
         originalRows = Array.from(tableBody.getElementsByTagName('tr'));
     }
     
-    // Inicializar sistema de filtros moderno si estamos en modo reporte
-    const modernFiltersContainer = document.getElementById('modernFilters');
-    if (modernFiltersContainer) {
-        console.log('🎨 Inicializando sistema de filtros moderno...');
-        setTimeout(() => {
-            initModernFilters();
-        }, 100); // Pequeño delay para asegurar que todo esté renderizado
-    }
+    // Los filtros básicos ya funcionan con la función applyFilters() existente
     
     // ROBUST SEARCH APPROACH - Multiple selectors and event delegation
     console.log('🔍 Starting search initialization...');
@@ -3080,14 +2593,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 function clearFilters() {
-    document.getElementById('filterOportunidad').value = '';
+    // Limpiar campos básicos
+    const inputs = ['filterOportunidad', 'filterTipo', 'filterEtapa', 'filterMesCierre', 'filterEmpleado'];
+    inputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) input.value = '';
+    });
+    
+    // Limpiar selectores especiales
     if (clienteSelect) clienteSelect.clear();
     if (empleadoSelect) empleadoSelect.clear();
-    document.getElementById('filterMesCierre').value = '';
-    document.getElementById('filterOrdenMonto').value = '';
-    document.getElementById('filterOrdenProbabilidad').value = '';
     
-    applyFilters();
+    // Mostrar todas las filas
+    const tableBody = document.getElementById('tablaOportunidades');
+    tableBody.innerHTML = '';
+    originalRows.forEach(row => tableBody.appendChild(row));
+    
+    updateNoResultsMessage(originalRows.length, tableBody);
 }
 
 function applyFilters() {
@@ -3196,397 +2718,112 @@ function updateNoResultsMessage(visibleCount, tableBody) {
     }
 }
 
-// ========== SISTEMA DE FILTROS MODERNO ==========
+// ========== FILTROS SIMPLIFICADOS ==========
 
-// Estado global de filtros
-let modernFilters = {
-    tipo: [],
-    etapa: [],
-    producto: [],
-    oportunidad: '',
-    cliente: '',
-    empleado: '',
-    mesCierre: '',
-    montoMin: '',
-    montoMax: '',
-    probabilidad: 0
-};
+// Actualizar función applyFilters para incluir nuevos campos
+function applyFilters() {
+    const monthMap = {
+        'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
+        'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
+        'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12'
+    };
 
-// Inicializar sistema de filtros moderno
-function initModernFilters() {
-    console.log('🎨 Inicializando sistema de filtros moderno...');
+    const oportunidad = document.getElementById('filterOportunidad') ? document.getElementById('filterOportunidad').value.toLowerCase().trim() : '';
+    const tipo = document.getElementById('filterTipo') ? document.getElementById('filterTipo').value.toLowerCase().trim() : '';
+    const etapa = document.getElementById('filterEtapa') ? document.getElementById('filterEtapa').value.toLowerCase().trim() : '';
+    const cliente = (clienteSelect ? clienteSelect.getValue() : '').toLowerCase().trim();
+    const empleado = document.getElementById('filterEmpleado') ? document.getElementById('filterEmpleado').value : '';
+    const mesCierre = document.getElementById('filterMesCierre') ? document.getElementById('filterMesCierre').value.toLowerCase().trim() : '';
     
-    // Configurar pills de filtros rápidos
-    setupFilterPills();
-    
-    // Configurar slider de probabilidad
-    setupProbabilitySlider();
-    
-    // Configurar filtros avanzados
-    setupAdvancedFilters();
-    
-    // Configurar colapso de filtros avanzados
-    setupAdvancedCollapse();
-    
-    // Actualizar contador de filtros
-    updateFiltersCounter();
-    
-    console.log('✅ Sistema de filtros moderno iniciado');
-}
-
-// Configurar pills de filtros rápidos
-function setupFilterPills() {
-    const pills = document.querySelectorAll('.filter-pill');
-    pills.forEach(pill => {
-        pill.addEventListener('click', function() {
-            const filter = this.getAttribute('data-filter');
-            const value = this.getAttribute('data-value');
-            
-            // Toggle active state
-            this.classList.toggle('active');
-            
-            // Update filters state
-            if (this.classList.contains('active')) {
-                if (!modernFilters[filter].includes(value)) {
-                    modernFilters[filter].push(value);
-                }
-            } else {
-                modernFilters[filter] = modernFilters[filter].filter(v => v !== value);
-            }
-            
-            // Apply filters in real time
-            applyModernFilters();
-            updateFiltersCounter();
-            
-            // Animate pill
-            this.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                this.style.transform = '';
-            }, 150);
-        });
-    });
-}
-
-// Configurar slider de probabilidad
-function setupProbabilitySlider() {
-    const slider = document.getElementById('filterProbabilidad');
-    const valueDisplay = document.getElementById('probabilityValue');
-    
-    if (slider && valueDisplay) {
-        slider.addEventListener('input', function() {
-            const value = this.value;
-            valueDisplay.textContent = value + '%';
-            modernFilters.probabilidad = parseInt(value);
-            
-            // Apply filters in real time
-            applyModernFilters();
-            updateFiltersCounter();
-        });
-    }
-}
-
-// Configurar filtros avanzados
-function setupAdvancedFilters() {
-    // Input de búsqueda
-    const searchInput = document.getElementById('filterOportunidad');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            modernFilters.oportunidad = this.value;
-            applyModernFilters();
-            updateFiltersCounter();
-        });
-    }
-    
-    // Selectores
-    const selectors = [
-        { id: 'filterCliente', key: 'cliente' },
-        { id: 'filterEmpleado', key: 'empleado' },
-        { id: 'filterMesCierre', key: 'mescierre' }
-    ];
-    
-    selectors.forEach(({ id, key }) => {
-        const select = document.getElementById(id);
-        if (select) {
-            select.addEventListener('change', function() {
-                modernFilters[key] = this.value;
-                applyModernFilters();
-                updateFiltersCounter();
-            });
-        }
-    });
-    
-    // Inputs de rango de monto
-    const montoMin = document.getElementById('filterMontoMin');
-    const montoMax = document.getElementById('filterMontoMax');
-    
-    if (montoMin) {
-        montoMin.addEventListener('input', function() {
-            modernFilters.montoMin = this.value;
-            applyModernFilters();
-            updateFiltersCounter();
-        });
-    }
-    
-    if (montoMax) {
-        montoMax.addEventListener('input', function() {
-            modernFilters.montoMax = this.value;
-            applyModernFilters();
-            updateFiltersCounter();
-        });
-    }
-}
-
-// Configurar colapso de filtros avanzados
-function setupAdvancedCollapse() {
-    const collapseBtn = document.getElementById('collapseAdvanced');
-    const advancedGrid = document.getElementById('advancedFiltersGrid');
-    
-    if (collapseBtn && advancedGrid) {
-        collapseBtn.addEventListener('click', function() {
-            advancedGrid.classList.toggle('collapsed');
-            
-            // Rotar icono
-            const svg = this.querySelector('svg');
-            if (svg) {
-                svg.style.transform = advancedGrid.classList.contains('collapsed') 
-                    ? 'rotate(180deg)' : 'rotate(0deg)';
-            }
-        });
-    }
-}
-
-// Función para aplicar filtros modernos
-function applyModernFilters() {
     const tableBody = document.getElementById('tablaOportunidades');
     const rows = originalRows;
     let filteredRows = [];
-    
-    console.log('🎨 Aplicando filtros modernos:', modernFilters);
-    
+
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         const cells = row.getElementsByTagName('td');
         
-        if (cells.length < 8) continue; // Skip rows that don't have enough cells
-        
+        if (cells.length < 8) continue;
+
         let showRow = true;
         
-        // Filtro de tipo de negociación
-        if (modernFilters.tipo.length > 0) {
-            const tipoCell = cells[5]; // Columna Tipo
+        // Filtro de oportunidad
+        if (oportunidad && !cells[0].textContent.toLowerCase().includes(oportunidad)) {
+            showRow = false;
+        }
+        
+        // Filtro de cliente
+        if (cliente && !cells[1].textContent.toLowerCase().includes(cliente)) {
+            showRow = false;
+        }
+        
+        // Filtro de empleado
+        if (empleado && row.dataset.usuarioId !== empleado) {
+            showRow = false;
+        }
+
+        // Filtro de tipo
+        if (tipo && cells.length > 5) {
+            const tipoCell = cells[5];
             const tipoBadge = tipoCell.querySelector('.tipo-negociacion-badge');
             if (tipoBadge) {
                 const tipoText = tipoBadge.textContent.toLowerCase().trim();
-                const tipoMatch = modernFilters.tipo.some(tipo => {
-                    if (tipo === 'runrate') return tipoText.includes('runrate');
-                    if (tipo === 'proyecto') return tipoText.includes('proyecto');
-                    return false;
-                });
-                if (!tipoMatch) showRow = false;
+                if (tipo === 'runrate' && !tipoText.includes('runrate')) showRow = false;
+                if (tipo === 'proyecto' && !tipoText.includes('proyecto')) showRow = false;
             }
         }
-        
+
         // Filtro de etapa
-        if (modernFilters.etapa.length > 0) {
-            const etapaCell = cells[6]; // Columna Etapa
+        if (etapa && cells.length > 6) {
+            const etapaCell = cells[6];
             const etapaBadge = etapaCell.querySelector('.etapa-badge');
             if (etapaBadge) {
                 const etapaText = etapaBadge.textContent.toLowerCase().trim();
-                const etapaMatch = modernFilters.etapa.some(etapa => {
-                    switch(etapa) {
-                        case 'inicial': return etapaText.includes('solicitud') || etapaText.includes('inicial');
-                        case 'cotizando': return etapaText.includes('cotizando');
-                        case 'enviada': return etapaText.includes('enviada');
-                        case 'seguimiento': return etapaText.includes('seguimiento');
-                        case 'vendido': return etapaText.includes('vendido');
-                        case 'ganado': return etapaText.includes('ganado');
-                        default: return false;
-                    }
-                });
+                let etapaMatch = false;
+                
+                switch(etapa) {
+                    case 'solicitud':
+                        etapaMatch = etapaText.includes('solicitud') || etapaText.includes('en solicitud');
+                        break;
+                    case 'cotizando':
+                        etapaMatch = etapaText.includes('cotizando');
+                        break;
+                    case 'enviada':
+                        etapaMatch = etapaText.includes('enviada');
+                        break;
+                    case 'seguimiento':
+                        etapaMatch = etapaText.includes('seguimiento');
+                        break;
+                    case 'vendido':
+                        etapaMatch = etapaText.includes('vendido');
+                        break;
+                    case 'ganado':
+                        etapaMatch = etapaText.includes('ganado');
+                        break;
+                }
+                
                 if (!etapaMatch) showRow = false;
             }
         }
         
-        // Filtro de producto
-        if (modernFilters.producto.length > 0) {
-            const productoCell = cells[3]; // Columna Producto
-            const productoText = productoCell.textContent.toLowerCase().trim();
-            const productoMatch = modernFilters.producto.some(producto => 
-                productoText.includes(producto.toLowerCase())
-            );
-            if (!productoMatch) showRow = false;
-        }
-        
-        // Filtro de búsqueda en oportunidad
-        if (modernFilters.oportunidad && modernFilters.oportunidad.trim()) {
-            const oportunidadText = cells[0].textContent.toLowerCase();
-            if (!oportunidadText.includes(modernFilters.oportunidad.toLowerCase())) {
+        // Filtro de mes de cierre
+        if (mesCierre && cells.length > 4) {
+            const mesCierreCell = cells[4].textContent.toLowerCase().trim();
+            if (monthMap[mesCierreCell] !== mesCierre) {
                 showRow = false;
             }
         }
-        
-        // Filtro de cliente
-        if (modernFilters.cliente && modernFilters.cliente.trim()) {
-            const clienteText = cells[1].textContent.toLowerCase();
-            if (!clienteText.includes(modernFilters.cliente.toLowerCase())) {
-                showRow = false;
-            }
-        }
-        
-        // Filtro de empleado
-        if (modernFilters.empleado && modernFilters.empleado.trim()) {
-            const empleadoText = cells[2].textContent.toLowerCase();
-            if (!empleadoText.includes(modernFilters.empleado.toLowerCase())) {
-                showRow = false;
-            }
-        }
-        
-        // Filtro de monto
-        const montoText = cells[7].textContent.replace('$', '').replace(/,/g, '').trim();
-        const monto = parseFloat(montoText) || 0;
-        
-        if (modernFilters.montoMin && modernFilters.montoMin.trim()) {
-            const minMonto = parseFloat(modernFilters.montoMin);
-            if (monto < minMonto) showRow = false;
-        }
-        
-        if (modernFilters.montoMax && modernFilters.montoMax.trim()) {
-            const maxMonto = parseFloat(modernFilters.montoMax);
-            if (monto > maxMonto) showRow = false;
-        }
-        
-        // Filtro de probabilidad
-        if (modernFilters.probabilidad > 0) {
-            const probCell = cells[8]; // Columna Probabilidad
-            const probSpan = probCell.querySelector('span');
-            if (probSpan) {
-                const prob = parseFloat(probSpan.textContent.replace('%', '')) || 0;
-                if (prob < modernFilters.probabilidad) showRow = false;
-            }
-        }
-        
+
         if (showRow) {
             filteredRows.push(row);
         }
     }
-    
+
     // Re-append filtered rows to the table body
     tableBody.innerHTML = '';
     filteredRows.forEach(row => tableBody.appendChild(row));
     
-    // Update results counter
-    updateResultsCounter(filteredRows.length);
     updateNoResultsMessage(filteredRows.length, tableBody);
-    
-    console.log(`🎨 Filtros aplicados: ${filteredRows.length}/${rows.length} resultados`);
-}
-
-// Actualizar contador de filtros activos
-function updateFiltersCounter() {
-    const counter = document.getElementById('filtersCounter');
-    if (!counter) return;
-    
-    let activeCount = 0;
-    
-    // Contar pills activos
-    activeCount += modernFilters.tipo.length;
-    activeCount += modernFilters.etapa.length;
-    activeCount += modernFilters.producto.length;
-    
-    // Contar filtros avanzados
-    if (modernFilters.oportunidad) activeCount++;
-    if (modernFilters.cliente) activeCount++;
-    if (modernFilters.empleado) activeCount++;
-    if (modernFilters.mescierre) activeCount++;
-    if (modernFilters.montoMin) activeCount++;
-    if (modernFilters.montoMax) activeCount++;
-    if (modernFilters.probabilidad > 0) activeCount++;
-    
-    counter.textContent = `${activeCount} filtro${activeCount !== 1 ? 's' : ''} activo${activeCount !== 1 ? 's' : ''}`;
-    
-    // Animar contador si hay cambios
-    if (activeCount > 0) {
-        counter.style.background = 'rgba(10, 132, 255, 0.2)';
-        counter.style.borderColor = 'rgba(10, 132, 255, 0.3)';
-        counter.style.color = 'var(--apple-blue)';
-    } else {
-        counter.style.background = 'rgba(255, 255, 255, 0.08)';
-        counter.style.borderColor = 'rgba(255, 255, 255, 0.12)';
-        counter.style.color = 'var(--apple-label-secondary)';
-    }
-}
-
-// Actualizar contador de resultados
-function updateResultsCounter(count) {
-    const counter = document.getElementById('resultsCounter');
-    if (counter) {
-        counter.textContent = `Mostrando ${count} oportunidad${count !== 1 ? 'es' : ''}`;
-    }
-}
-
-// Limpiar todos los filtros
-function clearAllFilters() {
-    console.log('🧹 Limpiando todos los filtros...');
-    
-    // Reset state
-    modernFilters = {
-        tipo: [],
-        etapa: [],
-        producto: [],
-        oportunidad: '',
-        cliente: '',
-        empleado: '',
-        mescierre: '',
-        montoMin: '',
-        montoMax: '',
-        probabilidad: 0
-    };
-    
-    // Clear UI
-    document.querySelectorAll('.filter-pill.active').forEach(pill => {
-        pill.classList.remove('active');
-    });
-    
-    // Clear inputs
-    const inputs = ['filterOportunidad', 'filterCliente', 'filterEmpleado', 'filterMesCierre', 'filterMontoMin', 'filterMontoMax'];
-    inputs.forEach(id => {
-        const input = document.getElementById(id);
-        if (input) input.value = '';
-    });
-    
-    // Reset probability slider
-    const probSlider = document.getElementById('filterProbabilidad');
-    const probValue = document.getElementById('probabilityValue');
-    if (probSlider) probSlider.value = 0;
-    if (probValue) probValue.textContent = '0%';
-    
-    // Show all rows
-    const tableBody = document.getElementById('tablaOportunidades');
-    tableBody.innerHTML = '';
-    originalRows.forEach(row => tableBody.appendChild(row));
-    
-    // Update counters
-    updateFiltersCounter();
-    updateResultsCounter(originalRows.length);
-    updateNoResultsMessage(originalRows.length, tableBody);
-    
-    console.log('✅ Filtros limpiados');
-}
-
-// Toggle filtros avanzados
-function toggleAdvancedFilters() {
-    const grid = document.getElementById('advancedFiltersGrid');
-    const btn = document.getElementById('collapseAdvanced');
-    
-    if (grid && btn) {
-        grid.classList.toggle('collapsed');
-        
-        const svg = btn.querySelector('svg');
-        if (svg) {
-            svg.style.transform = grid.classList.contains('collapsed') 
-                ? 'rotate(180deg)' : 'rotate(0deg)';
-        }
-    }
 }
 
 // Función para expandir/contraer etapas con lógica inteligente

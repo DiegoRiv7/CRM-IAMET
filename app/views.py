@@ -2151,6 +2151,10 @@ def todos (request):
             page_obj = paginator.page(paginator.num_pages)
         context_items = page_obj
 
+    # Obtener lista de empleados para el filtro
+    from django.contrib.auth.models import User
+    empleados = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+    
     context = {
         "items": context_items,
         "page_obj": page_obj,
@@ -2158,6 +2162,7 @@ def todos (request):
         "is_supervisor": is_supervisor(request.user),
         "search_query": search_query,
         "reporte_activo": reporte_activo,
+        "empleados": empleados,
     }
     return render (request, "todos.html", context)
 

@@ -264,34 +264,6 @@
         }
         
         /* Close Button */
-        .close-btn {
-            position: fixed;
-            top: 30px;
-            right: 30px;
-            width: 44px;
-            height: 44px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            z-index: 1000;
-        }
-        
-        .close-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: scale(1.1);
-        }
-        
-        .close-btn svg {
-            width: 20px;
-            height: 20px;
-            color: var(--apple-label);
-        }
         
         /* Responsive */
         @media (max-width: 768px) {
@@ -3404,96 +3376,111 @@
             showNotification(`Tema cambiado a ${themeNames[theme] || theme}. Se aplicará al salir.`, 'success');
         }
 
-        // Dock type functionality with animation
-        let previousDockType = 'normal'; // Variable para almacenar el tipo anterior
-        
-        function setDockTypeWithAnimation(type) {
-            // Obtener el render del dock
+        function setDockTypeWithAnimation(type, animate = true) {
+            console.log('setDockTypeWithAnimation called with type:', type, 'and animate:', animate);
             const dockPreview = document.getElementById('dockPreview');
-            const dockPreviewContainer = document.getElementById('dockPreviewContainer');
-            const dockPreviewNormal = document.getElementById('dockPreviewNormal');
-            const dockPreviewTransparent = document.getElementById('dockPreviewTransparent');
-            const dockPreviewCompact = document.getElementById('dockPreviewCompact');
-            
-            // Quitar iluminación de todas las opciones de dock
-            document.querySelectorAll('.dock-type-option').forEach(option => {
-                option.classList.remove('active');
-                
-                // Restaurar el color original del círculo (blanco para todos)
-                const previewCircle = option.querySelector('.dock-type-preview');
-                if (previewCircle) {
-                    if (option.id === 'normal-dock-option') {
-                        previewCircle.style.background = 'var(--apple-blue)';
-                        previewCircle.style.boxShadow = '0 0 0 3px rgba(0, 122, 255, 0.2)';
-                    } else if (option.id === 'transparent-dock-option') {
-                        previewCircle.style.background = 'rgba(255, 255, 255, 0.8)';
-                        previewCircle.style.boxShadow = '0 0 0 3px rgba(255, 255, 255, 0.2)';
-                    } else if (option.id === 'compact-dock-option') {
-                        previewCircle.style.background = 'var(--apple-label-secondary)';
-                        previewCircle.style.boxShadow = '0 0 0 3px rgba(235, 235, 245, 0.2)';
-                    }
-                }
-            });
-            
-            // Aplicar iluminación azul al anterior
-            if (previousDockType !== type) {
-                const previousOption = document.getElementById(`${previousDockType}-dock-option`);
-                if (previousOption) {
-                    const previousPreviewCircle = previousOption.querySelector('.dock-type-preview');
-                    if (previousPreviewCircle) {
-                        previousPreviewCircle.style.background = 'rgba(0, 122, 255, 0.7)';
-                        previousPreviewCircle.style.boxShadow = '0 0 0 3px rgba(0, 122, 255, 0.4)';
-                    }
-                }
+            if (!dockPreview) {
+                console.error('dockPreview element not found!');
+                return;
             }
-            
-            // Añadir iluminación azul a la opción de dock seleccionada
-            const selectedOption = document.getElementById(`${type}-dock-option`);
-            selectedOption.classList.add('active');
-            
-            // Aplicar iluminación azul al seleccionado
-            const selectedPreviewCircle = selectedOption.querySelector('.dock-type-preview');
-            if (selectedPreviewCircle) {
-                selectedPreviewCircle.style.background = 'var(--apple-blue)';
-                selectedPreviewCircle.style.boxShadow = '0 0 0 3px rgba(0, 122, 255, 0.5), 0 0 15px rgba(0, 122, 255, 0.7)';
-            }
-            
-            // Actualizar el tipo anterior
-            previousDockType = type;
-            
-            // Animación de zoom y fade out
-            dockPreview.style.transform = 'scale(0.95)';
-            dockPreview.style.opacity = '0.7';
-            dockPreview.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-            
-            // Después de la animación de salida, cambiar el tipo de dock y hacer animación de entrada
-            setTimeout(() => {
-                // Ocultar todos los tipos de dock
-                dockPreviewNormal.style.display = 'none';
-                dockPreviewTransparent.style.display = 'none';
-                dockPreviewCompact.style.display = 'none';
-                
-                // Mostrar el tipo de dock seleccionado
-                if (type === 'normal') {
-                    dockPreviewNormal.style.display = 'flex';
-                } else if (type === 'transparent') {
-                    dockPreviewTransparent.style.display = 'flex';
-                } else if (type === 'compact') {
-                    dockPreviewCompact.style.display = 'flex';
+
+            const generateDock = (isTransparent, isCompact) => {
+                console.log('generateDock called with isTransparent:', isTransparent, 'isCompact:', isCompact);
+                const dock = document.createElement('div');
+                dock.className = 'macos-dock';
+                dock.style.display = 'flex';
+                dock.style.gap = '8px';
+                dock.style.padding = '10px';
+                dock.style.borderRadius = '16px';
+                dock.style.transition = 'all 0.3s ease';
+
+                if (isCompact) {
+                    dock.style.borderRadius = '50%';
+                    dock.style.width = '60px';
+                    dock.style.height = '60px';
+                    dock.style.justifyContent = 'center';
+                    dock.style.alignItems = 'center';
+                    const compactIcon = document.createElement('div');
+                    compactIcon.className = 'dock-item';
+                    compactIcon.style.width = '48px';
+                    compactIcon.style.height = '48px';
+                    compactIcon.style.borderRadius = '50%';
+                    compactIcon.style.display = 'flex';
+                    compactIcon.style.alignItems = 'center';
+                    compactIcon.style.justifyContent = 'center';
+                    compactIcon.style.background = 'rgba(0, 122, 255, 0.8)';
+                    compactIcon.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9,22 9,12 15,12 15,22"></polyline></svg>`;
+                    dock.appendChild(compactIcon);
+                } else {
+                    dock.style.padding = '10px 20px';
+                    defaultDockOrder.slice(0, 5).forEach(item => {
+                        if (item.id === 'separator') return;
+                        const iconElement = document.createElement('div');
+                        iconElement.className = 'dock-item';
+                        iconElement.style.width = '48px';
+                        iconElement.style.height = '48px';
+                        iconElement.style.borderRadius = '12px';
+                        iconElement.style.display = 'flex';
+                        iconElement.style.alignItems = 'center';
+                        iconElement.style.justifyContent = 'center';
+                        iconElement.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="${item.icon}"></path></svg>`;
+                        iconElement.style.background = isTransparent ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 122, 255, 0.8)';
+                        dock.appendChild(iconElement);
+                    });
                 }
-                
-                // Animación de zoom y fade in
-                dockPreview.style.transform = 'scale(1.05)';
-                dockPreview.style.opacity = '1';
-                
-                // Volver al estado normal
+
+                if (isTransparent) {
+                    dock.style.background = 'rgba(255, 255, 255, 0.01)';
+                    dock.style.backdropFilter = 'blur(40px) saturate(500%) contrast(180%) brightness(140%)';
+                    dock.style.webkitBackdropFilter = 'blur(40px) saturate(500%) contrast(180%) brightness(140%)';
+                    dock.style.border = '1px solid rgba(255, 255, 255, 0.05)';
+                } else {
+                    dock.style.background = 'rgba(29, 29, 31, 0.85)';
+                    dock.style.border = '1px solid rgba(255, 255, 255, 0.15)';
+                }
+                console.log('Generated dock:', dock);
+                return dock;
+            };
+
+            if (animate) {
+                dockPreview.style.transform = 'scale(0.9)';
+                dockPreview.style.opacity = '0';
                 setTimeout(() => {
+                    dockPreview.innerHTML = '';
+                    let newDock;
+                    if (type === 'normal') newDock = generateDock(false, false);
+                    else if (type === 'transparent') newDock = generateDock(true, false);
+                    else if (type === 'compact') newDock = generateDock(false, true);
+                    dockPreview.appendChild(newDock);
+                    console.log('Appended new dock to preview:', newDock);
                     dockPreview.style.transform = 'scale(1)';
+                    dockPreview.style.opacity = '1';
                 }, 200);
-            }, 300);
-            
-            // Aplicar el tipo de dock al dock actual de la página
+            } else {
+                dockPreview.innerHTML = '';
+                let newDock;
+                if (type === 'normal') newDock = generateDock(false, false);
+                else if (type === 'transparent') newDock = generateDock(true, false);
+                else if (type === 'compact') newDock = generateDock(false, true);
+                dockPreview.appendChild(newDock);
+                console.log('Appended new dock to preview (no animation):', newDock);
+            }
+
             setDockType(type);
+        }
+
+        function openDesignSettings() {
+            showModal('designModal');
+            
+            setTimeout(() => {
+                const savedTheme = localStorage.getItem('theme') || 'dark';
+                applyTheme(savedTheme);
+                initializeActiveTheme(savedTheme);
+                initializeThemeDots(savedTheme);
+
+                const savedDockType = localStorage.getItem('dockType') || 'normal';
+                setDockTypeWithAnimation(savedDockType, false);
+            }, 100);
         }
 
         // Dock type functionality
@@ -3511,7 +3498,7 @@
             });
             
             // Find and activate the selected dock type option
-            const selectedOption = document.querySelector(`.dock-type-option[data-type="${type}"]`);
+            const selectedOption = document.querySelector(`.dock-type-option[id*="${type}"]`);
             if (selectedOption) {
                 selectedOption.classList.add('active');
                 console.log('Added active class to dock type option:', selectedOption);
@@ -3706,257 +3693,6 @@
                         else if (tooltipText === 'Notificaciones') itemId = 'notifications';
                         else if (tooltipText === 'Asistente Virtual') itemId = 'assistant';
                         else if (tooltipText === 'Cerrar Sesión' || tooltipText === 'Logout') itemId = 'logout';
-                    }
-                    
-                    if (itemId) {
-                        if (seenIds.has(itemId)) {
-                            console.log(`Removiendo duplicado: ${itemId}`);
-                            item.remove();
-                        } else {
-                            seenIds.add(itemId);
-                        }
-                    }
-                });
-                
-                console.log(`Dock limpiado. IDs únicos: ${Array.from(seenIds).join(', ')}`);
-            });
-        }
-
-        // Define default dock structure based on user permissions
-        const isSuper = '{{ user.is_superuser }}' === 'True';
-        
-        const defaultDockOrder = [
-            { id: 'home', name: 'Home', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
-            { id: 'todos', name: 'Oportunidades', icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' },
-            ...(isSuper ? [
-                { id: 'cotizaciones', name: 'Cotizaciones', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
-                { id: 'cotizaciones_automaticas', name: 'Cotizaciones Automáticas', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
-                { id: 'gestion_productos', name: 'Gestión de Productos', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M9 8l3-3 3 3' },
-                { id: 'gestion_catalogo_volumetria', name: 'Catálogo Volumetría', icon: 'M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z' },
-                { id: 'tareas_proyectos', name: 'Tareas y Proyectos', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2V7zm0 0a2 2 0 012-2h6l2 2h6a2 2 0 012 2v2H3V7z' },
-                { id: 'configuracion_avanzada', name: 'Configuración', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z' },
-                { id: 'incrementa', name: 'Incrementa', icon: 'M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z' },
-                { id: 'admin', name: 'Admin', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
-                { id: 'separator' }
-            ] : []),
-            { id: 'usuario', name: 'Usuario', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
-            { id: 'notifications', name: 'Notificaciones', icon: 'M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
-            ...(isSuper ? [{ id: 'assistant', name: 'Asistente Virtual', icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' }] : []),
-            { id: 'logout', name: 'Cerrar Sesión', icon: 'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1' }
-        ];
-
-        function initializeDockEditor() {
-            // Get current dock order from localStorage or use default
-            const savedOrder = localStorage.getItem('dockOrder');
-            if (savedOrder) {
-                currentDockOrder = JSON.parse(savedOrder);
-            } else {
-                currentDockOrder = [...defaultDockOrder];
-            }
-            
-            // Store original order
-            originalDockOrder = [...currentDockOrder];
-            
-            // Render dock editor
-            renderDockEditor();
-        }
-
-        function renderDockEditor() {
-            const dockEditor = document.getElementById('editable-dock');
-            if (!dockEditor) return;
-            
-            dockEditor.innerHTML = '';
-            
-            currentDockOrder.forEach((item, index) => {
-                if (item.id === 'separator') {
-                    const separator = document.createElement('div');
-                    separator.className = 'dock-editor-separator';
-                    separator.dataset.index = index;
-                    dockEditor.appendChild(separator);
-                } else {
-                    const iconElement = document.createElement('div');
-                    iconElement.className = 'dock-editor-item';
-                    iconElement.dataset.iconId = item.id;
-                    iconElement.dataset.index = index;
-                    iconElement.draggable = true;
-                    iconElement.title = item.name;
-                    
-                    iconElement.innerHTML = `
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${item.icon}"></path>
-                        </svg>
-                    `;
-                    
-                    // Add event listeners
-                    iconElement.addEventListener('click', () => selectIcon(iconElement));
-                    iconElement.addEventListener('dragstart', handleDragStart);
-                    iconElement.addEventListener('dragover', handleDragOver);
-                    iconElement.addEventListener('drop', handleDrop);
-                    iconElement.addEventListener('dragend', handleDragEnd);
-                    
-                    dockEditor.appendChild(iconElement);
-                }
-            });
-        }
-
-        function selectIcon(iconElement) {
-            // Deselect previous
-            if (selectedIcon) {
-                selectedIcon.classList.remove('selected');
-            }
-            
-            // Select new
-            selectedIcon = iconElement;
-            iconElement.classList.add('selected');
-            iconElement.style.animation = 'iconSelect 0.3s ease forwards';
-        }
-
-        function handleDragStart(e) {
-            isDockDragging = true;
-            e.dataTransfer.setData('text/plain', e.target.dataset.index);
-            e.target.classList.add('dragging');
-        }
-
-        function handleDragOver(e) {
-            e.preventDefault();
-            if (isDockDragging) {
-                e.target.classList.add('drop-target');
-            }
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            
-            const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
-            const targetIndex = parseInt(e.target.dataset.index);
-            
-            if (draggedIndex !== targetIndex) {
-                // Reorder array
-                const draggedItem = currentDockOrder[draggedIndex];
-                currentDockOrder.splice(draggedIndex, 1);
-                currentDockOrder.splice(targetIndex, 0, draggedItem);
-                
-                // Re-render
-                renderDockEditor();
-                
-                // Enable confirm button
-                document.querySelector('.btn-confirm').disabled = false;
-            }
-            
-            // Clean up
-            document.querySelectorAll('.drop-target').forEach(el => {
-                el.classList.remove('drop-target');
-            });
-        }
-
-        function handleDragEnd(e) {
-            isDockDragging = false;
-            e.target.classList.remove('dragging');
-            document.querySelectorAll('.drop-target').forEach(el => {
-                el.classList.remove('drop-target');
-            });
-        }
-
-        function resetDockOrder() {
-            currentDockOrder = [...originalDockOrder];
-            renderDockEditor();
-            selectedIcon = null;
-            document.querySelector('.btn-confirm').disabled = false;
-            showNotification('Orden del dock restablecido', 'info');
-        }
-
-        function saveDockOrder() {
-            // Save to localStorage
-            localStorage.setItem('dockOrder', JSON.stringify(currentDockOrder));
-            
-            // Update original order
-            originalDockOrder = [...currentDockOrder];
-            
-            // Disable confirm button
-            document.querySelector('.btn-confirm').disabled = true;
-            
-            // Apply changes to actual dock
-            applyDockOrder();
-            
-            showNotification('Orden del dock guardado correctamente', 'success');
-        }
-
-        function applyDockOrder() {
-            console.log('Aplicando nuevo orden del dock:', currentDockOrder);
-            
-            // Buscar solo los docks visibles en la página
-            const docks = document.querySelectorAll('.macos-dock[style*="opacity: 1"]');
-            console.log(`Aplicando orden a ${docks.length} docks visibles`);
-            
-            // Evitar ejecución múltiple
-            if (window.dockOrderApplying) {
-                console.log('ApplyDockOrder ya está ejecutándose, saltando...');
-                return;
-            }
-            
-            window.dockOrderApplying = true;
-            
-            docks.forEach((dock, dockIndex) => {
-                console.log(`Procesando dock ${dockIndex + 1} de ${docks.length}`);
-                
-                // Solo aplicar si el dock tiene elementos
-                if (dock.children.length === 0) {
-                    console.log(`Dock ${dockIndex + 1} está vacío, saltando...`);
-                    return;
-                }
-                // Obtener todos los items actuales del dock
-                const currentItems = Array.from(dock.querySelectorAll('.dock-item, .dock-separator'));
-                const itemsMap = new Map();
-                
-                console.log(`Procesando dock con ${currentItems.length} elementos`);
-                
-                // Crear un mapa de items existentes usando múltiples métodos de identificación
-                currentItems.forEach((item, index) => {
-                    let itemId = '';
-                    
-                    // Método 1: Por clases específicas
-                    if (item.classList.contains('home-icon')) {
-                        itemId = 'home';
-                    } else if (item.classList.contains('dock-separator')) {
-                        itemId = 'separator';
-                    } else {
-                        // Método 2: Por el texto del tooltip
-                        const tooltip = item.querySelector('.tooltip');
-                        const tooltipText = tooltip ? tooltip.textContent.trim() : '';
-                        
-                        // Método 3: Por el href del enlace
-                        const href = item.getAttribute('href') || '';
-                        
-                        // Mapeo mejorado con múltiples criterios
-                        if (tooltipText === 'Oportunidades' || href.includes('todos')) {
-                            itemId = 'todos';
-                        } else if (tooltipText === 'Cotizaciones' && !tooltipText.includes('Automáticas')) {
-                            itemId = 'cotizaciones';
-                        } else if (tooltipText === 'Cotizaciones Automáticas' || href.includes('cotizaciones_automaticas')) {
-                            itemId = 'cotizaciones_automaticas';
-                        } else if (tooltipText === 'Gestión de Productos' || href.includes('gestion_productos')) {
-                            itemId = 'gestion_productos';
-                        } else if (tooltipText === 'Catálogo Volumetría' || href.includes('gestion_catalogo_volumetria')) {
-                            itemId = 'gestion_catalogo_volumetria';
-                        } else if (tooltipText === 'Tareas y Proyectos' || href.includes('tareas_proyectos')) {
-                            itemId = 'tareas_proyectos';
-                        } else if (tooltipText === 'Configuración' || href.includes('configuracion_avanzada')) {
-                            itemId = 'configuracion_avanzada';
-                        } else if (tooltipText === 'Incrementa' || href.includes('/incrementa/')) {
-                            itemId = 'incrementa';
-                        } else if (tooltipText === 'Admin' || href.includes('/admin/')) {
-                            itemId = 'admin';
-                        } else if (tooltipText === 'Usuario' || tooltipText === 'Profile' || href.includes('user_profile')) {
-                            itemId = 'usuario';
-                        } else if (tooltipText === 'Notificaciones' || tooltipText.includes('Notificaciones')) {
-                            itemId = 'notifications';
-                        } else if (tooltipText === 'Asistente Virtual' || tooltipText.includes('Asistente')) {
-                            itemId = 'assistant';
-                        } else if (tooltipText === 'Cerrar Sesión' || tooltipText === 'Logout' || href.includes('logout')) {
-                            itemId = 'logout';
-                        }
-                        
-                        console.log(`Elemento ${index}: tooltip="${tooltipText}", href="${href}", itemId="${itemId}"`);
                     }
                     
                     if (itemId && !itemsMap.has(itemId)) {
