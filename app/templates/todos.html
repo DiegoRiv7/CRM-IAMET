@@ -2422,7 +2422,10 @@ if (filterClienteElement) {
         options: clientesOptions,
         render: {
             dropdown: function() {
-                return '<div class="ts-dropdown" style="background: rgba(28, 28, 30, 0.98) !important; border: 1px solid rgba(255, 255, 255, 0.25) !important; border-radius: 12px !important; backdrop-filter: blur(20px) !important; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;"></div>';
+                return '<div class="ts-dropdown" style="background: rgb(28, 28, 30) !important; border: 1px solid rgba(255, 255, 255, 0.4) !important; border-radius: 12px !important; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8) !important;"></div>';
+            },
+            option: function(data, escape) {
+                return '<div class="option" style="color: rgb(255, 255, 255) !important; background: transparent !important; padding: 12px 16px !important;">' + escape(data.text) + '</div>';
             }
         }
     });
