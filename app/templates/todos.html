@@ -2254,14 +2254,21 @@ var clientesOptions = [
 {% endfor %}
 
 <script>
-const clienteSelect = new TomSelect('#filterCliente',{
-    create: true,
-    sortField: {
-        field: "text",
-        direction: "asc"
-    },
-    options: clientesOptions
-});
+// Solo inicializar TomSelect si el elemento existe (modo reporte)
+const filterClienteElement = document.getElementById('filterCliente');
+let clienteSelect = null;
+if (filterClienteElement) {
+    clienteSelect = new TomSelect('#filterCliente',{
+        create: true,
+        sortField: {
+            field: "text",
+            direction: "asc"
+        },
+        options: clientesOptions
+    });
+} else {
+    console.log('🔍 filterCliente not found, skipping TomSelect initialization');
+}
 
 </script>
 
@@ -2283,19 +2290,26 @@ empleadosOptions.push({
 {% endfor %}
 
 <script>
-const empleadoSelect = new TomSelect('#filterEmpleado',{
-    create: true,
-    sortField: {
-        field: "text",
-        direction: "asc"
-    },
-    options: empleadosOptions
-});
+// Solo inicializar TomSelect si el elemento existe (modo reporte)
+const filterEmpleadoElement = document.getElementById('filterEmpleado');
+let empleadoSelect = null;
+if (filterEmpleadoElement) {
+    empleadoSelect = new TomSelect('#filterEmpleado',{
+        create: true,
+        sortField: {
+            field: "text",
+            direction: "asc"
+        },
+        options: empleadosOptions
+    });
+} else {
+    console.log('🔍 filterEmpleado not found, skipping TomSelect initialization');
+}
 
 function generarReporteCSV() {
     const oportunidad = document.getElementById('filterOportunidad').value.trim();
-    const cliente = clienteSelect.getValue();
-    const empleado = empleadoSelect.getValue();
+    const cliente = clienteSelect ? clienteSelect.getValue() : '';
+    const empleado = empleadoSelect ? empleadoSelect.getValue() : '';
     const mesCierre = document.getElementById('filterMesCierre').value.trim();
     const ordenMonto = document.getElementById('filterOrdenMonto').value;
     const ordenProbabilidad = document.getElementById('filterOrdenProbabilidad').value;
@@ -2316,6 +2330,8 @@ function generarReporteCSV() {
 let originalRows = [];
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 DOMContentLoaded fired - todos.html script starting');
+    
     const tableBody = document.getElementById('tablaOportunidades');
     if (tableBody) {
         originalRows = Array.from(tableBody.getElementsByTagName('tr'));
@@ -2479,8 +2495,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function clearFilters() {
     document.getElementById('filterOportunidad').value = '';
-    clienteSelect.clear();
-    empleadoSelect.clear();
+    if (clienteSelect) clienteSelect.clear();
+    if (empleadoSelect) empleadoSelect.clear();
     document.getElementById('filterMesCierre').value = '';
     document.getElementById('filterOrdenMonto').value = '';
     document.getElementById('filterOrdenProbabilidad').value = '';
@@ -2505,8 +2521,8 @@ function applyFilters() {
     };
 
     const oportunidad = document.getElementById('filterOportunidad').value.toLowerCase().trim();
-    const cliente = clienteSelect.getValue().toLowerCase().trim();
-    const empleado = empleadoSelect.getValue();
+    const cliente = (clienteSelect ? clienteSelect.getValue() : '').toLowerCase().trim();
+    const empleado = empleadoSelect ? empleadoSelect.getValue() : '';
     const mesCierre = document.getElementById('filterMesCierre').value.toLowerCase().trim();
     const ordenMonto = document.getElementById('filterOrdenMonto').value;
     const ordenProbabilidad = document.getElementById('filterOrdenProbabilidad').value;
@@ -2624,5 +2640,40 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// MANUAL BACKUP - If all else fails, force the search functionality
+console.log('🔄 Setting up manual backup search...');
+setTimeout(() => {
+    // Find ANY search-like elements and make them work
+    const manualSearchIcons = document.querySelectorAll('.search-icon-container, #search-icon');
+    console.log('🔄 Manual backup found icons:', manualSearchIcons.length);
+    
+    manualSearchIcons.forEach((icon, index) => {
+        if (icon && !icon.hasAttribute('data-manual-click-added')) {
+            console.log(`🔄 Adding manual click to icon ${index}`);
+            icon.setAttribute('data-manual-click-added', 'true');
+            
+            icon.addEventListener('click', function(e) {
+                console.log('🔄 MANUAL BACKUP CLICK!');
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const widget = document.querySelector('#search-widget, .search-widget-container');
+                const input = document.querySelector('#searchOportunidad, .search-input');
+                
+                if (widget && input) {
+                    console.log('🔄 Manual: Expanding search');
+                    widget.classList.add('expanded');
+                    setTimeout(() => {
+                        input.focus();
+                        console.log('🔄 Manual: Input focused');
+                    }, 100);
+                } else {
+                    console.log('🔄 Manual: Elements not found', {widget: !!widget, input: !!input});
+                }
+            });
+        }
+    });
+}, 1000);
 </script>
 {% endblock %}
