@@ -927,7 +927,7 @@ def get_etapa_from_bitrix_stage(stage_id, tipo_negociacion):
     
     # Mapeo para Runrate
     RUNRATE_STAGES = {
-        "NEW": ("Inicial", "Solicitud de Cotizacion", "#FFFFFF"),
+        "NEW": ("En Solicitud", "Solicitud de Cotizacion", "#FFFFFF"),
         "UC_YUQKW6": ("Cotizando", "Cotizando", "#FFEB3B"),
         "UC_H8L1Z8": ("Enviada", "Cotización Enviada", "#2196F3"),
         "UC_RFMQC1": ("Seguimiento", "Seguimiento de Cotización", "#FF9800"),

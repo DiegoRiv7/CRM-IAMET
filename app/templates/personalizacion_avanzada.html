@@ -2803,47 +2803,46 @@
             compactIcon.style.background = 'rgba(0, 122, 255, 0.8)';
             compactIcon.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9,22 9,12 15,12 15,22"></polyline></svg>`;
             dockPreviewCompact.appendChild(compactIcon);
+
+            // Set initial visibility
+            const currentDockType = localStorage.getItem('dockType') || 'normal';
+            setDockTypeWithAnimation(currentDockType, false); // false to prevent animation on init
         }
 
-        function setDockTypeWithAnimation(type) {
-            // Obtener el render del dock
-            const dockPreview = document.getElementById('dockPreview');
+        function setDockTypeWithAnimation(type, animate = true) {
             const dockPreviewNormal = document.getElementById('dockPreviewNormal');
             const dockPreviewTransparent = document.getElementById('dockPreviewTransparent');
             const dockPreviewCompact = document.getElementById('dockPreviewCompact');
-            
-            // Animación de zoom y fade out
-            dockPreview.style.transform = 'scale(0.95)';
-            dockPreview.style.opacity = '0.7';
-            dockPreview.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-            
-            // Después de la animación de salida, cambiar el tipo de dock y hacer animación de entrada
-            setTimeout(() => {
-                // Ocultar todos los tipos de dock
-                dockPreviewNormal.style.display = 'none';
-                dockPreviewTransparent.style.display = 'none';
-                dockPreviewCompact.style.display = 'none';
-                
-                // Mostrar el tipo de dock seleccionado
-                if (type === 'normal') {
-                    dockPreviewNormal.style.display = 'flex';
-                } else if (type === 'transparent') {
-                    dockPreviewTransparent.style.display = 'flex';
-                } else if (type === 'compact') {
-                    dockPreviewCompact.style.display = 'flex';
-                }
-                
-                // Animación de zoom y fade in
-                dockPreview.style.transform = 'scale(1.05)';
-                dockPreview.style.opacity = '1';
-                
-                // Volver al estado normal
+            const previews = [dockPreviewNormal, dockPreviewTransparent, dockPreviewCompact];
+
+            const showPreview = (previewToShow) => {
+                previews.forEach(p => {
+                    p.style.display = 'none';
+                });
+                previewToShow.style.display = 'flex';
+            };
+
+            if (animate) {
+                const dockPreview = document.getElementById('dockPreview');
+                dockPreview.style.transform = 'scale(0.95)';
+                dockPreview.style.opacity = '0';
+                dockPreview.style.transition = 'all 0.2s ease-out';
+
                 setTimeout(() => {
+                    if (type === 'normal') showPreview(dockPreviewNormal);
+                    else if (type === 'transparent') showPreview(dockPreviewTransparent);
+                    else if (type === 'compact') showPreview(dockPreviewCompact);
+                    
                     dockPreview.style.transform = 'scale(1)';
+                    dockPreview.style.opacity = '1';
+                    dockPreview.style.transition = 'all 0.2s ease-in';
                 }, 200);
-            }, 300);
+            } else {
+                if (type === 'normal') showPreview(dockPreviewNormal);
+                else if (type === 'transparent') showPreview(dockPreviewTransparent);
+                else if (type === 'compact') showPreview(dockPreviewCompact);
+            }
             
-            // Aplicar el tipo de dock al dock actual de la página
             setDockType(type);
         }
 
