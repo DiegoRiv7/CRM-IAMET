@@ -2800,22 +2800,52 @@ def exportar_oportunidades_csv(request):
     else:
         items = TodoItem.objects.select_related('usuario', 'cliente').prefetch_related('cotizaciones__detalles').filter(usuario=request.user)
 
-    # 2. Apply filters
+    # 2. Apply filters (supporting multiple values)
     oportunidad_filter = request.GET.get('filterOportunidad', '').strip()
     if oportunidad_filter:
         items = items.filter(oportunidad__icontains=oportunidad_filter)
-
+        
     cliente_filter = request.GET.get('filterCliente', '').strip()
     if cliente_filter:
         items = items.filter(cliente__nombre_empresa__icontains=cliente_filter)
-
+        
+    # Filtro de tipo
+    tipo_filter = request.GET.get('filterTipo', '').strip()
+    if tipo_filter:
+        items = items.filter(tipo_negociacion=tipo_filter)
+        
+    # Filtro de empleado múltiple
     empleado_filter = request.GET.get('empleado', '').strip()
     if empleado_filter:
-        items = items.filter(usuario__id=empleado_filter)
-
+        empleado_ids = [e.strip() for e in empleado_filter.split(',') if e.strip()]
+        if empleado_ids:
+            items = items.filter(usuario__id__in=empleado_ids)
+            
+    # Filtro de mes de cierre múltiple
     mes_cierre_filter = request.GET.get('filterMesCierre', '').strip()
     if mes_cierre_filter:
-        items = items.filter(mes_cierre=mes_cierre_filter)
+        meses = [m.strip() for m in mes_cierre_filter.split(',') if m.strip()]
+        if meses:
+            items = items.filter(mes_cierre__in=meses)
+            
+    # Filtro de etapa múltiple (estado)
+    etapa_filter = request.GET.get('filterEtapa', '').strip()
+    if etapa_filter:
+        from django.db.models import Q
+        etapas = [e.strip() for e in etapa_filter.split(',') if e.strip()]
+        if etapas:
+            etapa_conditions = Q()
+            for etapa in etapas:
+                if etapa == 'vigentes':
+                    # Excluir cerradas (ganadas, perdidas y pagadas)
+                    etapa_conditions |= ~Q(etapa_completa__icontains='ganado') & ~Q(etapa_completa__icontains='perdido') & ~Q(etapa_completa__icontains='pagado')
+                elif etapa == 'ganadas':
+                    # Solo cerradas ganadas, incluir pagado
+                    etapa_conditions |= Q(etapa_completa__icontains='ganado') | Q(etapa_completa__icontains='pagado')
+                elif etapa == 'perdidas':
+                    # Solo cerradas perdidas
+                    etapa_conditions |= Q(etapa_completa__icontains='perdido')
+            items = items.filter(etapa_conditions)
 
     area_filter = request.GET.get('filterArea', '').strip()
     if area_filter:
@@ -2895,7 +2925,7 @@ def exportar_oportunidades_csv(request):
         all_headers = [
             'OPORTUNIDAD', 'CLIENTE', 'AREA', 'CONTACTO', 'ZEBRA', 'PANDUIT', 'APC', 'AVIGILON', 
             'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'PÓLIZA', 'CISCO',
-            'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC', 'EMPLEADO'
+            'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC', 'ESTATUS', 'EMPLEADO'
         ]
         
         # Write all headers in a single row (starting at row 5)
@@ -2911,7 +2941,7 @@ def exportar_oportunidades_csv(request):
         headers = [
             'OPORTUNIDAD', 'CLIENTE', 'AREA', 'CONTACTO', 'ZEBRA', 'PANDUIT', 'APC', 'AVIGILON', 
             'GENETEC', 'AXIS', 'SOFTWARE', 'RUNRATE', 'PÓLIZA', 'CISCO',
-            'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC', 'EMPLEADO'
+            'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEPT', 'OCT', 'NOV', 'DIC', 'ESTATUS', 'EMPLEADO'
         ]
         
         response = HttpResponse(content_type='text/csv; charset=utf-8')
@@ -3064,6 +3094,11 @@ def exportar_oportunidades_csv(request):
         
         print(f"DEBUG: Final months array: {months}")
         row_data.extend(months)
+        
+        # Add estatus (etapa_corta) before empleado
+        estatus = getattr(item, 'etapa_corta', '') or ''
+        row_data.append(estatus)
+        
         row_data.append(item.usuario.get_full_name() or item.usuario.username if item.usuario else '')
         
         if OPENPYXL_AVAILABLE:
@@ -3086,8 +3121,8 @@ def exportar_oportunidades_csv(request):
         row += 1
     
     if OPENPYXL_AVAILABLE:
-        # Auto-adjust column widths (13 main headers + 12 month columns = 25 total)
-        total_columns = 13 + 12  # main headers + monthly columns
+        # Auto-adjust column widths (14 main headers + 12 month columns + 1 estatus + 1 empleado = 28 total)
+        total_columns = 14 + 12 + 1 + 1  # main headers + monthly columns + estatus + empleado
         for col in range(1, total_columns + 1):
             column_letter = get_column_letter(col)
             ws.column_dimensions[column_letter].width = 12
