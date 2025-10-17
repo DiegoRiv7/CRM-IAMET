@@ -2277,86 +2277,20 @@
                             <i class="fas fa-th-large" style="margin-right: 8px;"></i> Tipo de Dock
                         </h4>
                         
-                        <!-- Render único del dock actual -->
-                        <div class="dock-preview-container" style="margin: 20px 0; height: 200px; position: relative; overflow: hidden; background: transparent;">
-                            <!-- Render del dock sin fondo ni cuadro -->
-                            <div id="dockPreview" class="dock-preview" style="width: 100%; height: 100%; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                                <!-- Contenedor del dock -->
-                                <div id="dockPreviewContainer" style="position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);">
-                                    <!-- Dock normal - exactamente como el dock actual -->
-                                    <div id="dockPreviewNormal" class="dock-preview-type dock-normal-preview macos-dock" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; background: rgba(29, 29, 31, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3); min-width: 280px;">
-                                        <!-- Iconos del dock -->
-                                        <div class="dock-item" style="width: 32px; height: 32px; border-radius: 8px; background: var(--apple-blue); display: flex; align-items: center; justify-content: center;">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                                                <polyline points="9,22 9,12 15,12 15,22"></polyline>
-                                            </svg>
-                                        </div>
-                                        <div class="dock-item" style="width: 32px; height: 32px; border-radius: 8px; background: var(--apple-blue); display: flex; align-items: center; justify-content: center;">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                                <circle cx="12" cy="12" r="10"></circle>
-                                                <path d="M12 6v6l4 2"></path>
-                                            </svg>
-                                        </div>
-                                        <div class="dock-item" style="width: 32px; height: 32px; border-radius: 8px; background: var(--apple-blue); display: flex; align-items: center; justify-content: center;">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-                                            </svg>
-                                        </div>
-                                        <div class="dock-item" style="width: 32px; height: 32px; border-radius: 8px; background: var(--apple-blue); display: flex; align-items: center; justify-content: center;">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                                <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                                            </svg>
-                                        </div>
-                                        <div class="dock-item" style="width: 32px; height: 32px; border-radius: 8px; background: var(--apple-blue); display: flex; align-items: center; justify-content: center;">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                                <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Dock transparente - exactamente como el dock actual -->
-                                    <div id="dockPreviewTransparent" class="dock-preview-type dock-transparent-preview macos-dock dock-transparent" style="display: none; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; background: rgba(255, 255, 255, 0.01); backdrop-filter: blur(40px) saturate(500%) contrast(180%) brightness(140%); -webkit-backdrop-filter: blur(40px) saturate(500%) contrast(180%) brightness(140%); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 rgba(255, 255, 255, 0.05); min-width: 280px;">
-                                        <!-- Iconos del dock -->
-                                        <div class="dock-item" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center;">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                                                <polyline points="9,22 9,12 15,12 15,22"></polyline>
-                                            </svg>
-                                        </div>
-                                        <div class="dock-item" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center;">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                                <circle cx="12" cy="12" r="10"></circle>
-                                                <path d="M12 6v6l4 2"></path>
-                                            </svg>
-                                        </div>
-                                        <div class="dock-item" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center;">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-                                            </svg>
-                                        </div>
-                                        <div class="dock-item" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center;">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                                <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                                            </svg>
-                                        </div>
-                                        <div class="dock-item" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center;">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                                <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Dock compacto - exactamente como el dock actual -->
-                                    <div id="dockPreviewCompact" class="dock-preview-type dock-compact-preview macos-dock dock-compact" style="display: none; align-items: center; justify-content: center; gap: 8px; padding: 10px; background: rgba(29, 29, 31, 0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 50%; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);">
-                                        <!-- Icono principal del dock compacto -->
-                                        <div class="dock-item" style="width: 32px; height: 32px; border-radius: 8px; background: var(--apple-blue); display: flex; align-items: center; justify-content: center;">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                                                <polyline points="9,22 9,12 15,12 15,22"></polyline>
-                                            </svg>
-                                        </div>
-                                    </div>
+                        <!-- Render único del dock actualizado -->
+                        <div class="dock-preview-container" style="margin: 20px 0; height: 150px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                            <div id="dockPreview" class="dock-preview" style="position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);">
+
+                                <!-- Dock normal -->
+                                <div id="dockPreviewNormal" class="dock-preview-type macos-dock" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; background: rgba(29, 29, 31, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3); min-width: 280px;">
+                                </div>
+
+                                <!-- Dock transparente -->
+                                <div id="dockPreviewTransparent" class="dock-preview-type macos-dock dock-transparent" style="display: none; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; background: rgba(255, 255, 255, 0.01); backdrop-filter: blur(40px) saturate(500%) contrast(180%) brightness(140%); -webkit-backdrop-filter: blur(40px) saturate(500%) contrast(180%) brightness(140%); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 rgba(255, 255, 255, 0.05); min-width: 280px;">
+                                </div>
+
+                                <!-- Dock compacto -->
+                                <div id="dockPreviewCompact" class="dock-preview-type macos-dock dock-compact" style="display: none; align-items: center; justify-content: center; gap: 8px; padding: 10px; background: rgba(29, 29, 31, 0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 50%; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);">
                                 </div>
                             </div>
                         </div>
@@ -2822,6 +2756,96 @@
             }, 100);
         }
 
+        function initializeDockPreview() {
+            const dockNormal = document.getElementById('dockPreviewNormal');
+            const dockTransparent = document.getElementById('dockPreviewTransparent');
+            const dockCompact = document.getElementById('dockPreviewCompact');
+
+            if (!dockNormal || !dockTransparent || !dockCompact) return;
+
+            // Clear previous icons
+            dockNormal.innerHTML = '';
+            dockTransparent.innerHTML = '';
+            dockCompact.innerHTML = '';
+
+            // Populate normal and transparent docks
+            defaultDockOrder.slice(0, 5).forEach(item => {
+                if (item.id === 'separator') return; // Don't show separator in preview
+
+                const iconElement = document.createElement('div');
+                iconElement.className = 'dock-item';
+                iconElement.style.width = '32px';
+                iconElement.style.height = '32px';
+                iconElement.style.borderRadius = '8px';
+                iconElement.style.background = 'var(--apple-blue)';
+                iconElement.style.display = 'flex';
+                iconElement.style.alignItems = 'center';
+                iconElement.style.justifyContent = 'center';
+                iconElement.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="${item.icon}"></path></svg>`;
+                
+                dockNormal.appendChild(iconElement.cloneNode(true));
+
+                const transparentIcon = iconElement.cloneNode(true);
+                transparentIcon.style.background = 'rgba(255, 255, 255, 0.8)';
+                dockTransparent.appendChild(transparentIcon);
+            });
+
+            // Populate compact dock
+            const compactIcon = document.createElement('div');
+            compactIcon.className = 'dock-item';
+            compactIcon.style.width = '32px';
+            compactIcon.style.height = '32px';
+            compactIcon.style.borderRadius = '8px';
+            compactIcon.style.background = 'var(--apple-blue)';
+            compactIcon.style.display = 'flex';
+            compactIcon.style.alignItems = 'center';
+            compactIcon.style.justifyContent = 'center';
+            compactIcon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9,22 9,12 15,12 15,22"></polyline></svg>`;
+            dockCompact.appendChild(compactIcon);
+        }
+
+        function setDockTypeWithAnimation(type) {
+            // Obtener el render del dock
+            const dockPreview = document.getElementById('dockPreview');
+            const dockPreviewNormal = document.getElementById('dockPreviewNormal');
+            const dockPreviewTransparent = document.getElementById('dockPreviewTransparent');
+            const dockPreviewCompact = document.getElementById('dockPreviewCompact');
+            
+            // Animación de zoom y fade out
+            dockPreview.style.transform = 'scale(0.95)';
+            dockPreview.style.opacity = '0.7';
+            dockPreview.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            
+            // Después de la animación de salida, cambiar el tipo de dock y hacer animación de entrada
+            setTimeout(() => {
+                // Ocultar todos los tipos de dock
+                dockPreviewNormal.style.display = 'none';
+                dockPreviewTransparent.style.display = 'none';
+                dockPreviewCompact.style.display = 'none';
+                
+                // Mostrar el tipo de dock seleccionado
+                if (type === 'normal') {
+                    dockPreviewNormal.style.display = 'flex';
+                } else if (type === 'transparent') {
+                    dockPreviewTransparent.style.display = 'flex';
+                } else if (type === 'compact') {
+                    dockPreviewCompact.style.display = 'flex';
+                }
+                
+                // Animación de zoom y fade in
+                dockPreview.style.transform = 'scale(1.05)';
+                dockPreview.style.opacity = '1';
+                
+                // Volver al estado normal
+                setTimeout(() => {
+                    dockPreview.style.transform = 'scale(1)';
+                }, 200);
+            }, 300);
+            
+            // Aplicar el tipo de dock al dock actual de la página
+            setDockType(type);
+        }
+
         function openDesignSettings() {
             showModal('designModal');
             
@@ -2864,6 +2888,7 @@
                     initializeThemeDots(defaultTheme);
                     localStorage.setItem('theme', defaultTheme);
                 }
+                initializeDockPreview();
             }, 100);
         }
 
