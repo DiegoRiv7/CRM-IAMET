@@ -974,3 +974,54 @@ def get_etapa_from_bitrix_stage(stage_id, tipo_negociacion):
         print(f"DEBUG Bitrix: Runrate - STAGE_ID {stage_id} mapeado a: {stage_info[0]} ({stage_info[1]})")
     
     return stage_info
+
+
+def get_bitrix_deal_by_id(deal_id):
+    """
+    Obtiene información de una oportunidad específica de Bitrix24 por su ID
+    
+    Args:
+        deal_id (str): ID de la oportunidad en Bitrix24
+        
+    Returns:
+        dict: Datos de la oportunidad si existe
+        None: Si la oportunidad no existe o hay error
+    """
+    if not BITRIX_WEBHOOK_URL:
+        print("Error: La URL del webhook de Bitrix24 no está configurada.")
+        return None
+    
+    if not deal_id:
+        print("Error: deal_id no puede estar vacío")
+        return None
+    
+    # URL para obtener información de una oportunidad específica
+    get_deal_url = BITRIX_WEBHOOK_URL.replace("crm.deal.add.json", "crm.deal.get.json")
+    
+    try:
+        print(f"DEBUG Bitrix: Verificando existencia de Deal ID: {deal_id}")
+        
+        # Parámetros para obtener el deal específico
+        params = {
+            'id': deal_id
+        }
+        
+        response = requests.post(get_deal_url, json=params)
+        response.raise_for_status()
+        
+        result = response.json()
+        
+        # Verificar si la respuesta contiene datos válidos
+        if 'result' in result and result['result']:
+            print(f"DEBUG Bitrix: Deal ID {deal_id} existe en Bitrix24")
+            return result['result']
+        else:
+            print(f"DEBUG Bitrix: Deal ID {deal_id} NO existe en Bitrix24")
+            return None
+            
+    except requests.exceptions.RequestException as e:
+        print(f"Error al verificar Deal ID {deal_id} en Bitrix24: {e}")
+        return None
+    except Exception as e:
+        print(f"Error inesperado al verificar Deal ID {deal_id}: {e}")
+        return None

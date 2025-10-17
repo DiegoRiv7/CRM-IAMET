@@ -2653,7 +2653,6 @@
                 
                 // Agregar atributos de tema rosa
                 document.documentElement.setAttribute('data-theme', 'pink');
-                document.body.setAttribute('data-theme', 'pink');
                 
                 // Aplicar colores específicos del tema rosa inmediatamente
                 document.documentElement.style.setProperty('--apple-background', '#ffebf0');
@@ -2751,6 +2750,11 @@
                 document.body.classList.add('dark-theme');
                 document.documentElement.removeAttribute('data-theme');
                 
+                // Reset inline styles from other themes
+                document.body.style.background = '';
+                document.body.style.color = '';
+                document.body.style.backgroundAttachment = '';
+
                 // Restaurar variables CSS originales para tema oscuro
                 document.documentElement.style.setProperty('--apple-background', '#000000');
                 document.documentElement.style.setProperty('--apple-background-secondary', '#1D1D1F');
