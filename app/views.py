@@ -4375,7 +4375,7 @@ def bitrix_webhook_receiver(request):
                                 else:
                                     print(f"BITRIX WEBHOOK: ❌ No se pudo crear la cotización automática para deal actualizado {deal_id}")
                         else:
-                            print(f"BITRIX WEBHOOK: Oportunidad actualizada NO califica para cotización automática - Producto: {producto} (ID: {producto_bitrix_id})", flush=True)
+                            print(f"BITRIX WEBHOOK: Oportunidad actualizada NO califica para cotización automática - Producto: {producto}", flush=True)
                 else:
                     # Crear nueva oportunidad
                     print(f"BITRIX WEBHOOK: Creating new opportunity with data:", flush=True)
@@ -4453,7 +4453,7 @@ def bitrix_webhook_receiver(request):
                             else:
                                 print(f"BITRIX WEBHOOK: ❌ No se pudo crear la cotización automática para deal {deal_id}")
                         else:
-                            print(f"BITRIX WEBHOOK: Oportunidad NO califica para cotización automática - Producto: {producto} (ID: {producto_bitrix_id})", flush=True)
+                            print(f"BITRIX WEBHOOK: Oportunidad NO califica para cotización automática - Producto: {producto}", flush=True)
                         
                     except Exception as create_error:
                         print(f"BITRIX WEBHOOK: Error creating opportunity: {create_error}", flush=True)

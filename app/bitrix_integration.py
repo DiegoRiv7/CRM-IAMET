@@ -888,7 +888,8 @@ def get_producto_from_bitrix_deal(deal_details, tipo_negociacion):
     """
     Extrae el producto/solución según el tipo de negociación
     """
-    PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE = {
+    # Mapeo para Runrate (campo Producto)
+    PRODUCTO_RUNRATE_BITRIX_ID_TO_DJANGO_VALUE = {
         "176": "ZEBRA", "178": "PANDUIT", "180": "APC", "182": "AVIGILION",
         "184": "GENETEC", "186": "AXIS", "188": "SOFTWARE", "190": "RUNRATE",
         "192": "PÓLIZA", "194": "CISCO", "374": "RFID", "376": "CONSUMIBLE",
@@ -896,17 +897,24 @@ def get_producto_from_bitrix_deal(deal_details, tipo_negociacion):
         "582": "SERVICIO",
     }
     
+    # Mapeo para Proyectos (campo Solución) - IDs completamente diferentes
+    SOLUCION_PROYECTO_BITRIX_ID_TO_DJANGO_VALUE = {
+        "44": "ZEBRA", "46": "PANDUIT", "48": "APC", "50": "AVIGILION",
+        "52": "GENETEC", "54": "AXIS", "56": "SOFTWARE", "58": "RUNRATE",
+        "60": "CISCO", "62": "PÓLIZA", "578": "SERVICIO",
+    }
+    
     if tipo_negociacion == 'proyecto':
         # Para proyectos, usar el campo "Solución"
         solucion_bitrix_id = deal_details.get('UF_CRM_1750723256972')
         print(f"DEBUG Bitrix: Proyecto - Raw solución ID: {solucion_bitrix_id}")
-        producto = PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE.get(str(solucion_bitrix_id), 'SOFTWARE')
+        producto = SOLUCION_PROYECTO_BITRIX_ID_TO_DJANGO_VALUE.get(str(solucion_bitrix_id), 'SOFTWARE')
         print(f"DEBUG Bitrix: Proyecto - Solución mapeada: {producto}")
     else:
         # Para runrate, usar el campo "Producto"
         producto_bitrix_id = deal_details.get('UF_CRM_1752859685662')
         print(f"DEBUG Bitrix: Runrate - Raw producto ID: {producto_bitrix_id}")
-        producto = PRODUCTO_BITRIX_ID_TO_DJANGO_VALUE.get(str(producto_bitrix_id), 'SOFTWARE')
+        producto = PRODUCTO_RUNRATE_BITRIX_ID_TO_DJANGO_VALUE.get(str(producto_bitrix_id), 'SOFTWARE')
         print(f"DEBUG Bitrix: Runrate - Producto mapeado: {producto}")
     
     return producto
