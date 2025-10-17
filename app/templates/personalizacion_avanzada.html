@@ -1937,13 +1937,7 @@
 </head>
 <body data-avatar-config='{ "hasCustomAvatar": {% if user_profile.avatar and user_profile.avatar.name %}true{% else %}false{% endif %}, "customAvatarUrl": {% if user_profile.avatar and user_profile.avatar.name %}"{{ user_profile.avatar.url }}"{% else %}""{% endif %}, "avatarTipo": "{{ user_profile.avatar_tipo|default:"dinosaur" }}" }'>
     <div class="main-container">
-        <!-- Close Button -->
-        <button class="close-btn" onclick="closeSettings()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-        </button>
+
 
         <!-- Header -->
         <div class="header">
@@ -2898,6 +2892,9 @@
         function hideModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
             document.body.style.overflow = 'auto';
+            if (modalId === 'designModal') {
+                location.reload();
+            }
         }
 
         // Avatar functionality - original system
