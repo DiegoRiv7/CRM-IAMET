@@ -74,8 +74,14 @@
         backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
         border: 1px solid rgba(255, 255, 255, 0.2);
         display: flex; align-items: center; justify-content: center;
-        cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        cursor: pointer !important; transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        pointer-events: auto !important;
+    }
+    
+    .search-icon-container * {
+        pointer-events: none !important;
+        cursor: pointer !important;
     }
     .search-icon-container:hover { background: rgba(255, 255, 255, 0.15); transform: scale(1.05); }
     
@@ -2315,48 +2321,81 @@ document.addEventListener('DOMContentLoaded', function() {
         originalRows = Array.from(tableBody.getElementsByTagName('tr'));
     }
     
-    // SIMPLIFIED SEARCH APPROACH - Direct and immediate
+    // ROBUST SEARCH APPROACH - Multiple selectors and event delegation
     console.log('🔍 Starting search initialization...');
     
-    // Use setTimeout to ensure DOM is fully loaded
-    setTimeout(() => {
-        const searchWidget = document.getElementById('search-widget');
-        const searchIcon = document.getElementById('search-icon');
-        const searchInput = document.getElementById('searchOportunidad');
+    function initializeSearch() {
+        // Try multiple ways to select the search elements
+        const searchWidget = document.getElementById('search-widget') || document.querySelector('.search-widget-container');
+        const searchIcon = document.getElementById('search-icon') || document.querySelector('.search-icon-container');
+        const searchInput = document.getElementById('searchOportunidad') || document.querySelector('.search-input');
         
-        console.log('🔍 Search elements:', {
+        console.log('🔍 Search elements found:', {
             widget: !!searchWidget,
             icon: !!searchIcon, 
-            input: !!searchInput
+            input: !!searchInput,
+            widgetClasses: searchWidget ? searchWidget.className : 'null',
+            iconClasses: searchIcon ? searchIcon.className : 'null'
         });
         
-        if (searchIcon) {
-            console.log('🔍 Adding click event to search icon');
-            searchIcon.onclick = function(e) {
-                console.log('🔍 CLICK DETECTED!');
-                e.preventDefault();
-                e.stopPropagation();
-                
-                if (searchWidget && searchInput) {
-                    const isExpanded = searchWidget.classList.contains('expanded');
-                    console.log('🔍 Is expanded:', isExpanded);
-                    
-                    if (!isExpanded) {
-                        console.log('🔍 Expanding...');
-                        searchWidget.classList.add('expanded');
-                        setTimeout(() => {
-                            searchInput.focus();
-                        }, 100);
-                    } else {
-                        console.log('🔍 Searching...');
-                        performSearch();
-                    }
-                }
-            };
+        function handleSearchClick(e) {
+            console.log('🔍 SEARCH CLICK DETECTED!', e.target);
+            e.preventDefault();
+            e.stopPropagation();
             
-            // Also try with addEventListener as backup
+            if (searchWidget && searchInput) {
+                const isExpanded = searchWidget.classList.contains('expanded');
+                console.log('🔍 Is expanded:', isExpanded);
+                
+                if (!isExpanded) {
+                    console.log('🔍 Expanding search widget...');
+                    searchWidget.classList.add('expanded');
+                    console.log('🔍 Widget classes after expand:', searchWidget.className);
+                    setTimeout(() => {
+                        searchInput.focus();
+                        console.log('🔍 Input focused');
+                    }, 150);
+                } else {
+                    console.log('🔍 Performing search...');
+                    performSearch();
+                }
+            } else {
+                console.error('🔍 Missing search elements:', { widget: !!searchWidget, input: !!searchInput });
+            }
+        }
+        
+        // Add event listeners to multiple possible elements
+        if (searchIcon) {
+            console.log('🔍 Adding click events to search icon');
+            
+            // Method 1: Direct onclick
+            searchIcon.onclick = handleSearchClick;
+            
+            // Method 2: addEventListener
+            searchIcon.addEventListener('click', handleSearchClick);
+            
+            // Method 3: Event delegation for SVG clicks
             searchIcon.addEventListener('click', function(e) {
-                console.log('🔍 addEventListener CLICK DETECTED!');
+                console.log('🔍 Icon container clicked, target:', e.target.tagName);
+                handleSearchClick(e);
+            }, true); // Use capture phase
+        }
+        
+        // Also try to add to any SVG inside the icon container
+        const svgIcon = searchIcon ? searchIcon.querySelector('svg') : null;
+        if (svgIcon) {
+            console.log('🔍 Adding click event to SVG element');
+            svgIcon.onclick = handleSearchClick;
+            svgIcon.addEventListener('click', handleSearchClick);
+        }
+        
+        // Event delegation on the widget container
+        if (searchWidget) {
+            searchWidget.addEventListener('click', function(e) {
+                if (e.target.closest('.search-icon-container') || e.target.closest('#search-icon')) {
+                    console.log('🔍 Widget container delegation click');
+                    handleSearchClick(e);
+                }
             });
         }
         
@@ -2368,9 +2407,52 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
-    }, 100);
+        
+        return !!(searchWidget && searchIcon && searchInput);
+    }
+    
+    // Try immediate initialization
+    setTimeout(() => {
+        if (!initializeSearch()) {
+            console.log('🔍 First attempt failed, retrying in 200ms...');
+            setTimeout(() => {
+                if (!initializeSearch()) {
+                    console.log('🔍 Using fallback approach...');
+                    // FALLBACK: Add event to ANY element that looks like a search icon
+                    const allPossibleIcons = document.querySelectorAll('.search-icon-container, #search-icon, [class*="search"], svg[viewBox="0 0 24 24"]');
+                    console.log('🔍 Found possible icons:', allPossibleIcons.length);
+                    
+                    allPossibleIcons.forEach((icon, index) => {
+                        console.log(`🔍 Adding fallback event to icon ${index}:`, icon);
+                        icon.addEventListener('click', function(e) {
+                            console.log('🔍 FALLBACK CLICK DETECTED!', e.target);
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            const widget = document.querySelector('.search-widget-container, #search-widget');
+                            const input = document.querySelector('.search-input, #searchOportunidad');
+                            
+                            if (widget && input) {
+                                const isExpanded = widget.classList.contains('expanded');
+                                if (!isExpanded) {
+                                    widget.classList.add('expanded');
+                                    setTimeout(() => input.focus(), 150);
+                                }
+                            }
+                        });
+                    });
+                }
+            }, 200);
+        }
+    }, 50);
 
     function performSearch() {
+        const searchInput = document.getElementById('searchOportunidad') || document.querySelector('.search-input');
+        if (!searchInput) {
+            console.error('🔍 Search input not found for performSearch');
+            return;
+        }
+        
         const searchValue = searchInput.value.trim();
         const url = new URL(window.location);
         if (searchValue === '') {
