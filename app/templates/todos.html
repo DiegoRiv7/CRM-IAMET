@@ -2422,7 +2422,7 @@ if (filterClienteElement) {
         options: clientesOptions,
         render: {
             dropdown: function() {
-                return '<div class="ts-dropdown" style="background: rgba(28, 28, 30, 0.95) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 12px !important; backdrop-filter: blur(20px) !important;"></div>';
+                return '<div class="ts-dropdown" style="background: rgba(28, 28, 30, 0.98) !important; border: 1px solid rgba(255, 255, 255, 0.25) !important; border-radius: 12px !important; backdrop-filter: blur(20px) !important; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;"></div>';
             }
         }
     });
@@ -2865,8 +2865,8 @@ function applyFilters() {
                         etapaMatch = !etapaText.includes('ganado') && !etapaText.includes('perdido');
                         break;
                     case 'ganadas':
-                        // Solo cerradas ganadas, excluir pagado
-                        etapaMatch = etapaText.includes('ganado') && !etapaText.includes('pagado');
+                        // Solo cerradas ganadas, incluir pagado
+                        etapaMatch = etapaText.includes('ganado') || etapaText.includes('pagado');
                         break;
                     case 'perdidas':
                         // Solo cerradas perdidas
@@ -2884,8 +2884,16 @@ function applyFilters() {
         // Filtro de mes de cierre (columna 6)
         if (mesCierre && cells.length > 6) {
             const mesCierreCell = cells[6].textContent.toLowerCase().trim();
-            console.log('🔧 Comparando mes:', mesCierreCell, 'con filtro:', mesCierre, 'mapeado:', monthMap[mesCierreCell]);
-            if (monthMap[mesCierreCell] !== mesCierre) {
+            console.log('🔧 Debug mes cierre - Cell text:', mesCierreCell, 'Filter value:', mesCierre);
+            console.log('🔧 Month map lookup:', monthMap[mesCierreCell]);
+            
+            // Comparar tanto por nombre del mes como por número
+            const cellAsNumber = monthMap[mesCierreCell]; // nombre -> número
+            const filterAsNumber = mesCierre; // ya debería ser número
+            
+            console.log('🔧 Comparing:', cellAsNumber, 'vs', filterAsNumber);
+            
+            if (cellAsNumber !== filterAsNumber && mesCierreCell !== mesCierre) {
                 showRow = false;
             }
         }
