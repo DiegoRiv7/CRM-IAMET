@@ -215,6 +215,8 @@
         border: 1px solid var(--apple-separator);
         overflow: hidden;
         box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+        position: relative;
+        z-index: 1;
     }
     .data-table {
         width: 100%;
@@ -416,7 +418,7 @@
     margin-bottom: 1.5rem;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     position: relative;
-    z-index: 100;
+    z-index: 1000;
 }
 
 .filters-grid {
@@ -482,7 +484,7 @@
     padding-top: 1rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     position: relative;
-    z-index: 50;
+    z-index: 10;
 }
 
 /* Estilos específicos para TomSelect en filtros */
@@ -569,25 +571,50 @@
     background: rgba(40, 40, 42, 0.98) !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
     border-radius: 10px !important;
-    z-index: 9999 !important;
+    z-index: 10000 !important;
+    position: absolute !important;
     margin-top: 2px !important;
+    min-width: 200px !important;
+    max-height: 200px !important;
+    overflow-y: auto !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6) !important;
 }
 
 .compact-filters-container .ts-dropdown .ts-option {
-    color: white !important;
+    color: rgba(255, 255, 255, 0.9) !important;
     background: transparent !important;
-    padding: 10px 12px !important;
+    padding: 12px 16px !important;
     font-size: 14px !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    transition: all 0.2s ease !important;
+    font-weight: 500 !important;
+}
+
+.compact-filters-container .ts-dropdown .ts-option:last-child {
+    border-bottom: none !important;
 }
 
 .compact-filters-container .ts-dropdown .ts-option:hover {
-    background: rgba(0, 122, 255, 0.2) !important;
+    background: rgba(0, 122, 255, 0.25) !important;
+    color: #4FC3F7 !important;
+    transform: translateX(4px) !important;
 }
 
-.compact-filters-container .ts-dropdown .ts-option.active {
-    background: rgba(0, 122, 255, 0.3) !important;
+.compact-filters-container .ts-dropdown .ts-option.active,
+.compact-filters-container .ts-dropdown .ts-option.selected {
+    background: rgba(0, 122, 255, 0.4) !important;
     color: #007AFF !important;
+    font-weight: 600 !important;
+    position: relative !important;
+}
+
+.compact-filters-container .ts-dropdown .ts-option.active::after,
+.compact-filters-container .ts-dropdown .ts-option.selected::after {
+    content: '✓' !important;
+    position: absolute !important;
+    right: 16px !important;
+    color: #007AFF !important;
+    font-weight: bold !important;
 }
 
 .compact-filters-container .ts-control input {
