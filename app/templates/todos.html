@@ -626,34 +626,28 @@
     color: rgba(255, 255, 255, 0.5) !important;
 }
 
-/* Estilos para selectores HTML nativos múltiples */
-.compact-filters-container select[multiple] {
-    background: rgba(50, 50, 52, 0.95) !important;
-    border: 1px solid rgba(255, 255, 255, 0.25) !important;
-    border-radius: 10px !important;
-    color: white !important;
-    padding: 8px 12px !important;
-    font-size: 14px !important;
-    min-height: 42px !important;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+/* Estilos TomSelect SIMPLES que funcionan */
+.ts-dropdown {
+    z-index: 999999 !important;
+    background: rgb(50, 50, 52) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
 }
 
-.compact-filters-container select[multiple]:focus {
-    border-color: #007AFF !important;
-    outline: none !important;
-    background: rgba(60, 60, 62, 0.95) !important;
+.ts-dropdown .ts-option {
+    color: white !important;
+    background: transparent !important;
+    padding: 10px 15px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
-.compact-filters-container select[multiple] option {
-    background: rgba(50, 50, 52, 0.95) !important;
-    color: white !important;
-    padding: 8px 12px !important;
+.ts-dropdown .ts-option:hover {
+    background: rgba(0, 122, 255, 0.3) !important;
 }
 
-.compact-filters-container select[multiple] option:checked,
-.compact-filters-container select[multiple] option:hover {
-    background: rgba(0, 122, 255, 0.6) !important;
-    color: white !important;
+.ts-dropdown .ts-option.active {
+    background: rgba(0, 122, 255, 0.5) !important;
 }
 
 .report-filters-container {
@@ -2555,46 +2549,37 @@ if (filterClienteElement) {
     console.log('🔍 filterCliente not found, skipping TomSelect initialization');
 }
 
-// Usar selectores nativos HTML5 - sin TomSelect para filtros múltiples
-let etapaSelect = document.getElementById('filterEtapa');
-let empleadoSelect = document.getElementById('filterEmpleado'); 
-let mesCierreSelect = document.getElementById('filterMesCierre');
+// TomSelect con configuración simple y funcional
+let etapaSelect = null;
+let empleadoSelect = null; 
+let mesCierreSelect = null;
 
-// Agregar styling a los selects nativos
-if (etapaSelect) {
-    etapaSelect.style.cssText = `
-        background: rgba(50, 50, 52, 0.9) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-radius: 10px !important;
-        color: white !important;
-        padding: 8px 12px !important;
-        font-size: 14px !important;
-        min-height: 42px !important;
-    `;
+const filterEtapaElement = document.getElementById('filterEtapa');
+const filterEmpleadoElement = document.getElementById('filterEmpleado');
+const filterMesCierreElement = document.getElementById('filterMesCierre');
+
+if (filterEtapaElement) {
+    etapaSelect = new TomSelect('#filterEtapa', {
+        plugins: ['remove_button'],
+        placeholder: 'Seleccionar estados...',
+        dropdownParent: 'body'
+    });
 }
 
-if (empleadoSelect) {
-    empleadoSelect.style.cssText = `
-        background: rgba(50, 50, 52, 0.9) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-radius: 10px !important;
-        color: white !important;
-        padding: 8px 12px !important;
-        font-size: 14px !important;
-        min-height: 42px !important;
-    `;
+if (filterEmpleadoElement) {
+    empleadoSelect = new TomSelect('#filterEmpleado', {
+        plugins: ['remove_button'],
+        placeholder: 'Seleccionar empleados...',
+        dropdownParent: 'body'
+    });
 }
 
-if (mesCierreSelect) {
-    mesCierreSelect.style.cssText = `
-        background: rgba(50, 50, 52, 0.9) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-radius: 10px !important;
-        color: white !important;
-        padding: 8px 12px !important;
-        font-size: 14px !important;
-        min-height: 42px !important;
-    `;
+if (filterMesCierreElement) {
+    mesCierreSelect = new TomSelect('#filterMesCierre', {
+        plugins: ['remove_button'],
+        placeholder: 'Seleccionar meses...',
+        dropdownParent: 'body'
+    });
 }
 
 </script>
@@ -2623,10 +2608,10 @@ console.log('🔍 Empleado filter is a normal select, no TomSelect needed');
 function generarReporteCSV() {
     const oportunidad = document.getElementById('filterOportunidad') ? document.getElementById('filterOportunidad').value.trim() : '';
     const tipo = document.getElementById('filterTipo') ? document.getElementById('filterTipo').value.trim() : '';
-    const etapas = etapaSelect ? Array.from(etapaSelect.selectedOptions).map(option => option.value) : [];
+    const etapas = etapaSelect ? etapaSelect.getValue() : [];
     const cliente = clienteSelect ? clienteSelect.getValue() : '';
-    const empleados = empleadoSelect ? Array.from(empleadoSelect.selectedOptions).map(option => option.value) : [];
-    const mesesCierre = mesCierreSelect ? Array.from(mesCierreSelect.selectedOptions).map(option => option.value) : [];
+    const empleados = empleadoSelect ? empleadoSelect.getValue() : [];
+    const mesesCierre = mesCierreSelect ? mesCierreSelect.getValue() : [];
 
     // URL para exportar CSV
     var csvPath = '{% url "exportar_oportunidades_csv" %}';
@@ -2830,11 +2815,11 @@ function clearFilters() {
         if (input) input.value = '';
     });
     
-    // Limpiar TomSelect y selectores nativos
+    // Limpiar todos los TomSelect
     if (clienteSelect) clienteSelect.clear();
-    if (etapaSelect) etapaSelect.selectedIndex = -1;
-    if (empleadoSelect) empleadoSelect.selectedIndex = -1;
-    if (mesCierreSelect) mesCierreSelect.selectedIndex = -1;
+    if (etapaSelect) etapaSelect.clear();
+    if (empleadoSelect) empleadoSelect.clear();
+    if (mesCierreSelect) mesCierreSelect.clear();
     
     // Mostrar todas las filas
     const tableBody = document.getElementById('tablaOportunidades');
@@ -2964,10 +2949,10 @@ function applyFilters() {
 
     const oportunidad = document.getElementById('filterOportunidad')?.value?.toLowerCase().trim() || '';
     const tipo = document.getElementById('filterTipo')?.value?.trim() || '';
-    const etapas = etapaSelect ? Array.from(etapaSelect.selectedOptions).map(option => option.value) : []; // Array de estados seleccionados
+    const etapas = etapaSelect ? etapaSelect.getValue() : []; // Array de estados seleccionados
     const cliente = (clienteSelect?.getValue() || '').toLowerCase().trim();
-    const empleados = empleadoSelect ? Array.from(empleadoSelect.selectedOptions).map(option => option.value) : []; // Array de empleados seleccionados
-    const mesesCierre = mesCierreSelect ? Array.from(mesCierreSelect.selectedOptions).map(option => option.value) : []; // Array de meses seleccionados
+    const empleados = empleadoSelect ? empleadoSelect.getValue() : []; // Array de empleados seleccionados
+    const mesesCierre = mesCierreSelect ? mesCierreSelect.getValue() : []; // Array de meses seleccionados
     
     console.log('🔧 Valores de filtros:', {
         oportunidad,
