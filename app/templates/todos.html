@@ -626,28 +626,125 @@
     color: rgba(255, 255, 255, 0.5) !important;
 }
 
-/* Estilos TomSelect SIMPLES que funcionan */
-.ts-dropdown {
-    z-index: 999999 !important;
-    background: rgb(50, 50, 52) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-    border-radius: 8px !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+/* Custom multiselect styles */
+.custom-multiselect {
+    position: relative;
+    width: 100%;
 }
 
-.ts-dropdown .ts-option {
-    color: white !important;
-    background: transparent !important;
-    padding: 10px 15px !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+.multiselect-display {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 8px 12px;
+    min-height: 42px;
+    color: var(--apple-label);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    transition: all 0.3s ease;
 }
 
-.ts-dropdown .ts-option:hover {
-    background: rgba(0, 122, 255, 0.3) !important;
+.multiselect-display:hover {
+    border-color: rgba(255, 255, 255, 0.25);
 }
 
-.ts-dropdown .ts-option.active {
-    background: rgba(0, 122, 255, 0.5) !important;
+.multiselect-display.active {
+    border-color: var(--apple-blue);
+    box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2);
+}
+
+.placeholder {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+}
+
+.selected-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    flex: 1;
+}
+
+.selected-item {
+    background: var(--apple-blue);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.selected-item .remove {
+    cursor: pointer;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.selected-item .remove:hover {
+    color: white;
+}
+
+.dropdown-arrow {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    transition: transform 0.3s ease;
+}
+
+.multiselect-display.active .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.multiselect-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 10000;
+    background: rgba(40, 40, 42, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+    margin-top: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(20px);
+}
+
+.multiselect-option {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.multiselect-option:last-child {
+    border-bottom: none;
+}
+
+.multiselect-option:hover {
+    background: rgba(0, 122, 255, 0.2);
+}
+
+.multiselect-option input[type="checkbox"] {
+    margin: 0;
+    accent-color: var(--apple-blue);
+}
+
+.multiselect-option label {
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    margin: 0;
+    flex: 1;
 }
 
 .report-filters-container {
@@ -2348,11 +2445,27 @@
                                 
                                 <div class="filter-group">
                                     <label class="filter-label">Estado</label>
-                                    <select class="filter-input" id="filterEtapa" multiple>
-                                        <option value="vigentes">Solo vigentes</option>
-                                        <option value="ganadas">Solo cerradas ganadas</option>
-                                        <option value="perdidas">Solo cerradas perdidas</option>
-                                    </select>
+                                    <div class="custom-multiselect" id="filterEtapa">
+                                        <div class="multiselect-display">
+                                            <span class="placeholder">Seleccionar estados...</span>
+                                            <div class="selected-items"></div>
+                                            <span class="dropdown-arrow">▼</span>
+                                        </div>
+                                        <div class="multiselect-dropdown" style="display: none;">
+                                            <div class="multiselect-option" data-value="vigentes">
+                                                <input type="checkbox" id="etapa_vigentes">
+                                                <label for="etapa_vigentes">Solo vigentes</label>
+                                            </div>
+                                            <div class="multiselect-option" data-value="ganadas">
+                                                <input type="checkbox" id="etapa_ganadas">
+                                                <label for="etapa_ganadas">Solo cerradas ganadas</label>
+                                            </div>
+                                            <div class="multiselect-option" data-value="perdidas">
+                                                <input type="checkbox" id="etapa_perdidas">
+                                                <label for="etapa_perdidas">Solo cerradas perdidas</label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <div class="filter-group">
@@ -2362,29 +2475,82 @@
                                 
                                 <div class="filter-group">
                                     <label class="filter-label">Empleado</label>
-                                    <select class="filter-input" id="filterEmpleado" multiple>
-                                        {% for user in empleados %}
-                                        <option value="{{ user.id }}">{{ user.first_name }} {{ user.last_name }}</option>
-                                        {% endfor %}
-                                    </select>
+                                    <div class="custom-multiselect" id="filterEmpleado">
+                                        <div class="multiselect-display">
+                                            <span class="placeholder">Seleccionar empleados...</span>
+                                            <div class="selected-items"></div>
+                                            <span class="dropdown-arrow">▼</span>
+                                        </div>
+                                        <div class="multiselect-dropdown" style="display: none;">
+                                            {% for user in empleados %}
+                                            <div class="multiselect-option" data-value="{{ user.id }}">
+                                                <input type="checkbox" id="emp_{{ user.id }}">
+                                                <label for="emp_{{ user.id }}">{{ user.first_name }} {{ user.last_name }}</label>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <div class="filter-group">
                                     <label class="filter-label">Mes Cierre</label>
-                                    <select class="filter-input" id="filterMesCierre" multiple>
-                                        <option value="01">Enero</option>
-                                        <option value="02">Febrero</option>
-                                        <option value="03">Marzo</option>
-                                        <option value="04">Abril</option>
-                                        <option value="05">Mayo</option>
-                                        <option value="06">Junio</option>
-                                        <option value="07">Julio</option>
-                                        <option value="08">Agosto</option>
-                                        <option value="09">Septiembre</option>
-                                        <option value="10">Octubre</option>
-                                        <option value="11">Noviembre</option>
-                                        <option value="12">Diciembre</option>
-                                    </select>
+                                    <div class="custom-multiselect" id="filterMesCierre">
+                                        <div class="multiselect-display">
+                                            <span class="placeholder">Seleccionar meses...</span>
+                                            <div class="selected-items"></div>
+                                            <span class="dropdown-arrow">▼</span>
+                                        </div>
+                                        <div class="multiselect-dropdown" style="display: none;">
+                                            <div class="multiselect-option" data-value="01">
+                                                <input type="checkbox" id="mes_01">
+                                                <label for="mes_01">Enero</label>
+                                            </div>
+                                            <div class="multiselect-option" data-value="02">
+                                                <input type="checkbox" id="mes_02">
+                                                <label for="mes_02">Febrero</label>
+                                            </div>
+                                            <div class="multiselect-option" data-value="03">
+                                                <input type="checkbox" id="mes_03">
+                                                <label for="mes_03">Marzo</label>
+                                            </div>
+                                            <div class="multiselect-option" data-value="04">
+                                                <input type="checkbox" id="mes_04">
+                                                <label for="mes_04">Abril</label>
+                                            </div>
+                                            <div class="multiselect-option" data-value="05">
+                                                <input type="checkbox" id="mes_05">
+                                                <label for="mes_05">Mayo</label>
+                                            </div>
+                                            <div class="multiselect-option" data-value="06">
+                                                <input type="checkbox" id="mes_06">
+                                                <label for="mes_06">Junio</label>
+                                            </div>
+                                            <div class="multiselect-option" data-value="07">
+                                                <input type="checkbox" id="mes_07">
+                                                <label for="mes_07">Julio</label>
+                                            </div>
+                                            <div class="multiselect-option" data-value="08">
+                                                <input type="checkbox" id="mes_08">
+                                                <label for="mes_08">Agosto</label>
+                                            </div>
+                                            <div class="multiselect-option" data-value="09">
+                                                <input type="checkbox" id="mes_09">
+                                                <label for="mes_09">Septiembre</label>
+                                            </div>
+                                            <div class="multiselect-option" data-value="10">
+                                                <input type="checkbox" id="mes_10">
+                                                <label for="mes_10">Octubre</label>
+                                            </div>
+                                            <div class="multiselect-option" data-value="11">
+                                                <input type="checkbox" id="mes_11">
+                                                <label for="mes_11">Noviembre</label>
+                                            </div>
+                                            <div class="multiselect-option" data-value="12">
+                                                <input type="checkbox" id="mes_12">
+                                                <label for="mes_12">Diciembre</label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -2549,38 +2715,110 @@ if (filterClienteElement) {
     console.log('🔍 filterCliente not found, skipping TomSelect initialization');
 }
 
-// TomSelect con configuración simple y funcional
-let etapaSelect = null;
-let empleadoSelect = null; 
-let mesCierreSelect = null;
-
-const filterEtapaElement = document.getElementById('filterEtapa');
-const filterEmpleadoElement = document.getElementById('filterEmpleado');
-const filterMesCierreElement = document.getElementById('filterMesCierre');
-
-if (filterEtapaElement) {
-    etapaSelect = new TomSelect('#filterEtapa', {
-        plugins: ['remove_button'],
-        placeholder: 'Seleccionar estados...',
-        dropdownParent: 'body'
+// Custom multiselect functionality
+function initCustomMultiselects() {
+    const multiselects = document.querySelectorAll('.custom-multiselect');
+    
+    multiselects.forEach(multiselect => {
+        const display = multiselect.querySelector('.multiselect-display');
+        const dropdown = multiselect.querySelector('.multiselect-dropdown');
+        const placeholder = multiselect.querySelector('.placeholder');
+        const selectedItems = multiselect.querySelector('.selected-items');
+        const options = multiselect.querySelectorAll('.multiselect-option');
+        
+        // Toggle dropdown
+        display.addEventListener('click', () => {
+            const isActive = display.classList.contains('active');
+            
+            // Close all other dropdowns
+            document.querySelectorAll('.custom-multiselect .multiselect-display').forEach(d => {
+                d.classList.remove('active');
+                d.parentElement.querySelector('.multiselect-dropdown').style.display = 'none';
+            });
+            
+            if (!isActive) {
+                display.classList.add('active');
+                dropdown.style.display = 'block';
+            }
+        });
+        
+        // Handle option selection
+        options.forEach(option => {
+            const checkbox = option.querySelector('input[type="checkbox"]');
+            const label = option.querySelector('label');
+            
+            option.addEventListener('click', (e) => {
+                if (e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                }
+                updateSelectedItems(multiselect);
+            });
+        });
+    });
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.custom-multiselect')) {
+            document.querySelectorAll('.custom-multiselect .multiselect-display').forEach(d => {
+                d.classList.remove('active');
+                d.parentElement.querySelector('.multiselect-dropdown').style.display = 'none';
+            });
+        }
     });
 }
 
-if (filterEmpleadoElement) {
-    empleadoSelect = new TomSelect('#filterEmpleado', {
-        plugins: ['remove_button'],
-        placeholder: 'Seleccionar empleados...',
-        dropdownParent: 'body'
-    });
+function updateSelectedItems(multiselect) {
+    const selectedItems = multiselect.querySelector('.selected-items');
+    const placeholder = multiselect.querySelector('.placeholder');
+    const checkboxes = multiselect.querySelectorAll('input[type="checkbox"]:checked');
+    
+    selectedItems.innerHTML = '';
+    
+    if (checkboxes.length === 0) {
+        placeholder.style.display = 'block';
+    } else {
+        placeholder.style.display = 'none';
+        
+        checkboxes.forEach(checkbox => {
+            const label = checkbox.parentElement.querySelector('label').textContent;
+            const selectedItem = document.createElement('span');
+            selectedItem.className = 'selected-item';
+            selectedItem.innerHTML = `
+                ${label}
+                <span class="remove" data-value="${checkbox.parentElement.dataset.value}">×</span>
+            `;
+            selectedItems.appendChild(selectedItem);
+            
+            // Handle remove
+            selectedItem.querySelector('.remove').addEventListener('click', (e) => {
+                e.stopPropagation();
+                checkbox.checked = false;
+                updateSelectedItems(multiselect);
+            });
+        });
+    }
 }
 
-if (filterMesCierreElement) {
-    mesCierreSelect = new TomSelect('#filterMesCierre', {
-        plugins: ['remove_button'],
-        placeholder: 'Seleccionar meses...',
-        dropdownParent: 'body'
-    });
+// Helper functions for getting values
+function getMultiselectValues(id) {
+    const multiselect = document.getElementById(id);
+    if (!multiselect) return [];
+    
+    const checkboxes = multiselect.querySelectorAll('input[type="checkbox"]:checked');
+    return Array.from(checkboxes).map(cb => cb.parentElement.dataset.value);
 }
+
+function clearMultiselect(id) {
+    const multiselect = document.getElementById(id);
+    if (!multiselect) return;
+    
+    const checkboxes = multiselect.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(cb => cb.checked = false);
+    updateSelectedItems(multiselect);
+}
+
+// Initialize after DOM load
+initCustomMultiselects();
 
 </script>
 
@@ -2608,10 +2846,10 @@ console.log('🔍 Empleado filter is a normal select, no TomSelect needed');
 function generarReporteCSV() {
     const oportunidad = document.getElementById('filterOportunidad') ? document.getElementById('filterOportunidad').value.trim() : '';
     const tipo = document.getElementById('filterTipo') ? document.getElementById('filterTipo').value.trim() : '';
-    const etapas = etapaSelect ? etapaSelect.getValue() : [];
+    const etapas = getMultiselectValues('filterEtapa');
     const cliente = clienteSelect ? clienteSelect.getValue() : '';
-    const empleados = empleadoSelect ? empleadoSelect.getValue() : [];
-    const mesesCierre = mesCierreSelect ? mesCierreSelect.getValue() : [];
+    const empleados = getMultiselectValues('filterEmpleado');
+    const mesesCierre = getMultiselectValues('filterMesCierre');
 
     // URL para exportar CSV
     var csvPath = '{% url "exportar_oportunidades_csv" %}';
@@ -2815,11 +3053,11 @@ function clearFilters() {
         if (input) input.value = '';
     });
     
-    // Limpiar todos los TomSelect
+    // Limpiar TomSelect y custom multiselects
     if (clienteSelect) clienteSelect.clear();
-    if (etapaSelect) etapaSelect.clear();
-    if (empleadoSelect) empleadoSelect.clear();
-    if (mesCierreSelect) mesCierreSelect.clear();
+    clearMultiselect('filterEtapa');
+    clearMultiselect('filterEmpleado');
+    clearMultiselect('filterMesCierre');
     
     // Mostrar todas las filas
     const tableBody = document.getElementById('tablaOportunidades');
@@ -2949,10 +3187,10 @@ function applyFilters() {
 
     const oportunidad = document.getElementById('filterOportunidad')?.value?.toLowerCase().trim() || '';
     const tipo = document.getElementById('filterTipo')?.value?.trim() || '';
-    const etapas = etapaSelect ? etapaSelect.getValue() : []; // Array de estados seleccionados
+    const etapas = getMultiselectValues('filterEtapa'); // Array de estados seleccionados
     const cliente = (clienteSelect?.getValue() || '').toLowerCase().trim();
-    const empleados = empleadoSelect ? empleadoSelect.getValue() : []; // Array de empleados seleccionados
-    const mesesCierre = mesCierreSelect ? mesCierreSelect.getValue() : []; // Array de meses seleccionados
+    const empleados = getMultiselectValues('filterEmpleado'); // Array de empleados seleccionados
+    const mesesCierre = getMultiselectValues('filterMesCierre'); // Array de meses seleccionados
     
     console.log('🔧 Valores de filtros:', {
         oportunidad,
