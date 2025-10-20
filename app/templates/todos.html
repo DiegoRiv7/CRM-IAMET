@@ -2712,9 +2712,115 @@ var clientesOptions = [
 {% endfor %}
 
 <script>
-// Cliente ahora usa select nativo - sin TomSelect
+// Cliente ahora usa select nativo con funcionalidad de búsqueda
 let clienteSelect = null;
-console.log('🔍 Cliente now uses native select - no TomSelect needed');
+console.log('🔍 Cliente now uses native select with search functionality');
+
+// Agregar funcionalidad de búsqueda al select de cliente
+function initClienteSearch() {
+    const selectElement = document.getElementById('filterCliente');
+    if (!selectElement) return;
+    
+    // Guardar todas las opciones originales
+    const originalOptions = Array.from(selectElement.options).map(option => ({
+        value: option.value,
+        text: option.textContent
+    }));
+    
+    // Crear input de búsqueda
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.placeholder = 'Buscar cliente...';
+    searchInput.style.cssText = `
+        background: #484848 !important;
+        color: #FFFFFF !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        border-radius: 12px !important;
+        padding: 12px 16px !important;
+        font-size: 14px !important;
+        min-height: 42px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        margin-bottom: 4px !important;
+    `;
+    
+    // Insertar el input antes del select
+    selectElement.parentNode.insertBefore(searchInput, selectElement);
+    
+    // Ocultar el select original inicialmente
+    selectElement.style.display = 'none';
+    
+    // Función para filtrar opciones
+    function filterOptions(searchTerm) {
+        if (searchTerm.length === 0) {
+            // Si no hay búsqueda, ocultar select
+            selectElement.style.display = 'none';
+            selectElement.value = '';
+            return;
+        }
+        
+        // Mostrar select si hay búsqueda
+        selectElement.style.display = 'block';
+        
+        // Limpiar select
+        selectElement.innerHTML = '';
+        
+        // Filtrar opciones
+        const filteredOptions = originalOptions.filter(option => 
+            option.text.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        
+        // Agregar opciones filtradas
+        filteredOptions.forEach(optionData => {
+            const option = document.createElement('option');
+            option.value = optionData.value;
+            option.textContent = optionData.text;
+            selectElement.appendChild(option);
+        });
+        
+        // Auto-abrir el select si hay opciones
+        if (filteredOptions.length > 0) {
+            selectElement.focus();
+            selectElement.size = Math.min(filteredOptions.length, 8);
+        }
+    }
+    
+    // Event listener para el input de búsqueda
+    searchInput.addEventListener('input', function(e) {
+        filterOptions(e.target.value);
+    });
+    
+    // Cuando se selecciona una opción, actualizar el input de búsqueda
+    selectElement.addEventListener('change', function(e) {
+        if (e.target.value) {
+            searchInput.value = e.target.options[e.target.selectedIndex].text;
+            selectElement.style.display = 'none';
+            selectElement.size = 1;
+        } else {
+            searchInput.value = '';
+            selectElement.style.display = 'none';
+        }
+    });
+    
+    // Manejar clicks fuera del elemento para cerrar el dropdown
+    document.addEventListener('click', function(e) {
+        if (!selectElement.contains(e.target) && !searchInput.contains(e.target)) {
+            selectElement.style.display = 'none';
+            selectElement.size = 1;
+        }
+    });
+    
+    // Permitir selección con teclas
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowDown' && selectElement.style.display === 'block') {
+            e.preventDefault();
+            selectElement.focus();
+        } else if (e.key === 'Enter' && selectElement.options.length === 1) {
+            selectElement.selectedIndex = 0;
+            selectElement.dispatchEvent(new Event('change'));
+        }
+    });
+}
 
 // Custom multiselect functionality
 function initCustomMultiselects() {
@@ -2874,6 +2980,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (tableBody) {
         originalRows = Array.from(tableBody.getElementsByTagName('tr'));
     }
+    
+    // Inicializar búsqueda de cliente
+    initClienteSearch();
     
     // Handle filter icon click - PREVENT DOUBLE RELOAD
     const filterIcon = document.getElementById('filter-icon');
@@ -3073,6 +3182,19 @@ function clearFilters() {
     // Limpiar select nativo y custom multiselects
     const clienteSelect = document.getElementById('filterCliente');
     if (clienteSelect) clienteSelect.value = '';
+    
+    // Limpiar input de búsqueda de cliente
+    const clienteSearchInput = clienteSelect ? clienteSelect.parentNode.querySelector('input[placeholder="Buscar cliente..."]') : null;
+    if (clienteSearchInput) {
+        clienteSearchInput.value = '';
+        // Restaurar todas las opciones
+        if (typeof initClienteSearch === 'function') {
+            const originalOptions = Array.from(clienteSelect.options);
+            clienteSelect.innerHTML = '';
+            originalOptions.forEach(option => clienteSelect.appendChild(option.cloneNode(true)));
+        }
+    }
+    
     clearMultiselect('filterEtapa');
     clearMultiselect('filterEmpleado');
     clearMultiselect('filterMesCierre');
