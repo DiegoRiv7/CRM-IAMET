@@ -516,23 +516,6 @@
     border-radius: 8px !important;
 }
 
-.compact-filters-container .ts-dropdown {
-    background: rgba(28, 28, 30, 0.95) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    border-radius: 12px !important;
-    backdrop-filter: blur(20px) !important;
-}
-
-.compact-filters-container .ts-dropdown .ts-option {
-    color: var(--apple-label) !important;
-    background: transparent !important;
-}
-
-.compact-filters-container .ts-dropdown .ts-option:hover,
-.compact-filters-container .ts-dropdown .ts-option.active {
-    background: rgba(10, 132, 255, 0.3) !important;
-    color: var(--apple-label) !important;
-}
 
 /* TomSelect simple y limpio para filtros */
 .compact-filters-container .ts-control {
@@ -600,41 +583,35 @@
     transform: translateZ(1000px) !important;
 }
 
-/* Estilos MUY SÓLIDOS para TomSelect del cliente */
-.ts-dropdown {
+/* Select nativo para cliente - sin TomSelect */
+#filterCliente {
     background: #484848 !important;
-    background-color: #484848 !important;
-    border: 1px solid rgba(255, 255, 255, 0.5) !important;
-    border-radius: 12px !important;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.95) !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-}
-
-.ts-dropdown .ts-option {
     color: #FFFFFF !important;
-    background: #484848 !important;
-    background-color: #484848 !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 12px !important;
     padding: 12px 16px !important;
     font-size: 14px !important;
-    font-weight: 500 !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
-    opacity: 1 !important;
-    text-shadow: none !important;
+    min-height: 42px !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFFFFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
 }
 
-.ts-dropdown .ts-option:hover {
-    background: #007AFF !important;
-    background-color: #007AFF !important;
-    color: #FFFFFF !important;
+#filterCliente:focus {
+    border-color: #007AFF !important;
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3) !important;
 }
 
-.ts-dropdown .ts-option.active,
-.ts-dropdown .ts-option.selected {
-    background: #007AFF !important;
-    background-color: #007AFF !important;
+#filterCliente option {
+    background: #484848 !important;
     color: #FFFFFF !important;
-    font-weight: 600 !important;
+    padding: 8px 12px !important;
 }
 
 .compact-filters-container .ts-dropdown .ts-option.active::after,
@@ -2499,7 +2476,15 @@
                                 
                                 <div class="filter-group">
                                     <label class="filter-label">Cliente</label>
-                                    <select class="filter-input" id="filterCliente" placeholder="Buscar cliente..."></select>
+                                    <select class="filter-input" id="filterCliente">
+                                        <option value="">Todos los clientes</option>
+                                        {% regroup items by cliente.nombre_empresa as cliente_list %}
+                                        {% for cliente in cliente_list %}
+                                            {% if cliente.grouper %}
+                                                <option value="{{ cliente.grouper }}">{{ cliente.grouper }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
                                 </div>
                                 
                                 <div class="filter-group">
@@ -2727,22 +2712,9 @@ var clientesOptions = [
 {% endfor %}
 
 <script>
-// Inicializar TomSelect para cliente - VERSIÓN SIMPLE
-const filterClienteElement = document.getElementById('filterCliente');
+// Cliente ahora usa select nativo - sin TomSelect
 let clienteSelect = null;
-if (filterClienteElement) {
-    clienteSelect = new TomSelect('#filterCliente',{
-        create: true,
-        sortField: {
-            field: "text",
-            direction: "asc"
-        },
-        options: clientesOptions,
-        placeholder: 'Buscar cliente...'
-    });
-} else {
-    console.log('🔍 filterCliente not found, skipping TomSelect initialization');
-}
+console.log('🔍 Cliente now uses native select - no TomSelect needed');
 
 // Custom multiselect functionality
 function initCustomMultiselects() {
@@ -2876,7 +2848,7 @@ function generarReporteCSV() {
     const oportunidad = document.getElementById('filterOportunidad') ? document.getElementById('filterOportunidad').value.trim() : '';
     const tipo = document.getElementById('filterTipo') ? document.getElementById('filterTipo').value.trim() : '';
     const etapas = getMultiselectValues('filterEtapa');
-    const cliente = clienteSelect ? clienteSelect.getValue() : '';
+    const cliente = document.getElementById('filterCliente') ? document.getElementById('filterCliente').value : '';
     const empleados = getMultiselectValues('filterEmpleado');
     const mesesCierre = getMultiselectValues('filterMesCierre');
 
@@ -3098,8 +3070,9 @@ function clearFilters() {
         if (input) input.value = '';
     });
     
-    // Limpiar TomSelect y custom multiselects
-    if (clienteSelect) clienteSelect.clear();
+    // Limpiar select nativo y custom multiselects
+    const clienteSelect = document.getElementById('filterCliente');
+    if (clienteSelect) clienteSelect.value = '';
     clearMultiselect('filterEtapa');
     clearMultiselect('filterEmpleado');
     clearMultiselect('filterMesCierre');
@@ -3129,7 +3102,7 @@ function applyFilters() {
     };
 
     const oportunidad = document.getElementById('filterOportunidad').value.toLowerCase().trim();
-    const cliente = (clienteSelect ? clienteSelect.getValue() : '').toLowerCase().trim();
+    const cliente = document.getElementById('filterCliente') ? document.getElementById('filterCliente').value.toLowerCase().trim() : '';
     const empleado = empleadoSelect ? empleadoSelect.getValue() : '';
     const mesCierre = document.getElementById('filterMesCierre').value.toLowerCase().trim();
     const ordenMonto = document.getElementById('filterOrdenMonto').value;
@@ -3233,7 +3206,7 @@ function applyFilters() {
     const oportunidad = document.getElementById('filterOportunidad')?.value?.toLowerCase().trim() || '';
     const tipo = document.getElementById('filterTipo')?.value?.trim() || '';
     const etapas = getMultiselectValues('filterEtapa'); // Array de estados seleccionados
-    const cliente = (clienteSelect ? clienteSelect.getValue() : '').toLowerCase().trim();
+    const cliente = document.getElementById('filterCliente') ? document.getElementById('filterCliente').value.toLowerCase().trim() : '';
     const empleados = getMultiselectValues('filterEmpleado'); // Array de empleados seleccionados
     const mesesCierre = getMultiselectValues('filterMesCierre'); // Array de meses seleccionados
     
