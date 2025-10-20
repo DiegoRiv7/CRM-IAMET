@@ -600,30 +600,12 @@
     transform: translateZ(1000px) !important;
 }
 
-/* Forzar estilos para todas las opciones de TomSelect - MUY ESPECÍFICO */
-.ts-dropdown .ts-option,
-.compact-filters-container .ts-dropdown .ts-option,
-.ts-dropdown-content .ts-option,
-div[data-ts-dropdown] .ts-option,
-body .ts-dropdown .ts-option,
-html body .ts-dropdown .ts-option {
+/* Estilos más simples para TomSelect */
+.ts-dropdown .ts-option {
     color: #FFFFFF !important;
-    background: #323234 !important;
-    background-color: #323234 !important;
+    background-color: rgba(60, 60, 62, 0.9) !important;
     padding: 12px 16px !important;
     font-size: 14px !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
-    transition: all 0.2s ease !important;
-    font-weight: 500 !important;
-    opacity: 1 !important;
-}
-
-/* Sobrescribir cualquier estilo inline o de TomSelect */
-.ts-dropdown .ts-option[style],
-body .ts-dropdown .ts-option[style] {
-    color: #FFFFFF !important;
-    background: #323234 !important;
-    background-color: #323234 !important;
     opacity: 1 !important;
 }
 
@@ -632,37 +614,18 @@ body .ts-dropdown .ts-option[style] {
     border-bottom: none !important;
 }
 
-/* Hover state más agresivo */
-.ts-dropdown .ts-option:hover,
-.compact-filters-container .ts-dropdown .ts-option:hover,
-.ts-dropdown-content .ts-option:hover,
-div[data-ts-dropdown] .ts-option:hover {
-    background: rgba(0, 122, 255, 0.9) !important;
-    background-color: rgba(0, 122, 255, 0.9) !important;
+/* Hover state simple */
+.ts-dropdown .ts-option:hover {
+    background-color: rgba(0, 122, 255, 0.8) !important;
     color: #FFFFFF !important;
-    transform: translateX(4px) !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
-    opacity: 1 !important;
 }
 
-/* Active/Selected state más agresivo */
+/* Active/Selected state simple */
 .ts-dropdown .ts-option.active,
-.ts-dropdown .ts-option.selected,
-.compact-filters-container .ts-dropdown .ts-option.active,
-.compact-filters-container .ts-dropdown .ts-option.selected,
-.ts-dropdown-content .ts-option.active,
-.ts-dropdown-content .ts-option.selected,
-div[data-ts-dropdown] .ts-option.active,
-div[data-ts-dropdown] .ts-option.selected {
-    background: rgba(0, 122, 255, 0.95) !important;
-    background-color: rgba(0, 122, 255, 0.95) !important;
+.ts-dropdown .ts-option.selected {
+    background-color: rgba(0, 122, 255, 0.9) !important;
     color: #FFFFFF !important;
     font-weight: 600 !important;
-    position: relative !important;
-    opacity: 1 !important;
-    box-shadow: 
-        inset 0 1px 0 rgba(255, 255, 255, 0.4) !important,
-        0 2px 8px rgba(0, 0, 0, 0.4) !important;
 }
 
 .compact-filters-container .ts-dropdown .ts-option.active::after,
@@ -2775,76 +2738,27 @@ if (filterClienteElement) {
         }
     });
     
-    // Función para forzar estilos del dropdown - MÁS AGRESIVA
+    // Función simple para estilos del dropdown
     function forceDropdownStyles() {
         setTimeout(() => {
-            const dropdowns = document.querySelectorAll('.ts-dropdown');
-            dropdowns.forEach(dropdown => {
-                // Estilos del contenedor
-                dropdown.style.cssText = `
-                    background: rgba(34, 34, 36, 0.98) !important;
-                    backdrop-filter: blur(25px) saturate(180%) !important;
-                    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-                    z-index: 999999 !important;
-                `;
-                
-                // Estilos de las opciones - FORZAR
+            const dropdown = document.querySelector('.ts-dropdown');
+            if (dropdown) {
+                // Solo aplicar estilos básicos sin romper funcionalidad
                 const options = dropdown.querySelectorAll('.ts-option');
                 options.forEach(option => {
-                    option.style.cssText = `
-                        color: #FFFFFF !important;
-                        background: #323234 !important;
-                        background-color: #323234 !important;
-                        opacity: 1 !important;
-                        font-weight: 500 !important;
-                        padding: 12px 16px !important;
-                        font-size: 14px !important;
-                        border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
-                    `;
-                    
-                    // Event listeners para mantener los estilos
-                    option.addEventListener('mouseenter', function() {
-                        this.style.cssText += `
-                            background: rgba(0, 122, 255, 0.9) !important;
-                            background-color: rgba(0, 122, 255, 0.9) !important;
-                            color: #FFFFFF !important;
-                        `;
-                    });
-                    
-                    option.addEventListener('mouseleave', function() {
-                        this.style.cssText = this.style.cssText.replace(/background[^;]*;/g, 'background: #323234 !important;');
-                    });
+                    option.style.color = '#FFFFFF';
+                    option.style.backgroundColor = 'rgba(60, 60, 62, 0.9)';
+                    option.style.opacity = '1';
                 });
-            });
-        }, 10);
+            }
+        }, 100);
     }
     
     // Aplicar estilos inicialmente
     forceDropdownStyles();
     
-    // Aplicar estilos cada vez que se abra el dropdown
+    // Aplicar estilos solo cuando se abra el dropdown
     clienteSelect.on('dropdown_open', forceDropdownStyles);
-    clienteSelect.on('dropdown_close', forceDropdownStyles);
-    
-    // MutationObserver para detectar cambios en el DOM
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.type === 'childList') {
-                const addedNodes = Array.from(mutation.addedNodes);
-                addedNodes.forEach(node => {
-                    if (node.classList && (node.classList.contains('ts-dropdown') || node.querySelector('.ts-dropdown'))) {
-                        forceDropdownStyles();
-                    }
-                });
-            }
-        });
-    });
-    
-    // Observar cambios en el body
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true
-    });
 } else {
     console.log('🔍 filterCliente not found, skipping TomSelect initialization');
 }
