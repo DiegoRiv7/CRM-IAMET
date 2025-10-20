@@ -2003,7 +2003,7 @@
             </div>
         </div>
 
-        <!-- Modal placeholders for settings -->
+        <!-- Avatar Modal -->
         <div id="avatarModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -2011,11 +2011,54 @@
                     <button class="modal-close" onclick="closeModal('avatarModal')">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <p>Aquí puedes cambiar tu avatar. Esta función estará disponible próximamente.</p>
+                    <div class="avatar-section">
+                        <h3>Elige un avatar animado</h3>
+                        <p>Selecciona tu avatar favorito de nuestra colección</p>
+                        <div class="animal-grid">
+                            <div class="animal-option avatar-choice" data-animal="dinosaur" onclick="selectAvatar('dinosaur')">
+                                <div class="animal-emoji">🦕</div>
+                                <span>Dinosaurio</span>
+                            </div>
+                            <div class="animal-option avatar-choice" data-animal="panda" onclick="selectAvatar('panda')">
+                                <div class="animal-emoji">🐼</div>
+                                <span>Panda</span>
+                            </div>
+                            <div class="animal-option avatar-choice" data-animal="eagle" onclick="selectAvatar('eagle')">
+                                <div class="animal-emoji">🦅</div>
+                                <span>Águila</span>
+                            </div>
+                            <div class="animal-option avatar-choice" data-animal="fox" onclick="selectAvatar('fox')">
+                                <div class="animal-emoji">🦊</div>
+                                <span>Zorro</span>
+                            </div>
+                            <div class="animal-option avatar-choice" data-animal="wolf" onclick="selectAvatar('wolf')">
+                                <div class="animal-emoji">🐺</div>
+                                <span>Lobo</span>
+                            </div>
+                            <div class="animal-option avatar-choice" data-animal="owl" onclick="selectAvatar('owl')">
+                                <div class="animal-emoji">🦉</div>
+                                <span>Búho</span>
+                            </div>
+                            <div class="animal-option avatar-choice" data-animal="axolote" onclick="selectAvatar('axolote')">
+                                <div class="animal-emoji">🐸</div>
+                                <span>Axolote</span>
+                            </div>
+                            <div class="animal-option avatar-choice" data-animal="crocodile" onclick="selectAvatar('crocodile')">
+                                <div class="animal-emoji">🐊</div>
+                                <span>Cocodrilo</span>
+                            </div>
+                        </div>
+                        <div class="divider"></div>
+                        <h3>O sube tu propia imagen</h3>
+                        <p>Sube una imagen personalizada para tu avatar</p>
+                        <input type="file" id="avatarUpload" accept="image/*" style="margin-bottom: 16px;">
+                        <button class="btn-primary" onclick="saveAvatar()">Guardar Avatar</button>
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- Design Modal -->
         <div id="designModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -2023,11 +2066,182 @@
                     <button class="modal-close" onclick="closeModal('designModal')">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <p>Aquí puedes personalizar el tema y colores. Esta función estará disponible próximamente.</p>
+                    <div class="avatar-section">
+                        <h3>Selecciona un tema</h3>
+                        <p>Elige el tema que más te guste para personalizar la apariencia</p>
+                        <div class="theme-options">
+                            <div class="theme-option" data-theme="dark" onclick="selectTheme('dark')">
+                                <div class="theme-preview-large dark-preview">
+                                    <div class="preview-miniature">
+                                        <div class="mini-page">
+                                            <div class="mini-bg"></div>
+                                            <div class="mini-header">
+                                                <div class="mini-logo">
+                                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"/></svg>
+                                                </div>
+                                                <div class="mini-nav">
+                                                    <div class="mini-nav-dot"></div>
+                                                    <div class="mini-nav-dot"></div>
+                                                    <div class="mini-nav-dot"></div>
+                                                </div>
+                                            </div>
+                                            <div class="mini-content">
+                                                <div class="mini-welcome">
+                                                    <div class="mini-avatar"></div>
+                                                    <div class="mini-title">Bienvenido</div>
+                                                    <div class="mini-subtitle">Panel de Control</div>
+                                                </div>
+                                                <div class="mini-search">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                                                    <div class="mini-search-text">Buscar...</div>
+                                                </div>
+                                                <div class="mini-cards">
+                                                    <div class="mini-card">
+                                                        <div class="mini-card-avatar"></div>
+                                                        <div class="mini-card-title">Usuarios</div>
+                                                    </div>
+                                                    <div class="mini-card">
+                                                        <div class="mini-card-avatar"></div>
+                                                        <div class="mini-card-title">Ventas</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span>Tema Espacial (Oscuro)</span>
+                            </div>
+                            <div class="theme-option" data-theme="light" onclick="selectTheme('light')">
+                                <div class="theme-preview-large white-preview">
+                                    <div class="preview-miniature">
+                                        <div class="mini-page">
+                                            <div class="mini-bg"></div>
+                                            <div class="mini-header">
+                                                <div class="mini-logo">
+                                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"/></svg>
+                                                </div>
+                                                <div class="mini-nav">
+                                                    <div class="mini-nav-dot"></div>
+                                                    <div class="mini-nav-dot"></div>
+                                                    <div class="mini-nav-dot"></div>
+                                                </div>
+                                            </div>
+                                            <div class="mini-content">
+                                                <div class="mini-welcome">
+                                                    <div class="mini-avatar"></div>
+                                                    <div class="mini-title">Bienvenido</div>
+                                                    <div class="mini-subtitle">Panel de Control</div>
+                                                </div>
+                                                <div class="mini-search">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                                                    <div class="mini-search-text">Buscar...</div>
+                                                </div>
+                                                <div class="mini-cards">
+                                                    <div class="mini-card">
+                                                        <div class="mini-card-avatar"></div>
+                                                        <div class="mini-card-title">Usuarios</div>
+                                                    </div>
+                                                    <div class="mini-card">
+                                                        <div class="mini-card-avatar"></div>
+                                                        <div class="mini-card-title">Ventas</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span>Tema Perla (Claro)</span>
+                            </div>
+                            <div class="theme-option" data-theme="pink" onclick="selectTheme('pink')">
+                                <div class="theme-preview-large pink-preview">
+                                    <div class="preview-miniature">
+                                        <div class="mini-page">
+                                            <div class="mini-bg"></div>
+                                            <div class="mini-header">
+                                                <div class="mini-logo">
+                                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"/></svg>
+                                                </div>
+                                                <div class="mini-nav">
+                                                    <div class="mini-nav-dot"></div>
+                                                    <div class="mini-nav-dot"></div>
+                                                    <div class="mini-nav-dot"></div>
+                                                </div>
+                                            </div>
+                                            <div class="mini-content">
+                                                <div class="mini-welcome">
+                                                    <div class="mini-avatar"></div>
+                                                    <div class="mini-title">Bienvenido</div>
+                                                    <div class="mini-subtitle">Panel de Control</div>
+                                                </div>
+                                                <div class="mini-search">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                                                    <div class="mini-search-text">Buscar...</div>
+                                                </div>
+                                                <div class="mini-cards">
+                                                    <div class="mini-card">
+                                                        <div class="mini-card-avatar"></div>
+                                                        <div class="mini-card-title">Usuarios</div>
+                                                    </div>
+                                                    <div class="mini-card">
+                                                        <div class="mini-card-avatar"></div>
+                                                        <div class="mini-card-title">Ventas</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span>Tema Sakura (Rosa)</span>
+                            </div>
+                            <div class="theme-option" data-theme="coffee" onclick="selectTheme('coffee')">
+                                <div class="theme-preview-large coffee-preview">
+                                    <div class="preview-miniature">
+                                        <div class="mini-page">
+                                            <div class="mini-bg"></div>
+                                            <div class="mini-header">
+                                                <div class="mini-logo">
+                                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"/></svg>
+                                                </div>
+                                                <div class="mini-nav">
+                                                    <div class="mini-nav-dot"></div>
+                                                    <div class="mini-nav-dot"></div>
+                                                    <div class="mini-nav-dot"></div>
+                                                </div>
+                                            </div>
+                                            <div class="mini-content">
+                                                <div class="mini-welcome">
+                                                    <div class="mini-avatar"></div>
+                                                    <div class="mini-title">Bienvenido</div>
+                                                    <div class="mini-subtitle">Panel de Control</div>
+                                                </div>
+                                                <div class="mini-search">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                                                    <div class="mini-search-text">Buscar...</div>
+                                                </div>
+                                                <div class="mini-cards">
+                                                    <div class="mini-card">
+                                                        <div class="mini-card-avatar"></div>
+                                                        <div class="mini-card-title">Usuarios</div>
+                                                    </div>
+                                                    <div class="mini-card">
+                                                        <div class="mini-card-avatar"></div>
+                                                        <div class="mini-card-title">Ventas</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span>Tema Duna (Café)</span>
+                            </div>
+                        </div>
+                        <button class="btn-primary" onclick="applyTheme()">Aplicar Tema</button>
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- Language Modal -->
         <div id="languageModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -2035,11 +2249,33 @@
                     <button class="modal-close" onclick="closeModal('languageModal')">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <p>Aquí puedes cambiar el idioma de la interfaz. Esta función estará disponible próximamente.</p>
+                    <div class="avatar-section">
+                        <h3>Selecciona tu idioma</h3>
+                        <p>Cambia el idioma de la interfaz</p>
+                        <div class="language-options">
+                            <div class="language-option" onclick="setLanguage('es')">
+                                <div class="language-flag spanish-flag"></div>
+                                <div class="language-info">
+                                    <span class="language-name">Español</span>
+                                    <span class="language-code">ES</span>
+                                </div>
+                                <span class="current-indicator" style="display: {% if user_profile.language == 'es' or not user_profile.language %}block{% else %}none{% endif %};">✓</span>
+                            </div>
+                            <div class="language-option" onclick="setLanguage('en')">
+                                <div class="language-flag english-flag"></div>
+                                <div class="language-info">
+                                    <span class="language-name">English</span>
+                                    <span class="language-code">EN</span>
+                                </div>
+                                <span class="current-indicator" style="display: {% if user_profile.language == 'en' %}block{% else %}none{% endif %};">✓</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- User Info Modal -->
         <div id="userInfoModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -2047,20 +2283,84 @@
                     <button class="modal-close" onclick="closeModal('userInfoModal')">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <p>Aquí puedes actualizar tu información personal. Esta función estará disponible próximamente.</p>
+                    <form class="user-info-form" method="post" action="{% url 'configuracion_avanzada' %}">
+                        {% csrf_token %}
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="username">Nombre de usuario</label>
+                                <input type="text" id="username" name="username" value="{{ user.username }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="email">Correo electrónico</label>
+                                <input type="email" id="email" name="email" value="{{ user.email }}">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="first_name">Nombre</label>
+                                <input type="text" id="first_name" name="first_name" value="{{ user.first_name }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="last_name">Apellido</label>
+                                <input type="text" id="last_name" name="last_name" value="{{ user.last_name }}">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">Guardar Cambios</button>
+                            <button type="button" class="btn-danger" onclick="logout()">Cerrar Sesión</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        // Global variables
+        let selectedAvatar = null;
+        let selectedTheme = localStorage.getItem('theme') || 'dark';
+
+        // Notification function
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `<span class="icon">✓</span> ${message}`;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 3000);
+        }
+
         // Functions to open settings modals
         function openAvatarSettings() {
             showModal('avatarModal');
+            // Set current avatar as selected if any
+            const currentAvatar = document.body.getAttribute('data-avatar-config');
+            if (currentAvatar) {
+                try {
+                    const avatarConfig = JSON.parse(currentAvatar);
+                    if (avatarConfig.avatarTipo) {
+                        selectAvatar(avatarConfig.avatarTipo);
+                    }
+                } catch (e) {
+                    console.log('Could not parse avatar config');
+                }
+            }
         }
 
         function openDesignSettings() {
             showModal('designModal');
+            // Mark current theme as selected
+            const currentTheme = localStorage.getItem('theme') || 'dark';
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.classList.remove('active');
+                if (option.getAttribute('data-theme') === currentTheme) {
+                    option.classList.add('active');
+                }
+            });
         }
 
         function openLanguageSettings() {
@@ -2069,6 +2369,133 @@
 
         function openUserInfoSettings() {
             showModal('userInfoModal');
+        }
+
+        // Avatar functions
+        function selectAvatar(animalType) {
+            selectedAvatar = animalType;
+            document.querySelectorAll('.avatar-choice').forEach(choice => {
+                choice.classList.remove('selected');
+            });
+            document.querySelector(`[data-animal="${animalType}"]`).classList.add('selected');
+        }
+
+        function saveAvatar() {
+            if (selectedAvatar) {
+                // Create form data to submit avatar selection
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/app/configuracion_avanzada/';
+                
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken;
+                
+                const avatarInput = document.createElement('input');
+                avatarInput.type = 'hidden';
+                avatarInput.name = 'avatar_tipo';
+                avatarInput.value = selectedAvatar;
+                
+                form.appendChild(csrfInput);
+                form.appendChild(avatarInput);
+                document.body.appendChild(form);
+                form.submit();
+            } else {
+                showNotification('Por favor selecciona un avatar', 'warning');
+            }
+        }
+
+        // Theme functions
+        function selectTheme(theme) {
+            selectedTheme = theme;
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            document.querySelector(`[data-theme="${theme}"]`).classList.add('active');
+        }
+
+        function applyTheme() {
+            if (selectedTheme) {
+                // Apply theme immediately
+                applyThemeImmediate(selectedTheme);
+                showNotification('Tema aplicado correctamente', 'success');
+                closeModal('designModal');
+            }
+        }
+
+        // Theme application function (adapted from original)
+        window.applyThemeImmediate = function(theme) {
+            // Remove existing theme classes
+            document.documentElement.classList.remove('light-theme', 'pink-theme', 'coffee-theme', 'white-theme');
+            document.body.classList.remove('light-theme', 'pink-theme', 'coffee-theme', 'white-theme');
+            document.documentElement.removeAttribute('data-theme');
+            
+            // Apply new theme
+            if (theme === 'light' || theme === 'white') {
+                document.documentElement.classList.add('light-theme');
+                document.body.classList.add('light-theme');
+                document.documentElement.style.setProperty('--apple-background', '#ffffff');
+                document.documentElement.style.setProperty('--apple-label', '#212529');
+            } else if (theme === 'pink') {
+                document.documentElement.classList.add('light-theme', 'pink-theme');
+                document.body.classList.add('light-theme', 'pink-theme');
+                document.documentElement.setAttribute('data-theme', 'pink');
+                document.documentElement.style.setProperty('--apple-background', 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)');
+                document.documentElement.style.setProperty('--apple-blue', '#FF6B9D');
+                document.documentElement.style.setProperty('--apple-label', '#2D1B2E');
+            } else if (theme === 'coffee') {
+                document.documentElement.classList.add('light-theme', 'coffee-theme');
+                document.body.classList.add('light-theme', 'coffee-theme');
+                document.documentElement.setAttribute('data-theme', 'coffee');
+                document.documentElement.style.setProperty('--apple-background', 'linear-gradient(135deg, #f5e6d3 0%, #f0dcc7 100%)');
+                document.documentElement.style.setProperty('--apple-blue', '#8b6239');
+                document.documentElement.style.setProperty('--apple-label', '#4a3020');
+            } else {
+                // Dark theme (default)
+                document.documentElement.style.setProperty('--apple-background', '#000000');
+                document.documentElement.style.setProperty('--apple-blue', '#007AFF');
+                document.documentElement.style.setProperty('--apple-label', '#EBEBF5');
+            }
+            
+            // Save theme to localStorage
+            localStorage.setItem('theme', theme);
+            return true;
+        };
+
+        // Language functions
+        function setLanguage(lang) {
+            fetch('/app/set-language/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ language: lang })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Idioma cambiado correctamente', 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showNotification('Error al cambiar idioma', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Error al cambiar idioma', 'error');
+            });
+        }
+
+        // User functions
+        function logout() {
+            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                window.location.href = '/app/logout/';
+            }
         }
 
         // Modal management functions
@@ -2109,6 +2536,14 @@
                 openModals.forEach(modal => {
                     closeModal(modal.id);
                 });
+            }
+        });
+
+        // Initialize theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            if (typeof applyThemeImmediate === 'function') {
+                applyThemeImmediate(savedTheme);
             }
         });
     </script>
