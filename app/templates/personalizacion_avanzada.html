@@ -1998,3 +1998,119 @@
                     <div class="user-info-preview">
                         <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
                         <div class="user-role">{{ user.email|default:"Sin email" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal placeholders for settings -->
+        <div id="avatarModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Configuración de Avatar</h2>
+                    <button class="modal-close" onclick="closeModal('avatarModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>Aquí puedes cambiar tu avatar. Esta función estará disponible próximamente.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="designModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Configuración de Diseño</h2>
+                    <button class="modal-close" onclick="closeModal('designModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>Aquí puedes personalizar el tema y colores. Esta función estará disponible próximamente.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="languageModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Configuración de Idioma</h2>
+                    <button class="modal-close" onclick="closeModal('languageModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>Aquí puedes cambiar el idioma de la interfaz. Esta función estará disponible próximamente.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="userInfoModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Información Personal</h2>
+                    <button class="modal-close" onclick="closeModal('userInfoModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>Aquí puedes actualizar tu información personal. Esta función estará disponible próximamente.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Functions to open settings modals
+        function openAvatarSettings() {
+            showModal('avatarModal');
+        }
+
+        function openDesignSettings() {
+            showModal('designModal');
+        }
+
+        function openLanguageSettings() {
+            showModal('languageModal');
+        }
+
+        function openUserInfoSettings() {
+            showModal('userInfoModal');
+        }
+
+        // Modal management functions
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'flex';
+                modal.style.opacity = '1';
+                modal.style.visibility = 'visible';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.opacity = '0';
+                modal.style.visibility = 'hidden';
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = '';
+                }, 300);
+            }
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('modal')) {
+                const modalId = event.target.id;
+                closeModal(modalId);
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const openModals = document.querySelectorAll('.modal[style*="display: flex"]');
+                openModals.forEach(modal => {
+                    closeModal(modal.id);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
