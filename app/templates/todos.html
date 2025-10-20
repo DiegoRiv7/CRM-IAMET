@@ -600,7 +600,33 @@
     transform: translateZ(1000px) !important;
 }
 
-/* TomSelect ya no se usa para cliente - ahora usa custom-multiselect */
+/* Estilos específicos para TomSelect del cliente - SIN TRANSPARENCIAS */
+.ts-dropdown {
+    background: #2C2C2E !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.8) !important;
+}
+
+.ts-dropdown .ts-option {
+    color: #FFFFFF !important;
+    background-color: #2C2C2E !important;
+    padding: 12px 16px !important;
+    font-size: 14px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.ts-dropdown .ts-option:hover {
+    background-color: #007AFF !important;
+    color: #FFFFFF !important;
+}
+
+.ts-dropdown .ts-option.active,
+.ts-dropdown .ts-option.selected {
+    background-color: #007AFF !important;
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
+}
 
 .compact-filters-container .ts-dropdown .ts-option.active::after,
 .compact-filters-container .ts-dropdown .ts-option.selected::after {
@@ -2464,21 +2490,7 @@
                                 
                                 <div class="filter-group">
                                     <label class="filter-label">Cliente</label>
-                                    <div class="custom-multiselect" id="filterCliente">
-                                        <div class="multiselect-display">
-                                            <span class="placeholder">Seleccionar cliente...</span>
-                                            <div class="selected-items"></div>
-                                            <span class="dropdown-arrow">▼</span>
-                                        </div>
-                                        <div class="multiselect-dropdown">
-                                            {% for cliente in clientes_para_filtro %}
-                                                <div class="multiselect-option" data-value="{{ cliente.grouper }}">
-                                                    <input type="checkbox" id="cliente_{{ forloop.counter }}" value="{{ cliente.grouper }}">
-                                                    <label for="cliente_{{ forloop.counter }}">{{ cliente.grouper }}</label>
-                                                </div>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
+                                    <select class="filter-input" id="filterCliente" placeholder="Buscar cliente..."></select>
                                 </div>
                                 
                                 <div class="filter-group">
@@ -2706,9 +2718,22 @@ var clientesOptions = [
 {% endfor %}
 
 <script>
-// El cliente ahora usa custom-multiselect, no TomSelect
+// Inicializar TomSelect para cliente - VERSIÓN SIMPLE
+const filterClienteElement = document.getElementById('filterCliente');
 let clienteSelect = null;
-console.log('🔍 Cliente now uses custom-multiselect instead of TomSelect');
+if (filterClienteElement) {
+    clienteSelect = new TomSelect('#filterCliente',{
+        create: true,
+        sortField: {
+            field: "text",
+            direction: "asc"
+        },
+        options: clientesOptions,
+        placeholder: 'Buscar cliente...'
+    });
+} else {
+    console.log('🔍 filterCliente not found, skipping TomSelect initialization');
+}
 
 // Custom multiselect functionality
 function initCustomMultiselects() {
@@ -2842,7 +2867,7 @@ function generarReporteCSV() {
     const oportunidad = document.getElementById('filterOportunidad') ? document.getElementById('filterOportunidad').value.trim() : '';
     const tipo = document.getElementById('filterTipo') ? document.getElementById('filterTipo').value.trim() : '';
     const etapas = getMultiselectValues('filterEtapa');
-    const cliente = getMultiselectValues('filterCliente').join(',');
+    const cliente = clienteSelect ? clienteSelect.getValue() : '';
     const empleados = getMultiselectValues('filterEmpleado');
     const mesesCierre = getMultiselectValues('filterMesCierre');
 
@@ -3064,8 +3089,8 @@ function clearFilters() {
         if (input) input.value = '';
     });
     
-    // Limpiar custom multiselects
-    clearMultiselect('filterCliente');
+    // Limpiar TomSelect y custom multiselects
+    if (clienteSelect) clienteSelect.clear();
     clearMultiselect('filterEtapa');
     clearMultiselect('filterEmpleado');
     clearMultiselect('filterMesCierre');
@@ -3095,7 +3120,7 @@ function applyFilters() {
     };
 
     const oportunidad = document.getElementById('filterOportunidad').value.toLowerCase().trim();
-    const clientes = getMultiselectValues('filterCliente');
+    const cliente = (clienteSelect ? clienteSelect.getValue() : '').toLowerCase().trim();
     const empleado = empleadoSelect ? empleadoSelect.getValue() : '';
     const mesCierre = document.getElementById('filterMesCierre').value.toLowerCase().trim();
     const ordenMonto = document.getElementById('filterOrdenMonto').value;
@@ -3118,15 +3143,8 @@ function applyFilters() {
             showRow = false;
         }
         
-        // Filtro de cliente (múltiple)
-        if (clientes.length > 0) {
-            const clienteTexto = cells[1].textContent.toLowerCase();
-            const clienteMatch = clientes.some(cliente => 
-                clienteTexto.includes(cliente.toLowerCase())
-            );
-            if (!clienteMatch) {
-                showRow = false;
-            }
+        if (cliente && !cells[1].textContent.toLowerCase().includes(cliente)) {
+            showRow = false;
         }
         
         if (empleado && row.dataset.usuarioId !== empleado) {
@@ -3206,7 +3224,7 @@ function applyFilters() {
     const oportunidad = document.getElementById('filterOportunidad')?.value?.toLowerCase().trim() || '';
     const tipo = document.getElementById('filterTipo')?.value?.trim() || '';
     const etapas = getMultiselectValues('filterEtapa'); // Array de estados seleccionados
-    const clientes = getMultiselectValues('filterCliente');
+    const cliente = (clienteSelect ? clienteSelect.getValue() : '').toLowerCase().trim();
     const empleados = getMultiselectValues('filterEmpleado'); // Array de empleados seleccionados
     const mesesCierre = getMultiselectValues('filterMesCierre'); // Array de meses seleccionados
     
@@ -3214,7 +3232,7 @@ function applyFilters() {
         oportunidad,
         tipo, 
         etapas,
-        clientes,
+        cliente,
         empleados,
         mesesCierre
     });
@@ -3237,15 +3255,8 @@ function applyFilters() {
         }
         
         // Filtro de cliente
-        // Filtro de cliente (múltiple)
-        if (clientes.length > 0) {
-            const clienteTexto = cells[1].textContent.toLowerCase();
-            const clienteMatch = clientes.some(cliente => 
-                clienteTexto.includes(cliente.toLowerCase())
-            );
-            if (!clienteMatch) {
-                showRow = false;
-            }
+        if (cliente && !cells[1].textContent.toLowerCase().includes(cliente)) {
+            showRow = false;
         }
         
         // Filtro de empleado (múltiple)
