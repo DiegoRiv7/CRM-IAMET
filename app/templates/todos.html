@@ -2721,11 +2721,31 @@ function initClienteSearch() {
     const selectElement = document.getElementById('filterCliente');
     if (!selectElement) return;
     
-    // Guardar todas las opciones originales
-    const originalOptions = Array.from(selectElement.options).map(option => ({
-        value: option.value,
-        text: option.textContent
-    }));
+    // Guardar todas las opciones originales y eliminar duplicados
+    const allOptions = Array.from(selectElement.options);
+    const uniqueOptions = [];
+    const seenValues = new Set();
+    
+    allOptions.forEach(option => {
+        const value = option.value;
+        const text = option.textContent;
+        
+        if (!seenValues.has(value)) {
+            seenValues.add(value);
+            uniqueOptions.push({ value, text });
+        }
+    });
+    
+    // Limpiar el select y agregar solo opciones únicas
+    selectElement.innerHTML = '';
+    uniqueOptions.forEach(optionData => {
+        const option = document.createElement('option');
+        option.value = optionData.value;
+        option.textContent = optionData.text;
+        selectElement.appendChild(option);
+    });
+    
+    const originalOptions = uniqueOptions;
     
     // Crear input de búsqueda
     const searchInput = document.createElement('input');
