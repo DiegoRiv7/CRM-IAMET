@@ -422,7 +422,7 @@
         0 4px 16px rgba(0, 0, 0, 0.2),
         inset 0 1px 0 rgba(255, 255, 255, 0.1);
     position: relative;
-    z-index: 1000;
+    z-index: 10000;
 }
 
 .filters-grid {
@@ -580,11 +580,12 @@
     color: white !important;
 }
 
-.compact-filters-container .ts-dropdown {
+.compact-filters-container .ts-dropdown,
+.ts-dropdown {
     background: rgba(28, 28, 30, 0.98) !important;
     border: 1px solid rgba(255, 255, 255, 0.3) !important;
     border-radius: 12px !important;
-    z-index: 99999 !important;
+    z-index: 999999 !important;
     position: absolute !important;
     margin-top: 2px !important;
     min-width: 200px !important;
@@ -596,9 +597,11 @@
         0 12px 32px rgba(0, 0, 0, 0.8) !important,
         0 4px 12px rgba(0, 0, 0, 0.4) !important,
         inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+    transform: translateZ(1000px) !important;
 }
 
-.compact-filters-container .ts-dropdown .ts-option {
+.compact-filters-container .ts-dropdown .ts-option,
+.ts-dropdown .ts-option {
     color: rgba(255, 255, 255, 0.95) !important;
     background: rgba(255, 255, 255, 0.02) !important;
     padding: 12px 16px !important;
@@ -608,11 +611,13 @@
     font-weight: 500 !important;
 }
 
-.compact-filters-container .ts-dropdown .ts-option:last-child {
+.compact-filters-container .ts-dropdown .ts-option:last-child,
+.ts-dropdown .ts-option:last-child {
     border-bottom: none !important;
 }
 
-.compact-filters-container .ts-dropdown .ts-option:hover {
+.compact-filters-container .ts-dropdown .ts-option:hover,
+.ts-dropdown .ts-option:hover {
     background: rgba(0, 122, 255, 0.4) !important;
     color: rgba(255, 255, 255, 0.98) !important;
     transform: translateX(4px) !important;
@@ -620,7 +625,9 @@
 }
 
 .compact-filters-container .ts-dropdown .ts-option.active,
-.compact-filters-container .ts-dropdown .ts-option.selected {
+.compact-filters-container .ts-dropdown .ts-option.selected,
+.ts-dropdown .ts-option.active,
+.ts-dropdown .ts-option.selected {
     background: rgba(0, 122, 255, 0.6) !important;
     color: rgba(255, 255, 255, 0.98) !important;
     font-weight: 600 !important;
@@ -2731,7 +2738,13 @@ if (filterClienteElement) {
             direction: "asc"
         },
         options: clientesOptions,
-        placeholder: 'Buscar cliente...'
+        placeholder: 'Buscar cliente...',
+        dropdownParent: 'body',
+        render: {
+            dropdown: function() {
+                return '<div style="z-index: 999999 !important; position: absolute !important;"></div>';
+            }
+        }
     });
 } else {
     console.log('🔍 filterCliente not found, skipping TomSelect initialization');
