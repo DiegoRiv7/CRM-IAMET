@@ -2778,10 +2778,10 @@ function initClienteSearch() {
             selectElement.appendChild(option);
         });
         
-        // Auto-abrir el select si hay opciones
+        // Auto-redimensionar el select si hay opciones
         if (filteredOptions.length > 0) {
-            selectElement.focus();
             selectElement.size = Math.min(filteredOptions.length, 8);
+            selectElement.selectedIndex = -1; // No seleccionar nada automáticamente
         }
     }
     
@@ -2810,14 +2810,29 @@ function initClienteSearch() {
         }
     });
     
-    // Permitir selección con teclas
+    // Permitir navegación con teclas
     searchInput.addEventListener('keydown', function(e) {
         if (e.key === 'ArrowDown' && selectElement.style.display === 'block') {
             e.preventDefault();
             selectElement.focus();
-        } else if (e.key === 'Enter' && selectElement.options.length === 1) {
-            selectElement.selectedIndex = 0;
+            if (selectElement.options.length > 0) {
+                selectElement.selectedIndex = 0;
+            }
+        } else if (e.key === 'Escape') {
+            selectElement.style.display = 'none';
+            selectElement.size = 1;
+            searchInput.blur();
+        }
+    });
+    
+    // Manejar selección con teclas en el select
+    selectElement.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
             selectElement.dispatchEvent(new Event('change'));
+        } else if (e.key === 'Escape') {
+            selectElement.style.display = 'none';
+            selectElement.size = 1;
+            searchInput.focus();
         }
     });
 }
