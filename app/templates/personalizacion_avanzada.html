@@ -3561,9 +3561,9 @@ setTimeout(() => {
                     else if (type === 'compact') newDock = generateDock(false, true);
                     dockPreview.appendChild(newDock);
                     console.log('Appended new dock to preview:', newDock);
-dockPreview.style.transform = 'scale(1)';
+                    dockPreview.style.transform = 'scale(1)';
                     dockPreview.style.opacity = '1';
-}, 200);
+                }, 200);
             }, 300);
             
             // Aplicar el tipo de dock al dock actual de la página
@@ -3577,8 +3577,8 @@ dockPreview.style.transform = 'scale(1)';
                 console.log('Appended new dock to preview (no animation):', newDock);
             }
 
-setDockType(type);
-}
+            setDockType(type);
+        }
 
         function openDesignSettings() {
             showModal('designModal');
@@ -3609,24 +3609,23 @@ option.style.boxShadow = '';
 });
 
 // Find and activate the selected dock type option
-            const selectedOption = document.querySelector(`.dock-type-option[data-type="${type}"]`);
-            const selectedOption = document.querySelector(`.dock-type-option[id*="${type}"]`);
-if (selectedOption) {
-selectedOption.classList.add('active');
-console.log('Added active class to dock type option:', selectedOption);
+            const selectedOption = document.querySelector(`.dock-type-option[data-type="${type}"]`) || document.querySelector(`.dock-type-option[id*="${type}"]`);
+            if (selectedOption) {
+                selectedOption.classList.add('active');
+                console.log('Added active class to dock type option:', selectedOption);
 
-// Forzar un pequeño efecto visual sin interferer con los CSS
-selectedOption.style.transform = 'translateY(-2px) scale(1.05)';
-setTimeout(() => {
-// Quitar el estilo inline para que use el CSS de la clase active
-selectedOption.style.transform = '';
-}, 150);
-}
+                // Forzar un pequeño efecto visual sin interferer con los CSS
+                selectedOption.style.transform = 'translateY(-2px) scale(1.05)';
+                setTimeout(() => {
+                    // Quitar el estilo inline para que use el CSS de la clase active
+                    selectedOption.style.transform = '';
+                }, 150);
+            }
 
-// Apply dock type to actual dock using global function
-if (window.applyDockTypeStyles) {
-window.applyDockTypeStyles(type);
-}
+            // Apply dock type to actual dock using global function
+            if (window.applyDockTypeStyles) {
+                window.applyDockTypeStyles(type);
+            }
 
 // Save dock type to localStorage
 localStorage.setItem('dockType', type);
@@ -4376,7 +4375,7 @@ option.classList.remove('active');
 if (option.getAttribute('data-icons') === icons) {
 option.classList.add('active');
 }
-});
+    });
 }
 </script>
 </body>
