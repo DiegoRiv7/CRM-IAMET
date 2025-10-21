@@ -903,27 +903,86 @@
         right: -25px;
     }
 
+    .balloon-container {
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+    .balloon-string {
+        position: absolute;
+        bottom: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 2px;
+        height: 45px;
+        background: linear-gradient(to bottom, 
+            rgba(68, 68, 68, 0.9) 0%, 
+            rgba(102, 102, 102, 0.8) 50%, 
+            rgba(51, 51, 51, 0.7) 100%);
+        border-radius: 1px;
+        box-shadow: 1px 0 3px rgba(0, 0, 0, 0.4);
+        animation: stringSwing 4s ease-in-out infinite;
+    }
+
+    @keyframes stringSwing {
+        0%, 100% { transform: translateX(-50%) rotate(0deg); }
+        25% { transform: translateX(-50%) rotate(2deg); }
+        75% { transform: translateX(-50%) rotate(-2deg); }
+    }
+
     .balloon-3d {
-        width: 40px;
-        height: 55px;
-        border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+        width: 45px;
+        height: 65px;
+        border-radius: 50% 50% 50% 50% / 70% 70% 30% 30%;
         position: relative;
         margin-bottom: 15px;
         animation: balloonFloat3D 6s ease-in-out infinite;
         box-shadow: 
-            inset -10px -10px 0 rgba(0, 0, 0, 0.1),
-            0 5px 15px rgba(0, 0, 0, 0.3);
+            inset -12px -15px 8px rgba(0, 0, 0, 0.15),
+            inset 8px 8px 12px rgba(255, 255, 255, 0.3),
+            0 8px 20px rgba(0, 0, 0, 0.4);
+        transform-style: preserve-3d;
+    }
+
+    .balloon-3d::before {
+        content: '';
+        position: absolute;
+        top: 15%;
+        left: 20%;
+        width: 15px;
+        height: 20px;
+        background: rgba(255, 255, 255, 0.4);
+        border-radius: 50% 20% 50% 20%;
+        transform: rotate(-30deg);
+        filter: blur(1px);
     }
 
     .balloon-3d::after {
         content: '';
         position: absolute;
-        bottom: -8px;
+        bottom: -12px;
         left: 50%;
         transform: translateX(-50%);
-        width: 1px;
-        height: 30px;
-        background: #333;
+        width: 8px;
+        height: 8px;
+        background: inherit;
+        border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+        box-shadow: 
+            0 2px 4px rgba(0, 0, 0, 0.3),
+            inset -2px -2px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .balloon-3d::after::before {
+        content: '';
+        position: absolute;
+        bottom: -35px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 2px;
+        height: 40px;
+        background: linear-gradient(to bottom, #444 0%, #666 50%, #333 100%);
+        border-radius: 1px;
+        box-shadow: 1px 0 2px rgba(0, 0, 0, 0.3);
     }
 
     .balloon-red {
@@ -1162,26 +1221,66 @@
     }
 
     .birthday-name {
-        color: #FF69B4 !important;
-        text-shadow: 
-            0 2px 4px rgba(255, 215, 0, 0.5),
-            0 0 15px rgba(255, 105, 180, 0.6);
-        animation: nameGlow 2.5s ease-in-out infinite alternate;
-        font-weight: 600;
+        background: linear-gradient(45deg, #FFD700 0%, #FF69B4 25%, #8A2BE2 50%, #FFD700 75%, #FF69B4 100%);
+        background-size: 400% 400%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 1.8rem !important;
+        font-weight: 800 !important;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        animation: nameSpectacular 3s ease-in-out infinite;
+        filter: drop-shadow(0 4px 8px rgba(255, 215, 0, 0.8))
+                drop-shadow(0 0 20px rgba(255, 105, 180, 0.9))
+                drop-shadow(0 0 40px rgba(138, 43, 226, 0.6));
+        position: relative;
+        z-index: 10;
     }
 
-    @keyframes nameGlow {
-        from {
-            text-shadow: 
-                0 2px 4px rgba(255, 215, 0, 0.5),
-                0 0 15px rgba(255, 105, 180, 0.6);
+    .birthday-name::before {
+        content: '✨';
+        position: absolute;
+        left: -25px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 1.2rem;
+        animation: sparkleRotate 2s linear infinite;
+    }
+
+    .birthday-name::after {
+        content: '✨';
+        position: absolute;
+        right: -25px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 1.2rem;
+        animation: sparkleRotate 2s linear infinite reverse;
+    }
+
+    @keyframes nameSpectacular {
+        0%, 100% { 
+            background-position: 0% 50%;
+            transform: scale(1) translateY(0px);
         }
-        to {
-            text-shadow: 
-                0 3px 6px rgba(255, 215, 0, 0.8),
-                0 0 25px rgba(255, 105, 180, 0.9),
-                0 0 35px rgba(138, 43, 226, 0.5);
+        25% {
+            background-position: 50% 50%;
+            transform: scale(1.05) translateY(-2px);
         }
+        50% { 
+            background-position: 100% 50%;
+            transform: scale(1.1) translateY(-4px);
+        }
+        75% {
+            background-position: 150% 50%;
+            transform: scale(1.05) translateY(-2px);
+        }
+    }
+
+    @keyframes sparkleRotate {
+        0% { transform: translateY(-50%) rotate(0deg) scale(1); }
+        50% { transform: translateY(-50%) rotate(180deg) scale(1.2); }
+        100% { transform: translateY(-50%) rotate(360deg) scale(1); }
     }
 
     .birthday-message {
@@ -1518,12 +1617,24 @@
         <div class="apple-card text-center apple-float birthday-card" style="animation-delay: 0.2s;">
             <!-- Floating balloons outside the card -->
             <div class="floating-balloons-left">
-                <div class="balloon-3d balloon-red"></div>
-                <div class="balloon-3d balloon-blue"></div>
+                <div class="balloon-container">
+                    <div class="balloon-3d balloon-red"></div>
+                    <div class="balloon-string"></div>
+                </div>
+                <div class="balloon-container">
+                    <div class="balloon-3d balloon-blue"></div>
+                    <div class="balloon-string"></div>
+                </div>
             </div>
             <div class="floating-balloons-right">
-                <div class="balloon-3d balloon-yellow"></div>
-                <div class="balloon-3d balloon-pink"></div>
+                <div class="balloon-container">
+                    <div class="balloon-3d balloon-yellow"></div>
+                    <div class="balloon-string"></div>
+                </div>
+                <div class="balloon-container">
+                    <div class="balloon-3d balloon-pink"></div>
+                    <div class="balloon-string"></div>
+                </div>
             </div>
             
             <!-- Sparkles decoration -->
