@@ -1,6 +1,7 @@
 # Generated manually to fix tiempo_trabajado field
 
 from django.db import migrations, models
+from datetime import timedelta
 
 
 class Migration(migrations.Migration):
@@ -13,6 +14,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='tarea',
             name='tiempo_trabajado',
-            field=models.DurationField(default='00:00:00', verbose_name='Tiempo Trabajado'),
+            field=models.DurationField(default=timedelta(0), verbose_name='Tiempo Trabajado'),
         ),
     ]

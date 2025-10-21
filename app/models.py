@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 from django.contrib.auth.models import User
 from django.utils import timezone
 from decimal import Decimal # Importa Decimal para manejar números con precisión
+from datetime import timedelta
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -1969,7 +1970,7 @@ class Tarea(models.Model):
         verbose_name="Pausado"
     )
     tiempo_trabajado = models.DurationField(
-        default='00:00:00',
+        default=timedelta(0),
         verbose_name="Tiempo Trabajado"
     )
     
