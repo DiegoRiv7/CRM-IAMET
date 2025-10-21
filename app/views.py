@@ -9970,8 +9970,25 @@ def bitrix_lost_opportunities(request):
 def enviar_notificacion_cumpleanos():
     """
     Función para enviar notificación de cumpleaños a todos los usuarios excepto al cumpleañero
+    Solo se ejecuta una vez por día
     """
+    from datetime import date
+    
     try:
+        # Verificar si ya se envió la notificación hoy
+        hoy = date.today()
+        titulo_cumpleanos = "🎉 ¡Cumpleaños de Stefanny Corral! 🎂"
+        
+        # Buscar si ya existe una notificación de cumpleaños de hoy
+        notificacion_existente = Notificacion.objects.filter(
+            titulo=titulo_cumpleanos,
+            fecha_creacion__date=hoy
+        ).first()
+        
+        if notificacion_existente:
+            print("ℹ️ Ya se envió la notificación de cumpleaños hoy")
+            return True
+        
         # Buscar usuario Stefanny Corral
         try:
             stefanny = User.objects.get(
@@ -9991,7 +10008,6 @@ def enviar_notificacion_cumpleanos():
             is_active=True
         ).exclude(id=stefanny.id)
         
-        titulo = "🎉 ¡Cumpleaños de Stefanny Corral! 🎂"
         mensaje = (
             f"¡Hoy es el cumpleaños de {stefanny.get_full_name() or stefanny.username}! 🎈\n\n"
             "¡Únete a la celebración y envíale tus mejores deseos! 🎁✨\n\n"
@@ -10005,7 +10021,7 @@ def enviar_notificacion_cumpleanos():
             notificacion = crear_notificacion(
                 usuario_destinatario=usuario,
                 tipo='sistema',
-                titulo=titulo,
+                titulo=titulo_cumpleanos,
                 mensaje=mensaje,
                 usuario_remitente=None  # Sistema
             )

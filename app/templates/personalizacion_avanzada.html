@@ -3407,8 +3407,6 @@ showNotification(`Tema cambiado a ${themeNames[theme] || theme}. Se aplicará al
         // Dock type functionality with animation
         let previousDockType = 'normal'; // Variable para almacenar el tipo anterior
         
-        function setDockTypeWithAnimation(type) {
-            // Obtener el render del dock
         function setDockTypeWithAnimation(type, animate = true) {
             console.log('setDockTypeWithAnimation called with type:', type, 'and animate:', animate);
 const dockPreview = document.getElementById('dockPreview');
