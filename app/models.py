@@ -1968,6 +1968,11 @@ class Tarea(models.Model):
         default=False,
         verbose_name="Pausado"
     )
+    tiempo_trabajado = models.DurationField(
+        null=True,
+        blank=True,
+        verbose_name="Tiempo Trabajado"
+    )
     
     class Meta:
         verbose_name = "Tarea"
