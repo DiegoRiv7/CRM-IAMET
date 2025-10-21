@@ -238,12 +238,6 @@ def bienvenida(request):
     """
     Vista de bienvenida que será la primera que vea el usuario al ingresar.
     """
-    # Enviar notificación de cumpleaños de Stefanny automáticamente
-    try:
-        enviar_notificacion_cumpleanos()
-    except Exception as e:
-        print(f"Error enviando notificación de cumpleaños: {e}")
-    
     # Asegurar que el usuario tenga un perfil
     profile, created = UserProfile.objects.get_or_create(user=request.user)
     
@@ -9967,72 +9961,3 @@ def bitrix_lost_opportunities(request):
     return render(request, 'bitrix_lost_opportunities.html', context)
 
 
-def enviar_notificacion_cumpleanos():
-    """
-    Función para enviar notificación de cumpleaños a todos los usuarios excepto al cumpleañero
-    Solo se ejecuta una vez por día
-    """
-    from datetime import date
-    
-    try:
-        # Verificar si ya se envió la notificación hoy
-        hoy = date.today()
-        titulo_cumpleanos = "🎉 ¡Cumpleaños de Stefanny Corral! 🎂"
-        
-        # Buscar si ya existe una notificación de cumpleaños de hoy
-        notificacion_existente = Notificacion.objects.filter(
-            titulo=titulo_cumpleanos,
-            fecha_creacion__date=hoy
-        ).first()
-        
-        if notificacion_existente:
-            print("ℹ️ Ya se envió la notificación de cumpleaños hoy")
-            return True
-        
-        # Buscar usuario Stefanny Corral
-        try:
-            stefanny = User.objects.get(
-                Q(first_name__icontains='stefanny') & Q(last_name__icontains='corral') |
-                Q(username__icontains='stefanny')
-            )
-        except User.DoesNotExist:
-            print("❌ No se encontró usuario Stefanny Corral")
-            return False
-        except User.MultipleObjectsReturned:
-            stefanny = User.objects.filter(
-                Q(first_name__icontains='stefanny') & Q(last_name__icontains='corral')
-            ).first()
-        
-        # Obtener todos los usuarios activos excepto Stefanny
-        usuarios_destinatarios = User.objects.filter(
-            is_active=True
-        ).exclude(id=stefanny.id)
-        
-        mensaje = (
-            f"¡Hoy es el cumpleaños de {stefanny.get_full_name() or stefanny.username}! 🎈\n\n"
-            "¡Únete a la celebración y envíale tus mejores deseos! 🎁✨\n\n"
-            "¡Que tenga un día maravilloso lleno de alegría y felicidad! 🌟"
-        )
-        
-        notificaciones_creadas = 0
-        
-        # Crear notificación para cada usuario
-        for usuario in usuarios_destinatarios:
-            notificacion = crear_notificacion(
-                usuario_destinatario=usuario,
-                tipo='sistema',
-                titulo=titulo_cumpleanos,
-                mensaje=mensaje,
-                usuario_remitente=None  # Sistema
-            )
-            
-            if notificacion:
-                notificaciones_creadas += 1
-        
-        print(f"✅ Se enviaron {notificaciones_creadas} notificaciones de cumpleaños")
-        return True
-        
-    except Exception as e:
-        print(f"❌ Error enviando notificaciones de cumpleaños: {e}")
-        return False
-        
