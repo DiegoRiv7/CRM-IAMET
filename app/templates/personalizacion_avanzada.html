@@ -2695,7 +2695,7 @@ function closeSettings() {
 location.reload();
 }
 
-function openAvatarSettings() {
+window.openAvatarSettings = function() {
 console.log('Abriendo configuración de avatar...');
 
 // Mostrar el modal
@@ -2838,7 +2838,7 @@ console.log('Appended new dock to preview (no animation):', newDock);
 setDockType(type);
 }
 
-function openDesignSettings() {
+window.openDesignSettings = function() {
 showModal('designModal');
 
 setTimeout(() => {
@@ -2852,11 +2852,11 @@ setDockTypeWithAnimation(savedDockType, false);
 }, 100);
 }
 
-function openLanguageSettings() {
+window.openLanguageSettings = function() {
 showModal('languageModal');
 }
 
-function openUserInfoSettings() {
+window.openUserInfoSettings = function() {
 showModal('userInfoModal');
 }
 
@@ -3580,7 +3580,7 @@ setTimeout(() => {
             setDockType(type);
         }
 
-        function openDesignSettings() {
+        window.openDesignSettings = function() {
             showModal('designModal');
             
             setTimeout(() => {
