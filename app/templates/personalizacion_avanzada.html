@@ -3451,11 +3451,12 @@ const dockPreview = document.getElementById('dockPreview');
             const selectedOption = document.getElementById(`${type}-dock-option`);
             selectedOption.classList.add('active');
             
-            // Aplicar iluminación azul al seleccionado
+            // Aplicar iluminaciÃ³n azul al seleccionado
             const selectedPreviewCircle = selectedOption.querySelector('.dock-type-preview');
             if (selectedPreviewCircle) {
                 selectedPreviewCircle.style.background = 'var(--apple-blue)';
                 selectedPreviewCircle.style.boxShadow = '0 0 0 3px rgba(0, 122, 255, 0.5), 0 0 15px rgba(0, 122, 255, 0.7)';
+            }
             if (!dockPreview) {
                 console.error('dockPreview element not found!');
                 return;
@@ -3483,6 +3484,7 @@ const dockPreview = document.getElementById('dockPreview');
                     dockPreviewTransparent.style.display = 'flex';
                 } else if (type === 'compact') {
                     dockPreviewCompact.style.display = 'flex';
+                }
 
             const generateDock = (isTransparent, isCompact) => {
                 console.log('generateDock called with isTransparent:', isTransparent, 'isCompact:', isCompact);
@@ -3563,6 +3565,7 @@ setTimeout(() => {
                     dockPreview.style.opacity = '1';
                 }, 200);
             }, 300);
+            }
             
             // Aplicar el tipo de dock al dock actual de la página
             } else {
