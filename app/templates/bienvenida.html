@@ -852,6 +852,428 @@
         100% { transform: rotate(360deg) scale(1); }
     }
 
+    /* Enhanced 3D Birthday Card */
+    .birthday-card {
+        position: relative;
+        overflow: visible !important;
+        background: linear-gradient(135deg, 
+            rgba(255, 223, 128, 0.2) 0%, 
+            rgba(255, 192, 203, 0.25) 25%,
+            rgba(255, 105, 180, 0.2) 50%,
+            rgba(138, 43, 226, 0.15) 75%,
+            rgba(75, 0, 130, 0.1) 100%) !important;
+        border: 3px solid rgba(255, 215, 0, 0.5) !important;
+        animation: birthdayCardPulse 4s ease-in-out infinite;
+        box-shadow: 
+            0 15px 35px rgba(255, 215, 0, 0.3),
+            0 5px 15px rgba(255, 105, 180, 0.4),
+            inset 0 2px 5px rgba(255, 255, 255, 0.2);
+    }
+
+    @keyframes birthdayCardPulse {
+        0%, 100% { 
+            transform: scale(1);
+            box-shadow: 
+                0 15px 35px rgba(255, 215, 0, 0.3),
+                0 5px 15px rgba(255, 105, 180, 0.4),
+                inset 0 2px 5px rgba(255, 255, 255, 0.2);
+        }
+        50% { 
+            transform: scale(1.02);
+            box-shadow: 
+                0 20px 45px rgba(255, 215, 0, 0.4),
+                0 8px 25px rgba(255, 105, 180, 0.5),
+                inset 0 3px 8px rgba(255, 255, 255, 0.3);
+        }
+    }
+
+    /* 3D Floating Balloons Outside Card */
+    .floating-balloons-left,
+    .floating-balloons-right {
+        position: absolute;
+        top: -30px;
+        z-index: 10;
+    }
+
+    .floating-balloons-left {
+        left: -25px;
+    }
+
+    .floating-balloons-right {
+        right: -25px;
+    }
+
+    .balloon-3d {
+        width: 40px;
+        height: 55px;
+        border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+        position: relative;
+        margin-bottom: 15px;
+        animation: balloonFloat3D 6s ease-in-out infinite;
+        box-shadow: 
+            inset -10px -10px 0 rgba(0, 0, 0, 0.1),
+            0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .balloon-3d::after {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 1px;
+        height: 30px;
+        background: #333;
+    }
+
+    .balloon-red {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 50%, #e53e3e 100%);
+        animation-delay: 0s;
+    }
+
+    .balloon-blue {
+        background: linear-gradient(135deg, #4dabf7 0%, #339af0 50%, #1c7ed6 100%);
+        animation-delay: 1s;
+    }
+
+    .balloon-yellow {
+        background: linear-gradient(135deg, #ffd43b 0%, #fab005 50%, #f59f00 100%);
+        animation-delay: 2s;
+    }
+
+    .balloon-pink {
+        background: linear-gradient(135deg, #ff8cc8 0%, #ff6b9d 50%, #e64980 100%);
+        animation-delay: 3s;
+    }
+
+    @keyframes balloonFloat3D {
+        0%, 100% { 
+            transform: translateY(0px) rotate(0deg); 
+        }
+        25% { 
+            transform: translateY(-15px) rotate(2deg); 
+        }
+        50% { 
+            transform: translateY(-25px) rotate(0deg); 
+        }
+        75% { 
+            transform: translateY(-15px) rotate(-2deg); 
+        }
+    }
+
+    /* Sparkles Animation */
+    .sparkles-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 5;
+    }
+
+    .sparkle {
+        position: absolute;
+        font-size: 16px;
+        animation: sparkleGlow 3s ease-in-out infinite;
+    }
+
+    .sparkle-1 { top: 10%; left: 15%; animation-delay: 0s; }
+    .sparkle-2 { top: 20%; right: 20%; animation-delay: 0.5s; }
+    .sparkle-3 { top: 60%; left: 10%; animation-delay: 1s; }
+    .sparkle-4 { top: 70%; right: 15%; animation-delay: 1.5s; }
+    .sparkle-5 { top: 35%; left: 25%; animation-delay: 2s; }
+    .sparkle-6 { top: 45%; right: 25%; animation-delay: 2.5s; }
+
+    @keyframes sparkleGlow {
+        0%, 100% { 
+            opacity: 0.3;
+            transform: scale(0.8) rotate(0deg);
+        }
+        50% { 
+            opacity: 1;
+            transform: scale(1.2) rotate(180deg);
+        }
+    }
+
+    /* 3D Birthday Cake */
+    .birthday-cake-3d {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 60px;
+        height: 70px;
+        z-index: 8;
+    }
+
+    .cake-base,
+    .cake-middle,
+    .cake-top {
+        position: absolute;
+        border-radius: 8px;
+        box-shadow: inset -5px -5px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .cake-base {
+        bottom: 0;
+        width: 60px;
+        height: 25px;
+        background: linear-gradient(135deg, #8B4513 0%, #A0522D 50%, #CD853F 100%);
+        border-radius: 8px 8px 4px 4px;
+    }
+
+    .cake-middle {
+        bottom: 20px;
+        left: 8px;
+        width: 44px;
+        height: 20px;
+        background: linear-gradient(135deg, #FFB6C1 0%, #FF69B4 50%, #FF1493 100%);
+        border-radius: 6px 6px 4px 4px;
+    }
+
+    .cake-top {
+        bottom: 35px;
+        left: 15px;
+        width: 30px;
+        height: 15px;
+        background: linear-gradient(135deg, #FFFACD 0%, #FFE4B5 50%, #DEB887 100%);
+        border-radius: 4px 4px 2px 2px;
+    }
+
+    .cake-candle {
+        position: absolute;
+        width: 2px;
+        height: 12px;
+        background: #FFD700;
+        border-radius: 1px;
+        top: 8px;
+    }
+
+    .candle-1 { left: 22px; }
+    .candle-2 { left: 29px; }
+    .candle-3 { left: 36px; }
+
+    .cake-flame {
+        position: absolute;
+        width: 4px;
+        height: 6px;
+        background: radial-gradient(circle, #ff6b00 0%, #ff8500 50%, #ffa500 100%);
+        border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+        top: 2px;
+        animation: flameFlicker 0.5s ease-in-out infinite alternate;
+    }
+
+    .flame-1 { left: 21px; }
+    .flame-2 { left: 28px; }
+    .flame-3 { left: 35px; }
+
+    @keyframes flameFlicker {
+        0% { transform: scale(1) rotate(-2deg); }
+        100% { transform: scale(1.1) rotate(2deg); }
+    }
+
+    /* Enhanced Avatar Container */
+    .birthday-avatar-container {
+        position: relative;
+        display: inline-block;
+        z-index: 6;
+    }
+
+    .birthday-avatar {
+        animation: birthdayAvatarFloat 3s ease-in-out infinite;
+        border: 4px solid #FFD700 !important;
+        box-shadow: 
+            0 0 25px rgba(255, 215, 0, 0.8),
+            0 0 50px rgba(255, 105, 180, 0.5),
+            inset 0 2px 5px rgba(255, 255, 255, 0.3) !important;
+    }
+
+    @keyframes birthdayAvatarFloat {
+        0%, 100% { 
+            transform: translateY(0px) rotate(0deg) scale(1); 
+        }
+        33% { 
+            transform: translateY(-8px) rotate(1deg) scale(1.02); 
+        }
+        66% { 
+            transform: translateY(-12px) rotate(-1deg) scale(1.05); 
+        }
+    }
+
+    /* Enhanced Confetti Shower */
+    .confetti-shower {
+        position: absolute;
+        top: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 150px;
+        height: 150px;
+        pointer-events: none;
+    }
+
+    .confetti-shower::before,
+    .confetti-shower::after {
+        content: '🎊';
+        position: absolute;
+        font-size: 24px;
+        animation: confettiShower 4s linear infinite;
+    }
+
+    .confetti-shower::before {
+        left: 20%;
+        animation-delay: 0s;
+    }
+
+    .confetti-shower::after {
+        right: 20%;
+        animation-delay: 2s;
+    }
+
+    @keyframes confettiShower {
+        0% {
+            opacity: 1;
+            transform: translateY(-30px) rotate(0deg) scale(0.5);
+        }
+        50% {
+            opacity: 1;
+            transform: translateY(50px) rotate(180deg) scale(1);
+        }
+        100% {
+            opacity: 0;
+            transform: translateY(130px) rotate(360deg) scale(0.5);
+        }
+    }
+
+    /* Birthday Title Enhancement */
+    .birthday-title {
+        background: linear-gradient(45deg, #FFD700, #FF69B4, #8A2BE2, #FFD700);
+        background-size: 300% 300%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: birthdayTitleGlow 3s ease-in-out infinite;
+        text-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
+        font-weight: 700;
+    }
+
+    @keyframes birthdayTitleGlow {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+    }
+
+    .birthday-name {
+        color: #FF69B4 !important;
+        text-shadow: 
+            0 2px 4px rgba(255, 215, 0, 0.5),
+            0 0 15px rgba(255, 105, 180, 0.6);
+        animation: nameGlow 2.5s ease-in-out infinite alternate;
+        font-weight: 600;
+    }
+
+    @keyframes nameGlow {
+        from {
+            text-shadow: 
+                0 2px 4px rgba(255, 215, 0, 0.5),
+                0 0 15px rgba(255, 105, 180, 0.6);
+        }
+        to {
+            text-shadow: 
+                0 3px 6px rgba(255, 215, 0, 0.8),
+                0 0 25px rgba(255, 105, 180, 0.9),
+                0 0 35px rgba(138, 43, 226, 0.5);
+        }
+    }
+
+    .birthday-message {
+        color: #8A2BE2 !important;
+        font-weight: 600;
+        text-shadow: 0 1px 3px rgba(138, 43, 226, 0.3);
+    }
+
+    /* 3D Gift Boxes */
+    .gift-boxes {
+        position: absolute;
+        bottom: 15px;
+        left: 15px;
+        display: flex;
+        gap: 15px;
+        z-index: 7;
+    }
+
+    .gift-box {
+        position: relative;
+        width: 25px;
+        height: 25px;
+        transform-style: preserve-3d;
+        animation: giftBobble 4s ease-in-out infinite;
+    }
+
+    .gift-1 {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
+        animation-delay: 0s;
+    }
+
+    .gift-2 {
+        background: linear-gradient(135deg, #4dabf7 0%, #339af0 100%);
+        animation-delay: 2s;
+    }
+
+    .gift-lid {
+        position: absolute;
+        top: -3px;
+        left: 0;
+        width: 100%;
+        height: 8px;
+        background: linear-gradient(135deg, #333 0%, #666 100%);
+        border-radius: 2px 2px 0 0;
+    }
+
+    .gift-ribbon-h {
+        position: absolute;
+        top: 0;
+        left: 45%;
+        width: 10%;
+        height: 100%;
+        background: #FFD700;
+    }
+
+    .gift-ribbon-v {
+        position: absolute;
+        top: 45%;
+        left: 0;
+        width: 100%;
+        height: 10%;
+        background: #FFD700;
+    }
+
+    @keyframes giftBobble {
+        0%, 100% { 
+            transform: translateY(0px) rotate(0deg); 
+        }
+        50% { 
+            transform: translateY(-5px) rotate(5deg); 
+        }
+    }
+
+    /* Light theme birthday adjustments */
+    .light-theme .birthday-card {
+        background: linear-gradient(135deg, 
+            rgba(255, 240, 245, 0.95) 0%, 
+            rgba(255, 228, 239, 0.9) 25%,
+            rgba(255, 209, 220, 0.85) 50%,
+            rgba(255, 192, 203, 0.8) 75%,
+            rgba(255, 182, 193, 0.75) 100%) !important;
+        border: 2px solid rgba(255, 105, 180, 0.4) !important;
+    }
+
+    .light-theme .birthday-name {
+        color: #E55A87 !important;
+    }
+
+    .light-theme .birthday-message {
+        color: #2D1B2E !important;
+    }
+
     /* Responsive adjustments */
     @media (max-width: 768px) {
         .central-search-bar {
@@ -906,6 +1328,14 @@
         .floating-top-btn svg {
             width: 22px;
             height: 22px;
+        }
+
+        .birthday-balloons {
+            bottom: 5px;
+        }
+
+        .balloon {
+            font-size: 20px;
         }
     }
 </style>
@@ -1085,30 +1515,68 @@
             {% endif %}
         </div>
         
-        <div class="apple-card text-center apple-float" style="animation-delay: 0.2s;">
-            <h4 class="apple-title-3 mb-4">Empleado del Día</h4>
-            {% if usuario_dia %}
-                {% if usuario_dia.avatar_url %}
-                    <img src="{{ usuario_dia.avatar_url }}" 
-                         alt="Avatar día" 
-                         class="apple-avatar mx-auto mb-4"/>
-                {% else %}
-                    <div class="mx-auto mb-4" style="width: 80px; height: 80px;">
-                        {{ usuario_dia.user|user_avatar:"80" }}
-                    </div>
-                {% endif %}
-                <h5 class="apple-headline mb-2">{{ usuario_dia.nombre }}</h5>
-                <p class="apple-body">
-                    Oportunidades hoy: <span style="color: var(--apple-blue); font-weight: 500;">{{ usuario_dia.oportunidades_hoy }}</span>
-                </p>
-            {% else %}
-                <div class="apple-avatar mx-auto mb-4 flex items-center justify-center" style="background: var(--apple-background-tertiary);">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--apple-gray);">
-                        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"></polygon>
-                    </svg>
+        <div class="apple-card text-center apple-float birthday-card" style="animation-delay: 0.2s;">
+            <!-- Floating balloons outside the card -->
+            <div class="floating-balloons-left">
+                <div class="balloon-3d balloon-red"></div>
+                <div class="balloon-3d balloon-blue"></div>
+            </div>
+            <div class="floating-balloons-right">
+                <div class="balloon-3d balloon-yellow"></div>
+                <div class="balloon-3d balloon-pink"></div>
+            </div>
+            
+            <!-- Sparkles decoration -->
+            <div class="sparkles-container">
+                <div class="sparkle sparkle-1">✨</div>
+                <div class="sparkle sparkle-2">✨</div>
+                <div class="sparkle sparkle-3">✨</div>
+                <div class="sparkle sparkle-4">✨</div>
+                <div class="sparkle sparkle-5">✨</div>
+                <div class="sparkle sparkle-6">✨</div>
+            </div>
+            
+            <h4 class="apple-title-3 mb-4 birthday-title">Cumpleañero del Día</h4>
+            
+            <!-- 3D Birthday cake -->
+            <div class="birthday-cake-3d">
+                <div class="cake-base"></div>
+                <div class="cake-middle"></div>
+                <div class="cake-top"></div>
+                <div class="cake-candle candle-1"></div>
+                <div class="cake-candle candle-2"></div>
+                <div class="cake-candle candle-3"></div>
+                <div class="cake-flame flame-1"></div>
+                <div class="cake-flame flame-2"></div>
+                <div class="cake-flame flame-3"></div>
+            </div>
+            
+            <div class="birthday-avatar-container">
+                <img src="/static/images/1017E35C-6E41-4A4E-AC1A-A9A3D735BCF8.jpeg" 
+                     alt="Stefanny Corral" 
+                     class="apple-avatar mx-auto mb-4 birthday-avatar"/>
+                <div class="confetti-shower"></div>
+            </div>
+            
+            <h5 class="apple-headline mb-2 birthday-name">Stefanny Corral</h5>
+            <p class="apple-body birthday-message">
+                ¡Feliz Cumpleaños!<br>
+                <span style="color: var(--apple-blue); font-weight: 500;">¡Que tengas un día maravilloso!</span>
+            </p>
+            
+            <!-- Gift boxes decoration -->
+            <div class="gift-boxes">
+                <div class="gift-box gift-1">
+                    <div class="gift-lid"></div>
+                    <div class="gift-ribbon-h"></div>
+                    <div class="gift-ribbon-v"></div>
                 </div>
-                <p class="apple-body" style="color: var(--apple-gray);">Aún no hay empleado destacado hoy.</p>
-            {% endif %}
+                <div class="gift-box gift-2">
+                    <div class="gift-lid"></div>
+                    <div class="gift-ribbon-h"></div>
+                    <div class="gift-ribbon-v"></div>
+                </div>
+            </div>
         </div>
     </section>
     <!-- Apple Table Section -->
