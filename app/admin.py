@@ -181,3 +181,45 @@ class VolumetriaAdmin(admin.ModelAdmin):
         if not obj.pk:
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
+
+# Registro de modelos de Tarea
+from .models import Tarea, TareaComentario, TareaArchivo
+
+@admin.register(Tarea)
+class TareaAdmin(admin.ModelAdmin):
+    list_display = ['titulo', 'proyecto', 'estado', 'prioridad', 'creado_por', 'asignado_a', 'fecha_creacion']
+    list_filter = ['estado', 'prioridad', 'proyecto']
+    search_fields = ['titulo', 'descripcion']
+    readonly_fields = ['fecha_creacion']
+    
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:
+            obj.creado_por = request.user
+        super().save_model(request, obj, form, change)
+
+@admin.register(TareaComentario)
+class TareaComentarioAdmin(admin.ModelAdmin):
+    list_display = ['tarea', 'usuario', 'contenido_corto', 'fecha_creacion']
+    list_filter = ['fecha_creacion']
+    search_fields = ['contenido', 'tarea__titulo']
+    readonly_fields = ['fecha_creacion', 'fecha_edicion']
+    
+    def contenido_corto(self, obj):
+        return obj.contenido[:50] + "..." if len(obj.contenido) > 50 else obj.contenido
+    contenido_corto.short_description = 'Contenido'
+
+@admin.register(TareaArchivo)  
+class TareaArchivoAdmin(admin.ModelAdmin):
+    list_display = ['nombre_original', 'comentario', 'tamaño_formateado', 'fecha_subida']
+    list_filter = ['fecha_subida', 'tipo_contenido']
+    search_fields = ['nombre_original', 'comentario__tarea__titulo']
+    readonly_fields = ['fecha_subida', 'tamaño']
+    
+    def tamaño_formateado(self, obj):
+        if obj.tamaño < 1024:
+            return f"{obj.tamaño} B"
+        elif obj.tamaño < 1024*1024:
+            return f"{obj.tamaño/1024:.1f} KB"
+        else:
+            return f"{obj.tamaño/(1024*1024):.1f} MB"
+    tamaño_formateado.short_description = 'Tamaño'
