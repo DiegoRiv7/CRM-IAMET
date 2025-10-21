@@ -1964,6 +1964,10 @@ class Tarea(models.Model):
         blank=True,
         verbose_name="Fecha de Completado"
     )
+    pausado = models.BooleanField(
+        default=False,
+        verbose_name="Pausado"
+    )
     
     class Meta:
         verbose_name = "Tarea"

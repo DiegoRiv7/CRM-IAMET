@@ -187,8 +187,8 @@ from .models import Tarea, TareaComentario, TareaArchivo
 
 @admin.register(Tarea)
 class TareaAdmin(admin.ModelAdmin):
-    list_display = ['titulo', 'proyecto', 'estado', 'prioridad', 'creado_por', 'asignado_a', 'fecha_creacion']
-    list_filter = ['estado', 'prioridad', 'proyecto']
+    list_display = ['titulo', 'proyecto', 'estado', 'prioridad', 'pausado', 'creado_por', 'asignado_a', 'fecha_creacion']
+    list_filter = ['estado', 'prioridad', 'pausado', 'proyecto']
     search_fields = ['titulo', 'descripcion']
     readonly_fields = ['fecha_creacion']
     
