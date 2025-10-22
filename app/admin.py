@@ -171,7 +171,7 @@ class TareaAdmin(admin.ModelAdmin):
     search_fields = ('titulo', 'descripcion')
     list_filter = ('estado', 'prioridad', 'proyecto', 'creado_por', 'asignado_a', 'fecha_creacion')
     date_hierarchy = 'fecha_creacion'
-    readonly_fields = ('fecha_creacion', 'fecha_actualizacion')
+    readonly_fields = ('fecha_creacion',)
     filter_horizontal = ('participantes',)
     
     fieldsets = (
@@ -188,7 +188,7 @@ class TareaAdmin(admin.ModelAdmin):
             'fields': ('fecha_limite', 'fecha_completada')
         }),
         ('Metadatos', {
-            'fields': ('fecha_creacion', 'fecha_actualizacion'),
+            'fields': ('fecha_creacion',),
             'classes': ('collapse',)
         })
     )
