@@ -2062,9 +2062,6 @@ class Actividad(models.Model):
     def __str__(self):
         return f"{self.titulo} ({self.fecha_inicio.strftime('%d/%m/%Y %H:%M')})"
 
-        }
-        return colors.get(self.estado, '#6c757d')
-
 class EmpleadoDelMes(models.Model):
     """Modelo para almacenar al empleado del mes."""
     usuario = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Usuario")
