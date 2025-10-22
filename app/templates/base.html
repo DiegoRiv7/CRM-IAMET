@@ -821,6 +821,7 @@
             }
         }
     </style>
+    {% block extra_head %}{% endblock %}
 </head>
 <body class="min-h-screen flex flex-col" {% if is_supervisor or user.is_superuser %}data-user-is-supervisor="true"{% endif %}>
     <!-- Contenido Principal -->
