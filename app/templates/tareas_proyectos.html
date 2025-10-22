@@ -1847,13 +1847,13 @@ const TareasProyectos = {
             
             // Rellenar información del creador con avatar
             TareasProyectos.setElementText('task-detail-creado-por', tarea.creado_por);
-            TareasProyectos.setupPersonAvatar('task-detail-creador-avatar', tarea.creado_por);
+            TareasProyectos.setupPersonAvatarWithData('task-detail-creador-avatar', tarea.creado_por_data);
             
             // Configurar responsable con avatar
-            TareasProyectos.setupResponsable(tarea.responsable);
+            TareasProyectos.setupResponsableWithData(tarea.responsable_data);
             
-            // Configurar participantes (por ahora vacío, se puede llenar con datos del API)
-            TareasProyectos.setupParticipantes([]);
+            // Configurar participantes con datos reales
+            TareasProyectos.setupParticipantes(tarea.participantes || []);
             
             // Rellenar elementos HTML (badges)
             const estadoElement = document.getElementById('task-detail-estado');
@@ -1961,12 +1961,83 @@ const TareasProyectos = {
         return colors[Math.abs(hash) % colors.length];
     },
 
-    // Función para configurar el avatar de una persona
+    // Función para configurar el avatar de una persona (legacy)
     setupPersonAvatar(avatarId, personName) {
         const avatar = document.getElementById(avatarId);
         if (avatar && personName) {
             avatar.style.background = TareasProyectos.getAvatarColor(personName);
             avatar.textContent = TareasProyectos.getInitials(personName);
+        }
+    },
+
+    // Función mejorada para configurar avatar con datos completos del usuario
+    setupPersonAvatarWithData(avatarId, userData) {
+        const avatar = document.getElementById(avatarId);
+        if (!avatar || !userData) return;
+        
+        if (userData.avatar_url) {
+            // Si tiene foto, usar la imagen real
+            avatar.style.background = `url(${userData.avatar_url}) center/cover`;
+            avatar.textContent = '';
+            avatar.style.border = '2px solid rgba(255, 255, 255, 0.2)';
+        } else {
+            // Si no tiene foto, usar iniciales con gradiente
+            avatar.style.background = TareasProyectos.getAvatarColor(userData.nombre);
+            avatar.style.border = 'none';
+            avatar.textContent = TareasProyectos.getInitials(userData.nombre);
+        }
+    },
+
+    // Función para crear un avatar (HTML) con datos del usuario
+    createUserAvatarHTML(userData, size = 40) {
+        if (!userData) {
+            return `
+                <div style="width: ${size}px; height: ${size}px; border-radius: 50%; background: rgba(142, 142, 147, 0.3); display: flex; align-items: center; justify-content: center; color: var(--apple-label-secondary); font-weight: 600; font-size: 0.9rem;">
+                    ?
+                </div>
+            `;
+        }
+        
+        if (userData.avatar_url) {
+            return `
+                <div style="width: ${size}px; height: ${size}px; border-radius: 50%; background: url(${userData.avatar_url}) center/cover; border: 2px solid rgba(255, 255, 255, 0.2);"></div>
+            `;
+        } else {
+            return `
+                <div style="width: ${size}px; height: ${size}px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(userData.nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem;">
+                    ${TareasProyectos.getInitials(userData.nombre)}
+                </div>
+            `;
+        }
+    },
+
+    // Función para configurar el responsable con datos de usuario
+    setupResponsableWithData(responsableData) {
+        const container = document.getElementById('task-detail-responsable-container');
+        if (!container) return;
+        
+        if (responsableData) {
+            container.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
+                    ${TareasProyectos.createUserAvatarHTML(responsableData, 40)}
+                    <div>
+                        <div style="color: var(--apple-label); font-weight: 500; font-size: 0.95rem;">${responsableData.nombre}</div>
+                        <div style="color: var(--apple-label-secondary); font-size: 0.8rem;">Responsable</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px dashed rgba(255, 255, 255, 0.2);">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(142, 142, 147, 0.3); display: flex; align-items: center; justify-content: center; color: var(--apple-label-secondary); font-weight: 600; font-size: 0.9rem;">
+                        ?
+                    </div>
+                    <div>
+                        <div style="color: var(--apple-label-secondary); font-weight: 500; font-size: 0.95rem;">Sin asignar</div>
+                        <div style="color: var(--apple-label-tertiary); font-size: 0.8rem;">No hay responsable</div>
+                    </div>
+                </div>
+            `;
         }
     },
 
@@ -2008,17 +2079,34 @@ const TareasProyectos = {
         if (!container) return;
         
         if (participantes && participantes.length > 0) {
-            const participantesHTML = participantes.map(participante => `
-                <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; margin-bottom: 0.5rem;">
-                    <div style="width: 40px; height: 40px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(participante)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem;">
-                        ${TareasProyectos.getInitials(participante)}
-                    </div>
-                    <div>
-                        <div style="color: var(--apple-label); font-weight: 500; font-size: 0.95rem;">${participante}</div>
-                        <div style="color: var(--apple-label-secondary); font-size: 0.8rem;">Participante</div>
-                    </div>
-                </div>
-            `).join('');
+            const participantesHTML = participantes.map(participante => {
+                // Check if participante is an object with user data or just a string
+                if (typeof participante === 'object' && participante.nombre) {
+                    return `
+                        <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; margin-bottom: 0.5rem;">
+                            ${TareasProyectos.createUserAvatarHTML(participante, 40)}
+                            <div>
+                                <div style="color: var(--apple-label); font-weight: 500; font-size: 0.95rem;">${participante.nombre}</div>
+                                <div style="color: var(--apple-label-secondary); font-size: 0.8rem;">Participante</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Fallback for string names
+                    const nombre = typeof participante === 'string' ? participante : participante.toString();
+                    return `
+                        <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; margin-bottom: 0.5rem;">
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem;">
+                                ${TareasProyectos.getInitials(nombre)}
+                            </div>
+                            <div>
+                                <div style="color: var(--apple-label); font-weight: 500; font-size: 0.95rem;">${nombre}</div>
+                                <div style="color: var(--apple-label-secondary); font-size: 0.8rem;">Participante</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }).join('');
             
             container.innerHTML = participantesHTML;
         } else {

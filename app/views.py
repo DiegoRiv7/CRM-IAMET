@@ -9809,6 +9809,26 @@ def api_tarea_detalle(request, tarea_id):
             if not user_can_view:
                 return JsonResponse({'error': 'Sin permisos para ver esta tarea'}, status=403)
             
+            # Función auxiliar para obtener datos del usuario con avatar
+            def get_user_data(user):
+                if not user:
+                    return None
+                
+                user_data = {
+                    'nombre': user.get_full_name() or user.username,
+                    'username': user.username,
+                    'avatar_url': None
+                }
+                
+                # Intentar obtener avatar del UserProfile
+                try:
+                    if hasattr(user, 'userprofile') and user.userprofile.avatar:
+                        user_data['avatar_url'] = user.userprofile.avatar.url
+                except:
+                    pass
+                
+                return user_data
+            
             # Preparar datos de la tarea
             tarea_data = {
                 'id': tarea.id,
@@ -9819,10 +9839,13 @@ def api_tarea_detalle(request, tarea_id):
                 'proyecto_nombre': tarea.proyecto.nombre if tarea.proyecto else 'Sin proyecto',
                 'proyecto_id': tarea.proyecto.id if tarea.proyecto else None,
                 'creado_por': tarea.creado_por.get_full_name() or tarea.creado_por.username,
+                'creado_por_data': get_user_data(tarea.creado_por),
                 'responsable': tarea.asignado_a.get_full_name() or tarea.asignado_a.username if tarea.asignado_a else None,
+                'responsable_data': get_user_data(tarea.asignado_a) if tarea.asignado_a else None,
                 'fecha_limite': tarea.fecha_limite.isoformat() if tarea.fecha_limite else None,
                 'fecha_creacion': tarea.fecha_creacion.isoformat(),
                 'fecha_completada': tarea.fecha_completada.isoformat() if tarea.fecha_completada else None,
+                'participantes': [get_user_data(p) for p in tarea.participantes.all()] if hasattr(tarea, 'participantes') else [],
             }
             
             return JsonResponse(tarea_data)
