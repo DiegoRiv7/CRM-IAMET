@@ -1996,10 +1996,10 @@ def set_language(request):
         logger.error('Error al cambiar el idioma', exc_info=True)
         
         # Devolver un mensaje de error genérico al cliente
-            return JsonResponse(
-                {'status': 'error', 'message': 'Error interno del servidor'},
-                status=500
-            )
+        return JsonResponse(
+            {'status': 'error', 'message': 'Error interno del servidor'},
+            status=500
+        )
 
 @login_required
 def calendario_view(request):
