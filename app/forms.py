@@ -456,7 +456,7 @@ class NuevaOportunidadForm(forms.ModelForm):
             )
             instance.contacto = contacto
         
-                return instance
+        return instance
         
         
         class ActividadForm(forms.ModelForm):
