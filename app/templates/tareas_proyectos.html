@@ -1460,6 +1460,68 @@
     </div>
 </div>
 
+<!-- Modal para ver detalles de tarea -->
+<div class="modal-overlay" id="modal-detalle-tarea">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h2 class="modal-title">Detalles de la Tarea</h2>
+            <button class="modal-close" onclick="cerrarModalDetalleTarea()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="task-detail-content" style="padding: 1.5rem;">
+            <div class="task-detail-section">
+                <h3 id="task-detail-titulo" style="color: var(--apple-label); font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;"></h3>
+                
+                <div class="task-detail-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div class="detail-item">
+                        <label style="color: var(--apple-label-secondary); font-size: 0.9rem; font-weight: 500; display: block; margin-bottom: 0.5rem;">Estado:</label>
+                        <div id="task-detail-estado"></div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <label style="color: var(--apple-label-secondary); font-size: 0.9rem; font-weight: 500; display: block; margin-bottom: 0.5rem;">Prioridad:</label>
+                        <div id="task-detail-prioridad"></div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <label style="color: var(--apple-label-secondary); font-size: 0.9rem; font-weight: 500; display: block; margin-bottom: 0.5rem;">Proyecto:</label>
+                        <span id="task-detail-proyecto" style="color: var(--apple-label);"></span>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <label style="color: var(--apple-label-secondary); font-size: 0.9rem; font-weight: 500; display: block; margin-bottom: 0.5rem;">Creado por:</label>
+                        <span id="task-detail-creado-por" style="color: var(--apple-label);"></span>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <label style="color: var(--apple-label-secondary); font-size: 0.9rem; font-weight: 500; display: block; margin-bottom: 0.5rem;">Asignado a:</label>
+                        <span id="task-detail-asignado-a" style="color: var(--apple-label);"></span>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <label style="color: var(--apple-label-secondary); font-size: 0.9rem; font-weight: 500; display: block; margin-bottom: 0.5rem;">Fecha límite:</label>
+                        <span id="task-detail-fecha-limite" style="color: var(--apple-label);"></span>
+                    </div>
+                </div>
+                
+                <div class="detail-item" style="margin-bottom: 1.5rem;">
+                    <label style="color: var(--apple-label-secondary); font-size: 0.9rem; font-weight: 500; display: block; margin-bottom: 0.5rem;">Descripción:</label>
+                    <p id="task-detail-descripcion" style="color: var(--apple-label); line-height: 1.5; background: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 8px; margin: 0;"></p>
+                </div>
+                
+                <div class="detail-item">
+                    <label style="color: var(--apple-label-secondary); font-size: 0.9rem; font-weight: 500; display: block; margin-bottom: 0.5rem;">Fecha de creación:</label>
+                    <span id="task-detail-fecha-creacion" style="color: var(--apple-label-secondary); font-size: 0.9rem;"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Popup de éxito animado -->
 <div class="popup-exito" id="popup-exito">
     <div class="popup-content">
@@ -1723,6 +1785,73 @@ function mostrarEstadoVacio(tipo) {
     if(content) {
         content.innerHTML = '<div style="text-align: center; padding: 4rem; color: var(--apple-label-secondary);">No hay contenido disponible.</div>';
     }
+}
+
+// --- TASK DETAIL FUNCTIONS ---
+async function abrirDetallesTarea(tareaId) {
+    try {
+        // Hacer petición para obtener detalles de la tarea
+        const response = await fetch(`/app/api/tarea/${tareaId}/`);
+        if (!response.ok) throw new Error('Error al cargar los detalles de la tarea');
+        
+        const tarea = await response.json();
+        
+        // Rellenar el modal con los datos de la tarea
+        document.getElementById('task-detail-titulo').textContent = tarea.titulo;
+        document.getElementById('task-detail-descripcion').textContent = tarea.descripcion || 'Sin descripción';
+        document.getElementById('task-detail-estado').innerHTML = getEstadoBadgeHTML(tarea.estado);
+        document.getElementById('task-detail-prioridad').innerHTML = getPrioridadBadgeHTML(tarea.prioridad);
+        document.getElementById('task-detail-proyecto').textContent = tarea.proyecto_nombre || 'Sin proyecto';
+        document.getElementById('task-detail-creado-por').textContent = tarea.creado_por;
+        document.getElementById('task-detail-asignado-a').textContent = tarea.responsable || 'Sin asignar';
+        document.getElementById('task-detail-fecha-limite').textContent = tarea.fecha_limite ? formatearFechaCompleta(tarea.fecha_limite) : 'Sin fecha límite';
+        document.getElementById('task-detail-fecha-creacion').textContent = formatearFechaCompleta(tarea.fecha_creacion);
+        
+        // Mostrar el modal
+        const modal = document.getElementById('modal-detalle-tarea');
+        if (modal) {
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        
+    } catch (error) {
+        console.error('Error al cargar detalles de tarea:', error);
+        alert('Error al cargar los detalles de la tarea');
+    }
+}
+
+function cerrarModalDetalleTarea() {
+    const modal = document.getElementById('modal-detalle-tarea');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+function getPrioridadBadgeHTML(prioridad) {
+    const prioridadColors = {
+        'baja': '#30D158',
+        'media': '#FF9500', 
+        'alta': '#FF3B30'
+    };
+    
+    const color = prioridadColors[prioridad] || '#8E8E93';
+    return `<span class="priority-badge" style="background: ${color}; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">${prioridad.charAt(0).toUpperCase() + prioridad.slice(1)}</span>`;
+}
+
+function formatearFechaCompleta(fechaStr) {
+    if (!fechaStr) return '';
+    
+    const fecha = new Date(fechaStr);
+    const opciones = { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    };
+    
+    return fecha.toLocaleDateString('es-ES', opciones);
 }
 
 // --- MODAL & ACTION FUNCTIONS ---
@@ -2227,15 +2356,29 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ESC key to close modal
+    // ESC key to close modals
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            const modal = document.getElementById('modal-crear-proyecto');
-            if (modal && modal.classList.contains('active')) {
+            const modalCrear = document.getElementById('modal-crear-proyecto');
+            const modalDetalle = document.getElementById('modal-detalle-tarea');
+            
+            if (modalCrear && modalCrear.classList.contains('active')) {
                 cerrarModalCrearProyecto();
+            } else if (modalDetalle && modalDetalle.classList.contains('active')) {
+                cerrarModalDetalleTarea();
             }
         }
     });
+    
+    // Click outside to close task detail modal
+    const modalDetalleTarea = document.getElementById('modal-detalle-tarea');
+    if (modalDetalleTarea) {
+        modalDetalleTarea.addEventListener('click', (e) => {
+            if (e.target === modalDetalleTarea) {
+                cerrarModalDetalleTarea();
+            }
+        });
+    }
 
     // Initial data load
     cargarProyectos(1);

@@ -9779,3 +9779,50 @@ def bitrix_lost_opportunities(request):
     return render(request, 'bitrix_lost_opportunities.html', context)
 
 
+@login_required
+def api_tarea_detalle(request, tarea_id):
+    """
+    API para obtener detalles de una tarea específica
+    """
+    if request.method == 'GET':
+        try:
+            # Buscar la tarea en la base de datos
+            tarea = Tarea.objects.get(id=tarea_id)
+            
+            # Verificar permisos - el usuario debe ser participante, creador o asignado
+            user_can_view = (
+                tarea.creado_por == request.user or
+                tarea.asignado_a == request.user or
+                tarea.participantes.filter(id=request.user.id).exists() or
+                request.user.is_superuser
+            )
+            
+            if not user_can_view:
+                return JsonResponse({'error': 'Sin permisos para ver esta tarea'}, status=403)
+            
+            # Preparar datos de la tarea
+            tarea_data = {
+                'id': tarea.id,
+                'titulo': tarea.titulo,
+                'descripcion': tarea.descripcion,
+                'estado': tarea.estado,
+                'prioridad': tarea.prioridad,
+                'proyecto_nombre': tarea.proyecto.nombre if tarea.proyecto else 'Sin proyecto',
+                'proyecto_id': tarea.proyecto.id if tarea.proyecto else None,
+                'creado_por': tarea.creado_por.get_full_name() or tarea.creado_por.username,
+                'responsable': tarea.asignado_a.get_full_name() or tarea.asignado_a.username if tarea.asignado_a else None,
+                'fecha_limite': tarea.fecha_limite.isoformat() if tarea.fecha_limite else None,
+                'fecha_creacion': tarea.fecha_creacion.isoformat(),
+                'fecha_completada': tarea.fecha_completada.isoformat() if tarea.fecha_completada else None,
+            }
+            
+            return JsonResponse(tarea_data)
+            
+        except Tarea.DoesNotExist:
+            return JsonResponse({'error': 'Tarea no encontrada'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
