@@ -292,6 +292,18 @@
             border-radius: 10px !important;
         }
 
+        .select2-user-result, .select2-user-selection {
+            display: flex;
+            align-items: center;
+        }
+
+        .select2-user-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
         .form-group {
             margin-bottom: 20px; /* Add margin-bottom to form groups */
         }
@@ -384,6 +396,32 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
+        function formatUser (user) {
+            if (!user.id) {
+                return user.text;
+            }
+            var $user = $(
+                '<span class="select2-user-result">' +
+                '<img class="select2-user-avatar" src="' + (user.avatar_url || '/static/images/default-avatar.png') + '" />' +
+                user.text +
+                '</span>'
+            );
+            return $user;
+        };
+
+        function formatUserSelection (user) {
+            if (!user.id) {
+                return user.text;
+            }
+            var $user = $(
+                '<span class="select2-user-selection">' +
+                '<img class="select2-user-avatar" src="' + (user.avatar_url || '/static/images/default-avatar.png') + '" />' +
+                user.text +
+                '</span>'
+            );
+            return $user;
+        }
+
         let calendar;
         let currentEvent = null; // To store the event being edited/viewed
 
@@ -464,12 +502,15 @@
                         return {
                             results: data.map(user => ({
                                 id: user.id,
-                                text: user.username // Or user.full_name if available
+                                text: user.text,
+                                avatar_url: user.avatar_url
                             }))
                         };
                     },
                     cache: true
-                }
+                },
+                templateResult: formatUser,
+                templateSelection: formatUserSelection
             });
 
             $('#event-opportunity').select2({

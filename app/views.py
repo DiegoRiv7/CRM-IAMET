@@ -2182,16 +2182,25 @@ def user_list_api(request):
     """
     search_query = request.GET.get('q', '')
     users = User.objects.filter(
-        Q(username__icontains=search_query) |
-        Q(first_name__icontains=search_query) |
+        Q(username__icontains=search_query) | 
+        Q(first_name__icontains=search_query) | 
         Q(last_name__icontains=search_query)
     ).order_by('username')[:20] # Limitar resultados
     
     results = []
     for user in users:
-        results.append({'id': user.id, 'text': user.get_full_name() or user.username})
+        avatar_url = None
+        if hasattr(user, 'userprofile'):
+            try:
+                avatar_url = user.userprofile.get_avatar_url()
+            except:
+                avatar_url = None
+        results.append({
+            'id': user.id, 
+            'text': user.get_full_name() or user.username,
+            'avatar_url': avatar_url
+        })
     return JsonResponse(results, safe=False)
-
 @login_required
 def oportunidad_list_api(request):
     """
