@@ -1973,6 +1973,10 @@ class Tarea(models.Model):
         default=timedelta(0),
         verbose_name="Tiempo Trabajado"
     )
+    trabajando_actualmente = models.BooleanField(
+        default=False,
+        verbose_name="Trabajando Actualmente"
+    )
     
     class Meta:
         verbose_name = "Tarea"
