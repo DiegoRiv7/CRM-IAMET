@@ -669,53 +669,23 @@ def api_tareas(request):
         return JsonResponse({'error': 'Sin permisos'}, status=403)
     
     if request.method == 'GET':
-        # Obtener tareas por proyecto si se especifica
+        # Obtener tareas por proyecto si se especifica, sino mostrar TODAS las tareas
         proyecto_id = request.GET.get('proyecto_id')
         
-        if proyecto_id:
-            try:
+        try:
+            if proyecto_id:
+                # Filtrar por proyecto específico
                 proyecto = Proyecto.objects.get(id=proyecto_id)
-                
-                # Obtener tareas reales desde la base de datos
                 tareas = Tarea.objects.filter(proyecto=proyecto).select_related(
                     'creado_por', 'asignado_a', 'proyecto'
                 ).order_by('-fecha_creacion')
-                
-                tareas_data = []
-                for tarea in tareas:
-                    tareas_data.append({
-                        'id': tarea.id,
-                        'titulo': tarea.titulo,
-                        'descripcion': tarea.descripcion,
-                        'estado': tarea.estado,
-                        'prioridad': tarea.prioridad,
-                        'fecha_creacion': tarea.fecha_creacion.isoformat(),
-                        'fecha_limite': tarea.fecha_limite.isoformat() if tarea.fecha_limite else None,
-                        'fecha_completada': tarea.fecha_completada.isoformat() if tarea.fecha_completada else None,
-                        'creado_por': tarea.creado_por.get_full_name() or tarea.creado_por.username,
-                        'responsable': tarea.asignado_a.get_full_name() or tarea.asignado_a.username if tarea.asignado_a else None,
-                        'proyecto_nombre': tarea.proyecto.nombre,
-                        'pausado': tarea.pausado,
-                        'tiempo_trabajado': str(tarea.tiempo_trabajado) if tarea.tiempo_trabajado else None
-                    })
-                
-                return JsonResponse({
-                    'success': True,
-                    'tareas': tareas_data
-                })
-                
-            except Proyecto.DoesNotExist:
-                return JsonResponse({'error': 'Proyecto no encontrado'}, status=404)
-            except Exception as e:
-                return JsonResponse({'error': f'Error obteniendo tareas: {str(e)}'}, status=500)
-        
-        # Si no se especifica proyecto, devolver todas las tareas del usuario
-        try:
-            tareas = Tarea.objects.filter(
-                Q(creado_por=request.user) | 
-                Q(asignado_a=request.user) |
-                Q(participantes=request.user)
-            ).distinct().select_related('creado_por', 'asignado_a', 'proyecto').order_by('-fecha_creacion')
+            else:
+                # Mostrar TODAS las tareas del usuario (sin importar el proyecto)
+                tareas = Tarea.objects.filter(
+                    Q(creado_por=request.user) | 
+                    Q(asignado_a=request.user) |
+                    Q(participantes=request.user)
+                ).distinct().select_related('creado_por', 'asignado_a', 'proyecto').order_by('-fecha_creacion')
             
             tareas_data = []
             for tarea in tareas:
@@ -727,15 +697,21 @@ def api_tareas(request):
                     'prioridad': tarea.prioridad,
                     'fecha_creacion': tarea.fecha_creacion.isoformat(),
                     'fecha_limite': tarea.fecha_limite.isoformat() if tarea.fecha_limite else None,
+                    'fecha_completada': tarea.fecha_completada.isoformat() if tarea.fecha_completada else None,
                     'creado_por': tarea.creado_por.get_full_name() or tarea.creado_por.username,
                     'responsable': tarea.asignado_a.get_full_name() or tarea.asignado_a.username if tarea.asignado_a else None,
-                    'proyecto_nombre': tarea.proyecto.nombre
+                    'proyecto_nombre': tarea.proyecto.nombre if tarea.proyecto else 'Sin proyecto',
+                    'pausado': getattr(tarea, 'pausado', False),
+                    'tiempo_trabajado': str(tarea.tiempo_trabajado) if hasattr(tarea, 'tiempo_trabajado') and tarea.tiempo_trabajado else None
                 })
             
             return JsonResponse({
                 'success': True,
                 'tareas': tareas_data
             })
+            
+        except Proyecto.DoesNotExist:
+            return JsonResponse({'error': 'Proyecto no encontrado'}, status=404)
         except Exception as e:
             return JsonResponse({'error': f'Error obteniendo tareas: {str(e)}'}, status=500)
     

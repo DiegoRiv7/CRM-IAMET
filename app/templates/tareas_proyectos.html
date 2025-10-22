@@ -1597,6 +1597,9 @@ function mostrarTareasTabla(tareas) {
 }
 
 function createTaskRow(tarea) {
+    const proyectoNombre = tarea.proyecto_nombre || 'Sin proyecto';
+    const proyectoStyle = proyectoNombre === 'Sin proyecto' ? 'color: var(--apple-label-secondary); font-style: italic;' : '';
+    
     return `
         <div class="table-row" onclick="abrirDetallesTarea(${tarea.id})">
             <div class="table-cell name-cell">
@@ -1609,7 +1612,7 @@ function createTaskRow(tarea) {
             </div>
             <div class="table-cell activity-cell">${tarea.creado_por}</div>
             <div class="table-cell activity-cell">${tarea.responsable || 'Sin asignar'}</div>
-            <div class="table-cell activity-cell">${tarea.proyecto_nombre}</div>
+            <div class="table-cell activity-cell" style="${proyectoStyle}">${proyectoNombre}</div>
         </div>
     `;
 }
@@ -1661,7 +1664,7 @@ function mostrarEstadoVacioTareas() {
         content.innerHTML = `
             <div class="projects-table-container" id="tasks-table-view">
                 <div style="text-align: center; padding: 4rem; color: var(--apple-label-secondary);">
-                    No hay tareas para este proyecto.
+                    No hay tareas disponibles.
                 </div>
             </div>
         `;
