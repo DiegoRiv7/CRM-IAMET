@@ -16,7 +16,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo
 from . import views_exportar
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
 from django.db.models import Sum, Count, F, Q, Case, When, Value
@@ -9961,3 +9961,86 @@ def bitrix_lost_opportunities(request):
     return render(request, 'bitrix_lost_opportunities.html', context)
 
 
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from .models import TodoItem, OportunidadComentario
+
+@login_required
+def api_comentarios_tarea(request, tarea_id):
+    """
+    API SIMPLE - Usar oportunidades como tareas para que funcione YA
+    """
+    try:
+        # Buscar la oportunidad (usada como tarea)
+        oportunidad = TodoItem.objects.get(id=tarea_id)
+        
+        # Buscar comentarios de esta oportunidad
+        comentarios = OportunidadComentario.objects.filter(oportunidad=oportunidad).order_by('-fecha_creacion')
+        
+        # Formatear comentarios
+        comentarios_data = []
+        for comentario in comentarios:
+            comentarios_data.append({
+                'id': comentario.id,
+                'contenido': comentario.contenido,
+                'usuario': {
+                    'id': comentario.usuario.id,
+                    'nombre': comentario.usuario.get_full_name() or comentario.usuario.username,
+                    'username': comentario.usuario.username,
+                    'iniciales': ''.join([palabra[0].upper() for palabra in (comentario.usuario.get_full_name() or comentario.usuario.username).split()[:2]])
+                },
+                'fecha': comentario.fecha_creacion.strftime('%d de %b, %Y - %H:%M'),
+                'puede_editar': comentario.usuario == request.user,
+                'puede_eliminar': comentario.usuario == request.user
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'comentarios': comentarios_data
+        })
+        
+    except TodoItem.DoesNotExist:
+        return JsonResponse({'error': 'Oportunidad no encontrada'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
+
+
+@login_required  
+def api_agregar_comentario_tarea(request, tarea_id):
+    """
+    API SIMPLE - Agregar comentario a oportunidad
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        oportunidad = TodoItem.objects.get(id=tarea_id)
+        contenido = request.POST.get('contenido', '').strip()
+        
+        if not contenido:
+            return JsonResponse({'error': 'Contenido requerido'}, status=400)
+        
+        # Crear comentario
+        comentario = OportunidadComentario.objects.create(
+            oportunidad=oportunidad,
+            usuario=request.user,
+            contenido=contenido
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'comentario': {
+                'id': comentario.id,
+                'contenido': comentario.contenido,
+                'usuario': {
+                    'nombre': comentario.usuario.get_full_name() or comentario.usuario.username,
+                    'username': comentario.usuario.username
+                },
+                'fecha': comentario.fecha_creacion.strftime('%d de %b, %Y - %H:%M')
+            }
+        })
+        
+    except TodoItem.DoesNotExist:
+        return JsonResponse({'error': 'Oportunidad no encontrada'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
