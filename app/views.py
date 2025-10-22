@@ -401,12 +401,73 @@ def tareas_proyectos(request):
     if not request.user.is_superuser:
         return redirect('home')
     
+    # Crear datos de ejemplo si no existen (solo para desarrollo)
+    if request.GET.get('crear_ejemplos') == 'si':
+        crear_datos_ejemplo_tareas(request.user)
+    
     context = {
         'user': request.user,
         'page_title': 'Tareas y Proyectos'
     }
     
     return render(request, 'tareas_proyectos.html', context)
+
+def crear_datos_ejemplo_tareas(usuario):
+    """
+    Función temporal para crear datos de ejemplo
+    """
+    from .models import Proyecto, Tarea
+    from django.contrib.auth.models import User
+    from datetime import datetime, timedelta
+    
+    # Crear proyecto de ejemplo si no existe
+    proyecto, created = Proyecto.objects.get_or_create(
+        nombre="Proyecto Demo",
+        defaults={
+            'descripcion': 'Proyecto de demostración para el sistema de tareas',
+            'creado_por': usuario,
+            'privacidad': 'publico'
+        }
+    )
+    
+    # Crear algunas tareas de ejemplo
+    tareas_ejemplo = [
+        {
+            'titulo': 'Informacion de Pedidos recibidos',
+            'descripcion': 'Revisar y procesar la información de pedidos recibidos del sistema',
+            'estado': 'en_progreso',
+            'prioridad': 'alta',
+            'fecha_limite': datetime.now() + timedelta(days=2)
+        },
+        {
+            'titulo': 'Documentos factura 10827',
+            'descripcion': 'Procesar documentos de la factura número 10827',
+            'estado': 'pendiente',
+            'prioridad': 'media',
+            'fecha_limite': datetime.now() + timedelta(days=5)
+        },
+        {
+            'titulo': 'Actualizar base de datos',
+            'descripcion': 'Realizar actualización de la base de datos del sistema',
+            'estado': 'completada',
+            'prioridad': 'baja',
+            'fecha_limite': datetime.now() - timedelta(days=1)
+        }
+    ]
+    
+    for tarea_data in tareas_ejemplo:
+        Tarea.objects.get_or_create(
+            titulo=tarea_data['titulo'],
+            proyecto=proyecto,
+            defaults={
+                'descripcion': tarea_data['descripcion'],
+                'creado_por': usuario,
+                'asignado_a': usuario,
+                'estado': tarea_data['estado'],
+                'prioridad': tarea_data['prioridad'],
+                'fecha_limite': tarea_data['fecha_limite']
+            }
+        )
 
 
 @login_required
