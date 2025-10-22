@@ -16,7 +16,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo
 from . import views_exportar
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
 from django.db.models import Sum, Count, F, Q, Case, When, Value
@@ -416,8 +416,6 @@ def crear_datos_ejemplo_tareas(usuario):
     """
     Función temporal para crear datos de ejemplo
     """
-    from .models import Proyecto, Tarea
-    from django.contrib.auth.models import User
     from datetime import datetime, timedelta
     
     # Crear proyecto de ejemplo si no existe
@@ -676,7 +674,6 @@ def api_tareas(request):
         
         if proyecto_id:
             try:
-                from .models import Proyecto, Tarea
                 proyecto = Proyecto.objects.get(id=proyecto_id)
                 
                 # Obtener tareas reales desde la base de datos
@@ -714,11 +711,10 @@ def api_tareas(request):
         
         # Si no se especifica proyecto, devolver todas las tareas del usuario
         try:
-            from .models import Tarea
             tareas = Tarea.objects.filter(
-                models.Q(creado_por=request.user) | 
-                models.Q(asignado_a=request.user) |
-                models.Q(participantes=request.user)
+                Q(creado_por=request.user) | 
+                Q(asignado_a=request.user) |
+                Q(participantes=request.user)
             ).distinct().select_related('creado_por', 'asignado_a', 'proyecto').order_by('-fecha_creacion')
             
             tareas_data = []
@@ -746,8 +742,6 @@ def api_tareas(request):
     elif request.method == 'POST':
         # Crear nueva tarea
         try:
-            from .models import Proyecto, Tarea
-            from django.contrib.auth.models import User
             from datetime import datetime
             
             # Obtener datos del formulario
