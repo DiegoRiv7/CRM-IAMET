@@ -1785,101 +1785,111 @@ function mostrarEstadoVacio(tipo) {
 // --- TASK DETAIL FUNCTIONS (NAMESPACE) ---
 const TareasProyectos = {
     async verDetallesTarea(tareaId) {
-    console.log('TareasProyectos.verDetallesTarea called with ID:', tareaId);
-    console.log('This is the TareasProyectos namespace function, NOT the proyecto_detalle function');
-    
-    try {
-        // Hacer petición para obtener detalles de la tarea
-        const response = await fetch(`/app/api/tarea/${tareaId}/`);
-        console.log('Response status:', response.status);
+        console.log('TareasProyectos.verDetallesTarea called with ID:', tareaId);
+        console.log('This is the TareasProyectos namespace function, NOT the proyecto_detalle function');
         
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const tarea = await response.json();
-        console.log('Tarea data received:', tarea);
-        
-        // Verificar que todos los elementos existen antes de rellenarlos
-        const elementos = {
-            'task-detail-titulo': tarea.titulo,
-            'task-detail-descripcion': tarea.descripcion || 'Sin descripción',
-            'task-detail-proyecto': tarea.proyecto_nombre || 'Sin proyecto',
-            'task-detail-creado-por': tarea.creado_por,
-            'task-detail-asignado-a': tarea.responsable || 'Sin asignar',
-            'task-detail-fecha-limite': tarea.fecha_limite ? TareasProyectos.formatearFechaCompleta(tarea.fecha_limite) : 'Sin fecha límite',
-            'task-detail-fecha-creacion': TareasProyectos.formatearFechaCompleta(tarea.fecha_creacion)
-        };
-        
-        // Rellenar elementos de texto
-        for (const [id, valor] of Object.entries(elementos)) {
-            const elemento = document.getElementById(id);
-            if (elemento) {
-                elemento.textContent = valor;
-            } else {
-                console.warn(`Elemento no encontrado: ${id}`);
+        try {
+            // Hacer petición para obtener detalles de la tarea
+            const response = await fetch(`/app/api/tarea/${tareaId}/`);
+            console.log('Response status:', response.status);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            
+            const tarea = await response.json();
+            console.log('Tarea data received:', tarea);
+            
+            // Verificar que todos los elementos existen antes de rellenarlos
+            const elementos = {
+                'task-detail-titulo': tarea.titulo,
+                'task-detail-descripcion': tarea.descripcion || 'Sin descripción',
+                'task-detail-proyecto': tarea.proyecto_nombre || 'Sin proyecto',
+                'task-detail-creado-por': tarea.creado_por,
+                'task-detail-asignado-a': tarea.responsable || 'Sin asignar',
+                'task-detail-fecha-limite': tarea.fecha_limite ? TareasProyectos.formatearFechaCompleta(tarea.fecha_limite) : 'Sin fecha límite',
+                'task-detail-fecha-creacion': TareasProyectos.formatearFechaCompleta(tarea.fecha_creacion)
+            };
+            
+            // Rellenar elementos de texto
+            for (const [id, valor] of Object.entries(elementos)) {
+                const elemento = document.getElementById(id);
+                if (elemento) {
+                    elemento.textContent = valor;
+                } else {
+                    console.warn(`Elemento no encontrado: ${id}`);
+                }
+            }
+            
+            // Rellenar elementos HTML (badges)
+            const estadoElement = document.getElementById('task-detail-estado');
+            if (estadoElement) {
+                estadoElement.innerHTML = getEstadoBadgeHTML(tarea.estado);
+            }
+            
+            const prioridadElement = document.getElementById('task-detail-prioridad');
+            if (prioridadElement) {
+                prioridadElement.innerHTML = TareasProyectos.getPrioridadBadgeHTML(tarea.prioridad);
+            }
+            
+            // Mostrar el modal
+            const modal = document.getElementById('modal-detalle-tarea');
+            if (modal) {
+                console.log('Showing modal');
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            } else {
+                console.error('Modal not found!');
+            }
+            
+        } catch (error) {
+            console.error('Error al cargar detalles de tarea:', error);
+            alert('Error al cargar los detalles de la tarea: ' + error.message);
         }
-        
-        // Rellenar elementos HTML (badges)
-        const estadoElement = document.getElementById('task-detail-estado');
-        if (estadoElement) {
-            estadoElement.innerHTML = getEstadoBadgeHTML(tarea.estado);
-        }
-        
-        const prioridadElement = document.getElementById('task-detail-prioridad');
-        if (prioridadElement) {
-            prioridadElement.innerHTML = TareasProyectos.getPrioridadBadgeHTML(tarea.prioridad);
-        }
-        
-        // Mostrar el modal
-        const modal = document.getElementById('modal-detalle-tarea');
-        if (modal) {
-            console.log('Showing modal');
-            modal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        } else {
-            console.error('Modal not found!');
-        }
-        
-    } catch (error) {
-        console.error('Error al cargar detalles de tarea:', error);
-        alert('Error al cargar los detalles de la tarea: ' + error.message);
     },
 
     cerrarModalDetalleTarea() {
-    const modal = document.getElementById('modal-detalle-tarea');
-    if (modal) {
-        modal.classList.remove('active');
-        document.body.style.overflow = '';
+        const modal = document.getElementById('modal-detalle-tarea');
+        if (modal) {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
     },
 
     getPrioridadBadgeHTML(prioridad) {
-    const prioridadColors = {
-        'baja': '#30D158',
-        'media': '#FF9500', 
-        'alta': '#FF3B30'
-    };
-    
-    const color = prioridadColors[prioridad] || '#8E8E93';
-    return `<span class="priority-badge" style="background: ${color}; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">${prioridad.charAt(0).toUpperCase() + prioridad.slice(1)}</span>`;
+        const prioridadColors = {
+            'baja': '#30D158',
+            'media': '#FF9500', 
+            'alta': '#FF3B30'
+        };
+        
+        const color = prioridadColors[prioridad] || '#8E8E93';
+        return `<span class="priority-badge" style="background: ${color}; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">${prioridad.charAt(0).toUpperCase() + prioridad.slice(1)}</span>`;
     },
 
     formatearFechaCompleta(fechaStr) {
-    if (!fechaStr) return '';
-    
-    const fecha = new Date(fechaStr);
-    const opciones = { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    };
-    
-    return fecha.toLocaleDateString('es-ES', opciones);
+        if (!fechaStr) return '';
+        
+        const fecha = new Date(fechaStr);
+        const opciones = { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        };
+        
+        return fecha.toLocaleDateString('es-ES', opciones);
     }
 };
+
+function getPrioridadBadgeHTML(prioridad) {
+    return TareasProyectos.getPrioridadBadgeHTML(prioridad);
+}
+
+function formatearFechaCompleta(fechaStr) {
+    return TareasProyectos.formatearFechaCompleta(fechaStr);
+}
 
 // --- MODAL & ACTION FUNCTIONS ---
 function abrirModalCrearProyecto() {
