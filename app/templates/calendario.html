@@ -7,290 +7,288 @@
     <!-- FullCalendar CSS -->
     <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css' rel='stylesheet' />
     <style>
-        body {
-            font-family: var(--apple-font-family);
-            background: var(--apple-background);
-            color: var(--apple-label);
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            text-rendering: optimizeLegibility;
-        }
-        .fc .fc-button-primary {
-            background-color: var(--apple-blue);
-            border-color: var(--apple-blue);
-            color: var(--apple-label);
-        }
-        .fc .fc-button-primary:hover {
-            background-color: var(--apple-blue-dark);
-            border-color: var(--apple-blue-dark);
-        }
-        .fc .fc-button-primary:not(:disabled).fc-button-active {
-            background-color: var(--apple-blue-dark);
-            border-color: var(--apple-blue-dark);
-        }
-        .fc-event {
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 0.85em;
-            border: 1px solid transparent;
-            padding: 2px 4px;
-            text-align: center;
-        }
-        .fc-event-title {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .fc-daygrid-event-harness {
-            margin-bottom: 2px;
-        }
-        .fc-daygrid-event {
-            background-color: var(--apple-blue);
-            border-color: var(--apple-blue);
-            color: white;
-        }
-        .fc-timegrid-event {
-            background-color: var(--apple-blue-light);
-            border-color: var(--apple-blue-light);
-            color: white;
-        }
-        .fc-day-today {
-            background-color: rgba(0, 122, 255, 0.1);
-        }
-        .fc-toolbar-title {
-            color: var(--apple-label);
-        }
-        .fc-col-header-cell-cushion {
-            color: var(--apple-label-secondary);
-        }
-        .fc-daygrid-day-number {
-            color: var(--apple-label-secondary);
-        }
-        .fc-list-event-title {
-            color: var(--apple-blue);
-        }
-        .fc-list-event-dot {
-            border-color: var(--apple-blue) !important;
-        }
-        .fc-list-day-text, .fc-list-day-side-text {
-            color: var(--apple-label-tertiary);
-        }
-        .fc-theme-standard td, .fc-theme-standard th {
-            border-color: var(--apple-separator);
-        }
-        .fc-scrollgrid-sync-table {
-            background-color: var(--apple-background-secondary);
-        }
-        .fc-popover {
-            background-color: var(--apple-background-secondary);
-            border-color: var(--apple-separator);
-            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-        }
-        .fc-popover-header {
-            background-color: var(--apple-background-tertiary);
-            border-bottom-color: var(--apple-separator);
-            color: var(--apple-label);
-        }
-        .fc-popover-title {
-            color: var(--apple-label);
-        }
-        .fc-popover-close {
-            color: var(--apple-label);
+        /* Apple iPad-inspired Calendar Design */
+        :root {
+            --apple-blue: #007AFF;
+            --apple-blue-light: #4DA8FF;
+            --apple-blue-dark: #0056CC;
+            --apple-gray: #8E8E93;
+            --apple-gray-2: #AEAEB2;
+            --apple-gray-3: #C7C7CC;
+            --apple-gray-4: #D1D1D6;
+            --apple-gray-5: #E5E5EA;
+            --apple-gray-6: #F2F2F7;
+            --apple-background: #000000;
+            --apple-background-secondary: #1D1D1F;
+            --apple-background-tertiary: #2C2C2E;
+            --apple-background-quaternary: #3A3A3C;
+            --apple-label: #FFFFFF;
+            --apple-label-secondary: #EBEBF5;
+            --apple-label-tertiary: #EBEBF599;
+            --apple-label-quaternary: #EBEBF54D;
+            --apple-separator: #38383A;
+            --apple-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif;
         }
 
-        /* Modal Styles */
+        body {
+            background: var(--apple-background);
+            color: var(--apple-label);
+            font-family: var(--apple-font-family);
+        }
+
+        .apple-bg {
+            position: fixed; 
+            inset: 0; 
+            z-index: -1;
+            pointer-events: none;
+            background: 
+                radial-gradient(ellipse at top left, rgba(0, 122, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom right, rgba(0, 122, 255, 0.1) 0%, transparent 50%),
+                linear-gradient(180deg, var(--apple-background) 0%, var(--apple-background-secondary) 100%);
+        }
+
+        .apple-card {
+            background: rgba(28, 28, 30, 0.7);
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+
+        .apple-card:hover {
+            transform: translateY(-5px) scale(1.01) rotateX(2deg) rotateY(1deg);
+            box-shadow: 0 24px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        /* FullCalendar Customization */
+        .fc {
+            --fc-border-color: var(--apple-separator);
+            --fc-daygrid-event-dot-width: 8px;
+            --fc-list-event-dot-width: 10px;
+            --fc-event-border-color: transparent;
+            --fc-event-text-color: #fff;
+            --fc-button-text-color: var(--apple-label);
+            --fc-button-bg-color: var(--apple-background-tertiary);
+            --fc-button-border-color: var(--apple-separator);
+            --fc-button-hover-bg-color: var(--apple-background-quaternary);
+            --fc-button-hover-border-color: var(--apple-gray-4);
+            --fc-button-active-bg-color: var(--apple-blue);
+            --fc-button-active-border-color: var(--apple-blue);
+            --fc-today-bg-color: rgba(0, 122, 255, 0.15);
+            --fc-page-bg-color: transparent;
+            --fc-neutral-bg-color: transparent;
+        }
+
+        .fc .fc-toolbar-title {
+            color: var(--apple-label);
+            font-weight: 600;
+            font-size: 1.75rem;
+        }
+
+        .fc .fc-col-header-cell-cushion {
+            color: var(--apple-gray-2);
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        .fc .fc-daygrid-day-number {
+            color: var(--apple-label-secondary);
+            font-size: 0.9rem;
+            padding: 8px;
+        }
+
+        .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+            color: var(--apple-blue-light);
+            font-weight: 700;
+        }
+
+        .fc .fc-daygrid-event {
+            border-radius: 6px;
+            padding: 4px 6px;
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.2s ease;
+        }
+
+        .fc .fc-daygrid-event:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        /* Modal Styles - iPadOS Inspired */
         .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            transition: opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), visibility 0.4s;
         }
+
         .modal-overlay.show {
             opacity: 1;
             visibility: visible;
         }
+
         .modal-content {
-            background-color: var(--apple-background-secondary);
-            border-radius: 12px;
-            padding: 30px;
+            background: rgba(44, 44, 46, 0.85);
+            backdrop-filter: blur(30px) saturate(200%);
+            -webkit-backdrop-filter: blur(30px) saturate(200%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
             width: 90%;
-            max-width: 600px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
-            transform: translateY(20px);
-            transition: transform 0.3s ease;
-            position: relative;
-            border: 1px solid var(--apple-separator);
-        }
-        .modal-overlay.show .modal-content {
-            transform: translateY(0);
-        }
-        .modal-header {
+            max-width: 550px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            transform: scale(0.95) translateY(20px);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
+            flex-direction: column;
+            max-height: 90vh;
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+
+        .modal-header {
+            padding: 20px 24px;
             border-bottom: 1px solid var(--apple-separator);
+            flex-shrink: 0;
         }
+
         .modal-header h2 {
-            font-size: 1.8rem;
-            color: var(--apple-label);
+            font-size: 1.4rem;
             font-weight: 600;
-        }
-        .modal-close-btn {
-            background: none;
-            border: none;
-            font-size: 1.8rem;
-            color: var(--apple-gray);
-            cursor: pointer;
-            transition: color 0.2s ease;
-        }
-        .modal-close-btn:hover {
             color: var(--apple-label);
         }
-        .modal-body label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: var(--apple-label-secondary);
-            font-size: 0.95rem;
+
+        .modal-close-btn {
+            display: none; /* Hidden for a cleaner look, modal is closed by clicking overlay or cancel button */
         }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .modal-body label {
+            font-weight: 500;
+            color: var(--apple-gray-2);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
         .modal-body input[type="text"],
         .modal-body input[type="datetime-local"],
         .modal-body textarea,
         .modal-body select {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 1px solid var(--apple-separator);
-            border-radius: 8px;
             background-color: var(--apple-background-tertiary);
+            border: 1px solid var(--apple-separator);
+            border-radius: 10px;
             color: var(--apple-label);
             font-size: 1rem;
+            padding: 14px;
+            width: 100%;
             box-sizing: border-box;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            transition: all 0.2s ease;
         }
+
         .modal-body input[type="text"]:focus,
         .modal-body input[type="datetime-local"]:focus,
         .modal-body textarea:focus,
         .modal-body select:focus {
             border-color: var(--apple-blue);
-            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.4);
             outline: none;
         }
-        .modal-body textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
+
         .modal-footer {
+            padding: 20px 24px;
+            border-top: 1px solid var(--apple-separator);
             display: flex;
             justify-content: flex-end;
-            gap: 15px;
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 1px solid var(--apple-separator);
+            gap: 12px;
+            background: var(--apple-background-tertiary);
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            flex-shrink: 0;
         }
+
         .modal-footer button {
-            padding: 12px 25px;
-            border-radius: 8px;
             font-size: 1rem;
-            font-weight: 500;
+            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: none;
             cursor: pointer;
-            transition: background-color 0.2s ease, color 0.2s ease;
+            transition: all 0.2s ease;
         }
+
         .btn-primary {
             background-color: var(--apple-blue);
             color: white;
-            border: none;
         }
+
         .btn-primary:hover {
-            background-color: var(--apple-blue-dark);
+            background-color: var(--apple-blue-light);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
         }
+
         .btn-secondary {
-            background-color: var(--apple-gray-3);
+            background-color: var(--apple-background-quaternary);
             color: var(--apple-label);
-            border: none;
         }
+
         .btn-secondary:hover {
-            background-color: var(--apple-gray-2);
+            background-color: var(--apple-gray-4);
         }
+
         .btn-danger {
             background-color: #FF3B30;
             color: white;
-            border: none;
         }
+
         .btn-danger:hover {
-            background-color: #CC0000;
+            background-color: #ff6347;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(255, 59, 48, 0.3);
         }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group.checkbox {
-            display: flex;
-            align-items: center;
-            margin-top: 10px;
-        }
-        .form-group.checkbox input[type="checkbox"] {
-            width: auto;
-            margin-right: 10px;
-        }
-        .form-group.checkbox label {
-            margin-bottom: 0;
-        }
+
+        /* Select2 Customization */
         .select2-container--default .select2-selection--multiple {
             background-color: var(--apple-background-tertiary) !important;
             border: 1px solid var(--apple-separator) !important;
-            border-radius: 8px !important;
-            color: var(--apple-label) !important;
-            padding: 6px 12px !important;
+            border-radius: 10px !important;
+            padding: 8px 12px !important;
         }
+
         .select2-container--default .select2-selection--multiple .select2-selection__choice {
             background-color: var(--apple-blue) !important;
-            border: 1px solid var(--apple-blue-dark) !important;
+            border: none !important;
             color: white !important;
-            border-radius: 4px !important;
-            padding: 2px 8px !important;
-            margin-top: 4px !important;
+            border-radius: 6px !important;
+            padding: 4px 8px !important;
         }
-        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-            color: rgba(255, 255, 255, 0.7) !important;
-            margin-right: 5px !important;
-        }
-        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
-            color: white !important;
-        }
-        .select2-container--default .select2-selection--multiple .select2-selection__rendered {
-            color: var(--apple-label) !important;
-        }
-        .select2-container--default .select2-search--inline .select2-search__field {
-            color: var(--apple-label) !important;
-        }
+
         .select2-dropdown {
             background-color: var(--apple-background-secondary) !important;
             border: 1px solid var(--apple-separator) !important;
-            border-radius: 8px !important;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-        }
-        .select2-results__option {
-            color: var(--apple-label) !important;
-        }
-        .select2-results__option--highlighted {
-            background-color: var(--apple-blue) !important;
-            color: white !important;
-        }
-        .select2-search input {
-            background-color: var(--apple-background-tertiary) !important;
-            border: 1px solid var(--apple-separator) !important;
-            color: var(--apple-label) !important;
+            border-radius: 10px !important;
         }
     </style>
 {% endblock %}
