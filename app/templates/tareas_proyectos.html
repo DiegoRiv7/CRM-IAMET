@@ -1663,7 +1663,7 @@ function createTaskRow(tarea) {
     const proyectoStyle = proyectoNombre === 'Sin proyecto' ? 'color: var(--apple-label-secondary); font-style: italic;' : '';
     
     return `
-        <div class="table-row" onclick="TareasProyectos.verDetallesTarea(${tarea.id})">
+        <div class="table-row" onclick="console.log('Clicked task:', ${tarea.id}); TareasProyectos.verDetallesTarea(${tarea.id})">
             <div class="table-cell name-cell">
                 ${tarea.titulo}
                 ${tarea.prioridad === 'alta' ? '<span style="color: #FF9500; margin-left: 0.5rem;">●</span>' : ''}
@@ -1785,16 +1785,22 @@ function mostrarEstadoVacio(tipo) {
 // --- TASK DETAIL FUNCTIONS (NAMESPACE) ---
 const TareasProyectos = {
     async verDetallesTarea(tareaId) {
+        console.log('=== INICIANDO verDetallesTarea ===');
         console.log('TareasProyectos.verDetallesTarea called with ID:', tareaId);
         console.log('This is the TareasProyectos namespace function, NOT the proyecto_detalle function');
         
         try {
+            console.log('Haciendo petición a:', `/app/api/tarea/${tareaId}/`);
             // Hacer petición para obtener detalles de la tarea
             const response = await fetch(`/app/api/tarea/${tareaId}/`);
+            console.log('Response received:', response);
             console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
             
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                console.error('Response error text:', errorText);
+                throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
             }
             
             const tarea = await response.json();
@@ -1833,13 +1839,16 @@ const TareasProyectos = {
             }
             
             // Mostrar el modal
+            console.log('Buscando modal con ID: modal-detalle-tarea');
             const modal = document.getElementById('modal-detalle-tarea');
+            console.log('Modal encontrado:', modal);
             if (modal) {
-                console.log('Showing modal');
+                console.log('Showing modal, añadiendo clase active');
                 modal.classList.add('active');
                 document.body.style.overflow = 'hidden';
+                console.log('Modal classes after add:', modal.classList.toString());
             } else {
-                console.error('Modal not found!');
+                console.error('❌ Modal not found! El elemento modal-detalle-tarea no existe en el DOM');
             }
             
         } catch (error) {

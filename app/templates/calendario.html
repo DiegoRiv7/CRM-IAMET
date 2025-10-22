@@ -205,6 +205,7 @@
             width: 100%;
             box-sizing: border-box;
             transition: all 0.2s ease;
+            margin-bottom: 15px; /* Add margin-bottom to form elements */
         }
 
         .modal-body input[type="text"]:focus,
@@ -295,9 +296,9 @@
 
 {% block content %}
 <div class="apple-bg"></div>
-<main class="flex flex-col items-center justify-start min-h-screen p-8">
-    <section class="w-full max-w-7xl mx-auto apple-fade-in" style="animation-delay:0.2s;">
-        <h1 class="apple-title-1 text-center mb-8" style="color: var(--apple-blue);">Calendario de Actividades</h1>
+<main class="flex flex-col items-center justify-start min-h-screen p-4">
+    <section class="w-full max-w-full mx-auto apple-fade-in" style="animation-delay:0.2s;">
+
         <div class="apple-card p-6 md:p-8">
             <div id='calendar'></div>
         </div>
