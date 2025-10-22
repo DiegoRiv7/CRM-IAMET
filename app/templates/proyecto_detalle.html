@@ -7778,7 +7778,7 @@ const TareasProyectos = {
     // Función para cargar todos los usuarios
     async loadAllUsers() {
         try {
-            const response = await fetch('/app/api/buscar-usuarios/', {
+            const response = await fetch('/app/api/buscar-usuarios/?q=', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -7788,16 +7788,29 @@ const TareasProyectos = {
             
             if (response.ok) {
                 const data = await response.json();
-                TareasProyectos.allUsers = data.usuarios || [];
-                console.log('Usuarios cargados:', TareasProyectos.allUsers);
-                
-                // Mostrar usuarios en dropdowns activos
-                ['participantes', 'observadores'].forEach(type => {
-                    const dropdown = document.getElementById(`${type}-dropdown`);
-                    if (dropdown && dropdown.style.display === 'block') {
-                        TareasProyectos.displayUsers(TareasProyectos.allUsers, type);
-                    }
-                });
+                if (data.success && data.usuarios && data.usuarios.length > 0) {
+                    // Transformar los usuarios al formato que esperamos
+                    TareasProyectos.allUsers = data.usuarios.map(user => ({
+                        id: user.id,
+                        nombre: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
+                        email: user.email || '',
+                        username: user.username,
+                        first_name: user.first_name,
+                        last_name: user.last_name
+                    }));
+                    console.log('Usuarios cargados:', TareasProyectos.allUsers);
+                    
+                    // Mostrar usuarios en dropdowns activos
+                    ['participantes', 'observadores'].forEach(type => {
+                        const dropdown = document.getElementById(`${type}-dropdown`);
+                        if (dropdown && dropdown.style.display === 'block') {
+                            TareasProyectos.displayUsers(TareasProyectos.allUsers, type);
+                        }
+                    });
+                } else {
+                    console.log('No se encontraron usuarios disponibles');
+                    TareasProyectos.allUsers = [];
+                }
             } else {
                 console.error('Error al cargar usuarios:', response.status);
             }
