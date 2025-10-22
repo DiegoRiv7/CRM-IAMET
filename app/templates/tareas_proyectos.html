@@ -1574,50 +1574,20 @@ function mostrarTareasTabla(tareas) {
     const content = document.getElementById('tareas-content');
     if (!content) return;
     
-    // Crear estructura de tabla similar a la imagen
+    // Usar la misma estructura que la tabla de proyectos
     const tableHTML = `
-        <div class="tasks-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-            <h2 style="color: var(--apple-label); font-size: 1.5rem; margin: 0;">Mis Tareas</h2>
-            <button class="create-btn" onclick="abrirModalCrearTarea()" style="
-                background: var(--apple-blue);
-                border: none;
-                border-radius: 8px;
-                padding: 0.75rem 1.5rem;
-                color: white;
-                font-weight: 600;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-            ">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                    <path d="M12 4v16m8-8H4"/>
-                </svg>
-                Crear
-            </button>
-        </div>
-        
-        <div class="tasks-table-container" style="
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            overflow: hidden;
-        ">
-            <div class="tasks-table-header" style="
-                display: grid;
-                grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
-                background: rgba(255, 255, 255, 0.08);
-                padding: 1rem;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            ">
-                <div style="color: var(--apple-label-secondary); font-size: 0.85rem; text-transform: uppercase; font-weight: 600;">Nombre</div>
-                <div style="color: var(--apple-label-secondary); font-size: 0.85rem; text-transform: uppercase; font-weight: 600;">Actividad</div>
-                <div style="color: var(--apple-label-secondary); font-size: 0.85rem; text-transform: uppercase; font-weight: 600;">Fecha límite</div>
-                <div style="color: var(--apple-label-secondary); font-size: 0.85rem; text-transform: uppercase; font-weight: 600;">Creado por</div>
-                <div style="color: var(--apple-label-secondary); font-size: 0.85rem; text-transform: uppercase; font-weight: 600;">Responsable</div>
-                <div style="color: var(--apple-label-secondary); font-size: 0.85rem; text-transform: uppercase; font-weight: 600;">Proyecto</div>
+        <div class="projects-table-container" id="tasks-table-view">
+            <div class="table-header">
+                <div class="table-row header-row">
+                    <div class="table-cell">Nombre</div>
+                    <div class="table-cell">Actividad</div>
+                    <div class="table-cell">Fecha Límite</div>
+                    <div class="table-cell">Creado por</div>
+                    <div class="table-cell">Responsable</div>
+                    <div class="table-cell">Proyecto</div>
+                </div>
             </div>
-            <div class="tasks-table-body" id="tasks-table-body">
+            <div class="table-body" id="tasks-table-body">
                 ${tareas.map(tarea => createTaskRow(tarea)).join('')}
             </div>
         </div>
@@ -1628,28 +1598,18 @@ function mostrarTareasTabla(tareas) {
 
 function createTaskRow(tarea) {
     return `
-        <div class="task-row" style="
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
-            padding: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            cursor: pointer;
-            transition: background 0.2s ease;
-        " 
-        onclick="abrirDetallesTarea(${tarea.id})"
-        onmouseover="this.style.background='rgba(255, 255, 255, 0.05)'"
-        onmouseout="this.style.background='transparent'">
-            <div style="color: var(--apple-label); font-weight: 500;">
+        <div class="table-row" onclick="abrirDetallesTarea(${tarea.id})">
+            <div class="table-cell name-cell">
                 ${tarea.titulo}
                 ${tarea.prioridad === 'alta' ? '<span style="color: #FF9500; margin-left: 0.5rem;">●</span>' : ''}
             </div>
-            <div>${getEstadoBadgeHTML(tarea.estado)}</div>
-            <div style="color: var(--apple-label-secondary);">
+            <div class="table-cell activity-cell">${getEstadoBadgeHTML(tarea.estado)}</div>
+            <div class="table-cell activity-cell">
                 ${tarea.fecha_limite ? formatearFechaSimple(tarea.fecha_limite) : 'Sin fecha límite'}
             </div>
-            <div style="color: var(--apple-label-secondary);">${tarea.creado_por}</div>
-            <div style="color: var(--apple-label-secondary);">${tarea.responsable || 'Sin asignar'}</div>
-            <div style="color: var(--apple-label-secondary);">${tarea.proyecto_nombre}</div>
+            <div class="table-cell activity-cell">${tarea.creado_por}</div>
+            <div class="table-cell activity-cell">${tarea.responsable || 'Sin asignar'}</div>
+            <div class="table-cell activity-cell">${tarea.proyecto_nombre}</div>
         </div>
     `;
 }
@@ -1699,28 +1659,10 @@ function mostrarEstadoVacioTareas() {
     const content = document.getElementById('tareas-content');
     if (content) {
         content.innerHTML = `
-            <div style="text-align: center; padding: 4rem; color: var(--apple-label-secondary);">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">📋</div>
-                <h3 style="color: var(--apple-label); margin-bottom: 0.5rem;">No tienes tareas asignadas</h3>
-                <p>Cuando tengas tareas asignadas o creadas, aparecerán aquí.</p>
-                <button class="create-btn" onclick="abrirModalCrearTarea()" style="
-                    background: var(--apple-blue);
-                    border: none;
-                    border-radius: 8px;
-                    padding: 0.75rem 1.5rem;
-                    color: white;
-                    font-weight: 600;
-                    cursor: pointer;
-                    margin-top: 1rem;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                ">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                        <path d="M12 4v16m8-8H4"/>
-                    </svg>
-                    Crear primera tarea
-                </button>
+            <div class="projects-table-container" id="tasks-table-view">
+                <div style="text-align: center; padding: 4rem; color: var(--apple-label-secondary);">
+                    No hay tareas para este proyecto.
+                </div>
             </div>
         `;
     }
