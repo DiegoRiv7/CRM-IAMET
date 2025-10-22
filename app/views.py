@@ -16,7 +16,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad
 from . import views_exportar
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
 from django.db.models import Sum, Count, F, Q, Case, When, Value
@@ -1996,14 +1996,227 @@ def set_language(request):
         logger.error('Error al cambiar el idioma', exc_info=True)
         
         # Devolver un mensaje de error genérico al cliente
-        return JsonResponse(
-            {
-                'status': 'error', 
-                'message': 'Error interno del servidor al cambiar el idioma',
-                'debug': str(e) if settings.DEBUG else None
-            },
-            status=500
+            return JsonResponse(
+                {'status': 'error', 'message': 'Error interno del servidor'},
+                status=500
+            )
+
+@login_required
+def calendario_view(request):
+    """
+    Vista para mostrar el calendario de actividades.
+    """
+    return render(request, 'calendario.html', {})
+
+@login_required
+@csrf_exempt
+def actividad_list_create(request):
+    """
+    API para listar y crear actividades del calendario.
+    """
+    if request.method == 'GET':
+        # Filtrar actividades por el usuario actual o todas si es supervisor
+        if is_supervisor(request.user):
+            actividades = Actividad.objects.all()
+        else:
+            actividades = Actividad.objects.filter(Q(creado_por=request.user) | Q(participantes=request.user)).distinct()
+        
+        events = []
+        for actividad in actividades:
+            participants_data = []
+            for p in actividad.participantes.all():
+                participants_data.append({'id': p.id, 'text': p.get_full_name() or p.username})
+            
+            opportunity_data = None
+            if actividad.oportunidad:
+                opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad}
+
+            events.append({
+                'id': actividad.id,
+                'title': actividad.titulo,
+                'start': actividad.fecha_inicio.isoformat(),
+                'end': actividad.fecha_fin.isoformat(),
+                'description': actividad.descripcion,
+                'color': actividad.color,
+                'participants': participants_data,
+                'opportunity': opportunity_data,
+            })
+        return JsonResponse(events, safe=False)
+
+    elif request.method == 'POST':
+        data = json.loads(request.body)
+        
+        # Validar fechas
+        try:
+            start_date = datetime.fromisoformat(data['start'])
+            end_date = datetime.fromisoformat(data['end'])
+        except ValueError:
+            return JsonResponse({'error': 'Formato de fecha inválido.'}, status=400)
+
+        actividad = Actividad.objects.create(
+            titulo=data['title'],
+            descripcion=data.get('description', ''),
+            fecha_inicio=start_date,
+            fecha_fin=end_date,
+            creado_por=request.user,
+            color=data.get('color', '#007AFF'),
+            oportunidad_id=data.get('opportunity')
         )
+        
+        if 'participants' in data and data['participants']:
+            actividad.participantes.set(data['participants'])
+        
+        participants_data = []
+        for p in actividad.participantes.all():
+            participants_data.append({'id': p.id, 'text': p.get_full_name() or p.username})
+        
+        opportunity_data = None
+        if actividad.oportunidad:
+            opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad}
+
+        return JsonResponse({
+            'id': actividad.id,
+            'title': actividad.titulo,
+            'start': actividad.fecha_inicio.isoformat(),
+            'end': actividad.fecha_fin.isoformat(),
+            'description': actividad.descripcion,
+            'color': actividad.color,
+            'participants': participants_data,
+            'opportunity': opportunity_data,
+        }, status=201)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@login_required
+@csrf_exempt
+def actividad_detail(request, pk):
+    """
+    API para obtener, actualizar o eliminar una actividad específica.
+    """
+    actividad = get_object_or_404(Actividad, pk=pk)
+
+    # Verificar permisos: solo el creador o un participante puede ver/editar/eliminar
+    if actividad.creado_por != request.user and request.user not in actividad.participantes.all() and not is_supervisor(request.user):
+        return JsonResponse({'error': 'No tienes permiso para acceder a esta actividad.'}, status=403)
+
+    if request.method == 'GET':
+        participants_data = []
+        for p in actividad.participantes.all():
+            participants_data.append({'id': p.id, 'text': p.get_full_name() or p.username})
+        
+        opportunity_data = None
+        if actividad.oportunidad:
+            opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad}
+
+        return JsonResponse({
+            'id': actividad.id,
+            'title': actividad.titulo,
+            'start': actividad.fecha_inicio.isoformat(),
+            'end': actividad.fecha_fin.isoformat(),
+            'description': actividad.descripcion,
+            'color': actividad.color,
+            'participants': participants_data,
+            'opportunity': opportunity_data,
+        })
+
+    elif request.method == 'PUT':
+        data = json.loads(request.body)
+        
+        # Verificar permisos: solo el creador o un supervisor puede editar
+        if actividad.creado_por != request.user and not is_supervisor(request.user):
+            return JsonResponse({'error': 'No tienes permiso para editar esta actividad.'}, status=403)
+
+        # Validar fechas
+        try:
+            start_date = datetime.fromisoformat(data['start'])
+            end_date = datetime.fromisoformat(data['end'])
+        except ValueError:
+            return JsonResponse({'error': 'Formato de fecha inválido.'}, status=400)
+
+        actividad.titulo = data['title']
+        actividad.descripcion = data.get('description', '')
+        actividad.fecha_inicio = start_date
+        actividad.fecha_fin = end_date
+        actividad.color = data.get('color', '#007AFF')
+        actividad.oportunidad_id = data.get('opportunity')
+        actividad.save()
+
+        if 'participants' in data and data['participants'] is not None:
+            actividad.participantes.set(data['participants'])
+        else:
+            actividad.participantes.clear() # Clear if no participants are sent
+
+        participants_data = []
+        for p in actividad.participantes.all():
+            participants_data.append({'id': p.id, 'text': p.get_full_name() or p.username})
+        
+        opportunity_data = None
+        if actividad.oportunidad:
+            opportunity_data = {'id': actividad.oportunidad.id, 'text': actividad.oportunidad.oportunidad}
+
+        return JsonResponse({
+            'id': actividad.id,
+            'title': actividad.titulo,
+            'start': actividad.fecha_inicio.isoformat(),
+            'end': actividad.fecha_fin.isoformat(),
+            'description': actividad.descripcion,
+            'color': actividad.color,
+            'participants': participants_data,
+            'opportunity': opportunity_data,
+        })
+
+    elif request.method == 'DELETE':
+        # Verificar permisos: solo el creador o un supervisor puede eliminar
+        if actividad.creado_por != request.user and not is_supervisor(request.user):
+            return JsonResponse({'error': 'No tienes permiso para eliminar esta actividad.'}, status=403)
+
+        actividad.delete()
+        return JsonResponse({'message': 'Actividad eliminada exitosamente'}, status=204)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@login_required
+def user_list_api(request):
+    """
+    API para obtener una lista de usuarios para Select2.
+    """
+    search_query = request.GET.get('q', '')
+    users = User.objects.filter(
+        Q(username__icontains=search_query) |
+        Q(first_name__icontains=search_query) |
+        Q(last_name__icontains=search_query)
+    ).order_by('username')[:20] # Limitar resultados
+    
+    results = []
+    for user in users:
+        results.append({'id': user.id, 'text': user.get_full_name() or user.username})
+    return JsonResponse(results, safe=False)
+
+@login_required
+def oportunidad_list_api(request):
+    """
+    API para obtener una lista de oportunidades para Select2.
+    """
+    search_query = request.GET.get('q', '')
+    
+    if is_supervisor(request.user):
+        oportunidades = TodoItem.objects.filter(
+            Q(oportunidad__icontains=search_query) |
+            Q(cliente__nombre_empresa__icontains=search_query)
+        ).order_by('-fecha_creacion')[:20]
+    else:
+        oportunidades = TodoItem.objects.filter(
+            Q(usuario=request.user) &
+            (Q(oportunidad__icontains=search_query) |
+            Q(cliente__nombre_empresa__icontains=search_query))
+        ).order_by('-fecha_creacion')[:20]
+    
+    results = []
+    for op in oportunidades:
+        results.append({'id': op.id, 'text': f"{op.oportunidad} ({op.cliente.nombre_empresa if op.cliente else 'Sin Cliente'})", 'title': op.oportunidad})
+    return JsonResponse(results, safe=False)
+
+
 
 @login_required
 def editar_venta_todoitem(request, pk):

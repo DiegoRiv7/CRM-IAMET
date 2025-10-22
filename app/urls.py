@@ -240,6 +240,11 @@ urlpatterns = [
     path('api/marcar-notificacion-leida/<int:notificacion_id>/', views.marcar_notificacion_leida_api, name='marcar_notificacion_leida_api'),
     path('api/marcar-todas-notificaciones-leidas/', views.marcar_todas_notificaciones_leidas_api, name='marcar_todas_notificaciones_leidas_api'),
     
+    path('calendario/', views.calendario_view, name='calendario'),
+    path('api/actividades/', views.actividad_list_create, name='actividad_list_create'),
+    path('api/actividades/<int:pk>/', views.actividad_detail, name='actividad_detail'),
+    path('api/users/', views.user_list_api, name='user_list_api'),
+    path('api/oportunidades/', views.oportunidad_list_api, name='oportunidad_list_api'),
     path('koti-bot-html/', TemplateView.as_view(template_name='nethive_bot.html'), name='koti_bot_html'),
     
     # Generador de avatares con IA

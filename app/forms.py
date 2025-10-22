@@ -456,7 +456,22 @@ class NuevaOportunidadForm(forms.ModelForm):
             )
             instance.contacto = contacto
         
-        if commit:
-            instance.save()
+                return instance
         
-        return instance
+        
+        class ActividadForm(forms.ModelForm):
+            class Meta:
+                model = Actividad
+                fields = ['titulo', 'descripcion', 'fecha_inicio', 'fecha_fin', 'participantes', 'color', 'oportunidad']
+                widgets = {
+                    'fecha_inicio': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+                    'fecha_fin': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+                    'participantes': forms.SelectMultiple(attrs={'class': 'select2'}),
+                    'oportunidad': forms.Select(attrs={'class': 'select2'}),
+                }
+        
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.fields['participantes'].queryset = User.objects.all().order_by('username')
+                self.fields['oportunidad'].queryset = TodoItem.objects.all().order_by('oportunidad')
+                self.fields['oportunidad'].required = False # Make opportunity optional

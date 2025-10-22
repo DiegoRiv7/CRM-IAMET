@@ -2001,6 +2001,70 @@ class Tarea(models.Model):
         }
         return colors.get(self.estado, '#6c757d')
 
+
+class Actividad(models.Model):
+    """
+    Modelo para representar una actividad o evento en el calendario.
+    """
+    # Opciones de colores para las actividades
+    COLOR_CHOICES = [
+        ('#007AFF', 'Azul'),
+        ('#34C759', 'Verde'),
+        ('#FF9500', 'Naranja'),
+        ('#FF3B30', 'Rojo'),
+        ('#AF52DE', 'Morado'),
+        ('#5856D6', 'Índigo'),
+        ('#FF2D55', 'Rosa'),
+    ]
+
+    titulo = models.CharField(max_length=200, verbose_name="Título de la Actividad")
+    descripcion = models.TextField(blank=True, null=True, verbose_name="Descripción")
+    
+    fecha_inicio = models.DateTimeField(verbose_name="Fecha y Hora de Inicio")
+    fecha_fin = models.DateTimeField(verbose_name="Fecha y Hora de Fin")
+    
+    creado_por = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='actividades_creadas',
+        verbose_name="Creado por"
+    )
+    
+    participantes = models.ManyToManyField(
+        User, 
+        related_name='actividades_participando',
+        blank=True,
+        verbose_name="Participantes"
+    )
+    
+    color = models.CharField(
+        max_length=7,
+        choices=COLOR_CHOICES,
+        default='#007AFF',
+        verbose_name="Color del Evento"
+    )
+    
+    # Enlace opcional a una oportunidad
+    oportunidad = models.ForeignKey(
+        TodoItem,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='actividades_calendario',
+        verbose_name="Oportunidad Relacionada"
+    )
+
+    class Meta:
+        verbose_name = "Actividad del Calendario"
+        verbose_name_plural = "Actividades del Calendario"
+        ordering = ['fecha_inicio']
+
+    def __str__(self):
+        return f"{self.titulo} ({self.fecha_inicio.strftime('%d/%m/%Y %H:%M')})"
+
+        }
+        return colors.get(self.estado, '#6c757d')
+
 class EmpleadoDelMes(models.Model):
     """Modelo para almacenar al empleado del mes."""
     usuario = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Usuario")

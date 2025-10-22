@@ -1485,7 +1485,7 @@
         </svg>
     </a>
     
-    <button class="floating-top-btn" id="calendar-btn" title="Calendario y Eventos">
+    <a href="{% url 'calendario' %}" class="floating-top-btn" id="calendar-btn" title="Calendario y Eventos">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="4" width="18" height="18" rx="2"/>
             <path d="M16 2v4"/>
@@ -1498,7 +1498,7 @@
             <path d="M12 18h.01"/>
             <path d="M16 18h.01"/>
         </svg>
-    </button>
+    </a>
 </div>
 
 <main>
@@ -1871,15 +1871,6 @@ document.addEventListener('DOMContentLoaded', function() {
         newsBtn.addEventListener('click', function() {
             // Navigate to dashboard or reports section
             window.location.href = routes.dashboard;
-        });
-    }
-
-    // Floating widget calendar button functionality
-    const calendarBtn = document.getElementById('calendar-btn');
-    if (calendarBtn) {
-        calendarBtn.addEventListener('click', function() {
-            // Navigate to opportunities or create a calendar view
-            window.location.href = routes.opportunities;
         });
     }
 });
