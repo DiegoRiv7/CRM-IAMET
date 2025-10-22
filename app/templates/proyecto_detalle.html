@@ -2652,16 +2652,16 @@
                         <thead>
                             <tr style="background: rgba(255, 255, 255, 0.08);">
                                 <th style="padding: 1rem; text-align: left; color: var(--apple-label-secondary); font-size: 0.85rem; text-transform: uppercase; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Nombre</th>
-                                <th style="padding: 1rem; text-align: left; color: var(--apple-label-secondary); font-size: 0.85rem; text-transform: uppercase; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Fecha Inicial</th>
+                                <th style="padding: 1rem; text-align: left; color: var(--apple-label-secondary); font-size: 0.85rem; text-transform: uppercase; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Actividad</th>
                                 <th style="padding: 1rem; text-align: left; color: var(--apple-label-secondary); font-size: 0.85rem; text-transform: uppercase; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Fecha Límite</th>
                                 <th style="padding: 1rem; text-align: left; color: var(--apple-label-secondary); font-size: 0.85rem; text-transform: uppercase; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Creado Por</th>
                                 <th style="padding: 1rem; text-align: left; color: var(--apple-label-secondary); font-size: 0.85rem; text-transform: uppercase; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Responsable</th>
                                 <th style="padding: 1rem; text-align: left; color: var(--apple-label-secondary); font-size: 0.85rem; text-transform: uppercase; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Proyecto</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="tasks-table-body">
                             <!-- Las tareas se cargarán aquí dinámicamente -->
-                            <tr>
+                            <tr id="no-tasks-row">
                                 <td colspan="6" style="padding: 2rem; text-align: center; color: var(--apple-label-secondary);">No hay tareas para este proyecto.</td>
                             </tr>
                         </tbody>
@@ -2802,6 +2802,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Cargar comentarios cuando se activa el feed
             if (tabName === 'feed') {
                 cargarComentarios();
+            }
+            
+            // Cargar tareas cuando se activa la tab de tareas
+            if (tabName === 'tareas') {
+                cargarTareasDelProyecto();
             }
         });
     });
@@ -4472,11 +4477,11 @@ async function cargarTareasDelProyecto() {
         const data = await response.json();
         
         if (data.success && data.tareas) {
-            const tbody = document.querySelector('.tasks-table tbody');
+            const tbody = document.getElementById('tasks-table-body');
             
             if (data.tareas.length === 0) {
                 tbody.innerHTML = `
-                    <tr>
+                    <tr id="no-tasks-row">
                         <td colspan="6" style="padding: 2rem; text-align: center; color: var(--apple-label-secondary);">
                             No hay tareas para este proyecto.
                         </td>
@@ -4490,19 +4495,19 @@ async function cargarTareasDelProyecto() {
                         onmouseout="this.style.background='transparent'">
                         <td style="padding: 1rem; color: var(--apple-label); font-weight: 500;">
                             ${tarea.titulo}
-                            ${tarea.prioridad === 'alta' ? '<span style="color: #ffaa00; margin-left: 0.5rem;">★</span>' : ''}
+                            ${tarea.prioridad === 'alta' ? '<span style="color: #FF9500; margin-left: 0.5rem;">●</span>' : ''}
+                        </td>
+                        <td style="padding: 1rem;">
+                            ${getEstadoBadge(tarea.estado)}
                         </td>
                         <td style="padding: 1rem; color: var(--apple-label-secondary);">
-                            ${formatearFecha(tarea.fecha_creacion)}
-                        </td>
-                        <td style="padding: 1rem; color: var(--apple-label-secondary);">
-                            ${tarea.fecha_limite ? formatearFecha(tarea.fecha_limite) : '-'}
+                            ${tarea.fecha_limite ? formatearFecha(tarea.fecha_limite) : 'Sin fecha límite'}
                         </td>
                         <td style="padding: 1rem; color: var(--apple-label-secondary);">
                             ${tarea.creado_por}
                         </td>
                         <td style="padding: 1rem; color: var(--apple-label-secondary);">
-                            ${tarea.responsable || '-'}
+                            ${tarea.responsable || 'Sin asignar'}
                         </td>
                         <td style="padding: 1rem; color: var(--apple-label-secondary);">
                             ${PROYECTO_NOMBRE}
@@ -4515,7 +4520,7 @@ async function cargarTareasDelProyecto() {
         console.error('Error cargando tareas:', error);
         
         // Mostrar mensaje de error en la tabla
-        const tbody = document.querySelector('.tasks-table tbody');
+        const tbody = document.getElementById('tasks-table-body');
         if (tbody) {
             tbody.innerHTML = `
                 <tr>
@@ -4542,6 +4547,57 @@ function formatearFecha(fechaStr) {
     };
     
     return fecha.toLocaleDateString('es-ES', opciones);
+}
+
+// Función para generar badge de estado
+function getEstadoBadge(estado) {
+    const estadosConfig = {
+        'pendiente': {
+            label: 'Pendiente',
+            color: '#8E8E93',
+            bgColor: 'rgba(142, 142, 147, 0.2)',
+            icon: '○'
+        },
+        'en_progreso': {
+            label: 'En Progreso',
+            color: '#007AFF',
+            bgColor: 'rgba(0, 122, 255, 0.2)',
+            icon: '◐'
+        },
+        'completada': {
+            label: 'Completada',
+            color: '#34C759',
+            bgColor: 'rgba(52, 199, 89, 0.2)',
+            icon: '●'
+        },
+        'cancelada': {
+            label: 'Cancelada',
+            color: '#FF3B30',
+            bgColor: 'rgba(255, 59, 48, 0.2)',
+            icon: '×'
+        }
+    };
+    
+    const config = estadosConfig[estado] || estadosConfig['pendiente'];
+    
+    return `
+        <span style="
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 8px;
+            background: ${config.bgColor};
+            color: ${config.color};
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        ">
+            <span style="font-size: 0.875rem;">${config.icon}</span>
+            ${config.label}
+        </span>
+    `;
 }
 
 // Función para abrir detalles de tarea

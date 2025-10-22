@@ -606,7 +606,6 @@ def api_tareas(request):
     """
     API para obtener y crear tareas
     """
-    global tareas_temporales
     if not request.user.is_superuser:
         return JsonResponse({'error': 'Sin permisos'}, status=403)
     
@@ -616,191 +615,135 @@ def api_tareas(request):
         
         if proyecto_id:
             try:
-                from .models import Proyecto
+                from .models import Proyecto, Tarea
                 proyecto = Proyecto.objects.get(id=proyecto_id)
                 
-                # Filtrar tareas temporales por proyecto
-                tareas_del_proyecto = [
-                    tarea for tarea in tareas_temporales 
-                    if str(tarea.get('proyecto_id')) == str(proyecto_id)
-                ]
+                # Obtener tareas reales desde la base de datos
+                tareas = Tarea.objects.filter(proyecto=proyecto).select_related(
+                    'creado_por', 'asignado_a', 'proyecto'
+                ).order_by('-fecha_creacion')
                 
-                # Agregar datos de ejemplo solo si no hay tareas creadas
-                if not tareas_del_proyecto:
-                    # Crear usuarios de ejemplo para participantes
-                    from django.contrib.auth.models import User
-                    usuarios_ejemplo = []
-                    try:
-                        # Intentar obtener usuarios reales
-                        usuarios_ejemplo = list(User.objects.all()[:4])
-                    except:
-                        # Si hay error, usar datos estáticos
-                        pass
-                    
-                    # Función para generar datos de participante
-                    def generar_participante(user_id, nombre, username):
-                        iniciales = ''.join([palabra[0].upper() for palabra in nombre.split()[:2]])
-                        avatar_url = None
-                        if usuarios_ejemplo:
-                            try:
-                                user = usuarios_ejemplo[user_id % len(usuarios_ejemplo)]
-                                if hasattr(user, 'userprofile'):
-                                    avatar_url = user.userprofile.get_avatar_url()
-                                nombre = user.get_full_name() or user.username
-                                iniciales = ''.join([palabra[0].upper() for palabra in nombre.split()[:2]])
-                            except:
-                                pass
-                        
-                        return {
-                            'id': user_id,
-                            'nombre': nombre,
-                            'username': username,
-                            'iniciales': iniciales,
-                            'avatar_url': avatar_url,
-                            'rol': 'Participante'
-                        }
-                    
-                    tareas_del_proyecto = [
-                        {
-                            'id': 1,
-                            'titulo': 'Diseñar interfaz de notificaciones',
-                            'descripcion': 'Crear mockups y prototipos para el sistema de notificaciones',
-                            'prioridad': 'alta',
-                            'fecha_limite': '2025-01-25',
-                            'fecha_creacion': '2025-01-20',
-                            'creado_por': 'Rivera',
-                            'responsable': generar_participante(1, 'Juan Rivera', 'rivera'),
-                            'proyecto': proyecto.nombre,
-                            'participantes': [
-                                generar_participante(1, 'Juan Rivera', 'rivera'),
-                                generar_participante(2, 'María García', 'mgarcia'),
-                                generar_participante(3, 'Carlos López', 'clopez')
-                            ]
-                        },
-                        {
-                            'id': 2,
-                            'titulo': 'Optimizar consultas SQL',
-                            'descripcion': 'Revisar y optimizar las consultas más lentas del sistema',
-                            'prioridad': 'media',
-                            'fecha_limite': '2025-02-01',
-                            'fecha_creacion': '2025-01-20',
-                            'creado_por': 'Desarrollo',
-                            'responsable': generar_participante(2, 'María García', 'mgarcia'),
-                            'proyecto': proyecto.nombre,
-                            'participantes': [
-                                generar_participante(1, 'Juan Rivera', 'rivera'),
-                                generar_participante(4, 'Ana Martínez', 'amartinez')
-                            ]
-                        }
-                    ]
+                tareas_data = []
+                for tarea in tareas:
+                    tareas_data.append({
+                        'id': tarea.id,
+                        'titulo': tarea.titulo,
+                        'descripcion': tarea.descripcion,
+                        'estado': tarea.estado,
+                        'prioridad': tarea.prioridad,
+                        'fecha_creacion': tarea.fecha_creacion.isoformat(),
+                        'fecha_limite': tarea.fecha_limite.isoformat() if tarea.fecha_limite else None,
+                        'fecha_completada': tarea.fecha_completada.isoformat() if tarea.fecha_completada else None,
+                        'creado_por': tarea.creado_por.get_full_name() or tarea.creado_por.username,
+                        'responsable': tarea.asignado_a.get_full_name() or tarea.asignado_a.username if tarea.asignado_a else None,
+                        'proyecto_nombre': tarea.proyecto.nombre,
+                        'pausado': tarea.pausado,
+                        'tiempo_trabajado': str(tarea.tiempo_trabajado) if tarea.tiempo_trabajado else None
+                    })
                 
                 return JsonResponse({
                     'success': True,
-                    'tareas': tareas_del_proyecto
+                    'tareas': tareas_data
                 })
-            except:
+                
+            except Proyecto.DoesNotExist:
                 return JsonResponse({'error': 'Proyecto no encontrado'}, status=404)
+            except Exception as e:
+                return JsonResponse({'error': f'Error obteniendo tareas: {str(e)}'}, status=500)
         
-        # Devolver todas las tareas (ejemplo)
-        tareas_ejemplo = [
-            {
-                'id': 1,
-                'titulo': 'Diseñar interfaz de notificaciones',
-                'descripcion': 'Crear mockups y prototipos para el sistema de notificaciones',
-                'prioridad': 'alta',
-                'fecha_limite': '2025-01-25',
-                'asignado_a': 'Rivera'
-            },
-            {
-                'id': 2,
-                'titulo': 'Optimizar consultas SQL',
-                'descripcion': 'Revisar y optimizar las consultas más lentas del sistema',
-                'prioridad': 'media',
-                'fecha_limite': '2025-02-01',
-                'asignado_a': 'Desarrollo'
-            },
-            {
-                'id': 3,
-                'titulo': 'Documentar API endpoints',
-                'descripcion': 'Crear documentación completa de todos los endpoints de la API',
-                'prioridad': 'baja',
-                'fecha_limite': '2025-02-10',
-                'asignado_a': 'Technical Writer'
-            }
-        ]
-        
-        return JsonResponse({
-            'success': True,
-            'tareas': tareas_ejemplo
-        })
+        # Si no se especifica proyecto, devolver todas las tareas del usuario
+        try:
+            from .models import Tarea
+            tareas = Tarea.objects.filter(
+                models.Q(creado_por=request.user) | 
+                models.Q(asignado_a=request.user) |
+                models.Q(participantes=request.user)
+            ).distinct().select_related('creado_por', 'asignado_a', 'proyecto').order_by('-fecha_creacion')
+            
+            tareas_data = []
+            for tarea in tareas:
+                tareas_data.append({
+                    'id': tarea.id,
+                    'titulo': tarea.titulo,
+                    'descripcion': tarea.descripcion,
+                    'estado': tarea.estado,
+                    'prioridad': tarea.prioridad,
+                    'fecha_creacion': tarea.fecha_creacion.isoformat(),
+                    'fecha_limite': tarea.fecha_limite.isoformat() if tarea.fecha_limite else None,
+                    'creado_por': tarea.creado_por.get_full_name() or tarea.creado_por.username,
+                    'responsable': tarea.asignado_a.get_full_name() or tarea.asignado_a.username if tarea.asignado_a else None,
+                    'proyecto_nombre': tarea.proyecto.nombre
+                })
+            
+            return JsonResponse({
+                'success': True,
+                'tareas': tareas_data
+            })
+        except Exception as e:
+            return JsonResponse({'error': f'Error obteniendo tareas: {str(e)}'}, status=500)
     
     elif request.method == 'POST':
+        # Crear nueva tarea
         try:
-            import json
-            from datetime import datetime
+            from .models import Proyecto, Tarea
             from django.contrib.auth.models import User
-            from .models import Proyecto
+            from datetime import datetime
             
-            # Obtener datos del request
+            # Obtener datos del formulario
             titulo = request.POST.get('titulo', '').strip()
             descripcion = request.POST.get('descripcion', '').strip()
             proyecto_id = request.POST.get('proyecto_id')
-            alta_prioridad = request.POST.get('alta_prioridad', 'false').lower() == 'true'
-            prioridad = 'alta' if alta_prioridad else 'media'
-            fecha_limite = request.POST.get('fecha_limite')
-            responsable_id = request.POST.get('responsable_id')
-            participantes_json = request.POST.get('participantes', '[]')
-            observadores_json = request.POST.get('observadores', '[]')
             
-            # Validaciones básicas
+            # Manejar prioridad - puede venir como 'alta_prioridad' boolean o 'prioridad' string
+            alta_prioridad = request.POST.get('alta_prioridad', 'false').lower() == 'true'
+            prioridad = request.POST.get('prioridad', 'alta' if alta_prioridad else 'media')
+            
+            fecha_limite_str = request.POST.get('fecha_limite')
+            responsable_id = request.POST.get('responsable_id')
+            
+            # Validaciones
             if not titulo:
                 return JsonResponse({'error': 'El título es requerido'}, status=400)
-            
             if not proyecto_id:
                 return JsonResponse({'error': 'El proyecto es requerido'}, status=400)
             
+            # Obtener proyecto
             try:
                 proyecto = Proyecto.objects.get(id=proyecto_id)
             except Proyecto.DoesNotExist:
                 return JsonResponse({'error': 'Proyecto no encontrado'}, status=404)
             
-            # Obtener el nombre del responsable
-            responsable_nombre = request.user.username  # Por defecto el creador
+            # Procesar fecha límite
+            fecha_limite = None
+            if fecha_limite_str:
+                try:
+                    fecha_limite = datetime.fromisoformat(fecha_limite_str.replace('Z', '+00:00'))
+                except ValueError:
+                    return JsonResponse({'error': 'Formato de fecha inválido'}, status=400)
+            
+            # Obtener responsable
+            responsable = None
             if responsable_id:
                 try:
-                    responsable_user = User.objects.get(id=responsable_id)
-                    responsable_nombre = responsable_user.username
+                    responsable = User.objects.get(id=responsable_id)
                 except User.DoesNotExist:
-                    pass  # Mantener el valor por defecto
+                    return JsonResponse({'error': 'Usuario responsable no encontrado'}, status=404)
             
-            # Crear la tarea y agregarla a la lista temporal
-            nuevo_id = len(tareas_temporales) + 1000  # ID único
-            nueva_tarea = {
-                'id': nuevo_id,
-                'titulo': titulo,
-                'descripcion': descripcion,
-                'proyecto': proyecto.nombre,
-                'proyecto_id': proyecto_id,
-                'prioridad': prioridad,
-                'fecha_creacion': datetime.now().strftime('%Y-%m-%d'),
-                'fecha_limite': fecha_limite,
-                'creado_por': request.user.username,
-                'creado_por_id': request.user.id,
-                'responsable': responsable_nombre,
-                'responsable_id': responsable_id or request.user.id,
-                'estado': 'pendiente'
-            }
-            
-            # Agregar a la lista temporal
-            tareas_temporales.append(nueva_tarea)
-            
-            # Aquí se crearían las notificaciones para participantes y observadores
-            # Por ahora simular que se envían las notificaciones
+            # Crear tarea
+            tarea = Tarea.objects.create(
+                titulo=titulo,
+                descripcion=descripcion,
+                proyecto=proyecto,
+                creado_por=request.user,
+                asignado_a=responsable,
+                prioridad=prioridad,
+                fecha_limite=fecha_limite
+            )
             
             return JsonResponse({
                 'success': True,
-                'message': 'Tarea creada exitosamente',
-                'tarea': nueva_tarea
+                'tarea_id': tarea.id,
+                'mensaje': 'Tarea creada exitosamente'
             })
             
         except Exception as e:
