@@ -6761,18 +6761,9 @@ function crearSubTarea(tareaId = null) {
     background: rgba(255, 255, 255, 0.05);
 }
 
-.user-item .user-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: #4B7688;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: 600;
-    font-size: 0.8rem;
+.user-item .user-avatar-container {
     flex-shrink: 0;
+    margin-right: 0.75rem;
 }
 
 .user-item .user-info {
@@ -7804,6 +7795,14 @@ const TareasProyectos = {
     // Función para alternar mostrar/ocultar dropdown
     toggleDropdown(type) {
         console.log('toggleDropdown llamado con type:', type);
+        console.log('currentTaskId:', TareasProyectos.currentTaskId);
+        
+        // Verificar si hay una tarea seleccionada
+        if (!TareasProyectos.currentTaskId) {
+            alert('Por favor, selecciona una tarea primero haciendo clic en sus detalles');
+            return;
+        }
+        
         const dropdown = document.getElementById(`${type}-dropdown`);
         const searchInput = document.getElementById(`${type}-search`);
         
@@ -7840,7 +7839,7 @@ const TareasProyectos = {
 
     // Función para cargar todos los usuarios
     async loadAllUsers() {
-        console.log('loadAllUsers() iniciado...');
+        console.log('🔄 loadAllUsers() iniciado...');
         try {
             const response = await fetch('/app/api/buscar-usuarios/?q=', {
                 method: 'GET',
@@ -7850,23 +7849,28 @@ const TareasProyectos = {
                 }
             });
             
-            console.log('Response status:', response.status);
-            console.log('Response ok:', response.ok);
+            console.log('📡 Response status:', response.status);
+            console.log('📡 Response ok:', response.ok);
             
             if (response.ok) {
                 const data = await response.json();
-                console.log('Data recibida:', data);
+                console.log('📄 Data recibida:', data);
                 
                 if (data.success && data.usuarios && data.usuarios.length > 0) {
                     // Transformar los usuarios al formato que esperamos
-                    TareasProyectos.allUsers = data.usuarios.map(user => ({
-                        id: user.id,
-                        nombre: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
-                        email: user.email || '',
-                        username: user.username,
-                        first_name: user.first_name,
-                        last_name: user.last_name
-                    }));
+                    TareasProyectos.allUsers = data.usuarios.map(user => {
+                        console.log(`🧑 Usuario API: ${user.nombre}, Avatar: ${user.avatar_url || 'SIN AVATAR'}`);
+                        return {
+                            id: user.id,
+                            nombre: user.nombre || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
+                            email: user.email || '',
+                            username: user.username,
+                            first_name: user.first_name,
+                            last_name: user.last_name,
+                            avatar_url: user.avatar_url,
+                            iniciales: user.iniciales
+                        };
+                    });
                     console.log('Usuarios transformados:', TareasProyectos.allUsers);
                     
                     // Mostrar usuarios en dropdowns activos
@@ -7907,15 +7911,23 @@ const TareasProyectos = {
             return;
         }
         
-        const usersHTML = users.map(user => `
+        const usersHTML = users.map(user => {
+            console.log(`Usuario: ${user.nombre}, Avatar URL: ${user.avatar_url}, Iniciales: ${user.iniciales}`);
+            return `
             <div class="user-item" data-user-id="${user.id}" onclick="TareasProyectos.addUserToTask(${user.id}, '${type}')">
-                <div class="user-avatar">
-                    ${TareasProyectos.getInitials(user.nombre)}
+                <div class="user-avatar-container">
+                    ${user.avatar_url ? 
+                        `<img src="${user.avatar_url}" alt="${user.nombre}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.1);" onerror="console.error('Error cargando avatar:', this.src); this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                         <div style="width: 32px; height: 32px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(user.nombre)}; display: none; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.8rem; border: 2px solid rgba(255, 255, 255, 0.1);">${user.iniciales || TareasProyectos.getInitials(user.nombre)}</div>` :
+                        `<div style="width: 32px; height: 32px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(user.nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.8rem; border: 2px solid rgba(255, 255, 255, 0.1);">${user.iniciales || TareasProyectos.getInitials(user.nombre)}</div>`
+                    }
                 </div>
                 <div class="user-info">
                     <div class="user-name">${user.nombre}</div>
                     <div class="user-email">${user.email || ''}</div>
                 </div>
+            </div>`
+        })
             </div>
         `).join('');
         

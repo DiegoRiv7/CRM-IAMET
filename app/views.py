@@ -996,8 +996,12 @@ def api_buscar_usuarios(request):
         if hasattr(usuario, 'userprofile'):
             try:
                 avatar_url = usuario.userprofile.get_avatar_url()
-            except:
+                print(f"DEBUG: Avatar URL para {usuario.username}: {avatar_url}")
+            except Exception as e:
+                print(f"DEBUG: Error obteniendo avatar para {usuario.username}: {e}")
                 avatar_url = None
+        else:
+            print(f"DEBUG: Usuario {usuario.username} no tiene UserProfile")
         
         usuarios_data.append({
             'id': usuario.id,
