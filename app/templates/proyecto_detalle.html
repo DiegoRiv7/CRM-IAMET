@@ -7966,32 +7966,45 @@ Object.assign(TareasProyectos, {
 
     // Función para añadir usuario a la tarea
     async addUserToTask(userId, type) {
+        console.log('🟦 === INICIANDO addUserToTask ===');
+        console.log(`🟦 userId: ${userId}, type: ${type}, currentTaskId: ${TareasProyectos.currentTaskId}`);
+        
         if (!TareasProyectos.currentTaskId) {
-            console.error('No hay tarea seleccionada');
+            console.error('❌ No hay tarea seleccionada');
             alert('No hay tarea seleccionada');
             return;
         }
         
         try {
-            console.log(`Agregando usuario ${userId} como ${type} a tarea ${TareasProyectos.currentTaskId}`);
+            const requestData = {
+                user_id: userId,
+                action: 'add',
+                tipo: type
+            };
+            
+            console.log(`🟦 Enviando datos:`, requestData);
+            console.log(`🟦 URL: /app/api/tarea/${TareasProyectos.currentTaskId}/`);
+            
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+            console.log(`🟦 CSRF Token: ${csrfToken ? 'Presente' : 'FALTANTE'}`);
             
             const response = await fetch(`/app/api/tarea/${TareasProyectos.currentTaskId}/`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                    'X-CSRFToken': csrfToken || ''
                 },
-                body: JSON.stringify({
-                    user_id: userId,
-                    action: 'add',
-                    tipo: type
-                })
+                body: JSON.stringify(requestData)
             });
             
+            console.log(`🟦 Response status: ${response.status}`);
+            console.log(`🟦 Response ok: ${response.ok}`);
+            
             const result = await response.json();
+            console.log(`🟦 Response data:`, result);
             
             if (result.success) {
-                console.log('Usuario agregado exitosamente:', result.message);
+                console.log('✅ Usuario agregado exitosamente:', result.message);
                 
                 // Cerrar dropdown
                 TareasProyectos.closeAllDropdowns();
@@ -8003,14 +8016,16 @@ Object.assign(TareasProyectos, {
                 TareasProyectos.showSuccessMessage(result.message);
                 
             } else {
-                console.error('Error del servidor:', result.error);
+                console.error('❌ Error del servidor:', result.error);
                 alert(`Error: ${result.error}`);
             }
             
         } catch (error) {
-            console.error('Error agregando usuario:', error);
+            console.error('❌ Error agregando usuario:', error);
             alert('Error al agregar usuario a la tarea');
         }
+        
+        console.log('🟦 === FIN addUserToTask ===');
     },
     
     // Función para cerrar todos los dropdowns
@@ -8022,23 +8037,35 @@ Object.assign(TareasProyectos, {
     
     // Función para actualizar la visualización de miembros
     async updateMembersDisplay(type, userData) {
-        console.log(`Actualizando display de ${type} con:`, userData);
+        console.log(`🔄 === INICIANDO updateMembersDisplay ===`);
+        console.log(`🔄 type: ${type}, userData:`, userData);
+        console.log(`🔄 currentTaskId: ${TareasProyectos.currentTaskId}`);
         
         // Recargar los detalles de la tarea para mostrar cambios
         if (TareasProyectos.currentTaskId) {
             try {
+                console.log(`🔄 Recargando datos de tarea ${TareasProyectos.currentTaskId}...`);
                 const response = await fetch(`/app/api/tarea/${TareasProyectos.currentTaskId}/`);
+                
                 if (response.ok) {
                     const tareaData = await response.json();
+                    console.log(`🔄 Datos recargados:`, tareaData);
+                    console.log(`🔄 Participantes en respuesta:`, tareaData.participantes);
+                    console.log(`🔄 Observadores en respuesta:`, tareaData.observadores);
+                    
                     // Actualizar solo los miembros sin recargar todo el modal
                     TareasProyectos.updateTaskMembersUI(tareaData);
+                } else {
+                    console.error(`🔄 Error en respuesta: ${response.status}`);
                 }
             } catch (error) {
-                console.error('Error recargando datos de tarea:', error);
+                console.error('🔄 Error recargando datos de tarea:', error);
                 // Fallback: recargar todo el modal
                 TareasProyectos.verDetallesTarea(TareasProyectos.currentTaskId);
             }
         }
+        
+        console.log(`🔄 === FIN updateMembersDisplay ===`);
     },
     
     // Función para mostrar mensaje de éxito
@@ -8072,17 +8099,31 @@ Object.assign(TareasProyectos, {
     
     // Función para actualizar participantes y observadores en la UI
     updateTaskMembersUI(tarea) {
+        console.log(`🎨 === INICIANDO updateTaskMembersUI ===`);
+        console.log(`🎨 Tarea recibida:`, tarea);
+        console.log(`🎨 Participantes:`, tarea.participantes || []);
+        console.log(`🎨 Observadores:`, tarea.observadores || []);
+        
         // Actualizar participantes
         TareasProyectos.displayMembers('participantes', tarea.participantes || []);
         
         // Actualizar observadores  
         TareasProyectos.displayMembers('observadores', tarea.observadores || []);
+        
+        console.log(`🎨 === FIN updateTaskMembersUI ===`);
     },
     
     // Función para mostrar miembros (participantes u observadores)
     displayMembers(type, members) {
+        console.log(`🖼️ === INICIANDO displayMembers ===`);
+        console.log(`🖼️ type: ${type}, members:`, members);
+        
         const container = document.getElementById(`task-detail-${type}-container`);
-        if (!container) return;
+        console.log(`🖼️ Container encontrado:`, container);
+        if (!container) {
+            console.error(`🖼️ Container no encontrado: task-detail-${type}-container`);
+            return;
+        }
         
         let membersHTML = '';
         
@@ -8136,7 +8177,9 @@ Object.assign(TareasProyectos, {
             </button>
         `;
         
+        console.log(`🖼️ HTML generado:`, membersHTML);
         container.innerHTML = membersHTML;
+        console.log(`🖼️ === FIN displayMembers ===`);
     },
     
     // Función para obtener iniciales del nombre
