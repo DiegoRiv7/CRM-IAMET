@@ -9850,12 +9850,217 @@ def api_tarea_detalle(request, tarea_id):
                 'fecha_creacion': tarea.fecha_creacion.isoformat(),
                 'fecha_completada': tarea.fecha_completada.isoformat() if tarea.fecha_completada else None,
                 'participantes': [get_user_data(p) for p in tarea.participantes.all()] if hasattr(tarea, 'participantes') else [],
+                'observadores': [get_user_data(o) for o in tarea.observadores.all()] if hasattr(tarea, 'observadores') else [],
             }
             
             return JsonResponse(tarea_data)
             
         except Tarea.DoesNotExist:
             return JsonResponse({'error': 'Tarea no encontrada'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    elif request.method == 'PUT':
+        try:
+            import json
+            data = json.loads(request.body)
+            
+            # Buscar la tarea
+            tarea = Tarea.objects.get(id=tarea_id)
+            
+            # Verificar permisos - solo el creador o admin puede modificar participantes
+            user_can_edit = (
+                tarea.creado_por == request.user or
+                request.user.is_superuser
+            )
+            
+            if not user_can_edit:
+                return JsonResponse({'error': 'Sin permisos para modificar esta tarea'}, status=403)
+            
+            # Obtener datos de la petición
+            user_id = data.get('user_id')
+            action = data.get('action')  # 'add' o 'remove'
+            tipo = data.get('tipo')      # 'participantes' o 'observadores'
+            
+            if not all([user_id, action, tipo]):
+                return JsonResponse({'error': 'Datos faltantes: user_id, action y tipo son requeridos'}, status=400)
+            
+            # Obtener usuario
+            try:
+                usuario = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
+            
+            # Aplicar cambios según el tipo
+            if tipo == 'participantes':
+                if action == 'add':
+                    tarea.participantes.add(usuario)
+                    mensaje = f"{usuario.get_full_name() or usuario.username} ha sido agregado como participante a la tarea '{tarea.titulo}'"
+                elif action == 'remove':
+                    tarea.participantes.remove(usuario)
+                    mensaje = f"{usuario.get_full_name() or usuario.username} ha sido removido como participante de la tarea '{tarea.titulo}'"
+            elif tipo == 'observadores':
+                if action == 'add':
+                    tarea.observadores.add(usuario)
+                    mensaje = f"{usuario.get_full_name() or usuario.username} ha sido agregado como observador a la tarea '{tarea.titulo}'"
+                elif action == 'remove':
+                    tarea.observadores.remove(usuario)
+                    mensaje = f"{usuario.get_full_name() or usuario.username} ha sido removido como observador de la tarea '{tarea.titulo}'"
+            else:
+                return JsonResponse({'error': 'Tipo inválido. Use "participantes" o "observadores"'}, status=400)
+            
+            # Guardar cambios
+            tarea.save()
+            
+            # Enviar notificación al usuario agregado (solo si es 'add')
+            if action == 'add':
+                try:
+                    from .models import Notificacion
+                    Notificacion.objects.create(
+                        usuario=usuario,
+                        tipo='tarea_asignacion',
+                        titulo=f'Agregado a tarea: {tarea.titulo}',
+                        mensaje=mensaje,
+                        url=f'/app/proyecto/{tarea.proyecto.id}/' if tarea.proyecto else '/app/tareas/',
+                        creado_por=request.user
+                    )
+                except Exception as e:
+                    print(f"Error enviando notificación: {e}")
+            
+            return JsonResponse({
+                'success': True,
+                'message': mensaje,
+                'user_data': {
+                    'id': usuario.id,
+                    'nombre': usuario.get_full_name() or usuario.username,
+                    'username': usuario.username,
+                    'avatar_url': usuario.userprofile.get_avatar_url() if hasattr(usuario, 'userprofile') else None
+                }
+            })
+            
+        except Tarea.DoesNotExist:
+            return JsonResponse({'error': 'Tarea no encontrada'}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+# Funciones de utilidad para notificaciones
+def crear_notificacion(usuario, tipo, titulo, mensaje, url=None, creado_por=None):
+    """
+    Función de utilidad para crear notificaciones
+    """
+    try:
+        from .models import Notificacion
+        notificacion = Notificacion.objects.create(
+            usuario=usuario,
+            tipo=tipo,
+            titulo=titulo,
+            mensaje=mensaje,
+            url=url,
+            creado_por=creado_por
+        )
+        print(f"Notificación creada: {titulo} para {usuario.username}")
+        return notificacion
+    except Exception as e:
+        print(f"Error creando notificación: {e}")
+        return None
+
+def notificar_nueva_tarea(tarea, creado_por):
+    """
+    Envía notificación cuando se crea una nueva tarea
+    """
+    try:
+        # Notificar al responsable de la tarea
+        if tarea.asignado_a and tarea.asignado_a != creado_por:
+            crear_notificacion(
+                usuario=tarea.asignado_a,
+                tipo='tarea_nueva',
+                titulo=f'Nueva tarea asignada: {tarea.titulo}',
+                mensaje=f'Se te ha asignado la tarea "{tarea.titulo}" en el proyecto {tarea.proyecto.nombre if tarea.proyecto else "Sin proyecto"}',
+                url=f'/app/proyecto/{tarea.proyecto.id}/' if tarea.proyecto else '/app/tareas/',
+                creado_por=creado_por
+            )
+        
+        # Notificar a todos los participantes
+        for participante in tarea.participantes.all():
+            if participante != creado_por and participante != tarea.asignado_a:
+                crear_notificacion(
+                    usuario=participante,
+                    tipo='tarea_nueva',
+                    titulo=f'Nueva tarea: {tarea.titulo}',
+                    mensaje=f'Has sido agregado como participante en la tarea "{tarea.titulo}"',
+                    url=f'/app/proyecto/{tarea.proyecto.id}/' if tarea.proyecto else '/app/tareas/',
+                    creado_por=creado_por
+                )
+        
+        # Notificar a todos los observadores
+        for observador in tarea.observadores.all():
+            if observador != creado_por and observador != tarea.asignado_a:
+                crear_notificacion(
+                    usuario=observador,
+                    tipo='tarea_nueva',
+                    titulo=f'Nueva tarea: {tarea.titulo}',
+                    mensaje=f'Has sido agregado como observador en la tarea "{tarea.titulo}"',
+                    url=f'/app/proyecto/{tarea.proyecto.id}/' if tarea.proyecto else '/app/tareas/',
+                    creado_por=creado_por
+                )
+                
+    except Exception as e:
+        print(f"Error enviando notificaciones de nueva tarea: {e}")
+
+
+@login_required 
+def api_notificaciones(request):
+    """
+    API para obtener notificaciones del usuario actual
+    """
+    if request.method == 'GET':
+        try:
+            # Obtener notificaciones no leídas del usuario
+            notificaciones = request.user.notificaciones.filter(leida=False).order_by('-fecha_creacion')[:10]
+            
+            notificaciones_data = []
+            for notif in notificaciones:
+                notificaciones_data.append({
+                    'id': notif.id,
+                    'tipo': notif.tipo,
+                    'titulo': notif.titulo,
+                    'mensaje': notif.mensaje,
+                    'url': notif.url,
+                    'fecha_creacion': notif.fecha_creacion.isoformat(),
+                    'creado_por': notif.creado_por.get_full_name() or notif.creado_por.username if notif.creado_por else None
+                })
+            
+            return JsonResponse({
+                'success': True,
+                'notificaciones': notificaciones_data,
+                'total_no_leidas': request.user.notificaciones.filter(leida=False).count()
+            })
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    elif request.method == 'PUT':
+        try:
+            import json
+            data = json.loads(request.body)
+            
+            # Marcar notificación como leída
+            notif_id = data.get('id')
+            if notif_id:
+                from .models import Notificacion
+                notificacion = Notificacion.objects.get(id=notif_id, usuario=request.user)
+                notificacion.leida = True
+                notificacion.save()
+                
+                return JsonResponse({'success': True, 'message': 'Notificación marcada como leída'})
+            else:
+                return JsonResponse({'error': 'ID de notificación requerido'}, status=400)
+                
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     

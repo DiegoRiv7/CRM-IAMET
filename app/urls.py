@@ -241,6 +241,9 @@ urlpatterns = [
     path('api/marcar-notificacion-leida/<int:notificacion_id>/', views.marcar_notificacion_leida_api, name='marcar_notificacion_leida_api'),
     path('api/marcar-todas-notificaciones-leidas/', views.marcar_todas_notificaciones_leidas_api, name='marcar_todas_notificaciones_leidas_api'),
     
+    # Nueva API para sistema de notificaciones de tareas
+    path('api/notificaciones/', views.api_notificaciones, name='api_notificaciones'),
+    
     path('calendario/', views.calendario_view, name='calendario'),
     path('api/actividades/', views.actividad_list_create, name='actividad_list_create'),
     path('api/actividades/<int:pk>/', views.actividad_detail, name='actividad_detail'),

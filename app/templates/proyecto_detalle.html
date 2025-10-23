@@ -7395,14 +7395,10 @@ Object.assign(TareasProyectos, {
                 TareasProyectos.setupResponsable(tarea.responsable);
             }
             
-            // Configurar participantes
-            if (tarea.participantes && tarea.participantes.length > 0) {
-                TareasProyectos.setupParticipantes(tarea.participantes);
-            } else {
-                TareasProyectos.setupParticipantes([]);
-            }
+            // Configurar participantes y observadores usando la nueva función
+            TareasProyectos.updateTaskMembersUI(tarea);
             
-            // Configurar observadores
+            // Configurar observadores (legacy - se puede remover)
             if (tarea.observadores && tarea.observadores.length > 0) {
                 TareasProyectos.setupObservadores(tarea.observadores);
             } else {
@@ -7972,10 +7968,13 @@ Object.assign(TareasProyectos, {
     async addUserToTask(userId, type) {
         if (!TareasProyectos.currentTaskId) {
             console.error('No hay tarea seleccionada');
+            alert('No hay tarea seleccionada');
             return;
         }
         
         try {
+            console.log(`Agregando usuario ${userId} como ${type} a tarea ${TareasProyectos.currentTaskId}`);
+            
             const response = await fetch(`/app/api/tarea/${TareasProyectos.currentTaskId}/`, {
                 method: 'PUT',
                 headers: {
@@ -7983,45 +7982,188 @@ Object.assign(TareasProyectos, {
                     'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
                 },
                 body: JSON.stringify({
-                    action: 'add_user',
                     user_id: userId,
-                    user_type: type
+                    action: 'add',
+                    tipo: type
                 })
             });
             
-            if (response.ok) {
-                const data = await response.json();
-                console.log(`Usuario añadido como ${type}:`, data);
+            const result = await response.json();
+            
+            if (result.success) {
+                console.log('Usuario agregado exitosamente:', result.message);
                 
                 // Cerrar dropdown
-                const dropdown = document.getElementById(`${type}-dropdown`);
-                if (dropdown) {
-                    dropdown.style.display = 'none';
-                }
+                TareasProyectos.closeAllDropdowns();
                 
-                // Recargar detalles de la tarea para mostrar los cambios
-                if (data.tarea) {
-                    if (type === 'participantes') {
-                        TareasProyectos.setupParticipantes(data.tarea.participantes);
-                    } else if (type === 'observadores') {
-                        TareasProyectos.setupObservadores(data.tarea.observadores);
-                    }
-                }
+                // Actualizar la UI para mostrar el nuevo usuario
+                TareasProyectos.updateMembersDisplay(type, result.user_data);
                 
                 // Mostrar mensaje de éxito
-                const user = TareasProyectos.allUsers.find(u => u.id === userId);
-                if (user) {
-                    TareasProyectos.addSystemComment(
-                        `${user.nombre} ha sido añadido como ${type === 'participantes' ? 'participante' : 'observador'}.`, 
-                        '#16a34a'
-                    );
-                }
+                TareasProyectos.showSuccessMessage(result.message);
+                
             } else {
-                console.error('Error al añadir usuario:', response.status);
+                console.error('Error del servidor:', result.error);
+                alert(`Error: ${result.error}`);
             }
+            
         } catch (error) {
-            console.error('Error al añadir usuario:', error);
+            console.error('Error agregando usuario:', error);
+            alert('Error al agregar usuario a la tarea');
         }
+    },
+    
+    // Función para cerrar todos los dropdowns
+    closeAllDropdowns() {
+        document.querySelectorAll('.user-dropdown').forEach(dropdown => {
+            dropdown.style.display = 'none';
+        });
+    },
+    
+    // Función para actualizar la visualización de miembros
+    async updateMembersDisplay(type, userData) {
+        console.log(`Actualizando display de ${type} con:`, userData);
+        
+        // Recargar los detalles de la tarea para mostrar cambios
+        if (TareasProyectos.currentTaskId) {
+            try {
+                const response = await fetch(`/app/api/tarea/${TareasProyectos.currentTaskId}/`);
+                if (response.ok) {
+                    const tareaData = await response.json();
+                    // Actualizar solo los miembros sin recargar todo el modal
+                    TareasProyectos.updateTaskMembersUI(tareaData);
+                }
+            } catch (error) {
+                console.error('Error recargando datos de tarea:', error);
+                // Fallback: recargar todo el modal
+                TareasProyectos.verDetallesTarea(TareasProyectos.currentTaskId);
+            }
+        }
+    },
+    
+    // Función para mostrar mensaje de éxito
+    showSuccessMessage(message) {
+        // Crear elemento de notificación temporal
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--apple-green);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 10000;
+            font-size: 14px;
+            max-width: 300px;
+        `;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Remover después de 3 segundos
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 3000);
+    },
+    
+    // Función para actualizar participantes y observadores en la UI
+    updateTaskMembersUI(tarea) {
+        // Actualizar participantes
+        TareasProyectos.displayMembers('participantes', tarea.participantes || []);
+        
+        // Actualizar observadores  
+        TareasProyectos.displayMembers('observadores', tarea.observadores || []);
+    },
+    
+    // Función para mostrar miembros (participantes u observadores)
+    displayMembers(type, members) {
+        const container = document.getElementById(`task-detail-${type}-container`);
+        if (!container) return;
+        
+        let membersHTML = '';
+        
+        if (members && members.length > 0) {
+            // Mostrar hasta 3 miembros
+            const displayMembers = members.slice(0, 3);
+            
+            membersHTML = displayMembers.map(member => {
+                const iniciales = TareasProyectos.getInitials(member.nombre);
+                return `
+                <div class="task-member" title="${member.nombre}">
+                    ${member.avatar_url ? 
+                        `<img src="${member.avatar_url}" alt="${member.nombre}" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.1);">` :
+                        `<div style="width: 28px; height: 28px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(member.nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem; border: 2px solid rgba(255, 255, 255, 0.1);">${iniciales}</div>`
+                    }
+                </div>`;
+            }).join('');
+            
+            // Si hay más de 3, mostrar contador
+            if (members.length > 3) {
+                membersHTML += `
+                <div class="task-member-count" title="${members.length - 3} más">
+                    +${members.length - 3}
+                </div>`;
+            }
+        }
+        
+        // Agregar botón de añadir
+        membersHTML += `
+            <button onclick="TareasProyectos.toggleDropdown('${type}')" style="
+                width: 28px; 
+                height: 28px; 
+                border-radius: 50%; 
+                background: rgba(255, 255, 255, 0.1); 
+                border: 1px solid rgba(255, 255, 255, 0.2); 
+                color: rgba(255, 255, 255, 0.8); 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                cursor: pointer; 
+                transition: all 0.2s ease;
+                font-size: 14px;
+                font-weight: 500;
+            " 
+            onmouseover="this.style.background='rgba(255, 255, 255, 0.15)'; this.style.color='white';" 
+            onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'; this.style.color='rgba(255, 255, 255, 0.8)';"
+            title="Agregar ${type === 'participantes' ? 'participante' : 'observador'}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+            </button>
+        `;
+        
+        container.innerHTML = membersHTML;
+    },
+    
+    // Función para obtener iniciales del nombre
+    getInitials(nombre) {
+        if (!nombre) return '??';
+        const words = nombre.trim().split(' ');
+        if (words.length >= 2) {
+            return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+        } else {
+            return nombre.charAt(0).toUpperCase() + (nombre.charAt(1) || '').toUpperCase();
+        }
+    },
+    
+    // Función para obtener color de avatar basado en el nombre
+    getAvatarColor(nombre) {
+        const colors = [
+            '#FF6B9D', '#C44569', '#F8B500', '#6BCF7F', 
+            '#4834DF', '#686de0', '#eb4d4b', '#6c5ce7',
+            '#a29bfe', '#fd79a8', '#e84393', '#00b894'
+        ];
+        
+        let hash = 0;
+        for (let i = 0; i < nombre.length; i++) {
+            hash = nombre.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        
+        return colors[Math.abs(hash) % colors.length];
     },
 
     // Variable para controlar el estado del cronómetro
