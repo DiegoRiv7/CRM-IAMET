@@ -6745,6 +6745,61 @@ function crearSubTarea(tareaId = null) {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Estilos para dropdown de usuarios */
+.user-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    cursor: pointer;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    color: var(--apple-label);
+}
+
+.user-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.user-item .user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #4B7688;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.user-item .user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.user-item .user-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--apple-label);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-item .user-email {
+    font-size: 0.8rem;
+    color: var(--apple-label-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .project-link {
     color: var(--apple-blue);
     cursor: pointer;
@@ -7748,16 +7803,23 @@ const TareasProyectos = {
 
     // Función para alternar mostrar/ocultar dropdown
     toggleDropdown(type) {
+        console.log('toggleDropdown llamado con type:', type);
         const dropdown = document.getElementById(`${type}-dropdown`);
         const searchInput = document.getElementById(`${type}-search`);
         
+        console.log('Dropdown encontrado:', dropdown);
+        console.log('SearchInput encontrado:', searchInput);
+        
         if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+            console.log('Mostrando dropdown...');
             dropdown.style.display = 'block';
             
             // Cargar usuarios si no están cargados
             if (TareasProyectos.allUsers.length === 0) {
+                console.log('Cargando usuarios...');
                 TareasProyectos.loadAllUsers();
             } else {
+                console.log('Usuarios ya cargados, mostrando:', TareasProyectos.allUsers.length);
                 TareasProyectos.displayUsers(TareasProyectos.allUsers, type);
             }
             
@@ -7771,12 +7833,14 @@ const TareasProyectos = {
             // Setup event listeners para este dropdown
             TareasProyectos.setupDropdownListeners(type);
         } else {
+            console.log('Ocultando dropdown...');
             dropdown.style.display = 'none';
         }
     },
 
     // Función para cargar todos los usuarios
     async loadAllUsers() {
+        console.log('loadAllUsers() iniciado...');
         try {
             const response = await fetch('/app/api/buscar-usuarios/?q=', {
                 method: 'GET',
@@ -7786,8 +7850,13 @@ const TareasProyectos = {
                 }
             });
             
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+            
             if (response.ok) {
                 const data = await response.json();
+                console.log('Data recibida:', data);
+                
                 if (data.success && data.usuarios && data.usuarios.length > 0) {
                     // Transformar los usuarios al formato que esperamos
                     TareasProyectos.allUsers = data.usuarios.map(user => ({
@@ -7798,21 +7867,24 @@ const TareasProyectos = {
                         first_name: user.first_name,
                         last_name: user.last_name
                     }));
-                    console.log('Usuarios cargados:', TareasProyectos.allUsers);
+                    console.log('Usuarios transformados:', TareasProyectos.allUsers);
                     
                     // Mostrar usuarios en dropdowns activos
                     ['participantes', 'observadores'].forEach(type => {
                         const dropdown = document.getElementById(`${type}-dropdown`);
                         if (dropdown && dropdown.style.display === 'block') {
+                            console.log(`Mostrando usuarios en dropdown ${type}`);
                             TareasProyectos.displayUsers(TareasProyectos.allUsers, type);
                         }
                     });
                 } else {
-                    console.log('No se encontraron usuarios disponibles');
+                    console.log('No se encontraron usuarios disponibles - data:', data);
                     TareasProyectos.allUsers = [];
                 }
             } else {
                 console.error('Error al cargar usuarios:', response.status);
+                const errorText = await response.text();
+                console.error('Error text:', errorText);
             }
         } catch (error) {
             console.error('Error al cargar usuarios:', error);
@@ -7821,15 +7893,21 @@ const TareasProyectos = {
 
     // Función para mostrar usuarios en el dropdown
     displayUsers(users, type) {
-        const usersList = document.getElementById(`${type}-users-list`);
-        if (!usersList) return;
+        console.log(`displayUsers llamado con ${users.length} usuarios para tipo ${type}`);
+        const usersList = document.getElementById(`${type}-results`);
+        if (!usersList) {
+            console.error(`No se encontró elemento ${type}-results`);
+            return;
+        }
+        console.log('Elemento usersList encontrado:', usersList);
         
         if (users.length === 0) {
+            console.log('No hay usuarios para mostrar');
             usersList.innerHTML = '<div style="padding: 0.75rem; text-align: center; color: rgba(255, 255, 255, 0.6); font-size: 0.9rem;">No se encontraron usuarios</div>';
             return;
         }
         
-        usersList.innerHTML = users.map(user => `
+        const usersHTML = users.map(user => `
             <div class="user-item" data-user-id="${user.id}" onclick="TareasProyectos.addUserToTask(${user.id}, '${type}')">
                 <div class="user-avatar">
                     ${TareasProyectos.getInitials(user.nombre)}
@@ -7840,6 +7918,9 @@ const TareasProyectos = {
                 </div>
             </div>
         `).join('');
+        
+        console.log('HTML generado para usuarios:', usersHTML);
+        usersList.innerHTML = usersHTML;
     },
 
     // Función para configurar event listeners del dropdown
