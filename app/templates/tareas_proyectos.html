@@ -1849,6 +1849,9 @@
 </div>
 
 <script>
+// Namespace para funciones de tareas - DEFINIDO TEMPRANO para evitar errores de referencia
+const TareasProyectos = {};
+
 // State variables
 let currentPage = 1;
 const itemsPerPage = 30;
@@ -2094,7 +2097,7 @@ function mostrarEstadoVacio(tipo) {
 }
 
 // --- TASK DETAIL FUNCTIONS (NAMESPACE) ---
-const TareasProyectos = {
+Object.assign(TareasProyectos, {
     async verDetallesTarea(tareaId) {
         console.log('=== INICIANDO verDetallesTarea ===');
         console.log('TareasProyectos.verDetallesTarea called with ID:', tareaId);
@@ -2754,7 +2757,7 @@ const TareasProyectos = {
             `;
         }
     }
-};
+});
 
 function getPrioridadBadgeHTML(prioridad) {
     return TareasProyectos.getPrioridadBadgeHTML(prioridad);
