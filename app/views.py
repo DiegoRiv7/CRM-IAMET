@@ -9863,111 +9863,119 @@ def api_tarea_detalle(request, tarea_id):
     elif request.method == 'PUT':
         try:
             import json
+            from django.db import transaction
             data = json.loads(request.body)
             
             print(f"🔍 PUT request data: {data}")
             print(f"🔍 User making request: {request.user.username}")
             
-            # Buscar la tarea
-            tarea = Tarea.objects.get(id=tarea_id)
-            print(f"🔍 Tarea encontrada: {tarea.titulo} (ID: {tarea.id})")
-            
-            # Verificar permisos - solo el creador o admin puede modificar participantes
-            user_can_edit = (
-                tarea.creado_por == request.user or
-                request.user.is_superuser
-            )
-            
-            print(f"🔍 Permisos - Creador: {tarea.creado_por.username}, Current: {request.user.username}, Can edit: {user_can_edit}")
-            
-            if not user_can_edit:
-                return JsonResponse({'error': 'Sin permisos para modificar esta tarea'}, status=403)
-            
-            # Obtener datos de la petición
-            user_id = data.get('user_id')
-            action = data.get('action')  # 'add' o 'remove'
-            tipo = data.get('tipo')      # 'participantes' o 'observadores'
-            
-            print(f"🔍 Datos: user_id={user_id}, action={action}, tipo={tipo}")
-            
-            if not all([user_id, action, tipo]):
-                return JsonResponse({'error': 'Datos faltantes: user_id, action y tipo son requeridos'}, status=400)
-            
-            # Obtener usuario
-            try:
-                usuario = User.objects.get(id=user_id)
-                print(f"🔍 Usuario encontrado: {usuario.username} ({usuario.get_full_name()})")
-            except User.DoesNotExist:
-                return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
-            
-            # Verificar estado actual antes del cambio
-            if tipo == 'participantes':
-                current_participantes = list(tarea.participantes.all())
-                print(f"🔍 Participantes actuales ANTES: {[p.username for p in current_participantes]}")
-            elif tipo == 'observadores':
-                current_observadores = list(tarea.observadores.all())
-                print(f"🔍 Observadores actuales ANTES: {[o.username for o in current_observadores]}")
-            
-            # Aplicar cambios según el tipo
-            if tipo == 'participantes':
-                if action == 'add':
-                    tarea.participantes.add(usuario)
-                    mensaje = f"{usuario.get_full_name() or usuario.username} ha sido agregado como participante a la tarea '{tarea.titulo}'"
-                    print(f"✅ AGREGADO como participante: {usuario.username}")
-                elif action == 'remove':
-                    tarea.participantes.remove(usuario)
-                    mensaje = f"{usuario.get_full_name() or usuario.username} ha sido removido como participante de la tarea '{tarea.titulo}'"
-                    print(f"❌ REMOVIDO como participante: {usuario.username}")
-            elif tipo == 'observadores':
-                if action == 'add':
-                    tarea.observadores.add(usuario)
-                    mensaje = f"{usuario.get_full_name() or usuario.username} ha sido agregado como observador a la tarea '{tarea.titulo}'"
-                    print(f"✅ AGREGADO como observador: {usuario.username}")
-                elif action == 'remove':
-                    tarea.observadores.remove(usuario)
-                    mensaje = f"{usuario.get_full_name() or usuario.username} ha sido removido como observador de la tarea '{tarea.titulo}'"
-                    print(f"❌ REMOVIDO como observador: {usuario.username}")
-            else:
-                return JsonResponse({'error': 'Tipo inválido. Use "participantes" o "observadores"'}, status=400)
-            
-            # Guardar cambios
-            tarea.save()
-            print(f"💾 Tarea guardada")
-            
-            # Verificar estado después del cambio
-            if tipo == 'participantes':
-                new_participantes = list(tarea.participantes.all())
-                print(f"🔍 Participantes actuales DESPUÉS: {[p.username for p in new_participantes]}")
-            elif tipo == 'observadores':
-                new_observadores = list(tarea.observadores.all())
-                print(f"🔍 Observadores actuales DESPUÉS: {[o.username for o in new_observadores]}")
-            
-            # Enviar notificación al usuario agregado (solo si es 'add')
-            if action == 'add':
+            # Usar transacción atómica para asegurar consistencia
+            with transaction.atomic():
+                # Buscar la tarea
+                tarea = Tarea.objects.get(id=tarea_id)
+                print(f"🔍 Tarea encontrada: {tarea.titulo} (ID: {tarea.id})")
+                
+                # Verificar permisos - solo el creador o admin puede modificar participantes
+                user_can_edit = (
+                    tarea.creado_por == request.user or
+                    request.user.is_superuser
+                )
+                
+                print(f"🔍 Permisos - Creador: {tarea.creado_por.username}, Current: {request.user.username}, Can edit: {user_can_edit}")
+                
+                if not user_can_edit:
+                    return JsonResponse({'error': 'Sin permisos para modificar esta tarea'}, status=403)
+                
+                # Obtener datos de la petición
+                user_id = data.get('user_id')
+                action = data.get('action')  # 'add' o 'remove'
+                tipo = data.get('tipo')      # 'participantes' o 'observadores'
+                
+                print(f"🔍 Datos: user_id={user_id}, action={action}, tipo={tipo}")
+                
+                if not all([user_id, action, tipo]):
+                    return JsonResponse({'error': 'Datos faltantes: user_id, action y tipo son requeridos'}, status=400)
+                
+                # Obtener usuario
                 try:
-                    from .models import Notificacion
-                    Notificacion.objects.create(
-                        usuario=usuario,
-                        tipo='tarea_asignacion',
-                        titulo=f'Agregado a tarea: {tarea.titulo}',
-                        mensaje=mensaje,
-                        url=f'/app/proyecto/{tarea.proyecto.id}/' if tarea.proyecto else '/app/tareas/',
-                        creado_por=request.user
-                    )
-                    print(f"🔔 Notificación enviada a {usuario.username}")
-                except Exception as e:
-                    print(f"❌ Error enviando notificación: {e}")
-            
-            return JsonResponse({
-                'success': True,
-                'message': mensaje,
-                'user_data': {
-                    'id': usuario.id,
-                    'nombre': usuario.get_full_name() or usuario.username,
-                    'username': usuario.username,
-                    'avatar_url': usuario.userprofile.get_avatar_url() if hasattr(usuario, 'userprofile') else None
-                }
-            })
+                    usuario = User.objects.get(id=user_id)
+                    print(f"🔍 Usuario encontrado: {usuario.username} ({usuario.get_full_name()})")
+                except User.DoesNotExist:
+                    return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
+                
+                # Verificar estado actual antes del cambio
+                if tipo == 'participantes':
+                    current_participantes = list(tarea.participantes.all())
+                    print(f"🔍 Participantes actuales ANTES: {[p.username for p in current_participantes]}")
+                elif tipo == 'observadores':
+                    current_observadores = list(tarea.observadores.all())
+                    print(f"🔍 Observadores actuales ANTES: {[o.username for o in current_observadores]}")
+                
+                # Aplicar cambios según el tipo
+                if tipo == 'participantes':
+                    if action == 'add':
+                        tarea.participantes.add(usuario)
+                        print(f"✅ AGREGADO como participante: {usuario.username}")
+                        mensaje = f"{usuario.get_full_name() or usuario.username} ha sido agregado como participante a la tarea '{tarea.titulo}'"
+                    elif action == 'remove':
+                        tarea.participantes.remove(usuario)
+                        print(f"❌ REMOVIDO como participante: {usuario.username}")
+                        mensaje = f"{usuario.get_full_name() or usuario.username} ha sido removido como participante de la tarea '{tarea.titulo}'"
+                elif tipo == 'observadores':
+                    if action == 'add':
+                        tarea.observadores.add(usuario)
+                        print(f"✅ AGREGADO como observador: {usuario.username}")
+                        mensaje = f"{usuario.get_full_name() or usuario.username} ha sido agregado como observador a la tarea '{tarea.titulo}'"
+                    elif action == 'remove':
+                        tarea.observadores.remove(usuario)
+                        print(f"❌ REMOVIDO como observador: {usuario.username}")
+                        mensaje = f"{usuario.get_full_name() or usuario.username} ha sido removido como observador de la tarea '{tarea.titulo}'"
+                else:
+                    return JsonResponse({'error': 'Tipo inválido. Use "participantes" o "observadores"'}, status=400)
+                
+                # Guardar cambios
+                tarea.save()
+                print(f"💾 Tarea guardada")
+                
+                # Verificar estado después del cambio
+                if tipo == 'participantes':
+                    new_participantes = list(tarea.participantes.all())
+                    print(f"🔍 Participantes actuales DESPUÉS: {[p.username for p in new_participantes]}")
+                elif tipo == 'observadores':
+                    new_observadores = list(tarea.observadores.all())
+                    print(f"🔍 Observadores actuales DESPUÉS: {[o.username for o in new_observadores]}")
+                
+                # Enviar notificación al usuario agregado (solo si es 'add')
+                if action == 'add':
+                    try:
+                        from .models import Notificacion
+                        notificacion = Notificacion.objects.create(
+                            usuario=usuario,
+                            tipo='tarea_asignacion',
+                            titulo=f'Agregado a tarea: {tarea.titulo}',
+                            mensaje=mensaje,
+                            url=f'/app/proyecto/{tarea.proyecto.id}/' if tarea.proyecto else '/app/tareas/',
+                            creado_por=request.user
+                        )
+                        print(f"🔔 Notificación creada exitosamente: ID {notificacion.id} para {usuario.username}")
+                    except ImportError as e:
+                        print(f"❌ Modelo Notificacion no disponible (migración pendiente): {e}")
+                    except Exception as e:
+                        print(f"❌ Error enviando notificación: {e}")
+                        print(f"❌ Tipo de error: {type(e).__name__}")
+                        import traceback
+                        print(f"❌ Traceback: {traceback.format_exc()}")
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': mensaje,
+                    'user_data': {
+                        'id': usuario.id,
+                        'nombre': usuario.get_full_name() or usuario.username,
+                        'username': usuario.username,
+                        'avatar_url': usuario.userprofile.get_avatar_url() if hasattr(usuario, 'userprofile') else None
+                    }
+                })
             
         except Tarea.DoesNotExist:
             return JsonResponse({'error': 'Tarea no encontrada'}, status=404)
