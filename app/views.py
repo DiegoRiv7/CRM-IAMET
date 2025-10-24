@@ -9348,6 +9348,16 @@ def vista_previa_archivo_oportunidad(request, archivo_id):
 def obtener_notificaciones_api(request):
     """
     API para obtener las notificaciones del usuario actual
+    TEMPORALMENTE DESHABILITADO - Modelo Notificacion pendiente de migración
+    """
+    return JsonResponse({
+        'success': True,
+        'notificaciones': [],
+        'total_no_leidas': 0,
+        'message': 'Sistema de notificaciones temporalmente deshabilitado'
+    })
+    
+    # CÓDIGO ORIGINAL COMENTADO TEMPORALMENTE
     """
     try:
         user = request.user
@@ -9398,6 +9408,14 @@ def obtener_notificaciones_api(request):
 def marcar_notificacion_leida_api(request, notificacion_id):
     """
     API para marcar una notificación específica como leída
+    TEMPORALMENTE DESHABILITADO - Modelo Notificacion pendiente de migración
+    """
+    return JsonResponse({
+        'success': True,
+        'message': 'Función temporalmente deshabilitada'
+    })
+    
+    # CÓDIGO ORIGINAL COMENTADO TEMPORALMENTE
     """
     try:
         notificacion = get_object_or_404(
@@ -9426,6 +9444,15 @@ def marcar_notificacion_leida_api(request, notificacion_id):
 def marcar_todas_notificaciones_leidas_api(request):
     """
     API para marcar todas las notificaciones del usuario como leídas
+    TEMPORALMENTE DESHABILITADO - Modelo Notificacion pendiente de migración
+    """
+    return JsonResponse({
+        'success': True,
+        'message': 'Función temporalmente deshabilitada',
+        'notificaciones_marcadas': 0
+    })
+    
+    # CÓDIGO ORIGINAL COMENTADO TEMPORALMENTE
     """
     try:
         # Marcar todas las notificaciones no leídas del usuario
@@ -9945,26 +9972,9 @@ def api_tarea_detalle(request, tarea_id):
                     new_observadores = list(tarea.observadores.all())
                     print(f"🔍 Observadores actuales DESPUÉS: {[o.username for o in new_observadores]}")
                 
-                # Enviar notificación al usuario agregado (solo si es 'add')
+                # TODO: Enviar notificación al usuario agregado (temporalmente deshabilitado)
                 if action == 'add':
-                    try:
-                        from .models import Notificacion
-                        notificacion = Notificacion.objects.create(
-                            usuario=usuario,
-                            tipo='tarea_asignacion',
-                            titulo=f'Agregado a tarea: {tarea.titulo}',
-                            mensaje=mensaje,
-                            url=f'/app/proyecto/{tarea.proyecto.id}/' if tarea.proyecto else '/app/tareas/',
-                            creado_por=request.user
-                        )
-                        print(f"🔔 Notificación creada exitosamente: ID {notificacion.id} para {usuario.username}")
-                    except ImportError as e:
-                        print(f"❌ Modelo Notificacion no disponible (migración pendiente): {e}")
-                    except Exception as e:
-                        print(f"❌ Error enviando notificación: {e}")
-                        print(f"❌ Tipo de error: {type(e).__name__}")
-                        import traceback
-                        print(f"❌ Traceback: {traceback.format_exc()}")
+                    print(f"🔔 Notificación deshabilitada temporalmente para {usuario.username} - modelo pendiente de migración")
                 
                 return JsonResponse({
                     'success': True,
