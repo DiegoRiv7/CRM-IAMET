@@ -2583,33 +2583,76 @@ Object.assign(TareasProyectos, {
         };
     },
 
-    // Función para agregar usuario a la tarea
+    // Función para agregar usuario a la tarea - IMPLEMENTACIÓN REAL
     async addUserToTask(type, userId, userName) {
+        console.log('🟦 === INICIANDO addUserToTask (tareas_proyectos.html) ===');
+        console.log(`🟦 userId: ${userId}, type: ${type}, userName: ${userName}, currentTaskId: ${TareasProyectos.currentTaskId}`);
+        
         if (!TareasProyectos.currentTaskId) {
-            console.error('No hay tarea actual seleccionada');
+            console.error('❌ No hay tarea seleccionada');
+            alert('No hay tarea seleccionada');
             return;
         }
-
+        
         try {
-            // Aquí harías la petición al servidor para agregar el usuario
-            // Por ahora, solo simularemos agregando el usuario a la interfaz
+            const requestData = {
+                user_id: userId,
+                action: 'add',
+                tipo: type
+            };
             
-            // Cerrar dropdown
-            const dropdown = document.getElementById(`${type}-dropdown`);
-            dropdown.style.display = 'none';
-            document.getElementById(`${type}-search`).value = '';
+            console.log(`🟦 Enviando datos:`, requestData);
+            console.log(`🟦 URL: /app/api/tarea/${TareasProyectos.currentTaskId}/`);
+            
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+            console.log(`🟦 CSRF Token: ${csrfToken ? 'Presente' : 'FALTANTE'}`);
+            
+            const response = await fetch(`/app/api/tarea/${TareasProyectos.currentTaskId}/`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken || ''
+                },
+                body: JSON.stringify(requestData)
+            });
+            
+            console.log(`🟦 Response status: ${response.status}`);
+            console.log(`🟦 Response ok: ${response.ok}`);
+            
+            const result = await response.json();
+            console.log(`🟦 Response data:`, result);
+            
+            if (result.success) {
+                console.log('✅ Usuario agregado exitosamente:', result.message);
+                
+                // Cerrar dropdown
+                const dropdown = document.getElementById(`${type}-dropdown`);
+                if (dropdown) {
+                    dropdown.style.display = 'none';
+                }
+                const searchInput = document.getElementById(`${type}-search`);
+                if (searchInput) {
+                    searchInput.value = '';
+                }
 
-            // Agregar comentario del sistema
-            const tipoTexto = type === 'participantes' ? 'participante' : 'observador';
-            TareasProyectos.addSystemComment(`${userName} ha sido agregado como ${tipoTexto} a la tarea.`, '#3B82F6');
-
-            // Recargar los detalles de la tarea para mostrar los cambios
-            // (En un caso real, actualizarías los datos y refrecarías solo las secciones necesarias)
-            console.log(`Usuario ${userName} agregado como ${tipoTexto} a la tarea ${TareasProyectos.currentTaskId}`);
+                // Agregar comentario del sistema  
+                const tipoTexto = type === 'participantes' ? 'participante' : 'observador';
+                TareasProyectos.addSystemComment(`${userName} ha sido agregado como ${tipoTexto} a la tarea.`, '#3B82F6');
+                
+                // Mostrar mensaje de éxito
+                console.log(`✅ Usuario ${userName} agregado como ${tipoTexto} a la tarea ${TareasProyectos.currentTaskId} - GUARDADO EN BASE DE DATOS`);
+                
+            } else {
+                console.error('❌ Error del servidor:', result.error);
+                alert(`Error: ${result.error}`);
+            }
             
         } catch (error) {
-            console.error('Error al agregar usuario a la tarea:', error);
+            console.error('❌ Error agregando usuario:', error);
+            alert('Error al agregar usuario a la tarea');
         }
+        
+        console.log('🟦 === FIN addUserToTask (tareas_proyectos.html) ===');
     },
 
     // Variable para controlar el estado del cronómetro
