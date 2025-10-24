@@ -1381,6 +1381,8 @@ class Notificacion(models.Model):
         ('respuesta', 'Respuesta a comentario'),
         ('comentario_oportunidad', 'Nuevo comentario en oportunidad'),
         ('proyecto_agregado', 'Agregado a proyecto'),
+        ('tarea_participante', 'Agregado como participante a tarea'),
+        ('tarea_observador', 'Agregado como observador a tarea'),
         ('sistema', 'Notificación del sistema'),
     ]
     
@@ -1436,6 +1438,17 @@ class Notificacion(models.Model):
         null=True,
         blank=True,
         verbose_name="Nombre del Proyecto"
+    )
+    tarea_id = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="ID de la Tarea"
+    )
+    tarea_titulo = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        verbose_name="Título de la Tarea"
     )
     leida = models.BooleanField(
         default=False,

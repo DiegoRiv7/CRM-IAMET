@@ -3383,11 +3383,37 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Verificar si hay un task_id en los parámetros de la URL para abrir automáticamente
+    function checkAndOpenTaskFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const taskId = urlParams.get('task_id');
+        
+        if (taskId) {
+            console.log(`🔗 Task ID detectado en URL: ${taskId}`);
+            
+            // Cambiar a la pestaña de tareas
+            document.querySelector('[data-tab="tareas"]').click();
+            
+            // Esperar un momento para que se carguen las tareas y luego abrir el detalle
+            setTimeout(() => {
+                console.log(`🚀 Abriendo tarea automáticamente: ${taskId}`);
+                TareasProyectos.verDetallesTarea(parseInt(taskId));
+            }, 1000);
+            
+            // Limpiar el parámetro de la URL para no reabrir en navegación posterior
+            const newURL = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.replaceState({path: newURL}, '', newURL);
+        }
+    }
+
     // Initial data load
     cargarProyectos(1);
     
     // Cargar usuarios al inicializar
     cargarTodosLosUsuarios();
+    
+    // Verificar parámetros de URL después de cargar
+    setTimeout(checkAndOpenTaskFromURL, 500);
 });
 </script>
 {% endblock %}

@@ -9348,18 +9348,9 @@ def vista_previa_archivo_oportunidad(request, archivo_id):
 def obtener_notificaciones_api(request):
     """
     API para obtener las notificaciones del usuario actual
-    TEMPORALMENTE DESHABILITADO - Modelo Notificacion pendiente de migración
-    """
-    return JsonResponse({
-        'success': True,
-        'notificaciones': [],
-        'total_no_leidas': 0,
-        'message': 'Sistema de notificaciones temporalmente deshabilitado'
-    })
-    
-    # CÓDIGO ORIGINAL COMENTADO TEMPORALMENTE
     """
     try:
+        from .models import Notificacion
         user = request.user
         
         # Obtener notificaciones del usuario (últimas 50)
@@ -9378,15 +9369,26 @@ def obtener_notificaciones_api(request):
         # Serializar notificaciones
         notifications_data = []
         for notif in notificaciones:
+            # Determinar URL basada en el tipo de notificación
+            url = ''
+            if notif.tarea_id:
+                url = f'/app/tareas-proyectos/?task_id={notif.tarea_id}'
+            elif notif.oportunidad:
+                url = f'/app/todos/?oportunidad_id={notif.oportunidad.id}'
+            elif notif.proyecto_id:
+                url = f'/app/proyecto/{notif.proyecto_id}/'
+                
             notifications_data.append({
                 'id': notif.id,
                 'titulo': notif.titulo,
                 'mensaje': notif.mensaje,
                 'tipo': notif.tipo,
                 'leida': notif.leida,
-                'fecha': convert_to_tijuana_time(notif.fecha_creacion).strftime('%d/%m/%Y %H:%M'),
+                'fecha': notif.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
                 'remitente': notif.usuario_remitente.get_full_name() if notif.usuario_remitente else 'Sistema',
-                'url': notif.get_url(),
+                'url': url,
+                'tarea_id': notif.tarea_id,
+                'proyecto_id': notif.proyecto_id
             })
         
         return JsonResponse({
@@ -9399,9 +9401,10 @@ def obtener_notificaciones_api(request):
         print(f"❌ Error obteniendo notificaciones: {e}")
         return JsonResponse({
             'success': False,
-            'error': 'Error al obtener notificaciones'
-        }, status=500)
-    """
+            'error': str(e),
+            'notifications': [],
+            'unread_count': 0
+        })
 
 
 @login_required
@@ -9409,16 +9412,9 @@ def obtener_notificaciones_api(request):
 def marcar_notificacion_leida_api(request, notificacion_id):
     """
     API para marcar una notificación específica como leída
-    TEMPORALMENTE DESHABILITADO - Modelo Notificacion pendiente de migración
-    """
-    return JsonResponse({
-        'success': True,
-        'message': 'Función temporalmente deshabilitada'
-    })
-    
-    # CÓDIGO ORIGINAL COMENTADO TEMPORALMENTE
     """
     try:
+        from .models import Notificacion
         notificacion = get_object_or_404(
             Notificacion, 
             id=notificacion_id, 
@@ -9438,7 +9434,6 @@ def marcar_notificacion_leida_api(request, notificacion_id):
             'success': False,
             'error': 'Error al marcar notificación como leída'
         }, status=500)
-    """
 
 
 @login_required
@@ -9446,17 +9441,11 @@ def marcar_notificacion_leida_api(request, notificacion_id):
 def marcar_todas_notificaciones_leidas_api(request):
     """
     API para marcar todas las notificaciones del usuario como leídas
-    TEMPORALMENTE DESHABILITADO - Modelo Notificacion pendiente de migración
-    """
-    return JsonResponse({
-        'success': True,
-        'message': 'Función temporalmente deshabilitada',
-        'notificaciones_marcadas': 0
-    })
-    
-    # CÓDIGO ORIGINAL COMENTADO TEMPORALMENTE
     """
     try:
+        from .models import Notificacion
+        from django.utils import timezone
+        
         # Marcar todas las notificaciones no leídas del usuario
         notificaciones_no_leidas = Notificacion.objects.filter(
             usuario_destinatario=request.user,
@@ -9479,7 +9468,6 @@ def marcar_todas_notificaciones_leidas_api(request):
             'success': False,
             'error': 'Error al marcar notificaciones como leídas'
         }, status=500)
-    """
 
 
 def crear_notificacion(usuario_destinatario, tipo, titulo, mensaje, oportunidad=None, comentario=None, usuario_remitente=None, proyecto_id=None, proyecto_nombre=None):
@@ -9975,9 +9963,32 @@ def api_tarea_detalle(request, tarea_id):
                     new_observadores = list(tarea.observadores.all())
                     print(f"🔍 Observadores actuales DESPUÉS: {[o.username for o in new_observadores]}")
                 
-                # TODO: Enviar notificación al usuario agregado (temporalmente deshabilitado)
+                # Enviar notificación al usuario agregado
                 if action == 'add':
-                    print(f"🔔 Notificación deshabilitada temporalmente para {usuario.username} - modelo pendiente de migración")
+                    try:
+                        from .models import Notificacion
+                        
+                        # Determinar el tipo de notificación
+                        tipo_notificacion = 'tarea_participante' if tipo == 'participantes' else 'tarea_observador'
+                        
+                        # Crear la notificación
+                        notificacion = Notificacion.objects.create(
+                            usuario_destinatario=usuario,
+                            usuario_remitente=request.user,
+                            tipo=tipo_notificacion,
+                            titulo=f"Agregado a tarea: {tarea.titulo}",
+                            mensaje=mensaje,
+                            tarea_id=tarea.id,
+                            tarea_titulo=tarea.titulo,
+                            proyecto_id=tarea.proyecto.id if tarea.proyecto else None,
+                            proyecto_nombre=tarea.proyecto.nombre if tarea.proyecto else None
+                        )
+                        
+                        print(f"🔔 Notificación creada para {usuario.username}: {notificacion.titulo}")
+                        
+                    except Exception as e:
+                        print(f"❌ Error creando notificación: {e}")
+                        # No fallar si hay error en notificación, solo loggearlo
                 
                 return JsonResponse({
                     'success': True,
