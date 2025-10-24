@@ -9401,6 +9401,7 @@ def obtener_notificaciones_api(request):
             'success': False,
             'error': 'Error al obtener notificaciones'
         }, status=500)
+    """
 
 
 @login_required
@@ -9437,6 +9438,7 @@ def marcar_notificacion_leida_api(request, notificacion_id):
             'success': False,
             'error': 'Error al marcar notificación como leída'
         }, status=500)
+    """
 
 
 @login_required
@@ -9477,6 +9479,7 @@ def marcar_todas_notificaciones_leidas_api(request):
             'success': False,
             'error': 'Error al marcar notificaciones como leídas'
         }, status=500)
+    """
 
 
 def crear_notificacion(usuario_destinatario, tipo, titulo, mensaje, oportunidad=None, comentario=None, usuario_remitente=None, proyecto_id=None, proyecto_nombre=None):

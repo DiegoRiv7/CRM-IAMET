@@ -2006,67 +2006,6 @@ class Tarea(models.Model):
         return colors.get(self.estado, '#6c757d')
 
 
-class Notificacion(models.Model):
-    """
-    Modelo para el sistema de notificaciones del dock
-    """
-    TIPO_CHOICES = [
-        ('tarea_asignacion', 'Asignación de Tarea'),
-        ('tarea_nueva', 'Nueva Tarea'),
-        ('proyecto_nuevo', 'Nuevo Proyecto'),
-        ('comentario', 'Nuevo Comentario'),
-        ('cumpleanos', 'Cumpleaños'),
-        ('general', 'General'),
-    ]
-    
-    usuario = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='notificaciones',
-        verbose_name="Usuario"
-    )
-    tipo = models.CharField(
-        max_length=20,
-        choices=TIPO_CHOICES,
-        default='general',
-        verbose_name="Tipo de Notificación"
-    )
-    titulo = models.CharField(
-        max_length=200,
-        verbose_name="Título"
-    )
-    mensaje = models.TextField(
-        verbose_name="Mensaje"
-    )
-    url = models.URLField(
-        blank=True,
-        null=True,
-        verbose_name="URL de destino"
-    )
-    leida = models.BooleanField(
-        default=False,
-        verbose_name="Leída"
-    )
-    fecha_creacion = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Fecha de Creación"
-    )
-    creado_por = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='notificaciones_enviadas',
-        verbose_name="Creado por"
-    )
-    
-    class Meta:
-        ordering = ['-fecha_creacion']
-        verbose_name = "Notificación"
-        verbose_name_plural = "Notificaciones"
-    
-    def __str__(self):
-        return f"{self.titulo} - {self.usuario.username}"
-
-
 class Actividad(models.Model):
     """
     Modelo para representar una actividad o evento en el calendario.
