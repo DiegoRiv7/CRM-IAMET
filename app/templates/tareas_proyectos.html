@@ -2639,6 +2639,13 @@ Object.assign(TareasProyectos, {
                 const tipoTexto = type === 'participantes' ? 'participante' : 'observador';
                 TareasProyectos.addSystemComment(`${userName} ha sido agregado como ${tipoTexto} a la tarea.`, '#3B82F6');
                 
+                // Actualizar la interfaz visual agregando el usuario a la lista
+                TareasProyectos.actualizarListaUsuarios(type, {
+                    id: userId,
+                    nombre: userName,
+                    avatar_url: result.user_data ? result.user_data.avatar_url : null
+                });
+                
                 // Mostrar mensaje de éxito
                 console.log(`✅ Usuario ${userName} agregado como ${tipoTexto} a la tarea ${TareasProyectos.currentTaskId} - GUARDADO EN BASE DE DATOS`);
                 
@@ -2701,6 +2708,46 @@ Object.assign(TareasProyectos, {
         
         // Insertar al principio del feed para que aparezca arriba
         activityFeed.insertBefore(systemComment, activityFeed.firstChild);
+    },
+
+    // Función para actualizar la lista visual de usuarios (participantes/observadores)
+    actualizarListaUsuarios(type, usuario) {
+        console.log(`🔄 === INICIANDO actualizarListaUsuarios ===`);
+        console.log(`🔄 Type: ${type}`);
+        console.log(`🔄 Usuario:`, usuario);
+        
+        const containerId = `task-detail-${type}-container`;
+        const container = document.getElementById(containerId);
+        
+        if (!container) {
+            console.error(`❌ No se encontró el contenedor: ${containerId}`);
+            return;
+        }
+
+        // Crear el HTML del nuevo usuario
+        const avatarHtml = usuario.avatar_url ? 
+            `<img src="${usuario.avatar_url}" alt="${usuario.nombre}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.1);">` :
+            `<div style="width: 32px; height: 32px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(usuario.nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem; border: 2px solid rgba(255, 255, 255, 0.1);">${TareasProyectos.getInitials(usuario.nombre)}</div>`;
+
+        const nuevoUsuarioHtml = `
+            <div class="member-item" data-user-id="${usuario.id}">
+                <div class="member-avatar-container">
+                    ${avatarHtml}
+                </div>
+                <span class="member-name">${usuario.nombre}</span>
+            </div>
+        `;
+
+        // Buscar si ya existe un mensaje de "Sin usuarios"
+        const sinUsuariosMsg = container.querySelector('.no-members-message');
+        if (sinUsuariosMsg) {
+            sinUsuariosMsg.remove();
+        }
+
+        // Agregar el nuevo usuario al contenedor
+        container.insertAdjacentHTML('beforeend', nuevoUsuarioHtml);
+        
+        console.log(`✅ Usuario ${usuario.nombre} agregado visualmente a ${type}`);
     },
 
     // Función para configurar el responsable
