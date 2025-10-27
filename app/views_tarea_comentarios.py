@@ -174,25 +174,40 @@ def api_agregar_comentario_tarea(request, tarea_id):
                     usuario_remitente=request.user
                 )
         
-        # Notificar a otros participantes (excepto al autor del comentario)
+        # Lógica de notificaciones específica
         usuarios_a_notificar = set()
-        if tarea.creado_por != request.user:
-            usuarios_a_notificar.add(tarea.creado_por)
-        if tarea.asignado_a and tarea.asignado_a != request.user:
-            usuarios_a_notificar.add(tarea.asignado_a)
-        for participante in tarea.participantes.all():
-            if participante != request.user:
-                usuarios_a_notificar.add(participante)
-        for observador in tarea.observadores.all():
-            if observador != request.user:
-                usuarios_a_notificar.add(observador)
         
+        # Si el responsable (asignado_a) es quien comenta
+        if request.user == tarea.asignado_a:
+            # Notificar a todos los colaboradores (creador, participantes, observadores)
+            if tarea.creado_por != request.user:
+                usuarios_a_notificar.add(tarea.creado_por)
+            for participante in tarea.participantes.all():
+                if participante != request.user:
+                    usuarios_a_notificar.add(participante)
+            for observador in tarea.observadores.all():
+                if observador != request.user:
+                    usuarios_a_notificar.add(observador)
+        else:
+            # Si cualquier otro comenta, notificar solo al responsable
+            if tarea.asignado_a and tarea.asignado_a != request.user:
+                usuarios_a_notificar.add(tarea.asignado_a)
+        
+        # Enviar notificaciones
         for usuario in usuarios_a_notificar:
+            # Personalizar mensaje según quién comenta
+            if request.user == tarea.asignado_a:
+                titulo = f'El responsable comentó en {tarea.titulo}'
+                mensaje = f'{request.user.get_full_name() or request.user.username} (responsable) agregó un comentario'
+            else:
+                titulo = f'Nuevo comentario en {tarea.titulo}'
+                mensaje = f'{request.user.get_full_name() or request.user.username} agregó un comentario'
+            
             crear_notificacion(
                 usuario_destinatario=usuario,
                 tipo='tarea_comentario',
-                titulo=f'Nuevo comentario en {tarea.titulo}',
-                mensaje=f'{request.user.get_full_name() or request.user.username} agregó un comentario',
+                titulo=titulo,
+                mensaje=mensaje,
                 tarea_id=tarea.id,
                 tarea_titulo=tarea.titulo,
                 usuario_remitente=request.user
