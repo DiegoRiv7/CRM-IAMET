@@ -6,18 +6,19 @@ from django.contrib.auth.models import User
 from .models import Tarea, TareaComentario, TareaArchivo, Notificacion
 
 
-def crear_notificacion(usuario, tipo, titulo, mensaje, url=None, creado_por=None):
+def crear_notificacion(usuario_destinatario, tipo, titulo, mensaje, tarea_id=None, tarea_titulo=None, usuario_remitente=None):
     """
     Función de utilidad para crear notificaciones
     """
     try:
         notificacion = Notificacion.objects.create(
-            usuario=usuario,
+            usuario_destinatario=usuario_destinatario,
+            usuario_remitente=usuario_remitente,
             tipo=tipo,
             titulo=titulo,
             mensaje=mensaje,
-            url=url,
-            creado_por=creado_por
+            tarea_id=tarea_id,
+            tarea_titulo=tarea_titulo
         )
         return notificacion
     except Exception as e:
@@ -29,23 +30,20 @@ def api_comentarios_tarea(request, tarea_id):
     """
     API para obtener comentarios de una tarea
     """
-    import logging
-    logger = logging.getLogger(__name__)
-    
     try:
-        logger.info(f"=== API COMENTARIOS TAREA ===")
-        logger.info(f"Tarea ID: {tarea_id}")
-        logger.info(f"Usuario: {request.user}")
-        logger.info(f"Método: {request.method}")
+        print(f"🔍 === API COMENTARIOS TAREA ===")
+        print(f"🔍 Tarea ID: {tarea_id}")
+        print(f"🔍 Usuario: {request.user}")
+        print(f"🔍 Método: {request.method}")
         
         tarea = get_object_or_404(Tarea, id=tarea_id)
-        logger.info(f"Tarea encontrada: {tarea.titulo}")
+        print(f"🔍 Tarea encontrada: {tarea.titulo}")
         
         # Verificar permisos - el usuario debe ser participante, creador o asignado
-        logger.info(f"Verificando permisos para usuario: {request.user}")
-        logger.info(f"Creado por: {tarea.creado_por}")
-        logger.info(f"Asignado a: {tarea.asignado_a}")
-        logger.info(f"Es superuser: {request.user.is_superuser}")
+        print(f"🔍 Verificando permisos para usuario: {request.user}")
+        print(f"🔍 Creado por: {tarea.creado_por}")
+        print(f"🔍 Asignado a: {tarea.asignado_a}")
+        print(f"🔍 Es superuser: {request.user.is_superuser}")
         
         user_can_view = (
             request.user == tarea.creado_por or
@@ -55,16 +53,16 @@ def api_comentarios_tarea(request, tarea_id):
             request.user.is_superuser
         )
         
-        logger.info(f"Puede ver tarea: {user_can_view}")
+        print(f"🔍 Puede ver tarea: {user_can_view}")
         
         if not user_can_view:
-            logger.warning(f"Usuario sin permisos: {request.user}")
+            print(f"❌ Usuario sin permisos: {request.user}")
             return JsonResponse({'error': 'Sin permisos para ver esta tarea'}, status=403)
         
         # Obtener comentarios ordenados por fecha
-        logger.info(f"Obteniendo comentarios para tarea {tarea_id}")
+        print(f"🔍 Obteniendo comentarios para tarea {tarea_id}")
         comentarios = TareaComentario.objects.filter(tarea=tarea).order_by('fecha_creacion')
-        logger.info(f"Comentarios encontrados: {comentarios.count()}")
+        print(f"🔍 Comentarios encontrados: {comentarios.count()}")
         
         comentarios_data = []
         for comentario in comentarios:
@@ -96,16 +94,16 @@ def api_comentarios_tarea(request, tarea_id):
                 ]
             })
         
-        logger.info(f"Devolviendo {len(comentarios_data)} comentarios")
+        print(f"🔍 Devolviendo {len(comentarios_data)} comentarios")
         return JsonResponse({
             'success': True,
             'comentarios': comentarios_data
         })
         
     except Exception as e:
-        logger.error(f"ERROR en api_comentarios_tarea: {str(e)}")
+        print(f"❌ ERROR en api_comentarios_tarea: {str(e)}")
         import traceback
-        logger.error(f"Traceback: {traceback.format_exc()}")
+        print(f"❌ Traceback: {traceback.format_exc()}")
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -167,12 +165,13 @@ def api_agregar_comentario_tarea(request, tarea_id):
         for usuario_mencionado in usuarios_mencionados:
             if usuario_mencionado != request.user:  # No notificar al autor
                 crear_notificacion(
-                    usuario=usuario_mencionado,
+                    usuario_destinatario=usuario_mencionado,
                     tipo='tarea_mencion',
                     titulo=f'Te mencionaron en {tarea.titulo}',
                     mensaje=f'{request.user.get_full_name() or request.user.username} te mencionó en un comentario',
-                    url=f'/app/tareas-proyectos/?tarea={tarea.id}',
-                    creado_por=request.user
+                    tarea_id=tarea.id,
+                    tarea_titulo=tarea.titulo,
+                    usuario_remitente=request.user
                 )
         
         # Notificar a otros participantes (excepto al autor del comentario)
@@ -190,12 +189,13 @@ def api_agregar_comentario_tarea(request, tarea_id):
         
         for usuario in usuarios_a_notificar:
             crear_notificacion(
-                usuario=usuario,
+                usuario_destinatario=usuario,
                 tipo='tarea_comentario',
                 titulo=f'Nuevo comentario en {tarea.titulo}',
                 mensaje=f'{request.user.get_full_name() or request.user.username} agregó un comentario',
-                url=f'/app/tareas-proyectos/?tarea={tarea.id}',
-                creado_por=request.user
+                tarea_id=tarea.id,
+                tarea_titulo=tarea.titulo,
+                usuario_remitente=request.user
             )
         
         # Obtener datos del usuario para la respuesta
