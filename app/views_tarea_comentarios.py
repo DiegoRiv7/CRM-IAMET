@@ -29,10 +29,24 @@ def api_comentarios_tarea(request, tarea_id):
     """
     API para obtener comentarios de una tarea
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
+        logger.info(f"=== API COMENTARIOS TAREA ===")
+        logger.info(f"Tarea ID: {tarea_id}")
+        logger.info(f"Usuario: {request.user}")
+        logger.info(f"Método: {request.method}")
+        
         tarea = get_object_or_404(Tarea, id=tarea_id)
+        logger.info(f"Tarea encontrada: {tarea.titulo}")
         
         # Verificar permisos - el usuario debe ser participante, creador o asignado
+        logger.info(f"Verificando permisos para usuario: {request.user}")
+        logger.info(f"Creado por: {tarea.creado_por}")
+        logger.info(f"Asignado a: {tarea.asignado_a}")
+        logger.info(f"Es superuser: {request.user.is_superuser}")
+        
         user_can_view = (
             request.user == tarea.creado_por or
             request.user == tarea.asignado_a or
@@ -41,11 +55,16 @@ def api_comentarios_tarea(request, tarea_id):
             request.user.is_superuser
         )
         
+        logger.info(f"Puede ver tarea: {user_can_view}")
+        
         if not user_can_view:
+            logger.warning(f"Usuario sin permisos: {request.user}")
             return JsonResponse({'error': 'Sin permisos para ver esta tarea'}, status=403)
         
         # Obtener comentarios ordenados por fecha
+        logger.info(f"Obteniendo comentarios para tarea {tarea_id}")
         comentarios = TareaComentario.objects.filter(tarea=tarea).order_by('fecha_creacion')
+        logger.info(f"Comentarios encontrados: {comentarios.count()}")
         
         comentarios_data = []
         for comentario in comentarios:
@@ -77,12 +96,16 @@ def api_comentarios_tarea(request, tarea_id):
                 ]
             })
         
+        logger.info(f"Devolviendo {len(comentarios_data)} comentarios")
         return JsonResponse({
             'success': True,
             'comentarios': comentarios_data
         })
         
     except Exception as e:
+        logger.error(f"ERROR en api_comentarios_tarea: {str(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return JsonResponse({'error': str(e)}, status=500)
 
 
