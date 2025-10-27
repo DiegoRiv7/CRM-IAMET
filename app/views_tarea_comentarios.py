@@ -59,9 +59,9 @@ def api_comentarios_tarea(request, tarea_id):
             print(f"❌ Usuario sin permisos: {request.user}")
             return JsonResponse({'error': 'Sin permisos para ver esta tarea'}, status=403)
         
-        # Obtener comentarios ordenados por fecha
+        # Obtener comentarios ordenados por fecha (más nuevos primero)
         print(f"🔍 Obteniendo comentarios para tarea {tarea_id}")
-        comentarios = TareaComentario.objects.filter(tarea=tarea).order_by('fecha_creacion')
+        comentarios = TareaComentario.objects.filter(tarea=tarea).order_by('-fecha_creacion')
         print(f"🔍 Comentarios encontrados: {comentarios.count()}")
         
         comentarios_data = []
