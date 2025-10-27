@@ -2023,12 +2023,12 @@ function createTaskRow(tarea) {
     const proyectoStyle = proyectoNombre === 'Sin proyecto' ? 'color: var(--apple-label-secondary); font-style: italic;' : '';
     
     return `
-        <div class="table-row" onclick="console.log('Clicked task:', ${tarea.id}); TareasProyectos.verDetallesTarea(${tarea.id})">
+        <div class="table-row" data-tarea-id="${tarea.id}" onclick="console.log('Clicked task:', ${tarea.id}); TareasProyectos.verDetallesTarea(${tarea.id})">
             <div class="table-cell name-cell">
                 ${tarea.titulo}
                 ${tarea.prioridad === 'alta' ? '<span style="color: #FF9500; margin-left: 0.5rem;">●</span>' : ''}
             </div>
-            <div class="table-cell activity-cell">${getEstadoBadgeHTML(tarea.estado)}</div>
+            <div class="table-cell estado-cell">${getEstadoBadgeHTML(tarea.estado)}</div>
             <div class="table-cell activity-cell">
                 ${tarea.fecha_limite ? formatearFechaSimple(tarea.fecha_limite) : 'Sin fecha límite'}
             </div>
@@ -2208,6 +2208,9 @@ Object.assign(TareasProyectos, {
             await this.cargarComentarios(tareaId);
             this.configurarFormularioComentarios();
             
+            // Inicializar estado del cronómetro si la tarea ya está corriendo
+            this.initializeTimerState(tarea);
+            
             // Mostrar el modal
             console.log('Buscando modal con ID: modal-detalle-tarea');
             const modal = document.getElementById('modal-detalle-tarea');
@@ -2233,6 +2236,18 @@ Object.assign(TareasProyectos, {
             modal.classList.remove('active');
             document.body.style.overflow = '';
         }
+        
+        // Limpiar cronómetro si está corriendo pero no detener la tarea en el servidor
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+        
+        // Ocultar display del cronómetro
+        this.hideTimerDisplay();
+        
+        // Limpiar ID de tarea actual
+        this.currentTaskId = null;
     },
 
     getPrioridadBadgeHTML(prioridad) {
@@ -2876,6 +2891,65 @@ Object.assign(TareasProyectos, {
                 estadoCelda.innerHTML = this.getEstadoBadgeHTML(nuevoEstado);
             }
         });
+    },
+
+    // Función para inicializar el estado del cronómetro al abrir una tarea
+    initializeTimerState(tarea) {
+        console.log('🔄 Inicializando estado del cronómetro:', tarea);
+        
+        const btnStart = document.getElementById('btn-start-task');
+        const btnPause = document.getElementById('btn-pause-task');
+        
+        if (!btnStart || !btnPause) {
+            console.warn('⚠️ Botones de cronómetro no encontrados');
+            return;
+        }
+        
+        // Verificar si la tarea está corriendo actualmente
+        if (tarea.trabajando_actualmente) {
+            console.log('🟢 Tarea está corriendo - configurando interfaz');
+            
+            // Configurar botones
+            btnStart.style.display = 'none';
+            btnPause.style.display = 'flex';
+            
+            // Configurar estado interno
+            this.isTaskRunning = true;
+            
+            // Si tiene fecha de inicio de sesión, calcular tiempo transcurrido
+            if (tarea.fecha_inicio_sesion) {
+                const inicioSesion = new Date(tarea.fecha_inicio_sesion);
+                const ahora = new Date();
+                const tiempoTranscurrido = Math.floor((ahora - inicioSesion) / 1000);
+                
+                // Ajustar startTime para que el cronómetro muestre el tiempo correcto
+                this.startTime = Date.now() - (tiempoTranscurrido * 1000);
+                
+                console.log(`⏱️ Sesión iniciada hace ${tiempoTranscurrido} segundos`);
+            } else {
+                // Si no hay fecha de inicio, usar ahora como referencia
+                this.startTime = Date.now();
+            }
+            
+            // Mostrar y iniciar el cronómetro
+            this.showTimerDisplay();
+            this.timerInterval = setInterval(() => {
+                this.updateTimerDisplay();
+            }, 1000);
+            
+            console.log('✅ Cronómetro inicializado y corriendo');
+            
+        } else {
+            console.log('🔴 Tarea no está corriendo - configurando interfaz de pausa');
+            
+            // Configurar botones para estado pausado
+            btnStart.style.display = 'flex';
+            btnPause.style.display = 'none';
+            
+            // Limpiar estado interno
+            this.isTaskRunning = false;
+            this.stopTimer();
+        }
     },
 
     // Función para añadir comentarios del sistema

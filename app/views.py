@@ -690,6 +690,15 @@ def api_tareas(request):
             
             tareas_data = []
             for tarea in tareas:
+                # Formatear tiempo trabajado
+                tiempo_total_str = "00:00:00"
+                if hasattr(tarea, 'tiempo_trabajado') and tarea.tiempo_trabajado:
+                    total_seconds = int(tarea.tiempo_trabajado.total_seconds())
+                    hours = total_seconds // 3600
+                    minutes = (total_seconds % 3600) // 60
+                    seconds = total_seconds % 60
+                    tiempo_total_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                
                 tareas_data.append({
                     'id': tarea.id,
                     'titulo': tarea.titulo,
@@ -702,8 +711,11 @@ def api_tareas(request):
                     'creado_por': tarea.creado_por.get_full_name() or tarea.creado_por.username,
                     'responsable': tarea.asignado_a.get_full_name() or tarea.asignado_a.username if tarea.asignado_a else None,
                     'proyecto_nombre': tarea.proyecto.nombre if tarea.proyecto else 'Sin proyecto',
+                    # Datos del cronómetro
+                    'trabajando_actualmente': getattr(tarea, 'trabajando_actualmente', False),
                     'pausado': getattr(tarea, 'pausado', False),
-                    'tiempo_trabajado': str(tarea.tiempo_trabajado) if hasattr(tarea, 'tiempo_trabajado') and tarea.tiempo_trabajado else None
+                    'tiempo_trabajado': tiempo_total_str,
+                    'fecha_inicio_sesion': tarea.fecha_inicio_sesion.isoformat() if hasattr(tarea, 'fecha_inicio_sesion') and tarea.fecha_inicio_sesion else None,
                 })
             
             return JsonResponse({
@@ -9852,6 +9864,15 @@ def api_tarea_detalle(request, tarea_id):
                 
                 return user_data
             
+            # Formatear tiempo trabajado
+            tiempo_total_str = "00:00:00"
+            if hasattr(tarea, 'tiempo_trabajado') and tarea.tiempo_trabajado:
+                total_seconds = int(tarea.tiempo_trabajado.total_seconds())
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                seconds = total_seconds % 60
+                tiempo_total_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
             # Preparar datos de la tarea
             tarea_data = {
                 'id': tarea.id,
@@ -9870,6 +9891,11 @@ def api_tarea_detalle(request, tarea_id):
                 'fecha_completada': tarea.fecha_completada.isoformat() if tarea.fecha_completada else None,
                 'participantes': [get_user_data(p) for p in tarea.participantes.all()] if hasattr(tarea, 'participantes') else [],
                 'observadores': [get_user_data(o) for o in tarea.observadores.all()] if hasattr(tarea, 'observadores') else [],
+                # Datos del cronómetro
+                'trabajando_actualmente': getattr(tarea, 'trabajando_actualmente', False),
+                'pausado': getattr(tarea, 'pausado', False),
+                'tiempo_trabajado': tiempo_total_str,
+                'fecha_inicio_sesion': tarea.fecha_inicio_sesion.isoformat() if hasattr(tarea, 'fecha_inicio_sesion') and tarea.fecha_inicio_sesion else None,
             }
             
             return JsonResponse(tarea_data)
