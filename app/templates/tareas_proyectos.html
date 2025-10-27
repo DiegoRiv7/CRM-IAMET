@@ -2042,6 +2042,7 @@ function createTaskRow(tarea) {
 function getEstadoBadgeHTML(estado) {
     const estadosConfig = {
         'pendiente': { label: 'Pendiente', color: '#8E8E93', bgColor: 'rgba(142, 142, 147, 0.2)', icon: '○' },
+        'iniciada': { label: 'Iniciada', color: '#10B981', bgColor: 'rgba(16, 185, 129, 0.2)', icon: '⏱️' },
         'en_progreso': { label: 'En Progreso', color: '#007AFF', bgColor: 'rgba(0, 122, 255, 0.2)', icon: '◐' },
         'completada': { label: 'Completada', color: '#34C759', bgColor: 'rgba(52, 199, 89, 0.2)', icon: '●' },
         'cancelada': { label: 'Cancelada', color: '#FF3B30', bgColor: 'rgba(255, 59, 48, 0.2)', icon: '×' }
@@ -2382,8 +2383,10 @@ Object.assign(TareasProyectos, {
     getEstadoBadgeHTML(estado) {
         const estadoConfig = {
             'pendiente': { bg: 'rgba(239, 68, 68, 0.9)', color: '#7F1D1D', text: 'Pendiente' },
+            'iniciada': { bg: 'rgba(16, 185, 129, 0.2)', color: '#10B981', text: 'Iniciada ⏱️' },
             'en_progreso': { bg: 'rgba(59, 130, 246, 0.2)', color: '#93C5FD', text: 'En Progreso' },
-            'completado': { bg: 'rgba(16, 185, 129, 0.9)', color: '#064E3B', text: 'Completado' }
+            'completada': { bg: 'rgba(16, 185, 129, 0.9)', color: '#064E3B', text: 'Completada' },
+            'cancelada': { bg: 'rgba(239, 68, 68, 0.9)', color: '#7F1D1D', text: 'Cancelada' }
         };
         
         const config = estadoConfig[estado] || estadoConfig['pendiente'];
@@ -2712,28 +2715,167 @@ Object.assign(TareasProyectos, {
         console.log('🟦 === FIN addUserToTask (tareas_proyectos.html) ===');
     },
 
-    // Variable para controlar el estado del cronómetro
+    // Variables para controlar el cronómetro
     isTaskRunning: false,
+    timerInterval: null,
+    startTime: null,
+    elapsedTime: 0,
 
     // Función para alternar entre iniciar/pausar tarea
-    toggleTaskRunning() {
-        TareasProyectos.isTaskRunning = !TareasProyectos.isTaskRunning;
-        const btnStart = document.getElementById('btn-start-task');
-        const btnPause = document.getElementById('btn-pause-task');
-        
-        if (TareasProyectos.isTaskRunning) {
-            btnStart.style.display = 'none';
-            btnPause.style.display = 'flex';
-            // Aquí podrías añadir lógica para enviar al servidor que se inició la tarea
-            console.log('Tarea INICIADA - iniciando cronómetro');
-            TareasProyectos.addSystemComment('Tarea INICIADA. El tiempo se está registrando.', '#16a34a');
-        } else {
-            btnStart.style.display = 'flex';
-            btnPause.style.display = 'none';
-            // Aquí podrías añadir lógica para enviar al servidor que se pausó la tarea
-            console.log('Tarea PAUSADA - pausando cronómetro');
-            TareasProyectos.addSystemComment('Tarea PAUSADA. El cronómetro se ha detenido.', '#dc2626');
+    async toggleTaskRunning() {
+        if (!this.currentTaskId) {
+            alert('No hay tarea seleccionada');
+            return;
         }
+
+        try {
+            const response = await fetch(`/app/api/tarea/${this.currentTaskId}/toggle-timer/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                },
+                body: JSON.stringify({ action: 'toggle' })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.success) {
+                const btnStart = document.getElementById('btn-start-task');
+                const btnPause = document.getElementById('btn-pause-task');
+                
+                this.isTaskRunning = data.tarea.trabajando_actualmente;
+                
+                if (this.isTaskRunning) {
+                    // TAREA INICIADA
+                    btnStart.style.display = 'none';
+                    btnPause.style.display = 'flex';
+                    this.startTimer();
+                    this.addSystemComment('Tarea INICIADA. El cronómetro está en marcha.', '#16a34a');
+                    console.log('🟢 Tarea iniciada - cronómetro activado');
+                } else {
+                    // TAREA PAUSADA
+                    btnStart.style.display = 'flex';
+                    btnPause.style.display = 'none';
+                    this.stopTimer();
+                    this.addSystemComment('Tarea PAUSADA. El cronómetro se ha detenido.', '#dc2626');
+                    console.log('🔴 Tarea pausada - cronómetro detenido');
+                }
+                
+                // Actualizar estado de la tarea en la interfaz
+                this.updateTaskStatus(data.tarea.estado);
+                
+                // Mostrar mensaje de éxito
+                console.log('✅', data.message);
+                
+            } else {
+                alert('Error: ' + data.error);
+            }
+            
+        } catch (error) {
+            console.error('Error al cambiar estado de tarea:', error);
+            alert('Error al cambiar estado de la tarea: ' + error.message);
+        }
+    },
+
+    // Función para iniciar el cronómetro visual
+    startTimer() {
+        this.startTime = Date.now();
+        this.showTimerDisplay();
+        
+        this.timerInterval = setInterval(() => {
+            this.updateTimerDisplay();
+        }, 1000);
+    },
+
+    // Función para detener el cronómetro
+    stopTimer() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+        this.hideTimerDisplay();
+    },
+
+    // Función para mostrar el cronómetro
+    showTimerDisplay() {
+        const taskDetails = document.querySelector('.task-details-main');
+        if (!taskDetails) return;
+
+        // Verificar si ya existe el cronómetro
+        let timerDisplay = document.getElementById('task-timer-display');
+        if (!timerDisplay) {
+            timerDisplay = document.createElement('div');
+            timerDisplay.id = 'task-timer-display';
+            timerDisplay.style.cssText = `
+                background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.3));
+                border: 1px solid rgba(16, 185, 129, 0.4);
+                border-radius: 0.75rem;
+                padding: 1rem;
+                margin-top: 1rem;
+                text-align: center;
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+            `;
+            timerDisplay.innerHTML = `
+                <div style="color: #10B981; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.5rem;">
+                    ⏱️ CRONÓMETRO ACTIVO
+                </div>
+                <div id="timer-display" style="color: #E0E7FF; font-size: 1.5rem; font-weight: 700; font-family: 'Monaco', 'Menlo', monospace;">
+                    00:00:00
+                </div>
+                <div style="color: #9CA3AF; font-size: 0.75rem; margin-top: 0.5rem;">
+                    Tiempo de la sesión actual
+                </div>
+            `;
+            taskDetails.appendChild(timerDisplay);
+        }
+        timerDisplay.style.display = 'block';
+    },
+
+    // Función para ocultar el cronómetro
+    hideTimerDisplay() {
+        const timerDisplay = document.getElementById('task-timer-display');
+        if (timerDisplay) {
+            timerDisplay.style.display = 'none';
+        }
+    },
+
+    // Función para actualizar el cronómetro visual
+    updateTimerDisplay() {
+        const timerElement = document.getElementById('timer-display');
+        if (!timerElement || !this.startTime) return;
+
+        const currentTime = Date.now();
+        const elapsed = Math.floor((currentTime - this.startTime) / 1000);
+        
+        const hours = Math.floor(elapsed / 3600);
+        const minutes = Math.floor((elapsed % 3600) / 60);
+        const seconds = elapsed % 60;
+        
+        timerElement.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    },
+
+    // Función para actualizar el estado de la tarea en la interfaz
+    updateTaskStatus(nuevoEstado) {
+        // Actualizar el badge de estado en el modal
+        const estadoElement = document.getElementById('task-detail-estado');
+        if (estadoElement) {
+            estadoElement.innerHTML = this.getEstadoBadgeHTML(nuevoEstado);
+        }
+        
+        // También puedes actualizar la tabla de tareas si está visible
+        const filasTareas = document.querySelectorAll(`[data-tarea-id="${this.currentTaskId}"]`);
+        filasTareas.forEach(fila => {
+            const estadoCelda = fila.querySelector('.estado-cell');
+            if (estadoCelda) {
+                estadoCelda.innerHTML = this.getEstadoBadgeHTML(nuevoEstado);
+            }
+        });
     },
 
     // Función para añadir comentarios del sistema

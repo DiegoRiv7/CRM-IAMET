@@ -10131,3 +10131,84 @@ def api_notificaciones(request):
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 
+@login_required
+def api_toggle_task_timer(request, tarea_id):
+    """
+    API para iniciar/pausar el cronómetro de una tarea
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        # Importaciones necesarias
+        from datetime import datetime, timezone, timedelta
+        from .models import Tarea
+        import json
+        
+        # Obtener la tarea
+        tarea = get_object_or_404(Tarea, id=tarea_id)
+        
+        # Verificar permisos - solo el asignado puede iniciar/pausar
+        if request.user != tarea.asignado_a and not request.user.is_superuser:
+            return JsonResponse({'error': 'Solo el responsable puede iniciar/pausar esta tarea'}, status=403)
+        
+        # Obtener acción del request
+        data = json.loads(request.body) if request.body else {}
+        action = data.get('action', 'toggle')  # 'start', 'pause', 'toggle'
+        
+        ahora = datetime.now(timezone.utc)
+        
+        if not tarea.trabajando_actualmente:
+            # INICIAR TAREA
+            tarea.trabajando_actualmente = True
+            tarea.fecha_inicio_sesion = ahora
+            tarea.estado = 'iniciada'
+            tarea.pausado = False
+            
+            mensaje = f"Tarea iniciada. Cronómetro en marcha."
+            
+        else:
+            # PAUSAR TAREA
+            if tarea.fecha_inicio_sesion:
+                # Calcular tiempo trabajado en esta sesión
+                tiempo_sesion = ahora - tarea.fecha_inicio_sesion
+                # Sumar al tiempo total trabajado
+                if tarea.tiempo_trabajado:
+                    tarea.tiempo_trabajado += tiempo_sesion
+                else:
+                    tarea.tiempo_trabajado = tiempo_sesion
+            
+            tarea.trabajando_actualmente = False
+            tarea.fecha_inicio_sesion = None
+            tarea.estado = 'en_progreso'
+            tarea.pausado = True
+            
+            mensaje = f"Tarea pausada. Tiempo registrado."
+        
+        tarea.save()
+        
+        # Formatear tiempo trabajado para respuesta
+        tiempo_total_str = "00:00:00"
+        if tarea.tiempo_trabajado:
+            total_seconds = int(tarea.tiempo_trabajado.total_seconds())
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            seconds = total_seconds % 60
+            tiempo_total_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        
+        return JsonResponse({
+            'success': True,
+            'message': mensaje,
+            'tarea': {
+                'id': tarea.id,
+                'trabajando_actualmente': tarea.trabajando_actualmente,
+                'estado': tarea.estado,
+                'tiempo_trabajado': tiempo_total_str,
+                'fecha_inicio_sesion': tarea.fecha_inicio_sesion.isoformat() if tarea.fecha_inicio_sesion else None
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+

@@ -1907,6 +1907,7 @@ class Tarea(models.Model):
     
     ESTADO_CHOICES = [
         ('pendiente', 'Pendiente'),
+        ('iniciada', 'Iniciada'),
         ('en_progreso', 'En Progreso'),
         ('completada', 'Completada'),
         ('cancelada', 'Cancelada'),
@@ -1989,6 +1990,11 @@ class Tarea(models.Model):
     trabajando_actualmente = models.BooleanField(
         default=False,
         verbose_name="Trabajando Actualmente"
+    )
+    fecha_inicio_sesion = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Inicio de Sesión de Trabajo"
     )
     
     class Meta:
