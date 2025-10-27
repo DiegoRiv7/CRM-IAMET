@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('app', '0007_add_tipo_negociacion_to_todoitem'),
+        ('app', '0032_alter_todoitem_mes_cierre'),
     ]
 
     operations = [

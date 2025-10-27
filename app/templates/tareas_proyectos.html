@@ -1564,17 +1564,56 @@
                     padding: 1rem;
                 ">
                     <form id="comment-form" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                        <textarea id="comment-input" rows="3" style="
-                            width: 100%; 
-                            background: transparent; 
-                            color: #E0E7FF; 
-                            resize: none; 
-                            border: none;
-                            outline: none;
-                            font-family: inherit;
-                        " placeholder="Escribe tu comentario o actualización..."></textarea>
-                        <div style="display: flex; justify-content: flex-end;">
-                            <button type="submit" style="
+                        <div style="position: relative;">
+                            <textarea id="comment-input" rows="3" style="
+                                width: 100%; 
+                                background: transparent; 
+                                color: #E0E7FF; 
+                                resize: vertical; 
+                                border: none;
+                                outline: none;
+                                font-family: inherit;
+                                line-height: 1.5;
+                                min-height: 60px;
+                                max-height: 200px;
+                            " placeholder="Escribe tu comentario o actualización...
+
+Puedes usar @username para mencionar a otros usuarios"></textarea>
+                            <div style="
+                                position: absolute;
+                                bottom: 0.5rem;
+                                right: 0.5rem;
+                                display: flex;
+                                align-items: center;
+                                gap: 0.5rem;
+                                font-size: 0.75rem;
+                                color: #9CA3AF;
+                            ">
+                                <span id="char-counter">0</span>
+                                <span>caracteres</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <button type="button" id="btn-mention" style="
+                                    padding: 0.25rem 0.5rem;
+                                    font-size: 0.75rem;
+                                    color: #9CA3AF;
+                                    background: none;
+                                    border: 1px solid rgba(156, 163, 175, 0.3);
+                                    border-radius: 0.25rem;
+                                    cursor: pointer;
+                                    transition: all 0.2s;
+                                " onmouseover="this.style.color='#E0E7FF'; this.style.borderColor='rgba(224, 231, 255, 0.5)'" 
+                                   onmouseout="this.style.color='#9CA3AF'; this.style.borderColor='rgba(156, 163, 175, 0.3)'"
+                                   title="Mencionar usuario">
+                                    @ Mencionar
+                                </button>
+                                <div style="color: #9CA3AF; font-size: 0.75rem;">
+                                    Escribe @ seguido del nombre de usuario
+                                </div>
+                            </div>
+                            <button type="submit" id="btn-enviar-comentario" style="
                                 padding: 0.5rem 1rem; 
                                 font-size: 0.875rem; 
                                 font-weight: 600; 
@@ -1583,8 +1622,15 @@
                                 background-color: #3B82F6;
                                 border: none;
                                 cursor: pointer;
-                                transition: background-color 0.2s;
-                            " onmouseover="this.style.backgroundColor='#2563EB'" onmouseout="this.style.backgroundColor='#3B82F6'">
+                                transition: all 0.2s;
+                                display: flex;
+                                align-items: center;
+                                gap: 0.5rem;
+                            " onmouseover="this.style.backgroundColor='#2563EB'; this.style.boxShadow='0 0 10px rgba(59, 130, 246, 0.4)'" 
+                               onmouseout="this.style.backgroundColor='#3B82F6'; this.style.boxShadow='none'">
+                                <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg>
                                 Enviar
                             </button>
                         </div>
@@ -2156,6 +2202,10 @@ Object.assign(TareasProyectos, {
             if (prioridadElement) {
                 prioridadElement.innerHTML = TareasProyectos.getPrioridadBadgeGlass(tarea.prioridad);
             }
+            
+            // Cargar comentarios y configurar formulario
+            await this.cargarComentarios(tareaId);
+            this.configurarFormularioComentarios();
             
             // Mostrar el modal
             console.log('Buscando modal con ID: modal-detalle-tarea');
@@ -2845,6 +2895,438 @@ Object.assign(TareasProyectos, {
                     </svg>
                 </button>
             `;
+        }
+    },
+
+    // ======= FUNCIONES DE COMENTARIOS =======
+    
+    async cargarComentarios(tareaId) {
+        try {
+            const response = await fetch(`/app/api/tarea/${tareaId}/comentarios/`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            if (data.success) {
+                this.mostrarComentarios(data.comentarios);
+            } else {
+                console.error('Error al cargar comentarios:', data.error);
+            }
+        } catch (error) {
+            console.error('Error al cargar comentarios:', error);
+        }
+    },
+
+    mostrarComentarios(comentarios) {
+        const activityFeed = document.getElementById('activity-feed');
+        if (!activityFeed) return;
+
+        activityFeed.innerHTML = '';
+
+        if (comentarios.length === 0) {
+            activityFeed.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--apple-label-secondary);">
+                    No hay comentarios aún. ¡Sé el primero en comentar!
+                </div>
+            `;
+            return;
+        }
+
+        comentarios.forEach(comentario => {
+            const comentarioElement = this.crearElementoComentario(comentario);
+            activityFeed.appendChild(comentarioElement);
+        });
+    },
+
+    crearElementoComentario(comentario) {
+        const div = document.createElement('div');
+        div.setAttribute('data-comentario-id', comentario.id);
+        div.style.cssText = `
+            background-color: rgba(26, 31, 39, 0.6);
+            border: 1px solid rgba(45, 55, 72, 0.4);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        `;
+
+        const fecha = new Date(comentario.fecha_creacion);
+        const fechaFormateada = fecha.toLocaleString('es-ES', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        const editadoTexto = comentario.editado ? 
+            `<span style="color: #9CA3AF; font-size: 0.75rem; margin-left: 0.5rem;">(editado)</span>` : '';
+
+        div.innerHTML = `
+            <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                <div style="
+                    width: 32px; 
+                    height: 32px; 
+                    border-radius: 50%; 
+                    background: ${this.getAvatarColor(comentario.usuario.nombre)}; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    color: white; 
+                    font-weight: 600; 
+                    font-size: 0.875rem;
+                    flex-shrink: 0;
+                " title="${comentario.usuario.nombre}">
+                    ${this.getInitials(comentario.usuario.nombre)}
+                </div>
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <span style="font-weight: 600; color: #E0E7FF;">${comentario.usuario.nombre}</span>
+                        <span style="color: #9CA3AF; font-size: 0.875rem;">${fechaFormateada}</span>
+                        ${editadoTexto}
+                    </div>
+                    <div style="color: rgba(224, 231, 255, 0.9); line-height: 1.5; margin-bottom: 0.5rem;" 
+                         id="comentario-contenido-${comentario.id}">
+                        ${comentario.contenido_con_menciones || comentario.contenido}
+                    </div>
+                    ${comentario.archivos && comentario.archivos.length > 0 ? this.mostrarArchivos(comentario.archivos) : ''}
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+                        <button onclick="TareasProyectos.editarComentario(${comentario.id})" 
+                                style="
+                                    padding: 0.25rem 0.5rem; 
+                                    font-size: 0.75rem; 
+                                    color: #9CA3AF; 
+                                    background: none; 
+                                    border: 1px solid rgba(156, 163, 175, 0.3); 
+                                    border-radius: 0.25rem; 
+                                    cursor: pointer;
+                                " 
+                                onmouseover="this.style.color='#E0E7FF'; this.style.borderColor='rgba(224, 231, 255, 0.5)'" 
+                                onmouseout="this.style.color='#9CA3AF'; this.style.borderColor='rgba(156, 163, 175, 0.3)'">
+                            Editar
+                        </button>
+                        <button onclick="TareasProyectos.eliminarComentario(${comentario.id})" 
+                                style="
+                                    padding: 0.25rem 0.5rem; 
+                                    font-size: 0.75rem; 
+                                    color: #FF6B6B; 
+                                    background: none; 
+                                    border: 1px solid rgba(255, 107, 107, 0.3); 
+                                    border-radius: 0.25rem; 
+                                    cursor: pointer;
+                                " 
+                                onmouseover="this.style.color='#FF3B30'; this.style.borderColor='rgba(255, 59, 48, 0.5)'" 
+                                onmouseout="this.style.color='#FF6B6B'; this.style.borderColor='rgba(255, 107, 107, 0.3)'">
+                            Eliminar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        return div;
+    },
+
+    mostrarArchivos(archivos) {
+        if (!archivos || archivos.length === 0) return '';
+        
+        return `
+            <div style="margin-top: 0.5rem;">
+                ${archivos.map(archivo => `
+                    <a href="${archivo.url}" target="_blank" 
+                       style="
+                           display: inline-block; 
+                           padding: 0.25rem 0.5rem; 
+                           margin: 0.125rem; 
+                           background: rgba(59, 130, 246, 0.2); 
+                           color: #60A5FA; 
+                           border-radius: 0.25rem; 
+                           text-decoration: none; 
+                           font-size: 0.75rem;
+                       ">
+                        📎 ${archivo.nombre_original}
+                    </a>
+                `).join('')}
+            </div>
+        `;
+    },
+
+    async enviarComentario(contenido) {
+        if (!this.currentTaskId) {
+            console.error('No hay tarea actual seleccionada');
+            return;
+        }
+
+        if (!contenido.trim()) {
+            alert('Por favor escribe un comentario');
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append('contenido', contenido.trim());
+
+            const response = await fetch(`/app/api/tarea/${this.currentTaskId}/comentarios/agregar/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (data.success) {
+                // Limpiar el formulario
+                const commentInput = document.getElementById('comment-input');
+                if (commentInput) {
+                    commentInput.value = '';
+                }
+
+                // Recargar comentarios
+                await this.cargarComentarios(this.currentTaskId);
+            } else {
+                alert('Error al enviar comentario: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error al enviar comentario:', error);
+            alert('Error al enviar comentario: ' + error.message);
+        }
+    },
+
+    async editarComentario(comentarioId) {
+        const comentarioElement = document.querySelector(`[data-comentario-id="${comentarioId}"]`);
+        if (!comentarioElement) return;
+
+        const contenidoElement = document.getElementById(`comentario-contenido-${comentarioId}`);
+        if (!contenidoElement) return;
+
+        const contenidoActual = contenidoElement.textContent.trim();
+        
+        // Crear textarea para edición
+        const textarea = document.createElement('textarea');
+        textarea.value = contenidoActual;
+        textarea.style.cssText = `
+            width: 100%;
+            background: rgba(26, 31, 39, 0.8);
+            color: #E0E7FF;
+            border: 1px solid rgba(45, 55, 72, 0.6);
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 60px;
+        `;
+
+        // Crear botones de acción
+        const botonesDiv = document.createElement('div');
+        botonesDiv.style.cssText = 'display: flex; gap: 0.5rem; margin-top: 0.5rem;';
+        botonesDiv.innerHTML = `
+            <button onclick="TareasProyectos.guardarEdicionComentario(${comentarioId})" 
+                    style="
+                        padding: 0.25rem 0.75rem; 
+                        font-size: 0.75rem; 
+                        color: white; 
+                        background: #3B82F6; 
+                        border: none; 
+                        border-radius: 0.25rem; 
+                        cursor: pointer;
+                    ">
+                Guardar
+            </button>
+            <button onclick="TareasProyectos.cancelarEdicionComentario(${comentarioId})" 
+                    style="
+                        padding: 0.25rem 0.75rem; 
+                        font-size: 0.75rem; 
+                        color: #9CA3AF; 
+                        background: none; 
+                        border: 1px solid rgba(156, 163, 175, 0.3); 
+                        border-radius: 0.25rem; 
+                        cursor: pointer;
+                    ">
+                Cancelar
+            </button>
+        `;
+
+        // Reemplazar contenido con editor
+        contenidoElement.style.display = 'none';
+        contenidoElement.parentNode.insertBefore(textarea, contenidoElement.nextSibling);
+        contenidoElement.parentNode.insertBefore(botonesDiv, textarea.nextSibling);
+
+        // Enfocar textarea
+        textarea.focus();
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+        // Guardar referencias para uso posterior
+        this.editingCommentData = {
+            comentarioId,
+            contenidoOriginal: contenidoActual,
+            textarea,
+            botonesDiv,
+            contenidoElement
+        };
+    },
+
+    async guardarEdicionComentario(comentarioId) {
+        if (!this.editingCommentData || this.editingCommentData.comentarioId !== comentarioId) return;
+
+        const nuevoContenido = this.editingCommentData.textarea.value.trim();
+        if (!nuevoContenido) {
+            alert('El comentario no puede estar vacío');
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append('contenido', nuevoContenido);
+
+            const response = await fetch(`/app/api/comentario-tarea/${comentarioId}/editar/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (data.success) {
+                // Recargar comentarios
+                await this.cargarComentarios(this.currentTaskId);
+                this.editingCommentData = null;
+            } else {
+                alert('Error al editar comentario: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error al editar comentario:', error);
+            alert('Error al editar comentario: ' + error.message);
+        }
+    },
+
+    cancelarEdicionComentario(comentarioId) {
+        if (!this.editingCommentData || this.editingCommentData.comentarioId !== comentarioId) return;
+
+        // Restaurar estado original
+        this.editingCommentData.textarea.remove();
+        this.editingCommentData.botonesDiv.remove();
+        this.editingCommentData.contenidoElement.style.display = 'block';
+        this.editingCommentData = null;
+    },
+
+    async eliminarComentario(comentarioId) {
+        if (!confirm('¿Estás seguro de que quieres eliminar este comentario?')) return;
+
+        try {
+            const response = await fetch(`/app/api/comentario-tarea/${comentarioId}/eliminar/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (data.success) {
+                // Recargar comentarios
+                await this.cargarComentarios(this.currentTaskId);
+            } else {
+                alert('Error al eliminar comentario: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error al eliminar comentario:', error);
+            alert('Error al eliminar comentario: ' + error.message);
+        }
+    },
+
+    configurarFormularioComentarios() {
+        const commentForm = document.getElementById('comment-form');
+        const commentInput = document.getElementById('comment-input');
+        const charCounter = document.getElementById('char-counter');
+        const btnMention = document.getElementById('btn-mention');
+        const btnEnviar = document.getElementById('btn-enviar-comentario');
+
+        if (commentForm) {
+            // Remover listeners anteriores para evitar duplicados
+            const newForm = commentForm.cloneNode(true);
+            commentForm.parentNode.replaceChild(newForm, commentForm);
+            
+            // Obtener referencias actualizadas
+            const newCommentInput = document.getElementById('comment-input');
+            const newCharCounter = document.getElementById('char-counter');
+            const newBtnMention = document.getElementById('btn-mention');
+            const newBtnEnviar = document.getElementById('btn-enviar-comentario');
+            const newCommentForm = document.getElementById('comment-form');
+
+            // Evento submit del formulario
+            newCommentForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (newCommentInput && newCommentInput.value.trim()) {
+                    const originalText = newBtnEnviar.innerHTML;
+                    newBtnEnviar.disabled = true;
+                    newBtnEnviar.innerHTML = 'Enviando...';
+                    
+                    try {
+                        await this.enviarComentario(newCommentInput.value);
+                    } finally {
+                        newBtnEnviar.disabled = false;
+                        newBtnEnviar.innerHTML = originalText;
+                    }
+                }
+            });
+
+            // Contador de caracteres
+            if (newCommentInput && newCharCounter) {
+                const updateCharCounter = () => {
+                    const length = newCommentInput.value.length;
+                    newCharCounter.textContent = length;
+                    
+                    // Cambiar color según longitud
+                    if (length > 500) {
+                        newCharCounter.style.color = '#FF6B6B';
+                    } else if (length > 300) {
+                        newCharCounter.style.color = '#FF9500';
+                    } else {
+                        newCharCounter.style.color = '#9CA3AF';
+                    }
+                };
+
+                newCommentInput.addEventListener('input', updateCharCounter);
+                updateCharCounter(); // Inicializar
+            }
+
+            // Botón de mención
+            if (newBtnMention && newCommentInput) {
+                newBtnMention.addEventListener('click', () => {
+                    const cursorPosition = newCommentInput.selectionStart;
+                    const textBefore = newCommentInput.value.substring(0, cursorPosition);
+                    const textAfter = newCommentInput.value.substring(newCommentInput.selectionEnd);
+                    
+                    newCommentInput.value = textBefore + '@' + textAfter;
+                    newCommentInput.setSelectionRange(cursorPosition + 1, cursorPosition + 1);
+                    newCommentInput.focus();
+                });
+            }
+
+            // Atajos de teclado
+            if (newCommentInput) {
+                newCommentInput.addEventListener('keydown', (e) => {
+                    // Ctrl+Enter o Cmd+Enter para enviar
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                        e.preventDefault();
+                        newCommentForm.dispatchEvent(new Event('submit'));
+                    }
+                });
+            }
         }
     }
 });
