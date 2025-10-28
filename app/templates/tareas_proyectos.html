@@ -2776,13 +2776,24 @@ Object.assign(TareasProyectos, {
                 this.isTaskRunning = data.tarea.trabajando_actualmente;
                 
                 if (this.isTaskRunning) {
-                    // TAREA INICIADA
+                    // TAREA INICIADA/REANUDADA
                     btnStart.style.display = 'none';
                     btnStart.querySelector('span').textContent = 'Iniciar Tarea'; // Reset text
                     btnPause.style.display = 'flex';
-                    this.startTimer();
+                    
+                    // Configurar tiempo base correctamente para reanudar
+                    const tiempoTotal = data.tarea.tiempo_total_trabajado || 0;
+                    this.startTime = Date.now() - (tiempoTotal * 1000);
+                    
+                    // Mostrar y iniciar cronómetro
+                    this.showTimerDisplay();
+                    this.updateTimerDisplay(); // Mostrar tiempo inmediatamente
+                    this.timerInterval = setInterval(() => {
+                        this.updateTimerDisplay();
+                    }, 1000);
+                    
                     this.addSystemComment('Tarea INICIADA. El cronómetro está en marcha.', '#16a34a');
-                    console.log('🟢 Tarea iniciada - cronómetro activado');
+                    console.log('🟢 Tarea iniciada/reanudada - cronómetro activado');
                 } else {
                     // TAREA PAUSADA
                     btnStart.style.display = 'flex';
@@ -2804,8 +2815,13 @@ Object.assign(TareasProyectos, {
                     console.log('🔴 Tarea pausada - cronómetro detenido');
                 }
                 
-                // Actualizar estado de la tarea en la interfaz
+                // Actualizar estado de la tarea en la interfaz inmediatamente
                 this.updateTaskStatus(data.tarea.estado);
+                
+                // También recargar la lista de tareas para actualizar la tabla
+                if (typeof cargarTareas === 'function') {
+                    cargarTareas();
+                }
                 
                 // Mostrar mensaje de éxito
                 console.log('✅', data.message);
@@ -3236,13 +3252,13 @@ Object.assign(TareasProyectos, {
                     this.showCompletedTaskTimer(data.tiempo_total);
                 }
                 
+                // Recargar lista de tareas inmediatamente
+                if (typeof cargarTareas === 'function') {
+                    cargarTareas();
+                }
+                
                 // Mostrar mensaje de éxito
                 alert('¡Tarea completada exitosamente!');
-                
-                // Recargar lista de tareas para actualizar el orden
-                setTimeout(() => {
-                    cargarTareas();
-                }, 1000);
                 
             } else {
                 alert('Error: ' + data.error);
