@@ -1217,6 +1217,7 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
+        flex-wrap: nowrap;
     }
     
     .user-pill-remove {
@@ -5484,7 +5485,30 @@ function updateSelectedUsersInContainer(containerId, users) {
     users.forEach(user => {
         const userPill = document.createElement('div');
         userPill.className = 'user-pill';
+        
+        // Crear avatar igual que en el sistema original
+        const avatarColor = getAvatarColor(user.id - 1);
+        const avatarContent = user.avatar_url ? 
+            `<img src="${user.avatar_url}" alt="${user.name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 
+            user.iniciales;
+            
         userPill.innerHTML = `
+            <div style="
+                width: 20px; 
+                height: 20px; 
+                border-radius: 50%; 
+                background-color: ${avatarColor}; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                color: white; 
+                font-weight: 600; 
+                font-size: 0.7rem;
+                flex-shrink: 0;
+                margin-right: 0.5rem;
+            ">
+                ${avatarContent}
+            </div>
             <span>${user.name}</span>
             <button type="button" class="user-pill-remove" onclick="removeUser('${containerId}', ${user.id})">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -5652,13 +5676,31 @@ function mostrarResultadosBusquedaTarea(tipo, usuarios) {
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         `;
         
+        // Crear avatar igual que en el sistema original
+        const avatarColor = getAvatarColor(usuario.id - 1);
+        const avatarContent = usuario.avatar_url ? 
+            `<img src="${usuario.avatar_url}" alt="${usuario.nombre}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 
+            usuario.iniciales;
+            
         item.innerHTML = `
-            <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #007AFF, #4A90E2); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem;">
-                ${usuario.nombre.charAt(0).toUpperCase()}
+            <div class="user-avatar" style="
+                width: 32px; 
+                height: 32px; 
+                border-radius: 50%; 
+                background-color: ${avatarColor}; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                color: white; 
+                font-weight: 600; 
+                font-size: 0.9rem;
+                flex-shrink: 0;
+            ">
+                ${avatarContent}
             </div>
-            <div>
-                <div style="color: var(--apple-label); font-weight: 500;">${usuario.nombre}</div>
-                <div style="color: var(--apple-label-secondary); font-size: 0.85rem;">${usuario.email}</div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="color: var(--apple-label); font-weight: 500; line-height: 1.2;">${usuario.nombre}</div>
+                <div style="color: var(--apple-label-secondary); font-size: 0.85rem; line-height: 1.2;">${usuario.email}</div>
             </div>
         `;
         
@@ -5704,7 +5746,9 @@ function seleccionarUsuarioTarea(tipo, usuario) {
     const userObj = {
         id: usuario.id,
         name: usuario.nombre,
-        email: usuario.email
+        email: usuario.email,
+        iniciales: usuario.iniciales,
+        avatar_url: usuario.avatar_url
     };
     
     if (tipo === 'responsible') {
