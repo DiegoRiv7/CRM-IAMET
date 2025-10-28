@@ -954,6 +954,434 @@
         line-height: 1.4;
     }
 
+    /* ==========================================
+       POWER TASK MODAL - EDITOR AVANZADO
+       ========================================== */
+    
+    .power-task-modal-overlay {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        pointer-events: none;
+        isolation: isolate;
+    }
+    
+    .power-task-modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: all;
+    }
+    
+    .power-task-container {
+        background: rgba(18, 18, 20, 0.95);
+        backdrop-filter: blur(50px) saturate(1.8);
+        -webkit-backdrop-filter: blur(50px) saturate(1.8);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        width: 95%;
+        max-width: 700px;
+        max-height: 80vh;
+        overflow-y: auto;
+        position: relative;
+        box-shadow: 
+            0 32px 120px rgba(0, 0, 0, 0.6),
+            0 16px 60px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transform: scale(0.92) translateY(40px);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    .power-task-modal-overlay.active .power-task-container {
+        transform: scale(1) translateY(0);
+    }
+    
+    /* Header Simplificado */
+    .power-task-header {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    .task-header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1.5rem;
+    }
+    
+    .task-name-input {
+        flex: 1;
+        max-width: 400px;
+    }
+    
+    .header-right-section {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .task-title-field {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--apple-label);
+        font-size: 0.95rem;
+        font-weight: 500;
+        outline: none;
+        transition: all 0.2s ease;
+    }
+    
+    .task-title-field:focus {
+        border-color: var(--apple-blue);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+    }
+    
+    .task-title-field::placeholder {
+        color: var(--apple-label-secondary);
+    }
+    
+    .priority-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+    
+    .priority-toggle:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .priority-toggle input[type="checkbox"] {
+        display: none;
+    }
+    
+    .priority-icon {
+        width: 20px;
+        height: 20px;
+        color: var(--apple-label-secondary);
+        transition: all 0.2s ease;
+    }
+    
+    .priority-toggle input[type="checkbox"]:checked + .priority-icon {
+        color: #ffaa00;
+        transform: scale(1.1);
+    }
+    
+    .priority-label {
+        font-size: 0.95rem;
+        color: var(--apple-label);
+        font-weight: 500;
+    }
+    
+    .power-close-btn {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 10px;
+        padding: 0.75rem;
+        color: var(--apple-label-secondary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .power-close-btn:hover {
+        background: rgba(255, 59, 48, 0.2);
+        border-color: rgba(255, 59, 48, 0.4);
+        color: #ff3b30;
+    }
+    
+    /* Editor Principal */
+    .task-rich-editor {
+        min-height: 200px;
+        padding: 2rem;
+        color: var(--apple-label);
+        font-size: 1rem;
+        line-height: 1.6;
+        outline: none;
+        border: none;
+        background: transparent;
+        font-family: inherit;
+        position: relative;
+    }
+    
+    .task-rich-editor:empty::before {
+        content: attr(data-placeholder);
+        color: rgba(255, 255, 255, 0.4);
+        font-style: italic;
+        pointer-events: none;
+    }
+    
+    .task-rich-editor:focus {
+        background: rgba(255, 255, 255, 0.02);
+    }
+    
+    /* Sección de Asignaciones */
+    .task-assignments-section {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    .assignment-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .assignment-tab {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        color: var(--apple-label-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+    }
+    
+    .assignment-tab.active {
+        background: var(--apple-blue);
+        border-color: var(--apple-blue);
+        color: white;
+    }
+    
+    .assignment-tab:hover:not(.active) {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--apple-label);
+    }
+    
+    .assignment-panel {
+        display: none;
+    }
+    
+    .assignment-panel.active {
+        display: block;
+    }
+    
+    .user-search-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid rgba(255, 255, 255, 0.15);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--apple-label);
+        font-size: 0.95rem;
+        outline: none;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(10px);
+    }
+    
+    .user-search-input:focus {
+        border-color: var(--apple-blue);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+    }
+    
+    .selected-users {
+        margin-top: 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .user-pill {
+        background: rgba(10, 132, 255, 0.2);
+        border: 1px solid rgba(10, 132, 255, 0.3);
+        border-radius: 20px;
+        padding: 0.4rem 0.8rem;
+        color: var(--apple-blue);
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .user-pill-remove {
+        background: none;
+        border: none;
+        color: var(--apple-blue);
+        cursor: pointer;
+        padding: 0;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+    
+    .user-pill-remove:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Timing Section */
+    .task-timing-section {
+        display: flex;
+        gap: 2rem;
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        flex-wrap: wrap;
+    }
+    
+    .timing-item {
+        flex: 1;
+        min-width: 200px;
+    }
+    
+    .timing-item label {
+        display: block;
+        color: var(--apple-label-secondary);
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Custom Date Picker */
+    .custom-date-picker {
+        position: relative;
+        width: 100%;
+        cursor: pointer;
+    }
+    
+    .date-input {
+        width: 100%;
+        padding: 0.75rem 3rem 0.75rem 1rem;
+        border: 1.5px solid rgba(255, 255, 255, 0.15);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--apple-label);
+        font-size: 0.95rem;
+        outline: none;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        user-select: none;
+    }
+    
+    .date-input:focus, .date-input:hover {
+        border-color: var(--apple-blue);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+    }
+    
+    .date-icon {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--apple-label-secondary);
+        pointer-events: none;
+        transition: color 0.2s ease;
+    }
+    
+    .custom-date-picker:hover .date-icon {
+        color: var(--apple-blue);
+    }
+    
+    /* Creator Info */
+    .creator-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid rgba(255, 255, 255, 0.15);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .creator-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+    
+    .creator-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .creator-name {
+        color: var(--apple-label);
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+    
+    /* Footer */
+    .power-task-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem 2rem;
+        background: rgba(255, 255, 255, 0.02);
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .footer-left, .footer-right {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .footer-action {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        backdrop-filter: blur(10px);
+        white-space: nowrap;
+    }
+    
+    .footer-action.secondary {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: var(--apple-label-secondary);
+    }
+    
+    .footer-action.secondary:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: var(--apple-label);
+        transform: translateY(-1px);
+    }
+    
+    .footer-action.primary {
+        background: linear-gradient(135deg, var(--apple-blue), #4A90E2);
+        border: 1px solid rgba(10, 132, 255, 0.3);
+        color: white;
+        box-shadow: 0 4px 20px rgba(10, 132, 255, 0.25);
+    }
+    
+    .footer-action.primary:hover {
+        background: linear-gradient(135deg, #4A90E2, var(--apple-blue));
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(10, 132, 255, 0.35);
+    }
+
     /* User Search & Members Styles */
     .user-search-container {
         position: relative;
@@ -1719,71 +2147,118 @@
     </div>
 </div>
 
-<!-- Modal para crear tarea independiente -->
-<div class="modal-overlay" id="modal-crear-tarea">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2 class="modal-title">Crear Nueva Tarea</h2>
-            <button class="modal-close" onclick="cerrarModalCrearTarea()">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="m18 6-12 12"></path>
-                    <path d="m6 6 12 12"></path>
-                </svg>
-            </button>
+<!-- Modal para crear tarea independiente - Diseño Avanzado -->
+<div class="power-task-modal-overlay" id="modal-crear-tarea">
+    <div class="power-task-container">
+        <!-- Header Simplificado -->
+        <div class="power-task-header">
+            <div class="task-header-content">
+                <div class="task-name-input">
+                    <input type="text" id="taskTitle" placeholder="Nombre de la tarea" class="task-title-field">
+                </div>
+                <div class="header-right-section">
+                    <div class="task-priority">
+                        <label class="priority-toggle">
+                            <input type="checkbox" id="highPriority">
+                            <div class="priority-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                            </div>
+                            <span class="priority-label">Alta prioridad</span>
+                        </label>
+                    </div>
+                    <button class="power-close-btn" onclick="cerrarModalCrearTarea()" type="button">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="m18 6-12 12M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
         </div>
-        <form id="form-crear-tarea" onsubmit="submitTaskForm(event)">
-            <div class="form-group">
-                <label for="nombre-tarea">Nombre de la Tarea</label>
-                <input type="text" id="nombre-tarea" name="nombre" required>
+
+        <!-- Editor Principal -->
+        <div class="task-rich-editor" contenteditable="true" data-placeholder="Describe los detalles de la tarea, objetivos, requisitos...">
+        </div>
+
+        <!-- Sección de Asignaciones -->
+        <div class="task-assignments-section">
+            <div class="assignment-tabs">
+                <button class="assignment-tab active" data-tab="responsible">Responsable</button>
+                <button class="assignment-tab" data-tab="participants">Participantes</button>
+                <button class="assignment-tab" data-tab="observers">Observadores</button>
             </div>
             
-            <div class="form-group">
-                <label for="descripcion-tarea">Descripción</label>
-                <textarea id="descripcion-tarea" name="descripcion" rows="4"></textarea>
-            </div>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="fecha-inicio-tarea">Fecha de Inicio</label>
-                    <input type="date" id="fecha-inicio-tarea" name="fecha_inicio">
+            <div class="assignment-content">
+                <div class="assignment-panel active" id="responsible-panel">
+                    <div class="user-selector">
+                        <input type="text" class="user-search-input" placeholder="Buscar responsable..." id="responsibleSearch">
+                        <div class="selected-users" id="selectedResponsible"></div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="fecha-limite-tarea">Fecha Límite</label>
-                    <input type="date" id="fecha-limite-tarea" name="fecha_limite">
+                
+                <div class="assignment-panel" id="participants-panel">
+                    <div class="user-selector">
+                        <input type="text" class="user-search-input" placeholder="Buscar participantes..." id="participantsSearch">
+                        <div class="selected-users" id="selectedParticipants"></div>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="prioridad-tarea">Prioridad</label>
-                    <select id="prioridad-tarea" name="prioridad">
-                        <option value="baja">Baja</option>
-                        <option value="media" selected>Media</option>
-                        <option value="alta">Alta</option>
-                        <option value="urgente">Urgente</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="estimacion-horas-tarea">Estimación (horas)</label>
-                    <input type="number" id="estimacion-horas-tarea" name="estimacion_horas" min="0" step="0.5" placeholder="Ej: 2.5">
+                
+                <div class="assignment-panel" id="observers-panel">
+                    <div class="user-selector">
+                        <input type="text" class="user-search-input" placeholder="Buscar observadores..." id="observersSearch">
+                        <div class="selected-users" id="selectedObservers"></div>
+                    </div>
                 </div>
             </div>
-            
-            <div class="form-group">
-                <label for="asignado-a-tarea">Asignar a</label>
-                <div class="user-search-container">
-                    <input type="text" id="asignado-a-tarea" name="asignado_a_search" placeholder="Buscar usuario..." autocomplete="off" oninput="buscarUsuariosParaTarea(this.value)">
-                    <input type="hidden" id="asignado-a-id-tarea" name="asignado_a">
-                    <div class="user-search-results" id="user-search-results-tarea"></div>
+        </div>
+
+        <!-- Configuración de Tiempo -->
+        <div class="task-timing-section">
+            <div class="timing-item">
+                <label>Fecha límite</label>
+                <div class="custom-date-picker">
+                    <input type="text" id="taskDueDate" class="date-input" placeholder="Selecciona fecha y hora">
+                    <svg class="date-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/>
+                        <line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
                 </div>
-                <div class="selected-members" id="selected-members-tarea"></div>
             </div>
-            
-            <div class="form-actions">
-                <button type="button" class="btn-secondary" onclick="cerrarModalCrearTarea()">Cancelar</button>
-                <button type="submit" class="btn-primary">Crear Tarea</button>
+            <div class="timing-item">
+                <label>Creado por</label>
+                <div class="creator-info">
+                    <div class="creator-avatar">
+                        {% if user.userprofile.avatar %}
+                            <img src="{{ user.userprofile.avatar.url }}" alt="{{ user.get_full_name }}">
+                        {% else %}
+                            {% load app_filters %}
+                            {{ user|user_avatar:"40" }}
+                        {% endif %}
+                    </div>
+                    <span class="creator-name">{{ user.get_full_name|default:user.username }}</span>
+                </div>
             </div>
-        </form>
+        </div>
+
+        <!-- Footer con Acciones -->
+        <div class="power-task-footer">
+            <div class="footer-left">
+                <button type="button" class="footer-action secondary" onclick="cerrarModalCrearTarea()">
+                    Cancelar
+                </button>
+            </div>
+            <div class="footer-right">
+                <button type="button" class="footer-action primary" id="submitTaskBtn" onclick="submitTaskForm()">
+                    Crear tarea
+                </button>
+            </div>
+        </div>
+
+        <!-- Form oculto para datos -->
+        <form id="powerTaskForm" style="display: none;"></form>
     </div>
 </div>
 
@@ -2421,10 +2896,7 @@ function mostrarEstadoVacioTareas() {
     }
 }
 
-function abrirModalCrearTarea() {
-    // TODO: Implementar modal para crear tarea
-    alert('Funcionalidad de crear tarea en desarrollo');
-}
+// Esta función se movió al final del archivo
 
 
 function mostrarProyectosTabla(proyectos) {
@@ -4871,13 +5343,46 @@ function abrirModalCrearTarea() {
         // Resetear formulario
         resetTaskForm();
         
+        // Configurar tabs
+        initializeAssignmentTabs();
+        
+        // Configurar búsqueda de usuarios
+        setupUserSearchInTaskModal();
+        
         // Focus en el título
         setTimeout(() => {
-            const titleInput = document.getElementById('tarea-titulo');
+            const titleInput = document.getElementById('taskTitle');
             if (titleInput) titleInput.focus();
         }, 300);
     }
 }
+
+// Inicializar tabs de asignación
+function initializeAssignmentTabs() {
+    const tabs = document.querySelectorAll('.assignment-tab');
+    const panels = document.querySelectorAll('.assignment-panel');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Remover clase active de todos los tabs y panels
+            tabs.forEach(t => t.classList.remove('active'));
+            panels.forEach(p => p.classList.remove('active'));
+            
+            // Activar tab y panel correspondiente
+            tab.classList.add('active');
+            const targetTab = tab.dataset.tab;
+            const targetPanel = document.getElementById(`${targetTab}-panel`);
+            if (targetPanel) {
+                targetPanel.classList.add('active');
+            }
+        });
+    });
+}
+
+// Variables globales para almacenar selecciones
+let selectedResponsible = null;
+let selectedParticipants = [];
+let selectedObservers = [];
 
 function cerrarModalCrearTarea() {
     console.log('🔄 Cerrando modal crear tarea');
@@ -4891,32 +5396,222 @@ function cerrarModalCrearTarea() {
 
 function resetTaskForm() {
     // Limpiar campos del formulario
-    const titleInput = document.getElementById('tarea-titulo');
-    const descInput = document.getElementById('tarea-descripcion');
-    const dueDateInput = document.getElementById('tarea-fecha-limite');
-    const priorityInput = document.getElementById('tarea-prioridad-alta');
+    const titleInput = document.getElementById('taskTitle');
+    const descEditor = document.querySelector('.task-rich-editor');
+    const dueDateInput = document.getElementById('taskDueDate');
+    const priorityInput = document.getElementById('highPriority');
     
     if (titleInput) titleInput.value = '';
-    if (descInput) descInput.value = '';
+    if (descEditor) descEditor.innerHTML = '';
     if (dueDateInput) dueDateInput.value = '';
     if (priorityInput) priorityInput.checked = false;
     
     // Limpiar selecciones de usuarios
-    selectedTaskUsers = {
-        responsable: null,
-        participantes: [],
-        observadores: []
-    };
+    selectedResponsible = null;
+    selectedParticipants = [];
+    selectedObservers = [];
     
+    // Limpiar campos de búsqueda de usuarios
+    const responsibleSearch = document.getElementById('responsibleSearch');
+    const participantsSearch = document.getElementById('participantsSearch');
+    const observersSearch = document.getElementById('observersSearch');
+    
+    if (responsibleSearch) responsibleSearch.value = '';
+    if (participantsSearch) participantsSearch.value = '';
+    if (observersSearch) observersSearch.value = '';
+    
+    // Limpiar usuarios seleccionados en la UI
     updateSelectedUsersDisplay();
 }
 
-// Variables para manejar usuarios seleccionados
+// Función para actualizar display de usuarios seleccionados
+function updateSelectedUsersDisplay() {
+    updateSelectedUsersInContainer('selectedResponsible', selectedResponsible ? [selectedResponsible] : []);
+    updateSelectedUsersInContainer('selectedParticipants', selectedParticipants);
+    updateSelectedUsersInContainer('selectedObservers', selectedObservers);
+}
+
+function updateSelectedUsersInContainer(containerId, users) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    users.forEach(user => {
+        const userPill = document.createElement('div');
+        userPill.className = 'user-pill';
+        userPill.innerHTML = `
+            <span>${user.name}</span>
+            <button type="button" class="user-pill-remove" onclick="removeUser('${containerId}', ${user.id})">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m18 6-12 12M6 6l12 12"/>
+                </svg>
+            </button>
+        `;
+        container.appendChild(userPill);
+    });
+}
+
+function removeUser(containerId, userId) {
+    if (containerId === 'selectedResponsible') {
+        selectedResponsible = null;
+    } else if (containerId === 'selectedParticipants') {
+        selectedParticipants = selectedParticipants.filter(user => user.id !== userId);
+    } else if (containerId === 'selectedObservers') {
+        selectedObservers = selectedObservers.filter(user => user.id !== userId);
+    }
+    updateSelectedUsersDisplay();
+}
+
+// Variables para manejar usuarios seleccionados (legacy - mantener por compatibilidad)
 let selectedTaskUsers = {
     responsable: null,
     participantes: [],
     observadores: []
 };
+
+// Funciones para búsqueda de usuarios en el modal de tareas
+async function setupUserSearchInTaskModal() {
+    // Configurar búsqueda para responsable
+    const responsibleSearch = document.getElementById('responsibleSearch');
+    if (responsibleSearch) {
+        responsibleSearch.addEventListener('input', async (e) => {
+            const query = e.target.value.trim();
+            if (query.length >= 2) {
+                const usuarios = await buscarUsuarios(query);
+                mostrarResultadosBusquedaTarea('responsible', usuarios);
+            }
+        });
+    }
+    
+    // Configurar búsqueda para participantes
+    const participantsSearch = document.getElementById('participantsSearch');
+    if (participantsSearch) {
+        participantsSearch.addEventListener('input', async (e) => {
+            const query = e.target.value.trim();
+            if (query.length >= 2) {
+                const usuarios = await buscarUsuarios(query);
+                mostrarResultadosBusquedaTarea('participants', usuarios);
+            }
+        });
+    }
+    
+    // Configurar búsqueda para observadores
+    const observersSearch = document.getElementById('observersSearch');
+    if (observersSearch) {
+        observersSearch.addEventListener('input', async (e) => {
+            const query = e.target.value.trim();
+            if (query.length >= 2) {
+                const usuarios = await buscarUsuarios(query);
+                mostrarResultadosBusquedaTarea('observers', usuarios);
+            }
+        });
+    }
+}
+
+function mostrarResultadosBusquedaTarea(tipo, usuarios) {
+    // Crear dropdown de resultados dinámicamente si no existe
+    const searchInput = document.getElementById(`${tipo === 'responsible' ? 'responsibleSearch' : tipo === 'participants' ? 'participantsSearch' : 'observersSearch'}`);
+    const container = searchInput.parentElement;
+    
+    // Remover dropdown anterior si existe
+    const existingDropdown = container.querySelector('.user-search-dropdown');
+    if (existingDropdown) {
+        existingDropdown.remove();
+    }
+    
+    if (usuarios.length === 0) return;
+    
+    // Crear nuevo dropdown
+    const dropdown = document.createElement('div');
+    dropdown.className = 'user-search-dropdown';
+    dropdown.style.cssText = `
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: rgba(28, 28, 30, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        margin-top: 0.5rem;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    `;
+    
+    usuarios.forEach(usuario => {
+        const item = document.createElement('div');
+        item.className = 'user-search-item';
+        item.style.cssText = `
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        `;
+        
+        item.innerHTML = `
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #007AFF, #4A90E2); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem;">
+                ${usuario.nombre.charAt(0).toUpperCase()}
+            </div>
+            <div>
+                <div style="color: var(--apple-label); font-weight: 500;">${usuario.nombre}</div>
+                <div style="color: var(--apple-label-secondary); font-size: 0.85rem;">${usuario.email}</div>
+            </div>
+        `;
+        
+        item.addEventListener('mouseenter', () => {
+            item.style.background = 'rgba(255, 255, 255, 0.08)';
+        });
+        
+        item.addEventListener('mouseleave', () => {
+            item.style.background = '';
+        });
+        
+        item.addEventListener('click', () => {
+            seleccionarUsuarioTarea(tipo, usuario);
+            dropdown.remove();
+            searchInput.value = '';
+        });
+        
+        dropdown.appendChild(item);
+    });
+    
+    container.appendChild(dropdown);
+    
+    // Auto-remover dropdown después de un tiempo
+    setTimeout(() => {
+        if (dropdown.parentElement) {
+            dropdown.remove();
+        }
+    }, 10000);
+}
+
+function seleccionarUsuarioTarea(tipo, usuario) {
+    const userObj = {
+        id: usuario.id,
+        name: usuario.nombre,
+        email: usuario.email
+    };
+    
+    if (tipo === 'responsible') {
+        selectedResponsible = userObj;
+    } else if (tipo === 'participants') {
+        if (!selectedParticipants.find(u => u.id === userObj.id)) {
+            selectedParticipants.push(userObj);
+        }
+    } else if (tipo === 'observers') {
+        if (!selectedObservers.find(u => u.id === userObj.id)) {
+            selectedObservers.push(userObj);
+        }
+    }
+    
+    updateSelectedUsersDisplay();
+}
 
 function updateSelectedUsersDisplay() {
     // Actualizar display de responsable
@@ -4989,27 +5684,28 @@ function removeUserFromTask(role, userId) {
 }
 
 async function submitTaskForm() {
-    const submitBtn = document.getElementById('submit-tarea-btn');
+    const submitBtn = document.getElementById('submitTaskBtn');
     const originalText = submitBtn.textContent;
     
     try {
         // Validar campos requeridos
-        const titulo = document.getElementById('tarea-titulo').value.trim();
+        const titulo = document.getElementById('taskTitle').value.trim();
         if (!titulo) {
             alert('El título de la tarea es requerido');
             return;
         }
         
+        // Obtener descripción del editor de texto rico
+        const descEditor = document.querySelector('.task-rich-editor');
+        const descripcion = descEditor ? descEditor.innerText.trim() : '';
+        
         // Preparar datos
         const formData = {
-            titulo: titulo,
-            descripcion: document.getElementById('tarea-descripcion').value.trim(),
-            fecha_limite: document.getElementById('tarea-fecha-limite').value || null,
-            prioridad: document.getElementById('tarea-prioridad-alta').checked ? 'alta' : 'media',
-            proyecto_id: null, // Tarea standalone sin proyecto
-            asignado_a_id: selectedTaskUsers.responsable?.id || null,
-            participantes_ids: selectedTaskUsers.participantes.map(u => u.id),
-            observadores_ids: selectedTaskUsers.observadores.map(u => u.id)
+            nombre: titulo,
+            descripcion: descripcion,
+            fecha_limite: document.getElementById('taskDueDate').value || null,
+            prioridad: document.getElementById('highPriority').checked ? 'alta' : 'media',
+            asignado_a: selectedResponsible?.id || null
         };
         
         console.log('📤 Enviando tarea:', formData);
