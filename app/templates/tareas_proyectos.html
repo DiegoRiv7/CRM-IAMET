@@ -1516,7 +1516,7 @@
                     
                     <!-- Botón de Acción Rápida -->
                     <div style="display: flex; gap: 0.5rem;">
-                        <button onclick="console.log('Completar Tarea')" style="
+                        <button onclick="TareasProyectos.completarTarea()" style="
                             padding: 0.375rem 0.75rem; 
                             border-radius: 0.5rem; 
                             background-color: #3B82F6; 
@@ -3027,6 +3027,72 @@ Object.assign(TareasProyectos, {
             // Limpiar estado interno
             this.isTaskRunning = false;
             this.stopTimer();
+        }
+    },
+
+    // Función para completar una tarea
+    async completarTarea() {
+        if (!this.currentTaskId) {
+            alert('No hay tarea seleccionada');
+            return;
+        }
+
+        // Confirmar acción
+        if (!confirm('¿Estás seguro de que quieres marcar esta tarea como completada?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/app/api/tarea/${this.currentTaskId}/completar/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.success) {
+                console.log('✅ Tarea completada exitosamente');
+                
+                // Detener cronómetro si está corriendo
+                if (this.isTaskRunning) {
+                    this.stopTimer();
+                    this.isTaskRunning = false;
+                }
+                
+                // Actualizar estado de la tarea en la interfaz
+                this.updateTaskStatus('completada');
+                
+                // Agregar comentario del sistema
+                this.addSystemComment('Tarea COMPLETADA. ¡Excelente trabajo!', '#16a34a');
+                
+                // Ocultar botones de cronómetro ya que está completada
+                const btnStart = document.getElementById('btn-start-task');
+                const btnPause = document.getElementById('btn-pause-task');
+                if (btnStart) btnStart.style.display = 'none';
+                if (btnPause) btnPause.style.display = 'none';
+                
+                // Mostrar mensaje de éxito
+                alert('¡Tarea completada exitosamente!');
+                
+                // Recargar lista de tareas para actualizar el orden
+                setTimeout(() => {
+                    cargarTareas();
+                }, 1000);
+                
+            } else {
+                alert('Error: ' + data.error);
+            }
+            
+        } catch (error) {
+            console.error('Error al completar tarea:', error);
+            alert('Error al completar la tarea: ' + error.message);
         }
     },
 

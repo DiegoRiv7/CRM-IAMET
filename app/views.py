@@ -10238,3 +10238,77 @@ def api_toggle_task_timer(request, tarea_id):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+@login_required
+def api_completar_tarea(request, tarea_id):
+    """
+    API para marcar una tarea como completada
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        # Importaciones necesarias
+        from datetime import datetime, timezone
+        from .models import Tarea
+        
+        # Obtener la tarea
+        tarea = get_object_or_404(Tarea, id=tarea_id)
+        
+        # Verificar permisos - solo el asignado, creador o superusuario pueden completar
+        if (request.user != tarea.asignado_a and 
+            request.user != tarea.creado_por and 
+            not request.user.is_superuser):
+            return JsonResponse({'error': 'Sin permisos para completar esta tarea'}, status=403)
+        
+        # Verificar que no esté ya completada
+        if tarea.estado == 'completada':
+            return JsonResponse({'error': 'La tarea ya está completada'}, status=400)
+        
+        ahora = datetime.now(timezone.utc)
+        
+        # Si está corriendo el cronómetro, detenerlo y guardar tiempo
+        if getattr(tarea, 'trabajando_actualmente', False):
+            if hasattr(tarea, 'fecha_inicio_sesion') and tarea.fecha_inicio_sesion:
+                # Calcular tiempo trabajado en esta sesión
+                tiempo_sesion = ahora - tarea.fecha_inicio_sesion
+                # Sumar al tiempo total trabajado
+                if hasattr(tarea, 'tiempo_trabajado') and tarea.tiempo_trabajado:
+                    tarea.tiempo_trabajado += tiempo_sesion
+                else:
+                    tarea.tiempo_trabajado = tiempo_sesion
+            
+            # Detener cronómetro
+            tarea.trabajando_actualmente = False
+            tarea.fecha_inicio_sesion = None
+            tarea.pausado = False
+        
+        # Marcar como completada
+        tarea.estado = 'completada'
+        tarea.fecha_completada = ahora
+        tarea.save()
+        
+        # Formatear tiempo trabajado para respuesta
+        tiempo_total_str = "00:00:00"
+        if hasattr(tarea, 'tiempo_trabajado') and tarea.tiempo_trabajado:
+            total_seconds = int(tarea.tiempo_trabajado.total_seconds())
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            seconds = total_seconds % 60
+            tiempo_total_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Tarea completada exitosamente',
+            'tarea': {
+                'id': tarea.id,
+                'estado': tarea.estado,
+                'fecha_completada': tarea.fecha_completada.isoformat(),
+                'tiempo_trabajado_total': tiempo_total_str,
+                'trabajando_actualmente': False
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
