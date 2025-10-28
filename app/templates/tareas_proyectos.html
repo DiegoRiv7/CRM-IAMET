@@ -3000,7 +3000,7 @@ Object.assign(TareasProyectos, {
                 const hours = Math.floor(tiempoTranscurrido / 3600);
                 const minutes = Math.floor((tiempoTranscurrido % 3600) / 60);
                 const seconds = tiempoTranscurrido % 60;
-                console.log(`⏱️ Tiempo a mostrar: ${hours:02d}:${minutes:02d}:${seconds:02d}`);
+                console.log(`⏱️ Tiempo a mostrar: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
             } else {
                 // Si no hay fecha de inicio, usar ahora como referencia
                 this.startTime = Date.now();
