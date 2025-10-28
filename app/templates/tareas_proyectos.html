@@ -1350,6 +1350,265 @@
     html.light-theme[data-theme="pink"] thead {
         background: transparent !important;
     }
+
+    /* ========== ESTILOS PARA MODAL CREAR TAREA ========== */
+    .modal-crear-tarea {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .modal-crear-tarea.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .task-modal-container {
+        background: rgba(18, 18, 20, 0.95);
+        backdrop-filter: blur(50px) saturate(1.8);
+        -webkit-backdrop-filter: blur(50px) saturate(1.8);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        width: 95%;
+        max-width: 600px;
+        max-height: 80vh;
+        overflow-y: auto;
+        position: relative;
+        box-shadow: 0 32px 120px rgba(0, 0, 0, 0.6);
+        transform: scale(0.92) translateY(40px);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    .modal-crear-tarea.active .task-modal-container {
+        transform: scale(1) translateY(0);
+    }
+    
+    .task-modal-header {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .task-modal-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--apple-label);
+        margin: 0;
+    }
+    
+    .task-close-btn {
+        background: none;
+        border: none;
+        color: var(--apple-label-secondary);
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+    
+    .task-close-btn:hover {
+        color: var(--apple-label);
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .task-modal-content {
+        padding: 2rem;
+    }
+    
+    .task-form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .task-form-label {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--apple-label);
+        margin-bottom: 0.5rem;
+    }
+    
+    .task-form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--apple-label);
+        font-size: 0.95rem;
+        outline: none;
+        transition: all 0.2s ease;
+    }
+    
+    .task-form-input:focus {
+        border-color: var(--apple-blue);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+    }
+    
+    .task-form-textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+    
+    .task-priority-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+        padding: 0.75rem;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+    
+    .task-priority-checkbox:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .task-priority-checkbox input[type="checkbox"] {
+        display: none;
+    }
+    
+    .priority-checkbox-icon {
+        width: 20px;
+        height: 20px;
+        color: var(--apple-label-secondary);
+        transition: all 0.2s ease;
+    }
+    
+    .task-priority-checkbox input[type="checkbox"]:checked + .priority-checkbox-icon {
+        color: #ffaa00;
+        transform: scale(1.1);
+    }
+    
+    .task-users-section {
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        padding-top: 1.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    .task-user-group {
+        margin-bottom: 1rem;
+    }
+    
+    .task-user-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--apple-label-secondary);
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .selected-users-container {
+        min-height: 40px;
+        padding: 0.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.02);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    .user-chip {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 0.25rem 0.75rem 0.25rem 0.25rem;
+        font-size: 0.8rem;
+        color: var(--apple-label);
+    }
+    
+    .user-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+    }
+    
+    .remove-user {
+        background: none;
+        border: none;
+        color: var(--apple-label-secondary);
+        cursor: pointer;
+        font-size: 1.2rem;
+        line-height: 1;
+        padding: 0;
+        margin-left: 0.25rem;
+    }
+    
+    .remove-user:hover {
+        color: #ff3b30;
+    }
+    
+    .no-selection {
+        color: var(--apple-label-secondary);
+        font-style: italic;
+        font-size: 0.85rem;
+    }
+    
+    .task-modal-footer {
+        padding: 1.5rem 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+    }
+    
+    .task-btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .task-btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--apple-label);
+    }
+    
+    .task-btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.15);
+    }
+    
+    .task-btn-primary {
+        background: var(--apple-blue);
+        color: white;
+    }
+    
+    .task-btn-primary:hover {
+        background: #0056b3;
+    }
+    
+    .task-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
 </style>
 
 <div class="tareas-container">
@@ -1455,6 +1714,74 @@
             <div class="form-actions">
                 <button type="button" class="btn-secondary" onclick="cerrarModalCrearProyecto()">Cancelar</button>
                 <button type="submit" class="btn-primary">Crear Proyecto</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para crear tarea independiente -->
+<div class="modal-overlay" id="modal-crear-tarea">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Crear Nueva Tarea</h2>
+            <button class="modal-close" onclick="cerrarModalCrearTarea()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m18 6-12 12"></path>
+                    <path d="m6 6 12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <form id="form-crear-tarea" onsubmit="submitTaskForm(event)">
+            <div class="form-group">
+                <label for="nombre-tarea">Nombre de la Tarea</label>
+                <input type="text" id="nombre-tarea" name="nombre" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="descripcion-tarea">Descripción</label>
+                <textarea id="descripcion-tarea" name="descripcion" rows="4"></textarea>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="fecha-inicio-tarea">Fecha de Inicio</label>
+                    <input type="date" id="fecha-inicio-tarea" name="fecha_inicio">
+                </div>
+                <div class="form-group">
+                    <label for="fecha-limite-tarea">Fecha Límite</label>
+                    <input type="date" id="fecha-limite-tarea" name="fecha_limite">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="prioridad-tarea">Prioridad</label>
+                    <select id="prioridad-tarea" name="prioridad">
+                        <option value="baja">Baja</option>
+                        <option value="media" selected>Media</option>
+                        <option value="alta">Alta</option>
+                        <option value="urgente">Urgente</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="estimacion-horas-tarea">Estimación (horas)</label>
+                    <input type="number" id="estimacion-horas-tarea" name="estimacion_horas" min="0" step="0.5" placeholder="Ej: 2.5">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="asignado-a-tarea">Asignar a</label>
+                <div class="user-search-container">
+                    <input type="text" id="asignado-a-tarea" name="asignado_a_search" placeholder="Buscar usuario..." autocomplete="off" oninput="buscarUsuariosParaTarea(this.value)">
+                    <input type="hidden" id="asignado-a-id-tarea" name="asignado_a">
+                    <div class="user-search-results" id="user-search-results-tarea"></div>
+                </div>
+                <div class="selected-members" id="selected-members-tarea"></div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="cerrarModalCrearTarea()">Cancelar</button>
+                <button type="submit" class="btn-primary">Crear Tarea</button>
             </div>
         </form>
     </div>
@@ -4261,6 +4588,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (targetOption) targetOption.classList.add('active');
         if (activeContent) activeContent.classList.add('active');
         
+        // Actualizar botón de crear dinámicamente
+        updateCreateButton(tabName);
+        
         // Guardar selección en localStorage
         if (saveToStorage) {
             localStorage.setItem('selectedTab', tabName);
@@ -4272,6 +4602,32 @@ document.addEventListener('DOMContentLoaded', function() {
             cargarProyectos(1); 
         } else { 
             cargarTareas(); 
+        }
+    }
+    
+    // Función para actualizar el botón de crear según la pestaña activa
+    function updateCreateButton(tabName) {
+        const createBtn = document.querySelector('.create-btn');
+        if (!createBtn) return;
+        
+        if (tabName === 'proyectos') {
+            createBtn.onclick = () => abrirModalCrearProyecto();
+            createBtn.innerHTML = `
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path d="M12 5v14m-7-7h14"/>
+                </svg>
+                Crear
+            `;
+            console.log('🔄 Botón configurado para crear proyecto');
+        } else if (tabName === 'tareas') {
+            createBtn.onclick = () => abrirModalCrearTarea();
+            createBtn.innerHTML = `
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path d="M12 5v14m-7-7h14"/>
+                </svg>
+                Crear
+            `;
+            console.log('🔄 Botón configurado para crear tarea');
         }
     }
     
@@ -4502,5 +4858,220 @@ document.addEventListener('DOMContentLoaded', function() {
     // Verificar parámetros de URL después de cargar
     setTimeout(checkAndOpenTaskFromURL, 500);
 });
+
+// ======== FUNCIONES PARA CREAR TAREA STANDALONE ========
+
+function abrirModalCrearTarea() {
+    console.log('🚀 Abriendo modal crear tarea standalone');
+    const modal = document.getElementById('modal-crear-tarea');
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        
+        // Resetear formulario
+        resetTaskForm();
+        
+        // Focus en el título
+        setTimeout(() => {
+            const titleInput = document.getElementById('tarea-titulo');
+            if (titleInput) titleInput.focus();
+        }, 300);
+    }
+}
+
+function cerrarModalCrearTarea() {
+    console.log('🔄 Cerrando modal crear tarea');
+    const modal = document.getElementById('modal-crear-tarea');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+        resetTaskForm();
+    }
+}
+
+function resetTaskForm() {
+    // Limpiar campos del formulario
+    const titleInput = document.getElementById('tarea-titulo');
+    const descInput = document.getElementById('tarea-descripcion');
+    const dueDateInput = document.getElementById('tarea-fecha-limite');
+    const priorityInput = document.getElementById('tarea-prioridad-alta');
+    
+    if (titleInput) titleInput.value = '';
+    if (descInput) descInput.value = '';
+    if (dueDateInput) dueDateInput.value = '';
+    if (priorityInput) priorityInput.checked = false;
+    
+    // Limpiar selecciones de usuarios
+    selectedTaskUsers = {
+        responsable: null,
+        participantes: [],
+        observadores: []
+    };
+    
+    updateSelectedUsersDisplay();
+}
+
+// Variables para manejar usuarios seleccionados
+let selectedTaskUsers = {
+    responsable: null,
+    participantes: [],
+    observadores: []
+};
+
+function updateSelectedUsersDisplay() {
+    // Actualizar display de responsable
+    const responsableContainer = document.getElementById('selected-responsable');
+    if (responsableContainer) {
+        if (selectedTaskUsers.responsable) {
+            responsableContainer.innerHTML = createUserChip(selectedTaskUsers.responsable, 'responsable');
+        } else {
+            responsableContainer.innerHTML = '<span class="no-selection">Sin asignar</span>';
+        }
+    }
+    
+    // Actualizar participantes
+    const participantesContainer = document.getElementById('selected-participantes');
+    if (participantesContainer) {
+        if (selectedTaskUsers.participantes.length > 0) {
+            participantesContainer.innerHTML = selectedTaskUsers.participantes
+                .map(user => createUserChip(user, 'participante')).join('');
+        } else {
+            participantesContainer.innerHTML = '<span class="no-selection">Ninguno</span>';
+        }
+    }
+    
+    // Actualizar observadores
+    const observadoresContainer = document.getElementById('selected-observadores');
+    if (observadoresContainer) {
+        if (selectedTaskUsers.observadores.length > 0) {
+            observadoresContainer.innerHTML = selectedTaskUsers.observadores
+                .map(user => createUserChip(user, 'observador')).join('');
+        } else {
+            observadoresContainer.innerHTML = '<span class="no-selection">Ninguno</span>';
+        }
+    }
+}
+
+function createUserChip(user, role) {
+    return `
+        <div class="user-chip" data-user-id="${user.id}">
+            <div class="user-avatar" style="background: ${getAvatarColor(user.nombre)};">
+                ${getInitials(user.nombre)}
+            </div>
+            <span class="user-name">${user.nombre}</span>
+            <button type="button" class="remove-user" onclick="removeUserFromTask('${role}', ${user.id})">×</button>
+        </div>
+    `;
+}
+
+function getAvatarColor(name) {
+    const colors = ['#667eea', '#f093fb', '#4facfe', '#43e97b', '#fa709a', '#a8edea', '#ff9a9e', '#ffecd2'];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+}
+
+function getInitials(name) {
+    return name.split(' ').map(word => word.charAt(0).toUpperCase()).slice(0, 2).join('');
+}
+
+function removeUserFromTask(role, userId) {
+    if (role === 'responsable') {
+        selectedTaskUsers.responsable = null;
+    } else if (role === 'participante') {
+        selectedTaskUsers.participantes = selectedTaskUsers.participantes.filter(u => u.id !== userId);
+    } else if (role === 'observador') {
+        selectedTaskUsers.observadores = selectedTaskUsers.observadores.filter(u => u.id !== userId);
+    }
+    updateSelectedUsersDisplay();
+}
+
+async function submitTaskForm() {
+    const submitBtn = document.getElementById('submit-tarea-btn');
+    const originalText = submitBtn.textContent;
+    
+    try {
+        // Validar campos requeridos
+        const titulo = document.getElementById('tarea-titulo').value.trim();
+        if (!titulo) {
+            alert('El título de la tarea es requerido');
+            return;
+        }
+        
+        // Preparar datos
+        const formData = {
+            titulo: titulo,
+            descripcion: document.getElementById('tarea-descripcion').value.trim(),
+            fecha_limite: document.getElementById('tarea-fecha-limite').value || null,
+            prioridad: document.getElementById('tarea-prioridad-alta').checked ? 'alta' : 'media',
+            proyecto_id: null, // Tarea standalone sin proyecto
+            asignado_a_id: selectedTaskUsers.responsable?.id || null,
+            participantes_ids: selectedTaskUsers.participantes.map(u => u.id),
+            observadores_ids: selectedTaskUsers.observadores.map(u => u.id)
+        };
+        
+        console.log('📤 Enviando tarea:', formData);
+        
+        // Cambiar estado del botón
+        submitBtn.textContent = 'Creando...';
+        submitBtn.disabled = true;
+        
+        // Enviar al servidor
+        const response = await fetch('/app/api/crear-tarea/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('✅ Tarea creada exitosamente:', result.tarea);
+            
+            // Mostrar éxito
+            submitBtn.textContent = '✅ Creada';
+            submitBtn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+            
+            // Cerrar modal después de un momento
+            setTimeout(() => {
+                cerrarModalCrearTarea();
+                
+                // Recargar lista de tareas
+                if (typeof cargarTareas === 'function') {
+                    cargarTareas();
+                }
+                
+                // Restaurar botón
+                submitBtn.textContent = originalText;
+                submitBtn.style.background = '';
+                submitBtn.disabled = false;
+            }, 1500);
+            
+        } else {
+            throw new Error(result.error || 'Error al crear la tarea');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error al crear tarea:', error);
+        
+        // Mostrar error
+        submitBtn.textContent = '❌ Error';
+        submitBtn.style.background = 'linear-gradient(135deg, #dc3545, #e55565)';
+        
+        setTimeout(() => {
+            submitBtn.textContent = originalText;
+            submitBtn.style.background = '';
+            submitBtn.disabled = false;
+        }, 2000);
+        
+        alert('Error al crear la tarea: ' + error.message);
+    }
+}
+
 </script>
 {% endblock %}

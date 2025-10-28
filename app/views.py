@@ -1126,6 +1126,114 @@ def api_crear_proyecto(request):
 
 
 @login_required
+def api_crear_tarea(request):
+    """
+    API para crear una nueva tarea independiente (sin proyecto)
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Usuario no autenticado'}, status=401)
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        import json
+        data = json.loads(request.body)
+        
+        # Validar datos requeridos
+        nombre = data.get('nombre', '').strip()
+        if not nombre:
+            return JsonResponse({'error': 'El nombre de la tarea es requerido'}, status=400)
+        
+        descripcion = data.get('descripcion', '').strip()
+        prioridad = data.get('prioridad', 'media')
+        fecha_inicio = data.get('fecha_inicio')
+        fecha_limite = data.get('fecha_limite')
+        estimacion_horas = data.get('estimacion_horas')
+        asignado_a_id = data.get('asignado_a')
+        
+        # Convertir fechas si están presentes
+        fecha_inicio_obj = None
+        fecha_limite_obj = None
+        
+        if fecha_inicio:
+            from datetime import datetime
+            fecha_inicio_obj = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+        
+        if fecha_limite:
+            from datetime import datetime
+            fecha_limite_obj = datetime.strptime(fecha_limite, '%Y-%m-%d').date()
+        
+        # Obtener usuario asignado si se especificó
+        asignado_a = None
+        if asignado_a_id:
+            try:
+                from django.contrib.auth.models import User
+                asignado_a = User.objects.get(id=asignado_a_id)
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'Usuario asignado no encontrado'}, status=400)
+        
+        # Crear la tarea en la base de datos
+        tarea = Tarea.objects.create(
+            titulo=nombre,
+            descripcion=descripcion,
+            prioridad=prioridad,
+            estado='pendiente',
+            creado_por=request.user,
+            asignado_a=asignado_a,
+            fecha_inicio=fecha_inicio_obj,
+            fecha_limite=fecha_limite_obj,
+            estimacion_horas=estimacion_horas,
+            proyecto=None  # Tarea independiente, sin proyecto
+        )
+        
+        # Crear comentario inicial si hay descripción
+        if descripcion.strip():
+            TareaComentario.objects.create(
+                tarea=tarea,
+                usuario=request.user,
+                contenido=f"📝 Tarea creada: {descripcion}"
+            )
+        
+        # Enviar notificación al usuario asignado si es diferente al creador
+        if asignado_a and asignado_a != request.user:
+            try:
+                crear_notificacion(
+                    usuario_destinatario=asignado_a,
+                    tipo='tarea_asignada',
+                    titulo='Nueva tarea asignada',
+                    mensaje=f'Se te ha asignado la tarea "{nombre}"',
+                    usuario_remitente=request.user
+                )
+            except Exception as e:
+                print(f"⚠️ Error enviando notificación: {e}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Tarea creada exitosamente',
+            'tarea': {
+                'id': tarea.id,
+                'titulo': tarea.titulo,
+                'descripcion': tarea.descripcion,
+                'prioridad': tarea.prioridad,
+                'estado': tarea.estado,
+                'creado_por': request.user.get_full_name() or request.user.username,
+                'asignado_a': asignado_a.get_full_name() or asignado_a.username if asignado_a else None,
+                'fecha_creacion': tarea.fecha_creacion.strftime('%Y-%m-%d'),
+                'fecha_limite': tarea.fecha_limite.strftime('%Y-%m-%d') if tarea.fecha_limite else None
+            }
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Datos JSON inválidos'}, status=400)
+    except Exception as e:
+        print(f"❌ Error creando tarea: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': 'Error interno del servidor'}, status=500)
+
+
+@login_required
 def proyecto_detalle(request, proyecto_id):
     """
     Vista para el detalle individual de un proyecto
