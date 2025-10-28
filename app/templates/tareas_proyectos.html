@@ -2778,6 +2778,7 @@ Object.assign(TareasProyectos, {
                 if (this.isTaskRunning) {
                     // TAREA INICIADA
                     btnStart.style.display = 'none';
+                    btnStart.querySelector('span').textContent = 'Iniciar Tarea'; // Reset text
                     btnPause.style.display = 'flex';
                     this.startTimer();
                     this.addSystemComment('Tarea INICIADA. El cronómetro está en marcha.', '#16a34a');
@@ -2785,8 +2786,20 @@ Object.assign(TareasProyectos, {
                 } else {
                     // TAREA PAUSADA
                     btnStart.style.display = 'flex';
+                    btnStart.querySelector('span').textContent = 'Reanudar Tarea';
                     btnPause.style.display = 'none';
-                    this.stopTimer();
+                    
+                    // Detener cronómetro pero mostrar tiempo pausado
+                    if (this.timerInterval) {
+                        clearInterval(this.timerInterval);
+                        this.timerInterval = null;
+                    }
+                    
+                    // Mostrar cronómetro pausado con tiempo actual
+                    if (data.tarea.tiempo_total_trabajado) {
+                        this.showPausedTimer(data.tarea.tiempo_total_trabajado);
+                    }
+                    
                     this.addSystemComment('Tarea PAUSADA. El cronómetro se ha detenido.', '#dc2626');
                     console.log('🔴 Tarea pausada - cronómetro detenido');
                 }
@@ -2934,6 +2947,90 @@ Object.assign(TareasProyectos, {
         timerElement.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     },
 
+    // Función para mostrar cronómetro pausado
+    showPausedTimer(segundosTotal) {
+        const taskControls = document.getElementById('task-controls');
+        if (!taskControls) return;
+        
+        let timerDisplay = document.getElementById('task-timer-display');
+        if (!timerDisplay) {
+            timerDisplay = document.createElement('div');
+            timerDisplay.id = 'task-timer-display';
+            taskControls.appendChild(timerDisplay);
+        }
+        
+        const hours = Math.floor(segundosTotal / 3600);
+        const minutes = Math.floor((segundosTotal % 3600) / 60);
+        const seconds = segundosTotal % 60;
+        const timeText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        timerDisplay.style.cssText = `
+            background: rgba(28, 28, 30, 0.8);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-top: 12px;
+            text-align: center;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        `;
+        
+        timerDisplay.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #FF9F40;">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                <span style="font-weight: 600; font-size: 1.1rem;">${timeText}</span>
+                <span style="font-size: 0.8rem; opacity: 0.7;">(Pausado)</span>
+            </div>
+        `;
+        
+        timerDisplay.style.display = 'block';
+    },
+
+    // Función para mostrar cronómetro de tarea completada
+    showCompletedTaskTimer(segundosTotal) {
+        const taskControls = document.getElementById('task-controls');
+        if (!taskControls) return;
+        
+        let timerDisplay = document.getElementById('task-timer-display');
+        if (!timerDisplay) {
+            timerDisplay = document.createElement('div');
+            timerDisplay.id = 'task-timer-display';
+            taskControls.appendChild(timerDisplay);
+        }
+        
+        const hours = Math.floor(segundosTotal / 3600);
+        const minutes = Math.floor((segundosTotal % 3600) / 60);
+        const seconds = segundosTotal % 60;
+        const timeText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        timerDisplay.style.cssText = `
+            background: rgba(28, 28, 30, 0.8);
+            border: 1px solid rgba(48, 209, 88, 0.3);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-top: 12px;
+            text-align: center;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        `;
+        
+        timerDisplay.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #30D158;">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <span style="font-weight: 600; font-size: 1.1rem;">${timeText}</span>
+                <span style="font-size: 0.8rem; opacity: 0.7;">(Completado)</span>
+            </div>
+        `;
+        
+        timerDisplay.style.display = 'block';
+    },
+
     // Función para actualizar el estado de la tarea en la interfaz
     updateTaskStatus(nuevoEstado) {
         // Actualizar el badge de estado en el modal
@@ -2962,12 +3059,51 @@ Object.assign(TareasProyectos, {
         
         const btnStart = document.getElementById('btn-start-task');
         const btnPause = document.getElementById('btn-pause-task');
+        const btnComplete = document.querySelector('button[onclick="TareasProyectos.completarTarea()"]');
         
         console.log('🔄 Botón Start encontrado:', !!btnStart);
         console.log('🔄 Botón Pause encontrado:', !!btnPause);
+        console.log('🔄 Botón Complete encontrado:', !!btnComplete);
         
         if (!btnStart || !btnPause) {
             console.warn('⚠️ Botones de cronómetro no encontrados');
+            return;
+        }
+        
+        // Verificar si la tarea está completada
+        if (tarea.estado === 'completada') {
+            console.log('✅ Tarea completada - deshabilitando controles');
+            
+            // Ocultar botón de completar
+            if (btnComplete) {
+                btnComplete.style.display = 'none';
+            }
+            
+            // Deshabilitar controles de timer
+            btnStart.style.display = 'none';
+            btnPause.style.display = 'none';
+            
+            // Mostrar tiempo total si existe
+            if (tarea.tiempo_total_trabajado) {
+                this.showCompletedTaskTimer(tarea.tiempo_total_trabajado);
+            }
+            
+            this.isTaskRunning = false;
+            return;
+        }
+        
+        // Si la tarea tiene tiempo transcurrido pero no está corriendo (pausada)
+        if (!tarea.trabajando_actualmente && tarea.tiempo_total_trabajado > 0) {
+            console.log('⏸️ Tarea pausada con tiempo acumulado - mostrando cronómetro pausado');
+            
+            // Mostrar botón reanudar en lugar de iniciar
+            btnStart.style.display = 'flex';
+            btnStart.querySelector('span').textContent = 'Reanudar Tarea';
+            btnPause.style.display = 'none';
+            
+            // Mostrar el cronómetro pausado
+            this.showPausedTimer(tarea.tiempo_total_trabajado);
+            this.isTaskRunning = false;
             return;
         }
         
@@ -2988,18 +3124,21 @@ Object.assign(TareasProyectos, {
                 const ahora = new Date();
                 const tiempoTranscurrido = Math.floor((ahora - inicioSesion) / 1000);
                 
+                // Agregar tiempo previo si existe
+                const tiempoPrevio = tarea.tiempo_total_trabajado || 0;
+                const tiempoTotal = tiempoPrevio + tiempoTranscurrido;
+                
                 // Ajustar startTime para que el cronómetro muestre el tiempo correcto
-                this.startTime = Date.now() - (tiempoTranscurrido * 1000);
+                this.startTime = Date.now() - (tiempoTotal * 1000);
                 
                 console.log(`⏱️ Sesión iniciada hace ${tiempoTranscurrido} segundos`);
-                console.log(`⏱️ Inicio sesión: ${inicioSesion.toISOString()}`);
-                console.log(`⏱️ Ahora: ${ahora.toISOString()}`);
-                console.log(`⏱️ Tiempo transcurrido: ${tiempoTranscurrido}s`);
+                console.log(`⏱️ Tiempo previo: ${tiempoPrevio}s`);
+                console.log(`⏱️ Tiempo total: ${tiempoTotal}s`);
                 
                 // Mostrar inmediatamente el tiempo correcto
-                const hours = Math.floor(tiempoTranscurrido / 3600);
-                const minutes = Math.floor((tiempoTranscurrido % 3600) / 60);
-                const seconds = tiempoTranscurrido % 60;
+                const hours = Math.floor(tiempoTotal / 3600);
+                const minutes = Math.floor((tiempoTotal % 3600) / 60);
+                const seconds = tiempoTotal % 60;
                 console.log(`⏱️ Tiempo a mostrar: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
             } else {
                 // Si no hay fecha de inicio, usar ahora como referencia
@@ -3072,11 +3211,19 @@ Object.assign(TareasProyectos, {
                 // Agregar comentario del sistema
                 this.addSystemComment('Tarea COMPLETADA. ¡Excelente trabajo!', '#16a34a');
                 
-                // Ocultar botones de cronómetro ya que está completada
+                // Ocultar botones de cronómetro y completar ya que está completada
                 const btnStart = document.getElementById('btn-start-task');
                 const btnPause = document.getElementById('btn-pause-task');
+                const btnComplete = document.querySelector('button[onclick="TareasProyectos.completarTarea()"]');
+                
                 if (btnStart) btnStart.style.display = 'none';
                 if (btnPause) btnPause.style.display = 'none';
+                if (btnComplete) btnComplete.style.display = 'none';
+                
+                // Mostrar cronómetro completado con tiempo total
+                if (data.tiempo_total) {
+                    this.showCompletedTaskTimer(data.tiempo_total);
+                }
                 
                 // Mostrar mensaje de éxito
                 alert('¡Tarea completada exitosamente!');
