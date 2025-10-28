@@ -3093,7 +3093,18 @@ Object.assign(TareasProyectos, {
         }
         
         // Si la tarea tiene tiempo transcurrido pero no está corriendo (pausada)
-        if (!tarea.trabajando_actualmente && tarea.tiempo_total_trabajado > 0) {
+        // También verificar si el estado es 'iniciada' (lo que indica que se trabajó en ella)
+        const tiempoTotal = tarea.tiempo_total_trabajado || 0;
+        const fueIniciada = tarea.estado === 'iniciada' || tiempoTotal > 0 || tarea.fecha_inicio_sesion;
+        
+        console.log('🔍 Verificando si tarea está pausada:');
+        console.log('🔍 - trabajando_actualmente:', tarea.trabajando_actualmente);
+        console.log('🔍 - tiempo_total_trabajado:', tiempoTotal);
+        console.log('🔍 - estado:', tarea.estado);
+        console.log('🔍 - fecha_inicio_sesion:', tarea.fecha_inicio_sesion);
+        console.log('🔍 - fueIniciada:', fueIniciada);
+        
+        if (!tarea.trabajando_actualmente && fueIniciada) {
             console.log('⏸️ Tarea pausada con tiempo acumulado - mostrando cronómetro pausado');
             
             // Mostrar botón reanudar en lugar de iniciar
@@ -3102,7 +3113,7 @@ Object.assign(TareasProyectos, {
             btnPause.style.display = 'none';
             
             // Mostrar el cronómetro pausado
-            this.showPausedTimer(tarea.tiempo_total_trabajado);
+            this.showPausedTimer(tiempoTotal);
             this.isTaskRunning = false;
             return;
         }

@@ -9866,11 +9866,12 @@ def api_tarea_detalle(request, tarea_id):
             
             # Formatear tiempo trabajado
             tiempo_total_str = "00:00:00"
+            tiempo_total_segundos = 0
             if hasattr(tarea, 'tiempo_trabajado') and tarea.tiempo_trabajado:
-                total_seconds = int(tarea.tiempo_trabajado.total_seconds())
-                hours = total_seconds // 3600
-                minutes = (total_seconds % 3600) // 60
-                seconds = total_seconds % 60
+                tiempo_total_segundos = int(tarea.tiempo_trabajado.total_seconds())
+                hours = tiempo_total_segundos // 3600
+                minutes = (tiempo_total_segundos % 3600) // 60
+                seconds = tiempo_total_segundos % 60
                 tiempo_total_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
             # Preparar datos de la tarea
@@ -9895,6 +9896,7 @@ def api_tarea_detalle(request, tarea_id):
                 'trabajando_actualmente': getattr(tarea, 'trabajando_actualmente', False),
                 'pausado': getattr(tarea, 'pausado', False),
                 'tiempo_trabajado': tiempo_total_str,
+                'tiempo_total_trabajado': tiempo_total_segundos,  # En segundos para el frontend
                 'fecha_inicio_sesion': tarea.fecha_inicio_sesion.isoformat() if hasattr(tarea, 'fecha_inicio_sesion') and tarea.fecha_inicio_sesion else None,
             }
             
