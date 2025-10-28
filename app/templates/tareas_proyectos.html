@@ -2781,16 +2781,8 @@ Object.assign(TareasProyectos, {
                     btnStart.querySelector('span').textContent = 'Iniciar Tarea'; // Reset text
                     btnPause.style.display = 'flex';
                     
-                    // Configurar tiempo base correctamente para reanudar
-                    const tiempoTotal = data.tarea.tiempo_total_trabajado || 0;
-                    this.startTime = Date.now() - (tiempoTotal * 1000);
-                    
-                    // Mostrar y iniciar cronómetro
-                    this.showTimerDisplay();
-                    this.updateTimerDisplay(); // Mostrar tiempo inmediatamente
-                    this.timerInterval = setInterval(() => {
-                        this.updateTimerDisplay();
-                    }, 1000);
+                    // Primero obtener el tiempo acumulado correcto desde el servidor
+                    this.refreshTaskDataAndStartTimer();
                     
                     this.addSystemComment('Tarea INICIADA. El cronómetro está en marcha.', '#16a34a');
                     console.log('🟢 Tarea iniciada/reanudada - cronómetro activado');
@@ -3045,6 +3037,49 @@ Object.assign(TareasProyectos, {
         `;
         
         timerDisplay.style.display = 'block';
+    },
+
+    // Función para refrescar datos de tarea y iniciar cronómetro correctamente
+    async refreshTaskDataAndStartTimer() {
+        if (!this.currentTaskId) return;
+        
+        try {
+            console.log('🔄 Refrescando datos de tarea para cronómetro...');
+            const response = await fetch(`/app/api/tarea/${this.currentTaskId}/`);
+            const tarea = await response.json();
+            
+            console.log('🔄 Datos actualizados recibidos:', tarea);
+            console.log('🔄 Tiempo total trabajado:', tarea.tiempo_total_trabajado);
+            console.log('🔄 Trabajando actualmente:', tarea.trabajando_actualmente);
+            
+            if (tarea.trabajando_actualmente) {
+                // Configurar tiempo base correctamente
+                const tiempoTotal = tarea.tiempo_total_trabajado || 0;
+                this.startTime = Date.now() - (tiempoTotal * 1000);
+                
+                console.log('🔄 StartTime configurado:', this.startTime);
+                console.log('🔄 Tiempo que debería mostrar:', tiempoTotal, 'segundos');
+                
+                // Mostrar y iniciar cronómetro
+                this.showTimerDisplay();
+                this.updateTimerDisplay(); // Mostrar tiempo inmediatamente
+                
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                }
+                
+                this.timerInterval = setInterval(() => {
+                    this.updateTimerDisplay();
+                }, 1000);
+                
+                console.log('✅ Cronómetro iniciado con tiempo base correcto');
+            }
+        } catch (error) {
+            console.error('❌ Error refrescando datos de tarea:', error);
+            // Fallback: usar los datos anteriores
+            this.showTimerDisplay();
+            this.startTimer();
+        }
     },
 
     // Función para actualizar el estado de la tarea en la interfaz
