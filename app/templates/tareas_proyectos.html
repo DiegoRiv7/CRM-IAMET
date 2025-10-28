@@ -2812,6 +2812,8 @@ Object.assign(TareasProyectos, {
         this.startTime = Date.now();
         this.showTimerDisplay();
         
+        // Actualizar inmediatamente antes de iniciar el intervalo
+        this.updateTimerDisplay();
         this.timerInterval = setInterval(() => {
             this.updateTimerDisplay();
         }, 1000);
@@ -2840,26 +2842,66 @@ Object.assign(TareasProyectos, {
             timerDisplay = document.createElement('div');
             timerDisplay.id = 'task-timer-display';
             timerDisplay.style.cssText = `
-                background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.3));
-                border: 1px solid rgba(16, 185, 129, 0.4);
-                border-radius: 0.75rem;
-                padding: 1rem;
-                margin-top: 0.75rem;
+                background: rgba(28, 28, 30, 0.8);
+                border: 1px solid rgba(72, 72, 74, 0.3);
+                border-radius: 12px;
+                padding: 12px 16px;
+                margin-top: 12px;
                 text-align: center;
-                backdrop-filter: blur(10px);
-                -webkit-backdrop-filter: blur(10px);
-                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                box-shadow: 
+                    0 1px 3px rgba(0, 0, 0, 0.3),
+                    0 0 0 0.5px rgba(255, 255, 255, 0.05) inset;
+                transition: all 0.2s ease;
             `;
             timerDisplay.innerHTML = `
-                <div style="color: #10B981; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.5rem;">
-                    ⏱️ CRONÓMETRO ACTIVO
+                <div style="
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    gap: 8px;
+                    margin-bottom: 4px;
+                ">
+                    <div style="
+                        width: 6px; 
+                        height: 6px; 
+                        background: #30D158; 
+                        border-radius: 50%;
+                        animation: pulse 2s infinite;
+                    "></div>
+                    <span style="
+                        color: #8E8E93; 
+                        font-size: 11px; 
+                        font-weight: 500; 
+                        letter-spacing: 0.5px;
+                        text-transform: uppercase;
+                    ">En progreso</span>
                 </div>
-                <div id="timer-display" style="color: #E0E7FF; font-size: 1.5rem; font-weight: 700; font-family: 'Monaco', 'Menlo', monospace;">
+                <div id="timer-display" style="
+                    color: #F2F2F7; 
+                    font-size: 20px; 
+                    font-weight: 600; 
+                    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+                    letter-spacing: 1px;
+                    margin-bottom: 2px;
+                ">
                     00:00:00
                 </div>
-                <div style="color: #9CA3AF; font-size: 0.75rem; margin-top: 0.5rem;">
-                    Tiempo de la sesión actual
+                <div style="
+                    color: #636366; 
+                    font-size: 10px; 
+                    font-weight: 400;
+                    opacity: 0.8;
+                ">
+                    Sesión actual
                 </div>
+                <style>
+                    @keyframes pulse {
+                        0%, 100% { opacity: 1; }
+                        50% { opacity: 0.4; }
+                    }
+                </style>
             `;
             // Agregar el cronómetro al final del contenedor de controles
             taskControls.appendChild(timerDisplay);
@@ -2950,13 +2992,25 @@ Object.assign(TareasProyectos, {
                 this.startTime = Date.now() - (tiempoTranscurrido * 1000);
                 
                 console.log(`⏱️ Sesión iniciada hace ${tiempoTranscurrido} segundos`);
+                console.log(`⏱️ Inicio sesión: ${inicioSesion.toISOString()}`);
+                console.log(`⏱️ Ahora: ${ahora.toISOString()}`);
+                console.log(`⏱️ Tiempo transcurrido: ${tiempoTranscurrido}s`);
+                
+                // Mostrar inmediatamente el tiempo correcto
+                const hours = Math.floor(tiempoTranscurrido / 3600);
+                const minutes = Math.floor((tiempoTranscurrido % 3600) / 60);
+                const seconds = tiempoTranscurrido % 60;
+                console.log(`⏱️ Tiempo a mostrar: ${hours:02d}:${minutes:02d}:${seconds:02d}`);
             } else {
                 // Si no hay fecha de inicio, usar ahora como referencia
                 this.startTime = Date.now();
+                console.log(`⏱️ No hay fecha de inicio, empezando desde ahora`);
             }
             
             // Mostrar y iniciar el cronómetro
             this.showTimerDisplay();
+            // Actualizar inmediatamente el tiempo antes de iniciar el intervalo
+            this.updateTimerDisplay();
             this.timerInterval = setInterval(() => {
                 this.updateTimerDisplay();
             }, 1000);
