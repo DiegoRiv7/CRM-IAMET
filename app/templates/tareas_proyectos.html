@@ -2042,9 +2042,9 @@ function createTaskRow(tarea) {
 function getEstadoBadgeHTML(estado) {
     const estadosConfig = {
         'pendiente': { label: 'Pendiente', color: '#8E8E93', bgColor: 'rgba(142, 142, 147, 0.2)', icon: '○' },
-        'iniciada': { label: 'Iniciada', color: '#10B981', bgColor: 'rgba(16, 185, 129, 0.2)', icon: '⏱️' },
-        'en_progreso': { label: 'En Progreso', color: '#007AFF', bgColor: 'rgba(0, 122, 255, 0.2)', icon: '◐' },
-        'completada': { label: 'Completada', color: '#34C759', bgColor: 'rgba(52, 199, 89, 0.2)', icon: '●' },
+        'iniciada': { label: 'Pausado', color: '#FF9500', bgColor: 'rgba(255, 149, 0, 0.2)', icon: '⏸️' },
+        'en_progreso': { label: 'En Progreso', color: '#007AFF', bgColor: 'rgba(0, 122, 255, 0.2)', icon: '▶️' },
+        'completada': { label: 'Completada', color: '#34C759', bgColor: 'rgba(52, 199, 89, 0.2)', icon: '✅' },
         'cancelada': { label: 'Cancelada', color: '#FF3B30', bgColor: 'rgba(255, 59, 48, 0.2)', icon: '×' }
     };
     
@@ -2408,9 +2408,9 @@ Object.assign(TareasProyectos, {
     getEstadoBadgeHTML(estado) {
         const estadoConfig = {
             'pendiente': { bg: 'rgba(239, 68, 68, 0.9)', color: '#7F1D1D', text: 'Pendiente' },
-            'iniciada': { bg: 'rgba(16, 185, 129, 0.2)', color: '#10B981', text: 'Iniciada ⏱️' },
-            'en_progreso': { bg: 'rgba(59, 130, 246, 0.2)', color: '#93C5FD', text: 'En Progreso' },
-            'completada': { bg: 'rgba(16, 185, 129, 0.9)', color: '#064E3B', text: 'Completada' },
+            'iniciada': { bg: 'rgba(255, 149, 0, 0.2)', color: '#FF9500', text: 'Pausado ⏸️' },
+            'en_progreso': { bg: 'rgba(0, 122, 255, 0.2)', color: '#007AFF', text: 'En Progreso ▶️' },
+            'completada': { bg: 'rgba(52, 199, 89, 0.2)', color: '#34C759', text: 'Completada ✅' },
             'cancelada': { bg: 'rgba(239, 68, 68, 0.9)', color: '#7F1D1D', text: 'Cancelada' }
         };
         

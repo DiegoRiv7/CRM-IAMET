@@ -10190,7 +10190,7 @@ def api_toggle_task_timer(request, tarea_id):
             # INICIAR TAREA
             tarea.trabajando_actualmente = True
             tarea.fecha_inicio_sesion = ahora
-            tarea.estado = 'iniciada'
+            tarea.estado = 'en_progreso'
             tarea.pausado = False
             
             mensaje = f"Tarea iniciada. Cronómetro en marcha."
@@ -10208,7 +10208,7 @@ def api_toggle_task_timer(request, tarea_id):
             
             tarea.trabajando_actualmente = False
             tarea.fecha_inicio_sesion = None
-            tarea.estado = 'en_progreso'
+            tarea.estado = 'iniciada'  # Usamos 'iniciada' para representar pausado
             tarea.pausado = True
             
             mensaje = f"Tarea pausada. Tiempo registrado."
