@@ -2153,6 +2153,11 @@ Object.assign(TareasProyectos, {
         // Establecer la tarea actual
         TareasProyectos.currentTaskId = tareaId;
         
+        // Agregar task_id a la URL para persistencia al recargar
+        const currentURL = new URL(window.location);
+        currentURL.searchParams.set('task_id', tareaId);
+        window.history.replaceState({}, '', currentURL);
+        
         try {
             console.log('Haciendo petición a:', `/app/api/tarea/${tareaId}/`);
             // Hacer petición para obtener detalles de la tarea
@@ -2248,6 +2253,11 @@ Object.assign(TareasProyectos, {
         
         // Limpiar ID de tarea actual
         this.currentTaskId = null;
+        
+        // Limpiar task_id de la URL
+        const currentURL = new URL(window.location);
+        currentURL.searchParams.delete('task_id');
+        window.history.replaceState({}, '', currentURL);
     },
 
     getPrioridadBadgeHTML(prioridad) {
@@ -2818,8 +2828,11 @@ Object.assign(TareasProyectos, {
 
     // Función para mostrar el cronómetro
     showTimerDisplay() {
-        const taskDetails = document.querySelector('.task-details-main');
-        if (!taskDetails) return;
+        const taskControls = document.getElementById('task-controls');
+        if (!taskControls) {
+            console.warn('⚠️ Contenedor task-controls no encontrado');
+            return;
+        }
 
         // Verificar si ya existe el cronómetro
         let timerDisplay = document.getElementById('task-timer-display');
@@ -2831,10 +2844,11 @@ Object.assign(TareasProyectos, {
                 border: 1px solid rgba(16, 185, 129, 0.4);
                 border-radius: 0.75rem;
                 padding: 1rem;
-                margin-top: 1rem;
+                margin-top: 0.75rem;
                 text-align: center;
                 backdrop-filter: blur(10px);
                 -webkit-backdrop-filter: blur(10px);
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
             `;
             timerDisplay.innerHTML = `
                 <div style="color: #10B981; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.5rem;">
@@ -2847,9 +2861,12 @@ Object.assign(TareasProyectos, {
                     Tiempo de la sesión actual
                 </div>
             `;
-            taskDetails.appendChild(timerDisplay);
+            // Agregar el cronómetro al final del contenedor de controles
+            taskControls.appendChild(timerDisplay);
+            console.log('✅ Cronómetro agregado al DOM');
         }
         timerDisplay.style.display = 'block';
+        console.log('✅ Cronómetro mostrado');
     },
 
     // Función para ocultar el cronómetro
@@ -2895,10 +2912,17 @@ Object.assign(TareasProyectos, {
 
     // Función para inicializar el estado del cronómetro al abrir una tarea
     initializeTimerState(tarea) {
-        console.log('🔄 Inicializando estado del cronómetro:', tarea);
+        console.log('🔄 === INICIALIZANDO ESTADO DEL CRONÓMETRO ===');
+        console.log('🔄 Datos de la tarea:', tarea);
+        console.log('🔄 trabajando_actualmente:', tarea.trabajando_actualmente);
+        console.log('🔄 estado:', tarea.estado);
+        console.log('🔄 fecha_inicio_sesion:', tarea.fecha_inicio_sesion);
         
         const btnStart = document.getElementById('btn-start-task');
         const btnPause = document.getElementById('btn-pause-task');
+        
+        console.log('🔄 Botón Start encontrado:', !!btnStart);
+        console.log('🔄 Botón Pause encontrado:', !!btnPause);
         
         if (!btnStart || !btnPause) {
             console.warn('⚠️ Botones de cronómetro no encontrados');
@@ -4098,9 +4122,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 TareasProyectos.verDetallesTarea(parseInt(taskId));
             }, 1000);
             
-            // Limpiar el parámetro de la URL para no reabrir en navegación posterior
-            const newURL = window.location.protocol + "//" + window.location.host + window.location.pathname;
-            window.history.replaceState({path: newURL}, '', newURL);
+            // NO limpiar la URL - mantener task_id para persistencia al recargar
         }
     }
 
