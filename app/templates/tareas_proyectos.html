@@ -4242,22 +4242,60 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // --- Tab Selector Logic ---
+    // --- Tab Selector Logic with Persistence ---
     const tabSelector = document.querySelector('.tab-selector');
     const tabOptions = document.querySelectorAll('.tab-option');
     const tabContents = document.querySelectorAll('.tab-content');
+    
+    // Función para cambiar de pestaña
+    function switchToTab(tabName, saveToStorage = true) {
+        console.log(`🔄 Cambiando a pestaña: ${tabName}`);
+        
+        if (tabSelector) { tabSelector.dataset.active = tabName; }
+        tabOptions.forEach(tab => tab.classList.remove('active'));
+        tabContents.forEach(content => content.classList.remove('active'));
+        
+        const targetOption = document.querySelector(`[data-tab="${tabName}"]`);
+        const activeContent = document.getElementById(`${tabName}-content`);
+        
+        if (targetOption) targetOption.classList.add('active');
+        if (activeContent) activeContent.classList.add('active');
+        
+        // Guardar selección en localStorage
+        if (saveToStorage) {
+            localStorage.setItem('selectedTab', tabName);
+            console.log(`💾 Pestaña guardada en localStorage: ${tabName}`);
+        }
+        
+        // Cargar contenido apropiado
+        if (tabName === 'proyectos') { 
+            cargarProyectos(1); 
+        } else { 
+            cargarTareas(); 
+        }
+    }
+    
+    // Evento click para las pestañas
     tabOptions.forEach(option => {
         option.addEventListener('click', () => {
             const tabName = option.dataset.tab;
-            if (tabSelector) { tabSelector.dataset.active = tabName; }
-            tabOptions.forEach(tab => tab.classList.remove('active'));
-            option.classList.add('active');
-            tabContents.forEach(content => content.classList.remove('active'));
-            const activeContent = document.getElementById(`${tabName}-content`);
-            if (activeContent) activeContent.classList.add('active');
-            if (tabName === 'proyectos') { cargarProyectos(1); } else { cargarTareas(); }
+            switchToTab(tabName, true);
         });
     });
+    
+    // Restaurar pestaña seleccionada al cargar la página
+    function restoreSelectedTab() {
+        const savedTab = localStorage.getItem('selectedTab');
+        console.log(`🔍 Pestaña guardada encontrada: ${savedTab}`);
+        
+        if (savedTab && (savedTab === 'proyectos' || savedTab === 'tareas')) {
+            console.log(`✅ Restaurando pestaña: ${savedTab}`);
+            switchToTab(savedTab, false); // No guardar de nuevo
+        } else {
+            console.log('ℹ️ No hay pestaña guardada, usando proyectos por defecto');
+            switchToTab('proyectos', false);
+        }
+    }
 
     // --- User Search Functionality ---
     const userSearchInput = document.getElementById('proyecto-miembros');
@@ -4442,8 +4480,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (taskId) {
             console.log(`🔗 Task ID detectado en URL: ${taskId}`);
             
-            // Cambiar a la pestaña de tareas
-            document.querySelector('[data-tab="tareas"]').click();
+            // Cambiar a la pestaña de tareas usando la nueva función
+            switchToTab('tareas', true);
             
             // Esperar un momento para que se carguen las tareas y luego abrir el detalle
             setTimeout(() => {
@@ -4455,8 +4493,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Initial data load
-    cargarProyectos(1);
+    // Initial data load - Restaurar pestaña seleccionada
+    restoreSelectedTab();
     
     // Cargar usuarios al inicializar
     cargarTodosLosUsuarios();
