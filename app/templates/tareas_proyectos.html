@@ -1177,6 +1177,10 @@
         display: block;
     }
     
+    .user-selector {
+        position: relative;
+    }
+    
     .user-search-input {
         width: 100%;
         padding: 0.75rem 1rem;
@@ -1232,6 +1236,46 @@
     
     .user-pill-remove:hover {
         background: rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Dropdown de búsqueda de usuarios */
+    .user-search-dropdown {
+        position: absolute !important;
+        top: 100% !important;
+        left: 0 !important;
+        right: 0 !important;
+        background: rgba(28, 28, 30, 0.98) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 12px !important;
+        margin-top: 0.5rem !important;
+        max-height: 200px !important;
+        overflow-y: auto !important;
+        z-index: 100000 !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        display: block !important;
+    }
+    
+    .user-search-item {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.75rem !important;
+        padding: 0.75rem 1rem !important;
+        cursor: pointer !important;
+        transition: background-color 0.2s ease !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        color: var(--apple-label) !important;
+    }
+    
+    .user-search-item:hover {
+        background: rgba(255, 255, 255, 0.08) !important;
+    }
+    
+    .user-search-item:last-child {
+        border-bottom: none !important;
     }
     
     /* Timing Section */
@@ -5346,13 +5390,13 @@ function abrirModalCrearTarea() {
         // Configurar tabs
         initializeAssignmentTabs();
         
-        // Configurar búsqueda de usuarios
-        setupUserSearchInTaskModal();
-        
-        // Focus en el título
+        // Focus en el título y configurar búsqueda después de renderizar
         setTimeout(() => {
             const titleInput = document.getElementById('taskTitle');
             if (titleInput) titleInput.focus();
+            
+            // Configurar búsqueda de usuarios después del renderizado
+            setupUserSearchInTaskModal();
         }, 300);
     }
 }
@@ -5472,47 +5516,93 @@ let selectedTaskUsers = {
 
 // Funciones para búsqueda de usuarios en el modal de tareas
 async function setupUserSearchInTaskModal() {
+    console.log('🔍 Configurando búsqueda de usuarios en modal de tareas');
+    
     // Configurar búsqueda para responsable
     const responsibleSearch = document.getElementById('responsibleSearch');
     if (responsibleSearch) {
+        console.log('✅ Configurando búsqueda de responsable');
         responsibleSearch.addEventListener('input', async (e) => {
             const query = e.target.value.trim();
+            console.log('🔍 Búsqueda responsable:', query);
             if (query.length >= 2) {
                 const usuarios = await buscarUsuarios(query);
+                console.log('👥 Usuarios encontrados:', usuarios);
                 mostrarResultadosBusquedaTarea('responsible', usuarios);
+            } else {
+                // Limpiar resultados si query es muy corto
+                limpiarResultadosBusquedaTarea('responsible');
             }
         });
+    } else {
+        console.error('❌ No se encontró responsibleSearch');
     }
     
     // Configurar búsqueda para participantes
     const participantsSearch = document.getElementById('participantsSearch');
     if (participantsSearch) {
+        console.log('✅ Configurando búsqueda de participantes');
         participantsSearch.addEventListener('input', async (e) => {
             const query = e.target.value.trim();
+            console.log('🔍 Búsqueda participantes:', query);
             if (query.length >= 2) {
                 const usuarios = await buscarUsuarios(query);
+                console.log('👥 Usuarios encontrados:', usuarios);
                 mostrarResultadosBusquedaTarea('participants', usuarios);
+            } else {
+                limpiarResultadosBusquedaTarea('participants');
             }
         });
+    } else {
+        console.error('❌ No se encontró participantsSearch');
     }
     
     // Configurar búsqueda para observadores
     const observersSearch = document.getElementById('observersSearch');
     if (observersSearch) {
+        console.log('✅ Configurando búsqueda de observadores');
         observersSearch.addEventListener('input', async (e) => {
             const query = e.target.value.trim();
+            console.log('🔍 Búsqueda observadores:', query);
             if (query.length >= 2) {
                 const usuarios = await buscarUsuarios(query);
+                console.log('👥 Usuarios encontrados:', usuarios);
                 mostrarResultadosBusquedaTarea('observers', usuarios);
+            } else {
+                limpiarResultadosBusquedaTarea('observers');
             }
         });
+    } else {
+        console.error('❌ No se encontró observersSearch');
+    }
+}
+
+function limpiarResultadosBusquedaTarea(tipo) {
+    const searchInput = document.getElementById(`${tipo === 'responsible' ? 'responsibleSearch' : tipo === 'participants' ? 'participantsSearch' : 'observersSearch'}`);
+    if (searchInput) {
+        const container = searchInput.parentElement;
+        const existingDropdown = container.querySelector('.user-search-dropdown');
+        if (existingDropdown) {
+            existingDropdown.remove();
+        }
     }
 }
 
 function mostrarResultadosBusquedaTarea(tipo, usuarios) {
+    console.log(`📋 Mostrando resultados para ${tipo}:`, usuarios);
+    
     // Crear dropdown de resultados dinámicamente si no existe
     const searchInput = document.getElementById(`${tipo === 'responsible' ? 'responsibleSearch' : tipo === 'participants' ? 'participantsSearch' : 'observersSearch'}`);
+    
+    if (!searchInput) {
+        console.error(`❌ No se encontró input de búsqueda para ${tipo}`);
+        return;
+    }
+    
     const container = searchInput.parentElement;
+    
+    // Asegurar que el container tenga posición relativa
+    container.style.position = 'relative';
     
     // Remover dropdown anterior si existe
     const existingDropdown = container.querySelector('.user-search-dropdown');
@@ -5520,7 +5610,10 @@ function mostrarResultadosBusquedaTarea(tipo, usuarios) {
         existingDropdown.remove();
     }
     
-    if (usuarios.length === 0) return;
+    if (usuarios.length === 0) {
+        console.log('📋 No hay usuarios para mostrar');
+        return;
+    }
     
     // Crear nuevo dropdown
     const dropdown = document.createElement('div');
@@ -5530,16 +5623,21 @@ function mostrarResultadosBusquedaTarea(tipo, usuarios) {
         top: 100%;
         left: 0;
         right: 0;
-        background: rgba(28, 28, 30, 0.95);
+        background: rgba(28, 28, 30, 0.98);
         backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: 12px;
         margin-top: 0.5rem;
         max-height: 200px;
         overflow-y: auto;
-        z-index: 1000;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        z-index: 100000;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        visibility: visible;
+        opacity: 1;
     `;
+    
+    console.log(`✅ Creando dropdown con ${usuarios.length} usuarios`);
     
     usuarios.forEach(usuario => {
         const item = document.createElement('div');
@@ -5581,7 +5679,18 @@ function mostrarResultadosBusquedaTarea(tipo, usuarios) {
         dropdown.appendChild(item);
     });
     
+    console.log('📋 Agregando dropdown al container');
     container.appendChild(dropdown);
+    
+    // Verificar que se agregó correctamente
+    setTimeout(() => {
+        const added = container.querySelector('.user-search-dropdown');
+        if (added) {
+            console.log('✅ Dropdown agregado correctamente');
+        } else {
+            console.error('❌ Error: dropdown no se agregó');
+        }
+    }, 100);
     
     // Auto-remover dropdown después de un tiempo
     setTimeout(() => {
