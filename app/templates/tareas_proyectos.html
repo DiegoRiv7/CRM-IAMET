@@ -5676,11 +5676,20 @@ function mostrarResultadosBusquedaTarea(tipo, usuarios) {
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         `;
         
+        // Debug: verificar datos del usuario
+        console.log('🔍 Datos del usuario:', usuario);
+        console.log('📷 Avatar URL:', usuario.avatar_url);
+        console.log('🔤 Iniciales:', usuario.iniciales);
+        
         // Crear avatar igual que en el sistema original
         const avatarColor = getAvatarColor(usuario.id - 1);
+        console.log('🎨 Color avatar:', avatarColor);
+        
         const avatarContent = usuario.avatar_url ? 
             `<img src="${usuario.avatar_url}" alt="${usuario.nombre}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 
             usuario.iniciales;
+        
+        console.log('🖼️ Avatar content:', avatarContent);
             
         item.innerHTML = `
             <div class="user-avatar" style="
@@ -5703,6 +5712,8 @@ function mostrarResultadosBusquedaTarea(tipo, usuarios) {
                 <div style="color: var(--apple-label-secondary); font-size: 0.85rem; line-height: 1.2;">${usuario.email}</div>
             </div>
         `;
+        
+        console.log('📝 HTML generado:', item.innerHTML);
         
         item.addEventListener('mouseenter', () => {
             item.style.background = 'rgba(255, 255, 255, 0.08)';
