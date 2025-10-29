@@ -1147,22 +1147,25 @@ def api_crear_tarea(request):
         
         descripcion = data.get('descripcion', '').strip()
         prioridad = data.get('prioridad', 'media')
-        fecha_inicio = data.get('fecha_inicio')
         fecha_limite = data.get('fecha_limite')
         estimacion_horas = data.get('estimacion_horas')
         asignado_a_id = data.get('asignado_a')
         
-        # Convertir fechas si están presentes
-        fecha_inicio_obj = None
+        # Convertir fecha límite si está presente
         fecha_limite_obj = None
-        
-        if fecha_inicio:
-            from datetime import datetime
-            fecha_inicio_obj = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
         
         if fecha_limite:
             from datetime import datetime
-            fecha_limite_obj = datetime.strptime(fecha_limite, '%Y-%m-%d').date()
+            try:
+                # Intentar formato con hora primero (YYYY-MM-DDTHH:MM)
+                fecha_limite_obj = datetime.strptime(fecha_limite, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                try:
+                    # Si falla, intentar solo fecha (YYYY-MM-DD) y agregar hora por defecto
+                    fecha_limite_obj = datetime.strptime(fecha_limite + 'T23:59', '%Y-%m-%dT%H:%M')
+                except ValueError:
+                    print(f"⚠️ Formato de fecha_limite no válido: {fecha_limite}")
+                    fecha_limite_obj = None
         
         # Obtener usuario asignado si se especificó
         asignado_a = None
@@ -1181,7 +1184,6 @@ def api_crear_tarea(request):
             estado='pendiente',
             creado_por=request.user,
             asignado_a=asignado_a,
-            fecha_inicio=fecha_inicio_obj,
             fecha_limite=fecha_limite_obj,
             estimacion_horas=estimacion_horas,
             proyecto=None  # Tarea independiente, sin proyecto
