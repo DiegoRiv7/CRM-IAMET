@@ -2759,7 +2759,217 @@
 const PROYECTO_ID = {{ proyecto.id }};
 
 // Namespace para funciones de tareas - DEFINIDO TEMPRANO para evitar errores de referencia
-const TareasProyectos = {};
+const TareasProyectos = {
+    // Variables para navegación entre tareas
+    currentProjectTasks: [],
+    currentTaskIndex: -1,
+    currentTaskId: null,
+    allUsers: [],
+
+    // Función principal para ver detalles de tarea
+    async verDetallesTarea(tareaId) {
+        console.log('=== INICIANDO verDetallesTarea (proyecto_detalle) ===');
+        console.log('TareasProyectos.verDetallesTarea called with ID:', tareaId);
+        
+        try {
+            console.log('Haciendo petición a:', `/app/api/tarea/${tareaId}/`);
+            const response = await fetch(`/app/api/tarea/${tareaId}/`);
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Response error text:', errorText);
+                throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+            }
+            
+            const tarea = await response.json();
+            console.log('Tarea data received:', tarea);
+            
+            // Guardar ID de tarea actual para referencia
+            TareasProyectos.currentTaskId = tareaId;
+            
+            // Rellenar título de la tarea
+            const titleElement = document.getElementById('taskDetailTitle');
+            if (titleElement) {
+                titleElement.textContent = tarea.titulo;
+            }
+            
+            // Mostrar/ocultar estrella de prioridad
+            const priorityStar = document.getElementById('taskPriorityStar');
+            if (priorityStar) {
+                if (tarea.prioridad === 'alta') {
+                    priorityStar.style.display = 'block';
+                } else {
+                    priorityStar.style.display = 'none';
+                }
+            }
+            
+            // Descripción
+            const descContent = document.getElementById('taskDetailDescription');
+            if (descContent) {
+                if (tarea.descripcion && tarea.descripcion.trim()) {
+                    descContent.innerHTML = `<p>${tarea.descripcion}</p>`;
+                } else {
+                    descContent.innerHTML = '<p style="color: var(--apple-label-secondary); font-style: italic;">Sin descripción</p>';
+                }
+            }
+            
+            // Información del responsable
+            const responsibleElement = document.getElementById('taskDetailResponsible');
+            if (responsibleElement && tarea.responsable_data) {
+                const iniciales = TareasProyectos.getInitials(tarea.responsable_data.nombre);
+                responsibleElement.innerHTML = `
+                    ${tarea.responsable_data.avatar_url ? 
+                        `<img src="${tarea.responsable_data.avatar_url}" alt="${tarea.responsable_data.nombre}" />` :
+                        `<div class="user-avatar" style="background: ${TareasProyectos.getAvatarColor(tarea.responsable_data.nombre)}">${iniciales}</div>`
+                    }
+                    <span>${tarea.responsable_data.nombre}</span>
+                `;
+            }
+            
+            // Información del proyecto
+            const projectElement = document.getElementById('taskDetailProject');
+            if (projectElement) {
+                projectElement.textContent = tarea.proyecto_nombre || 'Tarea independiente';
+            }
+            
+            // Fecha límite
+            const dueDateElement = document.getElementById('taskDetailDueDate');
+            if (dueDateElement) {
+                dueDateElement.textContent = tarea.fecha_limite ? 
+                    TareasProyectos.formatearFechaCompleta(tarea.fecha_limite) : 
+                    'Sin fecha límite';
+            }
+            
+            // Fecha de creación
+            const createdElement = document.getElementById('taskDetailCreated');
+            if (createdElement) {
+                createdElement.textContent = TareasProyectos.formatearFechaCompleta(tarea.fecha_creacion);
+            }
+            
+            // Cargar participantes y observadores
+            TareasProyectos.updateTaskMembersUI(tarea);
+            
+            // Configurar navegación entre tareas del proyecto
+            TareasProyectos.setupTaskNavigation(tareaId);
+            
+            // Abrir el modal de detalles de tarea
+            console.log('Abriendo modal taskDetailModal');
+            const modal = document.getElementById('taskDetailModal');
+            if (modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                console.log('Modal taskDetailModal abierto correctamente');
+            } else {
+                console.error('❌ Modal taskDetailModal no encontrado');
+            }
+            
+        } catch (error) {
+            console.error('Error al cargar detalles de tarea:', error);
+            alert('Error al cargar los detalles de la tarea: ' + error.message);
+        }
+    },
+
+    // Configurar navegación entre tareas del proyecto
+    setupTaskNavigation(currentTaskId) {
+        // Obtener las tareas del proyecto actual desde la tabla
+        const taskRows = document.querySelectorAll('#tasks-tbody tr');
+        this.currentProjectTasks = [];
+        this.currentTaskIndex = -1;
+        
+        taskRows.forEach((row, index) => {
+            const onClick = row.getAttribute('onclick');
+            if (onClick) {
+                const match = onClick.match(/verDetallesTarea\((\d+)\)/);
+                if (match) {
+                    const taskId = parseInt(match[1]);
+                    this.currentProjectTasks.push(taskId);
+                    
+                    if (taskId === currentTaskId) {
+                        this.currentTaskIndex = index;
+                    }
+                }
+            }
+        });
+        
+        // Mostrar/ocultar navegación según cantidad de tareas
+        const navigation = document.getElementById('taskNavigation');
+        const taskCounter = document.getElementById('taskCounter');
+        const prevBtn = document.getElementById('prevTaskBtn');
+        const nextBtn = document.getElementById('nextTaskBtn');
+        
+        if (this.currentProjectTasks.length > 1) {
+            navigation.style.display = 'flex';
+            taskCounter.textContent = `${this.currentTaskIndex + 1} de ${this.currentProjectTasks.length}`;
+            
+            // Habilitar/deshabilitar botones
+            prevBtn.disabled = (this.currentTaskIndex <= 0);
+            nextBtn.disabled = (this.currentTaskIndex >= this.currentProjectTasks.length - 1);
+        } else {
+            navigation.style.display = 'none';
+        }
+    },
+
+    // Navegar a la tarea anterior
+    navegarTareaPrevious() {
+        if (this.currentTaskIndex > 0) {
+            const previousTaskId = this.currentProjectTasks[this.currentTaskIndex - 1];
+            this.verDetallesTarea(previousTaskId);
+        }
+    },
+
+    // Navegar a la tarea siguiente
+    navegarTareaNext() {
+        if (this.currentTaskIndex < this.currentProjectTasks.length - 1) {
+            const nextTaskId = this.currentProjectTasks[this.currentTaskIndex + 1];
+            this.verDetallesTarea(nextTaskId);
+        }
+    },
+
+    // Funciones auxiliares
+    getInitials(name) {
+        if (!name) return 'U';
+        const parts = name.trim().split(' ');
+        if (parts.length === 1) return parts[0][0].toUpperCase();
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    },
+
+    getAvatarColor(name) {
+        const colors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+            '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+        ];
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return colors[Math.abs(hash) % colors.length];
+    },
+
+    formatearFechaCompleta(fechaStr) {
+        if (!fechaStr) return 'Sin fecha';
+        try {
+            const fecha = new Date(fechaStr);
+            const opciones = {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            return fecha.toLocaleDateString('es-ES', opciones);
+        } catch (error) {
+            console.error('Error al formatear fecha:', error);
+            return fechaStr;
+        }
+    },
+
+    updateTaskMembersUI(tarea) {
+        // Esta función se implementará después si es necesaria
+        console.log('updateTaskMembersUI called with:', tarea);
+    }
+};
 const PROYECTO_NOMBRE = "{{ proyecto.nombre|escapejs }}";
 const CURRENT_USER_ID = {{ user.id }};
 const CURRENT_USER_NAME = "{{ user.first_name }} {{ user.last_name }}".trim() || "{{ user.username }}" || "Usuario";
@@ -7416,179 +7626,7 @@ function getEstadoBadgeHTML(estado) {
     `;
 }
 
-// Extender el namespace TareasProyectos con las funciones específicas
-Object.assign(TareasProyectos, {
-    async verDetallesTarea(tareaId) {
-        console.log('=== INICIANDO verDetallesTarea (proyecto_detalle) ===');
-        console.log('TareasProyectos.verDetallesTarea called with ID:', tareaId);
-        
-        try {
-            console.log('Haciendo petición a:', `/app/api/tarea/${tareaId}/`);
-            const response = await fetch(`/app/api/tarea/${tareaId}/`);
-            console.log('Response status:', response.status);
-            console.log('Response ok:', response.ok);
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Response error text:', errorText);
-                throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-            }
-            
-            const tarea = await response.json();
-            console.log('Tarea data received:', tarea);
-            
-            // Guardar ID de tarea actual para referencia
-            TareasProyectos.currentTaskId = tareaId;
-            
-            // Rellenar título de la tarea
-            const titleElement = document.getElementById('taskDetailTitle');
-            if (titleElement) {
-                titleElement.textContent = tarea.titulo;
-            }
-            
-            // Mostrar/ocultar estrella de prioridad
-            const priorityStar = document.getElementById('taskPriorityStar');
-            if (priorityStar) {
-                if (tarea.prioridad === 'alta') {
-                    priorityStar.style.display = 'block';
-                } else {
-                    priorityStar.style.display = 'none';
-                }
-            }
-            
-            // Descripción
-            const descContent = document.getElementById('taskDetailDescription');
-            if (descContent) {
-                if (tarea.descripcion && tarea.descripcion.trim()) {
-                    descContent.innerHTML = `<p>${tarea.descripcion}</p>`;
-                } else {
-                    descContent.innerHTML = '<p style="color: var(--apple-label-secondary); font-style: italic;">Sin descripción</p>';
-                }
-            }
-            
-            // Información del responsable
-            const responsibleElement = document.getElementById('taskDetailResponsible');
-            if (responsibleElement && tarea.responsable_data) {
-                const iniciales = TareasProyectos.getInitials(tarea.responsable_data.nombre);
-                responsibleElement.innerHTML = `
-                    ${tarea.responsable_data.avatar_url ? 
-                        `<img src="${tarea.responsable_data.avatar_url}" alt="${tarea.responsable_data.nombre}" />` :
-                        `<div class="user-avatar" style="background: ${TareasProyectos.getAvatarColor(tarea.responsable_data.nombre)}">${iniciales}</div>`
-                    }
-                    <span>${tarea.responsable_data.nombre}</span>
-                `;
-            }
-            
-            // Información del proyecto
-            const projectElement = document.getElementById('taskDetailProject');
-            if (projectElement) {
-                projectElement.textContent = tarea.proyecto_nombre || 'Tarea independiente';
-            }
-            
-            // Fecha límite
-            const dueDateElement = document.getElementById('taskDetailDueDate');
-            if (dueDateElement) {
-                dueDateElement.textContent = tarea.fecha_limite ? 
-                    TareasProyectos.formatearFechaCompleta(tarea.fecha_limite) : 
-                    'Sin fecha límite';
-            }
-            
-            // Fecha de creación
-            const createdElement = document.getElementById('taskDetailCreated');
-            if (createdElement) {
-                createdElement.textContent = TareasProyectos.formatearFechaCompleta(tarea.fecha_creacion);
-            }
-            
-            // Cargar participantes y observadores
-            TareasProyectos.updateTaskMembersUI(tarea);
-            
-            // Configurar navegación entre tareas del proyecto
-            TareasProyectos.setupTaskNavigation(tareaId);
-            
-            // Abrir el modal de detalles de tarea
-            console.log('Abriendo modal taskDetailModal');
-            const modal = document.getElementById('taskDetailModal');
-            if (modal) {
-                modal.classList.add('active');
-                document.body.style.overflow = 'hidden';
-                console.log('Modal taskDetailModal abierto correctamente');
-            } else {
-                console.error('❌ Modal taskDetailModal no encontrado');
-            }
-            
-        } catch (error) {
-            console.error('Error al cargar detalles de tarea:', error);
-            alert('Error al cargar los detalles de la tarea: ' + error.message);
-        }
-    },
-
-    cerrarModalDetalleTarea() {
-        const modal = document.getElementById('modal-detalle-tarea');
-        if (modal) {
-            modal.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-    },
-
-    // Variables para navegación entre tareas
-    currentProjectTasks: [],
-    currentTaskIndex: -1,
-
-    // Configurar navegación entre tareas del proyecto
-    setupTaskNavigation(currentTaskId) {
-        // Obtener las tareas del proyecto actual desde la tabla
-        const taskRows = document.querySelectorAll('#tasks-tbody tr');
-        this.currentProjectTasks = [];
-        this.currentTaskIndex = -1;
-        
-        taskRows.forEach((row, index) => {
-            const onClick = row.getAttribute('onclick');
-            if (onClick) {
-                const match = onClick.match(/verDetallesTarea\((\d+)\)/);
-                if (match) {
-                    const taskId = parseInt(match[1]);
-                    this.currentProjectTasks.push(taskId);
-                    
-                    if (taskId === currentTaskId) {
-                        this.currentTaskIndex = index;
-                    }
-                }
-            }
-        });
-        
-        // Mostrar/ocultar navegación según cantidad de tareas
-        const navigation = document.getElementById('taskNavigation');
-        const taskCounter = document.getElementById('taskCounter');
-        const prevBtn = document.getElementById('prevTaskBtn');
-        const nextBtn = document.getElementById('nextTaskBtn');
-        
-        if (this.currentProjectTasks.length > 1) {
-            navigation.style.display = 'flex';
-            taskCounter.textContent = `${this.currentTaskIndex + 1} de ${this.currentProjectTasks.length}`;
-            
-            // Habilitar/deshabilitar botones
-            prevBtn.disabled = (this.currentTaskIndex <= 0);
-            nextBtn.disabled = (this.currentTaskIndex >= this.currentProjectTasks.length - 1);
-        } else {
-            navigation.style.display = 'none';
-        }
-    },
-
-    // Navegar a la tarea anterior
-    navegarTareaPrevious() {
-        if (this.currentTaskIndex > 0) {
-            const previousTaskId = this.currentProjectTasks[this.currentTaskIndex - 1];
-            this.verDetallesTarea(previousTaskId);
-        }
-    },
-
-    // Navegar a la tarea siguiente
-    navegarTareaNext() {
-        if (this.currentTaskIndex < this.currentProjectTasks.length - 1) {
-            const nextTaskId = this.currentProjectTasks[this.currentTaskIndex + 1];
-            this.verDetallesTarea(nextTaskId);
-        }
-    },
+// Funciones auxiliares para el namespace TareasProyectos
 
     getPrioridadBadgeHTML(prioridad) {
         const prioridadColors = {
