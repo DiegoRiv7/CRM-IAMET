@@ -2766,16 +2766,82 @@ const TareasProyectos = {
     currentTaskId: null,
     allUsers: [],
 
-    // Función principal para ver detalles de tarea - USAR MODAL EXISTENTE
+    // Función principal para ver detalles de tarea - DENTRO DEL PROYECTO
     async verDetallesTarea(tareaId) {
-        console.log('🚀 Redirigiendo a vista de tareas para abrir modal existente');
+        console.log('🎯 Abriendo tarea dentro del proyecto:', tareaId);
         
-        // Redireccionar a la vista de tareas y proyectos con el modal abierto
-        const currentUrl = new URL(window.location);
-        const tareasUrl = '/app/tareas-proyectos/';
+        try {
+            // Obtener datos de la tarea
+            const response = await fetch(`/app/api/tarea/${tareaId}/`);
+            if (!response.ok) throw new Error(`Error ${response.status}`);
+            
+            const tarea = await response.json();
+            console.log('✅ Datos de tarea obtenidos:', tarea);
+            
+            // Llamar a la función que ya existe y funciona
+            // Esta es la función del modal que funciona en la vista de tareas
+            if (typeof abrirDetallesTareaLegacy === 'function') {
+                console.log('📂 Usando función legacy que funciona');
+                await abrirDetallesTareaLegacy(tareaId);
+            } else {
+                console.log('📂 Función legacy no encontrada, usando alternativa');
+                // Abrir el modal que funciona manualmente
+                this.abrirModalQuesFunciona(tarea);
+            }
+            
+        } catch (error) {
+            console.error('❌ Error:', error);
+            alert('Error al cargar la tarea: ' + error.message);
+        }
+    },
+
+    // Función para abrir el modal que sabemos que funciona
+    abrirModalQuesFunciona(tarea) {
+        console.log('🎯 Abriendo modal que funciona con datos:', tarea);
         
-        // Navegar a la vista de tareas con parámetro para abrir el modal
-        window.location.href = `${tareasUrl}?openTask=${tareaId}`;
+        // Usar el modal modal-detalle-tarea que es el que se ve en la imagen
+        const modal = document.getElementById('modal-detalle-tarea');
+        if (!modal) {
+            console.error('❌ Modal modal-detalle-tarea no encontrado');
+            return;
+        }
+
+        // Llenar los datos del modal
+        const elementos = {
+            'task-detail-titulo': tarea.titulo,
+            'task-detail-descripcion': tarea.descripcion || 'Sin descripción',
+            'task-detail-proyecto': tarea.proyecto_nombre || 'Sin proyecto',
+            'task-detail-fecha-limite': tarea.fecha_limite || 'Sin fecha límite',
+            'task-detail-creado-por': tarea.creado_por || 'Sin información'
+        };
+
+        // Rellenar elementos
+        Object.entries(elementos).forEach(([id, valor]) => {
+            const elemento = document.getElementById(id);
+            if (elemento) {
+                elemento.textContent = valor;
+                console.log(`✅ ${id}: ${valor}`);
+            } else {
+                console.log(`⚠️ Elemento ${id} no encontrado`);
+            }
+        });
+
+        // Cerrar todos los otros modales primero
+        const otrosModales = document.querySelectorAll('.modal-overlay, .advanced-task-modal-overlay, .power-task-modal-overlay');
+        otrosModales.forEach(m => {
+            if (m.id !== 'modal-detalle-tarea') {
+                m.classList.remove('active');
+                m.style.display = 'none';
+            }
+        });
+
+        // Abrir el modal correcto
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+        modal.style.zIndex = '10000';
+        document.body.style.overflow = 'hidden';
+        
+        console.log('✅ Modal abierto correctamente');
     },
 
     // Configurar navegación entre tareas del proyecto
@@ -4720,11 +4786,10 @@ function getEstadoBadge(estado) {
     `;
 }
 
-// Función legacy para abrir detalles de tarea (DESHABILITADA)
+// Función legacy para abrir detalles de tarea (HABILITADA PARA PROYECTO)
 async function abrirDetallesTareaLegacy(tareaId) {
-    console.log('❌ FUNCIÓN LEGACY EJECUTÁNDOSE - NO DEBERÍA PASAR');
-    console.log('❌ abrirDetallesTareaLegacy called with ID:', tareaId);
-    return; // Deshabilitamos la función
+    console.log('✅ FUNCIÓN LEGACY HABILITADA PARA PROYECTO');
+    console.log('✅ abrirDetallesTareaLegacy called with ID:', tareaId);
     
     try {
         // Establecer tarea actual para el dropdown
