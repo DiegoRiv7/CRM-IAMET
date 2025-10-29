@@ -2768,8 +2768,9 @@ const TareasProyectos = {
 
     // Función principal para ver detalles de tarea
     async verDetallesTarea(tareaId) {
-        console.log('=== INICIANDO verDetallesTarea (proyecto_detalle) ===');
-        console.log('TareasProyectos.verDetallesTarea called with ID:', tareaId);
+        console.log('🚀 === INICIANDO verDetallesTarea (NUEVO) ===');
+        console.log('🚀 TareasProyectos.verDetallesTarea called with ID:', tareaId);
+        console.log('🚀 Función ejecutándose correctamente');
         
         try {
             console.log('Haciendo petición a:', `/app/api/tarea/${tareaId}/`);
@@ -4813,8 +4814,12 @@ function getEstadoBadge(estado) {
     `;
 }
 
-// Función para abrir detalles de tarea
-async function abrirDetallesTarea(tareaId) {
+// Función legacy para abrir detalles de tarea (DESHABILITADA)
+async function abrirDetallesTareaLegacy(tareaId) {
+    console.log('❌ FUNCIÓN LEGACY EJECUTÁNDOSE - NO DEBERÍA PASAR');
+    console.log('❌ abrirDetallesTareaLegacy called with ID:', tareaId);
+    return; // Deshabilitamos la función
+    
     try {
         // Establecer tarea actual para el dropdown
         TareasProyectos.currentTaskId = tareaId;
