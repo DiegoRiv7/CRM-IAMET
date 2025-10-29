@@ -2855,13 +2855,25 @@ const TareasProyectos = {
             // Configurar navegación entre tareas del proyecto
             TareasProyectos.setupTaskNavigation(tareaId);
             
-            // Abrir el modal de detalles de tarea
-            console.log('Abriendo modal taskDetailModal');
+            // Cerrar cualquier otro modal que pueda estar abierto
+            const otherModal = document.getElementById('modal-detalle-tarea');
+            if (otherModal) {
+                otherModal.classList.remove('active');
+                console.log('🔒 Modal legacy cerrado');
+            }
+            
+            // Abrir el modal de detalles de tarea correcto
+            console.log('🚀 Abriendo modal taskDetailModal');
             const modal = document.getElementById('taskDetailModal');
             if (modal) {
                 modal.classList.add('active');
                 document.body.style.overflow = 'hidden';
-                console.log('Modal taskDetailModal abierto correctamente');
+                console.log('✅ Modal taskDetailModal abierto correctamente');
+                
+                // Verificar que el modal esté visible
+                const computedStyle = window.getComputedStyle(modal);
+                console.log('🔍 Display del modal:', computedStyle.display);
+                console.log('🔍 Z-index del modal:', computedStyle.zIndex);
             } else {
                 console.error('❌ Modal taskDetailModal no encontrado');
             }
@@ -6757,6 +6769,234 @@ function crearSubTarea(tareaId = null) {
     font-weight: 500;
     min-width: 50px;
     text-align: center;
+}
+
+/* Modal de detalles de tarea avanzado */
+.advanced-task-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.advanced-task-modal-overlay.active {
+    display: flex;
+}
+
+.advanced-task-container {
+    background: rgba(26, 31, 39, 0.95);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    max-width: 1200px;
+    width: 100%;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.advanced-task-content {
+    display: flex;
+    height: calc(90vh - 120px);
+    overflow: hidden;
+}
+
+.task-main-area {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.task-sidebar {
+    width: 320px;
+    background: rgba(255, 255, 255, 0.03);
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 2rem 1.5rem;
+    overflow-y: auto;
+}
+
+.task-main-title {
+    color: var(--apple-label);
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+    margin-right: 1rem;
+}
+
+.task-priority-star {
+    color: var(--apple-orange);
+}
+
+.advanced-task-close {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--apple-label-secondary);
+    cursor: pointer;
+    padding: 0.6rem;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+.advanced-task-close:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--apple-label);
+}
+
+.task-description-area {
+    margin-bottom: 2rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.section-title {
+    color: var(--apple-label);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.edit-description-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--apple-label-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.edit-description-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--apple-label);
+}
+
+.task-description-content {
+    color: var(--apple-label);
+    line-height: 1.6;
+}
+
+.task-description-edit {
+    margin-top: 1rem;
+}
+
+.description-editor {
+    width: 100%;
+    min-height: 120px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 1rem;
+    color: var(--apple-label);
+    font-family: inherit;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    resize: vertical;
+}
+
+.description-edit-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.btn-cancel-edit, .btn-save-edit {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-cancel-edit {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--apple-label-secondary);
+}
+
+.btn-save-edit {
+    background: var(--apple-blue);
+    border: 1px solid rgba(10, 132, 255, 0.3);
+    color: white;
+}
+
+.sidebar-section {
+    margin-bottom: 2rem;
+}
+
+.sidebar-title {
+    color: var(--apple-label);
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 1rem 0;
+}
+
+.info-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.info-label {
+    color: var(--apple-label-secondary);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+.info-value {
+    color: var(--apple-label);
+    font-size: 0.9rem;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.user-info img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.project-link {
+    color: var(--apple-blue);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.project-link:hover {
+    text-decoration: underline;
+}
+
+.date-value {
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 0.85rem;
 }
 
 /* Actualizar header layout */
