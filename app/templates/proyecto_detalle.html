@@ -2904,6 +2904,47 @@ const TareasProyectos = {
                     
                     document.body.style.overflow = 'hidden';
                     console.log('✅ Modal forzado a mostrarse con estilos inline');
+                    
+                    // WATCHDOG: Vigilar si alguien más modifica nuestro modal
+                    const watchdog = setInterval(() => {
+                        const allVisibleModals = document.querySelectorAll('[id*="modal"], [class*="modal"]');
+                        const visibleModals = Array.from(allVisibleModals).filter(m => {
+                            const style = window.getComputedStyle(m);
+                            return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+                        });
+                        
+                        if (visibleModals.length > 1) {
+                            console.log('🚨 DETECTADO: Múltiples modales visibles:', visibleModals.map(m => ({
+                                id: m.id, 
+                                classes: m.className,
+                                zIndex: window.getComputedStyle(m).zIndex
+                            })));
+                            
+                            // Cerrar todos excepto el nuestro
+                            visibleModals.forEach(m => {
+                                if (m.id !== 'taskDetailModal') {
+                                    m.style.display = 'none';
+                                    m.style.visibility = 'hidden';
+                                    m.style.opacity = '0';
+                                    m.style.zIndex = '-1';
+                                    console.log('🔒 Cerrado modal intruso:', m.id || m.className);
+                                }
+                            });
+                            
+                            // Reforzar nuestro modal
+                            modal.style.display = 'flex';
+                            modal.style.zIndex = '999999';
+                            modal.style.visibility = 'visible';
+                            modal.style.opacity = '1';
+                        }
+                    }, 100);
+                    
+                    // Limpiar watchdog después de 5 segundos
+                    setTimeout(() => {
+                        clearInterval(watchdog);
+                        console.log('🔍 Watchdog terminado');
+                    }, 5000);
+                    
                 } else {
                     console.error('❌ Modal taskDetailModal no encontrado');
                 }
