@@ -2855,28 +2855,43 @@ const TareasProyectos = {
             // Configurar navegación entre tareas del proyecto
             TareasProyectos.setupTaskNavigation(tareaId);
             
-            // Cerrar cualquier otro modal que pueda estar abierto
-            const otherModal = document.getElementById('modal-detalle-tarea');
-            if (otherModal) {
-                otherModal.classList.remove('active');
-                console.log('🔒 Modal legacy cerrado');
-            }
-            
-            // Abrir el modal de detalles de tarea correcto
-            console.log('🚀 Abriendo modal taskDetailModal');
-            const modal = document.getElementById('taskDetailModal');
-            if (modal) {
-                modal.classList.add('active');
-                document.body.style.overflow = 'hidden';
-                console.log('✅ Modal taskDetailModal abierto correctamente');
+            // Usar setTimeout para asegurar que nuestro modal se abra después de cualquier otro código
+            setTimeout(() => {
+                // Cerrar cualquier otro modal que pueda estar abierto
+                const otherModal = document.getElementById('modal-detalle-tarea');
+                if (otherModal) {
+                    otherModal.classList.remove('active');
+                    otherModal.style.display = 'none';
+                    console.log('🔒 Modal legacy cerrado y ocultado');
+                }
                 
-                // Verificar que el modal esté visible
-                const computedStyle = window.getComputedStyle(modal);
-                console.log('🔍 Display del modal:', computedStyle.display);
-                console.log('🔍 Z-index del modal:', computedStyle.zIndex);
-            } else {
-                console.error('❌ Modal taskDetailModal no encontrado');
-            }
+                // Cerrar también otros posibles modales
+                const allModals = document.querySelectorAll('.modal-overlay');
+                allModals.forEach(modalEl => {
+                    modalEl.classList.remove('active');
+                    modalEl.style.display = 'none';
+                });
+                console.log('🔒 Todos los modales legacy cerrados');
+                
+                // Abrir el modal de detalles de tarea correcto
+                console.log('🚀 Abriendo modal taskDetailModal');
+                const modal = document.getElementById('taskDetailModal');
+                if (modal) {
+                    modal.classList.add('active');
+                    modal.style.display = 'flex';
+                    modal.style.zIndex = '999999';
+                    document.body.style.overflow = 'hidden';
+                    console.log('✅ Modal taskDetailModal abierto correctamente');
+                    
+                    // Verificar que el modal esté visible
+                    const computedStyle = window.getComputedStyle(modal);
+                    console.log('🔍 Display del modal:', computedStyle.display);
+                    console.log('🔍 Z-index del modal:', computedStyle.zIndex);
+                    console.log('🔍 Modal element:', modal);
+                } else {
+                    console.error('❌ Modal taskDetailModal no encontrado');
+                }
+            }, 100); // Esperar 100ms para que cualquier otro código termine
             
         } catch (error) {
             console.error('Error al cargar detalles de tarea:', error);
@@ -6781,7 +6796,7 @@ function crearSubTarea(tareaId = null) {
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    z-index: 10000;
+    z-index: 999999 !important;
     display: none;
     align-items: center;
     justify-content: center;
