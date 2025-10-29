@@ -2855,43 +2855,59 @@ const TareasProyectos = {
             // Configurar navegación entre tareas del proyecto
             TareasProyectos.setupTaskNavigation(tareaId);
             
-            // Usar setTimeout para asegurar que nuestro modal se abra después de cualquier otro código
+            // DEPURACIÓN: Verificar qué modales existen en el DOM
             setTimeout(() => {
-                // Cerrar cualquier otro modal que pueda estar abierto
-                const otherModal = document.getElementById('modal-detalle-tarea');
-                if (otherModal) {
-                    otherModal.classList.remove('active');
-                    otherModal.style.display = 'none';
-                    console.log('🔒 Modal legacy cerrado y ocultado');
-                }
+                const allModalsInDOM = document.querySelectorAll('[id*="modal"], [class*="modal"]');
+                console.log('🔍 TODOS LOS MODALES EN EL DOM:', allModalsInDOM);
                 
-                // Cerrar también otros posibles modales
-                const allModals = document.querySelectorAll('.modal-overlay');
-                allModals.forEach(modalEl => {
+                allModalsInDOM.forEach((modalEl, index) => {
+                    const isVisible = window.getComputedStyle(modalEl).display !== 'none';
+                    const hasActiveClass = modalEl.classList.contains('active');
+                    console.log(`🔍 Modal ${index}:`, {
+                        id: modalEl.id,
+                        classes: modalEl.className,
+                        display: window.getComputedStyle(modalEl).display,
+                        zIndex: window.getComputedStyle(modalEl).zIndex,
+                        isVisible: isVisible,
+                        hasActiveClass: hasActiveClass,
+                        element: modalEl
+                    });
+                });
+                
+                // Cerrar TODOS los modales existentes
+                allModalsInDOM.forEach(modalEl => {
                     modalEl.classList.remove('active');
                     modalEl.style.display = 'none';
+                    modalEl.style.visibility = 'hidden';
+                    modalEl.style.opacity = '0';
+                    modalEl.style.zIndex = '-1';
                 });
-                console.log('🔒 Todos los modales legacy cerrados');
+                console.log('🔒 TODOS los modales cerrados forzosamente');
                 
-                // Abrir el modal de detalles de tarea correcto
-                console.log('🚀 Abriendo modal taskDetailModal');
+                // Abrir nuestro modal con máxima prioridad
                 const modal = document.getElementById('taskDetailModal');
                 if (modal) {
-                    modal.classList.add('active');
+                    // Forzar estilos inline para mayor prioridad
+                    modal.style.position = 'fixed';
+                    modal.style.top = '0';
+                    modal.style.left = '0';
+                    modal.style.right = '0';
+                    modal.style.bottom = '0';
                     modal.style.display = 'flex';
+                    modal.style.alignItems = 'center';
+                    modal.style.justifyContent = 'center';
                     modal.style.zIndex = '999999';
-                    document.body.style.overflow = 'hidden';
-                    console.log('✅ Modal taskDetailModal abierto correctamente');
+                    modal.style.visibility = 'visible';
+                    modal.style.opacity = '1';
+                    modal.style.background = 'rgba(0, 0, 0, 0.7)';
+                    modal.classList.add('active');
                     
-                    // Verificar que el modal esté visible
-                    const computedStyle = window.getComputedStyle(modal);
-                    console.log('🔍 Display del modal:', computedStyle.display);
-                    console.log('🔍 Z-index del modal:', computedStyle.zIndex);
-                    console.log('🔍 Modal element:', modal);
+                    document.body.style.overflow = 'hidden';
+                    console.log('✅ Modal forzado a mostrarse con estilos inline');
                 } else {
                     console.error('❌ Modal taskDetailModal no encontrado');
                 }
-            }, 100); // Esperar 100ms para que cualquier otro código termine
+            }, 200); // Aumentar a 200ms
             
         } catch (error) {
             console.error('Error al cargar detalles de tarea:', error);
