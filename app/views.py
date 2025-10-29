@@ -1185,7 +1185,6 @@ def api_crear_tarea(request):
             creado_por=request.user,
             asignado_a=asignado_a,
             fecha_limite=fecha_limite_obj,
-            estimacion_horas=estimacion_horas,
             proyecto=None  # Tarea independiente, sin proyecto
         )
         
