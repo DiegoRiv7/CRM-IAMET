@@ -2778,16 +2778,9 @@ const TareasProyectos = {
             const tarea = await response.json();
             console.log('✅ Datos de tarea obtenidos:', tarea);
             
-            // Llamar a la función que ya existe y funciona
-            // Esta es la función del modal que funciona en la vista de tareas
-            if (typeof abrirDetallesTareaLegacy === 'function') {
-                console.log('📂 Usando función legacy que funciona');
-                await abrirDetallesTareaLegacy(tareaId);
-            } else {
-                console.log('📂 Función legacy no encontrada, usando alternativa');
-                // Abrir el modal que funciona manualmente
-                this.abrirModalQuesFunciona(tarea);
-            }
+            // No usar la función legacy que tiene dependencias, usar directo el modal
+            console.log('📂 Abriendo modal directamente sin dependencias');
+            this.abrirModalQuesFunciona(tarea);
             
         } catch (error) {
             console.error('❌ Error:', error);
@@ -2806,16 +2799,19 @@ const TareasProyectos = {
             return;
         }
 
-        // Llenar los datos del modal
+        // Llenar los datos del modal con los elementos correctos
         const elementos = {
             'task-detail-titulo': tarea.titulo,
             'task-detail-descripcion': tarea.descripcion || 'Sin descripción',
             'task-detail-proyecto': tarea.proyecto_nombre || 'Sin proyecto',
-            'task-detail-fecha-limite': tarea.fecha_limite || 'Sin fecha límite',
-            'task-detail-creado-por': tarea.creado_por || 'Sin información'
+            'task-detail-fecha-limite': tarea.fecha_limite ? 
+                TareasProyectos.formatearFechaCompleta(tarea.fecha_limite) : 'Sin fecha límite',
+            'task-detail-creado-por': tarea.creado_por || 'Sin información',
+            'task-detail-fecha-creacion': tarea.fecha_creacion ? 
+                TareasProyectos.formatearFechaCompleta(tarea.fecha_creacion) : 'Sin fecha'
         };
 
-        // Rellenar elementos
+        // Rellenar elementos de texto
         Object.entries(elementos).forEach(([id, valor]) => {
             const elemento = document.getElementById(id);
             if (elemento) {
@@ -2825,6 +2821,37 @@ const TareasProyectos = {
                 console.log(`⚠️ Elemento ${id} no encontrado`);
             }
         });
+
+        // Llenar estado y prioridad con badges
+        const estadoElement = document.getElementById('task-detail-estado');
+        if (estadoElement) {
+            estadoElement.innerHTML = this.getEstadoBadgeHTML(tarea.estado);
+            console.log(`✅ Estado: ${tarea.estado}`);
+        }
+
+        const prioridadElement = document.getElementById('task-detail-prioridad');
+        if (prioridadElement) {
+            prioridadElement.innerHTML = this.getPrioridadBadgeHTML(tarea.prioridad);
+            console.log(`✅ Prioridad: ${tarea.prioridad}`);
+        }
+
+        // Llenar responsable con avatar
+        const responsableContainer = document.getElementById('task-detail-responsable-container');
+        if (responsableContainer && tarea.responsable_data) {
+            const iniciales = this.getInitials(tarea.responsable_data.nombre);
+            responsableContainer.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: ${this.getAvatarColor(tarea.responsable_data.nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem;">
+                        ${iniciales}
+                    </div>
+                    <div>
+                        <div style="color: var(--apple-label); font-weight: 500; font-size: 0.95rem;">${tarea.responsable_data.nombre}</div>
+                        <div style="color: var(--apple-label-secondary); font-size: 0.8rem;">Responsable</div>
+                    </div>
+                </div>
+            `;
+            console.log(`✅ Responsable: ${tarea.responsable_data.nombre}`);
+        }
 
         // Cerrar todos los otros modales primero
         const otrosModales = document.querySelectorAll('.modal-overlay, .advanced-task-modal-overlay, .power-task-modal-overlay');
@@ -2842,6 +2869,28 @@ const TareasProyectos = {
         document.body.style.overflow = 'hidden';
         
         console.log('✅ Modal abierto correctamente');
+    },
+
+    // Funciones auxiliares para badges
+    getEstadoBadgeHTML(estado) {
+        const config = {
+            'pendiente': { label: 'Pendiente', color: '#8E8E93', bg: 'rgba(142, 142, 147, 0.2)' },
+            'en_progreso': { label: 'En Progreso', color: '#007AFF', bg: 'rgba(0, 122, 255, 0.2)' },
+            'completada': { label: 'Completada', color: '#34C759', bg: 'rgba(52, 199, 89, 0.2)' },
+            'cancelada': { label: 'Cancelada', color: '#FF3B30', bg: 'rgba(255, 59, 48, 0.2)' }
+        }[estado] || { label: 'Desconocido', color: '#8E8E93', bg: 'rgba(142, 142, 147, 0.2)' };
+
+        return `<span style="background: ${config.bg}; color: ${config.color}; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">${config.label}</span>`;
+    },
+
+    getPrioridadBadgeHTML(prioridad) {
+        const config = {
+            'baja': { label: 'Baja', color: '#30D158' },
+            'media': { label: 'Media', color: '#FF9500' },
+            'alta': { label: 'Alta', color: '#FF3B30' }
+        }[prioridad] || { label: 'Sin prioridad', color: '#8E8E93' };
+
+        return `<span style="background: ${config.color}; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">${config.label}</span>`;
     },
 
     // Configurar navegación entre tareas del proyecto
