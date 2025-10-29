@@ -5391,6 +5391,9 @@ function abrirModalCrearTarea() {
         // Configurar tabs
         initializeAssignmentTabs();
         
+        // Configurar date picker
+        initializeCustomDatePicker();
+        
         // Focus en el título y configurar búsqueda después de renderizar
         setTimeout(() => {
             const titleInput = document.getElementById('taskTitle');
@@ -5469,11 +5472,126 @@ function resetTaskForm() {
     updateSelectedUsersDisplay();
 }
 
+// ========== DATE PICKER FUNCTIONALITY ==========
+function initializeCustomDatePicker() {
+    const dateInput = document.getElementById('taskDueDate');
+    
+    if (!dateInput) {
+        console.error('❌ No se encontró taskDueDate input');
+        return;
+    }
+    
+    console.log('📅 Inicializando date picker');
+    
+    // Convertir a input type="datetime-local" para funcionalidad básica
+    dateInput.type = 'datetime-local';
+    dateInput.style.colorScheme = 'dark';
+    
+    // Agregar eventos
+    dateInput.addEventListener('change', function() {
+        console.log('📅 Fecha seleccionada:', this.value);
+    });
+    
+    // También mantener compatibilidad con el contenedor
+    const datePicker = dateInput.parentElement;
+    if (datePicker && datePicker.classList.contains('custom-date-picker')) {
+        datePicker.addEventListener('click', function(e) {
+            if (e.target === this) {
+                dateInput.click();
+            }
+        });
+    }
+}
+
 // Función para actualizar display de usuarios seleccionados
 function updateSelectedUsersDisplay() {
     updateSelectedUsersInContainer('selectedResponsible', selectedResponsible ? [selectedResponsible] : []);
     updateSelectedUsersInContainer('selectedParticipants', selectedParticipants);
     updateSelectedUsersInContainer('selectedObservers', selectedObservers);
+}
+
+function addUserToSelection(user, containerId) {
+    const container = document.getElementById(`selected${containerId.charAt(0).toUpperCase() + containerId.slice(1)}`);
+    if (!container) {
+        console.error(`Container not found: selected${containerId.charAt(0).toUpperCase() + containerId.slice(1)}`);
+        return;
+    }
+    
+    // Verificar si el usuario ya está seleccionado
+    const existingPill = container.querySelector(`[data-user-id="${user.id}"]`);
+    if (existingPill) {
+        console.log('Usuario ya seleccionado');
+        return;
+    }
+    
+    // Para responsable, remover selección anterior (solo uno)
+    if (containerId === 'responsible') {
+        container.innerHTML = '';
+        selectedResponsible = user;
+    } else if (containerId === 'participants') {
+        if (!selectedParticipants.find(u => u.id === user.id)) {
+            selectedParticipants.push(user);
+        }
+    } else if (containerId === 'observers') {
+        if (!selectedObservers.find(u => u.id === user.id)) {
+            selectedObservers.push(user);
+        }
+    }
+    
+    const displayName = user.name || user.nombre;
+    
+    const userPill = document.createElement('div');
+    userPill.className = 'user-pill';
+    userPill.setAttribute('data-user-id', user.id);
+    
+    // Crear avatar igual que en el sistema original
+    const avatarColor = getAvatarColor(user.id - 1);
+    const avatarContent = user.avatar_url ? 
+        `<img src="${user.avatar_url}" alt="${displayName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 
+        user.iniciales;
+        
+    userPill.innerHTML = `
+        <div style="
+            width: 20px; 
+            height: 20px; 
+            border-radius: 50%; 
+            background-color: ${avatarColor}; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: white; 
+            font-weight: 600; 
+            font-size: 0.7rem;
+            flex-shrink: 0;
+            margin-right: 0.5rem;
+        ">
+            ${avatarContent}
+        </div>
+        <span>${displayName}</span>
+        <button type="button" class="user-pill-remove" onclick="removeUserFromSelection(${user.id}, '${containerId}')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m18 6-12 12M6 6l12 12"/>
+            </svg>
+        </button>
+    `;
+    container.appendChild(userPill);
+}
+
+function removeUserFromSelection(userId, containerId) {
+    const container = document.getElementById(`selected${containerId.charAt(0).toUpperCase() + containerId.slice(1)}`);
+    const pill = container.querySelector(`[data-user-id="${userId}"]`);
+    if (pill) {
+        pill.remove();
+    }
+    
+    // Actualizar variables globales
+    if (containerId === 'responsible') {
+        selectedResponsible = null;
+    } else if (containerId === 'participants') {
+        selectedParticipants = selectedParticipants.filter(user => user.id !== userId);
+    } else if (containerId === 'observers') {
+        selectedObservers = selectedObservers.filter(user => user.id !== userId);
+    }
 }
 
 function updateSelectedUsersInContainer(containerId, users) {
@@ -5483,40 +5601,7 @@ function updateSelectedUsersInContainer(containerId, users) {
     container.innerHTML = '';
     
     users.forEach(user => {
-        const userPill = document.createElement('div');
-        userPill.className = 'user-pill';
-        
-        // Crear avatar igual que en el sistema original
-        const avatarColor = getAvatarColor(user.id - 1);
-        const avatarContent = user.avatar_url ? 
-            `<img src="${user.avatar_url}" alt="${user.name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 
-            user.iniciales;
-            
-        userPill.innerHTML = `
-            <div style="
-                width: 20px; 
-                height: 20px; 
-                border-radius: 50%; 
-                background-color: ${avatarColor}; 
-                display: flex; 
-                align-items: center; 
-                justify-content: center; 
-                color: white; 
-                font-weight: 600; 
-                font-size: 0.7rem;
-                flex-shrink: 0;
-                margin-right: 0.5rem;
-            ">
-                ${avatarContent}
-            </div>
-            <span>${user.name}</span>
-            <button type="button" class="user-pill-remove" onclick="removeUser('${containerId}', ${user.id})">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="m18 6-12 12M6 6l12 12"/>
-                </svg>
-            </button>
-        `;
-        container.appendChild(userPill);
+        addUserToSelection(user, containerId.replace('selected', '').toLowerCase());
     });
 }
 
@@ -5724,7 +5809,8 @@ function mostrarResultadosBusquedaTarea(tipo, usuarios) {
         });
         
         item.addEventListener('click', () => {
-            seleccionarUsuarioTarea(tipo, usuario);
+            console.log('👆 Usuario seleccionado:', usuario);
+            addUserToSelection(usuario, tipo);
             dropdown.remove();
             searchInput.value = '';
         });
