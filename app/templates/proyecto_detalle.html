@@ -2986,7 +2986,7 @@ const TareasProyectos = {
             }
             
             // Cargar comentarios y configurar formulario
-            await this.cargarComentarios(tareaId);
+            await cargarComentariosTarea(tareaId);
             this.configurarFormularioComentarios();
             
             // Inicializar estado del cronómetro si la tarea ya está corriendo
@@ -2997,6 +2997,8 @@ const TareasProyectos = {
             const modal = document.getElementById('modal-detalle-tarea');
             console.log('Modal encontrado:', modal);
             if (modal) {
+                // Almacenar el ID de la tarea en el dataset del modal
+                modal.dataset.tareaId = tareaId;
                 console.log('Showing modal, añadiendo clase active');
                 modal.classList.add('active');
                 document.body.style.overflow = 'hidden';
@@ -5505,47 +5507,115 @@ function createSubtask(tareaId) {
 }
 
 // Funciones para el nuevo modal avanzado
-function cargarComentariosTarea(tareaId) {
+async function cargarComentariosTarea(tareaId) {
     const timeline = document.getElementById('taskCommentsTimeline');
     
-    // Por ahora mostrar datos de ejemplo
-    timeline.innerHTML = `
-        <div class="timeline-item">
-            <div class="timeline-avatar">
-                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxjaXJjbGUgY3g9IjEyIiBjeT0iOCIgcj0iNSIgZmlsbD0iIzRCNzY4OCIvPgo8cGF0aCBkPSJtMjAgMjEtMi0yLTEuMi0xLjIiIHN0cm9rZT0iIzRCNzY4OCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+" alt="Usuario" />
+    try {
+        // Mostrar loading
+        timeline.innerHTML = `
+            <div style="text-align: center; padding: 2rem; color: var(--apple-label-secondary);">
+                <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+                Cargando comentarios...
             </div>
-            <div class="timeline-content">
-                <div class="timeline-header">
-                    <span class="timeline-user">Eduardo Rivera</span>
-                    <span class="timeline-date">hace 2 horas</span>
+        `;
+        
+        const response = await fetch(`/app/api/tarea/${tareaId}/comentarios/`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (data.success) {
+            mostrarComentariosTarea(data.comentarios);
+        } else {
+            console.error('Error al cargar comentarios:', data.error);
+            timeline.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--apple-label-secondary);">
+                    Error al cargar comentarios.
                 </div>
-                <div class="timeline-text">
-                    Tarea creada y asignada para revisión de documentos.
-                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error al cargar comentarios:', error);
+        timeline.innerHTML = `
+            <div style="text-align: center; padding: 2rem; color: var(--apple-label-secondary);">
+                Error al cargar comentarios.
+            </div>
+        `;
+    }
+}
+
+function mostrarComentariosTarea(comentarios) {
+    const timeline = document.getElementById('taskCommentsTimeline');
+    if (!timeline) return;
+
+    timeline.innerHTML = '';
+
+    if (comentarios.length === 0) {
+        timeline.innerHTML = `
+            <div style="text-align: center; padding: 2rem; color: var(--apple-label-secondary);">
+                No hay comentarios aún. ¡Sé el primero en comentar!
+            </div>
+        `;
+        return;
+    }
+
+    comentarios.forEach(comentario => {
+        const comentarioElement = crearElementoComentarioTarea(comentario);
+        timeline.appendChild(comentarioElement);
+    });
+}
+
+function crearElementoComentarioTarea(comentario) {
+    const div = document.createElement('div');
+    div.className = 'timeline-item';
+    
+    const fechaFormateada = formatearFechaComentario(comentario.fecha_creacion);
+    const iniciales = getInitials(comentario.usuario__first_name, comentario.usuario__last_name);
+    const colorAvatar = getAvatarColor(comentario.usuario__username);
+    
+    div.innerHTML = `
+        <div class="timeline-avatar">
+            <div class="avatar-circle" style="background: ${colorAvatar}; color: white; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; font-size: 12px; font-weight: 600;">
+                ${iniciales}
             </div>
         </div>
-        <div class="timeline-item">
-            <div class="timeline-avatar">
-                <div class="activity-icon">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polygon points="5,3 19,12 5,21"/>
-                    </svg>
-                </div>
+        <div class="timeline-content">
+            <div class="timeline-header">
+                <span class="timeline-user">${comentario.usuario__first_name} ${comentario.usuario__last_name}</span>
+                <span class="timeline-date">${fechaFormateada}</span>
             </div>
-            <div class="timeline-content">
-                <div class="timeline-header">
-                    <span class="timeline-user">Sistema</span>
-                    <span class="timeline-date">hace 1 hora</span>
-                </div>
-                <div class="timeline-text">
-                    Estado cambiado a "En progreso"
-                </div>
+            <div class="timeline-text">
+                ${comentario.texto}
             </div>
         </div>
     `;
+    
+    return div;
 }
 
-function submitTaskComment() {
+function formatearFechaComentario(fechaStr) {
+    const fecha = new Date(fechaStr);
+    const ahora = new Date();
+    const diferencia = ahora - fecha;
+    
+    const minutos = Math.floor(diferencia / 60000);
+    const horas = Math.floor(diferencia / 3600000);
+    const dias = Math.floor(diferencia / 86400000);
+    
+    if (minutos < 1) return 'hace un momento';
+    if (minutos < 60) return `hace ${minutos} minuto${minutos !== 1 ? 's' : ''}`;
+    if (horas < 24) return `hace ${horas} hora${horas !== 1 ? 's' : ''}`;
+    if (dias < 7) return `hace ${dias} día${dias !== 1 ? 's' : ''}`;
+    
+    return fecha.toLocaleDateString('es-ES', {
+        day: 'numeric',
+        month: 'short',
+        year: fecha.getFullYear() !== ahora.getFullYear() ? 'numeric' : undefined
+    });
+}
+
+async function submitTaskComment() {
     const commentInput = document.getElementById('newTaskComment');
     const comment = commentInput.value.trim();
     
@@ -5554,30 +5624,50 @@ function submitTaskComment() {
         return;
     }
     
-    // TODO: Enviar comentario al backend
-    console.log('Enviando comentario:', comment);
+    // Obtener el ID de la tarea actual desde el modal
+    const modal = document.getElementById('modal-detalle-tarea');
+    if (!modal || !modal.style.opacity || modal.style.opacity === '0') {
+        console.error('Modal no está visible o no se puede obtener el ID de la tarea');
+        return;
+    }
     
-    // Simular añadir comentario
-    const timeline = document.getElementById('taskCommentsTimeline');
-    const newComment = document.createElement('div');
-    newComment.className = 'timeline-item';
-    newComment.innerHTML = `
-        <div class="timeline-avatar">
-            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxjaXJjbGUgY3g9IjEyIiBjeT0iOCIgcj0iNSIgZmlsbD0iIzRCNzY4OCIvPgo8cGF0aCBkPSJtMjAgMjEtMi0yLTEuMi0xLjIiIHN0cm9rZT0iIzRCNzY4OCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+" alt="Usuario" />
-        </div>
-        <div class="timeline-content">
-            <div class="timeline-header">
-                <span class="timeline-user">Tú</span>
-                <span class="timeline-date">ahora</span>
-            </div>
-            <div class="timeline-text">
-                ${comment}
-            </div>
-        </div>
-    `;
+    const tareaId = modal.dataset.tareaId;
+    if (!tareaId) {
+        console.error('No se puede obtener el ID de la tarea');
+        return;
+    }
     
-    timeline.insertBefore(newComment, timeline.firstChild);
-    commentInput.value = '';
+    try {
+        const formData = new FormData();
+        formData.append('contenido', comment);
+        
+        const response = await fetch(`/app/api/tarea/${tareaId}/comentarios/agregar/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            },
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (data.success) {
+            // Limpiar el input
+            commentInput.value = '';
+            
+            // Recargar comentarios para mostrar el nuevo
+            await cargarComentariosTarea(tareaId);
+        } else {
+            console.error('Error al enviar comentario:', data.error);
+            alert('Error al enviar el comentario: ' + (data.error || 'Error desconocido'));
+        }
+    } catch (error) {
+        console.error('Error al enviar comentario:', error);
+        alert('Error al enviar el comentario. Por favor intenta de nuevo.');
+    }
 }
 
 // Funciones placeholder para botones del header
