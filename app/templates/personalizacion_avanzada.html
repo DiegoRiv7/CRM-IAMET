@@ -1936,7 +1936,7 @@ flex-direction: column;
 }
 </style>
 </head>
-<body data-avatar-config='{ "hasCustomAvatar": {% if user_profile.avatar and user_profile.avatar.name %}true{% else %}false{% endif %}, "customAvatarUrl": {% if user_profile.avatar and user_profile.avatar.name %}"{{ user_profile.avatar.url }}"{% else %}""{% endif %}, "avatarTipo": "{{ user_profile.avatar_tipo|default:"dinosaur" }}" }'>
+<body class="theme-{{ user_profile.theme|default:'dark' }}" data-avatar-config='{ "hasCustomAvatar": {% if user_profile.avatar and user_profile.avatar.name %}true{% else %}false{% endif %}, "customAvatarUrl": {% if user_profile.avatar and user_profile.avatar.name %}"{{ user_profile.avatar.url }}"{% else %}""{% endif %}, "avatarTipo": "{{ user_profile.avatar_tipo|default:"dinosaur" }}" }'>
 <div class="main-container">
 
 
