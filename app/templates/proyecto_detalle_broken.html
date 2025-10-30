@@ -2908,8 +2908,15 @@
 // Variables globales
 const PROYECTO_ID = {{ proyecto.id }};
 
-// Namespace para funciones de tareas - REDIRECCIÓN SIMPLE A LA PÁGINA QUE FUNCIONA
+// Namespace para funciones de tareas - DEFINIDO TEMPRANO para evitar errores de referencia
 const TareasProyectos = {
+    // Variables para navegación entre tareas
+    currentProjectTasks: [],
+    currentTaskIndex: -1,
+    currentTaskId: null,
+    allUsers: [],
+
+    // Función principal para ver detalles de tarea - REDIRIGIR AL MODAL QUE FUNCIONA
     verDetallesTarea(tareaId) {
         console.log('=== PROYECTO DETALLE: Redirigiendo a modal de tareas_proyectos.html ===');
         console.log('Task ID:', tareaId);
@@ -2925,7 +2932,506 @@ const TareasProyectos = {
         window.location.href = taskURL;
     }
 };
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Response error text:', errorText);
+                throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+            }
+            
+            const response_data = await response.json();
+            console.log('Tarea data received:', response_data);
+            
+            // Extraer datos de la tarea según la estructura de la API
+            const tarea = response_data.success ? response_data.tarea : response_data;
+            console.log('Extracted tarea:', tarea);
+            
+            // Rellenar elementos básicos
+            TareasProyectos.setElementText('task-detail-titulo', tarea.titulo);
+            TareasProyectos.setElementText('task-detail-descripcion', tarea.descripcion || 'Sin descripción disponible');
+            TareasProyectos.setElementText('task-detail-proyecto', tarea.proyecto ? tarea.proyecto.nombre : 'Sin proyecto');
+            TareasProyectos.setElementText('task-detail-fecha-limite', tarea.fecha_limite ? TareasProyectos.formatearFechaCompleta(tarea.fecha_limite) : 'Sin fecha límite');
+            TareasProyectos.setElementText('task-detail-fecha-creacion', TareasProyectos.formatearFechaCompleta(tarea.fecha_creacion));
+            
+            // Rellenar información del creador con avatar
+            if (tarea.creado_por) {
+                TareasProyectos.setElementText('task-detail-creado-por', tarea.creado_por.nombre || tarea.creado_por);
+            } else {
+                TareasProyectos.setElementText('task-detail-creado-por', 'Sin información del creador');
+            }
+            
+            // Configurar responsable con avatar
+            TareasProyectos.setupResponsableWithData(tarea.responsable);
+            
+            // Configurar participantes con datos reales
+            TareasProyectos.setupParticipantes(tarea.participantes || []);
+            
+            // Configurar observadores con datos reales
+            TareasProyectos.setupObservadores(tarea.observadores || []);
+            
+            // Rellenar elementos HTML (badges) - Glassmorphism
+            const estadoElement = document.getElementById('task-detail-estado');
+            if (estadoElement) {
+                estadoElement.innerHTML = TareasProyectos.getEstadoBadgeHTML(tarea.estado);
+            }
+            
+            const prioridadElement = document.getElementById('task-detail-prioridad');
+            if (prioridadElement) {
+                prioridadElement.innerHTML = TareasProyectos.getPrioridadBadgeGlass(tarea.prioridad);
+            }
+            
+            // Cargar comentarios y configurar formulario
+            await cargarComentariosTarea(tareaId);
+            this.configurarFormularioComentarios();
+            
+            // Inicializar estado del cronómetro si la tarea ya está corriendo
+            this.initializeTimerState(tarea);
+            
+            // Mostrar el modal
+            console.log('Buscando modal con ID: modal-detalle-tarea');
+            const modal = document.getElementById('modal-detalle-tarea');
+            console.log('Modal encontrado:', modal);
+            if (modal) {
+                // Almacenar el ID de la tarea en el dataset del modal
+                modal.dataset.tareaId = tareaId;
+                console.log('Showing modal, añadiendo clase active');
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                console.log('Modal classes after add:', modal.classList.toString());
+            } else {
+                console.error('❌ Modal not found! El elemento modal-detalle-tarea no existe en el DOM');
+            }
+            
+        } catch (error) {
+            console.error('Error al cargar detalles de tarea:', error);
+            alert('Error al cargar los detalles de la tarea: ' + error.message);
+        }
+    },
 
+    // ===============================
+    // FUNCIONES AUXILIARES UNIFICADAS  
+    // ===============================
+    
+    setElementText(id, text) {
+        const elemento = document.getElementById(id);
+        if (elemento) {
+            elemento.textContent = text;
+        } else {
+            console.warn(`Elemento no encontrado: ${id}`);
+        }
+    },
+
+    formatearFechaCompleta(fechaStr) {
+        if (!fechaStr) return '';
+        
+        const fecha = new Date(fechaStr);
+        const opciones = { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        };
+        return fecha.toLocaleDateString('es-ES', opciones);
+    },
+
+    getEstadoBadgeHTML(estado) {
+        const estadosConfig = {
+            'pendiente': { label: 'Pendiente', color: '#8E8E93', bgColor: 'rgba(142, 142, 147, 0.2)', icon: '○' },
+            'iniciada': { label: 'Pausado', color: '#FF9500', bgColor: 'rgba(255, 149, 0, 0.2)', icon: '⏸️' },
+            'en_progreso': { label: 'En Progreso', color: '#007AFF', bgColor: 'rgba(0, 122, 255, 0.2)', icon: '▶️' },
+            'completada': { label: 'Completada', color: '#34C759', bgColor: 'rgba(52, 199, 89, 0.2)', icon: '✅' },
+            'cancelada': { label: 'Cancelada', color: '#FF3B30', bgColor: 'rgba(255, 59, 48, 0.2)', icon: '×' }
+        };
+        
+        const config = estadosConfig[estado] || estadosConfig['pendiente'];
+        
+        return `
+            <span style="
+                display: inline-flex;
+                align-items: center;
+                padding: 0.375rem 0.75rem;
+                background: ${config.bgColor};
+                color: ${config.color};
+                border-radius: 0.75rem;
+                font-size: 0.8rem;
+                font-weight: 600;
+                gap: 0.25rem;
+                text-transform: uppercase;
+                letter-spacing: 0.025em;
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            ">
+                <span>${config.icon}</span>
+                ${config.label}
+            </span>
+        `;
+    },
+
+    getPrioridadBadgeGlass(prioridad) {
+        const prioridadConfig = {
+            'baja': { label: 'Baja', color: '#34C759', bgColor: 'rgba(52, 199, 89, 0.2)' },
+            'media': { label: 'Media', color: '#FF9500', bgColor: 'rgba(255, 149, 0, 0.2)' },
+            'alta': { label: 'Alta', color: '#FF3B30', bgColor: 'rgba(255, 59, 48, 0.2)' }
+        };
+        
+        const config = prioridadConfig[prioridad] || prioridadConfig['media'];
+        
+        return `
+            <span style="
+                display: inline-flex;
+                align-items: center;
+                padding: 0.375rem 0.75rem;
+                background: ${config.bgColor};
+                color: ${config.color};
+                border-radius: 0.75rem;
+                font-size: 0.8rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.025em;
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            ">
+                ${config.label}
+            </span>
+        `;
+    },
+
+    setupResponsableWithData(responsableData) {
+        const container = document.getElementById('task-detail-responsable-container');
+        if (!container) return;
+
+        if (responsableData && responsableData.nombre) {
+            const avatarUrl = responsableData.avatar_url || null;
+            const iniciales = this.getInitials(responsableData.nombre);
+            
+            container.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; backdrop-filter: blur(8px);">
+                    ${avatarUrl ? 
+                        `<img src="${avatarUrl}" alt="${responsableData.nombre}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">` :
+                        `<div style="width: 40px; height: 40px; border-radius: 50%; background: ${this.getAvatarColor(responsableData.nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem;">${iniciales}</div>`
+                    }
+                    <div>
+                        <div style="color: var(--apple-label); font-weight: 500; font-size: 0.95rem;">${responsableData.nombre}</div>
+                        <div style="color: var(--apple-label-secondary); font-size: 0.8rem;">Responsable</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div style="padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; color: var(--apple-label-secondary); text-align: center;">
+                    Sin responsable asignado
+                </div>
+            `;
+        }
+    },
+
+    setupParticipantes(participantes) {
+        // Función placeholder - implementar si es necesario
+        console.log('setupParticipantes called with:', participantes);
+    },
+
+    setupObservadores(observadores) {
+        // Función placeholder - implementar si es necesario  
+        console.log('setupObservadores called with:', observadores);
+    },
+
+    async cargarComentarios(tareaId) {
+        try {
+            const response = await fetch(`/app/api/tarea/${tareaId}/comentarios/`);
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Comentarios cargados:', data);
+                // Implementar visualización de comentarios si es necesario
+            }
+        } catch (error) {
+            console.error('Error cargando comentarios:', error);
+        }
+    },
+
+    configurarFormularioComentarios() {
+        // Función placeholder para configurar el formulario de comentarios
+        console.log('configurarFormularioComentarios called');
+    },
+
+    initializeTimerState(tarea) {
+        // Función placeholder para inicializar el estado del cronómetro
+        console.log('initializeTimerState called with:', tarea);
+        
+        // Configurar botones según el estado de la tarea
+        const btnStart = document.getElementById('btn-start-task');
+        const btnPause = document.getElementById('btn-pause-task');
+        
+        if (btnStart && btnPause) {
+            if (tarea.trabajando_actualmente) {
+                btnStart.style.display = 'none';
+                btnPause.style.display = 'flex';
+            } else {
+                btnStart.style.display = 'flex';
+                btnPause.style.display = 'none';
+            }
+        }
+    },
+
+    cerrarModalDetalleTarea() {
+        const modal = document.getElementById('modal-detalle-tarea');
+        if (modal) {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        
+        // Limpiar cronómetro si está corriendo
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+        
+        // Limpiar task_id de la URL
+        const currentURL = new URL(window.location);
+        currentURL.searchParams.delete('task_id');
+        window.history.replaceState({}, '', currentURL);
+    },
+
+    // Función para generar iniciales de una persona
+    getInitials(name) {
+        if (!name) return '?';
+        return name.split(' ')
+            .map(word => word.charAt(0).toUpperCase())
+            .slice(0, 2)
+            .join('');
+    },
+
+    // Función para generar un color de avatar basado en el nombre
+    getAvatarColor(name) {
+        const colors = [
+            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+            'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+            'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+            'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+            'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+            'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+            'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)'
+        ];
+        
+        if (!name) return colors[0];
+        
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        
+        return colors[Math.abs(hash) % colors.length];
+    },
+
+    // Función para abrir el modal que sabemos que funciona
+    abrirModalQuesFunciona(tarea) {
+        console.log('🎯 Abriendo modal que funciona con datos:', tarea);
+        
+        // Usar el modal modal-detalle-tarea que es el que se ve en la imagen
+        const modal = document.getElementById('modal-detalle-tarea');
+        if (!modal) {
+            console.error('❌ Modal modal-detalle-tarea no encontrado');
+            return;
+        }
+
+        // Llenar los datos del modal con los elementos correctos
+        const elementos = {
+            'task-detail-titulo': tarea.titulo,
+            'task-detail-descripcion': tarea.descripcion || 'Sin descripción',
+            'task-detail-proyecto': tarea.proyecto_nombre || 'Sin proyecto',
+            'task-detail-fecha-limite': tarea.fecha_limite ? 
+                TareasProyectos.formatearFechaCompleta(tarea.fecha_limite) : 'Sin fecha límite',
+            'task-detail-creado-por': tarea.creado_por || 'Sin información',
+            'task-detail-fecha-creacion': tarea.fecha_creacion ? 
+                TareasProyectos.formatearFechaCompleta(tarea.fecha_creacion) : 'Sin fecha'
+        };
+
+        // Rellenar elementos de texto
+        Object.entries(elementos).forEach(([id, valor]) => {
+            const elemento = document.getElementById(id);
+            if (elemento) {
+                elemento.textContent = valor;
+                console.log(`✅ ${id}: ${valor}`);
+            } else {
+                console.log(`⚠️ Elemento ${id} no encontrado`);
+            }
+        });
+
+        // Llenar estado y prioridad con badges
+        const estadoElement = document.getElementById('task-detail-estado');
+        if (estadoElement) {
+            estadoElement.innerHTML = this.getEstadoBadgeHTML(tarea.estado);
+            console.log(`✅ Estado: ${tarea.estado}`);
+        }
+
+        const prioridadElement = document.getElementById('task-detail-prioridad');
+        if (prioridadElement) {
+            prioridadElement.innerHTML = this.getPrioridadBadgeHTML(tarea.prioridad);
+            console.log(`✅ Prioridad: ${tarea.prioridad}`);
+        }
+
+        // Llenar responsable con avatar
+        const responsableContainer = document.getElementById('task-detail-responsable-container');
+        if (responsableContainer && tarea.responsable_data) {
+            const iniciales = this.getInitials(tarea.responsable_data.nombre);
+            responsableContainer.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: ${this.getAvatarColor(tarea.responsable_data.nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem;">
+                        ${iniciales}
+                    </div>
+                    <div>
+                        <div style="color: var(--apple-label); font-weight: 500; font-size: 0.95rem;">${tarea.responsable_data.nombre}</div>
+                        <div style="color: var(--apple-label-secondary); font-size: 0.8rem;">Responsable</div>
+                    </div>
+                </div>
+            `;
+            console.log(`✅ Responsable: ${tarea.responsable_data.nombre}`);
+        }
+
+        // Cerrar todos los otros modales primero
+        const otrosModales = document.querySelectorAll('.modal-overlay, .advanced-task-modal-overlay, .power-task-modal-overlay');
+        otrosModales.forEach(m => {
+            if (m.id !== 'modal-detalle-tarea') {
+                m.classList.remove('active');
+                m.style.display = 'none';
+            }
+        });
+
+        // Abrir el modal correcto
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+        modal.style.zIndex = '10000';
+        document.body.style.overflow = 'hidden';
+        
+        console.log('✅ Modal abierto correctamente');
+    },
+
+    // Funciones auxiliares para badges
+    getEstadoBadgeHTML(estado) {
+        const config = {
+            'pendiente': { label: 'Pendiente', color: '#8E8E93', bg: 'rgba(142, 142, 147, 0.2)' },
+            'en_progreso': { label: 'En Progreso', color: '#007AFF', bg: 'rgba(0, 122, 255, 0.2)' },
+            'completada': { label: 'Completada', color: '#34C759', bg: 'rgba(52, 199, 89, 0.2)' },
+            'cancelada': { label: 'Cancelada', color: '#FF3B30', bg: 'rgba(255, 59, 48, 0.2)' }
+        }[estado] || { label: 'Desconocido', color: '#8E8E93', bg: 'rgba(142, 142, 147, 0.2)' };
+
+        return `<span style="background: ${config.bg}; color: ${config.color}; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">${config.label}</span>`;
+    },
+
+    getPrioridadBadgeHTML(prioridad) {
+        const config = {
+            'baja': { label: 'Baja', color: '#30D158' },
+            'media': { label: 'Media', color: '#FF9500' },
+            'alta': { label: 'Alta', color: '#FF3B30' }
+        }[prioridad] || { label: 'Sin prioridad', color: '#8E8E93' };
+
+        return `<span style="background: ${config.color}; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">${config.label}</span>`;
+    },
+
+    // Configurar navegación entre tareas del proyecto
+    setupTaskNavigation(currentTaskId) {
+        // Obtener las tareas del proyecto actual desde la tabla
+        const taskRows = document.querySelectorAll('#tasks-tbody tr');
+        this.currentProjectTasks = [];
+        this.currentTaskIndex = -1;
+        
+        taskRows.forEach((row, index) => {
+            const onClick = row.getAttribute('onclick');
+            if (onClick) {
+                const match = onClick.match(/verDetallesTarea\((\d+)\)/);
+                if (match) {
+                    const taskId = parseInt(match[1]);
+                    this.currentProjectTasks.push(taskId);
+                    
+                    if (taskId === currentTaskId) {
+                        this.currentTaskIndex = index;
+                    }
+                }
+            }
+        });
+        
+        // Mostrar/ocultar navegación según cantidad de tareas
+        const navigation = document.getElementById('taskNavigation');
+        const taskCounter = document.getElementById('taskCounter');
+        const prevBtn = document.getElementById('prevTaskBtn');
+        const nextBtn = document.getElementById('nextTaskBtn');
+        
+        if (this.currentProjectTasks.length > 1) {
+            navigation.style.display = 'flex';
+            taskCounter.textContent = `${this.currentTaskIndex + 1} de ${this.currentProjectTasks.length}`;
+            
+            // Habilitar/deshabilitar botones
+            prevBtn.disabled = (this.currentTaskIndex <= 0);
+            nextBtn.disabled = (this.currentTaskIndex >= this.currentProjectTasks.length - 1);
+        } else {
+            navigation.style.display = 'none';
+        }
+    },
+
+    // Navegar a la tarea anterior
+    navegarTareaPrevious() {
+        if (this.currentTaskIndex > 0) {
+            const previousTaskId = this.currentProjectTasks[this.currentTaskIndex - 1];
+            this.verDetallesTarea(previousTaskId);
+        }
+    },
+
+    // Navegar a la tarea siguiente
+    navegarTareaNext() {
+        if (this.currentTaskIndex < this.currentProjectTasks.length - 1) {
+            const nextTaskId = this.currentProjectTasks[this.currentTaskIndex + 1];
+            this.verDetallesTarea(nextTaskId);
+        }
+    },
+
+    // Funciones auxiliares
+    getInitials(name) {
+        if (!name) return 'U';
+        const parts = name.trim().split(' ');
+        if (parts.length === 1) return parts[0][0].toUpperCase();
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    },
+
+    getAvatarColor(name) {
+        const colors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+            '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+        ];
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return colors[Math.abs(hash) % colors.length];
+    },
+
+    formatearFechaCompleta(fechaStr) {
+        if (!fechaStr) return 'Sin fecha';
+        try {
+            const fecha = new Date(fechaStr);
+            const opciones = {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            return fecha.toLocaleDateString('es-ES', opciones);
+        } catch (error) {
+            console.error('Error al formatear fecha:', error);
+            return fechaStr;
+        }
+    },
+
+    updateTaskMembersUI(tarea) {
+        // Esta función se implementará después si es necesaria
+        console.log('updateTaskMembersUI called with:', tarea);
+    }
+};
 const PROYECTO_NOMBRE = "{{ proyecto.nombre|escapejs }}";
 const CURRENT_USER_ID = {{ user.id }};
 const CURRENT_USER_NAME = "{{ user.first_name }} {{ user.last_name }}".trim() || "{{ user.username }}" || "Usuario";
