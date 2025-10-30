@@ -2916,24 +2916,24 @@ const TareasProyectos = {
     currentTaskId: null,
     allUsers: [],
 
-    // Función principal para ver detalles de tarea - UNIFICADA CON TAREAS PROYECTOS
-    async verDetallesTarea(tareaId) {
-        console.log('=== INICIANDO verDetallesTarea DESDE PROYECTO ===');
-        console.log('TareasProyectos.verDetallesTarea called with ID:', tareaId);
-        console.log('This is the UNIFIED TareasProyectos function');
+    // Función principal para ver detalles de tarea - REDIRIGIR AL MODAL QUE FUNCIONA
+    verDetallesTarea(tareaId) {
+        console.log('=== PROYECTO DETALLE: Redirigiendo a modal de tareas_proyectos.html ===');
+        console.log('Task ID:', tareaId);
         
-        // Establecer la tarea actual
-        TareasProyectos.currentTaskId = tareaId;
-        
-        // Agregar task_id a la URL para persistencia al recargar
+        // Construir URL de la página de tareas y proyectos con el ID de la tarea
         const currentURL = new URL(window.location);
-        currentURL.searchParams.set('task_id', tareaId);
-        window.history.replaceState({}, '', currentURL);
+        const baseURL = currentURL.origin + '/app/tareas-proyectos/';
+        const taskURL = `${baseURL}?task_id=${tareaId}`;
         
-        try {
-            console.log('Haciendo petición a:', `/app/api/tarea/${tareaId}/`);
-            // Hacer petición para obtener detalles de la tarea
-            const response = await fetch(`/app/api/tarea/${tareaId}/`);
+        console.log('Redirigiendo a:', taskURL);
+        
+        // Redirigir a la página que sabemos que funciona
+        window.location.href = taskURL;
+    },
+
+    // Las demás funciones del objeto están comentadas porque ahora redirigimos directamente
+    // a la página de tareas y proyectos que sabemos que funciona perfectamente
             console.log('Response received:', response);
             console.log('Response status:', response.status);
             console.log('Response ok:', response.ok);

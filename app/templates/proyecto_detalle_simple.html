@@ -1,0 +1,21 @@
+// Esta es la solución simple: 
+// Cuando hagas clic en una tarea desde un proyecto, 
+// redirigir directamente a la página de tareas y proyectos que sabemos que funciona
+
+// Reemplazar la definición de TareasProyectos con esta versión simple:
+const TareasProyectos = {
+    verDetallesTarea(tareaId) {
+        console.log('=== PROYECTO DETALLE: Redirigiendo a modal de tareas_proyectos.html ===');
+        console.log('Task ID:', tareaId);
+        
+        // Construir URL de la página de tareas y proyectos con el ID de la tarea
+        const currentURL = new URL(window.location);
+        const baseURL = currentURL.origin + '/app/tareas-proyectos/';
+        const taskURL = `${baseURL}?task_id=${tareaId}`;
+        
+        console.log('Redirigiendo a:', taskURL);
+        
+        // Redirigir a la página que sabemos que funciona
+        window.location.href = taskURL;
+    }
+};
