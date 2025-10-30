@@ -2911,18 +2911,78 @@ const PROYECTO_ID = {{ proyecto.id }};
 // Namespace para funciones de tareas - REDIRECCIÓN SIMPLE A LA PÁGINA QUE FUNCIONA
 const TareasProyectos = {
     verDetallesTarea(tareaId) {
-        console.log('=== PROYECTO DETALLE: Redirigiendo a modal de tareas_proyectos.html ===');
+        console.log('=== PROYECTO DETALLE: Abriendo modal de tareas instantáneamente ===');
         console.log('Task ID:', tareaId);
         
-        // Construir URL de la página de tareas y proyectos con el ID de la tarea
-        const currentURL = new URL(window.location);
-        const baseURL = currentURL.origin + '/app/tareas-proyectos/';
-        const taskURL = `${baseURL}?task_id=${tareaId}`;
+        // Mostrar loading overlay para ocultar la transición
+        const loadingOverlay = document.createElement('div');
+        loadingOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        `;
         
-        console.log('Redirigiendo a:', taskURL);
+        loadingOverlay.innerHTML = `
+            <div style="
+                background: rgba(28, 28, 30, 0.95);
+                border: 1px solid rgba(72, 72, 74, 0.3);
+                border-radius: 16px;
+                padding: 2rem;
+                text-align: center;
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            ">
+                <div style="
+                    width: 32px;
+                    height: 32px;
+                    border: 3px solid rgba(0, 122, 255, 0.3);
+                    border-top: 3px solid #007AFF;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                    margin: 0 auto 1rem;
+                "></div>
+                <div style="color: #F2F2F7; font-size: 0.95rem; font-weight: 500;">
+                    Abriendo tarea...
+                </div>
+                <style>
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                </style>
+            </div>
+        `;
         
-        // Redirigir a la página que sabemos que funciona
-        window.location.href = taskURL;
+        document.body.appendChild(loadingOverlay);
+        
+        // Hacer visible el overlay
+        requestAnimationFrame(() => {
+            loadingOverlay.style.opacity = '1';
+        });
+        
+        // Construir URL y redirigir después de un breve delay para que se vea el loading
+        setTimeout(() => {
+            const currentURL = new URL(window.location);
+            const baseURL = currentURL.origin + '/app/tareas-proyectos/';
+            const taskURL = `${baseURL}?task_id=${tareaId}`;
+            
+            console.log('Redirigiendo a:', taskURL);
+            
+            // Redirección instantánea usando replace para que no se vea en el historial
+            window.location.replace(taskURL);
+        }, 300);
     }
 };
 
