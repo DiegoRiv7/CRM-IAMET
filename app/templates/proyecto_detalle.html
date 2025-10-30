@@ -2910,14 +2910,83 @@ const PROYECTO_ID = {{ proyecto.id }};
 
 // Namespace para funciones de tareas - REDIRECCIÓN SIMPLE A LA PÁGINA QUE FUNCIONA
 const TareasProyectos = {
-    verDetallesTarea(tareaId) {
-        // Redirección directa e inmediata como si fuera un enlace
-        const currentURL = new URL(window.location);
-        const baseURL = currentURL.origin + '/app/tareas-proyectos/';
-        const taskURL = `${baseURL}?task_id=${tareaId}`;
+    async verDetallesTarea(tareaId) {
+        console.log('=== ABRIENDO MODAL INSTANTÁNEO ===');
+        console.log('Task ID:', tareaId);
         
-        // Ir directamente, sin animaciones ni delays
-        window.location.href = taskURL;
+        try {
+            // Obtener datos de la tarea directamente vía API
+            const response = await fetch(`/app/api/tarea/${tareaId}/`);
+            if (!response.ok) {
+                throw new Error('No se pudo cargar la tarea');
+            }
+            
+            const tarea = await response.json();
+            console.log('Datos de tarea cargados:', tarea);
+            
+            // Buscar el modal existente en la página
+            const modal = document.getElementById('modal-detalle-tarea');
+            if (!modal) {
+                // Si no existe el modal, redirigir como fallback
+                window.location.href = `/app/tareas-proyectos/?task_id=${tareaId}`;
+                return;
+            }
+            
+            // Actualizar el contenido del modal con los datos de la tarea
+            this.actualizarModalConDatos(modal, tarea);
+            
+            // Mostrar el modal inmediatamente
+            modal.classList.add('active');
+            modal.style.opacity = '1';
+            modal.style.visibility = 'visible';
+            document.body.style.overflow = 'hidden';
+            
+            console.log('✅ Modal mostrado instantáneamente');
+            
+        } catch (error) {
+            console.error('Error:', error);
+            // Fallback: redirigir si hay error
+            window.location.href = `/app/tareas-proyectos/?task_id=${tareaId}`;
+        }
+    },
+    
+    actualizarModalConDatos(modal, tarea) {
+        // Actualizar título
+        const titulo = modal.querySelector('#task-detail-titulo, [data-field="titulo"]');
+        if (titulo) titulo.textContent = tarea.titulo || 'Sin título';
+        
+        // Actualizar descripción  
+        const descripcion = modal.querySelector('#task-detail-descripcion, [data-field="descripcion"]');
+        if (descripcion) descripcion.textContent = tarea.descripcion || 'Sin descripción';
+        
+        // Actualizar proyecto
+        const proyecto = modal.querySelector('#task-detail-proyecto, [data-field="proyecto"]');
+        if (proyecto) proyecto.textContent = tarea.proyecto_nombre || 'Sin proyecto';
+        
+        // Actualizar fechas
+        const fechaLimite = modal.querySelector('#task-detail-fecha-limite, [data-field="fecha_limite"]');
+        if (fechaLimite) fechaLimite.textContent = tarea.fecha_limite ? this.formatearFecha(tarea.fecha_limite) : 'Sin fecha límite';
+        
+        const fechaCreacion = modal.querySelector('#task-detail-fecha-creacion, [data-field="fecha_creacion"]');
+        if (fechaCreacion) fechaCreacion.textContent = this.formatearFecha(tarea.fecha_creacion);
+        
+        // Actualizar creado por
+        const creadoPor = modal.querySelector('#task-detail-creado-por, [data-field="creado_por"]');
+        if (creadoPor) creadoPor.textContent = tarea.creado_por || 'Desconocido';
+        
+        console.log('Modal actualizado con datos de la tarea');
+    },
+    
+    formatearFecha(fechaStr) {
+        if (!fechaStr) return '';
+        const fecha = new Date(fechaStr);
+        return fecha.toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     }
 };
 
