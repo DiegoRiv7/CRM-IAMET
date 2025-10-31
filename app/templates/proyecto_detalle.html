@@ -3163,8 +3163,8 @@ function getCookie(name) {
     return cookieValue;
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    // 🔥 DETECTAR RECARGA Y REDIRIGIR A TAREAS Y PROYECTOS
+// 🔥 REDIRECCIÓN INMEDIATA - ANTES DE QUE CARGUE NADA
+(function() {
     const redirectToTaskId = localStorage.getItem('redirectToTask');
     const redirectTimestamp = localStorage.getItem('redirectToTaskTimestamp');
     
@@ -3174,7 +3174,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const timestamp = parseInt(redirectTimestamp);
         
         if (now - timestamp < 10000) { // 10 segundos
-            console.log('🔥 REDIRIGIENDO A TAREAS Y PROYECTOS CON TAREA:', redirectToTaskId);
+            console.log('🔥 REDIRECCIÓN INMEDIATA A TAREAS Y PROYECTOS:', redirectToTaskId);
             
             // Limpiar localStorage
             localStorage.removeItem('redirectToTask');
@@ -3183,11 +3183,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Construir URL de tareas y proyectos con el task_id
             const tareasUrl = `/app/tareas-proyectos/?task_id=${redirectToTaskId}`;
             
-            console.log('✅ Redirigiendo inmediatamente a:', tareasUrl);
+            console.log('✅ Redirigiendo ANTES de cargar página:', tareasUrl);
             
-            // Redirección inmediata después de la recarga
-            window.location.href = tareasUrl;
-            return; // Salir para no ejecutar el resto del código
+            // Redirección INMEDIATA usando replace para ser más rápido
+            window.location.replace(tareasUrl);
+            return; // Esto debería prevenir que el resto del script se ejecute
         } else {
             // Timestamp muy viejo, limpiar
             localStorage.removeItem('redirectToTask');
@@ -3195,6 +3195,9 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('🧹 Timestamp de redirección expirado, limpiado');
         }
     }
+})();
+
+document.addEventListener('DOMContentLoaded', function() {
     
     // Tab functionality
     const tabButtons = document.querySelectorAll('.tab-button');
