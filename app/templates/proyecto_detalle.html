@@ -2914,17 +2914,74 @@ const TareasProyectos = {
     allUsers: [],
     
     verDetallesTarea(tareaId) {
-        console.log('=== RECARGA + REDIRECCIÓN SIN RECORRIDO VISIBLE ===');
+        console.log('=== PANTALLA DE BLOQUEO + REDIRECCIÓN OCULTA ===');
         console.log('Task ID:', tareaId);
         
-        // Guardar el ID en localStorage para redirigir después de la recarga
+        // Crear pantalla de bloqueo inmediatamente
+        this.crearPantallaBloqueo();
+        
+        // Guardar el ID en localStorage
         localStorage.setItem('redirectToTask', tareaId);
         localStorage.setItem('redirectToTaskTimestamp', Date.now().toString());
         
-        console.log('✅ Recargando página para ocultar recorrido...');
+        console.log('🔒 Pantalla de bloqueo activada, iniciando proceso...');
         
-        // Recargar la página para que el usuario no vea nada
-        window.location.reload();
+        // Esperar un momento para que la pantalla se muestre, luego recargar
+        setTimeout(() => {
+            window.location.reload();
+        }, 100);
+    },
+    
+    crearPantallaBloqueo() {
+        // Crear elemento de bloqueo que cubra toda la pantalla
+        const bloqueo = document.createElement('div');
+        bloqueo.id = 'pantalla-bloqueo-tarea';
+        bloqueo.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #1a1f27 0%, #2d3748 100%);
+            z-index: 999999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        `;
+        
+        bloqueo.innerHTML = `
+            <div style="text-align: center;">
+                <div style="
+                    width: 60px;
+                    height: 60px;
+                    border: 3px solid rgba(255, 255, 255, 0.3);
+                    border-top: 3px solid #3B82F6;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                    margin: 0 auto 20px;
+                "></div>
+                <h2 style="margin: 0 0 10px 0; font-size: 1.5rem; font-weight: 600;">Abriendo tarea...</h2>
+                <p style="margin: 0; opacity: 0.7; font-size: 0.9rem;">Un momento por favor</p>
+            </div>
+            
+            <style>
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+        `;
+        
+        // Agregar a la página inmediatamente
+        document.body.appendChild(bloqueo);
+        
+        // Bloquear scroll
+        document.body.style.overflow = 'hidden';
+        
+        console.log('🔒 Pantalla de bloqueo creada y activada');
     },
     
     poblarModalDetalleTarea(tarea) {
@@ -3163,7 +3220,7 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// 🔥 REDIRECCIÓN INMEDIATA - ANTES DE QUE CARGUE NADA
+// 🔥 PANTALLA DE BLOQUEO INMEDIATA + REDIRECCIÓN
 (function() {
     const redirectToTaskId = localStorage.getItem('redirectToTask');
     const redirectTimestamp = localStorage.getItem('redirectToTaskTimestamp');
@@ -3174,7 +3231,53 @@ function getCookie(name) {
         const timestamp = parseInt(redirectTimestamp);
         
         if (now - timestamp < 10000) { // 10 segundos
-            console.log('🔥 REDIRECCIÓN INMEDIATA A TAREAS Y PROYECTOS:', redirectToTaskId);
+            console.log('🔥 ACTIVANDO PANTALLA DE BLOQUEO TOTAL:', redirectToTaskId);
+            
+            // Crear pantalla de bloqueo INMEDIATA
+            const bloqueo = document.createElement('div');
+            bloqueo.id = 'pantalla-bloqueo-total';
+            bloqueo.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: linear-gradient(135deg, #1a1f27 0%, #2d3748 100%);
+                z-index: 999999;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            `;
+            
+            bloqueo.innerHTML = `
+                <div style="text-align: center;">
+                    <div style="
+                        width: 60px;
+                        height: 60px;
+                        border: 3px solid rgba(255, 255, 255, 0.3);
+                        border-top: 3px solid #3B82F6;
+                        border-radius: 50%;
+                        animation: spin 1s linear infinite;
+                        margin: 0 auto 20px;
+                    "></div>
+                    <h2 style="margin: 0 0 10px 0; font-size: 1.5rem; font-weight: 600;">Abriendo tarea...</h2>
+                    <p style="margin: 0; opacity: 0.7; font-size: 0.9rem;">Redirigiendo...</p>
+                </div>
+                
+                <style>
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                </style>
+            `;
+            
+            // Agregar inmediatamente al body
+            document.body.appendChild(bloqueo);
+            document.body.style.overflow = 'hidden';
             
             // Limpiar localStorage
             localStorage.removeItem('redirectToTask');
@@ -3183,11 +3286,14 @@ function getCookie(name) {
             // Construir URL de tareas y proyectos con el task_id
             const tareasUrl = `/app/tareas-proyectos/?task_id=${redirectToTaskId}`;
             
-            console.log('✅ Redirigiendo ANTES de cargar página:', tareasUrl);
+            console.log('✅ Redirigiendo con pantalla de bloqueo activa:', tareasUrl);
             
-            // Redirección INMEDIATA usando replace para ser más rápido
-            window.location.replace(tareasUrl);
-            return; // Esto debería prevenir que el resto del script se ejecute
+            // Redirección después de mostrar la pantalla
+            setTimeout(() => {
+                window.location.replace(tareasUrl);
+            }, 50);
+            
+            return;
         } else {
             // Timestamp muy viejo, limpiar
             localStorage.removeItem('redirectToTask');
