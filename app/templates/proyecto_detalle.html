@@ -2913,48 +2913,18 @@ const TareasProyectos = {
     currentTaskId: null,
     allUsers: [],
     
-    async verDetallesTarea(tareaId) {
-        console.log('=== ABRIENDO MODAL AVANZADO INSTANTÁNEO ===');
+    verDetallesTarea(tareaId) {
+        console.log('=== RECARGA DE PÁGINA CON AUTO-APERTURA DE TAREA ===');
         console.log('Task ID:', tareaId);
         
-        try {
-            // Establecer tarea actual
-            this.currentTaskId = tareaId;
-            
-            // Obtener datos de la tarea via API
-            const response = await fetch(`/app/api/tarea/${tareaId}/`);
-            const data = await response.json();
-            
-            if (data.success && data.tarea) {
-                const tarea = data.tarea;
-                console.log('✅ Datos de tarea cargados:', tarea);
-                
-                // Poblar el modal con los datos de la tarea
-                this.poblarModalDetalleTarea(tarea);
-                
-                // Cargar comentarios
-                await this.cargarComentariosTarea(tareaId);
-                
-                // Abrir el modal
-                const modal = document.getElementById('modal-detalle-tarea');
-                if (modal) {
-                    modal.classList.add('active');
-                    document.body.style.overflow = 'hidden';
-                    console.log('✅ Modal avanzado abierto instantáneamente');
-                } else {
-                    console.error('❌ No se encontró el modal de detalles de tarea');
-                }
-                
-            } else {
-                console.error('❌ Error al cargar datos de la tarea:', data.message || 'Datos no encontrados');
-                // Fallback a redirección si falla la API
-                window.location.href = `/app/tareas-proyectos/?task_id=${tareaId}`;
-            }
-        } catch (error) {
-            console.error('❌ Error al cargar tarea:', error);
-            // Fallback a redirección si hay error
-            window.location.href = `/app/tareas-proyectos/?task_id=${tareaId}`;
-        }
+        // Guardar el ID de la tarea en localStorage para que se abra después del reload
+        localStorage.setItem('autoOpenTaskId', tareaId);
+        localStorage.setItem('autoOpenTaskTimestamp', Date.now().toString());
+        
+        console.log('✅ ID de tarea guardado en localStorage, recargando página...');
+        
+        // Recargar la página - esto hará que no se vea ningún "recorrido"
+        window.location.reload();
     },
     
     poblarModalDetalleTarea(tarea) {
@@ -3194,6 +3164,67 @@ function getCookie(name) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    // 🔥 AUTO-ABRIR TAREA DESPUÉS DE RECARGA DE PÁGINA
+    const autoOpenTaskId = localStorage.getItem('autoOpenTaskId');
+    const autoOpenTimestamp = localStorage.getItem('autoOpenTaskTimestamp');
+    
+    if (autoOpenTaskId && autoOpenTimestamp) {
+        // Verificar que no sea muy viejo (máximo 10 segundos)
+        const now = Date.now();
+        const timestamp = parseInt(autoOpenTimestamp);
+        
+        if (now - timestamp < 10000) { // 10 segundos
+            console.log('🔥 AUTO-ABRIENDO TAREA DESPUÉS DE RECARGA:', autoOpenTaskId);
+            
+            // Limpiar localStorage
+            localStorage.removeItem('autoOpenTaskId');
+            localStorage.removeItem('autoOpenTaskTimestamp');
+            
+            // Esperar un momento para que la página termine de cargar completamente
+            setTimeout(async () => {
+                try {
+                    // Cargar datos de la tarea
+                    const response = await fetch(`/app/api/tarea/${autoOpenTaskId}/`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.tarea) {
+                        const tarea = data.tarea;
+                        console.log('✅ Datos de tarea cargados para auto-apertura:', tarea);
+                        
+                        // Establecer tarea actual
+                        TareasProyectos.currentTaskId = autoOpenTaskId;
+                        
+                        // Poblar el modal con los datos de la tarea
+                        TareasProyectos.poblarModalDetalleTarea(tarea);
+                        
+                        // Cargar comentarios
+                        await TareasProyectos.cargarComentariosTarea(autoOpenTaskId);
+                        
+                        // Abrir el modal
+                        const modal = document.getElementById('modal-detalle-tarea');
+                        if (modal) {
+                            modal.classList.add('active');
+                            document.body.style.overflow = 'hidden';
+                            console.log('✅ Modal auto-abierto después de recarga');
+                        } else {
+                            console.error('❌ No se encontró el modal para auto-apertura');
+                        }
+                        
+                    } else {
+                        console.error('❌ Error al cargar datos para auto-apertura:', data.message || 'Datos no encontrados');
+                    }
+                } catch (error) {
+                    console.error('❌ Error en auto-apertura:', error);
+                }
+            }, 500); // Esperar 500ms para que todo esté listo
+        } else {
+            // Timestamp muy viejo, limpiar
+            localStorage.removeItem('autoOpenTaskId');
+            localStorage.removeItem('autoOpenTaskTimestamp');
+            console.log('🧹 Timestamp de auto-apertura expirado, limpiado');
+        }
+    }
+    
     // Tab functionality
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
