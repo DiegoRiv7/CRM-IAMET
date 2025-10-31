@@ -2914,17 +2914,17 @@ const TareasProyectos = {
     allUsers: [],
     
     verDetallesTarea(tareaId) {
-        console.log('=== RECARGA DE PÁGINA CON AUTO-APERTURA DE TAREA ===');
+        console.log('=== REDIRECCIÓN DIRECTA A TAREAS Y PROYECTOS ===');
         console.log('Task ID:', tareaId);
         
-        // Usar parámetros de URL en lugar de localStorage
-        const currentUrl = new URL(window.location);
-        currentUrl.searchParams.set('auto_open_task', tareaId);
+        // Redirigir directamente a la página de Tareas y Proyectos con el task_id
+        // Esto abrirá el modal bueno que ya funciona perfecto
+        const tareasUrl = `/app/tareas-proyectos/?task_id=${tareaId}`;
         
-        console.log('✅ Recargando página con parámetro auto_open_task:', tareaId);
+        console.log('✅ Redirigiendo directamente a:', tareasUrl);
         
-        // Recargar la página con el parámetro - esto hará que no se vea ningún "recorrido"
-        window.location.href = currentUrl.toString();
+        // Redirección directa sin recorrido visible
+        window.location.href = tareasUrl;
     },
     
     poblarModalDetalleTarea(tarea) {
@@ -3164,63 +3164,6 @@ function getCookie(name) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // 🔥 AUTO-ABRIR TAREA DESPUÉS DE RECARGA DE PÁGINA
-    const urlParams = new URLSearchParams(window.location.search);
-    const autoOpenTaskId = urlParams.get('auto_open_task');
-    
-    if (autoOpenTaskId) {
-        console.log('🔥 AUTO-ABRIENDO TAREA DESPUÉS DE RECARGA:', autoOpenTaskId);
-        
-        // Limpiar el parámetro de la URL para que no se vea
-        const cleanUrl = new URL(window.location);
-        cleanUrl.searchParams.delete('auto_open_task');
-        window.history.replaceState({}, '', cleanUrl.toString());
-        
-        // Esperar un momento para que la página termine de cargar completamente
-        setTimeout(async () => {
-            try {
-                // Cargar datos de la tarea usando el API del proyecto que ya funciona
-                console.log('📡 Cargando datos de tarea desde proyecto:', autoOpenTaskId);
-                const response = await fetch(`/app/api/tareas/?proyecto_id=${PROYECTO_ID}`);
-                const data = await response.json();
-                
-                if (data.success && data.tareas) {
-                    // Buscar la tarea específica en la lista
-                    const tarea = data.tareas.find(t => t.id == autoOpenTaskId);
-                    
-                    if (tarea) {
-                        console.log('✅ Datos de tarea encontrados para auto-apertura:', tarea);
-                        
-                        // Establecer tarea actual
-                        TareasProyectos.currentTaskId = autoOpenTaskId;
-                        
-                        // Poblar el modal con los datos de la tarea
-                        TareasProyectos.poblarModalDetalleTarea(tarea);
-                        
-                        // Cargar comentarios
-                        await TareasProyectos.cargarComentariosTarea(autoOpenTaskId);
-                        
-                        // Abrir el modal
-                        const modal = document.getElementById('modal-detalle-tarea');
-                        if (modal) {
-                            modal.classList.add('active');
-                            document.body.style.overflow = 'hidden';
-                            console.log('✅ Modal auto-abierto después de recarga');
-                        } else {
-                            console.error('❌ No se encontró el modal para auto-apertura');
-                        }
-                    } else {
-                        console.error('❌ Tarea no encontrada en el proyecto:', autoOpenTaskId);
-                    }
-                } else {
-                    console.error('❌ Error al cargar tareas del proyecto:', data.message || 'Datos no encontrados');
-                }
-            } catch (error) {
-                console.error('❌ Error en auto-apertura:', error);
-            }
-        }, 800); // Aumentar tiempo de espera a 800ms
-    }
-    
     // Tab functionality
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
