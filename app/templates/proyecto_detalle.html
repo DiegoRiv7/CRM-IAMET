@@ -2914,17 +2914,17 @@ const TareasProyectos = {
     allUsers: [],
     
     verDetallesTarea(tareaId) {
-        console.log('=== REDIRECCIÓN DIRECTA A TAREAS Y PROYECTOS ===');
+        console.log('=== RECARGA + REDIRECCIÓN SIN RECORRIDO VISIBLE ===');
         console.log('Task ID:', tareaId);
         
-        // Redirigir directamente a la página de Tareas y Proyectos con el task_id
-        // Esto abrirá el modal bueno que ya funciona perfecto
-        const tareasUrl = `/app/tareas-proyectos/?task_id=${tareaId}`;
+        // Guardar el ID en localStorage para redirigir después de la recarga
+        localStorage.setItem('redirectToTask', tareaId);
+        localStorage.setItem('redirectToTaskTimestamp', Date.now().toString());
         
-        console.log('✅ Redirigiendo directamente a:', tareasUrl);
+        console.log('✅ Recargando página para ocultar recorrido...');
         
-        // Redirección directa sin recorrido visible
-        window.location.href = tareasUrl;
+        // Recargar la página para que el usuario no vea nada
+        window.location.reload();
     },
     
     poblarModalDetalleTarea(tarea) {
@@ -3164,6 +3164,38 @@ function getCookie(name) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    // 🔥 DETECTAR RECARGA Y REDIRIGIR A TAREAS Y PROYECTOS
+    const redirectToTaskId = localStorage.getItem('redirectToTask');
+    const redirectTimestamp = localStorage.getItem('redirectToTaskTimestamp');
+    
+    if (redirectToTaskId && redirectTimestamp) {
+        // Verificar que no sea muy viejo (máximo 10 segundos)
+        const now = Date.now();
+        const timestamp = parseInt(redirectTimestamp);
+        
+        if (now - timestamp < 10000) { // 10 segundos
+            console.log('🔥 REDIRIGIENDO A TAREAS Y PROYECTOS CON TAREA:', redirectToTaskId);
+            
+            // Limpiar localStorage
+            localStorage.removeItem('redirectToTask');
+            localStorage.removeItem('redirectToTaskTimestamp');
+            
+            // Construir URL de tareas y proyectos con el task_id
+            const tareasUrl = `/app/tareas-proyectos/?task_id=${redirectToTaskId}`;
+            
+            console.log('✅ Redirigiendo inmediatamente a:', tareasUrl);
+            
+            // Redirección inmediata después de la recarga
+            window.location.href = tareasUrl;
+            return; // Salir para no ejecutar el resto del código
+        } else {
+            // Timestamp muy viejo, limpiar
+            localStorage.removeItem('redirectToTask');
+            localStorage.removeItem('redirectToTaskTimestamp');
+            console.log('🧹 Timestamp de redirección expirado, limpiado');
+        }
+    }
+    
     // Tab functionality
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
