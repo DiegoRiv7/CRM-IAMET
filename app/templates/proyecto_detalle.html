@@ -4422,7 +4422,7 @@ async function submitTaskFormProyecto() {
             fecha_limite: fechaLimite,
             prioridad: document.getElementById('highPriorityProyecto').checked ? 'alta' : 'media',
             asignado_a: selectedResponsibleProyecto?.id || null,
-            proyecto_id: {{ proyecto.id }} // ID del proyecto actual
+            proyecto_id: {{ proyecto.id|default:"null" }} // ID del proyecto actual
         };
         
         console.log('📤 Enviando tarea para proyecto:', formData);
