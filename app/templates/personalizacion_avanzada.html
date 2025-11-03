@@ -7,6 +7,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Configuración Avanzada</title>
+{% include 'theme_script.html' %}
 
 <!-- Incluir Font Awesome para íconos del dock -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -1936,7 +1937,7 @@ flex-direction: column;
 }
 </style>
 </head>
-<body class="theme-{{ user_profile.theme|default:'dark' }}" data-avatar-config='{ "hasCustomAvatar": {% if user_profile.avatar and user_profile.avatar.name %}true{% else %}false{% endif %}, "customAvatarUrl": {% if user_profile.avatar and user_profile.avatar.name %}"{{ user_profile.avatar.url }}"{% else %}""{% endif %}, "avatarTipo": "{{ user_profile.avatar_tipo|default:"dinosaur" }}" }'>
+<body data-avatar-config='{ "hasCustomAvatar": {% if user_profile.avatar and user_profile.avatar.name %}true{% else %}false{% endif %}, "customAvatarUrl": {% if user_profile.avatar and user_profile.avatar.name %}"{{ user_profile.avatar.url }}"{% else %}""{% endif %}, "avatarTipo": "{{ user_profile.avatar_tipo|default:"dinosaur" }}" }'>
 <div class="main-container">
 
 
@@ -2520,184 +2521,6 @@ try {
 <!-- Incluir el JavaScript corregido para personalización avanzada -->
 <script src="{% static 'js/personalizacion_avanzada.js' %}"></script>
 
-<script>
-// Apply theme immediately to prevent flash - Improved version
-(function() {
-try {
-// Check for theme in localStorage
-const savedTheme = localStorage.getItem('theme');
-console.log('Initial theme check - savedTheme:', savedTheme);
 
-if (savedTheme) {
-// Apply the saved theme immediately without animations
-applyThemeImmediate(savedTheme);
-console.log('Applied saved theme:', savedTheme);
-} else {
-// Default to dark theme
-applyThemeImmediate('dark');
-localStorage.setItem('theme', 'dark');
-console.log('Applied default dark theme');
-}
-
-// Force a complete repaint to ensure theme is fully applied
-setTimeout(() => {
-document.body.style.display = 'none';
-document.body.offsetHeight; // Force reflow
-document.body.style.display = '';
-console.log('Forced complete repaint after initial theme application');
-}, 50);
-
-} catch (error) {
-console.log('Using default theme settings due to error:', error);
-// Default to dark theme if there's an error
-applyThemeImmediate('dark');
-localStorage.setItem('theme', 'dark');
-}
-})();
-
-// Immediate theme application without animations to prevent flash
-function applyThemeImmediate(theme) {
-if (theme === 'pink') {
-// Aplicar fondo INMEDIATAMENTE antes que cualquier otra cosa
-document.body.style.background = 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)';
-document.body.style.backgroundAttachment = 'fixed';
-document.body.style.color = '#2d1b2e';
-
-// Forzar repaint inmediato
-document.body.offsetHeight;
-
-// Para el tema rosa, asegurarse de desactivar otros temas
-document.documentElement.classList.remove('dark-theme');
-document.documentElement.classList.add('light-theme');
-document.body.classList.remove('dark-theme', 'light-theme');
-document.body.classList.add('pink-theme');
-
-// Agregar atributos de tema rosa
-document.documentElement.setAttribute('data-theme', 'pink');
-
-// Aplicar colores específicos del tema rosa inmediatamente
-document.documentElement.style.setProperty('--apple-background', '#ffebf0');
-document.documentElement.style.setProperty('--apple-background-secondary', '#fff5f8');
-document.documentElement.style.setProperty('--apple-background-tertiary', '#ffe0e6');
-document.documentElement.style.setProperty('--apple-background-quaternary', '#ffd1dc');
-document.documentElement.style.setProperty('--apple-label', '#2d1b2e');
-document.documentElement.style.setProperty('--apple-label-secondary', '#5d2f47');
-document.documentElement.style.setProperty('--apple-label-tertiary', '#8b4d6b');
-document.documentElement.style.setProperty('--apple-label-quaternary', '#b96d8f');
-document.documentElement.style.setProperty('--apple-blue', '#ff6b9d');
-document.documentElement.style.setProperty('--apple-blue-light', '#ff8fab');
-document.documentElement.style.setProperty('--apple-blue-dark', '#e6396b');
-document.documentElement.style.setProperty('--apple-separator', 'rgba(229, 90, 135, 0.2)');
-} else if (theme === 'light') {
-// Para el tema claro
-document.documentElement.classList.remove('dark-theme', 'pink-theme');
-document.documentElement.classList.add('light-theme');
-document.body.classList.remove('dark-theme', 'pink-theme');
-document.body.classList.add('light-theme');
-
-// Remover atributo de tema
-document.documentElement.removeAttribute('data-theme');
-
-// Restaurar variables CSS para tema claro
-document.documentElement.style.setProperty('--apple-background', '#ffffff');
-document.documentElement.style.setProperty('--apple-background-secondary', '#f8f9fa');
-document.documentElement.style.setProperty('--apple-background-tertiary', '#f1f3f5');
-document.documentElement.style.setProperty('--apple-background-quaternary', '#e9ecef');
-document.documentElement.style.setProperty('--apple-label', '#212529');
-document.documentElement.style.setProperty('--apple-label-secondary', '#343a40');
-document.documentElement.style.setProperty('--apple-label-tertiary', '#495057');
-document.documentElement.style.setProperty('--apple-blue', '#007bff');
-document.documentElement.style.setProperty('--apple-blue-light', '#4da8ff');
-document.documentElement.style.setProperty('--apple-blue-dark', '#0056b3');
-document.documentElement.style.setProperty('--apple-separator', 'rgba(0, 0, 0, 0.1)');
-
-document.body.style.background = '#ffffff';
-document.body.style.backgroundAttachment = 'fixed';
-} else if (theme === 'blue') {
-// Para el tema azul
-document.documentElement.classList.remove('dark-theme', 'pink-theme');
-document.documentElement.classList.add('light-theme');
-document.body.classList.remove('dark-theme', 'pink-theme');
-document.body.classList.add('light-theme');
-
-// Remover atributo de tema
-document.documentElement.removeAttribute('data-theme');
-
-// Aplicar colores específicos del tema azul inmediatamente
-document.documentElement.style.setProperty('--apple-background', '#f0f7ff');
-document.documentElement.style.setProperty('--apple-background-secondary', '#f5faff');
-document.documentElement.style.setProperty('--apple-background-tertiary', '#e6f3ff');
-document.documentElement.style.setProperty('--apple-background-quaternary', '#e1f0ff');
-document.documentElement.style.setProperty('--apple-label', '#0056b3');
-document.documentElement.style.setProperty('--apple-label-secondary', '#004085');
-document.documentElement.style.setProperty('--apple-label-tertiary', '#003366');
-document.documentElement.style.setProperty('--apple-blue', '#0056b3');
-document.documentElement.style.setProperty('--apple-blue-light', '#007bff');
-document.documentElement.style.setProperty('--apple-blue-dark', '#003d82');
-document.documentElement.style.setProperty('--apple-separator', 'rgba(0, 86, 179, 0.1)');
-
-document.body.style.background = '#f0f7ff';
-document.body.style.backgroundAttachment = 'fixed';
-} else if (theme === 'white') {
-// Para el tema blanco
-document.documentElement.classList.remove('dark-theme', 'pink-theme');
-document.documentElement.classList.add('light-theme');
-document.body.classList.remove('dark-theme', 'pink-theme');
-document.body.classList.add('light-theme');
-
-// Remover atributo de tema
-document.documentElement.removeAttribute('data-theme');
-
-// Aplicar colores específicos del tema blanco inmediatamente
-document.documentElement.style.setProperty('--apple-background', '#ffffff');
-document.documentElement.style.setProperty('--apple-background-secondary', '#f8f9fa');
-document.documentElement.style.setProperty('--apple-background-tertiary', '#f1f3f5');
-document.documentElement.style.setProperty('--apple-background-quaternary', '#e9ecef');
-document.documentElement.style.setProperty('--apple-label', '#212529');
-document.documentElement.style.setProperty('--apple-label-secondary', '#343a40');
-document.documentElement.style.setProperty('--apple-label-tertiary', '#495057');
-document.documentElement.style.setProperty('--apple-blue', '#007bff');
-document.documentElement.style.setProperty('--apple-blue-light', '#4da8ff');
-document.documentElement.style.setProperty('--apple-blue-dark', '#0056b3');
-document.documentElement.style.setProperty('--apple-separator', 'rgba(0, 0, 0, 0.1)');
-
-document.body.style.background = '#ffffff';
-document.body.style.backgroundAttachment = 'fixed';
-} else {
-// Dark theme (default)
-document.documentElement.classList.remove('light-theme', 'pink-theme');
-document.documentElement.classList.add('dark-theme');
-document.body.classList.remove('light-theme', 'pink-theme');
-document.body.classList.add('dark-theme');
-document.documentElement.removeAttribute('data-theme');
-
-// Reset inline styles from other themes
-document.body.style.background = '';
-document.body.style.color = '';
-document.body.style.backgroundAttachment = '';
-
-// Restaurar variables CSS originales para tema oscuro
-document.documentElement.style.setProperty('--apple-background', '#000000');
-document.documentElement.style.setProperty('--apple-background-secondary', '#1D1D1F');
-document.documentElement.style.setProperty('--apple-background-tertiary', '#2C2C2E');
-document.documentElement.style.setProperty('--apple-background-quaternary', '#3A3A3C');
-document.documentElement.style.setProperty('--apple-label', '#FFFFFF');
-document.documentElement.style.setProperty('--apple-label-secondary', '#EBEBF5');
-document.documentElement.style.setProperty('--apple-label-tertiary', '#EBEBF599');
-document.documentElement.style.setProperty('--apple-label-quaternary', '#EBEBF54D');
-document.documentElement.style.setProperty('--apple-blue', '#007AFF');
-document.documentElement.style.setProperty('--apple-blue-light', '#4DA8FF');
-document.documentElement.style.setProperty('--apple-blue-dark', '#0056CC');
-document.documentElement.style.setProperty('--apple-separator', '#38383A');
-
-document.body.style.background = '#000000';
-}
-}
-
-function closeSettings() {
-// Reload the page to apply theme
-location.reload();
-}
-</script>
 </body>
 </html>
