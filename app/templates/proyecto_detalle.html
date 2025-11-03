@@ -4488,6 +4488,68 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Funciones de gestión de usuarios para asignaciones
+async function loadUsersForAssignments() {
+    try {
+        const response = await fetch('/app/api/buscar-usuarios/?q=');
+        const data = await response.json();
+
+        if (data.success && data.usuarios && data.usuarios.length > 0) {
+            window.availableUsers = data.usuarios;
+            setupUserSearchInputs();
+        } else {
+            console.log('No se encontraron usuarios disponibles');
+            window.availableUsers = [];
+        }
+    } catch (error) {
+        console.error('Error cargando usuarios:', error);
+        window.availableUsers = [];
+    }
+}
+
+function setupUserSearchInputs() {
+    const searchInputs = document.querySelectorAll('.user-search-input');
+    
+    searchInputs.forEach(input => {
+        // Mostrar todos los usuarios al enfocar
+        input.addEventListener('focus', function() {
+            const containerId = this.id.replace('Search', '');
+            showUserSuggestions('', containerId, this, true); // true = mostrar todos
+        });
+        
+        input.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            const containerId = this.id.replace('Search', '');
+            showUserSuggestions(query, containerId, this);
+        });
+        
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const query = this.value.toLowerCase();
+                const matchedUser = window.availableUsers.find(user => 
+                    user.username.toLowerCase().includes(query) || 
+                    `${user.first_name} ${user.last_name}`.toLowerCase().includes(query)
+                );
+                
+                if (matchedUser) {
+                    const containerId = this.id.replace('Search', '');
+                    addUserToSelection(matchedUser, containerId);
+                    this.value = '';
+                }
+            }
+        });
+        
+        // Ocultar sugerencias al perder foco (con delay para permitir clics)
+        input.addEventListener('blur', function() {
+            setTimeout(() => {
+                const suggestions = document.querySelector('.user-suggestions');
+                if (suggestions) suggestions.remove();
+            }, 200);
+        });
+    });
+}
+
 // Funciones para el modal de Crear Tarea en Proyecto
 function openCreateTaskModal() {
     console.log('🚀 Abriendo modal crear tarea para proyecto:', PROYECTO_ID);
@@ -4922,6 +4984,15 @@ function initializeCustomDatePicker() {
     dateInput.addEventListener('focus', function() {
         showCustomCalendar(this);
     });
+    
+    // También agregar evento al contenedor
+    const datePicker = dateInput.parentElement;
+    if (datePicker) {
+        datePicker.addEventListener('click', function(e) {
+            e.preventDefault();
+            showCustomCalendar(dateInput);
+        });
+    }
 }
 
 // Función específica para el date picker del modal de proyecto
@@ -5263,66 +5334,6 @@ function resetPowerTaskForm() {
     switchAssignmentTab('responsible');
 }
 
-async function loadUsersForAssignments() {
-    try {
-        const response = await fetch('/app/api/buscar-usuarios/?q=');
-        const data = await response.json();
-
-        if (data.success && data.usuarios && data.usuarios.length > 0) {
-            window.availableUsers = data.usuarios;
-            setupUserSearchInputs();
-        } else {
-            console.log('No se encontraron usuarios disponibles');
-            window.availableUsers = [];
-        }
-    } catch (error) {
-        console.error('Error cargando usuarios:', error);
-        window.availableUsers = [];
-    }
-}
-
-function setupUserSearchInputs() {
-    const searchInputs = document.querySelectorAll('.user-search-input');
-    
-    searchInputs.forEach(input => {
-        // Mostrar todos los usuarios al enfocar
-        input.addEventListener('focus', function() {
-            const containerId = this.id.replace('Search', '');
-            showUserSuggestions('', containerId, this, true); // true = mostrar todos
-        });
-        
-        input.addEventListener('input', function() {
-            const query = this.value.toLowerCase();
-            const containerId = this.id.replace('Search', '');
-            showUserSuggestions(query, containerId, this);
-        });
-        
-        input.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const query = this.value.toLowerCase();
-                const matchedUser = window.availableUsers.find(user => 
-                    user.username.toLowerCase().includes(query) || 
-                    `${user.first_name} ${user.last_name}`.toLowerCase().includes(query)
-                );
-                
-                if (matchedUser) {
-                    const containerId = this.id.replace('Search', '');
-                    addUserToSelection(matchedUser, containerId);
-                    this.value = '';
-                }
-            }
-        });
-        
-        // Ocultar sugerencias al perder foco (con delay para permitir clics)
-        input.addEventListener('blur', function() {
-            setTimeout(() => {
-                const suggestions = document.querySelector('.user-suggestions');
-                if (suggestions) suggestions.remove();
-            }, 200);
-        });
-    });
-}
 
 function showUserSuggestions(query, containerId, inputElement, showAll = false) {
     // Remover sugerencias anteriores

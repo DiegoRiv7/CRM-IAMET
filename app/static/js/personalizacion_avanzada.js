@@ -108,6 +108,9 @@ function showModal(modalId) {
 function hideModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
     document.body.style.overflow = 'auto';
+    if (modalId === 'designModal') {
+        location.reload();
+    }
 }
 
 function applyTheme(theme) {
@@ -131,19 +134,7 @@ function applyTheme(theme) {
 
     localStorage.setItem('theme', theme);
 
-    const html = document.documentElement;
-    html.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme');
-    html.removeAttribute('data-theme');
-
-    if (theme === 'pink' || theme === 'white' || theme === 'coffee') {
-        html.classList.add('light-theme');
-    } else {
-        html.classList.add('dark-theme');
-    }
-
-    if (theme !== 'dark') {
-        html.setAttribute('data-theme', theme);
-    }
+    document.documentElement.setAttribute('data-theme', theme);
 
     const themeNames = {
         'dark': 'Oscuro',
@@ -804,6 +795,7 @@ function saveDesignSettings() {
     
     setTimeout(() => {
         hideModal('designModal');
+        setTimeout(() => location.reload(), 300);
     }, 1000);
 }
 
