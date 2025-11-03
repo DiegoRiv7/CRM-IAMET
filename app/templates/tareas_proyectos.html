@@ -2885,7 +2885,7 @@ function createTaskRow(tarea) {
     let proyectoContent;
     if (tarea.proyecto_id && proyectoNombre !== 'Sin proyecto') {
         // Si tiene proyecto asociado, hacerlo clickeable
-        proyectoContent = `<span style="cursor: pointer; color: #007AFF; text-decoration: underline;" onclick="event.stopPropagation(); window.location.href='/proyecto/${tarea.proyecto_id}/';">${proyectoNombre}</span>`;
+        proyectoContent = `<span style="cursor: pointer; color: #007AFF; text-decoration: underline;" onclick="event.stopPropagation(); window.location.href='/app/proyecto/${tarea.proyecto_id}/';">${proyectoNombre}</span>`;
     } else {
         // Si no tiene proyecto, mostrar texto normal
         proyectoContent = proyectoNombre;
