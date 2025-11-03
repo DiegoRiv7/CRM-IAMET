@@ -108,9 +108,6 @@ function showModal(modalId) {
 function hideModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
     document.body.style.overflow = 'auto';
-    if (modalId === 'designModal') {
-        location.reload();
-    }
 }
 
 function applyTheme(theme) {
@@ -140,7 +137,11 @@ function applyTheme(theme) {
         'white': 'Blanco',
         'coffee': 'Café'
     };
-    showNotification(`Tema cambiado a ${themeNames[theme] || theme}. Se aplicará al salir.`, 'success');
+    showNotification(`Tema cambiado a ${themeNames[theme] || theme}.`, 'success');
+
+    setTimeout(() => {
+        location.reload();
+    }, 500);
 }
 
 // Sistema de avatar completo
@@ -791,10 +792,7 @@ function saveDesignSettings() {
         'success'
     );
     
-    setTimeout(() => {
-        hideModal('designModal');
-        setTimeout(() => location.reload(), 300);
-    }, 1000);
+    location.reload();
 }
 
 // Sistema de idioma
