@@ -2906,7 +2906,8 @@
 
 <script>
 // Variables globales
-const PROYECTO_ID = document.querySelector('.proyecto-title').getAttribute('data-proyecto-id');
+const PROYECTO_ID = document.querySelector('.proyecto-title')?.getAttribute('data-proyecto-id');
+console.log('PROYECTO_ID:', PROYECTO_ID);
 
 // Namespace para funciones de tareas - MODAL AVANZADO INSTANTÁNEO
 const TareasProyectos = {
@@ -4971,8 +4972,10 @@ async function populateUserDropdowns() {
 // Función para cargar tareas del proyecto
 async function cargarTareasDelProyecto() {
     try {
+        console.log('Cargando tareas del proyecto:', PROYECTO_ID);
         const response = await fetch(`/app/api/tareas/?proyecto_id=${PROYECTO_ID}`);
         const data = await response.json();
+        console.log('Respuesta de tareas:', data);
         
         if (data.success && data.tareas) {
             const tbody = document.getElementById('tasks-table-body');
