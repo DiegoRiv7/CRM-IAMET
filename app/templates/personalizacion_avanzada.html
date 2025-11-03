@@ -7,6 +7,30 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Configuración Avanzada</title>
+<script>
+    (function() {
+        try {
+            const theme = localStorage.getItem('theme') || 'dark';
+            const html = document.documentElement;
+
+            html.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme');
+            html.removeAttribute('data-theme');
+
+            if (theme === 'pink' || theme === 'white' || theme === 'coffee') {
+                html.classList.add('light-theme');
+            } else {
+                html.classList.add('dark-theme');
+            }
+
+            if (theme !== 'dark') {
+                html.setAttribute('data-theme', theme);
+            }
+        } catch (e) {
+            console.error('Error applying theme from localStorage', e);
+            document.documentElement.classList.add('dark-theme');
+        }
+    })();
+</script>
 
 <!-- Incluir Font Awesome para íconos del dock -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -39,22 +63,21 @@
 --apple-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif;
 }
 
-/* Light Theme Variables - Tema Blanco */
-.light-theme {
---apple-background: #ffffff;
---apple-background-secondary: #f8f9fa;
---apple-background-tertiary: #f1f3f5;
---apple-background-quaternary: #e9ecef;
---apple-label: #212529;
---apple-label-secondary: #343a40;
---apple-label-tertiary: #495057;
---apple-blue: #007bff;
---apple-blue-light: #4da8ff;
---apple-blue-dark: #0056b3;
---apple-separator: rgba(0, 0, 0, 0.1);
+html[data-theme="white"] {
+    --apple-background: #ffffff;
+    --apple-background-secondary: #f8f9fa;
+    --apple-background-tertiary: #f1f3f5;
+    --apple-background-quaternary: #e9ecef;
+    --apple-label: #212529;
+    --apple-label-secondary: #343a40;
+    --apple-label-tertiary: #495057;
+    --apple-blue: #007bff;
+    --apple-blue-light: #4da8ff;
+    --apple-blue-dark: #0056b3;
+    --apple-separator: rgba(0, 0, 0, 0.1);
 }
 
-.pink-theme body {
+html[data-theme="pink"] {
   --apple-background: #FFF5F8;
   --apple-background-secondary: #FFE8EF;
   --apple-background-tertiary: #FFD1DC;
@@ -65,6 +88,20 @@
   --apple-blue-light: #FF8FB3;
   --apple-blue-dark: #E55A87;
   --apple-separator: rgba(255, 107, 157, 0.2);
+}
+
+html[data-theme="coffee"] {
+    --apple-background: #f5e6d3;
+    --apple-background-secondary: #f0dcc7;
+    --apple-background-tertiary: #ebd4bb;
+    --apple-background-quaternary: #e6cca8;
+    --apple-label: #4a3020;
+    --apple-label-secondary: #5d3d2a;
+    --apple-label-tertiary: #7a5038;
+    --apple-blue: #8b6239;
+    --apple-blue-light: #a0724a;
+    --apple-blue-dark: #6b4a30;
+    --apple-separator: rgba(139, 69, 19, 0.1);
 }
 
 * {
@@ -1949,7 +1986,7 @@ flex-direction: column;
 }
 </style>
 </head>
-<body class="theme-{{ user_profile.theme|default:'dark' }}" data-avatar-config='{ "hasCustomAvatar": {% if user_profile.avatar and user_profile.avatar.name %}true{% else %}false{% endif %}, "customAvatarUrl": {% if user_profile.avatar and user_profile.avatar.name %}"{{ user_profile.avatar.url }}"{% else %}""{% endif %}, "avatarTipo": "{{ user_profile.avatar_tipo|default:"dinosaur" }}" }'>
+<body data-avatar-config='{ "hasCustomAvatar": {% if user_profile.avatar and user_profile.avatar.name %}true{% else %}false{% endif %}, "customAvatarUrl": {% if user_profile.avatar and user_profile.avatar.name %}"{{ user_profile.avatar.url }}"{% else %}""{% endif %}, "avatarTipo": "{{ user_profile.avatar_tipo|default:"dinosaur" }}" }'>
 <div class="main-container">
 
 

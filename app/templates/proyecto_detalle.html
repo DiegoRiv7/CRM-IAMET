@@ -3,6 +3,390 @@
 {% csrf_token %}
 
 {% block content %}
+
+<!-- Estilos para Modal de Crear Tarea en Proyecto -->
+<style>
+    /* POWER TASK MODAL - EDITOR AVANZADO */
+    .power-task-modal-overlay {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        pointer-events: none;
+        isolation: isolate;
+    }
+    
+    .power-task-modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: all;
+    }
+    
+    .power-task-container {
+        background: rgba(18, 18, 20, 0.95);
+        backdrop-filter: blur(50px) saturate(1.8);
+        -webkit-backdrop-filter: blur(50px) saturate(1.8);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        width: 90%;
+        max-width: 800px;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: relative;
+        box-shadow: 
+            0 32px 120px rgba(0, 0, 0, 0.6),
+            0 16px 60px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transform: scale(0.92) translateY(40px);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    .power-task-modal-overlay.active .power-task-container {
+        transform: scale(1) translateY(0);
+    }
+    
+    /* Header Simplificado */
+    .power-task-header {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    .task-header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .task-name-input {
+        flex: 1;
+    }
+    
+    .task-title-field {
+        background: transparent;
+        border: none;
+        color: var(--apple-label);
+        font-size: 1.25rem;
+        font-weight: 600;
+        width: 100%;
+        outline: none;
+        padding: 0.5rem 0;
+    }
+    
+    .task-title-field::placeholder {
+        color: var(--apple-label-secondary);
+    }
+    
+    .header-right-section {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .task-priority {
+        display: flex;
+        align-items: center;
+    }
+    
+    .priority-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+        border-radius: 12px;
+        transition: all 0.2s ease;
+        user-select: none;
+    }
+    
+    .priority-toggle:hover {
+        background: rgba(255, 149, 0, 0.1);
+    }
+    
+    .priority-toggle input[type="checkbox"] {
+        display: none;
+    }
+    
+    .priority-icon {
+        display: flex;
+        align-items: center;
+        color: var(--apple-label-tertiary);
+        transition: all 0.2s ease;
+    }
+    
+    .priority-toggle input[type="checkbox"]:checked + .priority-icon {
+        color: #FF9500;
+    }
+    
+    .priority-label {
+        color: var(--apple-label-secondary);
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .priority-toggle input[type="checkbox"]:checked ~ .priority-label {
+        color: #FF9500;
+        font-weight: 600;
+    }
+    
+    .power-close-btn {
+        background: none;
+        border: none;
+        color: var(--apple-label-tertiary);
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .power-close-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--apple-label);
+    }
+    
+    /* Editor Principal */
+    .task-rich-editor-proyecto {
+        min-height: 120px;
+        max-height: 200px;
+        overflow-y: auto;
+        padding: 1.5rem 2rem;
+        border: none;
+        outline: none;
+        color: var(--apple-label);
+        font-size: 1rem;
+        line-height: 1.6;
+        resize: none;
+        background: transparent;
+    }
+    
+    .task-rich-editor-proyecto:empty::before {
+        content: attr(data-placeholder);
+        color: var(--apple-label-tertiary);
+        font-style: italic;
+    }
+    
+    /* Sección de Asignaciones */
+    .task-assignments-section {
+        padding: 0 2rem 1.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    .assignment-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .assignment-tab {
+        background: transparent;
+        border: none;
+        color: var(--apple-label-tertiary);
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .assignment-tab.active {
+        background: rgba(10, 132, 255, 0.2);
+        color: #007AFF;
+    }
+    
+    .assignment-tab:hover:not(.active) {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--apple-label-secondary);
+    }
+    
+    .assignment-content {
+        position: relative;
+    }
+    
+    .assignment-panel {
+        display: none;
+    }
+    
+    .assignment-panel.active {
+        display: block;
+    }
+    
+    .user-selector {
+        position: relative;
+    }
+    
+    .user-search-input {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        color: var(--apple-label);
+        font-size: 0.9rem;
+        outline: none;
+        transition: all 0.2s ease;
+    }
+    
+    .user-search-input:focus {
+        border-color: rgba(10, 132, 255, 0.5);
+        background: rgba(255, 255, 255, 0.08);
+    }
+    
+    .user-search-input::placeholder {
+        color: var(--apple-label-tertiary);
+    }
+    
+    .selected-users {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        min-height: 2rem;
+    }
+    
+    /* Configuración de Tiempo */
+    .task-timing-section {
+        padding: 1.5rem 2rem;
+        display: flex;
+        gap: 2rem;
+    }
+    
+    .timing-item {
+        flex: 1;
+    }
+    
+    .timing-item label {
+        display: block;
+        color: var(--apple-label-secondary);
+        font-size: 0.9rem;
+        font-weight: 500;
+        margin-bottom: 0.75rem;
+    }
+    
+    .custom-date-picker {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    
+    .date-input {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        padding-right: 3rem;
+        color: var(--apple-label);
+        font-size: 0.9rem;
+        outline: none;
+        transition: all 0.2s ease;
+    }
+    
+    .date-input:focus {
+        border-color: rgba(10, 132, 255, 0.5);
+        background: rgba(255, 255, 255, 0.08);
+    }
+    
+    .date-icon {
+        position: absolute;
+        right: 1rem;
+        color: var(--apple-label-tertiary);
+        pointer-events: none;
+    }
+    
+    .creator-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
+    }
+    
+    .creator-avatar {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+    
+    .creator-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .creator-name {
+        color: var(--apple-label);
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+    
+    /* Footer */
+    .power-task-footer {
+        padding: 1.5rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    .footer-left,
+    .footer-right {
+        display: flex;
+        gap: 1rem;
+    }
+    
+    .footer-action {
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+        outline: none;
+    }
+    
+    .footer-action.secondary {
+        background: transparent;
+        color: var(--apple-label-secondary);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .footer-action.secondary:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--apple-label);
+    }
+    
+    .footer-action.primary {
+        background: linear-gradient(135deg, #007AFF, #0056D6);
+        color: white;
+        border: 1px solid rgba(0, 122, 255, 0.3);
+    }
+    
+    .footer-action.primary:hover {
+        background: linear-gradient(135deg, #0056D6, #003DA6);
+        transform: translateY(-1px);
+    }
+</style>
+
 <style>
     /* This page intentionally overrides the base container for a full-width layout */
     .main-content.container {
@@ -4104,10 +4488,152 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Funciones para el modal de Crear Tarea
+// Funciones para el modal de Crear Tarea en Proyecto
 function openCreateTaskModal() {
-    // Por ahora, solo mostrar un alert mientras implementamos correctamente
-    alert('Función de crear tarea en desarrollo. Se creará desde este proyecto.');
+    console.log('🚀 Abriendo modal crear tarea para proyecto:', PROYECTO_ID);
+    const modal = document.getElementById('modal-crear-tarea-proyecto');
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        
+        // Resetear formulario
+        resetTaskFormProyecto();
+        
+        // Focus en el campo de título
+        setTimeout(() => {
+            const titleInput = document.getElementById('taskTitleProyecto');
+            if (titleInput) {
+                titleInput.focus();
+            }
+        }, 100);
+    }
+}
+
+function cerrarModalCrearTareaProyecto() {
+    console.log('🔄 Cerrando modal crear tarea proyecto');
+    const modal = document.getElementById('modal-crear-tarea-proyecto');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+        resetTaskFormProyecto();
+    }
+}
+
+function resetTaskFormProyecto() {
+    // Resetear campos del formulario
+    const titleInput = document.getElementById('taskTitleProyecto');
+    const editor = document.querySelector('.task-rich-editor-proyecto');
+    const highPriority = document.getElementById('highPriorityProyecto');
+    const dueDate = document.getElementById('taskDueDateProyecto');
+    
+    if (titleInput) titleInput.value = '';
+    if (editor) editor.innerHTML = '';
+    if (highPriority) highPriority.checked = false;
+    if (dueDate) dueDate.value = '';
+    
+    // Resetear selecciones de usuarios
+    selectedResponsibleProyecto = null;
+    selectedParticipantsProyecto = [];
+    selectedObserversProyecto = [];
+    
+    // Limpiar displays de usuarios seleccionados
+    const responsibleDisplay = document.getElementById('selectedResponsibleProyecto');
+    const participantsDisplay = document.getElementById('selectedParticipantsProyecto');
+    const observersDisplay = document.getElementById('selectedObserversProyecto');
+    
+    if (responsibleDisplay) responsibleDisplay.innerHTML = '';
+    if (participantsDisplay) participantsDisplay.innerHTML = '';
+    if (observersDisplay) observersDisplay.innerHTML = '';
+}
+
+// Variables para gestión de usuarios en el modal del proyecto
+let selectedResponsibleProyecto = null;
+let selectedParticipantsProyecto = [];
+let selectedObserversProyecto = [];
+
+async function submitTaskFormProyecto() {
+    console.log('📝 Enviando formulario de tarea para proyecto:', PROYECTO_ID);
+    
+    // Obtener datos del formulario
+    const titleInput = document.getElementById('taskTitleProyecto');
+    const editor = document.querySelector('.task-rich-editor-proyecto');
+    const highPriority = document.getElementById('highPriorityProyecto');
+    const dueDate = document.getElementById('taskDueDateProyecto');
+    
+    const title = titleInput?.value?.trim();
+    const description = editor?.innerHTML?.trim() || '';
+    const priority = highPriority?.checked ? 'alta' : 'normal';
+    const dueDateValue = dueDate?.value;
+    
+    // Validaciones básicas
+    if (!title) {
+        alert('Por favor ingresa un nombre para la tarea');
+        titleInput?.focus();
+        return;
+    }
+    
+    // Preparar datos para envío
+    const taskData = {
+        titulo: title,
+        descripcion: description,
+        prioridad: priority,
+        fecha_limite: dueDateValue || null,
+        proyecto_id: PROYECTO_ID,  // ¡Clave! - Esto asocia la tarea al proyecto
+        responsable_id: selectedResponsibleProyecto?.id || null,
+        participantes: selectedParticipantsProyecto.map(p => p.id),
+        observadores: selectedObserversProyecto.map(o => o.id)
+    };
+    
+    console.log('Datos de tarea a enviar:', taskData);
+    
+    try {
+        // Deshabilitar botón mientras se procesa
+        const submitBtn = document.getElementById('submitTaskBtnProyecto');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creando...';
+        }
+        
+        const response = await fetch('/app/api/crear-tarea/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(taskData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('✅ Tarea creada exitosamente:', result);
+            
+            // Cerrar modal
+            cerrarModalCrearTareaProyecto();
+            
+            // Recargar la lista de tareas
+            cargarTareasDelProyecto();
+            
+            // Mostrar notificación de éxito
+            // TODO: Implementar sistema de notificaciones
+            console.log(`Tarea "${title}" creada exitosamente en el proyecto`);
+            
+        } else {
+            throw new Error(result.error || 'Error al crear la tarea');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error al crear tarea:', error);
+        alert('Error al crear la tarea: ' + error.message);
+        
+    } finally {
+        // Rehabilitar botón
+        const submitBtn = document.getElementById('submitTaskBtnProyecto');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Crear tarea';
+        }
+    }
 }
 
 </script>
@@ -8107,5 +8633,119 @@ Puedes usar @username para mencionar a otros usuarios"></textarea>
     </div>
 </div>
 
+<!-- Modal para crear tarea en proyecto - Copiado y adaptado desde tareas_proyectos.html -->
+<div class="power-task-modal-overlay" id="modal-crear-tarea-proyecto">
+    <div class="power-task-container">
+        <!-- Header Simplificado -->
+        <div class="power-task-header">
+            <div class="task-header-content">
+                <div class="task-name-input">
+                    <input type="text" id="taskTitleProyecto" placeholder="Nombre de la tarea" class="task-title-field">
+                </div>
+                <div class="header-right-section">
+                    <div class="task-priority">
+                        <label class="priority-toggle">
+                            <input type="checkbox" id="highPriorityProyecto">
+                            <div class="priority-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                            </div>
+                            <span class="priority-label">Alta prioridad</span>
+                        </label>
+                    </div>
+                    <button class="power-close-btn" onclick="cerrarModalCrearTareaProyecto()" type="button">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="m18 6-12 12M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Editor Principal -->
+        <div class="task-rich-editor-proyecto" contenteditable="true" data-placeholder="Describe los detalles de la tarea, objetivos, requisitos...">
+        </div>
+
+        <!-- Sección de Asignaciones -->
+        <div class="task-assignments-section">
+            <div class="assignment-tabs">
+                <button class="assignment-tab active" data-tab="responsible">Responsable</button>
+                <button class="assignment-tab" data-tab="participants">Participantes</button>
+                <button class="assignment-tab" data-tab="observers">Observadores</button>
+            </div>
+            
+            <div class="assignment-content">
+                <div class="assignment-panel active" id="responsible-panel-proyecto">
+                    <div class="user-selector">
+                        <input type="text" class="user-search-input" placeholder="Buscar responsable..." id="responsibleSearchProyecto">
+                        <div class="selected-users" id="selectedResponsibleProyecto"></div>
+                    </div>
+                </div>
+                
+                <div class="assignment-panel" id="participants-panel-proyecto">
+                    <div class="user-selector">
+                        <input type="text" class="user-search-input" placeholder="Buscar participantes..." id="participantsSearchProyecto">
+                        <div class="selected-users" id="selectedParticipantsProyecto"></div>
+                    </div>
+                </div>
+                
+                <div class="assignment-panel" id="observers-panel-proyecto">
+                    <div class="user-selector">
+                        <input type="text" class="user-search-input" placeholder="Buscar observadores..." id="observersSearchProyecto">
+                        <div class="selected-users" id="selectedObserversProyecto"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuración de Tiempo -->
+        <div class="task-timing-section">
+            <div class="timing-item">
+                <label>Fecha límite</label>
+                <div class="custom-date-picker">
+                    <input type="text" id="taskDueDateProyecto" class="date-input" placeholder="Selecciona fecha y hora">
+                    <svg class="date-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/>
+                        <line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="timing-item">
+                <label>Creado por</label>
+                <div class="creator-info">
+                    <div class="creator-avatar">
+                        {% if user.userprofile.avatar %}
+                            <img src="{{ user.userprofile.avatar.url }}" alt="{{ user.get_full_name }}">
+                        {% else %}
+                            {% load app_filters %}
+                            {{ user|user_avatar:"40" }}
+                        {% endif %}
+                    </div>
+                    <span class="creator-name">{{ user.get_full_name|default:user.username }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer con Acciones -->
+        <div class="power-task-footer">
+            <div class="footer-left">
+                <button type="button" class="footer-action secondary" onclick="cerrarModalCrearTareaProyecto()">
+                    Cancelar
+                </button>
+            </div>
+            <div class="footer-right">
+                <button type="button" class="footer-action primary" id="submitTaskBtnProyecto" onclick="submitTaskFormProyecto()">
+                    Crear tarea
+                </button>
+            </div>
+        </div>
+
+        <!-- Form oculto para datos -->
+        <form id="powerTaskFormProyecto" style="display: none;"></form>
+    </div>
+</div>
 
 {% endblock %}

@@ -1,28 +1,3 @@
-function applyThemeOnLoad() {
-    try {
-        const theme = localStorage.getItem('theme') || 'dark';
-        const html = document.documentElement;
-
-        html.classList.remove('dark-theme', 'light-theme');
-        html.removeAttribute('data-theme');
-
-        if (theme === 'pink' || theme === 'white' || theme === 'coffee') {
-            html.classList.add('light-theme');
-        } else {
-            html.classList.add('dark-theme');
-        }
-
-        if (theme !== 'dark') {
-            html.setAttribute('data-theme', theme);
-        }
-    } catch (e) {
-        console.error('Error applying theme from localStorage', e);
-        document.documentElement.classList.add('dark-theme');
-    }
-}
-
-applyThemeOnLoad();
-
 // Variables globales para el estado del avatar
 let selectedImageFile = null;
 let currentImageFile = null;
@@ -147,21 +122,6 @@ function applyTheme(theme) {
         theme = 'dark';
     }
 
-    // Apply the theme to the <html> element
-    const html = document.documentElement;
-    html.classList.remove('dark-theme', 'light-theme');
-    html.removeAttribute('data-theme');
-
-    if (theme === 'pink' || theme === 'white' || theme === 'coffee') {
-        html.classList.add('light-theme');
-    } else {
-        html.classList.add('dark-theme');
-    }
-
-    if (theme !== 'dark') {
-        html.setAttribute('data-theme', theme);
-    }
-
     updateThemePreview(theme);
 
     document.querySelectorAll('.theme-dot-container').forEach(container => {
@@ -180,7 +140,7 @@ function applyTheme(theme) {
         'white': 'Blanco',
         'coffee': 'Café'
     };
-    showNotification(`Tema cambiado a ${themeNames[theme] || theme}.`, 'success');
+    showNotification(`Tema cambiado a ${themeNames[theme] || theme}. Se aplicará al salir.`, 'success');
 }
 
 // Sistema de avatar completo
