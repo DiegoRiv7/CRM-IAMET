@@ -109,7 +109,7 @@ function hideModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
     document.body.style.overflow = 'auto';
     if (modalId === 'designModal') {
-        location.reload();
+        setTimeout(() => location.reload(), 100);
     }
 }
 
@@ -795,7 +795,6 @@ function saveDesignSettings() {
     
     setTimeout(() => {
         hideModal('designModal');
-        setTimeout(() => location.reload(), 300);
     }, 1000);
 }
 
