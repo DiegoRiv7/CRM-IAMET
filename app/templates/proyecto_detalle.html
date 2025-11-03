@@ -4357,10 +4357,13 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Funciones para el modal de Crear Tarea
+console.log('DEBUG: Iniciando carga del script de proyecto detalle');
+
 // Variables globales para el modal del proyecto
 let selectedResponsibleProyecto = null;
 let selectedParticipantsProyecto = [];
 let selectedObserversProyecto = [];
+const PROYECTO_ID = {% if proyecto.id %}{{ proyecto.id }}{% else %}null{% endif %};
 
 function openCreateTaskModal() {
     const modal = document.getElementById('modal-crear-tarea-proyecto');
@@ -4396,6 +4399,7 @@ function cerrarModalCrearTareaProyecto() {
 }
 
 async function submitTaskFormProyecto() {
+    console.log('DEBUG: Iniciando submitTaskFormProyecto');
     const submitBtn = document.getElementById('submitTaskBtnProyecto');
     const originalText = submitBtn.textContent;
     
@@ -4415,6 +4419,9 @@ async function submitTaskFormProyecto() {
         const dueDateInput = document.getElementById('taskDueDateProyecto');
         const fechaLimite = dueDateInput?.getAttribute('data-datetime') || null;
         
+        // Debug del proyecto ID
+        console.log('DEBUG: PROYECTO_ID constante:', PROYECTO_ID);
+        
         // Preparar datos incluyendo el proyecto actual
         const formData = {
             nombre: titulo,
@@ -4422,7 +4429,7 @@ async function submitTaskFormProyecto() {
             fecha_limite: fechaLimite,
             prioridad: document.getElementById('highPriorityProyecto').checked ? 'alta' : 'media',
             asignado_a: selectedResponsibleProyecto?.id || null,
-            proyecto_id: {% if proyecto.id %}{{ proyecto.id }}{% else %}null{% endif %} // ID del proyecto actual
+            proyecto_id: PROYECTO_ID // ID del proyecto actual
         };
         
         console.log('📤 Enviando tarea para proyecto:', formData);
