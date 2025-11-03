@@ -108,9 +108,6 @@ function showModal(modalId) {
 function hideModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
     document.body.style.overflow = 'auto';
-    if (modalId === 'designModal') {
-        location.reload();
-    }
 }
 
 // Sistema de avatar completo
@@ -315,6 +312,7 @@ function applyTheme(theme) {
     }
     
     localStorage.setItem('theme', theme);
+    applyThemeImmediately(theme);
     
     const themeNames = {
         'dark': 'Oscuro',
@@ -322,7 +320,12 @@ function applyTheme(theme) {
         'white': 'Blanco',
         'coffee': 'Café'
     };
-    showNotification(`Tema cambiado a ${themeNames[theme] || theme}. Se aplicará al salir.`, 'success');
+    showNotification(`Tema cambiado a ${themeNames[theme] || theme}.`, 'success');
+}
+
+function applyThemeImmediately(theme) {
+    document.body.classList.remove('theme-dark', 'theme-pink', 'theme-light', 'theme-white', 'theme-coffee');
+    document.body.classList.add(`theme-${theme}`);
 }
 
 function updateThemePreview(theme) {

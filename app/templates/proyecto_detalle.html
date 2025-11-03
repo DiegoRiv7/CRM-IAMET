@@ -3036,7 +3036,7 @@
         <!-- Header -->
         <div class="proyecto-header">
             <div>
-                <h1 class="proyecto-title">{{ proyecto.nombre }}</h1>
+                <h1 class="proyecto-title" data-proyecto-id="{{ proyecto.id }}">{{ proyecto.nombre }}</h1>
                 <p style="color: var(--apple-label-secondary); margin: 0.5rem 0 0 0;">
                     {{ proyecto.tipo|title }} • {{ proyecto.privacidad|title }} • 
                     Creado el {{ proyecto.fecha_creacion }}
@@ -4363,7 +4363,24 @@ console.log('DEBUG: Iniciando carga del script de proyecto detalle');
 let selectedResponsibleProyecto = null;
 let selectedParticipantsProyecto = [];
 let selectedObserversProyecto = [];
-const PROYECTO_ID = {% if proyecto.id %}{{ proyecto.id }}{% else %}null{% endif %};
+
+// Obtener el ID del proyecto de forma segura desde el DOM
+function getProyectoId() {
+    // Buscar en el título del proyecto o en algún elemento HTML
+    const title = document.querySelector('.proyecto-title');
+    if (title && title.dataset.proyectoId) {
+        return parseInt(title.dataset.proyectoId);
+    }
+    
+    // Fallback: extraer de la URL
+    const urlParts = window.location.pathname.split('/');
+    const proyectoIndex = urlParts.indexOf('proyecto');
+    if (proyectoIndex !== -1 && urlParts[proyectoIndex + 1]) {
+        return parseInt(urlParts[proyectoIndex + 1]);
+    }
+    
+    return null;
+}
 
 function openCreateTaskModal() {
     const modal = document.getElementById('modal-crear-tarea-proyecto');
@@ -4419,8 +4436,9 @@ async function submitTaskFormProyecto() {
         const dueDateInput = document.getElementById('taskDueDateProyecto');
         const fechaLimite = dueDateInput?.getAttribute('data-datetime') || null;
         
-        // Debug del proyecto ID
-        console.log('DEBUG: PROYECTO_ID constante:', PROYECTO_ID);
+        // Obtener ID del proyecto de forma segura
+        const proyectoId = getProyectoId();
+        console.log('DEBUG: Proyecto ID obtenido:', proyectoId);
         
         // Preparar datos incluyendo el proyecto actual
         const formData = {
@@ -4429,7 +4447,7 @@ async function submitTaskFormProyecto() {
             fecha_limite: fechaLimite,
             prioridad: document.getElementById('highPriorityProyecto').checked ? 'alta' : 'media',
             asignado_a: selectedResponsibleProyecto?.id || null,
-            proyecto_id: PROYECTO_ID // ID del proyecto actual
+            proyecto_id: proyectoId // ID del proyecto actual
         };
         
         console.log('📤 Enviando tarea para proyecto:', formData);

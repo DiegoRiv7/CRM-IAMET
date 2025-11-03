@@ -7,7 +7,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Configuración Avanzada</title>
-{% include 'theme_script.html' %}
 
 <!-- Incluir Font Awesome para íconos del dock -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -55,7 +54,7 @@
 --apple-separator: rgba(0, 0, 0, 0.1);
 }
 
-html[data-theme="pink"] {
+.pink-theme body {
   --apple-background: #FFF5F8;
   --apple-background-secondary: #FFE8EF;
   --apple-background-tertiary: #FFD1DC;
@@ -1950,7 +1949,7 @@ flex-direction: column;
 }
 </style>
 </head>
-<body data-avatar-config='{ "hasCustomAvatar": {% if user_profile.avatar and user_profile.avatar.name %}true{% else %}false{% endif %}, "customAvatarUrl": {% if user_profile.avatar and user_profile.avatar.name %}"{{ user_profile.avatar.url }}"{% else %}""{% endif %}, "avatarTipo": "{{ user_profile.avatar_tipo|default:"dinosaur" }}" }'>
+<body class="theme-{{ user_profile.theme|default:'dark' }}" data-avatar-config='{ "hasCustomAvatar": {% if user_profile.avatar and user_profile.avatar.name %}true{% else %}false{% endif %}, "customAvatarUrl": {% if user_profile.avatar and user_profile.avatar.name %}"{{ user_profile.avatar.url }}"{% else %}""{% endif %}, "avatarTipo": "{{ user_profile.avatar_tipo|default:"dinosaur" }}" }'>
 <div class="main-container">
 
 
