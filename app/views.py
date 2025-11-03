@@ -1151,6 +1151,7 @@ def api_crear_tarea(request):
         fecha_limite = data.get('fecha_limite')
         estimacion_horas = data.get('estimacion_horas')
         asignado_a_id = data.get('asignado_a')
+        proyecto_id = data.get('proyecto_id')
         
         # Convertir fecha límite si está presente
         fecha_limite_obj = None
@@ -1177,6 +1178,14 @@ def api_crear_tarea(request):
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Usuario asignado no encontrado'}, status=400)
         
+        # Obtener proyecto si se especificó
+        proyecto = None
+        if proyecto_id:
+            try:
+                proyecto = Proyecto.objects.get(id=proyecto_id)
+            except Proyecto.DoesNotExist:
+                return JsonResponse({'error': 'Proyecto no encontrado'}, status=400)
+        
         # Crear la tarea en la base de datos
         tarea = Tarea.objects.create(
             titulo=nombre,
@@ -1186,7 +1195,7 @@ def api_crear_tarea(request):
             creado_por=request.user,
             asignado_a=asignado_a,
             fecha_limite=fecha_limite_obj,
-            proyecto=None  # Tarea independiente, sin proyecto
+            proyecto=proyecto  # Puede ser None (tarea independiente) o un proyecto específico
         )
         
         # Crear comentario inicial si hay descripción
