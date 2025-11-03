@@ -2906,7 +2906,7 @@
 
 <script>
 // Variables globales
-const PROYECTO_ID = {{ proyecto.id }};
+const PROYECTO_ID = document.querySelector('.proyecto-title').getAttribute('data-proyecto-id');
 
 // Namespace para funciones de tareas - MODAL AVANZADO INSTANTÁNEO
 const TareasProyectos = {

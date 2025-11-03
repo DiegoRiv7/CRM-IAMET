@@ -108,11 +108,6 @@ function showModal(modalId) {
 function hideModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
     document.body.style.overflow = 'auto';
-    if (modalId === 'designModal') {
-        setTimeout(() => {
-            location.reload();
-        }, 100);
-    }
 }
 
 function applyTheme(theme) {
