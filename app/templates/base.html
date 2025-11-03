@@ -52,14 +52,31 @@
         <!-- PWA Support -->
         <link rel="manifest" href="{% static 'manifest.json' %}">
     
-        <script src="{% static 'js/theme.js' %}"></script>
-        <script>
-            (function() {
-                const theme = localStorage.getItem('theme') || 'dark';
-                applyTheme(theme);
-            })();
-        </script>
-    <meta name="mobile-web-app-capable" content="yes">
+        <meta name="theme-color" content="#007AFF">
+    <script>
+    (function() {
+        try {
+            const theme = localStorage.getItem('theme') || 'dark';
+            const html = document.documentElement;
+
+            html.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme');
+            html.removeAttribute('data-theme');
+
+            if (theme === 'pink' || theme === 'white' || theme === 'coffee') {
+                html.classList.add('light-theme');
+            } else {
+                html.classList.add('dark-theme');
+            }
+
+            if (theme !== 'dark') {
+                html.setAttribute('data-theme', theme);
+            }
+        } catch (e) {
+            console.error('Error applying theme from localStorage', e);
+            document.documentElement.classList.add('dark-theme');
+        }
+    })();
+</script>    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Gestión Ventas">

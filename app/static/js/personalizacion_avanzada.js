@@ -108,6 +108,39 @@ function showModal(modalId) {
 function hideModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
     document.body.style.overflow = 'auto';
+    if (modalId === 'designModal') {
+        location.reload();
+    }
+}
+
+function applyTheme(theme) {
+    console.log('applyTheme called with:', theme);
+    
+    const validThemes = ['dark', 'pink', 'light', 'white', 'coffee'];
+    if (!validThemes.includes(theme)) {
+        console.error('Invalid theme provided:', theme);
+        theme = 'dark';
+    }
+    
+    updateThemePreview(theme);
+    
+    document.querySelectorAll('.theme-dot-container').forEach(container => {
+        container.querySelector('.theme-dot').style.boxShadow = '';
+    });
+    const selectedDot = document.getElementById(`${theme}-theme-dot`);
+    if (selectedDot) {
+        selectedDot.querySelector('.theme-dot').style.boxShadow = '0 0 0 3px rgba(0, 122, 255, 0.5), 0 0 15px rgba(0, 122, 255, 0.7)';
+    }
+    
+    localStorage.setItem('theme', theme);
+    
+    const themeNames = {
+        'dark': 'Oscuro',
+        'pink': 'Rosa',
+        'white': 'Blanco',
+        'coffee': 'Café'
+    };
+    showNotification(`Tema cambiado a ${themeNames[theme] || theme}. Se aplicará al salir.`, 'success');
 }
 
 // Sistema de avatar completo
