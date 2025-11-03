@@ -48,98 +48,17 @@
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="{% block twitter_title %}Sistema de Gestión de Ventas{% endblock %}">
     <meta name="twitter:description" content="Administra tus ventas, clientes y oportunidades de negocio">
+        
+        <!-- PWA Support -->
+        <link rel="manifest" href="{% static 'manifest.json' %}">
     
-    <!-- PWA Support -->
-    <link rel="manifest" href="{% static 'manifest.json' %}">
-
-    <!-- THEME-SWITCHING SCRIPT to prevent flash of incorrect theme - Optimized version -->
-    <script type="text/javascript">
-        // Guard theme initialization until DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                // Check for theme in localStorage first
-                const savedTheme = localStorage.getItem('theme');
-                
-                // Apply theme to documentElement (html) immediately
-                if (savedTheme === 'pink') {
-                    // Apply pink theme inline immediately
-                    document.documentElement.setAttribute('data-theme', 'pink');
-                    document.documentElement.classList.add('light-theme');
-                    
-                    // Set inline styles for immediate effect
-                    document.documentElement.style.setProperty('--apple-background', '#ffebf0');
-                    document.documentElement.style.setProperty('--apple-label', '#2d1b2e');
-                    document.documentElement.style.setProperty('--apple-blue', '#ff6b9d');
-                    if (document.body) {
-                        document.body.style.background = 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)';
-                        document.body.style.backgroundAttachment = 'fixed';
-                    }
-                } else if (savedTheme === 'white') {
-                    // Apply white theme inline immediately
-                    document.documentElement.classList.add('light-theme', 'white-theme');
-                    
-                    // Set inline styles for immediate effect
-                    document.documentElement.style.setProperty('--apple-background', '#ffffff');
-                    document.documentElement.style.setProperty('--apple-label', '#212529');
-                    document.documentElement.style.setProperty('--apple-blue', '#007bff');
-                    if (document.body) {
-                        document.body.style.background = '#ffffff';
-                        document.body.style.backgroundAttachment = 'fixed';
-                    }
-                } else if (savedTheme === 'coffee') {
-                    // Apply coffee theme inline immediately
-                    document.documentElement.classList.add('light-theme', 'coffee-theme');
-                    
-                    // Set inline styles for immediate effect
-                    document.documentElement.style.setProperty('--apple-background', '#f5e6d3');
-                    document.documentElement.style.setProperty('--apple-label', '#4a3020');
-                    document.documentElement.style.setProperty('--apple-blue', '#8b6239');
-                    if (document.body) {
-                        document.body.style.background = '#f5e6d3';
-                        document.body.style.backgroundAttachment = 'fixed';
-                    }
-                } else {
-                    // Default to dark theme
-                    document.documentElement.classList.add('dark-theme');
-                    if (document.body) {
-                        document.body.classList.add('dark-theme');
-                    }
-                    
-                    // Set inline styles for immediate effect
-                    document.documentElement.style.setProperty('--apple-background', '#000000');
-                    document.documentElement.style.setProperty('--apple-label', '#FFFFFF');
-                    document.documentElement.style.setProperty('--apple-blue', '#007AFF');
-                    if (document.body) {
-                        document.body.style.background = '#000000';
-                    }
-                    
-                    // Save default if not set
-                    if (!savedTheme) {
-                        localStorage.setItem('theme', 'dark');
-                    }
-                }
-                
-                // Hide body initially to prevent flash
-                if (document.body) {
-                    document.body.style.opacity = '0';
-                    
-                    // Show body after a short delay to ensure theme is applied
-                    setTimeout(function() {
-                        document.body.style.transition = 'opacity 0.3s ease-in-out';
-                        document.body.style.opacity = '1';
-                    }, 50);
-                }
-                
-            } catch (error) {
-                console.error('Theme initialization error:', error);
-                // Ensure body is visible even if theme fails
-                if (document.body) {
-                    document.body.style.opacity = '1';
-                }
-            }
-        });
-    </script>
-    <meta name="theme-color" content="#007AFF">
+        <script src="{% static 'js/theme.js' %}"></script>
+        <script>
+            (function() {
+                const theme = localStorage.getItem('theme') || 'dark';
+                applyTheme(theme);
+            })();
+        </script>
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">

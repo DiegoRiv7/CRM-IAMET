@@ -3031,6 +3031,14 @@
     }
 </style>
 
+<!-- Script para pasar datos del proyecto de forma segura -->
+<script>
+    window.PROYECTO_DATA = {
+        id: {{ proyecto.id }},
+        nombre: "{{ proyecto.nombre|escapejs }}"
+    };
+</script>
+
 <div class="proyecto-container">
     <div class="content-block">
         <!-- Header -->
@@ -4358,29 +4366,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Funciones para el modal de Crear Tarea
 console.log('DEBUG: Iniciando carga del script de proyecto detalle');
+console.log('DEBUG: Datos del proyecto:', window.PROYECTO_DATA);
 
 // Variables globales para el modal del proyecto
 let selectedResponsibleProyecto = null;
 let selectedParticipantsProyecto = [];
 let selectedObserversProyecto = [];
-
-// Obtener el ID del proyecto de forma segura desde el DOM
-function getProyectoId() {
-    // Buscar en el título del proyecto o en algún elemento HTML
-    const title = document.querySelector('.proyecto-title');
-    if (title && title.dataset.proyectoId) {
-        return parseInt(title.dataset.proyectoId);
-    }
-    
-    // Fallback: extraer de la URL
-    const urlParts = window.location.pathname.split('/');
-    const proyectoIndex = urlParts.indexOf('proyecto');
-    if (proyectoIndex !== -1 && urlParts[proyectoIndex + 1]) {
-        return parseInt(urlParts[proyectoIndex + 1]);
-    }
-    
-    return null;
-}
 
 function openCreateTaskModal() {
     const modal = document.getElementById('modal-crear-tarea-proyecto');
@@ -4436,10 +4427,6 @@ async function submitTaskFormProyecto() {
         const dueDateInput = document.getElementById('taskDueDateProyecto');
         const fechaLimite = dueDateInput?.getAttribute('data-datetime') || null;
         
-        // Obtener ID del proyecto de forma segura
-        const proyectoId = getProyectoId();
-        console.log('DEBUG: Proyecto ID obtenido:', proyectoId);
-        
         // Preparar datos incluyendo el proyecto actual
         const formData = {
             nombre: titulo,
@@ -4447,7 +4434,7 @@ async function submitTaskFormProyecto() {
             fecha_limite: fechaLimite,
             prioridad: document.getElementById('highPriorityProyecto').checked ? 'alta' : 'media',
             asignado_a: selectedResponsibleProyecto?.id || null,
-            proyecto_id: proyectoId // ID del proyecto actual
+            proyecto_id: window.PROYECTO_DATA ? window.PROYECTO_DATA.id : null
         };
         
         console.log('📤 Enviando tarea para proyecto:', formData);
