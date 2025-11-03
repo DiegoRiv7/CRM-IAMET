@@ -2881,6 +2881,16 @@ function createTaskRow(tarea) {
     const proyectoNombre = tarea.proyecto_nombre || 'Sin proyecto';
     const proyectoStyle = proyectoNombre === 'Sin proyecto' ? 'color: var(--apple-label-secondary); font-style: italic;' : '';
     
+    // Crear el contenido de la celda del proyecto
+    let proyectoContent;
+    if (tarea.proyecto_id && proyectoNombre !== 'Sin proyecto') {
+        // Si tiene proyecto asociado, hacerlo clickeable
+        proyectoContent = `<span style="cursor: pointer; color: #007AFF; text-decoration: underline;" onclick="event.stopPropagation(); window.location.href='/proyecto/${tarea.proyecto_id}/';">${proyectoNombre}</span>`;
+    } else {
+        // Si no tiene proyecto, mostrar texto normal
+        proyectoContent = proyectoNombre;
+    }
+    
     return `
         <div class="table-row" data-tarea-id="${tarea.id}" onclick="console.log('Clicked task:', ${tarea.id}); TareasProyectos.verDetallesTarea(${tarea.id})">
             <div class="table-cell name-cell">
@@ -2893,7 +2903,7 @@ function createTaskRow(tarea) {
             </div>
             <div class="table-cell activity-cell">${tarea.creado_por}</div>
             <div class="table-cell activity-cell">${tarea.responsable || 'Sin asignar'}</div>
-            <div class="table-cell activity-cell" style="${proyectoStyle}">${proyectoNombre}</div>
+            <div class="table-cell activity-cell" style="${proyectoStyle}">${proyectoContent}</div>
         </div>
     `;
 }

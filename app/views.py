@@ -711,6 +711,7 @@ def api_tareas(request):
                     'creado_por': tarea.creado_por.get_full_name() or tarea.creado_por.username,
                     'responsable': tarea.asignado_a.get_full_name() or tarea.asignado_a.username if tarea.asignado_a else None,
                     'proyecto_nombre': tarea.proyecto.nombre if tarea.proyecto else 'Sin proyecto',
+                    'proyecto_id': tarea.proyecto.id if tarea.proyecto else None,
                     # Datos del cronómetro
                     'trabajando_actualmente': getattr(tarea, 'trabajando_actualmente', False),
                     'pausado': getattr(tarea, 'pausado', False),
