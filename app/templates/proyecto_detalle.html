@@ -3267,6 +3267,73 @@ const TareasProyectos = {
 const PROYECTO_NOMBRE = "{{ proyecto.nombre|escapejs }}";
 const CURRENT_USER_ID = {{ user.id }};
 const CURRENT_USER_NAME = "{{ user.first_name }} {{ user.last_name }}".trim() || "{{ user.username }}" || "Usuario";
+
+// Función para formatear fechas
+function formatearFecha(fechaStr) {
+    if (!fechaStr) return '-';
+    
+    const fecha = new Date(fechaStr);
+    const opciones = { 
+        day: '2-digit', 
+        month: 'short', 
+        hour: '2-digit', 
+        minute: '2-digit'
+    };
+    
+    return fecha.toLocaleDateString('es-ES', opciones);
+}
+
+// Función para generar badge de estado
+function getEstadoBadge(estado) {
+    const estadosConfig = {
+        'pendiente': {
+            label: 'Pendiente',
+            color: '#8E8E93',
+            bgColor: 'rgba(142, 142, 147, 0.2)',
+            icon: '○'
+        },
+        'en_progreso': {
+            label: 'En Progreso',
+            color: '#007AFF',
+            bgColor: 'rgba(0, 122, 255, 0.2)',
+            icon: '◐'
+        },
+        'completada': {
+            label: 'Completada',
+            color: '#34C759',
+            bgColor: 'rgba(52, 199, 89, 0.2)',
+            icon: '●'
+        },
+        'cancelada': {
+            label: 'Cancelada',
+            color: '#FF3B30',
+            bgColor: 'rgba(255, 59, 48, 0.2)',
+            icon: '×'
+        }
+    };
+    
+    const config = estadosConfig[estado] || estadosConfig['pendiente'];
+    
+    return `
+        <span style="
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 8px;
+            background: ${config.bgColor};
+            color: ${config.color};
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        ">
+            <span style="font-size: 0.875rem;">${config.icon}</span>
+            ${config.label}
+        </span>
+    `;
+}
+
 let attachedFiles = [];
 let isSubmitting = false;
 
