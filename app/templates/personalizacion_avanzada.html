@@ -7,30 +7,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Configuración Avanzada</title>
-<script>
-    (function() {
-        try {
-            const theme = localStorage.getItem('theme') || 'dark';
-            const html = document.documentElement;
-
-            html.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme');
-            html.removeAttribute('data-theme');
-
-            if (theme === 'pink' || theme === 'white' || theme === 'coffee') {
-                html.classList.add('light-theme');
-            } else {
-                html.classList.add('dark-theme');
-            }
-
-            if (theme !== 'dark') {
-                html.setAttribute('data-theme', theme);
-            }
-        } catch (e) {
-            console.error('Error applying theme from localStorage', e);
-            document.documentElement.classList.add('dark-theme');
-        }
-    })();
-</script>
 
 <!-- Incluir Font Awesome para íconos del dock -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
