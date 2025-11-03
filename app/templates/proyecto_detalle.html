@@ -4499,6 +4499,15 @@ function openCreateTaskModal() {
         // Resetear formulario
         resetTaskFormProyecto();
         
+        // Cargar usuarios y configurar funcionalidades
+        loadUsersForAssignments();
+        
+        // Configurar date picker específico para proyecto
+        initializeCustomDatePickerProyecto();
+        
+        // Configurar tabs de asignación para el proyecto
+        initializeAssignmentTabsProyecto();
+        
         // Focus en el campo de título
         setTimeout(() => {
             const titleInput = document.getElementById('taskTitleProyecto');
@@ -4550,6 +4559,44 @@ function resetTaskFormProyecto() {
 let selectedResponsibleProyecto = null;
 let selectedParticipantsProyecto = [];
 let selectedObserversProyecto = [];
+
+// Función para inicializar tabs de asignación específicos del proyecto
+function initializeAssignmentTabsProyecto() {
+    const modal = document.getElementById('modal-crear-tarea-proyecto');
+    if (!modal) return;
+    
+    const assignmentTabs = modal.querySelectorAll('.assignment-tab');
+    assignmentTabs.forEach(tab => {
+        // Remover listeners anteriores para evitar duplicados
+        tab.removeEventListener('click', handleTabClick);
+        
+        // Agregar nuevo listener
+        tab.addEventListener('click', handleTabClick);
+    });
+    
+    function handleTabClick(e) {
+        const tabName = e.target.getAttribute('data-tab');
+        switchAssignmentTabProyecto(tabName);
+    }
+}
+
+// Función específica para cambiar tabs en el modal del proyecto
+function switchAssignmentTabProyecto(tabName) {
+    const modal = document.getElementById('modal-crear-tarea-proyecto');
+    if (!modal) return;
+    
+    // Cambiar tab activo
+    modal.querySelectorAll('.assignment-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    modal.querySelector(`[data-tab="${tabName}"]`)?.classList.add('active');
+    
+    // Cambiar panel activo
+    modal.querySelectorAll('.assignment-panel').forEach(panel => {
+        panel.classList.remove('active');
+    });
+    modal.querySelector(`#${tabName}-panel-proyecto`)?.classList.add('active');
+}
 
 async function submitTaskFormProyecto() {
     console.log('📝 Enviando formulario de tarea para proyecto:', PROYECTO_ID);
@@ -4861,6 +4908,25 @@ async function updateExistingTask(tareaId) {
 
 function initializeCustomDatePicker() {
     const dateInput = document.getElementById('taskDueDate');
+    
+    if (!dateInput) return;
+    
+    // Hacer readonly para prevenir escritura manual pero permitir eventos
+    dateInput.readOnly = true;
+    
+    dateInput.addEventListener('click', function(e) {
+        e.preventDefault();
+        showCustomCalendar(this);
+    });
+    
+    dateInput.addEventListener('focus', function() {
+        showCustomCalendar(this);
+    });
+}
+
+// Función específica para el date picker del modal de proyecto
+function initializeCustomDatePickerProyecto() {
+    const dateInput = document.getElementById('taskDueDateProyecto');
     
     if (!dateInput) return;
     
@@ -5411,6 +5477,19 @@ function addUserToSelection(user, containerId) {
     `;
     
     container.appendChild(userPill);
+    
+    // Actualizar variables globales si es el modal del proyecto
+    if (containerId === 'responsibleProyecto') {
+        selectedResponsibleProyecto = user;
+    } else if (containerId === 'participantsProyecto') {
+        if (!selectedParticipantsProyecto.find(u => u.id === user.id)) {
+            selectedParticipantsProyecto.push(user);
+        }
+    } else if (containerId === 'observersProyecto') {
+        if (!selectedObserversProyecto.find(u => u.id === user.id)) {
+            selectedObserversProyecto.push(user);
+        }
+    }
 }
 
 function removeUserFromSelection(userId, containerId) {
@@ -5418,6 +5497,15 @@ function removeUserFromSelection(userId, containerId) {
     const pill = container.querySelector(`[data-user-id="${userId}"]`);
     if (pill) {
         pill.remove();
+        
+        // Actualizar variables globales si es el modal del proyecto
+        if (containerId === 'responsibleProyecto') {
+            selectedResponsibleProyecto = null;
+        } else if (containerId === 'participantsProyecto') {
+            selectedParticipantsProyecto = selectedParticipantsProyecto.filter(u => u.id !== parseInt(userId));
+        } else if (containerId === 'observersProyecto') {
+            selectedObserversProyecto = selectedObserversProyecto.filter(u => u.id !== parseInt(userId));
+        }
     }
 }
 
