@@ -3313,15 +3313,18 @@ async function cargarTareasDelProyecto() {
                     </tr>
                 `;
             } else {
-                // Ordenar tareas: alta prioridad primero
+                // Ordenar tareas: alta prioridad no completadas primero
                 const tareasOrdenadas = data.tareas.sort((a, b) => {
-                    if (a.prioridad === 'alta' && b.prioridad !== 'alta') return -1;
-                    if (a.prioridad !== 'alta' && b.prioridad === 'alta') return 1;
+                    const aIsHighPriorityActive = a.prioridad === 'alta' && a.estado !== 'completada';
+                    const bIsHighPriorityActive = b.prioridad === 'alta' && b.estado !== 'completada';
+                    
+                    if (aIsHighPriorityActive && !bIsHighPriorityActive) return -1;
+                    if (!aIsHighPriorityActive && bIsHighPriorityActive) return 1;
                     return 0;
                 });
                 
                 tbody.innerHTML = tareasOrdenadas.map(tarea => {
-                    const isHighPriority = tarea.prioridad === 'alta';
+                    const isHighPriority = tarea.prioridad === 'alta' && tarea.estado !== 'completada';
                     const rowStyles = isHighPriority ? 
                         `background: linear-gradient(135deg, rgba(255, 149, 0, 0.08), rgba(255, 149, 0, 0.05));
                          border: 1px solid rgba(255, 149, 0, 0.15);
@@ -3454,6 +3457,9 @@ const TareasProyectos = {
     },
     
     poblarModalDetalleTarea(tarea) {
+        // Establecer el ID de la tarea actual para edición
+        setCurrentTaskId(tarea.id);
+        
         // Título
         const titulo = document.getElementById('task-detail-titulo');
         if (titulo) titulo.textContent = tarea.titulo || tarea.nombre || 'Sin título';
@@ -3488,6 +3494,9 @@ const TareasProyectos = {
         // Prioridad
         const prioridad = document.getElementById('task-detail-prioridad');
         if (prioridad) {
+            // Guardar el valor de prioridad original para edición
+            prioridad.setAttribute('data-priority-value', tarea.prioridad || 'normal');
+            
             const prioridadTexto = tarea.prioridad === 'alta' ? 'Alta' : 'Normal';
             const prioridadColor = tarea.prioridad === 'alta' ? '#FF9500' : '#8E8E93';
             const prioridadIcon = tarea.prioridad === 'alta' ? '⭐' : '';
@@ -3506,18 +3515,6 @@ const TareasProyectos = {
                     border: 1px solid ${tarea.prioridad === 'alta' ? 'rgba(255, 149, 0, 0.2)' : 'rgba(142, 142, 147, 0.2)'};
                 ">
                     ${prioridadIcon}
-                    ${prioridadTexto}
-                </span>
-                    display: inline-flex; 
-                    align-items: center; 
-                    gap: 0.5rem; 
-                    padding: 0.25rem 0.75rem; 
-                    background-color: ${prioridadColor}; 
-                    color: white; 
-                    border-radius: 1rem; 
-                    font-size: 0.75rem; 
-                    font-weight: 600;
-                ">
                     ${prioridadTexto}
                 </span>
             `;
@@ -8423,14 +8420,30 @@ function getEstadoBadgeHTML(estado) {
                 
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <!-- Título -->
-                    <h1 id="task-detail-titulo" style="
-                        font-size: 1.875rem; 
-                        font-weight: 800; 
-                        color: #E0E7FF; 
-                        line-height: 1.2; 
-                        max-width: 80%; 
-                        margin: 0;
-                    "></h1>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; max-width: 80%;">
+                        <h1 id="task-detail-titulo" style="
+                            font-size: 1.875rem; 
+                            font-weight: 800; 
+                            color: #E0E7FF; 
+                            line-height: 1.2; 
+                            margin: 0;
+                            cursor: pointer;
+                            padding: 0.25rem;
+                            border-radius: 4px;
+                            transition: background 0.2s ease;
+                        " onclick="makeEditable('title')" title="Click para editar"></h1>
+                        <button id="edit-title-btn" style="
+                            background: rgba(10, 132, 255, 0.1);
+                            border: 1px solid rgba(10, 132, 255, 0.3);
+                            color: #0A84FF;
+                            border-radius: 4px;
+                            padding: 0.25rem 0.5rem;
+                            font-size: 0.75rem;
+                            cursor: pointer;
+                            opacity: 0.7;
+                            transition: opacity 0.2s ease;
+                        " onclick="makeEditable('title')" title="Editar título">✏️</button>
+                    </div>
                     
                     <!-- Botón de Acción Rápida -->
                     <div style="display: flex; gap: 0.5rem;">
@@ -8458,7 +8471,20 @@ function getEstadoBadgeHTML(estado) {
 
             <!-- Descripción -->
             <section style="display: flex; flex-direction: column; gap: 0.75rem;">
-                <h2 style="font-size: 0.875rem; font-weight: 600; text-transform: uppercase; color: #9CA3AF; letter-spacing: 0.1em; margin: 0;">Descripción</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="font-size: 0.875rem; font-weight: 600; text-transform: uppercase; color: #9CA3AF; letter-spacing: 0.1em; margin: 0;">Descripción</h2>
+                    <button id="edit-description-btn" style="
+                        background: rgba(10, 132, 255, 0.1);
+                        border: 1px solid rgba(10, 132, 255, 0.3);
+                        color: #0A84FF;
+                        border-radius: 4px;
+                        padding: 0.25rem 0.5rem;
+                        font-size: 0.75rem;
+                        cursor: pointer;
+                        opacity: 0.7;
+                        transition: opacity 0.2s ease;
+                    " onclick="makeEditable('description')" title="Editar descripción">✏️</button>
+                </div>
                 <div id="task-detail-descripcion" style="
                     padding: 0.5rem; 
                     margin-left: -0.5rem; 
@@ -8466,7 +8492,9 @@ function getEstadoBadgeHTML(estado) {
                     line-height: 1.625; 
                     min-height: 50px;
                     border-radius: 0.375rem;
-                "></div>
+                    cursor: pointer;
+                    transition: background 0.2s ease;
+                " onclick="makeEditable('description')" title="Click para editar"></div>
             </section>
             
             <!-- Feed de Comentarios -->
@@ -8609,8 +8637,21 @@ Puedes usar @username para mencionar a otros usuarios"></textarea>
                     
                     <!-- Prioridad -->
                     <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                        <h3 style="font-size: 0.875rem; font-weight: 600; color: #9CA3AF; text-transform: uppercase; margin: 0;">Prioridad</h3>
-                        <div id="task-detail-prioridad" style="cursor: pointer;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="font-size: 0.875rem; font-weight: 600; color: #9CA3AF; text-transform: uppercase; margin: 0;">Prioridad</h3>
+                            <button id="edit-priority-btn" style="
+                                background: rgba(10, 132, 255, 0.1);
+                                border: 1px solid rgba(10, 132, 255, 0.3);
+                                color: #0A84FF;
+                                border-radius: 4px;
+                                padding: 0.25rem 0.5rem;
+                                font-size: 0.75rem;
+                                cursor: pointer;
+                                opacity: 0.7;
+                                transition: opacity 0.2s ease;
+                            " onclick="makeEditable('priority')" title="Editar prioridad">✏️</button>
+                        </div>
+                        <div id="task-detail-prioridad" style="cursor: pointer;" onclick="makeEditable('priority')" title="Click para editar">
                             <!-- Se llenará dinámicamente -->
                         </div>
                     </div>
@@ -8621,9 +8662,22 @@ Puedes usar @username para mencionar a otros usuarios"></textarea>
             <section style="padding-top: 1rem; border-top: 1px solid rgba(45, 55, 72, 0.4); display: flex; flex-direction: column; gap: 1rem;">
                 <h3 style="font-size: 0.875rem; font-weight: 600; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Información de la Tarea</h3>
                 <dl style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem; margin: 0;">
-                    <div style="display: flex; justify-content: space-between;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
                         <dt style="color: #9CA3AF;">Fecha Límite</dt>
-                        <dd id="task-detail-fecha-limite" style="font-weight: 500; color: #E0E7FF; margin: 0;"></dd>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <dd id="task-detail-fecha-limite" style="font-weight: 500; color: #E0E7FF; margin: 0; cursor: pointer; padding: 0.25rem; border-radius: 4px; transition: background 0.2s ease;" onclick="makeEditable('dueDate')" title="Click para editar"></dd>
+                            <button id="edit-duedate-btn" style="
+                                background: rgba(10, 132, 255, 0.1);
+                                border: 1px solid rgba(10, 132, 255, 0.3);
+                                color: #0A84FF;
+                                border-radius: 4px;
+                                padding: 0.125rem 0.25rem;
+                                font-size: 0.625rem;
+                                cursor: pointer;
+                                opacity: 0.7;
+                                transition: opacity 0.2s ease;
+                            " onclick="makeEditable('dueDate')" title="Editar fecha límite">✏️</button>
+                        </div>
                     </div>
                     <div style="display: flex; justify-content: space-between;">
                         <dt style="color: #9CA3AF;">Proyecto</dt>
@@ -8911,5 +8965,320 @@ Puedes usar @username para mencionar a otros usuarios"></textarea>
         <form id="powerTaskFormProyecto" style="display: none;"></form>
     </div>
 </div>
+
+<script>
+// Variables globales para edición
+let currentEditingElement = null;
+let originalValue = null;
+let currentTaskId = null;
+
+// Función para hacer elementos editables
+function makeEditable(field) {
+    if (currentEditingElement) {
+        cancelEdit();
+    }
+    
+    const elements = {
+        title: document.getElementById('task-detail-titulo'),
+        description: document.getElementById('task-detail-descripcion'),
+        dueDate: document.getElementById('task-detail-fecha-limite'),
+        priority: document.getElementById('task-detail-prioridad')
+    };
+    
+    const element = elements[field];
+    if (!element) return;
+    
+    currentEditingElement = { element, field };
+    originalValue = field === 'priority' ? element.getAttribute('data-priority-value') || 'normal' : element.textContent;
+    
+    // Crear controles de edición según el tipo de campo
+    if (field === 'title') {
+        createTitleEditor(element);
+    } else if (field === 'description') {
+        createDescriptionEditor(element);
+    } else if (field === 'dueDate') {
+        createDateEditor(element);
+    } else if (field === 'priority') {
+        createPriorityEditor(element);
+    }
+}
+
+function createTitleEditor(element) {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = originalValue;
+    input.style.cssText = `
+        font-size: 1.875rem;
+        font-weight: 800;
+        color: #E0E7FF;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid #0A84FF;
+        border-radius: 4px;
+        padding: 0.25rem 0.5rem;
+        width: 100%;
+        outline: none;
+    `;
+    
+    element.style.display = 'none';
+    element.parentNode.insertBefore(input, element.nextSibling);
+    input.focus();
+    
+    const saveBtn = createSaveButton(() => saveEdit('title', input.value));
+    const cancelBtn = createCancelButton();
+    element.parentNode.appendChild(saveBtn);
+    element.parentNode.appendChild(cancelBtn);
+    
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') saveEdit('title', input.value);
+        if (e.key === 'Escape') cancelEdit();
+    });
+}
+
+function createDescriptionEditor(element) {
+    const textarea = document.createElement('textarea');
+    textarea.value = originalValue;
+    textarea.style.cssText = `
+        color: rgba(224, 231, 255, 0.9);
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid #0A84FF;
+        border-radius: 4px;
+        padding: 0.5rem;
+        width: 100%;
+        min-height: 100px;
+        resize: vertical;
+        outline: none;
+        font-family: inherit;
+        line-height: 1.625;
+    `;
+    
+    element.style.display = 'none';
+    element.parentNode.appendChild(textarea);
+    textarea.focus();
+    
+    const saveBtn = createSaveButton(() => saveEdit('description', textarea.value));
+    const cancelBtn = createCancelButton();
+    element.parentNode.appendChild(saveBtn);
+    element.parentNode.appendChild(cancelBtn);
+}
+
+function createDateEditor(element) {
+    const input = document.createElement('input');
+    input.type = 'datetime-local';
+    
+    // Convertir fecha actual a formato datetime-local
+    if (originalValue && originalValue !== 'Sin fecha límite') {
+        try {
+            const date = new Date(originalValue);
+            if (!isNaN(date.getTime())) {
+                input.value = date.toISOString().slice(0, 16);
+            }
+        } catch (e) {
+            console.error('Error parsing date:', e);
+        }
+    }
+    
+    input.style.cssText = `
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid #0A84FF;
+        border-radius: 4px;
+        padding: 0.25rem 0.5rem;
+        color: #E0E7FF;
+        outline: none;
+    `;
+    
+    element.style.display = 'none';
+    element.parentNode.appendChild(input);
+    input.focus();
+    
+    const saveBtn = createSaveButton(() => saveEdit('dueDate', input.value));
+    const cancelBtn = createCancelButton();
+    element.parentNode.appendChild(saveBtn);
+    element.parentNode.appendChild(cancelBtn);
+}
+
+function createPriorityEditor(element) {
+    const select = document.createElement('select');
+    select.innerHTML = `
+        <option value="normal" ${originalValue === 'normal' ? 'selected' : ''}>Normal</option>
+        <option value="alta" ${originalValue === 'alta' ? 'selected' : ''}>Alta</option>
+    `;
+    
+    select.style.cssText = `
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid #0A84FF;
+        border-radius: 4px;
+        padding: 0.5rem;
+        color: #E0E7FF;
+        outline: none;
+        width: 150px;
+    `;
+    
+    element.style.display = 'none';
+    element.parentNode.appendChild(select);
+    select.focus();
+    
+    const saveBtn = createSaveButton(() => saveEdit('priority', select.value));
+    const cancelBtn = createCancelButton();
+    element.parentNode.appendChild(saveBtn);
+    element.parentNode.appendChild(cancelBtn);
+}
+
+function createSaveButton(saveCallback) {
+    const btn = document.createElement('button');
+    btn.textContent = '✅';
+    btn.title = 'Guardar';
+    btn.style.cssText = `
+        background: #30D158;
+        border: none;
+        border-radius: 4px;
+        padding: 0.25rem 0.5rem;
+        margin-left: 0.5rem;
+        cursor: pointer;
+        color: white;
+        font-size: 0.875rem;
+    `;
+    btn.onclick = saveCallback;
+    return btn;
+}
+
+function createCancelButton() {
+    const btn = document.createElement('button');
+    btn.textContent = '❌';
+    btn.title = 'Cancelar';
+    btn.style.cssText = `
+        background: #FF3B30;
+        border: none;
+        border-radius: 4px;
+        padding: 0.25rem 0.5rem;
+        margin-left: 0.25rem;
+        cursor: pointer;
+        color: white;
+        font-size: 0.875rem;
+    `;
+    btn.onclick = cancelEdit;
+    return btn;
+}
+
+async function saveEdit(field, newValue) {
+    if (!currentTaskId) {
+        console.error('No task ID available for editing');
+        return;
+    }
+    
+    try {
+        // Preparar datos para la API
+        const updateData = {};
+        
+        if (field === 'title') {
+            updateData.nombre = newValue;
+        } else if (field === 'description') {
+            updateData.descripcion = newValue;
+        } else if (field === 'dueDate') {
+            updateData.fecha_limite = newValue ? new Date(newValue).toISOString() : null;
+        } else if (field === 'priority') {
+            updateData.prioridad = newValue;
+        }
+        
+        // Enviar actualización a la API
+        const response = await fetch(`/app/api/tareas/${currentTaskId}/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(updateData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Actualizar la interfaz
+            updateUIAfterEdit(field, newValue, result.tarea);
+            cancelEdit();
+            
+            // Recargar la tabla de tareas para reflejar cambios
+            loadTasksForProject();
+            
+            console.log('Tarea actualizada exitosamente');
+        } else {
+            throw new Error(result.error || 'Error al actualizar la tarea');
+        }
+        
+    } catch (error) {
+        console.error('Error saving edit:', error);
+        alert('Error al guardar los cambios: ' + error.message);
+        cancelEdit();
+    }
+}
+
+function updateUIAfterEdit(field, newValue, updatedTask) {
+    const elements = {
+        title: document.getElementById('task-detail-titulo'),
+        description: document.getElementById('task-detail-descripcion'),
+        dueDate: document.getElementById('task-detail-fecha-limite'),
+        priority: document.getElementById('task-detail-prioridad')
+    };
+    
+    const element = elements[field];
+    if (!element) return;
+    
+    if (field === 'title') {
+        element.textContent = newValue;
+    } else if (field === 'description') {
+        element.textContent = newValue || 'Sin descripción';
+    } else if (field === 'dueDate') {
+        element.textContent = newValue ? formatearFecha(newValue) : 'Sin fecha límite';
+    } else if (field === 'priority') {
+        element.setAttribute('data-priority-value', newValue);
+        const prioridadTexto = newValue === 'alta' ? 'Alta' : 'Normal';
+        const prioridadColor = newValue === 'alta' ? '#FF9500' : '#8E8E93';
+        const prioridadIcon = newValue === 'alta' ? '⭐' : '';
+        
+        element.innerHTML = `
+            <span style="
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                background: ${newValue === 'alta' ? 'rgba(255, 149, 0, 0.1)' : 'rgba(142, 142, 147, 0.1)'};
+                color: ${prioridadColor};
+                padding: 0.375rem 0.75rem;
+                border-radius: 8px;
+                font-size: 0.875rem;
+                font-weight: 600;
+                border: 1px solid ${newValue === 'alta' ? 'rgba(255, 149, 0, 0.2)' : 'rgba(142, 142, 147, 0.2)'};
+            ">
+                ${prioridadIcon}
+                ${prioridadTexto}
+            </span>
+        `;
+    }
+}
+
+function cancelEdit() {
+    if (!currentEditingElement) return;
+    
+    const { element } = currentEditingElement;
+    
+    // Remover elementos de edición
+    const parent = element.parentNode;
+    const inputs = parent.querySelectorAll('input, textarea, select');
+    const buttons = parent.querySelectorAll('button[title="Guardar"], button[title="Cancelar"]');
+    
+    inputs.forEach(input => input.remove());
+    buttons.forEach(btn => btn.remove());
+    
+    // Mostrar elemento original
+    element.style.display = '';
+    
+    // Limpiar variables
+    currentEditingElement = null;
+    originalValue = null;
+}
+
+// Función para establecer el ID de la tarea actual cuando se abre el modal
+function setCurrentTaskId(taskId) {
+    currentTaskId = taskId;
+}
+</script>
 
 {% endblock %}

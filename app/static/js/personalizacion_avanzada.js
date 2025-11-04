@@ -790,11 +790,8 @@ function saveDesignSettings() {
     
     hideModal('designModal');
     setTimeout(() => {
-        location.reload(true); // First reload
-        setTimeout(() => {
-            location.reload(true); // Second reload
-        }, 100); // Very short delay for the second reload
-    }, 500); // Delay for the first reload
+        location.reload(true);
+    }, 500);
 }
 }
 
