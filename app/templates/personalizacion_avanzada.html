@@ -121,10 +121,7 @@ text-rendering: optimizeLegibility;
 padding: 20px;
 }
 
-.light-theme body {
-background: #ffffff !important;
-background-attachment: fixed;
-}
+
 
 .main-container {
 max-width: 800px;
@@ -175,20 +172,19 @@ position: relative;
 overflow: hidden;
 }
 
-.light-theme .settings-card,
-.white-theme .settings-card {
+html[data-theme="white"] .settings-card {
 background: rgba(255, 255, 255, 0.7);
 border: 1px solid rgba(0, 0, 0, 0.05);
 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.pink-theme .settings-card {
+html[data-theme="pink"] .settings-card {
 background: rgba(255, 245, 248, 0.7);
 border: 1px solid rgba(255, 107, 157, 0.1);
 box-shadow: 0 4px 12px rgba(255, 107, 157, 0.05);
 }
 
-.coffee-theme .settings-card {
+html[data-theme="coffee"] .settings-card {
 background: rgba(245, 235, 225, 0.7);
 border: 1px solid rgba(139, 69, 19, 0.1);
 box-shadow: 0 4px 12px rgba(139, 69, 19, 0.05);

@@ -4550,6 +4550,164 @@ function setupUserSearchInputs() {
     });
 }
 
+// Función específica para el date picker del modal de proyecto
+function initializeCustomDatePickerProyecto() {
+    const dateInput = document.getElementById('taskDueDateProyecto');
+    
+    if (!dateInput) return;
+    
+    // Hacer readonly para prevenir escritura manual pero permitir eventos
+    dateInput.readOnly = true;
+    
+    dateInput.addEventListener('click', function(e) {
+        e.preventDefault();
+        showCustomCalendar(this);
+    });
+    
+    dateInput.addEventListener('focus', function() {
+        showCustomCalendar(this);
+    });
+    
+    // También agregar evento al contenedor
+    const datePicker = dateInput.parentElement;
+    if (datePicker) {
+        datePicker.addEventListener('click', function(e) {
+            e.preventDefault();
+            showCustomCalendar(dateInput);
+        });
+    }
+}
+
+function showUserSuggestions(query, containerId, inputElement, showAll = false) {
+    // Remover sugerencias anteriores
+    const existingSuggestions = document.querySelector('.user-suggestions');
+    if (existingSuggestions) {
+        existingSuggestions.remove();
+    }
+    
+    if (!showAll && query.length < 2) return;
+    
+    const matchedUsers = showAll 
+        ? window.availableUsers.slice(0, 8) // Mostrar primeros 8 usuarios cuando showAll=true
+        : window.availableUsers.filter(user => 
+            user.username.toLowerCase().includes(query) || 
+            `${user.first_name} ${user.last_name}`.toLowerCase().includes(query)
+          ).slice(0, 5); // Mostrar máximo 5 sugerencias cuando se busca
+    
+    if (matchedUsers.length > 0) {
+        const suggestionsDiv = document.createElement('div');
+        suggestionsDiv.className = 'user-suggestions';
+        suggestionsDiv.style.cssText = `
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(28, 28, 30, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            margin-top: 0.5rem;
+        `;
+        
+        matchedUsers.forEach(user => {
+            const suggestionItem = document.createElement('div');
+            suggestionItem.className = 'user-suggestion-item';
+            suggestionItem.style.cssText = `
+                padding: 0.75rem 1rem;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                transition: background-color 0.2s ease;
+            `;
+            
+            const displayName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
+            
+            // Crear avatar
+            const avatar = document.createElement('div');
+            avatar.style.cssText = `
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: 600;
+                font-size: 0.8rem;
+                flex-shrink: 0;
+            `;
+            
+            if (user.avatar_url) {
+                const img = document.createElement('img');
+                img.src = user.avatar_url;
+                img.alt = displayName;
+                img.style.cssText = `
+                    width: 100%;
+                    height: 100%;
+                    border-radius: 50%;
+                    object-fit: cover;
+                `;
+                avatar.appendChild(img);
+            } else {
+                avatar.textContent = (user.first_name?.[0] || user.username?.[0] || '?').toUpperCase();
+            }
+            
+            // Crear información del usuario
+            const userInfo = document.createElement('div');
+            userInfo.style.cssText = `
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+            `;
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.style.cssText = `
+                font-weight: 500;
+                font-size: 0.9rem;
+            `;
+            nameSpan.textContent = displayName;
+            
+            const usernameSpan = document.createElement('span');
+            usernameSpan.style.cssText = `
+                font-size: 0.8rem;
+                color: rgba(255, 255, 255, 0.6);
+            `;
+            usernameSpan.textContent = `@${user.username}`;
+            
+            userInfo.appendChild(nameSpan);
+            userInfo.appendChild(usernameSpan);
+            
+            suggestionItem.appendChild(avatar);
+            suggestionItem.appendChild(userInfo);
+            
+            suggestionItem.addEventListener('mouseenter', function() {
+                this.style.background = 'rgba(255, 255, 255, 0.08)';
+            });
+            
+            suggestionItem.addEventListener('mouseleave', function() {
+                this.style.background = 'transparent';
+            });
+            
+            suggestionItem.addEventListener('click', function() {
+                addUserToSelection(user, containerId);
+                inputElement.value = '';
+                suggestionsDiv.remove();
+            });
+            
+            suggestionsDiv.appendChild(suggestionItem);
+        });
+        
+        inputElement.parentNode.style.position = 'relative';
+        inputElement.parentNode.appendChild(suggestionsDiv);
+    }
+}
+
 // Funciones para el modal de Crear Tarea en Proyecto
 function openCreateTaskModal() {
     console.log('🚀 Abriendo modal crear tarea para proyecto:', PROYECTO_ID);
@@ -4995,33 +5153,6 @@ function initializeCustomDatePicker() {
     }
 }
 
-// Función específica para el date picker del modal de proyecto
-function initializeCustomDatePickerProyecto() {
-    const dateInput = document.getElementById('taskDueDateProyecto');
-    
-    if (!dateInput) return;
-    
-    // Hacer readonly para prevenir escritura manual pero permitir eventos
-    dateInput.readOnly = true;
-    
-    dateInput.addEventListener('click', function(e) {
-        e.preventDefault();
-        showCustomCalendar(this);
-    });
-    
-    dateInput.addEventListener('focus', function() {
-        showCustomCalendar(this);
-    });
-    
-    // También agregar evento al contenedor
-    const datePicker = dateInput.parentElement;
-    if (datePicker) {
-        datePicker.addEventListener('click', function(e) {
-            e.preventDefault();
-            showCustomCalendar(dateInput);
-        });
-    }
-}
 
 function showCustomCalendar(inputElement) {
     // Remover calendario anterior si existe
@@ -5335,138 +5466,6 @@ function resetPowerTaskForm() {
 }
 
 
-function showUserSuggestions(query, containerId, inputElement, showAll = false) {
-    // Remover sugerencias anteriores
-    const existingSuggestions = document.querySelector('.user-suggestions');
-    if (existingSuggestions) {
-        existingSuggestions.remove();
-    }
-    
-    if (!showAll && query.length < 2) return;
-    
-    const matchedUsers = showAll 
-        ? window.availableUsers.slice(0, 8) // Mostrar primeros 8 usuarios cuando showAll=true
-        : window.availableUsers.filter(user => 
-            user.username.toLowerCase().includes(query) || 
-            `${user.first_name} ${user.last_name}`.toLowerCase().includes(query)
-          ).slice(0, 5); // Mostrar máximo 5 sugerencias cuando se busca
-    
-    if (matchedUsers.length > 0) {
-        const suggestionsDiv = document.createElement('div');
-        suggestionsDiv.className = 'user-suggestions';
-        suggestionsDiv.style.cssText = `
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: rgba(28, 28, 30, 0.95);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 10px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-            margin-top: 0.5rem;
-        `;
-        
-        matchedUsers.forEach(user => {
-            const suggestionItem = document.createElement('div');
-            suggestionItem.className = 'user-suggestion-item';
-            suggestionItem.style.cssText = `
-                padding: 0.75rem 1rem;
-                cursor: pointer;
-                color: var(--apple-label);
-                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-                transition: all 0.2s ease;
-                display: flex;
-                align-items: center;
-                gap: 0.75rem;
-            `;
-            
-            const displayName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
-            
-            // Crear avatar
-            const avatar = document.createElement('div');
-            avatar.className = 'suggestion-avatar';
-            avatar.style.cssText = `
-                width: 28px;
-                height: 28px;
-                border-radius: 50%;
-                background: linear-gradient(135deg, var(--apple-blue), #4A90E2);
-                color: white;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 600;
-                font-size: 0.8rem;
-                flex-shrink: 0;
-            `;
-            // Mostrar avatar o iniciales
-            if (user.avatar_url) {
-                const img = document.createElement('img');
-                img.src = user.avatar_url;
-                img.alt = displayName;
-                img.style.cssText = `
-                    width: 100%;
-                    height: 100%;
-                    border-radius: 50%;
-                    object-fit: cover;
-                `;
-                avatar.appendChild(img);
-            } else {
-                avatar.textContent = (user.first_name?.[0] || user.username?.[0] || '?').toUpperCase();
-            }
-            
-            // Crear información del usuario
-            const userInfo = document.createElement('div');
-            userInfo.style.cssText = `
-                display: flex;
-                flex-direction: column;
-                flex: 1;
-            `;
-            
-            const nameSpan = document.createElement('span');
-            nameSpan.style.cssText = `
-                font-weight: 500;
-                font-size: 0.9rem;
-            `;
-            nameSpan.textContent = displayName;
-            
-            const usernameSpan = document.createElement('span');
-            usernameSpan.style.cssText = `
-                font-size: 0.8rem;
-                color: var(--apple-label-secondary);
-                opacity: 0.8;
-            `;
-            usernameSpan.textContent = '@' + user.username;
-            
-            userInfo.appendChild(nameSpan);
-            userInfo.appendChild(usernameSpan);
-            
-            suggestionItem.appendChild(avatar);
-            suggestionItem.appendChild(userInfo);
-            
-            suggestionItem.addEventListener('mouseenter', function() {
-                this.style.background = 'rgba(255, 255, 255, 0.08)';
-            });
-            
-            suggestionItem.addEventListener('mouseleave', function() {
-                this.style.background = 'transparent';
-            });
-            
-            suggestionItem.addEventListener('click', function() {
-                addUserToSelection(user, containerId);
-                inputElement.value = '';
-                suggestionsDiv.remove();
-            });
-            
-            suggestionsDiv.appendChild(suggestionItem);
-        });
-        
-        inputElement.parentNode.style.position = 'relative';
-        inputElement.parentNode.appendChild(suggestionsDiv);
-    }
-}
 
 function addUserToSelection(user, containerId) {
     const container = document.getElementById(`selected${containerId.charAt(0).toUpperCase() + containerId.slice(1)}`);
