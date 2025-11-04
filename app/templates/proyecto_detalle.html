@@ -4578,6 +4578,58 @@ function initializeCustomDatePickerProyecto() {
     }
 }
 
+function addUserToSelection(user, containerId) {
+    const container = document.getElementById(`selected${containerId.charAt(0).toUpperCase() + containerId.slice(1)}`);
+    
+    // Verificar si el usuario ya está seleccionado
+    const existingPill = container.querySelector(`[data-user-id="${user.id}"]`);
+    if (existingPill) return;
+    
+    const displayName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
+    
+    const userPill = document.createElement('div');
+    userPill.className = 'user-pill';
+    userPill.setAttribute('data-user-id', user.id);
+    userPill.innerHTML = `
+        <span>${displayName}</span>
+        <button class="user-pill-remove" onclick="removeUserFromSelection(${user.id}, '${containerId}')">
+            ×
+        </button>
+    `;
+    
+    container.appendChild(userPill);
+    
+    // Actualizar variables globales si es el modal del proyecto
+    if (containerId === 'responsibleProyecto') {
+        selectedResponsibleProyecto = user;
+    } else if (containerId === 'participantsProyecto') {
+        if (!selectedParticipantsProyecto.find(u => u.id === user.id)) {
+            selectedParticipantsProyecto.push(user);
+        }
+    } else if (containerId === 'observersProyecto') {
+        if (!selectedObserversProyecto.find(u => u.id === user.id)) {
+            selectedObserversProyecto.push(user);
+        }
+    }
+}
+
+function removeUserFromSelection(userId, containerId) {
+    const container = document.getElementById(`selected${containerId.charAt(0).toUpperCase() + containerId.slice(1)}`);
+    const pill = container.querySelector(`[data-user-id="${userId}"]`);
+    if (pill) {
+        pill.remove();
+        
+        // Actualizar variables globales si es el modal del proyecto
+        if (containerId === 'responsibleProyecto') {
+            selectedResponsibleProyecto = null;
+        } else if (containerId === 'participantsProyecto') {
+            selectedParticipantsProyecto = selectedParticipantsProyecto.filter(u => u.id !== parseInt(userId));
+        } else if (containerId === 'observersProyecto') {
+            selectedObserversProyecto = selectedObserversProyecto.filter(u => u.id !== parseInt(userId));
+        }
+    }
+}
+
 function showUserSuggestions(query, containerId, inputElement, showAll = false) {
     // Remover sugerencias anteriores
     const existingSuggestions = document.querySelector('.user-suggestions');
@@ -5467,57 +5519,6 @@ function resetPowerTaskForm() {
 
 
 
-function addUserToSelection(user, containerId) {
-    const container = document.getElementById(`selected${containerId.charAt(0).toUpperCase() + containerId.slice(1)}`);
-    
-    // Verificar si el usuario ya está seleccionado
-    const existingPill = container.querySelector(`[data-user-id="${user.id}"]`);
-    if (existingPill) return;
-    
-    const displayName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
-    
-    const userPill = document.createElement('div');
-    userPill.className = 'user-pill';
-    userPill.setAttribute('data-user-id', user.id);
-    userPill.innerHTML = `
-        <span>${displayName}</span>
-        <button class="user-pill-remove" onclick="removeUserFromSelection(${user.id}, '${containerId}')">
-            ×
-        </button>
-    `;
-    
-    container.appendChild(userPill);
-    
-    // Actualizar variables globales si es el modal del proyecto
-    if (containerId === 'responsibleProyecto') {
-        selectedResponsibleProyecto = user;
-    } else if (containerId === 'participantsProyecto') {
-        if (!selectedParticipantsProyecto.find(u => u.id === user.id)) {
-            selectedParticipantsProyecto.push(user);
-        }
-    } else if (containerId === 'observersProyecto') {
-        if (!selectedObserversProyecto.find(u => u.id === user.id)) {
-            selectedObserversProyecto.push(user);
-        }
-    }
-}
-
-function removeUserFromSelection(userId, containerId) {
-    const container = document.getElementById(`selected${containerId.charAt(0).toUpperCase() + containerId.slice(1)}`);
-    const pill = container.querySelector(`[data-user-id="${userId}"]`);
-    if (pill) {
-        pill.remove();
-        
-        // Actualizar variables globales si es el modal del proyecto
-        if (containerId === 'responsibleProyecto') {
-            selectedResponsibleProyecto = null;
-        } else if (containerId === 'participantsProyecto') {
-            selectedParticipantsProyecto = selectedParticipantsProyecto.filter(u => u.id !== parseInt(userId));
-        } else if (containerId === 'observersProyecto') {
-            selectedObserversProyecto = selectedObserversProyecto.filter(u => u.id !== parseInt(userId));
-        }
-    }
-}
 
 async function submitPowerTaskForm() {
     const taskData = collectPowerTaskData();
