@@ -5129,13 +5129,17 @@ async function submitTaskFormProyecto() {
     const title = titleInput?.value?.trim();
     const description = editor?.innerHTML?.trim() || '';
     const priority = highPriority?.checked ? 'alta' : 'normal';
-    const dueDateValue = dueDate?.value;
+    const dueDateValue = dueDate?.getAttribute('data-datetime') || null;
     
     console.log('🔍 Valores obtenidos del formulario:');
     console.log('titleInput:', titleInput);
     console.log('title:', title);
     console.log('editor:', editor);
     console.log('description:', description);
+    console.log('dueDate element:', dueDate);
+    console.log('dueDate.value:', dueDate?.value);
+    console.log('dueDate.getAttribute("data-datetime"):', dueDate?.getAttribute('data-datetime'));
+    console.log('selectedResponsibleProyecto:', selectedResponsibleProyecto);
     
     // Validaciones básicas
     if (!title) {
@@ -5149,9 +5153,9 @@ async function submitTaskFormProyecto() {
         nombre: title,           // ← Cambiado de 'titulo' a 'nombre'
         descripcion: description,
         prioridad: priority,
-        fecha_limite: dueDateValue || null,
+        fecha_limite: dueDateValue,
         proyecto_id: PROYECTO_ID,  // ¡Clave! - Esto asocia la tarea al proyecto
-        responsable_id: selectedResponsibleProyecto?.id || null,
+        asignado_a: selectedResponsibleProyecto?.id || null,  // ← Cambiado de 'responsable_id' a 'asignado_a'
         participantes: selectedParticipantsProyecto.map(p => p.id),
         observadores: selectedObserversProyecto.map(o => o.id)
     };
