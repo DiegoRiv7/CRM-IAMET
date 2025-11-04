@@ -5146,7 +5146,7 @@ async function submitTaskFormProyecto() {
     
     // Preparar datos para envío
     const taskData = {
-        titulo: title,
+        nombre: title,           // ← Cambiado de 'titulo' a 'nombre'
         descripcion: description,
         prioridad: priority,
         fecha_limite: dueDateValue || null,
@@ -5160,8 +5160,8 @@ async function submitTaskFormProyecto() {
     
     // Verificar que los datos sean válidos antes del envío
     console.log('🔍 Verificación antes del envío:');
-    console.log('taskData.titulo:', taskData.titulo);
-    console.log('taskData.titulo length:', taskData.titulo?.length);
+    console.log('taskData.nombre:', taskData.nombre);
+    console.log('taskData.nombre length:', taskData.nombre?.length);
     console.log('JSON a enviar:', JSON.stringify(taskData));
     
     try {
