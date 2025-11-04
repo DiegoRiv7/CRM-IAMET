@@ -859,88 +859,85 @@ def api_actualizar_estado_tarea(request):
 @login_required
 def api_actualizar_tarea(request):
     """
-    API para actualizar una tarea (siguiendo el patrón de editar_oportunidad_api)
+    API para actualizar una tarea completa (solo creadores)
     """
     global tareas_temporales
     
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
     if request.method == 'POST':
         try:
-            # Debug logs
-            print(f"[DEBUG] Usuario: {request.user.username}")
-            print(f"[DEBUG] POST data: {dict(request.POST)}")
+            import json
+            from datetime import datetime
+            from django.contrib.auth.models import User
+            from .models import Proyecto
             
-            # Obtener ID de la tarea desde POST data (como en oportunidades)
-            tarea_id = request.POST.get('tarea_id')
+            # Obtener datos del request
+            data = json.loads(request.body)
+            tarea_id = data.get('tarea_id')
+            titulo = data.get('titulo', data.get('nombre', '')).strip()
+            descripcion = data.get('descripcion', '').strip()
+            proyecto_id = data.get('proyecto_id')
+            alta_prioridad = data.get('alta_prioridad', False)
+            prioridad = data.get('prioridad', 'media')
+            fecha_limite = data.get('fecha_limite')
+            responsable_id = data.get('responsable_id')
+            participantes_json = data.get('participantes', '[]')
+            observadores_json = data.get('observadores', '[]')
+            
+            # Validaciones básicas
             if not tarea_id:
-                return JsonResponse({'success': False, 'error': 'ID de tarea requerido'})
+                return JsonResponse({'error': 'ID de tarea requerido'}, status=400)
+            
+            if not titulo:
+                return JsonResponse({'error': 'El título es requerido'}, status=400)
             
             # Buscar la tarea en la lista temporal
             tarea_encontrada = None
-            tarea_index = None
             for i, tarea in enumerate(tareas_temporales):
                 if str(tarea['id']) == str(tarea_id):
                     tarea_encontrada = tarea
-                    tarea_index = i
                     break
             
             if not tarea_encontrada:
-                return JsonResponse({'success': False, 'error': 'Tarea no encontrada'})
+                return JsonResponse({'error': 'Tarea no encontrada'}, status=404)
             
-            # Verificar permisos: usuario autenticado puede editar sus tareas
-            if not request.user.is_authenticated:
-                return JsonResponse({'success': False, 'error': 'Usuario no autenticado'})
+            # Verificar permisos: solo el creador puede editar
+            if tarea_encontrada['creado_por_id'] != request.user.id:
+                return JsonResponse({'error': 'Solo el creador puede editar la tarea'}, status=403)
             
-            updated_values = {}
+            # Obtener el nombre del responsable
+            responsable_nombre = tarea_encontrada['responsable']  # Mantener actual por defecto
+            if responsable_id:
+                try:
+                    responsable_user = User.objects.get(id=responsable_id)
+                    responsable_nombre = responsable_user.username
+                except User.DoesNotExist:
+                    pass  # Mantener el valor actual
             
-            # Actualizar título
-            if 'titulo' in request.POST:
-                nuevo_titulo = request.POST['titulo'].strip()
-                if nuevo_titulo:
-                    tarea_encontrada['titulo'] = nuevo_titulo
-                    updated_values['titulo'] = nuevo_titulo
-                else:
-                    return JsonResponse({'success': False, 'error': 'El título no puede estar vacío'})
-            
-            # Actualizar descripción
-            if 'descripcion' in request.POST:
-                nueva_descripcion = request.POST['descripcion'].strip()
-                tarea_encontrada['descripcion'] = nueva_descripcion
-                updated_values['descripcion'] = nueva_descripcion
-            
-            # Actualizar prioridad
-            if 'prioridad' in request.POST:
-                nueva_prioridad = request.POST['prioridad']
-                if nueva_prioridad in ['baja', 'media', 'alta']:
-                    tarea_encontrada['prioridad'] = nueva_prioridad
-                    updated_values['prioridad'] = nueva_prioridad
-            
-            # Actualizar fecha límite
-            if 'fecha_limite' in request.POST:
-                nueva_fecha = request.POST['fecha_limite']
-                tarea_encontrada['fecha_limite'] = nueva_fecha if nueva_fecha else None
-                updated_values['fecha_limite'] = nueva_fecha
-            
-            # Actualizar la tarea en la lista global
-            tareas_temporales[tarea_index] = tarea_encontrada
-            
-            print(f"[DEBUG] Tarea actualizada: {tarea_encontrada}")
-            print(f"[DEBUG] Valores actualizados: {updated_values}")
+            # Actualizar los campos de la tarea
+            tarea_encontrada.update({
+                'titulo': titulo,
+                'descripcion': descripcion,
+                'prioridad': prioridad,
+                'fecha_limite': fecha_limite,
+                'responsable': responsable_nombre,
+                'responsable_id': responsable_id or tarea_encontrada['responsable_id'],
+            })
             
             return JsonResponse({
                 'success': True,
                 'message': 'Tarea actualizada exitosamente',
-                'updated_values': updated_values,
                 'tarea': tarea_encontrada
             })
             
         except Exception as e:
-            print(f"[DEBUG] Error en api_actualizar_tarea: {str(e)}")
             return JsonResponse({
-                'success': False,
                 'error': f'Error al actualizar la tarea: {str(e)}'
             }, status=500)
     
-    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 
 @login_required  

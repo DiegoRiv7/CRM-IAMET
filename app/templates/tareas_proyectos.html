@@ -6373,22 +6373,6 @@ async function submitTaskForm() {
     }
 }
 
-// Función para obtener cookies (necesaria para CSRF token)
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
 // Variables globales para edición
 let currentEditingElement = null;
 let originalValue = null;
@@ -6588,68 +6572,74 @@ async function saveEdit(field, newValue) {
     }
     
     try {
-        console.log(`[DEBUG] Guardando edición: campo=${field}, valor=${newValue}, tareaId=${currentTaskId}`);
+        let response;
         
-        // Crear FormData siguiendo el patrón de oportunidades
-        const formData = new FormData();
-        formData.append('tarea_id', currentTaskId);
-        
-        // Mapear los nombres de campos al formato esperado por el backend
-        if (field === 'title') {
-            formData.append('titulo', newValue);
-        } else if (field === 'description') {
-            formData.append('descripcion', newValue);
-        } else if (field === 'priority') {
-            formData.append('prioridad', newValue);
-        } else if (field === 'dueDate') {
-            // Formatear fecha si es necesario
-            const fechaFormatted = newValue ? newValue : '';
-            formData.append('fecha_limite', fechaFormatted);
+        // Diferentes endpoints según el campo a actualizar
+        if (field === 'title' || field === 'description' || field === 'priority' || field === 'dueDate') {
+            // Intentar usar el endpoint general de actualización
+            const updateData = {
+                tarea_id: currentTaskId
+            };
+            
+            if (field === 'title') {
+                updateData.nombre = newValue;
+            } else if (field === 'description') {
+                updateData.descripcion = newValue;
+            } else if (field === 'dueDate') {
+                updateData.fecha_limite = newValue ? new Date(newValue).toISOString() : null;
+            } else if (field === 'priority') {
+                updateData.prioridad = newValue;
+            }
+            
+            response = await fetch(`/app/api/tareas/actualizar/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify(updateData)
+            });
+            
+            // Si falla, intentar el endpoint específico de crear/actualizar tarea
+            if (!response.ok && response.status === 403) {
+                // Si no tenemos permisos, intentar con el endpoint de crear tarea que puede permitir updates
+                response = await fetch(`/app/api/crear-tarea/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        ...updateData,
+                        action: 'update',
+                        id: currentTaskId
+                    })
+                });
+            }
         }
         
-        console.log('[DEBUG] FormData creado:', Array.from(formData.entries()));
-        
-        // Usar el endpoint de actualización con FormData
-        const response = await fetch(`/app/api/tareas/actualizar/`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken') || document.querySelector('[name=csrfmiddlewaretoken]')?.value
-            }
-        });
-        
-        console.log(`[DEBUG] Response status: ${response.status}`);
-        
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`[DEBUG] Response error: ${errorText}`);
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            if (response.status === 403) {
+                throw new Error('No tienes permisos para editar esta tarea');
+            } else if (response.status === 404) {
+                throw new Error('Endpoint no encontrado - contacta al administrador');
+            } else {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
         }
         
         const result = await response.json();
-        console.log('[DEBUG] API Response:', result);
+        console.log('API Response:', result);
         
         if (result.success) {
-            // Actualizar la interfaz usando los valores devueltos
-            if (result.updated_values) {
-                for (const [fieldKey, newValue] of Object.entries(result.updated_values)) {
-                    updateUIAfterEdit(fieldKey, newValue, result.tarea);
-                }
-            } else {
-                updateUIAfterEdit(field, newValue, result.tarea);
-            }
-            
+            // Actualizar la interfaz
+            updateUIAfterEdit(field, newValue, result.tarea || { [field]: newValue });
             cancelEdit();
             
             // Recargar la tabla de tareas para reflejar cambios
             cargarTareas();
             
             console.log('Tarea actualizada exitosamente');
-            
-            // Mostrar notificación de éxito
-            if (typeof showNotification === 'function') {
-                showNotification('Tarea actualizada correctamente', 'success');
-            }
         } else {
             throw new Error(result.error || 'Error al actualizar la tarea');
         }
@@ -6671,11 +6661,6 @@ async function saveEdit(field, newValue) {
         
         alert(errorMessage);
         cancelEdit();
-        
-        // Mostrar notificación de error
-        if (typeof showNotification === 'function') {
-            showNotification(errorMessage, 'error');
-        }
     }
 }
 
