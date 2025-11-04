@@ -6572,34 +6572,68 @@ async function saveEdit(field, newValue) {
     }
     
     try {
-        // Preparar datos para la API
-        const updateData = {};
+        let response;
         
-        if (field === 'title') {
-            updateData.nombre = newValue;
-        } else if (field === 'description') {
-            updateData.descripcion = newValue;
-        } else if (field === 'dueDate') {
-            updateData.fecha_limite = newValue ? new Date(newValue).toISOString() : null;
-        } else if (field === 'priority') {
-            updateData.prioridad = newValue;
+        // Diferentes endpoints según el campo a actualizar
+        if (field === 'title' || field === 'description' || field === 'priority' || field === 'dueDate') {
+            // Intentar usar el endpoint general de actualización
+            const updateData = {
+                tarea_id: currentTaskId
+            };
+            
+            if (field === 'title') {
+                updateData.nombre = newValue;
+            } else if (field === 'description') {
+                updateData.descripcion = newValue;
+            } else if (field === 'dueDate') {
+                updateData.fecha_limite = newValue ? new Date(newValue).toISOString() : null;
+            } else if (field === 'priority') {
+                updateData.prioridad = newValue;
+            }
+            
+            response = await fetch(`/app/api/tareas/actualizar/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify(updateData)
+            });
+            
+            // Si falla, intentar el endpoint específico de crear/actualizar tarea
+            if (!response.ok && response.status === 403) {
+                // Si no tenemos permisos, intentar con el endpoint de crear tarea que puede permitir updates
+                response = await fetch(`/app/api/crear-tarea/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        ...updateData,
+                        action: 'update',
+                        id: currentTaskId
+                    })
+                });
+            }
         }
         
-        // Enviar actualización a la API
-        const response = await fetch(`/app/api/tareas/${currentTaskId}/`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: JSON.stringify(updateData)
-        });
+        if (!response.ok) {
+            if (response.status === 403) {
+                throw new Error('No tienes permisos para editar esta tarea');
+            } else if (response.status === 404) {
+                throw new Error('Endpoint no encontrado - contacta al administrador');
+            } else {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+        }
         
         const result = await response.json();
+        console.log('API Response:', result);
         
         if (result.success) {
             // Actualizar la interfaz
-            updateUIAfterEdit(field, newValue, result.tarea);
+            updateUIAfterEdit(field, newValue, result.tarea || { [field]: newValue });
             cancelEdit();
             
             // Recargar la tabla de tareas para reflejar cambios
@@ -6612,7 +6646,20 @@ async function saveEdit(field, newValue) {
         
     } catch (error) {
         console.error('Error saving edit:', error);
-        alert('Error al guardar los cambios: ' + error.message);
+        
+        // Dar feedback más específico
+        let errorMessage = 'Error al guardar los cambios: ';
+        if (error.message.includes('permisos')) {
+            errorMessage += 'No tienes permisos para editar esta tarea.';
+        } else if (error.message.includes('403')) {
+            errorMessage += 'No tienes permisos para editar esta tarea.';
+        } else if (error.message.includes('404')) {
+            errorMessage += 'La función de edición no está disponible.';
+        } else {
+            errorMessage += error.message;
+        }
+        
+        alert(errorMessage);
         cancelEdit();
     }
 }

@@ -793,7 +793,6 @@ function saveDesignSettings() {
         location.reload(true);
     }, 500);
 }
-}
 
 // Sistema de idioma
 function changeLanguage(langCode, langName) {
