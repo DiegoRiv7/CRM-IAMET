@@ -2855,6 +2855,13 @@ function mostrarTareasTabla(tareas) {
     const content = document.getElementById('tareas-content');
     if (!content) return;
     
+    // Ordenar tareas: alta prioridad primero
+    const tareasOrdenadas = tareas.sort((a, b) => {
+        if (a.prioridad === 'alta' && b.prioridad !== 'alta') return -1;
+        if (a.prioridad !== 'alta' && b.prioridad === 'alta') return 1;
+        return 0;
+    });
+    
     // Usar la misma estructura que la tabla de proyectos
     const tableHTML = `
         <div class="projects-table-container" id="tasks-table-view">
@@ -2869,7 +2876,7 @@ function mostrarTareasTabla(tareas) {
                 </div>
             </div>
             <div class="table-body" id="tasks-table-body">
-                ${tareas.map(tarea => createTaskRow(tarea)).join('')}
+                ${tareasOrdenadas.map(tarea => createTaskRow(tarea)).join('')}
             </div>
         </div>
     `;
@@ -2891,11 +2898,25 @@ function createTaskRow(tarea) {
         proyectoContent = proyectoNombre;
     }
     
+    const isHighPriority = tarea.prioridad === 'alta';
+    const rowStyles = isHighPriority ? 
+        `background: linear-gradient(135deg, rgba(255, 149, 0, 0.08), rgba(255, 149, 0, 0.05));
+         border: 1px solid rgba(255, 149, 0, 0.15);
+         border-radius: 8px;
+         margin-bottom: 0.25rem;
+         box-shadow: 0 2px 8px rgba(255, 149, 0, 0.1);` : 
+        '';
+    
     return `
-        <div class="table-row" data-tarea-id="${tarea.id}" onclick="console.log('Clicked task:', ${tarea.id}); TareasProyectos.verDetallesTarea(${tarea.id})">
-            <div class="table-cell name-cell">
-                ${tarea.titulo}
-                ${tarea.prioridad === 'alta' ? '<span style="color: #FF9500; margin-left: 0.5rem;">●</span>' : ''}
+        <div class="table-row" data-tarea-id="${tarea.id}" style="${rowStyles} transition: all 0.2s ease;" 
+             onclick="console.log('Clicked task:', ${tarea.id}); TareasProyectos.verDetallesTarea(${tarea.id})"
+             onmouseover="this.style.background='${isHighPriority ? 'rgba(255, 149, 0, 0.12)' : 'rgba(255, 255, 255, 0.05)'}'" 
+             onmouseout="this.style.background='${isHighPriority ? 'rgba(255, 149, 0, 0.08)' : 'transparent'}'">
+            <div class="table-cell name-cell" style="font-weight: ${isHighPriority ? '600' : '500'};">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    ${isHighPriority ? '<span style="color: #FF9500; font-size: 1.1rem;">⭐</span>' : ''}
+                    <span style="color: ${isHighPriority ? '#FF9500' : 'var(--apple-label)'};">${tarea.titulo}</span>
+                </div>
             </div>
             <div class="table-cell estado-cell">${getEstadoBadgeHTML(tarea.estado)}</div>
             <div class="table-cell activity-cell">
@@ -3295,23 +3316,25 @@ Object.assign(TareasProyectos, {
 
     // Función para generar badges de prioridad con glassmorphism
     getPrioridadBadgeGlass(prioridad) {
-        const prioridadConfig = {
-            'baja': { bg: 'rgba(156, 163, 175, 0.5)', color: 'white', text: 'Baja' },
-            'media': { bg: 'rgba(251, 191, 36, 0.9)', color: '#78350F', text: 'Media' },
-            'alta': { bg: 'rgba(239, 68, 68, 0.9)', color: '#7F1D1D', text: 'Alta' }
-        };
+        const prioridadTexto = prioridad === 'alta' ? 'Alta' : 'Normal';
+        const prioridadColor = prioridad === 'alta' ? '#FF9500' : '#8E8E93';
+        const prioridadIcon = prioridad === 'alta' ? '⭐' : '';
         
-        const config = prioridadConfig[prioridad] || prioridadConfig['media'];
         return `<span style="
-            padding: 4px 10px;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
             display: inline-flex;
             align-items: center;
-            background-color: ${config.bg};
-            color: ${config.color};
-        ">${config.text}</span>`;
+            gap: 0.5rem;
+            background: ${prioridad === 'alta' ? 'rgba(255, 149, 0, 0.1)' : 'rgba(142, 142, 147, 0.1)'};
+            color: ${prioridadColor};
+            padding: 0.375rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            border: 1px solid ${prioridad === 'alta' ? 'rgba(255, 149, 0, 0.2)' : 'rgba(142, 142, 147, 0.2)'};
+        ">
+            ${prioridadIcon}
+            ${prioridadTexto}
+        </span>`;
     },
 
     // Función para configurar observadores

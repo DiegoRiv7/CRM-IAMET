@@ -3313,14 +3313,33 @@ async function cargarTareasDelProyecto() {
                     </tr>
                 `;
             } else {
-                tbody.innerHTML = data.tareas.map(tarea => `
-                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); cursor: pointer;" 
+                // Ordenar tareas: alta prioridad primero
+                const tareasOrdenadas = data.tareas.sort((a, b) => {
+                    if (a.prioridad === 'alta' && b.prioridad !== 'alta') return -1;
+                    if (a.prioridad !== 'alta' && b.prioridad === 'alta') return 1;
+                    return 0;
+                });
+                
+                tbody.innerHTML = tareasOrdenadas.map(tarea => {
+                    const isHighPriority = tarea.prioridad === 'alta';
+                    const rowStyles = isHighPriority ? 
+                        `background: linear-gradient(135deg, rgba(255, 149, 0, 0.08), rgba(255, 149, 0, 0.05));
+                         border: 1px solid rgba(255, 149, 0, 0.15);
+                         border-radius: 8px;
+                         margin-bottom: 0.25rem;
+                         box-shadow: 0 2px 8px rgba(255, 149, 0, 0.1);` : 
+                        'border-bottom: 1px solid rgba(255, 255, 255, 0.05);';
+                    
+                    return `
+                    <tr style="${rowStyles} cursor: pointer; transition: all 0.2s ease;" 
                         onclick="TareasProyectos.verDetallesTarea(${tarea.id})" 
-                        onmouseover="this.style.background='rgba(255, 255, 255, 0.05)'" 
-                        onmouseout="this.style.background='transparent'">
-                        <td style="padding: 1rem; color: var(--apple-label); font-weight: 500;">
-                            ${tarea.titulo}
-                            ${tarea.prioridad === 'alta' ? '<span style="color: #FF9500; margin-left: 0.5rem;">●</span>' : ''}
+                        onmouseover="this.style.background='${isHighPriority ? 'rgba(255, 149, 0, 0.12)' : 'rgba(255, 255, 255, 0.05)'}'" 
+                        onmouseout="this.style.background='${isHighPriority ? 'rgba(255, 149, 0, 0.08)' : 'transparent'}'">
+                        <td style="padding: 1rem; color: var(--apple-label); font-weight: ${isHighPriority ? '600' : '500'};">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                ${isHighPriority ? '<span style="color: #FF9500; font-size: 1.1rem;">⭐</span>' : ''}
+                                <span style="color: ${isHighPriority ? '#FF9500' : 'var(--apple-label)'};">${tarea.titulo}</span>
+                            </div>
                         </td>
                         <td style="padding: 1rem;">
                             ${getEstadoBadge(tarea.estado)}
@@ -3469,10 +3488,26 @@ const TareasProyectos = {
         // Prioridad
         const prioridad = document.getElementById('task-detail-prioridad');
         if (prioridad) {
-            const prioridadColor = tarea.prioridad === 'alta' ? '#dc2626' : (tarea.prioridad === 'media' ? '#f59e0b' : '#16a34a');
-            const prioridadTexto = tarea.prioridad === 'alta' ? 'Alta' : (tarea.prioridad === 'media' ? 'Media' : 'Baja');
+            const prioridadTexto = tarea.prioridad === 'alta' ? 'Alta' : 'Normal';
+            const prioridadColor = tarea.prioridad === 'alta' ? '#FF9500' : '#8E8E93';
+            const prioridadIcon = tarea.prioridad === 'alta' ? '⭐' : '';
+            
             prioridad.innerHTML = `
                 <span style="
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    background: ${tarea.prioridad === 'alta' ? 'rgba(255, 149, 0, 0.1)' : 'rgba(142, 142, 147, 0.1)'};
+                    color: ${prioridadColor};
+                    padding: 0.375rem 0.75rem;
+                    border-radius: 8px;
+                    font-size: 0.875rem;
+                    font-weight: 600;
+                    border: 1px solid ${tarea.prioridad === 'alta' ? 'rgba(255, 149, 0, 0.2)' : 'rgba(142, 142, 147, 0.2)'};
+                ">
+                    ${prioridadIcon}
+                    ${prioridadTexto}
+                </span>
                     display: inline-flex; 
                     align-items: center; 
                     gap: 0.5rem; 
