@@ -790,6 +790,7 @@ function saveDesignSettings() {
     
     hideModal('designModal');
     setTimeout(() => {
+        console.log('Reloading page with theme:', localStorage.getItem('theme'));
         location.reload(true);
     }, 500);
 }
