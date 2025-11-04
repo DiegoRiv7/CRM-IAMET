@@ -789,10 +789,23 @@ function saveDesignSettings() {
     );
     
     hideModal('designModal');
-    setTimeout(() => {
-        console.log('Reloading page with theme:', localStorage.getItem('theme'));
-        location.reload(true);
-    }, 500);
+
+    // Apply the theme immediately without reloading
+    const theme = localStorage.getItem('theme') || 'dark';
+    const html = document.documentElement;
+
+    html.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme');
+    html.removeAttribute('data-theme');
+
+    if (theme === 'pink' || theme === 'white' || theme === 'coffee') {
+        html.classList.add('light-theme');
+    } else {
+        html.classList.add('dark-theme');
+    }
+
+    if (theme !== 'dark') {
+        html.setAttribute('data-theme', theme);
+    }
 }
 
 // Sistema de idioma
