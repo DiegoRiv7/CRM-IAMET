@@ -5158,6 +5158,12 @@ async function submitTaskFormProyecto() {
     
     console.log('Datos de tarea a enviar:', taskData);
     
+    // Verificar que los datos sean válidos antes del envío
+    console.log('🔍 Verificación antes del envío:');
+    console.log('taskData.titulo:', taskData.titulo);
+    console.log('taskData.titulo length:', taskData.titulo?.length);
+    console.log('JSON a enviar:', JSON.stringify(taskData));
+    
     try {
         // Deshabilitar botón mientras se procesa
         const submitBtn = document.getElementById('submitTaskBtnProyecto');
@@ -5176,6 +5182,9 @@ async function submitTaskFormProyecto() {
         });
         
         const result = await response.json();
+        
+        console.log('🔍 Respuesta del servidor:', result);
+        console.log('🔍 Status del response:', response.status);
         
         if (result.success) {
             console.log('✅ Tarea creada exitosamente:', result);

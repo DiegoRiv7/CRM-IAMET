@@ -131,8 +131,6 @@ function applyTheme(theme) {
 
     localStorage.setItem('theme', theme);
 
-    document.documentElement.setAttribute('data-theme', theme);
-
     const themeNames = {
         'dark': 'Oscuro',
         'pink': 'Rosa',
@@ -792,7 +790,7 @@ function saveDesignSettings() {
     
     hideModal('designModal');
     setTimeout(() => {
-        location.reload();
+        location.reload(true);
     }, 500);
 }
 
