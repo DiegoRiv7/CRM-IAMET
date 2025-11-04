@@ -108,9 +108,6 @@ function showModal(modalId) {
 function hideModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
     document.body.style.overflow = 'auto';
-    if (modalId === 'designModal') {
-        setTimeout(() => location.reload(), 100);
-    }
 }
 
 function applyTheme(theme) {
@@ -793,9 +790,10 @@ function saveDesignSettings() {
         'success'
     );
     
+    hideModal('designModal');
     setTimeout(() => {
-        hideModal('designModal');
-    }, 1000);
+        location.reload();
+    }, 500);
 }
 
 // Sistema de idioma

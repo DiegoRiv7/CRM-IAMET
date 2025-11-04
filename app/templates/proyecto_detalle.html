@@ -5131,6 +5131,12 @@ async function submitTaskFormProyecto() {
     const priority = highPriority?.checked ? 'alta' : 'normal';
     const dueDateValue = dueDate?.value;
     
+    console.log('🔍 Valores obtenidos del formulario:');
+    console.log('titleInput:', titleInput);
+    console.log('title:', title);
+    console.log('editor:', editor);
+    console.log('description:', description);
+    
     // Validaciones básicas
     if (!title) {
         alert('Por favor ingresa un nombre para la tarea');
