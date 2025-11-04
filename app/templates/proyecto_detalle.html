@@ -4550,6 +4550,253 @@ function setupUserSearchInputs() {
     });
 }
 
+function showCustomCalendar(inputElement) {
+    // Remover calendario anterior si existe
+    const existingCalendar = document.querySelector('.custom-calendar');
+    if (existingCalendar) {
+        existingCalendar.remove();
+    }
+    
+    const calendar = document.createElement('div');
+    calendar.className = 'custom-calendar';
+    calendar.style.cssText = `
+        position: fixed;
+        bottom: 120px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 500px;
+        max-width: 90vw;
+        background: rgba(18, 18, 20, 0.95);
+        backdrop-filter: blur(50px) saturate(1.8);
+        -webkit-backdrop-filter: blur(50px) saturate(1.8);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 16px;
+        padding: 1.5rem;
+        z-index: 9999999;
+        box-shadow: 
+            0 32px 120px rgba(0, 0, 0, 0.6),
+            0 8px 32px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        animation: calendarSlideUp 0.3s ease-out;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    `;
+    
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    // Header del calendario
+    const header = document.createElement('div');
+    header.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding: 0 0.5rem;
+    `;
+    
+    const monthYear = document.createElement('h3');
+    monthYear.style.cssText = `
+        color: var(--apple-label);
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0;
+    `;
+    monthYear.textContent = new Date(currentYear, currentMonth).toLocaleDateString('es-ES', {
+        month: 'long',
+        year: 'numeric'
+    });
+    
+    const prevBtn = createCalendarNavButton('‹', 'prev');
+    const nextBtn = createCalendarNavButton('›', 'next');
+    
+    header.appendChild(prevBtn);
+    header.appendChild(monthYear);
+    header.appendChild(nextBtn);
+    
+    // Grid de días
+    const daysGrid = document.createElement('div');
+    daysGrid.style.cssText = `
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    `;
+    
+    // Headers de días de la semana
+    const dayHeaders = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    dayHeaders.forEach(day => {
+        const dayHeader = document.createElement('div');
+        dayHeader.style.cssText = `
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--apple-label-secondary);
+            padding: 0.5rem;
+        `;
+        dayHeader.textContent = day;
+        daysGrid.appendChild(dayHeader);
+    });
+    
+    // Días del mes
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    
+    // Espacios vacíos para los días anteriores al primer día del mes
+    for (let i = 0; i < firstDayOfMonth; i++) {
+        const emptyDay = document.createElement('div');
+        daysGrid.appendChild(emptyDay);
+    }
+    
+    // Días del mes actual
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayButton = document.createElement('button');
+        dayButton.style.cssText = `
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--apple-label);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 36px;
+        `;
+        dayButton.textContent = day;
+        
+        // Destacar día actual
+        if (day === now.getDate() && currentMonth === now.getMonth() && currentYear === now.getFullYear()) {
+            dayButton.style.background = 'var(--apple-blue)';
+            dayButton.style.color = 'white';
+            dayButton.style.fontWeight = '600';
+        }
+        
+        dayButton.addEventListener('mouseenter', function() {
+            if (this.style.background !== 'var(--apple-blue)') {
+                this.style.background = 'rgba(255, 255, 255, 0.1)';
+            }
+        });
+        
+        dayButton.addEventListener('mouseleave', function() {
+            if (this.style.background !== 'var(--apple-blue)') {
+                this.style.background = 'transparent';
+            }
+        });
+        
+        dayButton.addEventListener('click', function() {
+            selectDate(currentYear, currentMonth, day, inputElement);
+            calendar.remove();
+        });
+        
+        daysGrid.appendChild(dayButton);
+    }
+    
+    // Sección de tiempo
+    const timeSection = document.createElement('div');
+    timeSection.style.cssText = `
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding-top: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    `;
+    
+    const timeLabel = document.createElement('label');
+    timeLabel.style.cssText = `
+        color: var(--apple-label);
+        font-size: 0.9rem;
+        font-weight: 500;
+        flex-shrink: 0;
+    `;
+    timeLabel.textContent = 'Hora:';
+    
+    const timeInput = document.createElement('input');
+    timeInput.type = 'time';
+    timeInput.style.cssText = `
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        padding: 0.5rem;
+        color: var(--apple-label);
+        font-size: 0.9rem;
+        flex: 1;
+    `;
+    timeInput.value = '09:00';
+    
+    timeSection.appendChild(timeLabel);
+    timeSection.appendChild(timeInput);
+    
+    calendar.appendChild(header);
+    calendar.appendChild(daysGrid);
+    calendar.appendChild(timeSection);
+    
+    // Appendar al body para mayor libertad de posicionamiento
+    document.body.appendChild(calendar);
+    
+    // Cerrar al hacer clic fuera
+    setTimeout(() => {
+        document.addEventListener('click', function closeCalendar(e) {
+            if (!calendar.contains(e.target) && e.target !== inputElement) {
+                calendar.remove();
+                document.removeEventListener('click', closeCalendar);
+            }
+        });
+    }, 100);
+}
+
+function createCalendarNavButton(text, direction) {
+    const btn = document.createElement('button');
+    btn.style.cssText = `
+        width: 28px;
+        height: 28px;
+        border: none;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--apple-label);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+    `;
+    btn.textContent = text;
+    
+    btn.addEventListener('mouseenter', function() {
+        this.style.background = 'rgba(255, 255, 255, 0.2)';
+    });
+    
+    btn.addEventListener('mouseleave', function() {
+        this.style.background = 'rgba(255, 255, 255, 0.1)';
+    });
+    
+    return btn;
+}
+
+function selectDate(year, month, day, inputElement) {
+    const timeInput = document.querySelector('.custom-calendar input[type="time"]');
+    const time = timeInput ? timeInput.value : '09:00';
+    
+    const selectedDate = new Date(year, month, day);
+    const formattedDate = selectedDate.toLocaleDateString('es-ES', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+    });
+    
+    // Crear fecha y hora combinada para el atributo data-datetime
+    const datetime = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${time}`;
+    
+    inputElement.value = `${formattedDate} a las ${time}`;
+    inputElement.setAttribute('data-datetime', datetime);
+}
+
 // Función específica para el date picker del modal de proyecto
 function initializeCustomDatePickerProyecto() {
     const dateInput = document.getElementById('taskDueDateProyecto');
@@ -5206,242 +5453,6 @@ function initializeCustomDatePicker() {
 }
 
 
-function showCustomCalendar(inputElement) {
-    // Remover calendario anterior si existe
-    const existingCalendar = document.querySelector('.custom-calendar');
-    if (existingCalendar) {
-        existingCalendar.remove();
-    }
-    
-    const calendar = document.createElement('div');
-    calendar.className = 'custom-calendar';
-    calendar.style.cssText = `
-        position: fixed;
-        bottom: 120px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 500px;
-        max-width: 90vw;
-        background: rgba(18, 18, 20, 0.95);
-        backdrop-filter: blur(50px) saturate(1.8);
-        -webkit-backdrop-filter: blur(50px) saturate(1.8);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 16px;
-        padding: 1.5rem;
-        z-index: 9999999;
-        box-shadow: 
-            0 32px 120px rgba(0, 0, 0, 0.6),
-            0 8px 32px rgba(0, 0, 0, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        animation: calendarSlideUp 0.3s ease-out;
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-    `;
-    
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    
-    // Header del calendario
-    const header = document.createElement('div');
-    header.style.cssText = `
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-        padding: 0 0.5rem;
-    `;
-    
-    const monthYear = document.createElement('h3');
-    monthYear.style.cssText = `
-        color: var(--apple-label);
-        font-size: 1rem;
-        font-weight: 600;
-        margin: 0;
-    `;
-    monthYear.textContent = now.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-    
-    const prevBtn = createCalendarNavButton('‹', -1);
-    const nextBtn = createCalendarNavButton('›', 1);
-    
-    header.appendChild(prevBtn);
-    header.appendChild(monthYear);
-    header.appendChild(nextBtn);
-    
-    // Grid de días
-    const daysGrid = document.createElement('div');
-    daysGrid.style.cssText = `
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 0.25rem;
-        margin-bottom: 1rem;
-    `;
-    
-    // Nombres de días
-    const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-    dayNames.forEach(day => {
-        const dayHeader = document.createElement('div');
-        dayHeader.style.cssText = `
-            text-align: center;
-            font-size: 0.8rem;
-            color: var(--apple-label-secondary);
-            padding: 0.5rem 0;
-            font-weight: 500;
-        `;
-        dayHeader.textContent = day;
-        daysGrid.appendChild(dayHeader);
-    });
-    
-    // Días del mes
-    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    
-    // Espacios vacíos al inicio
-    for (let i = 0; i < firstDay; i++) {
-        const emptyDay = document.createElement('div');
-        daysGrid.appendChild(emptyDay);
-    }
-    
-    // Días del mes
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dayButton = document.createElement('button');
-        dayButton.style.cssText = `
-            aspect-ratio: 1;
-            border: none;
-            background: transparent;
-            color: var(--apple-label);
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        `;
-        
-        if (day === now.getDate()) {
-            dayButton.style.background = 'var(--apple-blue)';
-            dayButton.style.color = 'white';
-        }
-        
-        dayButton.textContent = day;
-        
-        dayButton.addEventListener('mouseenter', function() {
-            if (this.style.background !== 'var(--apple-blue)') {
-                this.style.background = 'rgba(255, 255, 255, 0.1)';
-            }
-        });
-        
-        dayButton.addEventListener('mouseleave', function() {
-            if (day !== now.getDate()) {
-                this.style.background = 'transparent';
-            }
-        });
-        
-        dayButton.addEventListener('click', function() {
-            selectDate(currentYear, currentMonth, day, inputElement);
-            calendar.remove();
-        });
-        
-        daysGrid.appendChild(dayButton);
-    }
-    
-    // Sección de tiempo
-    const timeSection = document.createElement('div');
-    timeSection.style.cssText = `
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        padding-top: 1rem;
-        display: flex;
-        gap: 1rem;
-        align-items: center;
-    `;
-    
-    const timeLabel = document.createElement('span');
-    timeLabel.style.cssText = `
-        color: var(--apple-label-secondary);
-        font-size: 0.9rem;
-    `;
-    timeLabel.textContent = 'Hora:';
-    
-    const timeInput = document.createElement('input');
-    timeInput.type = 'time';
-    timeInput.style.cssText = `
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 6px;
-        padding: 0.5rem;
-        color: var(--apple-label);
-        font-size: 0.9rem;
-        flex: 1;
-    `;
-    timeInput.value = '09:00';
-    
-    timeSection.appendChild(timeLabel);
-    timeSection.appendChild(timeInput);
-    
-    calendar.appendChild(header);
-    calendar.appendChild(daysGrid);
-    calendar.appendChild(timeSection);
-    
-    // Appendar al body para mayor libertad de posicionamiento
-    document.body.appendChild(calendar);
-    
-    // Cerrar al hacer clic fuera
-    setTimeout(() => {
-        document.addEventListener('click', function closeCalendar(e) {
-            if (!calendar.contains(e.target) && e.target !== inputElement) {
-                calendar.remove();
-                document.removeEventListener('click', closeCalendar);
-            }
-        });
-    }, 100);
-}
-
-function createCalendarNavButton(text, direction) {
-    const btn = document.createElement('button');
-    btn.style.cssText = `
-        width: 28px;
-        height: 28px;
-        border: none;
-        background: rgba(255, 255, 255, 0.1);
-        color: var(--apple-label);
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.2rem;
-        transition: all 0.2s ease;
-    `;
-    btn.textContent = text;
-    
-    btn.addEventListener('mouseenter', function() {
-        this.style.background = 'rgba(255, 255, 255, 0.2)';
-    });
-    
-    btn.addEventListener('mouseleave', function() {
-        this.style.background = 'rgba(255, 255, 255, 0.1)';
-    });
-    
-    return btn;
-}
-
-function selectDate(year, month, day, inputElement) {
-    const timeInput = document.querySelector('.custom-calendar input[type="time"]');
-    const time = timeInput ? timeInput.value : '09:00';
-    
-    const selectedDate = new Date(year, month, day);
-    const formattedDate = selectedDate.toLocaleDateString('es-ES', {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric'
-    });
-    
-    inputElement.value = `${formattedDate} a las ${time}`;
-    inputElement.setAttribute('data-datetime', `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${time}`);
-}
 
 function executeFormatCommand(command) {
     const editor = document.querySelector('.task-rich-editor');
