@@ -868,21 +868,37 @@ def api_actualizar_tarea(request):
     
     if request.method == 'POST':
         try:
+            import json
             from datetime import datetime
             from django.contrib.auth.models import User
             from .models import Proyecto
             
-            # Obtener datos del request
-            tarea_id = request.POST.get('tarea_id')
-            titulo = request.POST.get('titulo', '').strip()
-            descripcion = request.POST.get('descripcion', '').strip()
-            proyecto_id = request.POST.get('proyecto_id')
-            alta_prioridad = request.POST.get('alta_prioridad', 'false').lower() == 'true'
-            prioridad = 'alta' if alta_prioridad else 'media'
-            fecha_limite = request.POST.get('fecha_limite')
-            responsable_id = request.POST.get('responsable_id')
-            participantes_json = request.POST.get('participantes', '[]')
-            observadores_json = request.POST.get('observadores', '[]')
+            # Obtener datos del request (manejar tanto JSON como form data)
+            if request.content_type == 'application/json':
+                data = json.loads(request.body)
+                tarea_id = data.get('tarea_id')
+                # Manejar tanto 'titulo' como 'nombre' para compatibilidad
+                titulo = data.get('titulo', data.get('nombre', '')).strip()
+                descripcion = data.get('descripcion', '').strip()
+                proyecto_id = data.get('proyecto_id')
+                alta_prioridad = data.get('alta_prioridad', False)
+                prioridad = data.get('prioridad', 'media')
+                fecha_limite = data.get('fecha_limite')
+                responsable_id = data.get('responsable_id')
+                participantes_json = data.get('participantes', '[]')
+                observadores_json = data.get('observadores', '[]')
+            else:
+                # Fallback para form data
+                tarea_id = request.POST.get('tarea_id')
+                titulo = request.POST.get('titulo', '').strip()
+                descripcion = request.POST.get('descripcion', '').strip()
+                proyecto_id = request.POST.get('proyecto_id')
+                alta_prioridad = request.POST.get('alta_prioridad', 'false').lower() == 'true'
+                prioridad = 'alta' if alta_prioridad else 'media'
+                fecha_limite = request.POST.get('fecha_limite')
+                responsable_id = request.POST.get('responsable_id')
+                participantes_json = request.POST.get('participantes', '[]')
+                observadores_json = request.POST.get('observadores', '[]')
             
             # Validaciones básicas
             if not tarea_id:
