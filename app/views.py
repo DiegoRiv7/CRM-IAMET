@@ -863,8 +863,14 @@ def api_actualizar_tarea(request):
     """
     global tareas_temporales
     
-    if not request.user.is_superuser:
-        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    # Debug logs
+    print(f"[DEBUG] Usuario: {request.user.username}, is_superuser: {request.user.is_superuser}")
+    print(f"[DEBUG] Content-Type: {request.content_type}")
+    print(f"[DEBUG] Método: {request.method}")
+    
+    # Cambiar la validación para permitir usuarios autenticados
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Usuario no autenticado'}, status=401)
     
     if request.method == 'POST':
         try:
@@ -876,6 +882,7 @@ def api_actualizar_tarea(request):
             # Obtener datos del request (manejar tanto JSON como form data)
             if request.content_type == 'application/json':
                 data = json.loads(request.body)
+                print(f"[DEBUG] Datos JSON recibidos: {data}")
                 tarea_id = data.get('tarea_id')
                 # Manejar tanto 'titulo' como 'nombre' para compatibilidad
                 titulo = data.get('titulo', data.get('nombre', '')).strip()
