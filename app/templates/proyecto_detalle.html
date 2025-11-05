@@ -3524,8 +3524,8 @@ const TareasProyectos = {
         const responsableContainer = document.getElementById('task-detail-responsable-container');
         if (responsableContainer && tarea.responsable) {
             responsableContainer.innerHTML = `
-                <div style="width: 2rem; height: 2rem; border-radius: 50%; background: ${this.getAvatarColor(tarea.responsable)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.875rem;">
-                    ${this.getInitials(tarea.responsable)}
+                <div style="width: 2rem; height: 2rem; border-radius: 50%; background: ${getAvatarColor(tarea.responsable)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.875rem;">
+                    ${getInitials(tarea.responsable)}
                 </div>
                 <span style="font-weight: 500; color: #E0E7FF;">${tarea.responsable}</span>
             `;
@@ -3568,8 +3568,8 @@ const TareasProyectos = {
                         gap: 0.75rem;
                     ">
                         <div style="display: flex; align-items: center; gap: 0.75rem;">
-                            <div style="width: 2rem; height: 2rem; border-radius: 50%; background: ${this.getAvatarColor(comentario.autor || 'Usuario')}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;">
-                                ${this.getInitials(comentario.autor || 'Usuario')}
+                            <div style="width: 2rem; height: 2rem; border-radius: 50%; background: ${getAvatarColor(comentario.autor || 'Usuario')}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;">
+                                ${getInitials(comentario.autor || 'Usuario')}
                             </div>
                             <div style="flex: 1;">
                                 <div style="font-weight: 600; color: #E0E7FF; font-size: 0.875rem;">${comentario.autor || 'Usuario'}</div>
@@ -3613,25 +3613,29 @@ const TareasProyectos = {
         // Implementación básica - puede expandirse según necesidades
         console.log('Completando tarea:', this.currentTaskId);
         // Aquí puedes agregar la lógica para actualizar el estado de la tarea
-    },
-    
-    // Utility functions
-    getInitials(name) {
-        if (!name) return '?';
-        return name.split(' ').map(word => word.charAt(0).toUpperCase()).slice(0, 2).join('');
-    },
-    
-    getAvatarColor(name) {
-        const colors = [
-            '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', 
-            '#06B6D4', '#F97316', '#84CC16', '#EC4899', '#6366F1'
-        ];
-        let hash = 0;
-        for (let i = 0; i < name.length; i++) {
-            hash = name.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        return colors[Math.abs(hash) % colors.length];
-    },
+    }
+}
+
+// Utility functions
+function getInitials(name) {
+    if (!name) return '?';
+    return name.split(' ').map(word => word.charAt(0).toUpperCase()).slice(0, 2).join('');
+}
+
+function getAvatarColor(name) {
+    const colors = [
+        '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', 
+        '#06B6D4', '#F97316', '#84CC16', '#EC4899', '#6366F1'
+    ];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+}
+
+// Object para controlar tareas
+const TaskController = {
     
     // Variable para controlar el estado del cronómetro
     isTaskRunning: false,
@@ -9326,6 +9330,7 @@ function cancelEdit() {
 function setCurrentTaskId(taskId) {
     currentTaskId = taskId;
 }
+
 </script>
 
 {% endblock %}
