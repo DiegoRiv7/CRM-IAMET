@@ -3789,90 +3789,7 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// Función de redirección comentada temporalmente
-// Inicio de función comentada
-(function() {
-    const redirectToTaskId = localStorage.getItem('redirectToTask');
-    const redirectTimestamp = localStorage.getItem('redirectToTaskTimestamp');
-    
-    if (redirectToTaskId && redirectTimestamp) {
-        // Verificar que no sea muy viejo (máximo 10 segundos)
-        const now = Date.now();
-        const timestamp = parseInt(redirectTimestamp);
-        
-        if (now - timestamp < 10000) { // 10 segundos
-            console.log('ACTIVANDO PANTALLA DE BLOQUEO TOTAL:', redirectToTaskId);
-            
-            // Crear pantalla de bloqueo INMEDIATA
-            const bloqueo = document.createElement('div');
-            bloqueo.id = 'pantalla-bloqueo-total';
-            bloqueo.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 100vh;
-                background: linear-gradient(135deg, #1a1f27 0%, #2d3748 100%);
-                z-index: 999999;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            `;
-            
-            bloqueo.innerHTML = `
-                <div style="text-align: center;">
-                    <div style="
-                        width: 60px;
-                        height: 60px;
-                        border: 3px solid rgba(255, 255, 255, 0.3);
-                        border-top: 3px solid #3B82F6;
-                        border-radius: 50%;
-                        animation: spin 1s linear infinite;
-                        margin: 0 auto 20px;
-                    "></div>
-                    <h2 style="margin: 0 0 10px 0; font-size: 1.5rem; font-weight: 600;">Abriendo tarea...</h2>
-                    <p style="margin: 0; opacity: 0.7; font-size: 0.9rem;">Redirigiendo...</p>
-                </div>
-                
-                <style>
-                    @keyframes spin {
-                        0% { transform: rotate(0deg); }
-                        100% { transform: rotate(360deg); }
-                    }
-                </style>
-            `;
-            
-            // Agregar inmediatamente al body
-            document.body.appendChild(bloqueo);
-            document.body.style.overflow = 'hidden';
-            
-            // Limpiar localStorage
-            localStorage.removeItem('redirectToTask');
-            localStorage.removeItem('redirectToTaskTimestamp');
-            
-            // Construir URL de tareas y proyectos con el task_id
-            const tareasUrl = `/app/tareas-proyectos/?task_id=${redirectToTaskId}`;
-            
-            console.log('✅ Redirigiendo con pantalla de bloqueo activa:', tareasUrl);
-            
-            // Redirección después de mostrar la pantalla
-            setTimeout(() => {
-                window.location.replace(tareasUrl);
-            }, 50);
-            
-            return;
-        } else {
-            // Timestamp muy viejo, limpiar
-            localStorage.removeItem('redirectToTask');
-            localStorage.removeItem('redirectToTaskTimestamp');
-            console.log('Timestamp de redireccion expirado, limpiado');
-        }
-    }
-})();
-// Fin de función comentada
+// Función de redirección eliminada para evitar errores de sintaxis
 
 document.addEventListener('DOMContentLoaded', function() {
     
@@ -5840,7 +5757,7 @@ async function populateUserDropdowns() {
             });
         } else {
             console.log('No se encontraron usuarios disponibles');
-            // Añadir mensaje informativo
+            // Agregar mensaje informativo
             const noUsersOption = document.createElement('option');
             noUsersOption.textContent = 'No hay usuarios disponibles';
             noUsersOption.disabled = true;
