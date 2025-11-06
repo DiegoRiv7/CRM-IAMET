@@ -491,14 +491,14 @@
 {% block extra_js %}
     <!-- jQuery -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- Select2 JS (depends on jQuery) -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <!-- FullCalendar JS -->
     <script src='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/6.1.11/index.global.min.js'></script>
     <!-- Moment.js for date formatting (optional, but useful) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-    <!-- Select2 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <!-- Select2 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
         function formatUser (user) {
@@ -532,9 +532,9 @@
         let allEvents = []; // To store all events fetched from the server
 
         let currentUser = {
-            id: {{ user.id }},
-            text: "{{ user.get_full_name|default:user.username }}",
-            avatar_url: "{% if user.userprofile.avatar %}{{ user.userprofile.avatar.url }}{% else %}/static/images/apple-touch-icon.png{% endif %}"
+            id: parseInt("{{ user.id }}"), // Ensure ID is parsed as integer
+            text: "{{ user.get_full_name|default:user.username|escapejs }}", // Escape for JS string
+            avatar_url: "{% if user.userprofile.avatar %}{{ user.userprofile.avatar.url|escapejs }}{% else %}/static/images/apple-touch-icon.png{% endif %}"
         };
 
         document.addEventListener('DOMContentLoaded', function() {
