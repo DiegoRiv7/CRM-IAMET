@@ -531,6 +531,12 @@
         let currentEvent = null; // To store the event being edited/viewed
         let allEvents = []; // To store all events fetched from the server
 
+        let currentUser = {
+            id: {{ user.id }},
+            text: "{{ user.get_full_name|default:user.username }}",
+            avatar_url: "{% if user.userprofile.avatar %}{{ user.userprofile.avatar.url }}{% else %}/static/images/apple-touch-icon.png{% endif %}"
+        };
+
         document.addEventListener('DOMContentLoaded', function() {
             var calendarEl = document.getElementById('calendar');
             var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
@@ -709,6 +715,15 @@
             document.getElementById('event-start').value = moment(dateStr).format('YYYY-MM-DDTHH:mm');
             document.getElementById('event-end').value = moment(dateStr).add(1, 'hour').format('YYYY-MM-DDTHH:mm');
             document.getElementById('delete-event-btn').style.display = 'none';
+
+            // Pre-select the current user as a participant
+            const participantSelect = $('#event-participants');
+            participantSelect.empty(); // Clear existing options
+            if (currentUser.id) {
+                participantSelect.append(new Option(currentUser.text, currentUser.id, true, true));
+                participantSelect.trigger('change');
+            }
+
             openModal();
         }
 
