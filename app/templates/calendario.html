@@ -111,12 +111,15 @@
             padding: 4px 6px;
             font-weight: 500;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            transition: all 0.2s ease;
+            transition: all 0.2s ease-in-out;
         }
 
         .fc .fc-daygrid-event:hover {
             transform: scale(1.05);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            z-index: 1000;
+            backface-visibility: hidden;
+            perspective: 1000px;
         }
 
         /* Modal Styles - iPadOS Inspired */
