@@ -2042,7 +2042,21 @@ class Actividad(models.Model):
         ('#FF2D55', 'Rosa'),
     ]
 
+    TIPO_ACTIVIDAD_CHOICES = [
+        ('llamada', 'Llamada'),
+        ('reunion', 'Reunión'),
+        ('tarea', 'Tarea'),
+        ('email', 'Email'),
+        ('otro', 'Otro'),
+    ]
+
     titulo = models.CharField(max_length=200, verbose_name="Título de la Actividad")
+    tipo_actividad = models.CharField(
+        max_length=20,
+        choices=TIPO_ACTIVIDAD_CHOICES,
+        default='otro',
+        verbose_name="Tipo de Actividad"
+    )
     descripcion = models.TextField(blank=True, null=True, verbose_name="Descripción")
     
     fecha_inicio = models.DateTimeField(verbose_name="Fecha y Hora de Inicio")

@@ -307,14 +307,98 @@
         .form-group {
             margin-bottom: 20px; /* Add margin-bottom to form groups */
         }
+
+        #calendar-sidebar {
+            height: calc(100vh - 4rem);
+            overflow-y: auto;
+        }
+
+        #user-filter-container .user-filter-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--apple-separator);
+        }
+
+        #user-filter-container .user-filter-item:last-child {
+            border-bottom: none;
+        }
+
+        #user-filter-container .user-filter-item input[type="checkbox"] {
+            margin-right: 12px;
+        }
+
+        #user-filter-container .user-filter-item label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        #user-filter-container .user-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            margin-right: 8px;
+            object-fit: cover;
+        }
+
+        .filter-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--apple-separator);
+        }
+
+        .filter-item:last-child {
+            border-bottom: none;
+        }
+
+        .filter-item input[type="checkbox"] {
+            margin-right: 12px;
+        }
+
+        .filter-item label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
     </style>
 {% endblock %}
 
 {% block content %}
 <div class="apple-bg"></div>
-<main class="flex flex-col items-center justify-start min-h-screen p-0">
-    <section class="w-full max-w-full mx-auto apple-fade-in" style="animation-delay:0.2s;">
+<main class="flex flex-row items-start justify-start min-h-screen p-4 md:p-6">
+    <aside id="calendar-sidebar" class="w-1/4 max-w-xs p-4 apple-card mr-4">
+        <h3 class="text-lg font-semibold mb-4">Calendarios</h3>
+        <div id="user-filter-container">
+            <!-- User filters will be dynamically inserted here -->
+        </div>
 
+        <h3 class="text-lg font-semibold mt-6 mb-4">Tipos de Actividad</h3>
+        <div id="activity-type-filter-container">
+            <div class="filter-item">
+                <input type="checkbox" id="type-llamada" value="llamada" checked onchange="filterCalendarEvents()">
+                <label for="type-llamada">Llamada</label>
+            </div>
+            <div class="filter-item">
+                <input type="checkbox" id="type-reunion" value="reunion" checked onchange="filterCalendarEvents()">
+                <label for="type-reunion">Reunión</label>
+            </div>
+            <div class="filter-item">
+                <input type="checkbox" id="type-tarea" value="tarea" checked onchange="filterCalendarEvents()">
+                <label for="type-tarea">Tarea</label>
+            </div>
+            <div class="filter-item">
+                <input type="checkbox" id="type-email" value="email" checked onchange="filterCalendarEvents()">
+                <label for="type-email">Email</label>
+            </div>
+            <div class="filter-item">
+                <input type="checkbox" id="type-otro" value="otro" checked onchange="filterCalendarEvents()">
+                <label for="type-otro">Otro</label>
+            </div>
+        </div>
+    </aside>
+    <section class="w-3/4 flex-grow mx-auto apple-fade-in" style="animation-delay:0.2s;">
         <div class="apple-card p-6 md:p-8">
             <div id='calendar'></div>
         </div>
@@ -332,46 +416,62 @@
             <form id="event-form">
                 {% csrf_token %}
                 <input type="hidden" id="event-id">
-                <div class="form-group">
-                    <label for="event-title">Título</label>
-                    <input type="text" id="event-title" required>
-                </div>
-                <div class="form-group">
-                    <label for="event-description">Descripción</label>
-                    <textarea id="event-description"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="event-start">Inicio</label>
-                    <input type="datetime-local" id="event-start" required>
-                </div>
-                <div class="form-group">
-                    <label for="event-end">Fin</label>
-                    <input type="datetime-local" id="event-end" required>
-                </div>
-                <div class="form-group">
-                    <label for="event-color">Color</label>
-                    <select id="event-color">
-                        <option value="#007AFF" style="background-color: #007AFF; color: white;">Azul</option>
-                        <option value="#34C759" style="background-color: #34C759; color: white;">Verde</option>
-                        <option value="#FF9500" style="background-color: #FF9500; color: white;">Naranja</option>
-                        <option value="#FF3B30" style="background-color: #FF3B30; color: white;">Rojo</option>
-                        <option value="#AF52DE" style="background-color: #AF52DE; color: white;">Morado</option>
-                        <option value="#5856D6" style="background-color: #5856D6; color: white;">Índigo</option>
-                        <option value="#FF2D55" style="background-color: #FF2D55; color: white;">Rosa</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="event-participants">Participantes</label>
-                    <select id="event-participants" multiple="multiple" style="width: 100%;">
-                        <!-- Options will be loaded dynamically -->
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="event-opportunity">Oportunidad Relacionada</label>
-                    <select id="event-opportunity" style="width: 100%;">
-                        <option value="">-- Seleccionar Oportunidad --</option>
-                        <!-- Options will be loaded dynamically -->
-                    </select>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <div class="form-group">
+                            <label for="event-title">Título</label>
+                            <input type="text" id="event-title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="event-description">Descripción</label>
+                            <textarea id="event-description"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="event-start">Inicio</label>
+                            <input type="datetime-local" id="event-start" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="event-end">Fin</label>
+                            <input type="datetime-local" id="event-end" required>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="form-group">
+                            <label for="event-tipo-actividad">Tipo de Actividad</label>
+                            <select id="event-tipo-actividad">
+                                <option value="llamada">Llamada</option>
+                                <option value="reunion">Reunión</option>
+                                <option value="tarea">Tarea</option>
+                                <option value="email">Email</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="event-color">Color</label>
+                            <select id="event-color">
+                                <option value="#007AFF" style="background-color: #007AFF; color: white;">Azul</option>
+                                <option value="#34C759" style="background-color: #34C759; color: white;">Verde</option>
+                                <option value="#FF9500" style="background-color: #FF9500; color: white;">Naranja</option>
+                                <option value="#FF3B30" style="background-color: #FF3B30; color: white;">Rojo</option>
+                                <option value="#AF52DE" style="background-color: #AF52DE; color: white;">Morado</option>
+                                <option value="#5856D6" style="background-color: #5856D6; color: white;">Índigo</option>
+                                <option value="#FF2D55" style="background-color: #FF2D55; color: white;">Rosa</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="event-participants">Participantes</label>
+                            <select id="event-participants" multiple="multiple" style="width: 100%;">
+                                <!-- Options will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="event-opportunity">Oportunidad Relacionada</label>
+                            <select id="event-opportunity" style="width: 100%;">
+                                <option value="">-- Seleccionar Oportunidad --</option>
+                                <!-- Options will be loaded dynamically -->
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
@@ -424,6 +524,7 @@
 
         let calendar;
         let currentEvent = null; // To store the event being edited/viewed
+        let allEvents = []; // To store all events fetched from the server
 
         document.addEventListener('DOMContentLoaded', function() {
             var calendarEl = document.getElementById('calendar');
@@ -458,17 +559,19 @@
                     })
                     .then(response => response.json())
                     .then(data => {
-                        const events = data.map(event => ({
+                        allEvents = data.map(event => ({
                             id: event.id,
                             title: event.title,
                             start: event.start,
                             end: event.end,
                             description: event.description,
                             color: event.color,
-                            participants: event.participants, // Array of user IDs
-                            opportunity: event.opportunity // Opportunity ID
+                            participants: event.participants, // Array of user objects
+                            opportunity: event.opportunity, // Opportunity object
+                            creado_por: event.creado_por, // User object
+                            tipo_actividad: event.tipo_actividad
                         }));
-                        successCallback(events);
+                        successCallback(allEvents);
                     })
                     .catch(error => {
                         console.error('Error fetching events:', error);
@@ -531,7 +634,56 @@
                     cache: true
                 }
             });
+
+            // Fetch users and populate sidebar
+            fetchUsersForSidebar();
         });
+
+        function fetchUsersForSidebar() {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            fetch('/app/api/users/', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const userFilterContainer = document.getElementById('user-filter-container');
+                let userFiltersHTML = '';
+                data.forEach(user => {
+                    userFiltersHTML += `
+                        <div class="user-filter-item">
+                            <input type="checkbox" id="user-${user.id}" value="${user.id}" checked onchange="filterCalendarEvents()">
+                            <label for="user-${user.id}">
+                                <img src="${user.avatar_url || '/static/images/apple-touch-icon.png'}" class="user-avatar">
+                                ${user.text}
+                            </label>
+                        </div>
+                    `;
+                });
+                userFilterContainer.innerHTML = userFiltersHTML;
+            })
+            .catch(error => console.error('Error fetching users for sidebar:', error));
+        }
+
+        function filterCalendarEvents() {
+            const selectedUserIds = Array.from(document.querySelectorAll('#user-filter-container input[type="checkbox"]:checked')).map(cb => cb.value);
+            const selectedActivityTypes = Array.from(document.querySelectorAll('#activity-type-filter-container input[type="checkbox"]:checked')).map(cb => cb.value);
+
+            const filteredEvents = allEvents.filter(event => {
+                const createdById = event.creado_por ? String(event.creado_por.id) : null;
+                const participantIds = event.participants ? event.participants.map(p => String(p.id)) : [];
+                const userMatch = selectedUserIds.includes(createdById) || participantIds.some(id => selectedUserIds.includes(id));
+
+                const activityTypeMatch = selectedActivityTypes.includes(event.tipo_actividad);
+
+                return userMatch && activityTypeMatch;
+            });
+            calendar.removeAllEvents();
+            calendar.addEventSource(filteredEvents);
+        }
 
         function openModal() {
             document.getElementById('event-modal').classList.add('show');
@@ -564,6 +716,7 @@
             document.getElementById('event-start').value = moment(event.start).format('YYYY-MM-DDTHH:mm');
             document.getElementById('event-end').value = moment(event.end).format('YYYY-MM-DDTHH:mm');
             document.getElementById('event-color').value = event.backgroundColor || '#007AFF';
+            document.getElementById('event-tipo-actividad').value = event.extendedProps.tipo_actividad || 'llamada';
             
             // Set participants
             if (event.extendedProps.participants && event.extendedProps.participants.length > 0) {
@@ -602,6 +755,7 @@
                 start: document.getElementById('event-start').value,
                 end: document.getElementById('event-end').value,
                 color: document.getElementById('event-color').value,
+                tipo_actividad: document.getElementById('event-tipo-actividad').value,
                 participants: $('#event-participants').val(), // Array of selected user IDs
                 opportunity: $('#event-opportunity').val() // Selected opportunity ID
             };
@@ -624,29 +778,6 @@
             .then(response => response.json())
             .then(data => {
                 if (data.id) {
-                    if (eventData.id) {
-                        // Update existing event
-                        currentEvent.setProp('title', data.title);
-                        currentEvent.setStart(data.start);
-                        currentEvent.setEnd(data.end);
-                        currentEvent.setProp('backgroundColor', data.color);
-                        currentEvent.setProp('borderColor', data.color);
-                        currentEvent.setExtendedProp('description', data.description);
-                        currentEvent.setExtendedProp('participants', data.participants);
-                        currentEvent.setExtendedProp('opportunity', data.opportunity);
-                    } else {
-                        // Add new event
-                        calendar.addEvent({
-                            id: data.id,
-                            title: data.title,
-                            start: data.start,
-                            end: data.end,
-                            description: data.description,
-                            color: data.color,
-                            participants: data.participants,
-                            opportunity: data.opportunity
-                        });
-                    }
                     calendar.refetchEvents(); // Refresh events
                     closeModal();
                 } else {
@@ -695,6 +826,7 @@
                 end: moment(event.end).format('YYYY-MM-DDTHH:mm'),
                 description: event.extendedProps.description,
                 color: event.backgroundColor,
+                tipo_actividad: event.extendedProps.tipo_actividad,
                 participants: event.extendedProps.participants ? event.extendedProps.participants.map(p => p.id) : [],
                 opportunity: event.extendedProps.opportunity ? event.extendedProps.opportunity.id : null
             };

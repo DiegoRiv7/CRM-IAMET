@@ -2178,6 +2178,7 @@ def actividad_list_create(request):
                 'color': actividad.color,
                 'participants': participants_data,
                 'opportunity': opportunity_data,
+                'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username}
             })
         return JsonResponse(events, safe=False)
 
@@ -2221,6 +2222,7 @@ def actividad_list_create(request):
             'color': actividad.color,
             'participants': participants_data,
             'opportunity': opportunity_data,
+            'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username}
         }, status=201)
     
     return JsonResponse({'error': 'Método no permitido'}, status=405)
@@ -2255,6 +2257,7 @@ def actividad_detail(request, pk):
             'color': actividad.color,
             'participants': participants_data,
             'opportunity': opportunity_data,
+            'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username}
         })
 
     elif request.method == 'PUT':
@@ -2301,6 +2304,7 @@ def actividad_detail(request, pk):
             'color': actividad.color,
             'participants': participants_data,
             'opportunity': opportunity_data,
+            'creado_por': {'id': actividad.creado_por.id, 'text': actividad.creado_por.get_full_name() or actividad.creado_por.username}
         })
 
     elif request.method == 'DELETE':

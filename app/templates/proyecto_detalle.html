@@ -3790,6 +3790,7 @@ function getCookie(name) {
 }
 
 // PANTALLA DE BLOQUEO INMEDIATA + REDIRECCION
+/*
 (function() {
     const redirectToTaskId = localStorage.getItem('redirectToTask');
     const redirectTimestamp = localStorage.getItem('redirectToTaskTimestamp');
@@ -3867,10 +3868,11 @@ function getCookie(name) {
             // Timestamp muy viejo, limpiar
             localStorage.removeItem('redirectToTask');
             localStorage.removeItem('redirectToTaskTimestamp');
-            console.log('🧹 Timestamp de redirección expirado, limpiado');
+            console.log('Timestamp de redireccion expirado, limpiado');
         }
     }
 })();
+*/
 
 document.addEventListener('DOMContentLoaded', function() {
     
@@ -5618,6 +5620,7 @@ function resetPowerTaskForm() {
 
 
 
+/*
 async function submitPowerTaskForm() {
     const taskData = collectPowerTaskData();
     const submitBtn = document.getElementById('submitTaskBtn');
@@ -5712,6 +5715,7 @@ async function submitPowerTaskForm() {
         alert('Error al crear la tarea: ' + error.message);
     }
 }
+*/
 
 function showSuccessNotification(message) {
     const notification = document.createElement('div');
