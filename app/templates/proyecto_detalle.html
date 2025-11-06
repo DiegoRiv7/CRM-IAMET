@@ -3290,8 +3290,24 @@
 
 <script>
 // Variables globales
-const PROYECTO_ID = document.querySelector('.proyecto-title')?.getAttribute('data-proyecto-id');
-console.log('PROYECTO_ID:', PROYECTO_ID);
+// Obtener PROYECTO_ID de múltiples fuentes posibles
+let PROYECTO_ID = document.querySelector('.proyecto-title')?.getAttribute('data-proyecto-id');
+
+// Si no se encuentra, intentar otras formas
+if (!PROYECTO_ID) {
+    PROYECTO_ID = document.querySelector('[data-proyecto-id]')?.getAttribute('data-proyecto-id');
+}
+
+// Si aún no se encuentra, intentar obtenerlo de la URL
+if (!PROYECTO_ID) {
+    const urlParts = window.location.pathname.split('/');
+    const proyectoIndex = urlParts.findIndex(part => part === 'proyecto');
+    if (proyectoIndex !== -1 && urlParts[proyectoIndex + 1]) {
+        PROYECTO_ID = urlParts[proyectoIndex + 1];
+    }
+}
+
+console.log('PROYECTO_ID detectado:', PROYECTO_ID);
 
 // Función para cargar tareas del proyecto
 async function cargarTareasDelProyecto() {
@@ -3892,8 +3908,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inicializar sistema de comentarios
     initFeedSystem();
     
-    // Cargar comentarios inicialmente
-    cargarComentarios();
+    // Cargar comentarios inicialmente con un pequeño delay
+    setTimeout(() => {
+        cargarComentarios();
+    }, 100);
 });
 
 // Inicializar sistema de feed
@@ -4064,6 +4082,20 @@ async function cargarComentarios() {
     const feedLoading = document.getElementById('feedLoading');
     const feedItems = document.getElementById('feedItems');
     const feedEmpty = document.getElementById('feedEmpty');
+    
+    // Verificar que los elementos existen
+    if (!feedLoading || !feedItems || !feedEmpty) {
+        console.error('Elementos de feed no encontrados');
+        return;
+    }
+    
+    // Verificar que PROYECTO_ID existe
+    if (!PROYECTO_ID) {
+        console.error('PROYECTO_ID no está definido');
+        feedLoading.style.display = 'none';
+        feedEmpty.style.display = 'block';
+        return;
+    }
     
     try {
         feedLoading.style.display = 'flex';
