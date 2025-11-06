@@ -3789,11 +3789,9 @@ function getCookie(name) {
     return cookieValue;
 }
 
-console.log('LINEA 3792 - Test de sintaxis');
-
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM cargado - iniciando aplicacion');
     
-    // Tab functionality
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
 
@@ -5677,9 +5675,9 @@ function showSuccessNotification(message) {
         setTimeout(() => notification.remove(), 300);
     }, 3000);
 }
-console.log('LINEA 5678 - Test de sintaxis');
 
 function collectPowerTaskData() {
+    console.log('Ejecutando collectPowerTaskData');
     const titleInput = document.getElementById('taskTitle');
     const editor = document.querySelector('.task-rich-editor');
     const dueDateInput = document.getElementById('taskDueDate');
