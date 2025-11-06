@@ -5953,7 +5953,7 @@ async function abrirDetallesTareaLegacy(tareaId) {
                 configurarBotonesAvanzadosSegunPermisos(tarea);
                 
                 // Cargar comentarios
-                cargarComentariosTarea(tareaId);
+                TareasProyectos.cargarComentariosTarea(tareaId);
                 
                 // Cargar etiquetas de ejemplo
                 cargarEtiquetasTarea(tarea);
@@ -6097,178 +6097,10 @@ function createSubtask(tareaId) {
     // TODO: Abrir modal de creación de subtarea
 }
 
-// Funciones para el nuevo modal avanzado
-async function cargarComentariosTarea(tareaId) {
-    const timeline = document.getElementById('activity-feed');
-    
-    try {
-        // Mostrar loading
-        timeline.innerHTML = `
-            <div style="text-align: center; padding: 2rem; color: var(--apple-label-secondary);">
-                <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
-                Cargando comentarios...
-            </div>
-        `;
-        
-        const response = await fetch(`/app/api/tarea/${tareaId}/comentarios/`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        if (data.success) {
-            mostrarComentariosTarea(data.comentarios);
-        } else {
-            console.error('Error al cargar comentarios:', data.error);
-            timeline.innerHTML = `
-                <div style="text-align: center; padding: 2rem; color: var(--apple-label-secondary);">
-                    Error al cargar comentarios.
-                </div>
-            `;
-        }
-    } catch (error) {
-        console.error('Error al cargar comentarios:', error);
-        timeline.innerHTML = `
-            <div style="text-align: center; padding: 2rem; color: var(--apple-label-secondary);">
-                Error al cargar comentarios.
-            </div>
-        `;
-    }
-}
 
-function mostrarComentariosTarea(comentarios) {
-    const timeline = document.getElementById('activity-feed');
-    if (!timeline) return;
 
-    timeline.innerHTML = '';
 
-    if (comentarios.length === 0) {
-        timeline.innerHTML = `
-            <div style="text-align: center; padding: 2rem; color: var(--apple-label-secondary);">
-                No hay comentarios aún. ¡Sé el primero en comentar!
-            </div>
-        `;
-        return;
-    }
 
-    comentarios.forEach(comentario => {
-        const comentarioElement = crearElementoComentarioTarea(comentario);
-        timeline.appendChild(comentarioElement);
-    });
-}
-
-function crearElementoComentarioTarea(comentario) {
-    const div = document.createElement('div');
-    div.setAttribute('data-comentario-id', comentario.id);
-    div.style.cssText = `
-        background-color: rgba(26, 31, 39, 0.6);
-        border: 1px solid rgba(45, 55, 72, 0.4);
-        border-radius: 0.75rem;
-        padding: 1rem;
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-    `;
-
-    const fecha = new Date(comentario.fecha_creacion);
-    const fechaFormateada = formatearFechaComentario(comentario.fecha_creacion);
-    const iniciales = getInitials(comentario.usuario__first_name, comentario.usuario__last_name);
-    const colorAvatar = getAvatarColor(comentario.usuario__username);
-
-    div.innerHTML = `
-        <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
-            <div style="background: ${colorAvatar}; color: white; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; font-size: 14px; font-weight: 600; flex-shrink: 0;">
-                ${iniciales}
-            </div>
-            <div style="flex: 1; min-width: 0;">
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                    <span style="font-weight: 600; color: var(--apple-label); font-size: 0.875rem;">${comentario.usuario__first_name} ${comentario.usuario__last_name}</span>
-                    <span style="color: var(--apple-label-secondary); font-size: 0.75rem;">${fechaFormateada}</span>
-                </div>
-                <div style="color: var(--apple-label); line-height: 1.5; word-wrap: break-word;">
-                    ${comentario.texto}
-                </div>
-            </div>
-        </div>
-    `;
-    
-    return div;
-}
-
-function formatearFechaComentario(fechaStr) {
-    const fecha = new Date(fechaStr);
-    const ahora = new Date();
-    const diferencia = ahora - fecha;
-    
-    const minutos = Math.floor(diferencia / 60000);
-    const horas = Math.floor(diferencia / 3600000);
-    const dias = Math.floor(diferencia / 86400000);
-    
-    if (minutos < 1) return 'hace un momento';
-    if (minutos < 60) return `hace ${minutos} minuto${minutos !== 1 ? 's' : ''}`;
-    if (horas < 24) return `hace ${horas} hora${horas !== 1 ? 's' : ''}`;
-    if (dias < 7) return `hace ${dias} día${dias !== 1 ? 's' : ''}`;
-    
-    return fecha.toLocaleDateString('es-ES', {
-        day: 'numeric',
-        month: 'short',
-        year: fecha.getFullYear() !== ahora.getFullYear() ? 'numeric' : undefined
-    });
-}
-
-async function submitTaskComment() {
-    const commentInput = document.getElementById('newTaskComment');
-    const comment = commentInput.value.trim();
-    
-    if (!comment) {
-        alert('Por favor escribe un comentario');
-        return;
-    }
-    
-    // Obtener el ID de la tarea actual desde el modal
-    const modal = document.getElementById('modal-detalle-tarea');
-    if (!modal || !modal.style.opacity || modal.style.opacity === '0') {
-        console.error('Modal no está visible o no se puede obtener el ID de la tarea');
-        return;
-    }
-    
-    const tareaId = modal.dataset.tareaId;
-    if (!tareaId) {
-        console.error('No se puede obtener el ID de la tarea');
-        return;
-    }
-    
-    try {
-        const formData = new FormData();
-        formData.append('contenido', comment);
-        
-        const response = await fetch(`/app/api/tarea/${tareaId}/comentarios/agregar/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
-            },
-            body: formData
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        if (data.success) {
-            // Limpiar el input
-            commentInput.value = '';
-            
-            // Recargar comentarios para mostrar el nuevo
-            await cargarComentariosTarea(tareaId);
-        } else {
-            console.error('Error al enviar comentario:', data.error);
-            alert('Error al enviar el comentario: ' + (data.error || 'Error desconocido'));
-        }
-    } catch (error) {
-        console.error('Error al enviar comentario:', error);
-        alert('Error al enviar el comentario. Por favor intenta de nuevo.');
-    }
-}
 
 // Funciones placeholder para botones del header
 function toggleTaskWatch() {
