@@ -5166,7 +5166,7 @@ async function cargarTareasDelProyecto() {
             } else {
                 tbody.innerHTML = data.tareas.map(tarea => `
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); cursor: pointer;" 
-                        onclick="TareasProyectos.verDetallesTarea(${tarea.id})" 
+                        onclick="window.location.href='/app/tareas-proyectos/?task=${tarea.id}'" 
                         onmouseover="this.style.background='rgba(255, 255, 255, 0.05)'" 
                         onmouseout="this.style.background='transparent'">
                         <td style="padding: 1rem; color: var(--apple-label); font-weight: 500;">

@@ -5157,6 +5157,28 @@ async function recargarUsuarios() {
 
 // --- DOMContentLoaded ---
 document.addEventListener('DOMContentLoaded', function() {
+    // --- Check for task parameter in URL ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const taskId = urlParams.get('task');
+    
+    if (taskId) {
+        console.log('🔗 Detected task parameter in URL:', taskId);
+        // Switch to tareas tab first
+        const tareasTab = document.querySelector('[data-tab="tareas"]');
+        if (tareasTab) {
+            tareasTab.click();
+        }
+        
+        // Wait a moment for the tab to load, then open the modal
+        setTimeout(() => {
+            TareasProyectos.mostrarDetalleTarea(taskId);
+        }, 500);
+        
+        // Clean URL after opening modal
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+    }
+    
     // --- Search Widget Logic ---
     const searchWidget = document.getElementById('search-widget');
     const searchIcon = document.getElementById('search-icon');
