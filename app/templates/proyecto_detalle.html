@@ -3789,8 +3789,8 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// PANTALLA DE BLOQUEO INMEDIATA + REDIRECCION
-/*
+// Función de redirección comentada temporalmente
+// Inicio de función comentada
 (function() {
     const redirectToTaskId = localStorage.getItem('redirectToTask');
     const redirectTimestamp = localStorage.getItem('redirectToTaskTimestamp');
@@ -3872,7 +3872,7 @@ function getCookie(name) {
         }
     }
 })();
-*/
+// Fin de función comentada
 
 document.addEventListener('DOMContentLoaded', function() {
     
@@ -3911,7 +3911,10 @@ document.addEventListener('DOMContentLoaded', function() {
     initFeedSystem();
     
     // Cargar comentarios inicialmente con un pequeño delay
+    console.log('PROYECTO DETALLE: Iniciando carga de comentarios...');
+    console.log('PROYECTO DETALLE: PROYECTO_ID =', PROYECTO_ID);
     setTimeout(() => {
+        console.log('PROYECTO DETALLE: Ejecutando cargarComentarios()');
         cargarComentarios();
     }, 100);
 });
@@ -4081,38 +4084,54 @@ function removeFile(index) {
 
 // Cargar comentarios
 async function cargarComentarios() {
+    console.log('CARGAR COMENTARIOS: Iniciando función cargarComentarios');
     const feedLoading = document.getElementById('feedLoading');
     const feedItems = document.getElementById('feedItems');
     const feedEmpty = document.getElementById('feedEmpty');
     
+    console.log('CARGAR COMENTARIOS: Elementos encontrados:', {
+        feedLoading: !!feedLoading,
+        feedItems: !!feedItems,
+        feedEmpty: !!feedEmpty
+    });
+    
     // Verificar que los elementos existen
     if (!feedLoading || !feedItems || !feedEmpty) {
-        console.error('Elementos de feed no encontrados');
+        console.error('CARGAR COMENTARIOS: Elementos de feed no encontrados');
         return;
     }
     
     // Verificar que PROYECTO_ID existe
     if (!PROYECTO_ID) {
-        console.error('PROYECTO_ID no está definido');
+        console.error('CARGAR COMENTARIOS: PROYECTO_ID no está definido');
         feedLoading.style.display = 'none';
         feedEmpty.style.display = 'block';
         return;
     }
+    
+    console.log('CARGAR COMENTARIOS: PROYECTO_ID =', PROYECTO_ID);
     
     try {
         feedLoading.style.display = 'flex';
         feedItems.style.display = 'none';
         feedEmpty.style.display = 'none';
         
-        console.log('Cargando comentarios para proyecto:', PROYECTO_ID);
-        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/comentarios/`);
+        console.log('CARGAR COMENTARIOS: Iniciando fetch para proyecto:', PROYECTO_ID);
+        const url = `/app/api/proyecto/${PROYECTO_ID}/comentarios/`;
+        console.log('CARGAR COMENTARIOS: URL de fetch:', url);
+        
+        const response = await fetch(url);
+        console.log('CARGAR COMENTARIOS: Response status:', response.status);
+        console.log('CARGAR COMENTARIOS: Response ok:', response.ok);
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const data = await response.json();
-        console.log('Respuesta del servidor:', data);
+        console.log('CARGAR COMENTARIOS: Respuesta del servidor:', data);
+        console.log('CARGAR COMENTARIOS: data.success =', data.success);
+        console.log('CARGAR COMENTARIOS: data.comentarios length =', data.comentarios ? data.comentarios.length : 'undefined');
         
         feedLoading.style.display = 'none';
         
@@ -5620,8 +5639,8 @@ function resetPowerTaskForm() {
 
 
 
-/*
 async function submitPowerTaskForm() {
+    console.log('INICIO submitPowerTaskForm - Función restaurada');
     const taskData = collectPowerTaskData();
     const submitBtn = document.getElementById('submitTaskBtn');
     const originalText = submitBtn.textContent;
@@ -5715,7 +5734,6 @@ async function submitPowerTaskForm() {
         alert('Error al crear la tarea: ' + error.message);
     }
 }
-*/
 
 function showSuccessNotification(message) {
     const notification = document.createElement('div');
