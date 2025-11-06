@@ -3568,7 +3568,7 @@ const TareasProyectos = {
             
             const activityFeed = document.getElementById('activity-feed');
             if (!activityFeed) {
-                console.error('❌ No se encontró el contenedor de comentarios');
+                console.error('ERROR: No se encontro el contenedor de comentarios');
                 return;
             }
             
@@ -3612,7 +3612,7 @@ const TareasProyectos = {
                 `;
             }
         } catch (error) {
-            console.error('❌ Error al cargar comentarios:', error);
+            console.error('ERROR: Error al cargar comentarios:', error);
         }
     },
     
@@ -3789,7 +3789,7 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// 🔥 PANTALLA DE BLOQUEO INMEDIATA + REDIRECCIÓN
+// PANTALLA DE BLOQUEO INMEDIATA + REDIRECCION
 (function() {
     const redirectToTaskId = localStorage.getItem('redirectToTask');
     const redirectTimestamp = localStorage.getItem('redirectToTaskTimestamp');
@@ -3800,7 +3800,7 @@ function getCookie(name) {
         const timestamp = parseInt(redirectTimestamp);
         
         if (now - timestamp < 10000) { // 10 segundos
-            console.log('🔥 ACTIVANDO PANTALLA DE BLOQUEO TOTAL:', redirectToTaskId);
+            console.log('ACTIVANDO PANTALLA DE BLOQUEO TOTAL:', redirectToTaskId);
             
             // Crear pantalla de bloqueo INMEDIATA
             const bloqueo = document.createElement('div');
@@ -5106,7 +5106,7 @@ function openCreateTaskModal() {
 }
 
 function cerrarModalCrearTareaProyecto() {
-    console.log('🔄 Cerrando modal crear tarea proyecto');
+    console.log('Cerrando modal crear tarea proyecto');
     const modal = document.getElementById('modal-crear-tarea-proyecto');
     if (modal) {
         modal.classList.remove('active');
@@ -5186,7 +5186,7 @@ function switchAssignmentTabProyecto(tabName) {
 }
 
 async function submitTaskFormProyecto() {
-    console.log('📝 Enviando formulario de tarea para proyecto:', PROYECTO_ID);
+    console.log('Enviando formulario de tarea para proyecto:', PROYECTO_ID);
     
     // Obtener datos del formulario
     const titleInput = document.getElementById('taskTitleProyecto');
@@ -5276,7 +5276,7 @@ async function submitTaskFormProyecto() {
         }
         
     } catch (error) {
-        console.error('❌ Error al crear tarea:', error);
+        console.error('ERROR: Error al crear tarea:', error);
         alert('Error al crear la tarea: ' + error.message);
         
     } finally {
@@ -5478,7 +5478,7 @@ async function updateExistingTask(tareaId) {
         
         if (response.ok && result.success) {
             // Éxito
-            submitBtn.textContent = '✓ Actualizada';
+            submitBtn.textContent = 'Actualizada';
             submitBtn.style.background = 'linear-gradient(135deg, #28a745, #34ce57)';
             
             setTimeout(() => {
@@ -5499,7 +5499,7 @@ async function updateExistingTask(tareaId) {
         console.error('Error al actualizar tarea:', error);
         
         // Mostrar error
-        submitBtn.textContent = '❌ Error';
+        submitBtn.textContent = 'Error';
         submitBtn.style.background = 'linear-gradient(135deg, #dc3545, #e55565)';
         
         setTimeout(() => {
@@ -5679,7 +5679,7 @@ async function submitPowerTaskForm() {
         
         if (response.ok && result.success) {
             // Éxito
-            submitBtn.textContent = '✓ Tarea Creada';
+            submitBtn.textContent = 'Tarea Creada';
             submitBtn.style.background = 'linear-gradient(135deg, #28a745, #34ce57)';
             
             setTimeout(() => {
@@ -5700,7 +5700,7 @@ async function submitPowerTaskForm() {
         console.error('Error al crear tarea:', error);
         
         // Mostrar error
-        submitBtn.textContent = '❌ Error';
+        submitBtn.textContent = 'Error';
         submitBtn.style.background = 'linear-gradient(135deg, #dc3545, #e55565)';
         
         setTimeout(() => {
@@ -9011,7 +9011,7 @@ function createSaveButton(saveCallback) {
 
 function createCancelButton() {
     const btn = document.createElement('button');
-    btn.textContent = '❌';
+    btn.textContent = 'X';
     btn.title = 'Cancelar';
     btn.style.cssText = `
         background: #FF3B30;

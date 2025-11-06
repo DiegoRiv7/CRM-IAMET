@@ -1615,59 +1615,32 @@
             {% endif %}
         </div>
         
-        <div class="apple-card text-center apple-float birthday-card" style="animation-delay: 0.2s;">
-            
-            <!-- Sparkles decoration -->
-            <div class="sparkles-container">
-                <div class="sparkle sparkle-1">✨</div>
-                <div class="sparkle sparkle-2">✨</div>
-                <div class="sparkle sparkle-3">✨</div>
-                <div class="sparkle sparkle-4">✨</div>
-                <div class="sparkle sparkle-5">✨</div>
-                <div class="sparkle sparkle-6">✨</div>
-            </div>
-            
-            <h4 class="apple-title-3 mb-4 birthday-title">Cumpleañero del Día</h4>
-            
-            <!-- 3D Birthday cake -->
-            <div class="birthday-cake-3d">
-                <div class="cake-base"></div>
-                <div class="cake-middle"></div>
-                <div class="cake-top"></div>
-                <div class="cake-candle candle-1"></div>
-                <div class="cake-candle candle-2"></div>
-                <div class="cake-candle candle-3"></div>
-                <div class="cake-flame flame-1"></div>
-                <div class="cake-flame flame-2"></div>
-                <div class="cake-flame flame-3"></div>
-            </div>
-            
-            <div class="birthday-avatar-container">
-                <img src="/static/images/2C34E717-CA30-490E-B2FA-81D70DC0B2D0.jpeg" 
-                     alt="Aaron Rojas" 
-                     class="apple-avatar mx-auto mb-4 birthday-avatar"/>
-                <div class="confetti-shower"></div>
-            </div>
-            
-            <h5 class="apple-headline mb-2 birthday-name">Aaron Rojas</h5>
-            <p class="apple-body birthday-message">
-                ¡Feliz Cumpleaños!<br>
-                <span style="color: var(--apple-blue); font-weight: 500;">¡Que tengas un día maravilloso!</span>
-            </p>
-            
-            <!-- Gift boxes decoration -->
-            <div class="gift-boxes">
-                <div class="gift-box gift-1">
-                    <div class="gift-lid"></div>
-                    <div class="gift-ribbon-h"></div>
-                    <div class="gift-ribbon-v"></div>
+        <div class="apple-card text-center apple-float" style="animation-delay: 0.2s;">
+            <h4 class="apple-title-3 mb-4">Empleado del Día</h4>
+            {% if usuario_dia %}
+                {% if usuario_dia.avatar_url %}
+                    <img src="{{ usuario_dia.avatar_url }}" 
+                         alt="Avatar dia" 
+                         class="apple-avatar mx-auto mb-4"/>
+                {% else %}
+                    <div class="mx-auto mb-4" style="width: 80px; height: 80px;">
+                        {{ usuario_dia.user|user_avatar:"80" }}
+                    </div>
+                {% endif %}
+                <h5 class="apple-headline mb-2">{{ usuario_dia.nombre }}</h5>
+                <p class="apple-body">
+                    Oportunidades creadas: <span style="color: var(--apple-blue); font-weight: 500;">{{ usuario_dia.oportunidades_creadas }}</span><br>
+                    Monto total: <span style="color: var(--apple-blue); font-weight: 500;">${{ usuario_dia.monto_total_dia|format_currency_es }}</span>
+                </p>
+            {% else %}
+                <div class="apple-avatar mx-auto mb-4 flex items-center justify-center" style="background: var(--apple-background-tertiary);">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--apple-gray);">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
                 </div>
-                <div class="gift-box gift-2">
-                    <div class="gift-lid"></div>
-                    <div class="gift-ribbon-h"></div>
-                    <div class="gift-ribbon-v"></div>
-                </div>
-            </div>
+                <p class="apple-body" style="color: var(--apple-gray);">Aún no hay empleado destacado hoy.</p>
+            {% endif %}
         </div>
     </section>
     <!-- Apple Table Section -->
