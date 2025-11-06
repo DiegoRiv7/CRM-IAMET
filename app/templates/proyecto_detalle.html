@@ -1049,7 +1049,7 @@
         background: rgba(10, 132, 255, 0.3);
     }
 
-    /* Estilos para edición de comentarios */
+    /* Estilos para edicion de comentarios */
     .edit-mode {
         position: relative;
     }
@@ -1117,7 +1117,7 @@
         background: rgba(255, 255, 255, 0.15);
     }
 
-    /* Modal personalizado para confirmación de eliminación */
+    /* Modal personalizado para confirmación de eliminacion */
     .delete-modal {
         position: fixed;
         top: 0;
@@ -3290,7 +3290,7 @@
 
 <script>
 // Variables globales
-// Obtener PROYECTO_ID de múltiples fuentes posibles
+// Obtener PROYECTO_ID de multiples fuentes posibles
 let PROYECTO_ID = document.querySelector('.proyecto-title')?.getAttribute('data-proyecto-id');
 
 // Si no se encuentra, intentar otras formas
@@ -3298,7 +3298,7 @@ if (!PROYECTO_ID) {
     PROYECTO_ID = document.querySelector('[data-proyecto-id]')?.getAttribute('data-proyecto-id');
 }
 
-// Si aún no se encuentra, intentar obtenerlo de la URL
+// Si aun no se encuentra, intentar obtenerlo de la URL
 if (!PROYECTO_ID) {
     const urlParts = window.location.pathname.split('/');
     const proyectoIndex = urlParts.findIndex(part => part === 'proyecto');
@@ -3309,7 +3309,7 @@ if (!PROYECTO_ID) {
 
 console.log('PROYECTO_ID detectado:', PROYECTO_ID);
 
-// Función para cargar tareas del proyecto
+// Funcion para cargar tareas del proyecto
 async function cargarTareasDelProyecto() {
     try {
         console.log('Cargando tareas del proyecto:', PROYECTO_ID);
@@ -3473,14 +3473,14 @@ const TareasProyectos = {
     },
     
     poblarModalDetalleTarea(tarea) {
-        // Establecer el ID de la tarea actual para edición
+        // Establecer el ID de la tarea actual para edicion
         setCurrentTaskId(tarea.id);
         
         // Título
         const titulo = document.getElementById('task-detail-titulo');
         if (titulo) titulo.textContent = tarea.titulo || tarea.nombre || 'Sin título';
         
-        // Descripción
+        // Descripcion
         const descripcion = document.getElementById('task-detail-descripcion');
         if (descripcion) descripcion.textContent = tarea.descripcion || 'Sin descripción';
         
@@ -3510,7 +3510,7 @@ const TareasProyectos = {
         // Prioridad
         const prioridad = document.getElementById('task-detail-prioridad');
         if (prioridad) {
-            // Guardar el valor de prioridad original para edición
+            // Guardar el valor de prioridad original para edicion
             prioridad.setAttribute('data-priority-value', tarea.prioridad || 'normal');
             
             const prioridadTexto = tarea.prioridad === 'alta' ? 'Alta' : 'Normal';
@@ -3656,7 +3656,7 @@ const TaskController = {
     // Variable para controlar el estado del cronómetro
     isTaskRunning: false,
 
-    // Función para alternar entre iniciar/pausar tarea
+    // Funcion para alternar entre iniciar/pausar tarea
     toggleTaskRunning() {
         this.isTaskRunning = !this.isTaskRunning;
         const btnStart = document.getElementById('btn-start-task');
@@ -3675,7 +3675,7 @@ const TaskController = {
         }
     },
 
-    // Función para añadir comentarios del sistema
+    // Funcion para agregar comentarios del sistema
     addSystemComment(text, color) {
         const activityFeed = document.getElementById('activity-feed');
         if (!activityFeed) return;
@@ -3704,7 +3704,7 @@ const PROYECTO_NOMBRE = "{{ proyecto.nombre|escapejs }}";
 const CURRENT_USER_ID = {{ user.id }};
 const CURRENT_USER_NAME = "{{ user.first_name }} {{ user.last_name }}".trim() || "{{ user.username }}" || "Usuario";
 
-// Función para formatear fechas
+// Funcion para formatear fechas
 function formatearFecha(fechaStr) {
     if (!fechaStr) return '-';
     
@@ -3719,7 +3719,7 @@ function formatearFecha(fechaStr) {
     return fecha.toLocaleDateString('es-ES', opciones);
 }
 
-// Función para generar badge de estado
+// Funcion para generar badge de estado
 function getEstadoBadge(estado) {
     const estadosConfig = {
         'pendiente': {
@@ -3773,7 +3773,7 @@ function getEstadoBadge(estado) {
 let attachedFiles = [];
 let isSubmitting = false;
 
-// Función para obtener cookies
+// Funcion para obtener cookies
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -3789,7 +3789,7 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// Función de redirección eliminada para evitar errores de sintaxis
+// Funcion de redireccion eliminada para evitar errores de sintaxis
 
 document.addEventListener('DOMContentLoaded', function() {
     
@@ -4210,13 +4210,13 @@ async function enviarComentario() {
     }
 }
 
-// Variables para edición
+// Variables para edicion
 let comentarioEnEdicion = null;
 let contenidoOriginal = '';
 
 // Editar comentario
 function editarComentario(comentarioId) {
-    // Si hay otro comentario en edición, cancelarlo
+    // Si hay otro comentario en edicion, cancelarlo
     if (comentarioEnEdicion && comentarioEnEdicion !== comentarioId) {
         cancelarEdicion();
     }
@@ -4228,7 +4228,7 @@ function editarComentario(comentarioId) {
     contenidoOriginal = contentDiv.textContent.trim();
     comentarioEnEdicion = comentarioId;
     
-    // Crear textarea para edición
+    // Crear textarea para edicion
     const textarea = document.createElement('textarea');
     textarea.className = 'edit-textarea';
     textarea.value = contenidoOriginal;
@@ -4242,7 +4242,7 @@ function editarComentario(comentarioId) {
         <button class="btn-edit-action btn-edit-save" onclick="guardarEdicion(${comentarioId})" disabled>Guardar</button>
     `;
     
-    // Crear contenedor de edición
+    // Crear contenedor de edicion
     const editContainer = document.createElement('div');
     editContainer.className = 'edit-mode';
     editContainer.id = `edit-container-${comentarioId}`;
@@ -4283,7 +4283,7 @@ function editarComentario(comentarioId) {
     });
 }
 
-// Cancelar edición
+// Cancelar edicion
 function cancelarEdicion() {
     if (!comentarioEnEdicion) return;
     
@@ -4302,7 +4302,7 @@ function cancelarEdicion() {
     contenidoOriginal = '';
 }
 
-// Guardar edición
+// Guardar edicion
 async function guardarEdicion(comentarioId) {
     const textarea = document.getElementById(`edit-textarea-${comentarioId}`);
     const saveBtn = document.querySelector('.btn-edit-save');
@@ -4350,20 +4350,20 @@ async function guardarEdicion(comentarioId) {
             
             cancelarEdicion();
         } else {
-            alert('Error: ' + (data.error || 'No se pudo guardar la edición'));
+            alert('Error: ' + (data.error || 'No se pudo guardar la edicion'));
             saveBtn.disabled = false;
             saveBtn.textContent = 'Guardar';
         }
         
     } catch (error) {
-        console.error('Error guardando edición:', error);
+        console.error('Error guardando edicion:', error);
         alert('Error de conexión. Intenta nuevamente.');
         saveBtn.disabled = false;
         saveBtn.textContent = 'Guardar';
     }
 }
 
-// Variables para eliminación
+// Variables para eliminacion
 let comentarioAEliminar = null;
 
 // Eliminar comentario
@@ -4377,14 +4377,14 @@ function eliminarComentario(comentarioId) {
     btnConfirm.onclick = confirmarEliminacion;
 }
 
-// Cerrar modal de eliminación
+// Cerrar modal de eliminacion
 function cerrarModalEliminar() {
     const modal = document.getElementById('deleteModal');
     modal.classList.remove('active');
     comentarioAEliminar = null;
 }
 
-// Confirmar eliminación
+// Confirmar eliminacion
 async function confirmarEliminacion() {
     if (!comentarioAEliminar) return;
     
@@ -4437,7 +4437,7 @@ document.addEventListener('keydown', function(e) {
             cerrarModalEliminar();
         }
         
-        // También cancelar edición si está activa
+        // También cancelar edicion si está activa
         if (comentarioEnEdicion) {
             cancelarEdicion();
         }
@@ -4460,7 +4460,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const searchValue = searchInputTareas.value.trim();
         console.log('Searching for tasks:', searchValue);
         // Aquí se implementaría la lógica de búsqueda de tareas, por ejemplo, recargar la tabla con resultados filtrados
-        // Para una implementación completa, necesitarías una API o una función de filtrado de datos en el frontend.
+        // Para una implementacion completa, necesitarías una API o una función de filtrado de datos en el frontend.
     }
 
     if (searchIconTareas && searchWidgetTareas && searchInputTareas) {
@@ -5085,7 +5085,7 @@ let selectedResponsibleProyecto = null;
 let selectedParticipantsProyecto = [];
 let selectedObserversProyecto = [];
 
-// Función para inicializar tabs de asignación específicos del proyecto
+// Funcion para inicializar tabs de asignación específicos del proyecto
 function initializeAssignmentTabsProyecto() {
     const modal = document.getElementById('modal-crear-tarea-proyecto');
     if (!modal) return;
@@ -5230,7 +5230,7 @@ async function submitTaskFormProyecto() {
 </script>
 
 <script>
-    // TODO: Código del modal de creación de tareas - necesita implementación completa
+    // TODO: Código del modal de creación de tareas - necesita implementacion completa
     /*
     Este código está comentado porque hace referencia a variables no definidas:
     - modal
@@ -5255,7 +5255,7 @@ async function submitTaskFormProyecto() {
     document.addEventListener('keydown', function(e) {
         if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && modal.classList.contains('active')) {
             e.preventDefault();
-            // Solo llamar submitPowerTaskForm si no es edición
+            // Solo llamar submitPowerTaskForm si no es edicion
             if (!tareaParaEditar) {
                 submitPowerTaskForm();
             }
@@ -5264,7 +5264,7 @@ async function submitTaskFormProyecto() {
     */
 }
 
-// Función para poblar el formulario con datos de tarea existente
+// Funcion para poblar el formulario con datos de tarea existente
 function populateEditForm(tarea) {
     // Actualizar título del modal
     const titleInput = document.getElementById('taskTitle');
@@ -5297,7 +5297,7 @@ function populateEditForm(tarea) {
         submitBtn.setAttribute('onclick', `updateExistingTask(${tarea.id})`);
     }
     
-    // Agregar ID de tarea para edición
+    // Agregar ID de tarea para edicion
     const form = document.getElementById('powerTaskForm');
     if (form) {
         form.setAttribute('data-editing-task-id', tarea.id);
@@ -5343,7 +5343,7 @@ function initializePowerTaskEditor() {
     }, 100);
 }
 
-// Función para resetear el formulario al modo creación
+// Funcion para resetear el formulario al modo creación
 function resetTaskForm() {
     // Restaurar texto del botón usando ID específico
     const submitBtn = document.getElementById('submitTaskBtn');
@@ -5356,14 +5356,14 @@ function resetTaskForm() {
         submitBtn.style.background = '';
     }
     
-    // Remover ID de edición
+    // Remover ID de edicion
     const form = document.getElementById('powerTaskForm');
     if (form) {
         form.removeAttribute('data-editing-task-id');
     }
 }
 
-// Función para actualizar tarea existente
+// Funcion para actualizar tarea existente
 async function updateExistingTask(tareaId) {
     const taskData = collectPowerTaskData();
     const submitBtn = document.getElementById('submitTaskBtn');
@@ -5773,7 +5773,7 @@ async function populateUserDropdowns() {
     }
 }
 
-// Función para formatear fechas
+// Funcion para formatear fechas
 function formatearFecha(fechaStr) {
     if (!fechaStr) return '-';
     
@@ -5789,7 +5789,7 @@ function formatearFecha(fechaStr) {
     return fecha.toLocaleDateString('es-ES', opciones);
 }
 
-// Función para generar badge de estado
+// Funcion para generar badge de estado
 function getEstadoBadge(estado) {
     const estadosConfig = {
         'pendiente': {
@@ -5873,7 +5873,7 @@ async function abrirDetallesTareaLegacy(tareaId) {
                     }
                 }
                 
-                // Descripción
+                // Descripcion
                 const descContent = document.getElementById('taskDetailDescription');
                 if (descContent) {
                     if (tarea.descripcion && tarea.descripcion.trim()) {
@@ -5951,7 +5951,7 @@ async function abrirDetallesTareaLegacy(tareaId) {
     }
 }
 
-// Función para cerrar el modal de detalles
+// Funcion para cerrar el modal de detalles
 function closeTaskDetailModal() {
     const modal = document.getElementById('modal-detalle-tarea');
     if (modal) {
@@ -5962,7 +5962,7 @@ function closeTaskDetailModal() {
     }
 }
 
-// Función para configurar botones según permisos del usuario (para header actions)
+// Funcion para configurar botones según permisos del usuario (para header actions)
 function configurarBotonesAvanzadosSegunPermisos(tarea) {
     // Obtener los botones del header con verificaciones de null
     const headerStartBtn = document.getElementById('headerStartTaskBtn');
@@ -6027,7 +6027,7 @@ async function editTask(tareaId) {
                 // Cerrar modal de detalles
                 closeTaskDetailModal();
                 
-                // Abrir modal de creación en modo edición
+                // Abrir modal de creación en modo edicion
                 openCreateTaskModal(tarea);
             } else {
                 alert('No se encontró la tarea para editar');
@@ -6042,7 +6042,7 @@ async function editTask(tareaId) {
 function deleteTask(tareaId) {
     if (confirm('¿Estás seguro de que quieres eliminar esta tarea? Esta acción no se puede deshacer.')) {
         alert('Función de eliminar tarea en desarrollo. ID: ' + tareaId);
-        // TODO: Implementar eliminación de tarea
+        // TODO: Implementar eliminacion de tarea
     }
 }
 
@@ -6082,7 +6082,7 @@ function shareTask() {
     alert('Función de compartir tarea en desarrollo');
 }
 
-// Función para editar descripción de tarea
+// Funcion para editar descripción de tarea
 function editTaskDescription() {
     const descContent = document.getElementById('taskDetailDescription');
     const descEdit = document.getElementById('taskDescriptionEdit');
@@ -6098,7 +6098,7 @@ function editTaskDescription() {
     textarea.focus();
 }
 
-// Cancelar edición de descripción
+// Cancelar edicion de descripción
 function cancelDescriptionEdit() {
     const descContent = document.getElementById('taskDetailDescription');
     const descEdit = document.getElementById('taskDescriptionEdit');
@@ -6107,7 +6107,7 @@ function cancelDescriptionEdit() {
     descEdit.style.display = 'none';
 }
 
-// Guardar edición de descripción
+// Guardar edicion de descripción
 function saveDescriptionEdit() {
     const textarea = document.getElementById('taskDescriptionTextarea');
     const descContent = document.getElementById('taskDetailDescription');
@@ -6516,7 +6516,7 @@ function crearSubTarea(tareaId = null) {
     transform: translateY(-1px);
 }
 
-/* Estilos para edición de descripción */
+/* Estilos para edicion de descripción */
 .task-description-edit {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -7262,7 +7262,7 @@ function crearSubTarea(tareaId = null) {
     background: var(--apple-label-tertiary);
 }
 
-/* Formulario de edición de comentarios */
+/* Formulario de edicion de comentarios */
 .task-timeline-panel .edit-comment-textarea {
     width: 100%;
     background: var(--apple-background-tertiary);
@@ -8146,7 +8146,7 @@ function crearSubTarea(tareaId = null) {
 
 
 <script>
-// Función para generar badges de estado de tareas
+// Funcion para generar badges de estado de tareas
 function getEstadoBadgeHTML(estado) {
     const estadosConfig = {
         'pendiente': { label: 'Pendiente', color: '#8E8E93', bgColor: 'rgba(142, 142, 147, 0.2)', icon: '○' },
@@ -8774,12 +8774,12 @@ Puedes usar @username para mencionar a otros usuarios"></textarea>
 </div>
 
 <script>
-// Variables globales para edición
+// Variables globales para edicion
 let currentEditingElement = null;
 let originalValue = null;
 let currentTaskId = null;
 
-// Función para hacer elementos editables
+// Funcion para hacer elementos editables
 function makeEditable(field) {
     if (currentEditingElement) {
         cancelEdit();
@@ -8798,7 +8798,7 @@ function makeEditable(field) {
     currentEditingElement = { element, field };
     originalValue = field === 'priority' ? element.getAttribute('data-priority-value') || 'normal' : element.textContent;
     
-    // Crear controles de edición según el tipo de campo
+    // Crear controles de edicion según el tipo de campo
     if (field === 'title') {
         createTitleEditor(element);
     } else if (field === 'description') {
@@ -9055,7 +9055,7 @@ async function saveEdit(field, newValue) {
         } else if (error.message.includes('403')) {
             errorMessage += 'No tienes permisos para editar esta tarea.';
         } else if (error.message.includes('404')) {
-            errorMessage += 'La función de edición no está disponible.';
+            errorMessage += 'La función de edicion no está disponible.';
         } else {
             errorMessage += error.message;
         }
@@ -9113,7 +9113,7 @@ function cancelEdit() {
     
     const { element } = currentEditingElement;
     
-    // Remover elementos de edición
+    // Remover elementos de edicion
     const parent = element.parentNode;
     const inputs = parent.querySelectorAll('input, textarea, select');
     const buttons = parent.querySelectorAll('button[title="Guardar"], button[title="Cancelar"]');
@@ -9129,7 +9129,7 @@ function cancelEdit() {
     originalValue = null;
 }
 
-// Función para establecer el ID de la tarea actual cuando se abre el modal
+// Funcion para establecer el ID de la tarea actual cuando se abre el modal
 function setCurrentTaskId(taskId) {
     currentTaskId = taskId;
 }
