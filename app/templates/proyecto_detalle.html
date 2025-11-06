@@ -3702,7 +3702,7 @@ const TaskController = {
 
 const PROYECTO_NOMBRE = "{{ proyecto.nombre|escapejs }}";
 const CURRENT_USER_ID = {{ user.id }};
-const CURRENT_USER_NAME = "{{ user.first_name }} {{ user.last_name }}".trim() || "{{ user.username }}" || "Usuario";
+const CURRENT_USER_NAME = "{{ user.first_name|escapejs }} {{ user.last_name|escapejs }}".trim() || "{{ user.username|escapejs }}" || "Usuario";
 
 // Funcion para formatear fechas
 function formatearFecha(fechaStr) {
