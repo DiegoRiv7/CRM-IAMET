@@ -3532,11 +3532,18 @@ Object.assign(TareasProyectos, {
         }
 
         try {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+            console.log('🔍 DEBUG Toggle Timer - Proyecto Detalle:');
+            console.log('🔍 currentTaskId:', this.currentTaskId);
+            console.log('🔍 CSRF Token encontrado:', csrfToken ? 'SÍ' : 'NO');
+            console.log('🔍 CSRF Token valor:', csrfToken);
+            console.log('🔍 URL completa:', `/app/api/tarea/${this.currentTaskId}/toggle-timer/`);
+            
             const response = await fetch(`/app/api/tarea/${this.currentTaskId}/toggle-timer/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                    'X-CSRFToken': csrfToken || ''
                 },
                 body: JSON.stringify({ action: 'toggle' })
             });
