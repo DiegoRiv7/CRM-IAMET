@@ -22,4 +22,3 @@ class Migration(migrations.Migration):
             field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='archivos', to='app.proyecto', verbose_name='Proyecto'),
         ),
     ]
-EOF < /dev/null
