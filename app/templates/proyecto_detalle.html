@@ -5166,7 +5166,7 @@ async function cargarTareasDelProyecto() {
             } else {
                 tbody.innerHTML = data.tareas.map(tarea => `
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); cursor: pointer;" 
-                        onclick="window.location.href='/app/tareas-proyectos/?task=${tarea.id}'" 
+                        onclick="TareasProyectos.mostrarDetalleTarea(${tarea.id})" 
                         onmouseover="this.style.background='rgba(255, 255, 255, 0.05)'" 
                         onmouseout="this.style.background='transparent'">
                         <td style="padding: 1rem; color: var(--apple-label); font-weight: 500;">
@@ -6686,14 +6686,30 @@ function getEstadoBadgeHTML(estado) {
                 
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <!-- Título -->
-                    <h1 id="task-detail-titulo" style="
-                        font-size: 1.875rem; 
-                        font-weight: 800; 
-                        color: #E0E7FF; 
-                        line-height: 1.2; 
-                        max-width: 80%; 
-                        margin: 0;
-                    "></h1>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; max-width: 80%;">
+                        <h1 id="task-detail-titulo" style="
+                            font-size: 1.875rem; 
+                            font-weight: 800; 
+                            color: #E0E7FF; 
+                            line-height: 1.2; 
+                            margin: 0;
+                            cursor: pointer;
+                            padding: 0.25rem;
+                            border-radius: 4px;
+                            transition: background 0.2s ease;
+                        " onclick="makeEditable('title')" title="Click para editar"></h1>
+                        <button id="edit-title-btn" style="
+                            background: rgba(10, 132, 255, 0.1);
+                            border: 1px solid rgba(10, 132, 255, 0.3);
+                            color: #0A84FF;
+                            border-radius: 4px;
+                            padding: 0.25rem 0.5rem;
+                            font-size: 0.75rem;
+                            cursor: pointer;
+                            opacity: 0.7;
+                            transition: opacity 0.2s ease;
+                        " onclick="makeEditable('title')" title="Editar título">✏️</button>
+                    </div>
                     
                     <!-- Botón de Acción Rápida -->
                     <div style="display: flex; gap: 0.5rem;">
@@ -6721,7 +6737,20 @@ function getEstadoBadgeHTML(estado) {
 
             <!-- Descripción -->
             <section style="display: flex; flex-direction: column; gap: 0.75rem;">
-                <h2 style="font-size: 0.875rem; font-weight: 600; text-transform: uppercase; color: #9CA3AF; letter-spacing: 0.1em; margin: 0;">Descripción</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="font-size: 0.875rem; font-weight: 600; text-transform: uppercase; color: #9CA3AF; letter-spacing: 0.1em; margin: 0;">Descripción</h2>
+                    <button id="edit-description-btn" style="
+                        background: rgba(10, 132, 255, 0.1);
+                        border: 1px solid rgba(10, 132, 255, 0.3);
+                        color: #0A84FF;
+                        border-radius: 4px;
+                        padding: 0.25rem 0.5rem;
+                        font-size: 0.75rem;
+                        cursor: pointer;
+                        opacity: 0.7;
+                        transition: opacity 0.2s ease;
+                    " onclick="makeEditable('description')" title="Editar descripción">✏️</button>
+                </div>
                 <div id="task-detail-descripcion" style="
                     padding: 0.5rem; 
                     margin-left: -0.5rem; 
@@ -6729,426 +6758,9 @@ function getEstadoBadgeHTML(estado) {
                     line-height: 1.625; 
                     min-height: 50px;
                     border-radius: 0.375rem;
-                "></div>
-            </section>
-            
-            <!-- Feed de Comentarios -->
-            <section style="display: flex; flex-direction: column; gap: 1.5rem; padding-top: 1rem;">
-                <h2 style="font-size: 0.875rem; font-weight: 600; text-transform: uppercase; color: #9CA3AF; letter-spacing: 0.1em; margin: 0;">Comentarios</h2>
-                
-                <!-- Área de Entrada de Comentarios -->
-                <div style="
-                    background-color: rgba(26, 31, 39, 0.8); 
-                    border: 1px solid rgba(45, 55, 72, 0.6);
-                    border-radius: 0.75rem; 
-                    box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
-                    padding: 1rem;
-                ">
-                    <form id="comment-form" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                        <div style="position: relative;">
-                            <textarea id="comment-input" rows="3" style="
-                                width: 100%; 
-                                background: transparent; 
-                                color: #E0E7FF; 
-                                resize: vertical; 
-                                border: none;
-                                outline: none;
-                                font-family: inherit;
-                                line-height: 1.5;
-                                min-height: 60px;
-                                max-height: 200px;
-                            " placeholder="Escribe tu comentario o actualización...
-
-Puedes usar @username para mencionar a otros usuarios"></textarea>
-                            <div style="
-                                position: absolute;
-                                bottom: 0.5rem;
-                                right: 0.5rem;
-                                display: flex;
-                                align-items: center;
-                                gap: 0.5rem;
-                                font-size: 0.75rem;
-                                color: #9CA3AF;
-                            ">
-                                <span id="char-counter">0</span>
-                                <span>caracteres</span>
-                            </div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <button type="button" id="btn-mention" style="
-                                    padding: 0.25rem 0.5rem;
-                                    font-size: 0.75rem;
-                                    color: #9CA3AF;
-                                    background: none;
-                                    border: 1px solid rgba(156, 163, 175, 0.3);
-                                    border-radius: 0.25rem;
-                                    cursor: pointer;
-                                    transition: all 0.2s;
-                                " onmouseover="this.style.color='#E0E7FF'; this.style.borderColor='rgba(224, 231, 255, 0.5)'" 
-                                   onmouseout="this.style.color='#9CA3AF'; this.style.borderColor='rgba(156, 163, 175, 0.3)'"
-                                   title="Mencionar usuario">
-                                    @ Mencionar
-                                </button>
-                                <div style="color: #9CA3AF; font-size: 0.75rem;">
-                                    Escribe @ seguido del nombre de usuario
-                                </div>
-                            </div>
-                            <button type="submit" id="btn-enviar-comentario" style="
-                                padding: 0.5rem 1rem; 
-                                font-size: 0.875rem; 
-                                font-weight: 600; 
-                                border-radius: 0.5rem; 
-                                color: white; 
-                                background-color: #3B82F6;
-                                border: none;
-                                cursor: pointer;
-                                transition: all 0.2s;
-                                display: flex;
-                                align-items: center;
-                                gap: 0.5rem;
-                            " onmouseover="this.style.backgroundColor='#2563EB'; this.style.boxShadow='0 0 10px rgba(59, 130, 246, 0.4)'" 
-                               onmouseout="this.style.backgroundColor='#3B82F6'; this.style.boxShadow='none'">
-                                <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                </svg>
-                                Enviar
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Lista de Comentarios -->
-                <div id="activity-feed" style="display: flex; flex-direction: column; gap: 1.5rem;">
-                    <!-- Los comentarios se inyectan aquí -->
-                </div>
-            </section>
-
-        </div>
-
-        <!-- Columna Derecha (Panel de Control/Detalles - Cristal más oscuro) -->
-        <aside style="
-            width: 24rem; 
-            background-color: rgba(22, 26, 32, 0.75);
-            backdrop-filter: blur(20px); 
-            -webkit-backdrop-filter: blur(20px);
-            padding: 1.5rem; 
-            border-left: 1px solid rgba(45, 55, 72, 0.4); 
-            flex-shrink: 0; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 2rem;
-            overflow-y: auto;
-        ">
-            
-            <!-- 1. Controles Clave -->
-            <section style="display: flex; flex-direction: column; gap: 1.5rem;">
-                
-                <!-- Responsable -->
-                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                    <h3 style="font-size: 0.875rem; font-weight: 600; color: #9CA3AF; text-transform: uppercase; margin: 0;">Responsable</h3>
-                    <div id="task-detail-responsable-container" style="
-                        display: flex; 
-                        align-items: center; 
-                        gap: 0.75rem; 
-                        padding: 0.5rem; 
-                        border-radius: 0.5rem; 
-                        cursor: pointer;
-                        transition: background-color 0.2s;
-                    " onmouseover="this.style.backgroundColor='rgba(45, 55, 72, 0.5)'" onmouseout="this.style.backgroundColor='transparent'">
-                        <!-- Se llenará dinámicamente -->
-                    </div>
-                </div>
-
-                <!-- Estado y Prioridad en la misma fila -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <!-- Estado -->
-                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                        <h3 style="font-size: 0.875rem; font-weight: 600; color: #9CA3AF; text-transform: uppercase; margin: 0;">Estado</h3>
-                        <div id="task-detail-estado" style="cursor: pointer;">
-                            <!-- Se llenará dinámicamente -->
-                        </div>
-                    </div>
-                    
-                    <!-- Prioridad -->
-                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                        <h3 style="font-size: 0.875rem; font-weight: 600; color: #9CA3AF; text-transform: uppercase; margin: 0;">Prioridad</h3>
-                        <div id="task-detail-prioridad" style="cursor: pointer;">
-                            <!-- Se llenará dinámicamente -->
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 2. Información de la Tarea -->
-            <section style="padding-top: 1rem; border-top: 1px solid rgba(45, 55, 72, 0.4); display: flex; flex-direction: column; gap: 1rem;">
-                <h3 style="font-size: 0.875rem; font-weight: 600; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Información de la Tarea</h3>
-                <dl style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem; margin: 0;">
-                    <div style="display: flex; justify-content: space-between;">
-                        <dt style="color: #9CA3AF;">Fecha Límite</dt>
-                        <dd id="task-detail-fecha-limite" style="font-weight: 500; color: #E0E7FF; margin: 0;"></dd>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <dt style="color: #9CA3AF;">Proyecto</dt>
-                        <dd id="task-detail-proyecto" style="font-weight: 500; color: #E0E7FF; margin: 0;"></dd>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <dt style="color: #9CA3AF;">Creador</dt>
-                        <dd id="task-detail-creado-por" style="font-weight: 500; color: #E0E7FF; margin: 0;"></dd>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <dt style="color: #9CA3AF;">Fecha de Creación</dt>
-                        <dd id="task-detail-fecha-creacion" style="font-weight: 500; color: #E0E7FF; margin: 0;"></dd>
-                    </div>
-                </dl>
-            </section>
-
-            <!-- 3. Colaboradores -->
-            <section style="padding-top: 1rem; border-top: 1px solid rgba(45, 55, 72, 0.4); display: flex; flex-direction: column; gap: 1rem;">
-                <h3 style="font-size: 0.875rem; font-weight: 600; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Colaboradores</h3>
-                
-                <!-- Participantes Activos -->
-                <div style="display: flex; flex-direction: column; gap: 0.5rem; position: relative;">
-                    <h4 style="font-size: 0.75rem; font-weight: 500; color: #9CA3AF; text-transform: uppercase; margin: 0;">Participantes Activos</h4>
-                    <div id="task-detail-participantes-container" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                        <!-- Se llenará dinámicamente -->
-                    </div>
-                    <!-- Dropdown para agregar participantes -->
-                    <div id="participantes-dropdown" style="
-                        position: absolute;
-                        top: 100%;
-                        left: 0;
-                        right: 0;
-                        background: rgba(26, 31, 39, 0.95);
-                        backdrop-filter: blur(20px);
-                        border: 1px solid rgba(45, 55, 72, 0.6);
-                        border-radius: 0.5rem;
-                        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-                        z-index: 1000;
-                        display: none;
-                        flex-direction: column;
-                        max-height: 200px;
-                        overflow: hidden;
-                    ">
-                        <input 
-                            id="participantes-search" 
-                            type="text" 
-                            placeholder="Buscar usuario para agregar..."
-                            style="
-                                padding: 0.75rem;
-                                background: transparent;
-                                border: none;
-                                border-bottom: 1px solid rgba(45, 55, 72, 0.6);
-                                color: #E0E7FF;
-                                outline: none;
-                                font-size: 0.875rem;
-                            "
-                        />
-                        <div id="participantes-results" style="
-                            max-height: 150px;
-                            overflow-y: auto;
-                            padding: 0.25rem;
-                        ">
-                            <!-- Resultados de búsqueda -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Observadores (Seguidores) -->
-                <div style="display: flex; flex-direction: column; gap: 0.5rem; position: relative;">
-                    <h4 style="font-size: 0.75rem; font-weight: 500; color: #9CA3AF; text-transform: uppercase; margin: 0;">Observadores</h4>
-                    <div id="task-detail-observadores-container" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                        <!-- Se llenará dinámicamente -->
-                    </div>
-                    <!-- Dropdown para agregar observadores -->
-                    <div id="observadores-dropdown" style="
-                        position: absolute;
-                        top: 100%;
-                        left: 0;
-                        right: 0;
-                        background: rgba(26, 31, 39, 0.95);
-                        backdrop-filter: blur(20px);
-                        border: 1px solid rgba(45, 55, 72, 0.6);
-                        border-radius: 0.5rem;
-                        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-                        z-index: 1000;
-                        display: none;
-                        flex-direction: column;
-                        max-height: 200px;
-                        overflow: hidden;
-                    ">
-                        <input 
-                            id="observadores-search" 
-                            type="text" 
-                            placeholder="Buscar usuario para agregar..."
-                            style="
-                                padding: 0.75rem;
-                                background: transparent;
-                                border: none;
-                                border-bottom: 1px solid rgba(45, 55, 72, 0.6);
-                                color: #E0E7FF;
-                                outline: none;
-                                font-size: 0.875rem;
-                            "
-                        />
-                        <div id="observadores-results" style="
-                            max-height: 150px;
-                            overflow-y: auto;
-                            padding: 0.25rem;
-                        ">
-                            <!-- Resultados de búsqueda -->
-                        </div>
-                    </div>
-                </div>
-            </section>
-            
-            <!-- 4. Control de Tiempo -->
-            <section style="padding-top: 1rem; border-top: 1px solid rgba(45, 55, 72, 0.4); display: flex; flex-direction: column; gap: 0.75rem;">
-                <h3 style="font-size: 0.875rem; font-weight: 600; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Control de Tiempo</h3>
-                <div id="task-controls" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                    <!-- Botón INICIAR -->
-                    <button id="btn-start-task" onclick="TareasProyectos.toggleTaskRunning()" style="
-                        width: 100%; 
-                        padding: 0.5rem 1rem; 
-                        font-size: 0.875rem; 
-                        font-weight: 600; 
-                        border-radius: 0.5rem; 
-                        color: white; 
-                        background-color: #16a34a; 
-                        border: none; 
-                        cursor: pointer;
-                        transition: all 0.2s; 
-                        box-shadow: 0 2px 4px rgba(22, 163, 74, 0.3);
-                        display: flex; 
-                        align-items: center; 
-                        justify-content: center; 
-                        gap: 0.5rem;
-                    " onmouseover="this.style.backgroundColor='#15803d'; this.style.boxShadow='0 0 15px rgba(22, 163, 74, 0.5)'" onmouseout="this.style.backgroundColor='#16a34a'; this.style.boxShadow='0 2px 4px rgba(22, 163, 74, 0.3)'">
-                        <svg xmlns="http://www.w3.org/2000/svg" style="width: 1.25rem; height: 1.25rem;" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                        </svg>
-                        <span>Iniciar Tarea</span>
-                    </button>
-                    <!-- Botón PAUSAR (Alternativo al de Iniciar) -->
-                    <button id="btn-pause-task" onclick="TareasProyectos.toggleTaskRunning()" style="
-                        width: 100%; 
-                        padding: 0.5rem 1rem; 
-                        font-size: 0.875rem; 
-                        font-weight: 600; 
-                        border-radius: 0.5rem; 
-                        color: white; 
-                        background-color: #dc2626; 
-                        border: none; 
-                        cursor: pointer;
-                        transition: all 0.2s; 
-                        box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
-                        display: none; 
-                        align-items: center; 
-                        justify-content: center; 
-                        gap: 0.5rem;
-                    " onmouseover="this.style.backgroundColor='#b91c1c'; this.style.boxShadow='0 0 15px rgba(220, 38, 38, 0.5)'" onmouseout="this.style.backgroundColor='#dc2626'; this.style.boxShadow='0 2px 4px rgba(220, 38, 38, 0.3)'">
-                        <svg xmlns="http://www.w3.org/2000/svg" style="width: 1.25rem; height: 1.25rem;" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                        </svg>
-                        <span>Pausar Tarea</span>
-                    </button>
-                </div>
-            </section>
-            
-        </aside>
-
-    </div>
-</div>
-
-<!-- Modal para ver detalles de tarea - Glassmorphism Design -->
-<div class="modal-overlay" id="modal-detalle-tarea" style="background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">
-    <!-- Contenedor Principal (Vista de Tarea - Cristal principal) -->
-    <div class="task-view-container" style="
-        background-color: rgba(26, 31, 39, 0.65); 
-        backdrop-filter: blur(30px) saturate(120%); 
-        -webkit-backdrop-filter: blur(30px) saturate(120%);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
-        max-width: 1200px;
-        width: 90vw;
-        height: 90vh;
-        display: flex;
-        border: 1px solid rgba(45, 55, 72, 0.4);
-        border-radius: 12px;
-        overflow: hidden;
-        color: #E0E7FF;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    ">
-
-        <!-- Columna Izquierda (Contenido y Comentarios - 2/3) -->
-        <div id="main-content-area" class="flex-1" style="padding: 2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 2rem;">
-            
-            <!-- Encabezado y Título Principal -->
-            <header style="display: flex; flex-direction: column; gap: 1rem;">
-                <button onclick="TareasProyectos.cerrarModalDetalleTarea()" style="
-                    display: flex; 
-                    align-items: center; 
-                    font-size: 0.875rem; 
-                    font-weight: 600; 
-                    color: #9CA3AF; 
-                    background: none; 
-                    border: none; 
                     cursor: pointer;
-                    transition: color 0.2s;
-                    padding: 0;
-                    align-self: flex-start;
-                " onmouseover="this.style.color='#5B9EFF'" onmouseout="this.style.color='#9CA3AF'">
-                    <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    Volver
-                </button>
-                
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <!-- Título -->
-                    <h1 id="task-detail-titulo" style="
-                        font-size: 1.875rem; 
-                        font-weight: 800; 
-                        color: #E0E7FF; 
-                        line-height: 1.2; 
-                        max-width: 80%; 
-                        margin: 0;
-                    "></h1>
-                    
-                    <!-- Botón de Acción Rápida -->
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button onclick="TareasProyectos.completarTarea()" style="
-                            padding: 0.375rem 0.75rem; 
-                            border-radius: 0.5rem; 
-                            background-color: #3B82F6; 
-                            color: white; 
-                            font-size: 0.875rem; 
-                            font-weight: 600; 
-                            display: flex; 
-                            align-items: center; 
-                            border: none; 
-                            cursor: pointer;
-                            transition: all 0.2s;
-                        " onmouseover="this.style.backgroundColor='#2563EB'; this.style.boxShadow='0 0 15px rgba(59, 130, 246, 0.5)'" onmouseout="this.style.backgroundColor='#3B82F6'; this.style.boxShadow='none'">
-                            <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                            Completar
-                        </button>
-                    </div>
-                </div>
-            </header>
-
-            <!-- Descripción -->
-            <section style="display: flex; flex-direction: column; gap: 0.75rem;">
-                <h2 style="font-size: 0.875rem; font-weight: 600; text-transform: uppercase; color: #9CA3AF; letter-spacing: 0.1em; margin: 0;">Descripción</h2>
-                <div id="task-detail-descripcion" style="
-                    padding: 0.5rem; 
-                    margin-left: -0.5rem; 
-                    color: rgba(224, 231, 255, 0.9); 
-                    line-height: 1.625; 
-                    min-height: 50px;
-                    border-radius: 0.375rem;
-                "></div>
+                    transition: background 0.2s ease;
+                " onclick="makeEditable('description')" title="Click para editar"></div>
             </section>
             
             <!-- Feed de Comentarios -->
@@ -7291,8 +6903,21 @@ Puedes usar @username para mencionar a otros usuarios"></textarea>
                     
                     <!-- Prioridad -->
                     <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                        <h3 style="font-size: 0.875rem; font-weight: 600; color: #9CA3AF; text-transform: uppercase; margin: 0;">Prioridad</h3>
-                        <div id="task-detail-prioridad" style="cursor: pointer;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="font-size: 0.875rem; font-weight: 600; color: #9CA3AF; text-transform: uppercase; margin: 0;">Prioridad</h3>
+                            <button id="edit-priority-btn" style="
+                                background: rgba(10, 132, 255, 0.1);
+                                border: 1px solid rgba(10, 132, 255, 0.3);
+                                color: #0A84FF;
+                                border-radius: 4px;
+                                padding: 0.25rem 0.5rem;
+                                font-size: 0.75rem;
+                                cursor: pointer;
+                                opacity: 0.7;
+                                transition: opacity 0.2s ease;
+                            " onclick="makeEditable('priority')" title="Editar prioridad">✏️</button>
+                        </div>
+                        <div id="task-detail-prioridad" style="cursor: pointer;" onclick="makeEditable('priority')" title="Click para editar">
                             <!-- Se llenará dinámicamente -->
                         </div>
                     </div>
@@ -7303,9 +6928,22 @@ Puedes usar @username para mencionar a otros usuarios"></textarea>
             <section style="padding-top: 1rem; border-top: 1px solid rgba(45, 55, 72, 0.4); display: flex; flex-direction: column; gap: 1rem;">
                 <h3 style="font-size: 0.875rem; font-weight: 600; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Información de la Tarea</h3>
                 <dl style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem; margin: 0;">
-                    <div style="display: flex; justify-content: space-between;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
                         <dt style="color: #9CA3AF;">Fecha Límite</dt>
-                        <dd id="task-detail-fecha-limite" style="font-weight: 500; color: #E0E7FF; margin: 0;"></dd>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <dd id="task-detail-fecha-limite" style="font-weight: 500; color: #E0E7FF; margin: 0; cursor: pointer; padding: 0.25rem; border-radius: 4px; transition: background 0.2s ease;" onclick="makeEditable('dueDate')" title="Click para editar"></dd>
+                            <button id="edit-duedate-btn" style="
+                                background: rgba(10, 132, 255, 0.1);
+                                border: 1px solid rgba(10, 132, 255, 0.3);
+                                color: #0A84FF;
+                                border-radius: 4px;
+                                padding: 0.125rem 0.25rem;
+                                font-size: 0.625rem;
+                                cursor: pointer;
+                                opacity: 0.7;
+                                transition: opacity 0.2s ease;
+                            " onclick="makeEditable('dueDate')" title="Editar fecha límite">✏️</button>
+                        </div>
                     </div>
                     <div style="display: flex; justify-content: space-between;">
                         <dt style="color: #9CA3AF;">Proyecto</dt>
