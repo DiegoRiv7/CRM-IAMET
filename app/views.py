@@ -16,7 +16,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
@@ -10438,4 +10438,311 @@ def api_completar_tarea(request, tarea_id):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+
+# =============================================
+# API ENDPOINTS PARA SISTEMA DE CARPETAS Y ARCHIVOS
+# =============================================
+
+@csrf_exempt
+@login_required
+def api_carpetas_proyecto(request, proyecto_id):
+    """API para listar carpetas de un proyecto y crear nuevas carpetas"""
+    try:
+        proyecto = get_object_or_404(TodoItem, id=proyecto_id)
+        
+        if request.method == 'GET':
+            parent_id = request.GET.get('parent')
+            if parent_id:
+                carpetas = CarpetaProyecto.objects.filter(
+                    proyecto=proyecto,
+                    carpeta_padre_id=parent_id
+                ).order_by('nombre')
+            else:
+                # Carpetas raíz (sin padre)
+                carpetas = CarpetaProyecto.objects.filter(
+                    proyecto=proyecto,
+                    carpeta_padre__isnull=True
+                ).order_by('nombre')
+            
+            carpetas_data = []
+            for carpeta in carpetas:
+                carpetas_data.append({
+                    'id': carpeta.id,
+                    'nombre': carpeta.nombre,
+                    'fecha_creacion': carpeta.fecha_creacion.isoformat(),
+                    'fecha_modificacion': carpeta.fecha_modificacion.isoformat(),
+                    'creado_por': carpeta.creado_por.get_full_name() or carpeta.creado_por.username,
+                    'carpeta_padre_id': carpeta.carpeta_padre_id,
+                    'tipo': 'carpeta'
+                })
+            
+            # También incluir archivos en la carpeta actual
+            if parent_id:
+                archivos = ArchivoProyecto.objects.filter(
+                    proyecto=proyecto,
+                    carpeta_id=parent_id
+                ).order_by('nombre_original')
+            else:
+                # Archivos en raíz (sin carpeta)
+                archivos = ArchivoProyecto.objects.filter(
+                    proyecto=proyecto,
+                    carpeta__isnull=True
+                ).order_by('nombre_original')
+            
+            archivos_data = []
+            for archivo in archivos:
+                archivos_data.append({
+                    'id': archivo.id,
+                    'nombre': archivo.nombre_original,
+                    'tipo_archivo': archivo.tipo_archivo,
+                    'tamaño': archivo.tamaño,
+                    'extension': archivo.extension,
+                    'fecha_subida': archivo.fecha_subida.isoformat(),
+                    'subido_por': archivo.subido_por.get_full_name() or archivo.subido_por.username,
+                    'es_publico': archivo.es_publico,
+                    'descripcion': archivo.descripcion,
+                    'url': archivo.archivo.url if archivo.archivo else '',
+                    'tipo': 'archivo'
+                })
+            
+            return JsonResponse({
+                'success': True,
+                'carpetas': carpetas_data,
+                'archivos': archivos_data
+            })
+        
+        elif request.method == 'POST':
+            data = json.loads(request.body)
+            nombre = data.get('nombre')
+            parent_id = data.get('parent_id')
+            
+            if not nombre:
+                return JsonResponse({'error': 'Nombre de carpeta requerido'}, status=400)
+            
+            # Verificar que no exista una carpeta con el mismo nombre en el mismo nivel
+            carpeta_padre = None
+            if parent_id:
+                carpeta_padre = get_object_or_404(CarpetaProyecto, id=parent_id)
+            
+            if CarpetaProyecto.objects.filter(
+                proyecto=proyecto,
+                carpeta_padre=carpeta_padre,
+                nombre=nombre
+            ).exists():
+                return JsonResponse({'error': 'Ya existe una carpeta con ese nombre'}, status=400)
+            
+            carpeta = CarpetaProyecto.objects.create(
+                nombre=nombre,
+                proyecto=proyecto,
+                carpeta_padre=carpeta_padre,
+                creado_por=request.user
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'carpeta': {
+                    'id': carpeta.id,
+                    'nombre': carpeta.nombre,
+                    'fecha_creacion': carpeta.fecha_creacion.isoformat(),
+                    'creado_por': carpeta.creado_por.get_full_name() or carpeta.creado_por.username,
+                    'carpeta_padre_id': carpeta.carpeta_padre_id,
+                    'tipo': 'carpeta'
+                }
+            })
+            
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@login_required
+def api_carpeta_detalle(request, proyecto_id, carpeta_id):
+    """API para obtener, actualizar y eliminar una carpeta específica"""
+    try:
+        proyecto = get_object_or_404(TodoItem, id=proyecto_id)
+        carpeta = get_object_or_404(CarpetaProyecto, id=carpeta_id, proyecto=proyecto)
+        
+        if request.method == 'GET':
+            return JsonResponse({
+                'success': True,
+                'carpeta': {
+                    'id': carpeta.id,
+                    'nombre': carpeta.nombre,
+                    'fecha_creacion': carpeta.fecha_creacion.isoformat(),
+                    'fecha_modificacion': carpeta.fecha_modificacion.isoformat(),
+                    'creado_por': carpeta.creado_por.get_full_name() or carpeta.creado_por.username,
+                    'carpeta_padre_id': carpeta.carpeta_padre_id
+                }
+            })
+        
+        elif request.method == 'PUT':
+            data = json.loads(request.body)
+            nuevo_nombre = data.get('nombre')
+            
+            if not nuevo_nombre:
+                return JsonResponse({'error': 'Nombre requerido'}, status=400)
+            
+            # Verificar que no exista otra carpeta con el mismo nombre
+            if CarpetaProyecto.objects.filter(
+                proyecto=proyecto,
+                carpeta_padre=carpeta.carpeta_padre,
+                nombre=nuevo_nombre
+            ).exclude(id=carpeta_id).exists():
+                return JsonResponse({'error': 'Ya existe una carpeta con ese nombre'}, status=400)
+            
+            carpeta.nombre = nuevo_nombre
+            carpeta.save()
+            
+            return JsonResponse({
+                'success': True,
+                'carpeta': {
+                    'id': carpeta.id,
+                    'nombre': carpeta.nombre,
+                    'fecha_modificacion': carpeta.fecha_modificacion.isoformat()
+                }
+            })
+        
+        elif request.method == 'DELETE':
+            # Verificar que la carpeta esté vacía
+            if carpeta.subcarpetas.exists() or carpeta.archivos.exists():
+                return JsonResponse({'error': 'No se puede eliminar una carpeta que contiene archivos o subcarpetas'}, status=400)
+            
+            carpeta.delete()
+            return JsonResponse({'success': True, 'message': 'Carpeta eliminada'})
+            
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@login_required
+def api_archivos_proyecto(request, proyecto_id):
+    """API para subir archivos a un proyecto"""
+    try:
+        proyecto = get_object_or_404(TodoItem, id=proyecto_id)
+        
+        if request.method == 'POST':
+            carpeta_id = request.POST.get('carpeta_id')
+            descripcion = request.POST.get('descripcion', '')
+            es_publico = request.POST.get('es_publico', 'true').lower() == 'true'
+            archivo_file = request.FILES.get('archivo')
+            
+            if not archivo_file:
+                return JsonResponse({'error': 'Archivo requerido'}, status=400)
+            
+            carpeta = None
+            if carpeta_id:
+                carpeta = get_object_or_404(CarpetaProyecto, id=carpeta_id, proyecto=proyecto)
+            
+            # Detectar información del archivo
+            nombre_original = archivo_file.name
+            extension = nombre_original.split('.')[-1].lower() if '.' in nombre_original else ''
+            tamaño = archivo_file.size
+            mime_type = archivo_file.content_type or ''
+            
+            # Determinar tipo de archivo
+            tipos_archivo = {
+                'pdf': 'pdf',
+                'doc': 'documento', 'docx': 'documento', 'odt': 'documento', 'rtf': 'documento', 'txt': 'documento',
+                'jpg': 'imagen', 'jpeg': 'imagen', 'png': 'imagen', 'gif': 'imagen', 'bmp': 'imagen', 'svg': 'imagen',
+                'mp4': 'video', 'avi': 'video', 'mov': 'video', 'wmv': 'video', 'flv': 'video', 'webm': 'video',
+                'mp3': 'audio', 'wav': 'audio', 'aac': 'audio', 'flac': 'audio', 'ogg': 'audio',
+                'xls': 'hoja_calculo', 'xlsx': 'hoja_calculo', 'ods': 'hoja_calculo', 'csv': 'hoja_calculo',
+                'ppt': 'presentacion', 'pptx': 'presentacion', 'odp': 'presentacion',
+                'zip': 'archivo_comprimido', 'rar': 'archivo_comprimido', '7z': 'archivo_comprimido', 'tar': 'archivo_comprimido', 'gz': 'archivo_comprimido'
+            }
+            tipo_archivo = tipos_archivo.get(extension, 'otro')
+            
+            archivo = ArchivoProyecto.objects.create(
+                nombre_original=nombre_original,
+                archivo=archivo_file,
+                tipo_archivo=tipo_archivo,
+                tamaño=tamaño,
+                proyecto=proyecto,
+                carpeta=carpeta,
+                subido_por=request.user,
+                descripcion=descripcion,
+                es_publico=es_publico,
+                extension=extension,
+                mime_type=mime_type
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'archivo': {
+                    'id': archivo.id,
+                    'nombre': archivo.nombre_original,
+                    'tipo_archivo': archivo.tipo_archivo,
+                    'tamaño': archivo.tamaño,
+                    'extension': archivo.extension,
+                    'fecha_subida': archivo.fecha_subida.isoformat(),
+                    'subido_por': archivo.subido_por.get_full_name() or archivo.subido_por.username,
+                    'es_publico': archivo.es_publico,
+                    'descripcion': archivo.descripcion,
+                    'url': archivo.archivo.url,
+                    'tipo': 'archivo'
+                }
+            })
+            
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@login_required
+def api_archivo_detalle(request, proyecto_id, archivo_id):
+    """API para obtener, actualizar y eliminar un archivo específico"""
+    try:
+        proyecto = get_object_or_404(TodoItem, id=proyecto_id)
+        archivo = get_object_or_404(ArchivoProyecto, id=archivo_id, proyecto=proyecto)
+        
+        if request.method == 'GET':
+            return JsonResponse({
+                'success': True,
+                'archivo': {
+                    'id': archivo.id,
+                    'nombre': archivo.nombre_original,
+                    'tipo_archivo': archivo.tipo_archivo,
+                    'tamaño': archivo.tamaño,
+                    'extension': archivo.extension,
+                    'fecha_subida': archivo.fecha_subida.isoformat(),
+                    'subido_por': archivo.subido_por.get_full_name() or archivo.subido_por.username,
+                    'es_publico': archivo.es_publico,
+                    'descripcion': archivo.descripcion,
+                    'url': archivo.archivo.url,
+                    'mime_type': archivo.mime_type
+                }
+            })
+        
+        elif request.method == 'PUT':
+            data = json.loads(request.body)
+            nueva_descripcion = data.get('descripcion', archivo.descripcion)
+            nuevo_es_publico = data.get('es_publico', archivo.es_publico)
+            
+            archivo.descripcion = nueva_descripcion
+            archivo.es_publico = nuevo_es_publico
+            archivo.save()
+            
+            return JsonResponse({
+                'success': True,
+                'archivo': {
+                    'id': archivo.id,
+                    'descripcion': archivo.descripcion,
+                    'es_publico': archivo.es_publico
+                }
+            })
+        
+        elif request.method == 'DELETE':
+            # Eliminar archivo físico
+            if archivo.archivo:
+                try:
+                    archivo.archivo.delete(save=False)
+                except:
+                    pass  # Ignorar errores al eliminar archivo físico
+            
+            archivo.delete()
+            return JsonResponse({'success': True, 'message': 'Archivo eliminado'})
+            
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 

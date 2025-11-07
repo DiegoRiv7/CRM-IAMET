@@ -2115,3 +2115,209 @@ class EmpleadoDelMes(models.Model):
 
     def __str__(self):
         return f"{self.usuario.get_full_name() or self.usuario.username} - {self.mes}/{self.ano}"
+
+
+# ============= SISTEMA DE CARPETAS Y ARCHIVOS =============
+
+def archivo_upload_path(instance, filename):
+    """Genera la ruta de subida para archivos de proyecto"""
+    return f'proyectos/{instance.proyecto.id}/archivos/{filename}'
+
+class CarpetaProyecto(models.Model):
+    """Modelo para carpetas dentro de proyectos (estilo Google Drive)"""
+    nombre = models.CharField(max_length=255, verbose_name="Nombre de la Carpeta")
+    proyecto = models.ForeignKey(
+        'TodoItem', 
+        on_delete=models.CASCADE, 
+        related_name='carpetas',
+        verbose_name="Proyecto"
+    )
+    carpeta_padre = models.ForeignKey(
+        'self', 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True,
+        related_name='subcarpetas',
+        verbose_name="Carpeta Padre"
+    )
+    creado_por = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE,
+        verbose_name="Creado por"
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
+    fecha_modificacion = models.DateTimeField(auto_now=True, verbose_name="Última Modificación")
+    
+    class Meta:
+        verbose_name = "Carpeta del Proyecto"
+        verbose_name_plural = "Carpetas del Proyecto"
+        ordering = ['nombre']
+        unique_together = [('proyecto', 'carpeta_padre', 'nombre')]  # No duplicados en la misma carpeta
+    
+    def __str__(self):
+        if self.carpeta_padre:
+            return f"{self.carpeta_padre.nombre}/{self.nombre}"
+        return self.nombre
+    
+    @property
+    def archivos_count(self):
+        """Cuenta archivos en esta carpeta"""
+        return self.archivos.count()
+    
+    @property
+    def ruta_completa(self):
+        """Obtiene la ruta completa de la carpeta"""
+        if self.carpeta_padre:
+            return f"{self.carpeta_padre.ruta_completa}/{self.nombre}"
+        return self.nombre
+    
+    def puede_eliminar(self):
+        """Verifica si la carpeta puede ser eliminada (no tiene subcarpetas ni archivos)"""
+        return not (self.subcarpetas.exists() or self.archivos.exists())
+
+
+class ArchivoProyecto(models.Model):
+    """Modelo para archivos dentro de proyectos y carpetas"""
+    
+    TIPO_ARCHIVO_CHOICES = [
+        ('documento', 'Documento'),
+        ('imagen', 'Imagen'),
+        ('video', 'Video'),
+        ('audio', 'Audio'),
+        ('hoja_calculo', 'Hoja de Cálculo'),
+        ('presentacion', 'Presentación'),
+        ('pdf', 'PDF'),
+        ('archivo_comprimido', 'Archivo Comprimido'),
+        ('otro', 'Otro'),
+    ]
+    
+    nombre_original = models.CharField(max_length=255, verbose_name="Nombre Original")
+    archivo = models.FileField(upload_to=archivo_upload_path, verbose_name="Archivo")
+    tipo_archivo = models.CharField(
+        max_length=20, 
+        choices=TIPO_ARCHIVO_CHOICES, 
+        default='otro',
+        verbose_name="Tipo de Archivo"
+    )
+    tamaño = models.BigIntegerField(verbose_name="Tamaño en Bytes")
+    proyecto = models.ForeignKey(
+        'TodoItem', 
+        on_delete=models.CASCADE, 
+        related_name='archivos',
+        verbose_name="Proyecto"
+    )
+    carpeta = models.ForeignKey(
+        CarpetaProyecto, 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True,
+        related_name='archivos',
+        verbose_name="Carpeta"
+    )
+    subido_por = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE,
+        verbose_name="Subido por"
+    )
+    fecha_subida = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Subida")
+    descripcion = models.TextField(blank=True, null=True, verbose_name="Descripción")
+    es_publico = models.BooleanField(default=True, verbose_name="Es Público")
+    
+    # Metadatos de archivo
+    extension = models.CharField(max_length=10, blank=True, verbose_name="Extensión")
+    mime_type = models.CharField(max_length=100, blank=True, verbose_name="MIME Type")
+    
+    class Meta:
+        verbose_name = "Archivo del Proyecto"
+        verbose_name_plural = "Archivos del Proyecto"
+        ordering = ['-fecha_subida']
+    
+    def __str__(self):
+        return self.nombre_original
+    
+    def save(self, *args, **kwargs):
+        """Override save para extraer metadatos automáticamente"""
+        if self.archivo:
+            # Extraer extensión
+            import os
+            self.extension = os.path.splitext(self.nombre_original)[1].lower()
+            
+            # Determinar tipo de archivo
+            self.tipo_archivo = self.determinar_tipo_archivo()
+            
+            # Obtener tamaño si no está definido
+            if not self.tamaño:
+                self.tamaño = self.archivo.size
+        
+        super().save(*args, **kwargs)
+    
+    def determinar_tipo_archivo(self):
+        """Determina el tipo de archivo basado en la extensión"""
+        extension = self.extension.lower()
+        
+        if extension in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg']:
+            return 'imagen'
+        elif extension in ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm']:
+            return 'video'
+        elif extension in ['.mp3', '.wav', '.flac', '.aac', '.ogg']:
+            return 'audio'
+        elif extension in ['.doc', '.docx', '.txt', '.rtf']:
+            return 'documento'
+        elif extension in ['.xls', '.xlsx', '.csv']:
+            return 'hoja_calculo'
+        elif extension in ['.ppt', '.pptx']:
+            return 'presentacion'
+        elif extension == '.pdf':
+            return 'pdf'
+        elif extension in ['.zip', '.rar', '.7z', '.tar', '.gz']:
+            return 'archivo_comprimido'
+        else:
+            return 'otro'
+    
+    @property
+    def tamaño_formateado(self):
+        """Formatea el tamaño del archivo para mostrar"""
+        if self.tamaño < 1024:
+            return f"{self.tamaño} B"
+        elif self.tamaño < 1024 * 1024:
+            return f"{self.tamaño / 1024:.1f} KB"
+        elif self.tamaño < 1024 * 1024 * 1024:
+            return f"{self.tamaño / (1024 * 1024):.1f} MB"
+        else:
+            return f"{self.tamaño / (1024 * 1024 * 1024):.1f} GB"
+    
+    @property
+    def icono(self):
+        """Retorna el icono correspondiente al tipo de archivo"""
+        iconos = {
+            'documento': '📄',
+            'imagen': '🖼️',
+            'video': '🎥',
+            'audio': '🎵',
+            'hoja_calculo': '📊',
+            'presentacion': '📽️',
+            'pdf': '📕',
+            'archivo_comprimido': '📦',
+            'otro': '📎'
+        }
+        return iconos.get(self.tipo_archivo, '📎')
+
+
+class CompartirArchivo(models.Model):
+    """Modelo para compartir archivos con usuarios específicos"""
+    archivo = models.ForeignKey(
+        ArchivoProyecto, 
+        on_delete=models.CASCADE, 
+        related_name='compartidos'
+    )
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    fecha_compartido = models.DateTimeField(auto_now_add=True)
+    puede_editar = models.BooleanField(default=False, verbose_name="Puede Editar")
+    
+    class Meta:
+        verbose_name = "Archivo Compartido"
+        verbose_name_plural = "Archivos Compartidos"
+        unique_together = [('archivo', 'usuario')]
+    
+    def __str__(self):
+        return f"{self.archivo.nombre_original} → {self.usuario.get_full_name()}"

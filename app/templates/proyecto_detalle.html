@@ -6928,6 +6928,367 @@ function setCurrentTaskId(taskId) {
     currentTaskId = taskId;
 }
 
+// ============= SISTEMA DE CARPETAS ESTILO GOOGLE DRIVE =============
+
+// Variables globales para carpetas
+let currentFolders = [];
+let currentFolder = null; // null = carpeta raíz
+
+// Inicializar el sistema de carpetas
+document.addEventListener('DOMContentLoaded', function() {
+    // Event listener para botón "Crear Carpeta"
+    const btnCrearCarpeta = document.getElementById('btnCrearCarpeta');
+    if (btnCrearCarpeta) {
+        btnCrearCarpeta.addEventListener('click', openCreateFolderModal);
+    }
+
+    // Event listener para el formulario de crear carpeta
+    const createFolderForm = document.getElementById('createFolderForm');
+    if (createFolderForm) {
+        createFolderForm.addEventListener('submit', handleCreateFolder);
+    }
+
+    // Cargar carpetas cuando se active la pestaña
+    const carpetasTab = document.querySelector('[data-tab="carpetas"]');
+    if (carpetasTab) {
+        carpetasTab.addEventListener('click', cargarCarpetas);
+    }
+});
+
+// Abrir modal para crear carpeta
+function openCreateFolderModal() {
+    const modal = document.getElementById('createFolderModal');
+    const folderNameInput = document.getElementById('folderName');
+    
+    // Limpiar el campo
+    folderNameInput.value = '';
+    
+    // Mostrar modal
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // Focus en el input
+    setTimeout(() => folderNameInput.focus(), 100);
+}
+
+// Cerrar modal para crear carpeta
+function closeCreateFolderModal() {
+    const modal = document.getElementById('createFolderModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// Manejar la creación de carpeta
+async function handleCreateFolder(event) {
+    event.preventDefault();
+    
+    const folderName = document.getElementById('folderName').value.trim();
+    if (!folderName) return;
+
+    try {
+        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/carpetas/crear/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            },
+            body: JSON.stringify({
+                nombre: folderName,
+                carpeta_padre: currentFolder
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            closeCreateFolderModal();
+            cargarCarpetas(); // Recargar vista
+            mostrarNotificacion('Carpeta creada exitosamente', 'success');
+        } else {
+            throw new Error('Error al crear la carpeta');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarNotificacion('Error al crear la carpeta', 'error');
+    }
+}
+
+// Cargar carpetas del proyecto
+async function cargarCarpetas() {
+    try {
+        const url = currentFolder 
+            ? `/app/api/proyecto/${PROYECTO_ID}/carpetas/?parent=${currentFolder}`
+            : `/app/api/proyecto/${PROYECTO_ID}/carpetas/`;
+            
+        const response = await fetch(url, {
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            currentFolders = data.carpetas || [];
+            renderizarCarpetas();
+        } else {
+            throw new Error('Error al cargar carpetas');
+        }
+    } catch (error) {
+        console.error('Error cargando carpetas:', error);
+        mostrarNotificacion('Error al cargar las carpetas', 'error');
+    }
+}
+
+// Renderizar carpetas en la vista
+function renderizarCarpetas() {
+    const container = document.getElementById('foldersContainer');
+    
+    if (currentFolders.length === 0) {
+        // Mostrar estado vacío
+        container.innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1; text-align: center; color: var(--apple-label-secondary); padding: 2rem;">
+                <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1" style="margin: 0 auto 1rem; opacity: 0.5;">
+                    <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                </svg>
+                <h3 style="margin-bottom: 0.5rem;">No hay carpetas creadas</h3>
+                <p style="margin: 0;">Crea tu primera carpeta para organizar los archivos del proyecto.</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Crear navegación de breadcrumb si estamos en una subcarpeta
+    let breadcrumbHTML = '';
+    if (currentFolder) {
+        breadcrumbHTML = `
+            <div style="grid-column: 1 / -1; margin-bottom: 1rem;">
+                <button onclick="navegarCarpeta(null)" style="background: none; border: none; color: var(--apple-blue); cursor: pointer; font-size: 0.875rem;">
+                    ← Volver a carpeta principal
+                </button>
+            </div>
+        `;
+    }
+
+    // Renderizar carpetas
+    const carpetasHTML = currentFolders.map(carpeta => `
+        <div class="folder-item" data-folder-id="${carpeta.id}" style="
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            position: relative;
+        " onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'" 
+           onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'"
+           ondblclick="abrirCarpeta(${carpeta.id})">
+            
+            <!-- Icono de carpeta -->
+            <div style="margin-bottom: 0.75rem;">
+                <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="color: var(--apple-blue);">
+                    <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                </svg>
+            </div>
+            
+            <!-- Nombre de carpeta -->
+            <div style="color: var(--apple-label); font-weight: 500; font-size: 0.875rem; margin-bottom: 0.5rem; word-break: break-word;">
+                ${carpeta.nombre}
+            </div>
+            
+            <!-- Información adicional -->
+            <div style="color: var(--apple-label-secondary); font-size: 0.75rem;">
+                ${carpeta.archivos_count || 0} archivos
+            </div>
+            
+            <!-- Menú de opciones -->
+            <div class="folder-menu" style="position: absolute; top: 0.5rem; right: 0.5rem; opacity: 0; transition: opacity 0.2s;">
+                <button onclick="mostrarMenuCarpeta(event, ${carpeta.id})" style="
+                    background: rgba(255, 255, 255, 0.1);
+                    border: none;
+                    border-radius: 6px;
+                    padding: 0.25rem;
+                    color: var(--apple-label-secondary);
+                    cursor: pointer;
+                ">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = breadcrumbHTML + carpetasHTML;
+    
+    // Agregar hover effect para mostrar menús
+    container.querySelectorAll('.folder-item').forEach(item => {
+        const menu = item.querySelector('.folder-menu');
+        item.addEventListener('mouseenter', () => {
+            menu.style.opacity = '1';
+        });
+        item.addEventListener('mouseleave', () => {
+            menu.style.opacity = '0';
+        });
+    });
+}
+
+// Navegar a una carpeta
+function navegarCarpeta(folderId) {
+    currentFolder = folderId;
+    cargarCarpetas();
+}
+
+// Abrir carpeta (doble click)
+function abrirCarpeta(folderId) {
+    navegarCarpeta(folderId);
+}
+
+// Mostrar menú contextual de carpeta
+function mostrarMenuCarpeta(event, folderId) {
+    event.stopPropagation();
+    
+    // Crear menú contextual
+    const menu = document.createElement('div');
+    menu.className = 'context-menu';
+    menu.style.cssText = `
+        position: fixed;
+        top: ${event.clientY}px;
+        left: ${event.clientX}px;
+        background: rgba(28, 28, 30, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 0.5rem 0;
+        z-index: 10000;
+        min-width: 150px;
+    `;
+    
+    menu.innerHTML = `
+        <button onclick="renombrarCarpeta(${folderId}); removeContextMenu()" style="
+            width: 100%; 
+            background: none; 
+            border: none; 
+            color: var(--apple-label); 
+            padding: 0.5rem 1rem; 
+            text-align: left; 
+            cursor: pointer;
+            font-size: 0.875rem;
+        " onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'" 
+           onmouseout="this.style.background='none'">
+            Renombrar
+        </button>
+        <button onclick="eliminarCarpeta(${folderId}); removeContextMenu()" style="
+            width: 100%; 
+            background: none; 
+            border: none; 
+            color: var(--apple-red); 
+            padding: 0.5rem 1rem; 
+            text-align: left; 
+            cursor: pointer;
+            font-size: 0.875rem;
+        " onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'" 
+           onmouseout="this.style.background='none'">
+            Eliminar
+        </button>
+    `;
+    
+    document.body.appendChild(menu);
+    
+    // Cerrar menú al hacer click fuera
+    setTimeout(() => {
+        document.addEventListener('click', removeContextMenu, { once: true });
+    }, 10);
+}
+
+// Eliminar menú contextual
+function removeContextMenu() {
+    const menu = document.querySelector('.context-menu');
+    if (menu) menu.remove();
+}
+
+// Renombrar carpeta
+async function renombrarCarpeta(folderId) {
+    const carpeta = currentFolders.find(c => c.id === folderId);
+    if (!carpeta) return;
+    
+    const nuevoNombre = prompt('Nuevo nombre de la carpeta:', carpeta.nombre);
+    if (!nuevoNombre || nuevoNombre.trim() === carpeta.nombre) return;
+    
+    try {
+        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/carpetas/${folderId}/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            },
+            body: JSON.stringify({ nombre: nuevoNombre.trim() })
+        });
+
+        if (response.ok) {
+            cargarCarpetas();
+            mostrarNotificacion('Carpeta renombrada exitosamente', 'success');
+        } else {
+            throw new Error('Error al renombrar');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarNotificacion('Error al renombrar la carpeta', 'error');
+    }
+}
+
+// Eliminar carpeta
+async function eliminarCarpeta(folderId) {
+    const carpeta = currentFolders.find(c => c.id === folderId);
+    if (!carpeta) return;
+    
+    if (!confirm(`¿Estás seguro de que quieres eliminar la carpeta "${carpeta.nombre}"?`)) return;
+    
+    try {
+        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/carpetas/${folderId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            }
+        });
+
+        if (response.ok) {
+            cargarCarpetas();
+            mostrarNotificacion('Carpeta eliminada exitosamente', 'success');
+        } else {
+            throw new Error('Error al eliminar');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarNotificacion('Error al eliminar la carpeta', 'error');
+    }
+}
+
+// Mostrar notificaciones
+function mostrarNotificacion(mensaje, tipo = 'info') {
+    const notif = document.createElement('div');
+    notif.style.cssText = `
+        position: fixed;
+        top: 2rem;
+        right: 2rem;
+        background: ${tipo === 'success' ? 'var(--apple-green)' : tipo === 'error' ? 'var(--apple-red)' : 'var(--apple-blue)'};
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        z-index: 10000;
+        font-size: 0.875rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    `;
+    notif.textContent = mensaje;
+    
+    document.body.appendChild(notif);
+    
+    setTimeout(() => {
+        notif.style.opacity = '0';
+        notif.style.transform = 'translateY(-20px)';
+        setTimeout(() => notif.remove(), 300);
+    }, 3000);
+}
+
 </script>
 
 <!-- Formulario Potente de Tareas con Editor Avanzado -->

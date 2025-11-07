@@ -36,6 +36,12 @@ urlpatterns = [
     path("api/comentario-tarea/<int:comentario_id>/editar/", views.api_editar_comentario_tarea, name="api_editar_comentario_tarea"),
     path("api/comentario-tarea/<int:comentario_id>/eliminar/", views.api_eliminar_comentario_tarea, name="api_eliminar_comentario_tarea"),
     
+    # APIs para sistema de carpetas y archivos
+    path("api/proyecto/<int:proyecto_id>/carpetas/", views.api_carpetas_proyecto, name="api_carpetas_proyecto"),
+    path("api/proyecto/<int:proyecto_id>/carpeta/<int:carpeta_id>/", views.api_carpeta_detalle, name="api_carpeta_detalle"),
+    path("api/proyecto/<int:proyecto_id>/archivos/", views.api_archivos_proyecto, name="api_archivos_proyecto"),
+    path("api/proyecto/<int:proyecto_id>/archivo/<int:archivo_id>/", views.api_archivo_detalle, name="api_archivo_detalle"),
+    
     
     # APIs para Tareas y Proyectos
     path("api/proyectos/", views.api_proyectos, name="api_proyectos"),
