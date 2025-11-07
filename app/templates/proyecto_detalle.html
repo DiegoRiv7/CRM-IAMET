@@ -2907,6 +2907,9 @@
 <script>
 // Variables globales
 const PROYECTO_ID = {{ proyecto.id }};
+let currentTaskId = null;
+let currentEditingElement = null;
+let originalValue = null;
 
 // Namespace para funciones de tareas - DEFINIDO TEMPRANO para evitar errores de referencia
 const TareasProyectos = {};
@@ -6908,6 +6911,10 @@ function crearSubTarea(tareaId = null) {
 
 
 
+// Función para establecer el ID de la tarea actual cuando se abre el modal
+function setCurrentTaskId(taskId) {
+    currentTaskId = taskId;
+}
 
 </script>
 
