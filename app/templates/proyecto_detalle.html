@@ -2909,18 +2909,14 @@
 const PROYECTO_ID = {{ proyecto.id }};
 
 // Namespace para funciones de tareas - DEFINIDO TEMPRANO para evitar errores de referencia
-const TareasProyectos = {
-    // Variables para navegación entre tareas
-    currentProjectTasks: [],
-    currentTaskIndex: -1,
-    currentTaskId: null,
-    allUsers: [],
+const TareasProyectos = {};
 
-    // Función principal para ver detalles de tarea - UNIFICADA CON TAREAS PROYECTOS
+// --- TASK DETAIL FUNCTIONS (NAMESPACE) ---
+Object.assign(TareasProyectos, {
     async verDetallesTarea(tareaId) {
-        console.log('=== INICIANDO verDetallesTarea DESDE PROYECTO ===');
+        console.log('=== INICIANDO verDetallesTarea ===');
         console.log('TareasProyectos.verDetallesTarea called with ID:', tareaId);
-        console.log('This is the UNIFIED TareasProyectos function');
+        console.log('This is the TareasProyectos namespace function, NOT the proyecto_detalle function');
         
         // Establecer la tarea actual
         TareasProyectos.currentTaskId = tareaId;
@@ -2944,29 +2940,28 @@ const TareasProyectos = {
                 throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
             }
             
-            const response_data = await response.json();
-            console.log('Tarea data received:', response_data);
-            
-            // Extraer datos de la tarea según la estructura de la API
-            const tarea = response_data.success ? response_data.tarea : response_data;
-            console.log('Extracted tarea:', tarea);
+            const tarea = await response.json();
+            console.log('Tarea data received:', tarea);
             
             // Rellenar elementos básicos
             TareasProyectos.setElementText('task-detail-titulo', tarea.titulo);
             TareasProyectos.setElementText('task-detail-descripcion', tarea.descripcion || 'Sin descripción disponible');
-            TareasProyectos.setElementText('task-detail-proyecto', tarea.proyecto ? tarea.proyecto.nombre : 'Sin proyecto');
+            TareasProyectos.setElementText('task-detail-proyecto', tarea.proyecto_nombre || 'Sin proyecto');
             TareasProyectos.setElementText('task-detail-fecha-limite', tarea.fecha_limite ? TareasProyectos.formatearFechaCompleta(tarea.fecha_limite) : 'Sin fecha límite');
             TareasProyectos.setElementText('task-detail-fecha-creacion', TareasProyectos.formatearFechaCompleta(tarea.fecha_creacion));
             
             // Rellenar información del creador con avatar
-            if (tarea.creado_por) {
-                TareasProyectos.setElementText('task-detail-creado-por', tarea.creado_por.nombre || tarea.creado_por);
+            if (tarea.creado_por_data) {
+                TareasProyectos.setElementText('task-detail-creado-por', tarea.creado_por_data.nombre);
             } else {
-                TareasProyectos.setElementText('task-detail-creado-por', 'Sin información del creador');
+                TareasProyectos.setElementText('task-detail-creado-por', tarea.creado_por);
             }
             
             // Configurar responsable con avatar
-            TareasProyectos.setupResponsableWithData(tarea.responsable);
+            TareasProyectos.setupResponsableWithData(tarea.responsable_data);
+            
+            // Establecer el ID de la tarea actual para edición
+            setCurrentTaskId(tarea.id);
             
             // Configurar participantes con datos reales
             TareasProyectos.setupParticipantes(tarea.participantes || []);
@@ -2982,6 +2977,8 @@ const TareasProyectos = {
             
             const prioridadElement = document.getElementById('task-detail-prioridad');
             if (prioridadElement) {
+                // Guardar el valor de prioridad original para edición
+                prioridadElement.setAttribute('data-priority-value', tarea.prioridad || 'normal');
                 prioridadElement.innerHTML = TareasProyectos.getPrioridadBadgeGlass(tarea.prioridad);
             }
             
@@ -3011,17 +3008,40 @@ const TareasProyectos = {
         }
     },
 
-    // ===============================
-    // FUNCIONES AUXILIARES UNIFICADAS  
-    // ===============================
-    
-    setElementText(id, text) {
-        const elemento = document.getElementById(id);
-        if (elemento) {
-            elemento.textContent = text;
-        } else {
-            console.warn(`Elemento no encontrado: ${id}`);
+    cerrarModalDetalleTarea() {
+        const modal = document.getElementById('modal-detalle-tarea');
+        if (modal) {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
         }
+        
+        // Limpiar cronómetro si está corriendo pero no detener la tarea en el servidor
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+        
+        // Ocultar display del cronómetro
+        this.hideTimerDisplay();
+        
+        // Limpiar ID de tarea actual
+        this.currentTaskId = null;
+        
+        // Limpiar task_id de la URL
+        const currentURL = new URL(window.location);
+        currentURL.searchParams.delete('task_id');
+        window.history.replaceState({}, '', currentURL);
+    },
+
+    getPrioridadBadgeHTML(prioridad) {
+        const prioridadColors = {
+            'baja': '#30D158',
+            'media': '#FF9500', 
+            'alta': '#FF3B30'
+        };
+        
+        const color = prioridadColors[prioridad] || '#8E8E93';
+        return `<span class="priority-badge" style="background: ${color}; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">${prioridad.charAt(0).toUpperCase() + prioridad.slice(1)}</span>`;
     },
 
     formatearFechaCompleta(fechaStr) {
@@ -3035,166 +3055,18 @@ const TareasProyectos = {
             hour: '2-digit',
             minute: '2-digit'
         };
+        
         return fecha.toLocaleDateString('es-ES', opciones);
     },
 
-    getEstadoBadgeHTML(estado) {
-        const estadosConfig = {
-            'pendiente': { label: 'Pendiente', color: '#8E8E93', bgColor: 'rgba(142, 142, 147, 0.2)', icon: '○' },
-            'iniciada': { label: 'Pausado', color: '#FF9500', bgColor: 'rgba(255, 149, 0, 0.2)', icon: '⏸️' },
-            'en_progreso': { label: 'En Progreso', color: '#007AFF', bgColor: 'rgba(0, 122, 255, 0.2)', icon: '▶️' },
-            'completada': { label: 'Completada', color: '#34C759', bgColor: 'rgba(52, 199, 89, 0.2)', icon: '✅' },
-            'cancelada': { label: 'Cancelada', color: '#FF3B30', bgColor: 'rgba(255, 59, 48, 0.2)', icon: '×' }
-        };
-        
-        const config = estadosConfig[estado] || estadosConfig['pendiente'];
-        
-        return `
-            <span style="
-                display: inline-flex;
-                align-items: center;
-                padding: 0.375rem 0.75rem;
-                background: ${config.bgColor};
-                color: ${config.color};
-                border-radius: 0.75rem;
-                font-size: 0.8rem;
-                font-weight: 600;
-                gap: 0.25rem;
-                text-transform: uppercase;
-                letter-spacing: 0.025em;
-                backdrop-filter: blur(8px);
-                -webkit-backdrop-filter: blur(8px);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-            ">
-                <span>${config.icon}</span>
-                ${config.label}
-            </span>
-        `;
-    },
-
-    getPrioridadBadgeGlass(prioridad) {
-        const prioridadConfig = {
-            'baja': { label: 'Baja', color: '#34C759', bgColor: 'rgba(52, 199, 89, 0.2)' },
-            'media': { label: 'Media', color: '#FF9500', bgColor: 'rgba(255, 149, 0, 0.2)' },
-            'alta': { label: 'Alta', color: '#FF3B30', bgColor: 'rgba(255, 59, 48, 0.2)' }
-        };
-        
-        const config = prioridadConfig[prioridad] || prioridadConfig['media'];
-        
-        return `
-            <span style="
-                display: inline-flex;
-                align-items: center;
-                padding: 0.375rem 0.75rem;
-                background: ${config.bgColor};
-                color: ${config.color};
-                border-radius: 0.75rem;
-                font-size: 0.8rem;
-                font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 0.025em;
-                backdrop-filter: blur(8px);
-                -webkit-backdrop-filter: blur(8px);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-            ">
-                ${config.label}
-            </span>
-        `;
-    },
-
-    setupResponsableWithData(responsableData) {
-        const container = document.getElementById('task-detail-responsable-container');
-        if (!container) return;
-
-        if (responsableData && responsableData.nombre) {
-            const avatarUrl = responsableData.avatar_url || null;
-            const iniciales = this.getInitials(responsableData.nombre);
-            
-            container.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; backdrop-filter: blur(8px);">
-                    ${avatarUrl ? 
-                        `<img src="${avatarUrl}" alt="${responsableData.nombre}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">` :
-                        `<div style="width: 40px; height: 40px; border-radius: 50%; background: ${this.getAvatarColor(responsableData.nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem;">${iniciales}</div>`
-                    }
-                    <div>
-                        <div style="color: var(--apple-label); font-weight: 500; font-size: 0.95rem;">${responsableData.nombre}</div>
-                        <div style="color: var(--apple-label-secondary); font-size: 0.8rem;">Responsable</div>
-                    </div>
-                </div>
-            `;
+    // Función auxiliar para establecer texto en elementos
+    setElementText(id, text) {
+        const elemento = document.getElementById(id);
+        if (elemento) {
+            elemento.textContent = text;
         } else {
-            container.innerHTML = `
-                <div style="padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; color: var(--apple-label-secondary); text-align: center;">
-                    Sin responsable asignado
-                </div>
-            `;
+            console.warn(`Elemento no encontrado: ${id}`);
         }
-    },
-
-    setupParticipantes(participantes) {
-        // Función placeholder - implementar si es necesario
-        console.log('setupParticipantes called with:', participantes);
-    },
-
-    setupObservadores(observadores) {
-        // Función placeholder - implementar si es necesario  
-        console.log('setupObservadores called with:', observadores);
-    },
-
-    async cargarComentarios(tareaId) {
-        try {
-            const response = await fetch(`/app/api/tarea/${tareaId}/comentarios/`);
-            if (response.ok) {
-                const data = await response.json();
-                console.log('Comentarios cargados:', data);
-                // Implementar visualización de comentarios si es necesario
-            }
-        } catch (error) {
-            console.error('Error cargando comentarios:', error);
-        }
-    },
-
-    configurarFormularioComentarios() {
-        // Función placeholder para configurar el formulario de comentarios
-        console.log('configurarFormularioComentarios called');
-    },
-
-    initializeTimerState(tarea) {
-        // Función placeholder para inicializar el estado del cronómetro
-        console.log('initializeTimerState called with:', tarea);
-        
-        // Configurar botones según el estado de la tarea
-        const btnStart = document.getElementById('btn-start-task');
-        const btnPause = document.getElementById('btn-pause-task');
-        
-        if (btnStart && btnPause) {
-            if (tarea.trabajando_actualmente) {
-                btnStart.style.display = 'none';
-                btnPause.style.display = 'flex';
-            } else {
-                btnStart.style.display = 'flex';
-                btnPause.style.display = 'none';
-            }
-        }
-    },
-
-    cerrarModalDetalleTarea() {
-        const modal = document.getElementById('modal-detalle-tarea');
-        if (modal) {
-            modal.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-        
-        // Limpiar cronómetro si está corriendo
-        if (this.timerInterval) {
-            clearInterval(this.timerInterval);
-            this.timerInterval = null;
-        }
-        
-        // Limpiar task_id de la URL
-        const currentURL = new URL(window.location);
-        currentURL.searchParams.delete('task_id');
-        window.history.replaceState({}, '', currentURL);
     },
 
     // Función para generar iniciales de una persona
@@ -3229,210 +3101,1579 @@ const TareasProyectos = {
         return colors[Math.abs(hash) % colors.length];
     },
 
-    // Función para abrir el modal que sabemos que funciona
-    abrirModalQuesFunciona(tarea) {
-        console.log('🎯 Abriendo modal que funciona con datos:', tarea);
+    // Función para configurar el avatar de una persona (legacy)
+    setupPersonAvatar(avatarId, personName) {
+        const avatar = document.getElementById(avatarId);
+        if (avatar && personName) {
+            avatar.style.background = TareasProyectos.getAvatarColor(personName);
+            avatar.textContent = TareasProyectos.getInitials(personName);
+        }
+    },
+
+    // Función mejorada para configurar avatar con datos completos del usuario
+    setupPersonAvatarWithData(avatarId, userData) {
+        const avatar = document.getElementById(avatarId);
+        if (!avatar || !userData) return;
         
-        // Usar el modal modal-detalle-tarea que es el que se ve en la imagen
-        const modal = document.getElementById('modal-detalle-tarea');
-        if (!modal) {
-            console.error('❌ Modal modal-detalle-tarea no encontrado');
+        if (userData.avatar_url) {
+            // Si tiene foto, usar la imagen real
+            avatar.style.background = `url(${userData.avatar_url}) center/cover`;
+            avatar.textContent = '';
+            avatar.style.border = '2px solid rgba(255, 255, 255, 0.2)';
+        } else {
+            // Si no tiene foto, usar iniciales con gradiente
+            avatar.style.background = TareasProyectos.getAvatarColor(userData.nombre);
+            avatar.style.border = 'none';
+            avatar.textContent = TareasProyectos.getInitials(userData.nombre);
+        }
+    },
+
+    // Función para crear un avatar (HTML) con datos del usuario
+    createUserAvatarHTML(userData, size = 40) {
+        if (!userData) {
+            return `
+                <div style="width: ${size}px; height: ${size}px; border-radius: 50%; background: rgba(142, 142, 147, 0.3); display: flex; align-items: center; justify-content: center; color: var(--apple-label-secondary); font-weight: 600; font-size: 0.9rem;">
+                    ?
+                </div>
+            `;
+        }
+        
+        if (userData.avatar_url) {
+            return `
+                <div style="width: ${size}px; height: ${size}px; border-radius: 50%; background: url(${userData.avatar_url}) center/cover; border: 2px solid rgba(255, 255, 255, 0.2);"></div>
+            `;
+        } else {
+            return `
+                <div style="width: ${size}px; height: ${size}px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(userData.nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem;">
+                    ${TareasProyectos.getInitials(userData.nombre)}
+                </div>
+            `;
+        }
+    },
+
+    // Función para configurar el responsable con datos de usuario (Glassmorphism)
+    setupResponsableWithData(responsableData) {
+        const container = document.getElementById('task-detail-responsable-container');
+        if (!container) return;
+        
+        if (responsableData) {
+            container.innerHTML = `
+                ${TareasProyectos.createUserAvatarHTML(responsableData, 32)}
+                <span style="color: #E0E7FF; font-weight: 500;">${responsableData.nombre}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem; margin-left: auto; color: #9CA3AF;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+            `;
+        } else {
+            container.innerHTML = `
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(142, 142, 147, 0.3); display: flex; align-items: center; justify-content: center; color: #9CA3AF; font-weight: 600; font-size: 0.875rem;">
+                    ?
+                </div>
+                <span style="color: #9CA3AF; font-weight: 500;">Sin asignar</span>
+                <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem; margin-left: auto; color: #9CA3AF;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+            `;
+        }
+    },
+
+    // Función para generar badges de estado con glassmorphism
+    getEstadoBadgeHTML(estado) {
+        const estadoConfig = {
+            'pendiente': { bg: 'rgba(239, 68, 68, 0.9)', color: '#7F1D1D', text: 'Pendiente' },
+            'iniciada': { bg: 'rgba(255, 149, 0, 0.2)', color: '#FF9500', text: 'Pausado ⏸️' },
+            'en_progreso': { bg: 'rgba(0, 122, 255, 0.2)', color: '#007AFF', text: 'En Progreso ▶️' },
+            'completada': { bg: 'rgba(52, 199, 89, 0.2)', color: '#34C759', text: 'Completada ✅' },
+            'cancelada': { bg: 'rgba(239, 68, 68, 0.9)', color: '#7F1D1D', text: 'Cancelada' }
+        };
+        
+        const config = estadoConfig[estado] || estadoConfig['pendiente'];
+        return `<span style="
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            background-color: ${config.bg};
+            color: ${config.color};
+        ">${config.text}</span>`;
+    },
+
+    // Función para generar badges de prioridad con glassmorphism
+    getPrioridadBadgeGlass(prioridad) {
+        const prioridadTexto = prioridad === 'alta' ? 'Alta' : 'Normal';
+        const prioridadColor = prioridad === 'alta' ? '#FF9500' : '#8E8E93';
+        const prioridadIcon = prioridad === 'alta' ? '⭐' : '';
+        
+        return `<span style="
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: ${prioridad === 'alta' ? 'rgba(255, 149, 0, 0.1)' : 'rgba(142, 142, 147, 0.1)'};
+            color: ${prioridadColor};
+            padding: 0.375rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            border: 1px solid ${prioridad === 'alta' ? 'rgba(255, 149, 0, 0.2)' : 'rgba(142, 142, 147, 0.2)'};
+        ">
+            ${prioridadIcon}
+            ${prioridadTexto}
+        </span>`;
+    },
+
+    // Función para configurar observadores
+    setupObservadores(observadores) {
+        const container = document.getElementById('task-detail-observadores-container');
+        if (!container) return;
+        
+        if (observadores && observadores.length > 0) {
+            const observadoresHTML = observadores.map(observador => {
+                // Check if observador is an object with user data or just a string
+                if (typeof observador === 'object' && observador.nombre) {
+                    return TareasProyectos.createUserAvatarHTML(observador, 28);
+                } else {
+                    // Fallback for string names
+                    const nombre = typeof observador === 'string' ? observador : observador.toString();
+                    return `
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;" title="${nombre}">
+                            ${TareasProyectos.getInitials(nombre)}
+                        </div>
+                    `;
+                }
+            }).join('');
+            
+            // Add button to add observers
+            container.innerHTML = observadoresHTML + `
+                <button onclick="TareasProyectos.toggleDropdown('observadores')" style="
+                    width: 28px; 
+                    height: 28px; 
+                    background: rgba(45, 55, 72, 1); 
+                    color: #9CA3AF; 
+                    border-radius: 50%; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    font-size: 0.75rem; 
+                    border: none; 
+                    cursor: pointer;
+                    transition: background-color 0.2s;
+                " title="Añadir observador" onmouseover="this.style.backgroundColor='rgba(45, 55, 72, 0.5)'" onmouseout="this.style.backgroundColor='rgba(45, 55, 72, 1)'">
+                    <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                </button>
+            `;
+        } else {
+            container.innerHTML = `
+                <button onclick="TareasProyectos.toggleDropdown('observadores')" style="
+                    width: 28px; 
+                    height: 28px; 
+                    background: rgba(45, 55, 72, 1); 
+                    color: #9CA3AF; 
+                    border-radius: 50%; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    font-size: 0.75rem; 
+                    border: none; 
+                    cursor: pointer;
+                    transition: background-color 0.2s;
+                " title="Añadir observador" onmouseover="this.style.backgroundColor='rgba(45, 55, 72, 0.5)'" onmouseout="this.style.backgroundColor='rgba(45, 55, 72, 1)'">
+                    <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                </button>
+            `;
+        }
+    },
+
+    // Variables para controlar dropdowns
+    currentTaskId: null,
+    allUsers: [],
+
+    // Función para alternar mostrar/ocultar dropdown
+    toggleDropdown(type) {
+        const dropdown = document.getElementById(`${type}-dropdown`);
+        const searchInput = document.getElementById(`${type}-search`);
+        
+        if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+            // Mostrar dropdown
+            dropdown.style.display = 'flex';
+            searchInput.focus();
+            // Cargar usuarios si no están cargados
+            if (TareasProyectos.allUsers.length === 0) {
+                TareasProyectos.loadAllUsers();
+            } else {
+                TareasProyectos.displayUsers(type, TareasProyectos.allUsers);
+            }
+            
+            // Configurar event listeners
+            TareasProyectos.setupDropdownListeners(type);
+        } else {
+            // Ocultar dropdown
+            dropdown.style.display = 'none';
+            searchInput.value = '';
+        }
+    },
+
+    // Función para cargar todos los usuarios
+    async loadAllUsers() {
+        try {
+            const response = await fetch('/app/api/buscar-usuarios/?q=', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.usuarios && data.usuarios.length > 0) {
+                    // Transformar los usuarios al formato que esperamos
+                    TareasProyectos.allUsers = data.usuarios.map(user => ({
+                        id: user.id,
+                        nombre: user.nombre || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
+                        email: user.email || '',
+                        username: user.username,
+                        first_name: user.first_name,
+                        last_name: user.last_name,
+                        avatar_url: user.avatar_url,
+                        iniciales: user.iniciales
+                    }));
+                    console.log('Usuarios cargados:', TareasProyectos.allUsers);
+                    
+                    // Mostrar usuarios en dropdowns activos
+                    ['participantes', 'observadores'].forEach(type => {
+                        const dropdown = document.getElementById(`${type}-dropdown`);
+                        if (dropdown && dropdown.style.display === 'block') {
+                            TareasProyectos.displayUsers(type, TareasProyectos.allUsers);
+                        }
+                    });
+                } else {
+                    console.log('No se encontraron usuarios disponibles');
+                    TareasProyectos.allUsers = [];
+                }
+            } else {
+                console.error('Error al cargar usuarios:', response.status);
+            }
+        } catch (error) {
+            console.error('Error al cargar usuarios:', error);
+        }
+    },
+
+    // Función para mostrar usuarios en el dropdown
+    displayUsers(type, users) {
+        const resultsContainer = document.getElementById(`${type}-results`);
+        if (!resultsContainer) return;
+
+        if (users.length === 0) {
+            resultsContainer.innerHTML = `
+                <div style="padding: 1rem; text-align: center; color: #9CA3AF; font-size: 0.875rem;">
+                    No se encontraron usuarios
+                </div>
+            `;
             return;
         }
 
-        // Llenar los datos del modal con los elementos correctos
-        const elementos = {
-            'task-detail-titulo': tarea.titulo,
-            'task-detail-descripcion': tarea.descripcion || 'Sin descripción',
-            'task-detail-proyecto': tarea.proyecto_nombre || 'Sin proyecto',
-            'task-detail-fecha-limite': tarea.fecha_limite ? 
-                TareasProyectos.formatearFechaCompleta(tarea.fecha_limite) : 'Sin fecha límite',
-            'task-detail-creado-por': tarea.creado_por || 'Sin información',
-            'task-detail-fecha-creacion': tarea.fecha_creacion ? 
-                TareasProyectos.formatearFechaCompleta(tarea.fecha_creacion) : 'Sin fecha'
+        const usersHTML = users.map(user => `
+            <div onclick="TareasProyectos.addUserToTask('${type}', ${user.id}, '${user.nombre}')" style="
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.75rem;
+                cursor: pointer;
+                border-radius: 0.375rem;
+                transition: background-color 0.2s;
+            " onmouseover="this.style.backgroundColor='rgba(45, 55, 72, 0.5)'" onmouseout="this.style.backgroundColor='transparent'">
+                <div style="flex-shrink: 0;">
+                    ${user.avatar_url ? 
+                        `<img src="${user.avatar_url}" alt="${user.nombre}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.1);">` :
+                        `<div style="width: 32px; height: 32px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(user.nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.8rem; border: 2px solid rgba(255, 255, 255, 0.1);">${user.iniciales || TareasProyectos.getInitials(user.nombre)}</div>`
+                    }
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="color: #E0E7FF; font-weight: 500; font-size: 0.875rem;">${user.nombre}</div>
+                    <div style="color: #9CA3AF; font-size: 0.75rem;">@${user.username}</div>
+                </div>
+            </div>
+        `).join('');
+
+        resultsContainer.innerHTML = usersHTML;
+    },
+
+    // Función para configurar event listeners del dropdown
+    setupDropdownListeners(type) {
+        const searchInput = document.getElementById(`${type}-search`);
+        const dropdown = document.getElementById(`${type}-dropdown`);
+        
+        // Filtrar usuarios mientras se escribe
+        searchInput.oninput = (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            const filteredUsers = TareasProyectos.allUsers.filter(user => 
+                user.nombre.toLowerCase().includes(query) || 
+                user.username.toLowerCase().includes(query)
+            );
+            TareasProyectos.displayUsers(type, filteredUsers);
         };
 
-        // Rellenar elementos de texto
-        Object.entries(elementos).forEach(([id, valor]) => {
-            const elemento = document.getElementById(id);
-            if (elemento) {
-                elemento.textContent = valor;
-                console.log(`✅ ${id}: ${valor}`);
-            } else {
-                console.log(`⚠️ Elemento ${id} no encontrado`);
+        // Cerrar dropdown al presionar Escape
+        searchInput.onkeydown = (e) => {
+            if (e.key === 'Escape') {
+                dropdown.style.display = 'none';
+                searchInput.value = '';
             }
-        });
+        };
 
-        // Llenar estado y prioridad con badges
+        // Cerrar dropdown al hacer clic fuera
+        document.onclick = (e) => {
+            if (!dropdown.contains(e.target) && !e.target.closest(`[onclick*="${type}"]`)) {
+                dropdown.style.display = 'none';
+                searchInput.value = '';
+            }
+        };
+    },
+
+    // Función para agregar usuario a la tarea - IMPLEMENTACIÓN REAL
+    async addUserToTask(type, userId, userName) {
+        console.log('🟦 === INICIANDO addUserToTask (tareas_proyectos.html) ===');
+        console.log(`🟦 userId: ${userId}, type: ${type}, userName: ${userName}, currentTaskId: ${TareasProyectos.currentTaskId}`);
+        
+        if (!TareasProyectos.currentTaskId) {
+            console.error('❌ No hay tarea seleccionada');
+            alert('No hay tarea seleccionada');
+            return;
+        }
+        
+        try {
+            const requestData = {
+                user_id: userId,
+                action: 'add',
+                tipo: type
+            };
+            
+            console.log(`🟦 Enviando datos:`, requestData);
+            console.log(`🟦 URL: /app/api/tarea/${TareasProyectos.currentTaskId}/`);
+            
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+            console.log(`🟦 CSRF Token: ${csrfToken ? 'Presente' : 'FALTANTE'}`);
+            
+            const response = await fetch(`/app/api/tarea/${TareasProyectos.currentTaskId}/`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken || ''
+                },
+                body: JSON.stringify(requestData)
+            });
+            
+            console.log(`🟦 Response status: ${response.status}`);
+            console.log(`🟦 Response ok: ${response.ok}`);
+            
+            const result = await response.json();
+            console.log(`🟦 Response data:`, result);
+            
+            if (result.success) {
+                console.log('✅ Usuario agregado exitosamente:', result.message);
+                
+                // Cerrar dropdown
+                const dropdown = document.getElementById(`${type}-dropdown`);
+                if (dropdown) {
+                    dropdown.style.display = 'none';
+                }
+                const searchInput = document.getElementById(`${type}-search`);
+                if (searchInput) {
+                    searchInput.value = '';
+                }
+
+                // Agregar comentario del sistema  
+                const tipoTexto = type === 'participantes' ? 'participante' : 'observador';
+                TareasProyectos.addSystemComment(`${userName} ha sido agregado como ${tipoTexto} a la tarea.`, '#3B82F6');
+                
+                // Actualizar la interfaz visual agregando el usuario a la lista
+                TareasProyectos.actualizarListaUsuarios(type, {
+                    id: userId,
+                    nombre: userName,
+                    avatar_url: result.user_data ? result.user_data.avatar_url : null
+                });
+                
+                // Mostrar mensaje de éxito
+                console.log(`✅ Usuario ${userName} agregado como ${tipoTexto} a la tarea ${TareasProyectos.currentTaskId} - GUARDADO EN BASE DE DATOS`);
+                
+            } else {
+                console.error('❌ Error del servidor:', result.error);
+                alert(`Error: ${result.error}`);
+            }
+            
+        } catch (error) {
+            console.error('❌ Error agregando usuario:', error);
+            alert('Error al agregar usuario a la tarea');
+        }
+        
+        console.log('🟦 === FIN addUserToTask (tareas_proyectos.html) ===');
+    },
+
+    // Variables para controlar el cronómetro
+    isTaskRunning: false,
+    timerInterval: null,
+    startTime: null,
+    elapsedTime: 0,
+
+    // Función para alternar entre iniciar/pausar tarea
+    async toggleTaskRunning() {
+        if (!this.currentTaskId) {
+            alert('No hay tarea seleccionada');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/app/api/tarea/${this.currentTaskId}/toggle-timer/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                },
+                body: JSON.stringify({ action: 'toggle' })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.success) {
+                const btnStart = document.getElementById('btn-start-task');
+                const btnPause = document.getElementById('btn-pause-task');
+                
+                this.isTaskRunning = data.tarea.trabajando_actualmente;
+                
+                if (this.isTaskRunning) {
+                    // TAREA INICIADA/REANUDADA
+                    btnStart.style.display = 'none';
+                    btnStart.querySelector('span').textContent = 'Iniciar Tarea'; // Reset text
+                    btnPause.style.display = 'flex';
+                    
+                    // Primero obtener el tiempo acumulado correcto desde el servidor
+                    this.refreshTaskDataAndStartTimer();
+                    
+                    this.addSystemComment('Tarea INICIADA. El cronómetro está en marcha.', '#16a34a');
+                    console.log('🟢 Tarea iniciada/reanudada - cronómetro activado');
+                } else {
+                    // TAREA PAUSADA
+                    btnStart.style.display = 'flex';
+                    btnStart.querySelector('span').textContent = 'Reanudar Tarea';
+                    btnPause.style.display = 'none';
+                    
+                    // Detener cronómetro pero mostrar tiempo pausado
+                    if (this.timerInterval) {
+                        clearInterval(this.timerInterval);
+                        this.timerInterval = null;
+                    }
+                    
+                    // Mostrar cronómetro pausado con tiempo actual
+                    if (data.tarea.tiempo_total_trabajado) {
+                        this.showPausedTimer(data.tarea.tiempo_total_trabajado);
+                    }
+                    
+                    this.addSystemComment('Tarea PAUSADA. El cronómetro se ha detenido.', '#dc2626');
+                    console.log('🔴 Tarea pausada - cronómetro detenido');
+                }
+                
+                // Actualizar estado de la tarea en la interfaz inmediatamente
+                this.updateTaskStatus(data.tarea.estado);
+                
+                // También recargar la lista de tareas para actualizar la tabla
+                if (typeof cargarTareas === 'function') {
+                    cargarTareas();
+                }
+                
+                // Mostrar mensaje de éxito
+                console.log('✅', data.message);
+                
+            } else {
+                alert('Error: ' + data.error);
+            }
+            
+        } catch (error) {
+            console.error('Error al cambiar estado de tarea:', error);
+            alert('Error al cambiar estado de la tarea: ' + error.message);
+        }
+    },
+
+    // Función para iniciar el cronómetro visual
+    startTimer() {
+        this.startTime = Date.now();
+        this.showTimerDisplay();
+        
+        // Actualizar inmediatamente antes de iniciar el intervalo
+        this.updateTimerDisplay();
+        this.timerInterval = setInterval(() => {
+            this.updateTimerDisplay();
+        }, 1000);
+    },
+
+    // Función para detener el cronómetro
+    stopTimer() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+        this.hideTimerDisplay();
+    },
+
+    // Función para mostrar el cronómetro
+    showTimerDisplay() {
+        const taskControls = document.getElementById('task-controls');
+        if (!taskControls) {
+            console.warn('⚠️ Contenedor task-controls no encontrado');
+            return;
+        }
+
+        // Verificar si ya existe el cronómetro
+        let timerDisplay = document.getElementById('task-timer-display');
+        if (!timerDisplay) {
+            timerDisplay = document.createElement('div');
+            timerDisplay.id = 'task-timer-display';
+            timerDisplay.style.cssText = `
+                background: rgba(28, 28, 30, 0.8);
+                border: 1px solid rgba(72, 72, 74, 0.3);
+                border-radius: 12px;
+                padding: 12px 16px;
+                margin-top: 12px;
+                text-align: center;
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                box-shadow: 
+                    0 1px 3px rgba(0, 0, 0, 0.3),
+                    0 0 0 0.5px rgba(255, 255, 255, 0.05) inset;
+                transition: all 0.2s ease;
+            `;
+            timerDisplay.innerHTML = `
+                <div style="
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    gap: 8px;
+                    margin-bottom: 4px;
+                ">
+                    <div style="
+                        width: 6px; 
+                        height: 6px; 
+                        background: #30D158; 
+                        border-radius: 50%;
+                        animation: pulse 2s infinite;
+                    "></div>
+                    <span style="
+                        color: #8E8E93; 
+                        font-size: 11px; 
+                        font-weight: 500; 
+                        letter-spacing: 0.5px;
+                        text-transform: uppercase;
+                    ">En progreso</span>
+                </div>
+                <div id="timer-display" style="
+                    color: #F2F2F7; 
+                    font-size: 20px; 
+                    font-weight: 600; 
+                    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+                    letter-spacing: 1px;
+                    margin-bottom: 2px;
+                ">
+                    00:00:00
+                </div>
+                <div style="
+                    color: #636366; 
+                    font-size: 10px; 
+                    font-weight: 400;
+                    opacity: 0.8;
+                ">
+                    Sesión actual
+                </div>
+                <style>
+                    @keyframes pulse {
+                        0%, 100% { opacity: 1; }
+                        50% { opacity: 0.4; }
+                    }
+                </style>
+            `;
+            // Agregar el cronómetro al final del contenedor de controles
+            taskControls.appendChild(timerDisplay);
+            console.log('✅ Cronómetro agregado al DOM');
+        }
+        timerDisplay.style.display = 'block';
+        console.log('✅ Cronómetro mostrado');
+    },
+
+    // Función para ocultar el cronómetro
+    hideTimerDisplay() {
+        const timerDisplay = document.getElementById('task-timer-display');
+        if (timerDisplay) {
+            timerDisplay.style.display = 'none';
+        }
+    },
+
+    // Función para actualizar el cronómetro visual
+    updateTimerDisplay() {
+        const timerElement = document.getElementById('timer-display');
+        if (!timerElement || !this.startTime) return;
+
+        const currentTime = Date.now();
+        const elapsed = Math.floor((currentTime - this.startTime) / 1000);
+        
+        const hours = Math.floor(elapsed / 3600);
+        const minutes = Math.floor((elapsed % 3600) / 60);
+        const seconds = elapsed % 60;
+        
+        timerElement.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    },
+
+    // Función para mostrar cronómetro pausado
+    showPausedTimer(segundosTotal) {
+        const taskControls = document.getElementById('task-controls');
+        if (!taskControls) return;
+        
+        let timerDisplay = document.getElementById('task-timer-display');
+        if (!timerDisplay) {
+            timerDisplay = document.createElement('div');
+            timerDisplay.id = 'task-timer-display';
+            taskControls.appendChild(timerDisplay);
+        }
+        
+        const hours = Math.floor(segundosTotal / 3600);
+        const minutes = Math.floor((segundosTotal % 3600) / 60);
+        const seconds = segundosTotal % 60;
+        const timeText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        timerDisplay.style.cssText = `
+            background: rgba(28, 28, 30, 0.8);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-top: 12px;
+            text-align: center;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        `;
+        
+        timerDisplay.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #FF9F40;">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                <span style="font-weight: 600; font-size: 1.1rem;">${timeText}</span>
+                <span style="font-size: 0.8rem; opacity: 0.7;">(Pausado)</span>
+            </div>
+        `;
+        
+        timerDisplay.style.display = 'block';
+    },
+
+    // Función para mostrar cronómetro de tarea completada
+    showCompletedTaskTimer(segundosTotal) {
+        const taskControls = document.getElementById('task-controls');
+        if (!taskControls) return;
+        
+        let timerDisplay = document.getElementById('task-timer-display');
+        if (!timerDisplay) {
+            timerDisplay = document.createElement('div');
+            timerDisplay.id = 'task-timer-display';
+            taskControls.appendChild(timerDisplay);
+        }
+        
+        const hours = Math.floor(segundosTotal / 3600);
+        const minutes = Math.floor((segundosTotal % 3600) / 60);
+        const seconds = segundosTotal % 60;
+        const timeText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        timerDisplay.style.cssText = `
+            background: rgba(28, 28, 30, 0.8);
+            border: 1px solid rgba(48, 209, 88, 0.3);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-top: 12px;
+            text-align: center;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        `;
+        
+        timerDisplay.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #30D158;">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <span style="font-weight: 600; font-size: 1.1rem;">${timeText}</span>
+                <span style="font-size: 0.8rem; opacity: 0.7;">(Completado)</span>
+            </div>
+        `;
+        
+        timerDisplay.style.display = 'block';
+    },
+
+    // Función para refrescar datos de tarea y iniciar cronómetro correctamente
+    async refreshTaskDataAndStartTimer() {
+        if (!this.currentTaskId) return;
+        
+        try {
+            console.log('🔄 Refrescando datos de tarea para cronómetro...');
+            const response = await fetch(`/app/api/tarea/${this.currentTaskId}/`);
+            const tarea = await response.json();
+            
+            console.log('🔄 Datos actualizados recibidos:', tarea);
+            console.log('🔄 Tiempo total trabajado:', tarea.tiempo_total_trabajado);
+            console.log('🔄 Trabajando actualmente:', tarea.trabajando_actualmente);
+            
+            if (tarea.trabajando_actualmente) {
+                // Configurar tiempo base correctamente
+                const tiempoTotal = tarea.tiempo_total_trabajado || 0;
+                this.startTime = Date.now() - (tiempoTotal * 1000);
+                
+                console.log('🔄 StartTime configurado:', this.startTime);
+                console.log('🔄 Tiempo que debería mostrar:', tiempoTotal, 'segundos');
+                
+                // Mostrar y iniciar cronómetro
+                this.showTimerDisplay();
+                this.updateTimerDisplay(); // Mostrar tiempo inmediatamente
+                
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                }
+                
+                this.timerInterval = setInterval(() => {
+                    this.updateTimerDisplay();
+                }, 1000);
+                
+                console.log('✅ Cronómetro iniciado con tiempo base correcto');
+            }
+        } catch (error) {
+            console.error('❌ Error refrescando datos de tarea:', error);
+            // Fallback: usar los datos anteriores
+            this.showTimerDisplay();
+            this.startTimer();
+        }
+    },
+
+    // Función para actualizar el estado de la tarea en la interfaz
+    updateTaskStatus(nuevoEstado) {
+        // Actualizar el badge de estado en el modal
         const estadoElement = document.getElementById('task-detail-estado');
         if (estadoElement) {
-            estadoElement.innerHTML = this.getEstadoBadgeHTML(tarea.estado);
-            console.log(`✅ Estado: ${tarea.estado}`);
+            estadoElement.innerHTML = this.getEstadoBadgeHTML(nuevoEstado);
+        }
+        
+        // También puedes actualizar la tabla de tareas si está visible
+        const filasTareas = document.querySelectorAll(`[data-tarea-id="${this.currentTaskId}"]`);
+        filasTareas.forEach(fila => {
+            const estadoCelda = fila.querySelector('.estado-cell');
+            if (estadoCelda) {
+                estadoCelda.innerHTML = this.getEstadoBadgeHTML(nuevoEstado);
+            }
+        });
+    },
+
+    // Función para inicializar el estado del cronómetro al abrir una tarea
+    initializeTimerState(tarea) {
+        console.log('🔄 === INICIALIZANDO ESTADO DEL CRONÓMETRO ===');
+        console.log('🔄 Datos de la tarea:', tarea);
+        console.log('🔄 trabajando_actualmente:', tarea.trabajando_actualmente);
+        console.log('🔄 estado:', tarea.estado);
+        console.log('🔄 fecha_inicio_sesion:', tarea.fecha_inicio_sesion);
+        
+        const btnStart = document.getElementById('btn-start-task');
+        const btnPause = document.getElementById('btn-pause-task');
+        const btnComplete = document.querySelector('button[onclick="TareasProyectos.completarTarea()"]');
+        
+        console.log('🔄 Botón Start encontrado:', !!btnStart);
+        console.log('🔄 Botón Pause encontrado:', !!btnPause);
+        console.log('🔄 Botón Complete encontrado:', !!btnComplete);
+        
+        if (!btnStart || !btnPause) {
+            console.warn('⚠️ Botones de cronómetro no encontrados');
+            return;
+        }
+        
+        // Verificar si la tarea está completada
+        if (tarea.estado === 'completada') {
+            console.log('✅ Tarea completada - deshabilitando controles');
+            
+            // Ocultar botón de completar
+            if (btnComplete) {
+                btnComplete.style.display = 'none';
+            }
+            
+            // Deshabilitar controles de timer
+            btnStart.style.display = 'none';
+            btnPause.style.display = 'none';
+            
+            // Mostrar tiempo total si existe
+            if (tarea.tiempo_total_trabajado) {
+                this.showCompletedTaskTimer(tarea.tiempo_total_trabajado);
+            }
+            
+            this.isTaskRunning = false;
+            return;
+        }
+        
+        // Si la tarea tiene tiempo transcurrido pero no está corriendo (pausada)
+        // También verificar si el estado es 'iniciada' (lo que indica que se trabajó en ella)
+        const tiempoTotal = tarea.tiempo_total_trabajado || 0;
+        const fueIniciada = tarea.estado === 'iniciada' || tiempoTotal > 0 || tarea.fecha_inicio_sesion;
+        
+        console.log('🔍 Verificando si tarea está pausada:');
+        console.log('🔍 - trabajando_actualmente:', tarea.trabajando_actualmente);
+        console.log('🔍 - tiempo_total_trabajado:', tiempoTotal);
+        console.log('🔍 - estado:', tarea.estado);
+        console.log('🔍 - fecha_inicio_sesion:', tarea.fecha_inicio_sesion);
+        console.log('🔍 - fueIniciada:', fueIniciada);
+        
+        if (!tarea.trabajando_actualmente && fueIniciada) {
+            console.log('⏸️ Tarea pausada con tiempo acumulado - mostrando cronómetro pausado');
+            
+            // Mostrar botón reanudar en lugar de iniciar
+            btnStart.style.display = 'flex';
+            btnStart.querySelector('span').textContent = 'Reanudar Tarea';
+            btnPause.style.display = 'none';
+            
+            // Mostrar el cronómetro pausado
+            this.showPausedTimer(tiempoTotal);
+            this.isTaskRunning = false;
+            return;
+        }
+        
+        // Verificar si la tarea está corriendo actualmente
+        if (tarea.trabajando_actualmente) {
+            console.log('🟢 Tarea está corriendo - configurando interfaz');
+            
+            // Configurar botones
+            btnStart.style.display = 'none';
+            btnPause.style.display = 'flex';
+            
+            // Configurar estado interno
+            this.isTaskRunning = true;
+            
+            // Si tiene fecha de inicio de sesión, calcular tiempo transcurrido
+            if (tarea.fecha_inicio_sesion) {
+                const inicioSesion = new Date(tarea.fecha_inicio_sesion);
+                const ahora = new Date();
+                const tiempoTranscurrido = Math.floor((ahora - inicioSesion) / 1000);
+                
+                // Agregar tiempo previo si existe
+                const tiempoPrevio = tarea.tiempo_total_trabajado || 0;
+                const tiempoTotal = tiempoPrevio + tiempoTranscurrido;
+                
+                // Ajustar startTime para que el cronómetro muestre el tiempo correcto
+                this.startTime = Date.now() - (tiempoTotal * 1000);
+                
+                console.log(`⏱️ Sesión iniciada hace ${tiempoTranscurrido} segundos`);
+                console.log(`⏱️ Tiempo previo: ${tiempoPrevio}s`);
+                console.log(`⏱️ Tiempo total: ${tiempoTotal}s`);
+                
+                // Mostrar inmediatamente el tiempo correcto
+                const hours = Math.floor(tiempoTotal / 3600);
+                const minutes = Math.floor((tiempoTotal % 3600) / 60);
+                const seconds = tiempoTotal % 60;
+                console.log(`⏱️ Tiempo a mostrar: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+            } else {
+                // Si no hay fecha de inicio, usar ahora como referencia
+                this.startTime = Date.now();
+                console.log(`⏱️ No hay fecha de inicio, empezando desde ahora`);
+            }
+            
+            // Mostrar y iniciar el cronómetro
+            this.showTimerDisplay();
+            // Actualizar inmediatamente el tiempo antes de iniciar el intervalo
+            this.updateTimerDisplay();
+            this.timerInterval = setInterval(() => {
+                this.updateTimerDisplay();
+            }, 1000);
+            
+            console.log('✅ Cronómetro inicializado y corriendo');
+            
+        } else {
+            console.log('🔴 Tarea no está corriendo - configurando interfaz de pausa');
+            
+            // Configurar botones para estado pausado
+            btnStart.style.display = 'flex';
+            btnPause.style.display = 'none';
+            
+            // Limpiar estado interno
+            this.isTaskRunning = false;
+            this.stopTimer();
+        }
+    },
+
+    // Función para completar una tarea
+    async completarTarea() {
+        if (!this.currentTaskId) {
+            alert('No hay tarea seleccionada');
+            return;
         }
 
-        const prioridadElement = document.getElementById('task-detail-prioridad');
-        if (prioridadElement) {
-            prioridadElement.innerHTML = this.getPrioridadBadgeHTML(tarea.prioridad);
-            console.log(`✅ Prioridad: ${tarea.prioridad}`);
+        // Confirmar acción
+        if (!confirm('¿Estás seguro de que quieres marcar esta tarea como completada?')) {
+            return;
         }
 
-        // Llenar responsable con avatar
-        const responsableContainer = document.getElementById('task-detail-responsable-container');
-        if (responsableContainer && tarea.responsable_data) {
-            const iniciales = this.getInitials(tarea.responsable_data.nombre);
-            responsableContainer.innerHTML = `
+        try {
+            const response = await fetch(`/app/api/tarea/${this.currentTaskId}/completar/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.success) {
+                console.log('✅ Tarea completada exitosamente');
+                
+                // Detener cronómetro si está corriendo
+                if (this.isTaskRunning) {
+                    this.stopTimer();
+                    this.isTaskRunning = false;
+                }
+                
+                // Actualizar estado de la tarea en la interfaz
+                this.updateTaskStatus('completada');
+                
+                // Agregar comentario del sistema
+                this.addSystemComment('Tarea COMPLETADA. ¡Excelente trabajo!', '#16a34a');
+                
+                // Ocultar botones de cronómetro y completar ya que está completada
+                const btnStart = document.getElementById('btn-start-task');
+                const btnPause = document.getElementById('btn-pause-task');
+                const btnComplete = document.querySelector('button[onclick="TareasProyectos.completarTarea()"]');
+                
+                if (btnStart) btnStart.style.display = 'none';
+                if (btnPause) btnPause.style.display = 'none';
+                if (btnComplete) btnComplete.style.display = 'none';
+                
+                // Mostrar cronómetro completado con tiempo total
+                if (data.tiempo_total) {
+                    this.showCompletedTaskTimer(data.tiempo_total);
+                }
+                
+                // Recargar lista de tareas inmediatamente
+                if (typeof cargarTareas === 'function') {
+                    cargarTareas();
+                }
+                
+                // Mostrar mensaje de éxito
+                alert('¡Tarea completada exitosamente!');
+                
+            } else {
+                alert('Error: ' + data.error);
+            }
+            
+        } catch (error) {
+            console.error('Error al completar tarea:', error);
+            alert('Error al completar la tarea: ' + error.message);
+        }
+    },
+
+    // Función para añadir comentarios del sistema
+    addSystemComment(text, color) {
+        const activityFeed = document.getElementById('activity-feed');
+        if (!activityFeed) return;
+
+        const systemComment = document.createElement('div');
+        systemComment.style.cssText = 'display: flex; gap: 1rem;';
+        systemComment.innerHTML = `
+            <div style="flex-shrink: 0;">
+                <div style="width: 2.5rem; height: 2.5rem; background-color: ${color}; color: white; font-weight: 700; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.875rem;">S</div>
+            </div>
+            <div style="flex: 1; min-width: 0; background-color: rgba(37, 42, 51, 0.7); border: 1px solid rgba(45, 55, 72, 0.3); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); padding: 1rem; border-radius: 0.75rem;">
+                <div style="display: flex; align-items: baseline; gap: 0.5rem; border-bottom: 1px solid rgba(45, 55, 72, 0.5); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
+                    <span style="font-weight: 600; color: #E0E7FF;">Sistema</span>
+                    <span style="font-size: 0.75rem; color: #9CA3AF;">Justo ahora</span>
+                </div>
+                <p style="color: rgba(224, 231, 255, 0.9); white-space: pre-wrap; line-height: 1.625; font-size: 0.875rem; margin: 0;">${text}</p>
+            </div>
+        `;
+        
+        // Insertar al principio del feed para que aparezca arriba
+        activityFeed.insertBefore(systemComment, activityFeed.firstChild);
+    },
+
+    // Función para actualizar la lista visual de usuarios (participantes/observadores)
+    actualizarListaUsuarios(type, usuario) {
+        console.log(`🔄 === INICIANDO actualizarListaUsuarios ===`);
+        console.log(`🔄 Type: ${type}`);
+        console.log(`🔄 Usuario:`, usuario);
+        
+        const containerId = `task-detail-${type}-container`;
+        const container = document.getElementById(containerId);
+        
+        if (!container) {
+            console.error(`❌ No se encontró el contenedor: ${containerId}`);
+            return;
+        }
+
+        // Crear el HTML del nuevo usuario
+        const avatarHtml = usuario.avatar_url ? 
+            `<img src="${usuario.avatar_url}" alt="${usuario.nombre}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.1);">` :
+            `<div style="width: 32px; height: 32px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(usuario.nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem; border: 2px solid rgba(255, 255, 255, 0.1);">${TareasProyectos.getInitials(usuario.nombre)}</div>`;
+
+        const nuevoUsuarioHtml = `
+            <div class="member-item" data-user-id="${usuario.id}">
+                <div class="member-avatar-container">
+                    ${avatarHtml}
+                </div>
+                <span class="member-name">${usuario.nombre}</span>
+            </div>
+        `;
+
+        // Buscar si ya existe un mensaje de "Sin usuarios"
+        const sinUsuariosMsg = container.querySelector('.no-members-message');
+        if (sinUsuariosMsg) {
+            sinUsuariosMsg.remove();
+        }
+
+        // Agregar el nuevo usuario al contenedor
+        container.insertAdjacentHTML('beforeend', nuevoUsuarioHtml);
+        
+        console.log(`✅ Usuario ${usuario.nombre} agregado visualmente a ${type}`);
+    },
+
+    // Función para configurar el responsable
+    setupResponsable(responsable) {
+        const container = document.getElementById('task-detail-responsable-container');
+        if (!container) return;
+        
+        if (responsable) {
+            container.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
-                    <div style="width: 40px; height: 40px; border-radius: 50%; background: ${this.getAvatarColor(tarea.responsable_data.nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem;">
-                        ${iniciales}
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(responsable)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem;">
+                        ${TareasProyectos.getInitials(responsable)}
                     </div>
                     <div>
-                        <div style="color: var(--apple-label); font-weight: 500; font-size: 0.95rem;">${tarea.responsable_data.nombre}</div>
+                        <div style="color: var(--apple-label); font-weight: 500; font-size: 0.95rem;">${responsable}</div>
                         <div style="color: var(--apple-label-secondary); font-size: 0.8rem;">Responsable</div>
                     </div>
                 </div>
             `;
-            console.log(`✅ Responsable: ${tarea.responsable_data.nombre}`);
+        } else {
+            container.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px dashed rgba(255, 255, 255, 0.2);">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(142, 142, 147, 0.3); display: flex; align-items: center; justify-content: center; color: var(--apple-label-secondary); font-weight: 600; font-size: 0.9rem;">
+                        ?
+                    </div>
+                    <div>
+                        <div style="color: var(--apple-label-secondary); font-weight: 500; font-size: 0.95rem;">Sin asignar</div>
+                        <div style="color: var(--apple-label-tertiary); font-size: 0.8rem;">No hay responsable</div>
+                    </div>
+                </div>
+            `;
+        }
+    },
+
+    // Función para configurar participantes (Glassmorphism)
+    setupParticipantes(participantes) {
+        const container = document.getElementById('task-detail-participantes-container');
+        if (!container) return;
+        
+        if (participantes && participantes.length > 0) {
+            const participantesHTML = participantes.map(participante => {
+                // Check if participante is an object with user data or just a string
+                if (typeof participante === 'object' && participante.nombre) {
+                    return TareasProyectos.createUserAvatarHTML(participante, 28);
+                } else {
+                    // Fallback for string names
+                    const nombre = typeof participante === 'string' ? participante : participante.toString();
+                    return `
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;" title="${nombre}">
+                            ${TareasProyectos.getInitials(nombre)}
+                        </div>
+                    `;
+                }
+            }).join('');
+            
+            // Add button to add participants
+            container.innerHTML = participantesHTML + `
+                <button onclick="TareasProyectos.toggleDropdown('participantes')" style="
+                    width: 28px; 
+                    height: 28px; 
+                    background: rgba(45, 55, 72, 1); 
+                    color: #9CA3AF; 
+                    border-radius: 50%; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    font-size: 0.75rem; 
+                    border: none; 
+                    cursor: pointer;
+                    transition: background-color 0.2s;
+                " title="Añadir participante" onmouseover="this.style.backgroundColor='rgba(45, 55, 72, 0.5)'" onmouseout="this.style.backgroundColor='rgba(45, 55, 72, 1)'">
+                    <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                </button>
+            `;
+        } else {
+            container.innerHTML = `
+                <button onclick="TareasProyectos.toggleDropdown('participantes')" style="
+                    width: 28px; 
+                    height: 28px; 
+                    background: rgba(45, 55, 72, 1); 
+                    color: #9CA3AF; 
+                    border-radius: 50%; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    font-size: 0.75rem; 
+                    border: none; 
+                    cursor: pointer;
+                    transition: background-color 0.2s;
+                " title="Añadir participante" onmouseover="this.style.backgroundColor='rgba(45, 55, 72, 0.5)'" onmouseout="this.style.backgroundColor='rgba(45, 55, 72, 1)'">
+                    <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                </button>
+            `;
+        }
+    },
+
+    // ======= FUNCIONES DE COMENTARIOS =======
+    
+    async cargarComentarios(tareaId) {
+        try {
+            const response = await fetch(`/app/api/tarea/${tareaId}/comentarios/`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            if (data.success) {
+                this.mostrarComentarios(data.comentarios);
+            } else {
+                console.error('Error al cargar comentarios:', data.error);
+            }
+        } catch (error) {
+            console.error('Error al cargar comentarios:', error);
+        }
+    },
+
+    mostrarComentarios(comentarios) {
+        const activityFeed = document.getElementById('activity-feed');
+        if (!activityFeed) return;
+
+        activityFeed.innerHTML = '';
+
+        if (comentarios.length === 0) {
+            activityFeed.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--apple-label-secondary);">
+                    No hay comentarios aún. ¡Sé el primero en comentar!
+                </div>
+            `;
+            return;
         }
 
-        // Cerrar todos los otros modales primero
-        const otrosModales = document.querySelectorAll('.modal-overlay, .advanced-task-modal-overlay, .power-task-modal-overlay');
-        otrosModales.forEach(m => {
-            if (m.id !== 'modal-detalle-tarea') {
-                m.classList.remove('active');
-                m.style.display = 'none';
-            }
+        comentarios.forEach(comentario => {
+            const comentarioElement = this.crearElementoComentario(comentario);
+            activityFeed.appendChild(comentarioElement);
+        });
+    },
+
+    crearElementoComentario(comentario) {
+        const div = document.createElement('div');
+        div.setAttribute('data-comentario-id', comentario.id);
+        div.style.cssText = `
+            background-color: rgba(26, 31, 39, 0.6);
+            border: 1px solid rgba(45, 55, 72, 0.4);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        `;
+
+        const fecha = new Date(comentario.fecha_creacion);
+        const fechaFormateada = fecha.toLocaleString('es-ES', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
         });
 
-        // Abrir el modal correcto
-        modal.classList.add('active');
-        modal.style.display = 'flex';
-        modal.style.zIndex = '10000';
-        document.body.style.overflow = 'hidden';
+        const editadoTexto = comentario.editado ? 
+            `<span style="color: #9CA3AF; font-size: 0.75rem; margin-left: 0.5rem;">(editado)</span>` : '';
+
+        div.innerHTML = `
+            <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                <div style="
+                    width: 32px; 
+                    height: 32px; 
+                    border-radius: 50%; 
+                    background: ${this.getAvatarColor(comentario.usuario.nombre)}; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    color: white; 
+                    font-weight: 600; 
+                    font-size: 0.875rem;
+                    flex-shrink: 0;
+                " title="${comentario.usuario.nombre}">
+                    ${this.getInitials(comentario.usuario.nombre)}
+                </div>
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <span style="font-weight: 600; color: #E0E7FF;">${comentario.usuario.nombre}</span>
+                        <span style="color: #9CA3AF; font-size: 0.875rem;">${fechaFormateada}</span>
+                        ${editadoTexto}
+                    </div>
+                    <div style="color: rgba(224, 231, 255, 0.9); line-height: 1.5; margin-bottom: 0.5rem;" 
+                         id="comentario-contenido-${comentario.id}">
+                        ${comentario.contenido_con_menciones || comentario.contenido}
+                    </div>
+                    ${comentario.archivos && comentario.archivos.length > 0 ? this.mostrarArchivos(comentario.archivos) : ''}
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+                        <button onclick="TareasProyectos.editarComentario(${comentario.id})" 
+                                style="
+                                    padding: 0.25rem 0.5rem; 
+                                    font-size: 0.75rem; 
+                                    color: #9CA3AF; 
+                                    background: none; 
+                                    border: 1px solid rgba(156, 163, 175, 0.3); 
+                                    border-radius: 0.25rem; 
+                                    cursor: pointer;
+                                " 
+                                onmouseover="this.style.color='#E0E7FF'; this.style.borderColor='rgba(224, 231, 255, 0.5)'" 
+                                onmouseout="this.style.color='#9CA3AF'; this.style.borderColor='rgba(156, 163, 175, 0.3)'">
+                            Editar
+                        </button>
+                        <button onclick="TareasProyectos.eliminarComentario(${comentario.id})" 
+                                style="
+                                    padding: 0.25rem 0.5rem; 
+                                    font-size: 0.75rem; 
+                                    color: #FF6B6B; 
+                                    background: none; 
+                                    border: 1px solid rgba(255, 107, 107, 0.3); 
+                                    border-radius: 0.25rem; 
+                                    cursor: pointer;
+                                " 
+                                onmouseover="this.style.color='#FF3B30'; this.style.borderColor='rgba(255, 59, 48, 0.5)'" 
+                                onmouseout="this.style.color='#FF6B6B'; this.style.borderColor='rgba(255, 107, 107, 0.3)'">
+                            Eliminar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        return div;
+    },
+
+    mostrarArchivos(archivos) {
+        if (!archivos || archivos.length === 0) return '';
         
-        console.log('✅ Modal abierto correctamente');
+        return `
+            <div style="margin-top: 0.5rem;">
+                ${archivos.map(archivo => `
+                    <a href="${archivo.url}" target="_blank" 
+                       style="
+                           display: inline-block; 
+                           padding: 0.25rem 0.5rem; 
+                           margin: 0.125rem; 
+                           background: rgba(59, 130, 246, 0.2); 
+                           color: #60A5FA; 
+                           border-radius: 0.25rem; 
+                           text-decoration: none; 
+                           font-size: 0.75rem;
+                       ">
+                        📎 ${archivo.nombre_original}
+                    </a>
+                `).join('')}
+            </div>
+        `;
     },
 
-    // Funciones auxiliares para badges
-    getEstadoBadgeHTML(estado) {
-        const config = {
-            'pendiente': { label: 'Pendiente', color: '#8E8E93', bg: 'rgba(142, 142, 147, 0.2)' },
-            'en_progreso': { label: 'En Progreso', color: '#007AFF', bg: 'rgba(0, 122, 255, 0.2)' },
-            'completada': { label: 'Completada', color: '#34C759', bg: 'rgba(52, 199, 89, 0.2)' },
-            'cancelada': { label: 'Cancelada', color: '#FF3B30', bg: 'rgba(255, 59, 48, 0.2)' }
-        }[estado] || { label: 'Desconocido', color: '#8E8E93', bg: 'rgba(142, 142, 147, 0.2)' };
+    async enviarComentario(contenido) {
+        if (!this.currentTaskId) {
+            console.error('No hay tarea actual seleccionada');
+            return;
+        }
 
-        return `<span style="background: ${config.bg}; color: ${config.color}; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">${config.label}</span>`;
+        if (!contenido.trim()) {
+            alert('Por favor escribe un comentario');
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append('contenido', contenido.trim());
+
+            const response = await fetch(`/app/api/tarea/${this.currentTaskId}/comentarios/agregar/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (data.success) {
+                // Limpiar el formulario
+                const commentInput = document.getElementById('comment-input');
+                if (commentInput) {
+                    commentInput.value = '';
+                }
+
+                // Recargar comentarios
+                await this.cargarComentarios(this.currentTaskId);
+            } else {
+                alert('Error al enviar comentario: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error al enviar comentario:', error);
+            alert('Error al enviar comentario: ' + error.message);
+        }
     },
 
-    getPrioridadBadgeHTML(prioridad) {
-        const config = {
-            'baja': { label: 'Baja', color: '#30D158' },
-            'media': { label: 'Media', color: '#FF9500' },
-            'alta': { label: 'Alta', color: '#FF3B30' }
-        }[prioridad] || { label: 'Sin prioridad', color: '#8E8E93' };
+    async editarComentario(comentarioId) {
+        const comentarioElement = document.querySelector(`[data-comentario-id="${comentarioId}"]`);
+        if (!comentarioElement) return;
 
-        return `<span style="background: ${config.color}; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">${config.label}</span>`;
-    },
+        const contenidoElement = document.getElementById(`comentario-contenido-${comentarioId}`);
+        if (!contenidoElement) return;
 
-    // Configurar navegación entre tareas del proyecto
-    setupTaskNavigation(currentTaskId) {
-        // Obtener las tareas del proyecto actual desde la tabla
-        const taskRows = document.querySelectorAll('#tasks-tbody tr');
-        this.currentProjectTasks = [];
-        this.currentTaskIndex = -1;
+        const contenidoActual = contenidoElement.textContent.trim();
         
-        taskRows.forEach((row, index) => {
-            const onClick = row.getAttribute('onclick');
-            if (onClick) {
-                const match = onClick.match(/verDetallesTarea\((\d+)\)/);
-                if (match) {
-                    const taskId = parseInt(match[1]);
-                    this.currentProjectTasks.push(taskId);
+        // Crear textarea para edición
+        const textarea = document.createElement('textarea');
+        textarea.value = contenidoActual;
+        textarea.style.cssText = `
+            width: 100%;
+            background: rgba(26, 31, 39, 0.8);
+            color: #E0E7FF;
+            border: 1px solid rgba(45, 55, 72, 0.6);
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 60px;
+        `;
+
+        // Crear botones de acción
+        const botonesDiv = document.createElement('div');
+        botonesDiv.style.cssText = 'display: flex; gap: 0.5rem; margin-top: 0.5rem;';
+        botonesDiv.innerHTML = `
+            <button onclick="TareasProyectos.guardarEdicionComentario(${comentarioId})" 
+                    style="
+                        padding: 0.25rem 0.75rem; 
+                        font-size: 0.75rem; 
+                        color: white; 
+                        background: #3B82F6; 
+                        border: none; 
+                        border-radius: 0.25rem; 
+                        cursor: pointer;
+                    ">
+                Guardar
+            </button>
+            <button onclick="TareasProyectos.cancelarEdicionComentario(${comentarioId})" 
+                    style="
+                        padding: 0.25rem 0.75rem; 
+                        font-size: 0.75rem; 
+                        color: #9CA3AF; 
+                        background: none; 
+                        border: 1px solid rgba(156, 163, 175, 0.3); 
+                        border-radius: 0.25rem; 
+                        cursor: pointer;
+                    ">
+                Cancelar
+            </button>
+        `;
+
+        // Reemplazar contenido con editor
+        contenidoElement.style.display = 'none';
+        contenidoElement.parentNode.insertBefore(textarea, contenidoElement.nextSibling);
+        contenidoElement.parentNode.insertBefore(botonesDiv, textarea.nextSibling);
+
+        // Enfocar textarea
+        textarea.focus();
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+        // Guardar referencias para uso posterior
+        this.editingCommentData = {
+            comentarioId,
+            contenidoOriginal: contenidoActual,
+            textarea,
+            botonesDiv,
+            contenidoElement
+        };
+    },
+
+    async guardarEdicionComentario(comentarioId) {
+        if (!this.editingCommentData || this.editingCommentData.comentarioId !== comentarioId) return;
+
+        const nuevoContenido = this.editingCommentData.textarea.value.trim();
+        if (!nuevoContenido) {
+            alert('El comentario no puede estar vacío');
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append('contenido', nuevoContenido);
+
+            const response = await fetch(`/app/api/comentario-tarea/${comentarioId}/editar/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (data.success) {
+                // Recargar comentarios
+                await this.cargarComentarios(this.currentTaskId);
+                this.editingCommentData = null;
+            } else {
+                alert('Error al editar comentario: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error al editar comentario:', error);
+            alert('Error al editar comentario: ' + error.message);
+        }
+    },
+
+    cancelarEdicionComentario(comentarioId) {
+        if (!this.editingCommentData || this.editingCommentData.comentarioId !== comentarioId) return;
+
+        // Restaurar estado original
+        this.editingCommentData.textarea.remove();
+        this.editingCommentData.botonesDiv.remove();
+        this.editingCommentData.contenidoElement.style.display = 'block';
+        this.editingCommentData = null;
+    },
+
+    async eliminarComentario(comentarioId) {
+        if (!confirm('¿Estás seguro de que quieres eliminar este comentario?')) return;
+
+        try {
+            const response = await fetch(`/app/api/comentario-tarea/${comentarioId}/eliminar/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (data.success) {
+                // Recargar comentarios
+                await this.cargarComentarios(this.currentTaskId);
+            } else {
+                alert('Error al eliminar comentario: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error al eliminar comentario:', error);
+            alert('Error al eliminar comentario: ' + error.message);
+        }
+    },
+
+    configurarFormularioComentarios() {
+        const commentForm = document.getElementById('comment-form');
+        const commentInput = document.getElementById('comment-input');
+        const charCounter = document.getElementById('char-counter');
+        const btnMention = document.getElementById('btn-mention');
+        const btnEnviar = document.getElementById('btn-enviar-comentario');
+
+        if (commentForm) {
+            // Remover listeners anteriores para evitar duplicados
+            const newForm = commentForm.cloneNode(true);
+            commentForm.parentNode.replaceChild(newForm, commentForm);
+            
+            // Obtener referencias actualizadas
+            const newCommentInput = document.getElementById('comment-input');
+            const newCharCounter = document.getElementById('char-counter');
+            const newBtnMention = document.getElementById('btn-mention');
+            const newBtnEnviar = document.getElementById('btn-enviar-comentario');
+            const newCommentForm = document.getElementById('comment-form');
+
+            // Evento submit del formulario
+            newCommentForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (newCommentInput && newCommentInput.value.trim()) {
+                    const originalText = newBtnEnviar.innerHTML;
+                    newBtnEnviar.disabled = true;
+                    newBtnEnviar.innerHTML = 'Enviando...';
                     
-                    if (taskId === currentTaskId) {
-                        this.currentTaskIndex = index;
+                    try {
+                        await this.enviarComentario(newCommentInput.value);
+                    } finally {
+                        newBtnEnviar.disabled = false;
+                        newBtnEnviar.innerHTML = originalText;
                     }
                 }
+            });
+
+            // Contador de caracteres
+            if (newCommentInput && newCharCounter) {
+                const updateCharCounter = () => {
+                    const length = newCommentInput.value.length;
+                    newCharCounter.textContent = length;
+                    
+                    // Cambiar color según longitud
+                    if (length > 500) {
+                        newCharCounter.style.color = '#FF6B6B';
+                    } else if (length > 300) {
+                        newCharCounter.style.color = '#FF9500';
+                    } else {
+                        newCharCounter.style.color = '#9CA3AF';
+                    }
+                };
+
+                newCommentInput.addEventListener('input', updateCharCounter);
+                updateCharCounter(); // Inicializar
             }
-        });
-        
-        // Mostrar/ocultar navegación según cantidad de tareas
-        const navigation = document.getElementById('taskNavigation');
-        const taskCounter = document.getElementById('taskCounter');
-        const prevBtn = document.getElementById('prevTaskBtn');
-        const nextBtn = document.getElementById('nextTaskBtn');
-        
-        if (this.currentProjectTasks.length > 1) {
-            navigation.style.display = 'flex';
-            taskCounter.textContent = `${this.currentTaskIndex + 1} de ${this.currentProjectTasks.length}`;
-            
-            // Habilitar/deshabilitar botones
-            prevBtn.disabled = (this.currentTaskIndex <= 0);
-            nextBtn.disabled = (this.currentTaskIndex >= this.currentProjectTasks.length - 1);
-        } else {
-            navigation.style.display = 'none';
+
+            // Botón de mención
+            if (newBtnMention && newCommentInput) {
+                newBtnMention.addEventListener('click', () => {
+                    const cursorPosition = newCommentInput.selectionStart;
+                    const textBefore = newCommentInput.value.substring(0, cursorPosition);
+                    const textAfter = newCommentInput.value.substring(newCommentInput.selectionEnd);
+                    
+                    newCommentInput.value = textBefore + '@' + textAfter;
+                    newCommentInput.setSelectionRange(cursorPosition + 1, cursorPosition + 1);
+                    newCommentInput.focus();
+                });
+            }
+
+            // Atajos de teclado
+            if (newCommentInput) {
+                newCommentInput.addEventListener('keydown', (e) => {
+                    // Ctrl+Enter o Cmd+Enter para enviar
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                        e.preventDefault();
+                        newCommentForm.dispatchEvent(new Event('submit'));
+                    }
+                });
+            }
         }
-    },
-
-    // Navegar a la tarea anterior
-    navegarTareaPrevious() {
-        if (this.currentTaskIndex > 0) {
-            const previousTaskId = this.currentProjectTasks[this.currentTaskIndex - 1];
-            this.verDetallesTarea(previousTaskId);
-        }
-    },
-
-    // Navegar a la tarea siguiente
-    navegarTareaNext() {
-        if (this.currentTaskIndex < this.currentProjectTasks.length - 1) {
-            const nextTaskId = this.currentProjectTasks[this.currentTaskIndex + 1];
-            this.verDetallesTarea(nextTaskId);
-        }
-    },
-
-    // Funciones auxiliares
-    getInitials(name) {
-        if (!name) return 'U';
-        const parts = name.trim().split(' ');
-        if (parts.length === 1) return parts[0][0].toUpperCase();
-        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    },
-
-    getAvatarColor(name) {
-        const colors = [
-            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
-            '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
-        ];
-        let hash = 0;
-        for (let i = 0; i < name.length; i++) {
-            hash = name.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        return colors[Math.abs(hash) % colors.length];
-    },
-
-    formatearFechaCompleta(fechaStr) {
-        if (!fechaStr) return 'Sin fecha';
-        try {
-            const fecha = new Date(fechaStr);
-            const opciones = {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            };
-            return fecha.toLocaleDateString('es-ES', opciones);
-        } catch (error) {
-            console.error('Error al formatear fecha:', error);
-            return fechaStr;
-        }
-    },
-
-    updateTaskMembersUI(tarea) {
-        // Esta función se implementará después si es necesaria
-        console.log('updateTaskMembersUI called with:', tarea);
     }
-};
+});
 const PROYECTO_NOMBRE = "{{ proyecto.nombre|escapejs }}";
 const CURRENT_USER_ID = {{ user.id }};
 const CURRENT_USER_NAME = "{{ user.first_name }} {{ user.last_name }}".trim() || "{{ user.username }}" || "Usuario";
