@@ -6986,7 +6986,7 @@ async function handleCreateFolder(event) {
     if (!folderName) return;
 
     try {
-        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/carpetas/crear/`, {
+        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/carpetas/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
