@@ -3,6 +3,11 @@
 {% csrf_token %}
 
 {% block content %}
+
+<!-- Form oculto para generar token CSRF accesible por JavaScript -->
+<form id="hidden-csrf-form" style="display: none;">
+    {% csrf_token %}
+</form>
 <style>
     /* This page intentionally overrides the base container for a full-width layout */
     .main-content.container {
