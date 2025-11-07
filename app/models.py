@@ -2127,7 +2127,7 @@ class CarpetaProyecto(models.Model):
     """Modelo para carpetas dentro de proyectos (estilo Google Drive)"""
     nombre = models.CharField(max_length=255, verbose_name="Nombre de la Carpeta")
     proyecto = models.ForeignKey(
-        'TodoItem', 
+        'Proyecto', 
         on_delete=models.CASCADE, 
         related_name='carpetas',
         verbose_name="Proyecto"
@@ -2201,7 +2201,7 @@ class ArchivoProyecto(models.Model):
     )
     tamaño = models.BigIntegerField(verbose_name="Tamaño en Bytes")
     proyecto = models.ForeignKey(
-        'TodoItem', 
+        'Proyecto', 
         on_delete=models.CASCADE, 
         related_name='archivos',
         verbose_name="Proyecto"

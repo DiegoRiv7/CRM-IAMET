@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
                 ('fecha_modificacion', models.DateTimeField(auto_now=True, verbose_name='Última Modificación')),
                 ('carpeta_padre', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='subcarpetas', to='app.carpetaproyecto', verbose_name='Carpeta Padre')),
                 ('creado_por', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL, verbose_name='Creado por')),
-                ('proyecto', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='carpetas', to='app.todoitem', verbose_name='Proyecto')),
+                ('proyecto', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='carpetas', to='app.proyecto', verbose_name='Proyecto')),
             ],
             options={
                 'verbose_name': 'Carpeta del Proyecto',
@@ -49,7 +49,7 @@ class Migration(migrations.Migration):
                 ('extension', models.CharField(blank=True, max_length=10, verbose_name='Extensión')),
                 ('mime_type', models.CharField(blank=True, max_length=100, verbose_name='MIME Type')),
                 ('carpeta', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='archivos', to='app.carpetaproyecto', verbose_name='Carpeta')),
-                ('proyecto', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='archivos', to='app.todoitem', verbose_name='Proyecto')),
+                ('proyecto', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='archivos', to='app.proyecto', verbose_name='Proyecto')),
                 ('subido_por', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL, verbose_name='Subido por')),
             ],
             options={

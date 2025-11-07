@@ -10448,7 +10448,7 @@ def api_completar_tarea(request, tarea_id):
 def api_carpetas_proyecto(request, proyecto_id):
     """API para listar carpetas de un proyecto y crear nuevas carpetas"""
     try:
-        proyecto = get_object_or_404(TodoItem, id=proyecto_id)
+        proyecto = get_object_or_404(Proyecto, id=proyecto_id)
         
         if request.method == 'GET':
             parent_id = request.GET.get('parent')
@@ -10559,7 +10559,7 @@ def api_carpetas_proyecto(request, proyecto_id):
 def api_carpeta_detalle(request, proyecto_id, carpeta_id):
     """API para obtener, actualizar y eliminar una carpeta específica"""
     try:
-        proyecto = get_object_or_404(TodoItem, id=proyecto_id)
+        proyecto = get_object_or_404(Proyecto, id=proyecto_id)
         carpeta = get_object_or_404(CarpetaProyecto, id=carpeta_id, proyecto=proyecto)
         
         if request.method == 'GET':
@@ -10619,7 +10619,7 @@ def api_carpeta_detalle(request, proyecto_id, carpeta_id):
 def api_archivos_proyecto(request, proyecto_id):
     """API para subir archivos a un proyecto"""
     try:
-        proyecto = get_object_or_404(TodoItem, id=proyecto_id)
+        proyecto = get_object_or_404(Proyecto, id=proyecto_id)
         
         if request.method == 'POST':
             carpeta_id = request.POST.get('carpeta_id')
@@ -10693,7 +10693,7 @@ def api_archivos_proyecto(request, proyecto_id):
 def api_archivo_detalle(request, proyecto_id, archivo_id):
     """API para obtener, actualizar y eliminar un archivo específico"""
     try:
-        proyecto = get_object_or_404(TodoItem, id=proyecto_id)
+        proyecto = get_object_or_404(Proyecto, id=proyecto_id)
         archivo = get_object_or_404(ArchivoProyecto, id=archivo_id, proyecto=proyecto)
         
         if request.method == 'GET':
