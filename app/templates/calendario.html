@@ -534,7 +534,7 @@
         let currentUser = {
             id: parseInt("{{ user.id }}"), // Ensure ID is parsed as integer
             text: "{{ user.get_full_name|default:user.username|escapejs }}", // Escape for JS string
-            avatar_url: "{{ user.userprofile.avatar.url|default:'/static/images/apple-touch-icon.png'|escapejs }}"
+            avatar_url: "{% if user.userprofile.avatar and user.userprofile.avatar._file %}{{ user.userprofile.avatar.url|escapejs }}{% else %}/static/images/apple-touch-icon.png{% endif %}"
         };
 
         document.addEventListener('DOMContentLoaded', function() {
