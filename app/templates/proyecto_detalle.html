@@ -2865,15 +2865,56 @@
                 </div>
             </div>
 
+            <!-- Input file oculto para subir archivos -->
+            <input type="file" id="fileInput" style="display: none;" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt">
+
+            <!-- Modal para Vista Previa de Archivos -->
+            <div class="modal-overlay" id="filePreviewModal">
+                <div class="modal-content" style="max-width: 90vw; max-height: 90vh;">
+                    <div class="modal-header">
+                        <h3 class="modal-title" id="previewFileName">Vista Previa</h3>
+                        <button class="modal-close" onclick="closeFilePreviewModal()">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="previewContent" style="text-align: center; max-height: calc(90vh - 120px); overflow: auto;">
+                        <!-- Contenido de vista previa se cargará aquí -->
+                    </div>
+                    <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0;">
+                        <div class="file-info" id="fileInfo">
+                            <!-- Información del archivo -->
+                        </div>
+                        <div class="file-actions">
+                            <button class="btn-cancelar" onclick="downloadFile()" id="downloadBtn">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m7-10v12m4-4l-4 4-4-4"/>
+                                </svg>
+                                Descargar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Carpetas Tab -->
             <div class="tab-content" id="carpetas-content">
                 <div class="folders-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                    <button class="btn-nuevo-comentario" id="btnCrearCarpeta" style="background: var(--apple-blue); border-color: rgba(10, 132, 255, 0.3);">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path d="M12 4v16m8-8H4"/>
-                        </svg>
-                        Crear Carpeta
-                    </button>
+                    <div class="folders-actions" style="display: flex; gap: 0.5rem;">
+                        <button class="btn-nuevo-comentario" id="btnCrearCarpeta" style="background: var(--apple-blue); border-color: rgba(10, 132, 255, 0.3);">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Crear Carpeta
+                        </button>
+                        <button class="btn-nuevo-comentario" id="btnSubirArchivo" style="background: var(--apple-green); border-color: rgba(52, 199, 89, 0.3);">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m4-5l5-5 5 5m-5-5v12"/>
+                            </svg>
+                            Subir Archivo
+                        </button>
+                    </div>
                     <div class="search-widget-container" id="search-widget-carpetas">
                         <input type="text" id="searchCarpetas" placeholder="Buscar carpetas..." class="search-input" value="">
                         <div class="search-icon-container" id="search-icon-carpetas">
@@ -8260,6 +8301,330 @@ function getEstadoBadgeHTML(estado) {
         activityFeed.insertBefore(systemComment, activityFeed.firstChild);
     }
 });
+
+// =============================================
+// SISTEMA DE ARCHIVOS EN CARPETAS
+// =============================================
+
+// Variables globales para archivos
+let currentFilePreview = null;
+
+// Event listeners para subida de archivos
+document.addEventListener('DOMContentLoaded', function() {
+    const btnSubirArchivo = document.getElementById('btnSubirArchivo');
+    const fileInput = document.getElementById('fileInput');
+    const foldersContainer = document.getElementById('foldersContainer');
+
+    // Botón subir archivo
+    if (btnSubirArchivo) {
+        btnSubirArchivo.addEventListener('click', function() {
+            fileInput.click();
+        });
+    }
+
+    // Input file change
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                subirArchivos(e.target.files);
+            }
+        });
+    }
+
+    // Drag & drop en container de carpetas
+    if (foldersContainer) {
+        // Prevenir comportamiento por defecto
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            foldersContainer.addEventListener(eventName, preventDefaults, false);
+        });
+
+        // Highlighting durante drag
+        ['dragenter', 'dragover'].forEach(eventName => {
+            foldersContainer.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            foldersContainer.addEventListener(eventName, unhighlight, false);
+        });
+
+        // Drop handler
+        foldersContainer.addEventListener('drop', handleDrop, false);
+    }
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function highlight(e) {
+    e.currentTarget.style.backgroundColor = 'rgba(10, 132, 255, 0.1)';
+    e.currentTarget.style.borderColor = 'var(--apple-blue)';
+}
+
+function unhighlight(e) {
+    e.currentTarget.style.backgroundColor = '';
+    e.currentTarget.style.borderColor = '';
+}
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    subirArchivos(files);
+}
+
+async function subirArchivos(files) {
+    for (let file of files) {
+        await subirArchivo(file);
+    }
+    // Recargar vista de carpetas después de subir
+    cargarCarpetas();
+}
+
+async function subirArchivo(file) {
+    try {
+        const formData = new FormData();
+        formData.append('archivo', file);
+        formData.append('carpeta_id', currentFolder || '');
+        formData.append('descripcion', '');
+        formData.append('es_publico', 'true');
+
+        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/archivos/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        mostrarNotificacion(`✅ ${file.name} subido correctamente`);
+        
+    } catch (error) {
+        console.error('Error subiendo archivo:', error);
+        mostrarNotificacion(`❌ Error subiendo ${file.name}`, 'error');
+    }
+}
+
+// Función para obtener icono según tipo de archivo
+function obtenerIconoArchivo(extension, tipoArchivo) {
+    const iconos = {
+        // Imágenes
+        'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️', 'gif': '🖼️', 'svg': '🖼️',
+        // Documentos
+        'pdf': '📄', 'doc': '📝', 'docx': '📝', 'txt': '📝', 'rtf': '📝',
+        // Hojas de cálculo
+        'xls': '📊', 'xlsx': '📊', 'csv': '📊',
+        // Presentaciones
+        'ppt': '🎞️', 'pptx': '🎞️',
+        // Videos
+        'mp4': '🎬', 'avi': '🎬', 'mov': '🎬', 'wmv': '🎬',
+        // Audio
+        'mp3': '🎵', 'wav': '🎵', 'aac': '🎵',
+        // Comprimidos
+        'zip': '📦', 'rar': '📦', '7z': '📦'
+    };
+
+    return iconos[extension?.toLowerCase()] || '📄';
+}
+
+// Función para abrir vista previa de archivo
+async function abrirVistaPrevia(archivoId, archivo) {
+    try {
+        currentFilePreview = archivo;
+        
+        const modal = document.getElementById('filePreviewModal');
+        const fileName = document.getElementById('previewFileName');
+        const previewContent = document.getElementById('previewContent');
+        const fileInfo = document.getElementById('fileInfo');
+
+        fileName.textContent = archivo.nombre;
+        
+        // Información del archivo
+        const tamaño = formatearTamaño(archivo.tamaño);
+        const fecha = new Date(archivo.fecha_subida).toLocaleDateString('es-ES');
+        fileInfo.innerHTML = `
+            <div style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.7);">
+                <div>Tamaño: ${tamaño}</div>
+                <div>Subido: ${fecha}</div>
+                <div>Tipo: ${archivo.tipo_archivo}</div>
+            </div>
+        `;
+
+        // Generar vista previa según tipo
+        if (archivo.tipo_archivo === 'imagen') {
+            previewContent.innerHTML = `
+                <img src="${archivo.url}" 
+                     style="max-width: 100%; max-height: 70vh; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);"
+                     alt="${archivo.nombre}">
+            `;
+        } else if (archivo.extension === 'pdf') {
+            previewContent.innerHTML = `
+                <iframe src="${archivo.url}" 
+                        style="width: 100%; height: 70vh; border: none; border-radius: 8px;"
+                        frameborder="0">
+                </iframe>
+            `;
+        } else {
+            // Para otros tipos, mostrar icono e información
+            const icono = obtenerIconoArchivo(archivo.extension, archivo.tipo_archivo);
+            previewContent.innerHTML = `
+                <div style="padding: 2rem; text-align: center;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">${icono}</div>
+                    <h3 style="margin-bottom: 0.5rem;">${archivo.nombre}</h3>
+                    <p style="color: rgba(255, 255, 255, 0.7);">No se puede mostrar vista previa de este tipo de archivo</p>
+                    <button onclick="downloadFile()" class="btn-nuevo-comentario" style="margin-top: 1rem;">
+                        Descargar Archivo
+                    </button>
+                </div>
+            `;
+        }
+
+        modal.style.display = 'flex';
+        
+    } catch (error) {
+        console.error('Error abriendo vista previa:', error);
+        mostrarNotificacion('❌ Error abriendo vista previa', 'error');
+    }
+}
+
+function closeFilePreviewModal() {
+    document.getElementById('filePreviewModal').style.display = 'none';
+    currentFilePreview = null;
+}
+
+function downloadFile() {
+    if (currentFilePreview && currentFilePreview.url) {
+        // Crear elemento a temporal para descarga
+        const a = document.createElement('a');
+        a.href = currentFilePreview.url;
+        a.download = currentFilePreview.nombre;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+}
+
+function formatearTamaño(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Actualizar función cargarCarpetas para mostrar archivos también
+const originalCargarCarpetas = cargarCarpetas;
+cargarCarpetas = async function() {
+    try {
+        const url = currentFolder 
+            ? `/app/api/proyecto/${PROYECTO_ID}/carpetas/?parent=${currentFolder}`
+            : `/app/api/proyecto/${PROYECTO_ID}/carpetas/`;
+        
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Error al cargar carpetas');
+        
+        const data = await response.json();
+        const container = document.getElementById('foldersContainer');
+        
+        if (!container) return;
+        
+        // Limpiar contenedor
+        container.innerHTML = '';
+        
+        // Mostrar carpetas
+        data.carpetas?.forEach(carpeta => {
+            const folderElement = document.createElement('div');
+            folderElement.className = 'folder-item';
+            folderElement.style.cssText = `
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 1rem;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.05);
+                cursor: pointer;
+                transition: all 0.2s ease;
+                min-height: 100px;
+                justify-content: center;
+            `;
+            
+            folderElement.innerHTML = `
+                <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--apple-blue); margin-bottom: 0.5rem;">
+                    <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                </svg>
+                <span style="font-weight: 500; text-align: center; word-break: break-word;">${carpeta.nombre}</span>
+            `;
+            
+            folderElement.addEventListener('click', () => {
+                currentFolder = carpeta.id;
+                updateBreadcrumb();
+                cargarCarpetas();
+            });
+            
+            container.appendChild(folderElement);
+        });
+        
+        // Mostrar archivos
+        data.archivos?.forEach(archivo => {
+            const fileElement = document.createElement('div');
+            fileElement.className = 'file-item';
+            fileElement.style.cssText = `
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 1rem;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.05);
+                cursor: pointer;
+                transition: all 0.2s ease;
+                min-height: 100px;
+                justify-content: center;
+            `;
+            
+            const icono = obtenerIconoArchivo(archivo.extension, archivo.tipo_archivo);
+            
+            fileElement.innerHTML = `
+                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">${icono}</div>
+                <span style="font-weight: 500; text-align: center; word-break: break-word; font-size: 0.875rem;">${archivo.nombre}</span>
+                <div style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.6); margin-top: 0.25rem;">
+                    ${formatearTamaño(archivo.tamaño)}
+                </div>
+            `;
+            
+            fileElement.addEventListener('click', () => {
+                abrirVistaPrevia(archivo.id, archivo);
+            });
+            
+            container.appendChild(fileElement);
+        });
+        
+        // Si no hay carpetas ni archivos, mostrar estado vacío
+        if ((!data.carpetas || data.carpetas.length === 0) && 
+            (!data.archivos || data.archivos.length === 0)) {
+            container.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: rgba(255, 255, 255, 0.6);">
+                    <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1" style="margin-bottom: 1rem; opacity: 0.5;">
+                        <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                    </svg>
+                    <p>Esta carpeta está vacía</p>
+                    <p style="font-size: 0.875rem;">Arrastra archivos aquí o usa el botón "Subir Archivo"</p>
+                </div>
+            `;
+        }
+        
+    } catch (error) {
+        console.error('Error cargando carpetas:', error);
+        mostrarNotificacion('❌ Error al cargar carpetas', 'error');
+    }
+};
+
 </script>
 
 <!-- Modal para ver detalles de tarea - Glassmorphism Design -->
