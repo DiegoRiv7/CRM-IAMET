@@ -2865,8 +2865,8 @@
                 </div>
             </div>
 
-            <!-- Input file oculto para subir archivos -->
-            <input type="file" id="fileInput" style="display: none;" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt">
+            <!-- Input file para uso dentro de carpetas -->
+            <input type="file" id="fileInputCarpeta" style="display: none;" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt">
 
             <!-- Modal para Vista Previa de Archivos -->
             <div class="modal-overlay" id="filePreviewModal">
@@ -2900,26 +2900,49 @@
 
             <!-- Carpetas Tab -->
             <div class="tab-content" id="carpetas-content">
-                <div class="folders-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                    <div class="folders-actions" style="display: flex; gap: 0.5rem;">
-                        <button class="btn-nuevo-comentario" id="btnCrearCarpeta" style="background: var(--apple-blue); border-color: rgba(10, 132, 255, 0.3);">
-                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path d="M12 4v16m8-8H4"/>
-                            </svg>
-                            Crear Carpeta
-                        </button>
-                        <button class="btn-nuevo-comentario" id="btnSubirArchivo" style="background: var(--apple-green); border-color: rgba(52, 199, 89, 0.3);">
-                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m4-5l5-5 5 5m-5-5v12"/>
-                            </svg>
-                            Subir Archivo
-                        </button>
-                    </div>
+                <!-- Header dinámico - Vista raíz -->
+                <div class="folders-header" id="folders-header-root" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <button class="btn-nuevo-comentario" id="btnCrearCarpeta" style="background: var(--apple-blue); border-color: rgba(10, 132, 255, 0.3);">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Crear Carpeta
+                    </button>
                     <div class="search-widget-container" id="search-widget-carpetas">
                         <input type="text" id="searchCarpetas" placeholder="Buscar carpetas..." class="search-input" value="">
                         <div class="search-icon-container" id="search-icon-carpetas">
                             <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Header dinámico - Vista dentro de carpeta -->
+                <div class="folders-header" id="folders-header-inside" style="display: none; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <div class="folder-navigation" style="display: flex; align-items: center; gap: 1rem;">
+                        <button class="btn-nuevo-comentario" id="btnVolver" style="background: var(--apple-gray); border-color: rgba(156, 163, 175, 0.3);">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M19 12H5m7-7l-7 7 7 7"/>
+                            </svg>
+                            Volver
+                        </button>
+                        
+                        <!-- Breadcrumb -->
+                        <nav class="breadcrumb" id="breadcrumbNav" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: rgba(255, 255, 255, 0.7);">
+                            <span class="breadcrumb-item" style="color: var(--apple-blue);">Proyecto</span>
+                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M9 18l6-6-6-6"/>
+                            </svg>
+                            <span class="breadcrumb-current" id="currentFolderName" style="color: rgba(255, 255, 255, 0.9);">Carpeta Actual</span>
+                        </nav>
+                    </div>
+
+                    <div class="folder-actions" style="display: flex; gap: 0.5rem;">
+                        <button class="btn-nuevo-comentario" id="btnSubirArchivoCarpeta" style="background: var(--apple-green); border-color: rgba(52, 199, 89, 0.3);">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m4-5l5-5 5 5m-5-5v12"/>
+                            </svg>
+                            Subir Archivo
+                        </button>
                     </div>
                 </div>
 
@@ -6979,6 +7002,34 @@ let currentFolder = null; // null = carpeta raíz
 document.addEventListener('DOMContentLoaded', function() {
     // Event listener para botón "Crear Carpeta"
     const btnCrearCarpeta = document.getElementById('btnCrearCarpeta');
+    
+    // Event listeners para los nuevos botones de navegación
+    const btnVolver = document.getElementById('btnVolver');
+    const btnSubirArchivoCarpeta = document.getElementById('btnSubirArchivoCarpeta');
+    const fileInputCarpeta = document.getElementById('fileInputCarpeta');
+    
+    // Botón Volver - regresar a la carpeta padre o raíz
+    if (btnVolver) {
+        btnVolver.addEventListener('click', function() {
+            navegarHaciaAtras();
+        });
+    }
+    
+    // Botón Subir Archivo dentro de carpeta
+    if (btnSubirArchivoCarpeta) {
+        btnSubirArchivoCarpeta.addEventListener('click', function() {
+            fileInputCarpeta.click();
+        });
+    }
+    
+    // Input file para subir archivos dentro de carpetas
+    if (fileInputCarpeta) {
+        fileInputCarpeta.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                subirArchivosACarpeta(e.target.files, currentFolder);
+            }
+        });
+    }
     if (btnCrearCarpeta) {
         btnCrearCarpeta.addEventListener('click', openCreateFolderModal);
     }
@@ -7056,6 +7107,9 @@ async function handleCreateFolder(event) {
 // Cargar carpetas del proyecto
 async function cargarCarpetas() {
     try {
+        // Actualizar vista de headers según el estado de navegación
+        updateFoldersView();
+        
         const url = currentFolder 
             ? `/app/api/proyecto/${PROYECTO_ID}/carpetas/?parent=${currentFolder}`
             : `/app/api/proyecto/${PROYECTO_ID}/carpetas/`;
@@ -7069,6 +7123,15 @@ async function cargarCarpetas() {
         if (response.ok) {
             const data = await response.json();
             currentFolders = data.carpetas || [];
+            
+            // Actualizar breadcrumb si estamos dentro de una carpeta
+            if (currentFolder && data.carpeta_actual) {
+                const currentFolderNameEl = document.getElementById('currentFolderName');
+                if (currentFolderNameEl) {
+                    currentFolderNameEl.textContent = data.carpeta_actual.nombre;
+                }
+            }
+            
             renderizarCarpetas();
         } else {
             throw new Error('Error al cargar carpetas');
@@ -7182,6 +7245,28 @@ function navegarCarpeta(folderId) {
 // Abrir carpeta (doble click)
 function abrirCarpeta(folderId) {
     navegarCarpeta(folderId);
+}
+
+// Navegar hacia atrás (botón Volver)
+function navegarHaciaAtras() {
+    currentFolder = null; // Por ahora siempre volver a la raíz
+    cargarCarpetas();
+}
+
+// Actualizar vista de headers según el estado de navegación
+function updateFoldersView() {
+    const headerRoot = document.getElementById('folders-header-root');
+    const headerInside = document.getElementById('folders-header-inside');
+    
+    if (currentFolder === null) {
+        // Vista raíz - mostrar header con search y crear carpeta
+        if (headerRoot) headerRoot.style.display = 'flex';
+        if (headerInside) headerInside.style.display = 'none';
+    } else {
+        // Vista dentro de carpeta - mostrar header con volver y subir archivo
+        if (headerRoot) headerRoot.style.display = 'none';
+        if (headerInside) headerInside.style.display = 'flex';
+    }
 }
 
 // Mostrar menú contextual de carpeta
@@ -8309,83 +8394,143 @@ function getEstadoBadgeHTML(estado) {
 // Variables globales para archivos
 let currentFilePreview = null;
 
-// Event listeners para subida de archivos
+// Variables para drag & drop
+let dragTargetFolder = null;
+
+// Event listeners para drag & drop
 document.addEventListener('DOMContentLoaded', function() {
-    const btnSubirArchivo = document.getElementById('btnSubirArchivo');
-    const fileInput = document.getElementById('fileInput');
+    setupGlobalDragListeners();
+});
+
+function setupGlobalDragListeners() {
+    // Prevenir comportamiento por defecto en toda la página
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        document.addEventListener(eventName, preventDefaults, false);
+    });
+}
+
+function setupFolderDragListeners(folderElement, folderId) {
+    // Drag & drop específico para cada carpeta
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        folderElement.addEventListener(eventName, preventDefaults, false);
+    });
+
+    // Highlighting cuando se arrastra sobre una carpeta específica
+    ['dragenter', 'dragover'].forEach(eventName => {
+        folderElement.addEventListener(eventName, function(e) {
+            highlightFolder(e.currentTarget, folderId);
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        folderElement.addEventListener(eventName, function(e) {
+            unhighlightFolder(e.currentTarget);
+        }, false);
+    });
+
+    // Drop handler específico para carpeta
+    folderElement.addEventListener('drop', function(e) {
+        handleFolderDrop(e, folderId);
+    }, false);
+
+    // También setup para el contenedor general (raíz)
     const foldersContainer = document.getElementById('foldersContainer');
-
-    // Botón subir archivo
-    if (btnSubirArchivo) {
-        btnSubirArchivo.addEventListener('click', function() {
-            fileInput.click();
-        });
-    }
-
-    // Input file change
-    if (fileInput) {
-        fileInput.addEventListener('change', function(e) {
-            if (e.target.files.length > 0) {
-                subirArchivos(e.target.files);
-            }
-        });
-    }
-
-    // Drag & drop en container de carpetas
     if (foldersContainer) {
-        // Prevenir comportamiento por defecto
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            foldersContainer.addEventListener(eventName, preventDefaults, false);
-        });
-
-        // Highlighting durante drag
         ['dragenter', 'dragover'].forEach(eventName => {
-            foldersContainer.addEventListener(eventName, highlight, false);
+            foldersContainer.addEventListener(eventName, function(e) {
+                // Solo highlight si no estamos sobre una carpeta específica
+                if (!e.target.closest('.folder-item')) {
+                    highlightContainer(e.currentTarget);
+                }
+            }, false);
         });
 
         ['dragleave', 'drop'].forEach(eventName => {
-            foldersContainer.addEventListener(eventName, unhighlight, false);
+            foldersContainer.addEventListener(eventName, function(e) {
+                if (!e.target.closest('.folder-item')) {
+                    unhighlightContainer(e.currentTarget);
+                }
+            }, false);
         });
 
-        // Drop handler
-        foldersContainer.addEventListener('drop', handleDrop, false);
+        foldersContainer.addEventListener('drop', function(e) {
+            // Solo procesar si no estamos sobre una carpeta específica
+            if (!e.target.closest('.folder-item')) {
+                handleContainerDrop(e);
+            }
+        }, false);
     }
-});
+}
 
 function preventDefaults(e) {
     e.preventDefault();
     e.stopPropagation();
 }
 
-function highlight(e) {
-    e.currentTarget.style.backgroundColor = 'rgba(10, 132, 255, 0.1)';
-    e.currentTarget.style.borderColor = 'var(--apple-blue)';
+// Highlighting para carpetas específicas
+function highlightFolder(folderElement, folderId) {
+    dragTargetFolder = folderId;
+    folderElement.style.backgroundColor = 'rgba(52, 199, 89, 0.2)';
+    folderElement.style.borderColor = 'var(--apple-green)';
+    folderElement.style.transform = 'scale(1.05)';
+    folderElement.style.boxShadow = '0 8px 25px rgba(52, 199, 89, 0.3)';
 }
 
-function unhighlight(e) {
-    e.currentTarget.style.backgroundColor = '';
-    e.currentTarget.style.borderColor = '';
+function unhighlightFolder(folderElement) {
+    dragTargetFolder = null;
+    folderElement.style.backgroundColor = '';
+    folderElement.style.borderColor = '';
+    folderElement.style.transform = '';
+    folderElement.style.boxShadow = '';
 }
 
-function handleDrop(e) {
+// Highlighting para área general (raíz)
+function highlightContainer(container) {
+    container.style.backgroundColor = 'rgba(10, 132, 255, 0.1)';
+    container.style.borderColor = 'var(--apple-blue)';
+}
+
+function unhighlightContainer(container) {
+    container.style.backgroundColor = '';
+    container.style.borderColor = '';
+}
+
+// Drop en carpeta específica
+function handleFolderDrop(e, folderId) {
     const dt = e.dataTransfer;
     const files = dt.files;
-    subirArchivos(files);
+    
+    if (files.length > 0) {
+        subirArchivosACarpeta(files, folderId);
+        mostrarNotificacion(`📁 Subiendo ${files.length} archivo(s) a la carpeta`);
+    }
 }
 
-async function subirArchivos(files) {
+// Drop en área general (raíz)
+function handleContainerDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    
+    if (files.length > 0) {
+        subirArchivosACarpeta(files, currentFolder);
+        const ubicacion = currentFolder ? 'la carpeta actual' : 'la carpeta raíz';
+        mostrarNotificacion(`📁 Subiendo ${files.length} archivo(s) a ${ubicacion}`);
+    }
+}
+
+async function subirArchivosACarpeta(files, targetFolderId = null) {
     for (let file of files) {
-        await subirArchivo(file);
+        await subirArchivoACarpeta(file, targetFolderId);
     }
     // Recargar vista de carpetas después de subir
     cargarCarpetas();
 }
 
-async function subirArchivo(file) {
+async function subirArchivoACarpeta(file, targetFolderId = null) {
     try {
         const formData = new FormData();
         formData.append('archivo', file);
-        formData.append('carpeta_id', currentFolder || '');
+        formData.append('carpeta_id', targetFolderId || '');
         formData.append('descripcion', '');
         formData.append('es_publico', 'true');
 
@@ -8402,7 +8547,8 @@ async function subirArchivo(file) {
         }
 
         const data = await response.json();
-        mostrarNotificacion(`✅ ${file.name} subido correctamente`);
+        const ubicacion = targetFolderId ? 'carpeta' : 'raíz';
+        mostrarNotificacion(`✅ ${file.name} subido a ${ubicacion}`);
         
     } catch (error) {
         console.error('Error subiendo archivo:', error);
@@ -8566,6 +8712,9 @@ cargarCarpetas = async function() {
                 updateBreadcrumb();
                 cargarCarpetas();
             });
+
+            // Configurar drag & drop para esta carpeta específica
+            setupFolderDragListeners(folderElement, carpeta.id);
             
             container.appendChild(folderElement);
         });
@@ -8614,10 +8763,13 @@ cargarCarpetas = async function() {
                         <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
                     </svg>
                     <p>Esta carpeta está vacía</p>
-                    <p style="font-size: 0.875rem;">Arrastra archivos aquí o usa el botón "Subir Archivo"</p>
+                    <p style="font-size: 0.875rem;">Arrastra archivos aquí para subirlos</p>
                 </div>
             `;
         }
+        
+        // Configurar drag & drop para el contenedor general después de cargar todo
+        setupGlobalDragListeners();
         
     } catch (error) {
         console.error('Error cargando carpetas:', error);

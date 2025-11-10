@@ -10505,10 +10505,23 @@ def api_carpetas_proyecto(request, proyecto_id):
                     'tipo': 'archivo'
                 })
             
+            # Obtener información de la carpeta actual si estamos en una subcarpeta
+            carpeta_actual = None
+            if parent_id:
+                try:
+                    carpeta_obj = CarpetaProyecto.objects.get(id=parent_id)
+                    carpeta_actual = {
+                        'id': carpeta_obj.id,
+                        'nombre': carpeta_obj.nombre
+                    }
+                except CarpetaProyecto.DoesNotExist:
+                    pass
+            
             return JsonResponse({
                 'success': True,
                 'carpetas': carpetas_data,
-                'archivos': archivos_data
+                'archivos': archivos_data,
+                'carpeta_actual': carpeta_actual
             })
         
         elif request.method == 'POST':
