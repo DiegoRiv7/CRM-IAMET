@@ -10529,6 +10529,8 @@ def api_carpetas_proyecto(request, proyecto_id):
             nombre = data.get('nombre')
             parent_id = data.get('parent_id')
             
+            print(f"📂 Creando carpeta: {nombre} en proyecto {proyecto_id}, parent: {parent_id}")
+            
             if not nombre:
                 return JsonResponse({'error': 'Nombre de carpeta requerido'}, status=400)
             
@@ -10550,6 +10552,8 @@ def api_carpetas_proyecto(request, proyecto_id):
                 carpeta_padre=carpeta_padre,
                 creado_por=request.user
             )
+            
+            print(f"✅ Carpeta creada exitosamente: ID={carpeta.id}, Nombre={carpeta.nombre}")
             
             return JsonResponse({
                 'success': True,
@@ -10630,9 +10634,10 @@ def api_carpeta_detalle(request, proyecto_id, carpeta_id):
 @csrf_exempt
 @login_required
 def api_archivos_proyecto(request, proyecto_id):
-    """API para subir archivos a un proyecto"""
+    """API para subir archivos a un proyecto - Usando lógica exitosa de oportunidades"""
     try:
         proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+        print(f"🏗️ Procesando archivos para proyecto: {proyecto.nombre} (ID: {proyecto_id})")
         
         if request.method == 'POST':
             carpeta_id = request.POST.get('carpeta_id')
@@ -10647,38 +10652,58 @@ def api_archivos_proyecto(request, proyecto_id):
             if carpeta_id:
                 carpeta = get_object_or_404(CarpetaProyecto, id=carpeta_id, proyecto=proyecto)
             
-            # Detectar información del archivo
-            nombre_original = archivo_file.name
-            extension = nombre_original.split('.')[-1].lower() if '.' in nombre_original else ''
-            tamaño = archivo_file.size
-            mime_type = archivo_file.content_type or ''
+            # Usar lógica simplificada similar a OportunidadArchivo que funciona
+            print(f"📁 Subiendo archivo: {archivo_file.name} (Tamaño: {archivo_file.size} bytes)")
             
-            # Determinar tipo de archivo
-            tipos_archivo = {
-                'pdf': 'pdf',
-                'doc': 'documento', 'docx': 'documento', 'odt': 'documento', 'rtf': 'documento', 'txt': 'documento',
-                'jpg': 'imagen', 'jpeg': 'imagen', 'png': 'imagen', 'gif': 'imagen', 'bmp': 'imagen', 'svg': 'imagen',
-                'mp4': 'video', 'avi': 'video', 'mov': 'video', 'wmv': 'video', 'flv': 'video', 'webm': 'video',
-                'mp3': 'audio', 'wav': 'audio', 'aac': 'audio', 'flac': 'audio', 'ogg': 'audio',
-                'xls': 'hoja_calculo', 'xlsx': 'hoja_calculo', 'ods': 'hoja_calculo', 'csv': 'hoja_calculo',
-                'ppt': 'presentacion', 'pptx': 'presentacion', 'odp': 'presentacion',
-                'zip': 'archivo_comprimido', 'rar': 'archivo_comprimido', '7z': 'archivo_comprimido', 'tar': 'archivo_comprimido', 'gz': 'archivo_comprimido'
-            }
-            tipo_archivo = tipos_archivo.get(extension, 'otro')
+            # Detectar tipo de archivo simplificado
+            content_type = archivo_file.content_type or ''
+            extension = archivo_file.name.split('.')[-1].lower() if '.' in archivo_file.name else ''
             
-            archivo = ArchivoProyecto.objects.create(
-                nombre_original=nombre_original,
-                archivo=archivo_file,
-                tipo_archivo=tipo_archivo,
-                tamaño=tamaño,
-                proyecto=proyecto,
-                carpeta=carpeta,
-                subido_por=request.user,
-                descripcion=descripcion,
-                es_publico=es_publico,
-                extension=extension,
-                mime_type=mime_type
-            )
+            # Determinar tipo basado en extensión (similar a oportunidades)
+            if extension in ['pdf']:
+                tipo_archivo = 'pdf'
+            elif extension in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg']:
+                tipo_archivo = 'imagen'
+            elif extension in ['doc', 'docx', 'txt', 'rtf', 'odt']:
+                tipo_archivo = 'documento'
+            elif extension in ['xls', 'xlsx', 'csv', 'ods']:
+                tipo_archivo = 'hoja_calculo'
+            elif extension in ['ppt', 'pptx', 'odp']:
+                tipo_archivo = 'presentacion'
+            elif extension in ['mp4', 'avi', 'mov', 'wmv']:
+                tipo_archivo = 'video'
+            elif extension in ['mp3', 'wav', 'aac', 'flac']:
+                tipo_archivo = 'audio'
+            elif extension in ['zip', 'rar', '7z', 'tar', 'gz']:
+                tipo_archivo = 'archivo_comprimido'
+            else:
+                tipo_archivo = 'otro'
+            
+            print(f"📋 Tipo determinado: {tipo_archivo}")
+            
+            try:
+                # Crear registro de archivo siguiendo el patrón exitoso de oportunidades
+                archivo = ArchivoProyecto.objects.create(
+                    nombre_original=archivo_file.name,
+                    archivo=archivo_file,
+                    tipo_archivo=tipo_archivo,
+                    tamaño=archivo_file.size,
+                    proyecto=proyecto,
+                    carpeta=carpeta,
+                    subido_por=request.user,
+                    descripcion=descripcion or f"Archivo subido a {'carpeta' if carpeta else 'raíz'}",
+                    es_publico=es_publico,
+                    extension=extension,
+                    mime_type=content_type
+                )
+                
+                print(f"✅ Archivo guardado exitosamente: ID={archivo.id}, URL={archivo.archivo.url}")
+                
+            except Exception as e:
+                print(f"❌ Error guardando archivo {archivo_file.name}: {e}")
+                import traceback
+                print(traceback.format_exc())
+                return JsonResponse({'error': f'Error guardando archivo: {str(e)}'}, status=500)
             
             return JsonResponse({
                 'success': True,
@@ -10698,7 +10723,10 @@ def api_archivos_proyecto(request, proyecto_id):
             })
             
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        print(f"❌ Error general en api_archivos_proyecto: {e}")
+        import traceback
+        print(traceback.format_exc())
+        return JsonResponse({'error': f'Error en el servidor: {str(e)}'}, status=500)
 
 
 @csrf_exempt
