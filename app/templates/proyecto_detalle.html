@@ -7990,7 +7990,7 @@ function getEstadoBadgeHTML(estado) {
                         console.log(`🧑 Usuario API: ${user.nombre}, Avatar: ${user.avatar_url || 'SIN AVATAR'}`);
                         return {
                             id: user.id,
-                            nombre: user.nombre || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
+                            nombre: user.nombre || (user.first_name + ' ' + user.last_name).trim() || user.username,
                             email: user.email || '',
                             username: user.username,
                             first_name: user.first_name,
