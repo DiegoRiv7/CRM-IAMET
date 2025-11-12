@@ -113,7 +113,7 @@ function hideModal(modalId) {
 function applyTheme(theme) {
     console.log('applyTheme called with:', theme);
 
-    const validThemes = ['dark', 'pink', 'light', 'white', 'coffee'];
+    const validThemes = ['dark', 'pink', 'light', 'white', 'coffee', 'perla'];
     if (!validThemes.includes(theme)) {
         console.error('Invalid theme provided:', theme);
         theme = 'dark';
@@ -135,7 +135,8 @@ function applyTheme(theme) {
         'dark': 'Oscuro',
         'pink': 'Rosa',
         'white': 'Blanco',
-        'coffee': 'Café'
+        'coffee': 'Café',
+        'perla': 'Perla'
     };
     showNotification(`Tema cambiado a ${themeNames[theme] || theme}.`, 'success');
 }

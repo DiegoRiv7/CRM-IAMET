@@ -104,6 +104,20 @@ html[data-theme="coffee"] {
     --apple-separator: rgba(139, 69, 19, 0.1);
 }
 
+html[data-theme="perla"] {
+    --apple-background: #FDFCFB;
+    --apple-background-secondary: #F8F5F2;
+    --apple-background-tertiary: #F1ECE6;
+    --apple-background-quaternary: #EAE2D9;
+    --apple-label: #4B423B;
+    --apple-label-secondary: #6D5F53;
+    --apple-label-tertiary: #8E7E6E;
+    --apple-blue: #E8B923;
+    --apple-blue-light: #FAD460;
+    --apple-blue-dark: #D4A01A;
+    --apple-separator: rgba(75, 66, 59, 0.1);
+}
+
 * {
 margin: 0;
 padding: 0;
@@ -2310,6 +2324,12 @@ style="padding: 10px 20px;
 <div class="theme-dot-container" id="coffee-theme-dot" onclick="applyTheme('coffee')" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'" style="cursor: pointer; transition: transform 0.2s ease;">
 <div class="theme-dot" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #8b6239 0%, #a0724a 100%); box-shadow: 0 4px 12px rgba(139, 69, 19, 0.2); transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);"></div>
 <p style="text-align: center; margin-top: 8px; font-size: 14px; color: var(--apple-label); font-weight: 500;">Duna</p>
+</div>
+
+<!-- Tema Perla -->
+<div class="theme-dot-container" id="perla-theme-dot" onclick="applyTheme('perla')" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'" style="cursor: pointer; transition: transform 0.2s ease;">
+<div class="theme-dot" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #FAD460 0%, #E8B923 100%); box-shadow: 0 4px 12px rgba(232, 185, 35, 0.2); transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);"></div>
+<p style="text-align: center; margin-top: 8px; font-size: 14px; color: var(--apple-label); font-weight: 500;">Perla</p>
 </div>
 </div>
 </div>
