@@ -960,7 +960,7 @@ function initializeActiveTheme(theme) {
     
     console.log('initializeActiveTheme called with:', theme);
     
-    document.querySelectorAll('.theme-option').forEach(option => {
+    document.querySelectorAll('.theme-dot-container').forEach(option => {
         option.classList.remove('active');
         option.style.borderColor = '';
         option.style.boxShadow = '';
@@ -971,7 +971,7 @@ function initializeActiveTheme(theme) {
     });
     
     let foundTheme = false;
-    document.querySelectorAll('.theme-option').forEach(option => {
+    document.querySelectorAll('.theme-dot-container').forEach(option => {
         const onclickAttr = option.getAttribute('onclick');
         if (onclickAttr && onclickAttr.includes(`'${theme}'`)) {
             option.classList.add('active');
