@@ -960,38 +960,35 @@ function initializeActiveTheme(theme) {
     
     console.log('initializeActiveTheme called with:', theme);
     
+    // Desactivar todos los temas primero
     document.querySelectorAll('.theme-dot-container').forEach(option => {
         option.classList.remove('active');
-        option.style.borderColor = '';
-        option.style.boxShadow = '';
-        option.style.transform = '';
-        option.style.setProperty('border-color', '', 'important');
-        option.style.setProperty('box-shadow', '', 'important');
-        option.style.setProperty('transform', '', 'important');
+        option.style.boxShadow = 'none';
+        option.style.transform = 'translateY(0)';
     });
     
-    let foundTheme = false;
-    document.querySelectorAll('.theme-dot-container').forEach(option => {
-        const onclickAttr = option.getAttribute('onclick');
-        if (onclickAttr && onclickAttr.includes(`'${theme}'`)) {
-            option.classList.add('active');
-            option.style.setProperty('border-color', 'var(--apple-blue)', 'important');
-            option.style.setProperty('box-shadow', '0 0 0 2px rgba(0, 122, 255, 0.5)', 'important');
-            option.style.setProperty('transform', 'translateY(-2px)', 'important');
-            foundTheme = true;
-            console.log('Theme option activated:', theme, option);
-            option.offsetHeight;
+    // Activar el tema correcto por ID
+    const activeOption = document.getElementById(`${theme}-theme-dot`);
+    if (activeOption) {
+        activeOption.classList.add('active');
+        activeOption.style.transform = 'translateY(-5px)';
+        
+        // Aplicar la sombra correcta según el tema
+        const dot = activeOption.querySelector('.theme-dot');
+        if (dot) {
+            if (theme === 'dark') {
+                dot.style.boxShadow = '0 0 0 3px rgba(0, 122, 255, 0.5), 0 0 15px rgba(0, 122, 255, 0.7)';
+            } else if (theme === 'pink') {
+                dot.style.boxShadow = '0 0 0 3px rgba(255, 107, 157, 0.5), 0 0 15px rgba(255, 107, 157, 0.7)';
+            } else if (theme === 'white') {
+                dot.style.boxShadow = '0 0 0 3px rgba(0, 169, 255, 0.5), 0 0 15px rgba(0, 169, 255, 0.7)';
+            } else if (theme === 'coffee') {
+                dot.style.boxShadow = '0 0 0 3px rgba(139, 98, 57, 0.5), 0 0 15px rgba(139, 98, 57, 0.7)';
+            }
         }
-    });
-    
-    if (!foundTheme) {
-        console.warn('No theme option found for:', theme);
+        console.log('Theme option activated by ID:', theme, activeOption);
     } else {
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme !== theme) {
-            console.warn('Theme mismatch in localStorage! Expected:', theme, 'Got:', savedTheme);
-            localStorage.setItem('theme', theme);
-        }
+        console.warn('No theme option found for ID:', `${theme}-theme-dot`);
     }
 }
 
