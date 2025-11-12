@@ -920,6 +920,10 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('DOMContentLoaded started');
     
     let currentTheme = localStorage.getItem('theme');
+    if (currentTheme === 'auto') {
+        currentTheme = 'dark';
+        localStorage.setItem('theme', 'dark');
+    }
     console.log('DOMContentLoaded - currentTheme:', currentTheme);
     
     if (currentTheme) {
