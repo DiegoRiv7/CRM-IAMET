@@ -3270,8 +3270,8 @@ Object.assign(TareasProyectos, {
                     // Fallback for string names
                     const nombre = typeof observador === 'string' ? observador : observador.toString();
                     return `
-                        <div style="width: 28px; height: 28px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;" title="${nombre}">
-                            ${TareasProyectos.getInitials(nombre)}
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: ' + TareasProyectos.getAvatarColor(nombre) + '; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;" title="' + nombre + '">
+                            ' + TareasProyectos.getInitials(nombre) + '
                         </div>
                     `;
                 }
@@ -3527,7 +3527,7 @@ Object.assign(TareasProyectos, {
                 
             } else {
                 console.error('❌ Error del servidor:', result.error);
-                alert(`Error: ${result.error}`);
+                alert('Error: ' + result.error);
             }
             
         } catch (error) {
@@ -3569,7 +3569,7 @@ Object.assign(TareasProyectos, {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error('HTTP error! status: ' + response.status);
             }
 
             const data = await response.json();
@@ -3681,54 +3681,53 @@ Object.assign(TareasProyectos, {
                     0 0 0 0.5px rgba(255, 255, 255, 0.05) inset;
                 transition: all 0.2s ease;
             `;
-            timerDisplay.innerHTML = `
-                <div style="
-                    display: flex; 
-                    align-items: center; 
-                    justify-content: center; 
-                    gap: 8px;
-                    margin-bottom: 4px;
-                ">
-                    <div style="
-                        width: 6px; 
-                        height: 6px; 
-                        background: #30D158; 
-                        border-radius: 50%;
-                        animation: pulse 2s infinite;
-                    "></div>
-                    <span style="
-                        color: #8E8E93; 
-                        font-size: 11px; 
-                        font-weight: 500; 
-                        letter-spacing: 0.5px;
-                        text-transform: uppercase;
-                    ">En progreso</span>
-                </div>
-                <div id="timer-display" style="
-                    color: #F2F2F7; 
-                    font-size: 20px; 
-                    font-weight: 600; 
-                    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
-                    letter-spacing: 1px;
-                    margin-bottom: 2px;
-                ">
-                    00:00:00
-                </div>
-                <div style="
-                    color: #636366; 
-                    font-size: 10px; 
-                    font-weight: 400;
-                    opacity: 0.8;
-                ">
-                    Sesión actual
-                </div>
-                <style>
-                    @keyframes pulse {
-                        0%, 100% { opacity: 1; }
-                        50% { opacity: 0.4; }
-                    }
-                </style>
-            `;
+            timerDisplay.innerHTML = 
+                '<div style="' +
+                    'display: flex; ' + 
+                    'align-items: center; ' + 
+                    'justify-content: center; ' + 
+                    'gap: 8px;' +
+                    'margin-bottom: 4px;' +
+                '">' +
+                    '<div style="' +
+                        'width: 6px; ' + 
+                        'height: 6px; ' + 
+                        'background: #30D158; ' + 
+                        'border-radius: 50%;' +
+                        'animation: pulse 2s infinite;' +
+                    '"></div>' +
+                    '<span style="' +
+                        'color: #8E8E93; ' + 
+                        'font-size: 11px; ' + 
+                        'font-weight: 500; ' + 
+                        'letter-spacing: 0.5px;' +
+                        'text-transform: uppercase;' +
+                    '">En progreso</span>' +
+                '</div>' +
+                '<div id="timer-display" style="' +
+                    'color: #F2F2F7; ' + 
+                    'font-size: 20px; ' + 
+                    'font-weight: 600; ' + 
+                    'font-family: -apple-system, BlinkMacSystemFont, \'SF Pro Display\', system-ui, sans-serif;' +
+                    'letter-spacing: 1px;' +
+                    'margin-bottom: 2px;' +
+                '">' +
+                    '00:00:00' +
+                '</div>' +
+                '<div style="' +
+                    'color: #636366; ' + 
+                    'font-size: 10px; ' + 
+                    'font-weight: 400;' +
+                    'opacity: 0.8;' +
+                '">' +
+                    'Sesión actual' +
+                '</div>' +
+                '<style>' +
+                    '@keyframes pulse {' +
+                        '0%, 100% { opacity: 1; }' +
+                        '50% { opacity: 0.4; }' +
+                    '}' +
+                '</style>';
             // Agregar el cronómetro al final del contenedor de controles
             taskControls.appendChild(timerDisplay);
             console.log('✅ Cronómetro agregado al DOM');
@@ -3789,15 +3788,14 @@ Object.assign(TareasProyectos, {
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
         `;
         
-        timerDisplay.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #FF9F40;">
-                <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-                <span style="font-weight: 600; font-size: 1.1rem;">${timeText}</span>
-                <span style="font-size: 0.8rem; opacity: 0.7;">(Pausado)</span>
-            </div>
-        `;
+        timerDisplay.innerHTML = 
+            '<div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #FF9F40;">' +
+                '<svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">' +
+                    '<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />' +
+                '</svg>' +
+                '<span style="font-weight: 600; font-size: 1.1rem;">' + timeText + '</span>' +
+                '<span style="font-size: 0.8rem; opacity: 0.7;">(Pausado)</span>' +
+            '</div>';
         
         timerDisplay.style.display = 'block';
     },
@@ -3831,15 +3829,14 @@ Object.assign(TareasProyectos, {
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
         `;
         
-        timerDisplay.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #30D158;">
-                <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                </svg>
-                <span style="font-weight: 600; font-size: 1.1rem;">${timeText}</span>
-                <span style="font-size: 0.8rem; opacity: 0.7;">(Completado)</span>
-            </div>
-        `;
+        timerDisplay.innerHTML = 
+            '<div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #30D158;">' +
+                '<svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">' +
+                    '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />' +
+                '</svg>' +
+                '<span style="font-weight: 600; font-size: 1.1rem;">' + timeText + '</span>' +
+                '<span style="font-size: 0.8rem; opacity: 0.7;">(Completado)</span>' +
+            '</div>';
         
         timerDisplay.style.display = 'block';
     },
@@ -3998,15 +3995,15 @@ Object.assign(TareasProyectos, {
                 // Ajustar startTime para que el cronómetro muestre el tiempo correcto
                 this.startTime = Date.now() - (tiempoTotal * 1000);
                 
-                console.log(`⏱️ Sesión iniciada hace ${tiempoTranscurrido} segundos`);
-                console.log(`⏱️ Tiempo previo: ${tiempoPrevio}s`);
-                console.log(`⏱️ Tiempo total: ${tiempoTotal}s`);
+                console.log('⏱️ Sesión iniciada hace ' + tiempoTranscurrido + ' segundos');
+                console.log('⏱️ Tiempo previo: ' + tiempoPrevio + 's');
+                console.log('⏱️ Tiempo total: ' + tiempoTotal + 's');
                 
                 // Mostrar inmediatamente el tiempo correcto
                 const hours = Math.floor(tiempoTotal / 3600);
                 const minutes = Math.floor((tiempoTotal % 3600) / 60);
                 const seconds = tiempoTotal % 60;
-                console.log(`⏱️ Tiempo a mostrar: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+                console.log('⏱️ Tiempo a mostrar: ' + hours.toString().padStart(2, '0') + ':' + minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0'));
             } else {
                 // Si no hay fecha de inicio, usar ahora como referencia
                 this.startTime = Date.now();
@@ -4058,7 +4055,7 @@ Object.assign(TareasProyectos, {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error('HTTP error! status: ' + response.status);
             }
 
             const data = await response.json();
@@ -4119,14 +4116,14 @@ Object.assign(TareasProyectos, {
         systemComment.style.cssText = 'display: flex; gap: 1rem;';
         systemComment.innerHTML = `
             <div style="flex-shrink: 0;">
-                <div style="width: 2.5rem; height: 2.5rem; background-color: ${color}; color: white; font-weight: 700; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.875rem;">S</div>
+                <div style="width: 2.5rem; height: 2.5rem; background-color: ' + color + '; color: white; font-weight: 700; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.875rem;">S</div>
             </div>
             <div style="flex: 1; min-width: 0; background-color: rgba(37, 42, 51, 0.7); border: 1px solid rgba(45, 55, 72, 0.3); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); padding: 1rem; border-radius: 0.75rem;">
                 <div style="display: flex; align-items: baseline; gap: 0.5rem; border-bottom: 1px solid rgba(45, 55, 72, 0.5); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
                     <span style="font-weight: 600; color: #E0E7FF;">Sistema</span>
                     <span style="font-size: 0.75rem; color: #9CA3AF;">Justo ahora</span>
                 </div>
-                <p style="color: rgba(224, 231, 255, 0.9); white-space: pre-wrap; line-height: 1.625; font-size: 0.875rem; margin: 0;">${text}</p>
+                <p style="color: rgba(224, 231, 255, 0.9); white-space: pre-wrap; line-height: 1.625; font-size: 0.875rem; margin: 0;">' + text + '</p>
             </div>
         `;
         
@@ -4137,30 +4134,29 @@ Object.assign(TareasProyectos, {
     // Función para actualizar la lista visual de usuarios (participantes/observadores)
     actualizarListaUsuarios(type, usuario) {
         console.log(`🔄 === INICIANDO actualizarListaUsuarios ===`);
-        console.log(`🔄 Type: ${type}`);
+        console.log('🔄 Type: ' + type);
         console.log(`🔄 Usuario:`, usuario);
         
-        const containerId = `task-detail-${type}-container`;
+        const containerId = 'task-detail-' + type + '-container';
         const container = document.getElementById(containerId);
         
         if (!container) {
-            console.error(`❌ No se encontró el contenedor: ${containerId}`);
+            console.error('❌ No se encontró el contenedor: ' + containerId);
             return;
         }
 
         // Crear el HTML del nuevo usuario
         const avatarHtml = usuario.avatar_url ? 
-            `<img src="${usuario.avatar_url}" alt="${usuario.nombre}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.1);">` :
-            `<div style="width: 32px; height: 32px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(usuario.nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem; border: 2px solid rgba(255, 255, 255, 0.1);">${TareasProyectos.getInitials(usuario.nombre)}</div>`;
+            '<img src="' + usuario.avatar_url + '" alt="' + usuario.nombre + '" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.1);">' :
+            '<div style="width: 32px; height: 32px; border-radius: 50%; background: ' + TareasProyectos.getAvatarColor(usuario.nombre) + '; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem; border: 2px solid rgba(255, 255, 255, 0.1);">' + TareasProyectos.getInitials(usuario.nombre) + '</div>';
 
-        const nuevoUsuarioHtml = `
-            <div class="member-item" data-user-id="${usuario.id}">
-                <div class="member-avatar-container">
-                    ${avatarHtml}
-                </div>
-                <span class="member-name">${usuario.nombre}</span>
-            </div>
-        `;
+        const nuevoUsuarioHtml = 
+            '<div class="member-item" data-user-id="' + usuario.id + '">' +
+                '<div class="member-avatar-container">' +
+                    avatarHtml +
+                '</div>' +
+                '<span class="member-name">' + usuario.nombre + '</span>' +
+            '</div>';
 
         // Buscar si ya existe un mensaje de "Sin usuarios"
         const sinUsuariosMsg = container.querySelector('.no-members-message');
@@ -4171,7 +4167,7 @@ Object.assign(TareasProyectos, {
         // Agregar el nuevo usuario al contenedor
         container.insertAdjacentHTML('beforeend', nuevoUsuarioHtml);
         
-        console.log(`✅ Usuario ${usuario.nombre} agregado visualmente a ${type}`);
+        console.log('✅ Usuario ' + usuario.nombre + ' agregado visualmente a ' + type);
     },
 
     // Función para configurar el responsable
@@ -4180,17 +4176,16 @@ Object.assign(TareasProyectos, {
         if (!container) return;
         
         if (responsable) {
-            container.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
-                    <div style="width: 40px; height: 40px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(responsable)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem;">
-                        ${TareasProyectos.getInitials(responsable)}
-                    </div>
-                    <div>
-                        <div style="color: var(--apple-label); font-weight: 500; font-size: 0.95rem;">${responsable}</div>
-                        <div style="color: var(--apple-label-secondary); font-size: 0.8rem;">Responsable</div>
-                    </div>
-                </div>
-            `;
+            container.innerHTML = 
+                '<div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">' +
+                    '<div style="width: 40px; height: 40px; border-radius: 50%; background: ' + TareasProyectos.getAvatarColor(responsable) + '; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem;">' +
+                        TareasProyectos.getInitials(responsable) +
+                    '</div>' +
+                    '<div>' +
+                        '<div style="color: var(--apple-label); font-weight: 500; font-size: 0.95rem;">' + responsable + '</div>' +
+                        '<div style="color: var(--apple-label-secondary); font-size: 0.8rem;">Responsable</div>' +
+                    '</div>' +
+                '</div>';
         } else {
             container.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px dashed rgba(255, 255, 255, 0.2);">
@@ -4220,8 +4215,8 @@ Object.assign(TareasProyectos, {
                     // Fallback for string names
                     const nombre = typeof participante === 'string' ? participante : participante.toString();
                     return `
-                        <div style="width: 28px; height: 28px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;" title="${nombre}">
-                            ${TareasProyectos.getInitials(nombre)}
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: ' + TareasProyectos.getAvatarColor(nombre) + '; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;" title="' + nombre + '">
+                            ' + TareasProyectos.getInitials(nombre) + '
                         </div>
                     `;
                 }
@@ -4278,7 +4273,7 @@ Object.assign(TareasProyectos, {
         try {
             const response = await fetch('/app/api/tarea/' + tareaId + '/comentarios/');
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error('HTTP error! status: ' + response.status);
             }
             
             const data = await response.json();
@@ -4337,67 +4332,66 @@ Object.assign(TareasProyectos, {
         const editadoTexto = comentario.editado ? 
             `<span style="color: #9CA3AF; font-size: 0.75rem; margin-left: 0.5rem;">(editado)</span>` : '';
 
-        div.innerHTML = `
-            <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
-                <div style="
-                    width: 32px; 
-                    height: 32px; 
-                    border-radius: 50%; 
-                    background: ${this.getAvatarColor(comentario.usuario.nombre)}; 
-                    display: flex; 
-                    align-items: center; 
-                    justify-content: center; 
-                    color: white; 
-                    font-weight: 600; 
-                    font-size: 0.875rem;
-                    flex-shrink: 0;
-                " title="${comentario.usuario.nombre}">
-                    ${this.getInitials(comentario.usuario.nombre)}
-                </div>
-                <div style="flex: 1;">
-                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                        <span style="font-weight: 600; color: #E0E7FF;">${comentario.usuario.nombre}</span>
-                        <span style="color: #9CA3AF; font-size: 0.875rem;">${fechaFormateada}</span>
-                        ${editadoTexto}
-                    </div>
-                    <div style="color: rgba(224, 231, 255, 0.9); line-height: 1.5; margin-bottom: 0.5rem;" 
-                         id="comentario-contenido-${comentario.id}">
-                        ${comentario.contenido_con_menciones || comentario.contenido}
-                    </div>
-                    ${comentario.archivos && comentario.archivos.length > 0 ? this.mostrarArchivos(comentario.archivos) : ''}
-                    <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
-                        <button onclick="TareasProyectos.editarComentario(${comentario.id})" 
-                                style="
-                                    padding: 0.25rem 0.5rem; 
-                                    font-size: 0.75rem; 
-                                    color: #9CA3AF; 
-                                    background: none; 
-                                    border: 1px solid rgba(156, 163, 175, 0.3); 
-                                    border-radius: 0.25rem; 
-                                    cursor: pointer;
-                                " 
-                                onmouseover="this.style.color='#E0E7FF'; this.style.borderColor='rgba(224, 231, 255, 0.5)'" 
-                                onmouseout="this.style.color='#9CA3AF'; this.style.borderColor='rgba(156, 163, 175, 0.3)'">
-                            Editar
-                        </button>
-                        <button onclick="TareasProyectos.eliminarComentario(${comentario.id})" 
-                                style="
-                                    padding: 0.25rem 0.5rem; 
-                                    font-size: 0.75rem; 
-                                    color: #FF6B6B; 
-                                    background: none; 
-                                    border: 1px solid rgba(255, 107, 107, 0.3); 
-                                    border-radius: 0.25rem; 
-                                    cursor: pointer;
-                                " 
-                                onmouseover="this.style.color='#FF3B30'; this.style.borderColor='rgba(255, 59, 48, 0.5)'" 
-                                onmouseout="this.style.color='#FF6B6B'; this.style.borderColor='rgba(255, 107, 107, 0.3)'">
-                            Eliminar
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
+        div.innerHTML = 
+            '<div style="display: flex; align-items: flex-start; gap: 0.75rem;">' +
+                '<div style="' +
+                    'width: 32px; ' +
+                    'height: 32px; ' +
+                    'border-radius: 50%; ' +
+                    'background: ' + this.getAvatarColor(comentario.usuario.nombre) + '; ' +
+                    'display: flex; ' +
+                    'align-items: center; ' +
+                    'justify-content: center; ' +
+                    'color: white; ' +
+                    'font-weight: 600; ' +
+                    'font-size: 0.875rem;' +
+                    'flex-shrink: 0;' +
+                '" title="' + comentario.usuario.nombre + '">' +
+                    this.getInitials(comentario.usuario.nombre) +
+                '</div>' +
+                '<div style="flex: 1;">' +
+                    '<div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">' +
+                        '<span style="font-weight: 600; color: #E0E7FF;">' + comentario.usuario.nombre + '</span>' +
+                        '<span style="color: #9CA3AF; font-size: 0.875rem;">' + fechaFormateada + '</span>' +
+                        editadoTexto +
+                    '</div>' +
+                    '<div style="color: rgba(224, 231, 255, 0.9); line-height: 1.5; margin-bottom: 0.5rem;" ' +
+                         'id="comentario-contenido-' + comentario.id + '">' +
+                        (comentario.contenido_con_menciones || comentario.contenido) +
+                    '</div>' +
+                    (comentario.archivos && comentario.archivos.length > 0 ? this.mostrarArchivos(comentario.archivos) : '') +
+                    '<div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">' +
+                        '<button onclick="TareasProyectos.editarComentario(' + comentario.id + ')" ' +
+                                'style="' +
+                                    'padding: 0.25rem 0.5rem; ' +
+                                    'font-size: 0.75rem; ' +
+                                    'color: #9CA3AF; ' +
+                                    'background: none; ' +
+                                    'border: 1px solid rgba(156, 163, 175, 0.3); ' +
+                                    'border-radius: 0.25rem; ' +
+                                    'cursor: pointer;' +
+                                '" ' +
+                                'onmouseover="this.style.color=\'#E0E7FF\'; this.style.borderColor=\'rgba(224, 231, 255, 0.5)\'" ' +
+                                'onmouseout="this.style.color=\'#9CA3AF\'; this.style.borderColor=\'rgba(156, 163, 175, 0.3)\'">' +
+                            'Editar' +
+                        '</button>' +
+                        '<button onclick="TareasProyectos.eliminarComentario(' + comentario.id + ')" ' +
+                                'style="' +
+                                    'padding: 0.25rem 0.5rem; ' +
+                                    'font-size: 0.75rem; ' +
+                                    'color: #FF6B6B; ' +
+                                    'background: none; ' +
+                                    'border: 1px solid rgba(255, 107, 107, 0.3); ' +
+                                    'border-radius: 0.25rem; ' +
+                                    'cursor: pointer;' +
+                                '" ' +
+                                'onmouseover="this.style.color=\'#FF3B30\'; this.style.borderColor=\'rgba(255, 59, 48, 0.5)\'" ' +
+                                'onmouseout="this.style.color=\'#FF6B6B\'; this.style.borderColor=\'rgba(255, 107, 107, 0.3)\'">' +
+                            'Eliminar' +
+                        '</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
 
         return div;
     },
@@ -4405,25 +4399,23 @@ Object.assign(TareasProyectos, {
     mostrarArchivos(archivos) {
         if (!archivos || archivos.length === 0) return '';
         
-        return `
-            <div style="margin-top: 0.5rem;">
-                ${archivos.map(archivo => `
-                    <a href="${archivo.url}" target="_blank" 
-                       style="
-                           display: inline-block; 
-                           padding: 0.25rem 0.5rem; 
-                           margin: 0.125rem; 
-                           background: rgba(59, 130, 246, 0.2); 
-                           color: #60A5FA; 
-                           border-radius: 0.25rem; 
-                           text-decoration: none; 
-                           font-size: 0.75rem;
-                       ">
-                        📎 ${archivo.nombre_original}
-                    </a>
-                `).join('')}
-            </div>
-        `;
+        var archivosHtml = archivos.map(function(archivo) {
+            return '<a href="' + archivo.url + '" target="_blank" ' +
+                       'style="' +
+                           'display: inline-block; ' +
+                           'padding: 0.25rem 0.5rem; ' +
+                           'margin: 0.125rem; ' +
+                           'background: rgba(59, 130, 246, 0.2); ' +
+                           'color: #60A5FA; ' +
+                           'border-radius: 0.25rem; ' +
+                           'text-decoration: none; ' +
+                           'font-size: 0.75rem;' +
+                       '">' +
+                        '📎 ' + archivo.nombre_original +
+                    '</a>';
+        }).join('');
+        
+        return '<div style="margin-top: 0.5rem;">' + archivosHtml + '</div>';
     },
 
     async enviarComentario(contenido) {
@@ -4450,7 +4442,7 @@ Object.assign(TareasProyectos, {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error('HTTP error! status: ' + response.status);
             }
 
             const data = await response.json();
@@ -4499,32 +4491,31 @@ Object.assign(TareasProyectos, {
         // Crear botones de acción
         const botonesDiv = document.createElement('div');
         botonesDiv.style.cssText = 'display: flex; gap: 0.5rem; margin-top: 0.5rem;';
-        botonesDiv.innerHTML = `
-            <button onclick="TareasProyectos.guardarEdicionComentario(${comentarioId})" 
-                    style="
-                        padding: 0.25rem 0.75rem; 
-                        font-size: 0.75rem; 
-                        color: white; 
-                        background: #3B82F6; 
-                        border: none; 
-                        border-radius: 0.25rem; 
-                        cursor: pointer;
-                    ">
-                Guardar
-            </button>
-            <button onclick="TareasProyectos.cancelarEdicionComentario(${comentarioId})" 
-                    style="
-                        padding: 0.25rem 0.75rem; 
-                        font-size: 0.75rem; 
-                        color: #9CA3AF; 
-                        background: none; 
-                        border: 1px solid rgba(156, 163, 175, 0.3); 
-                        border-radius: 0.25rem; 
-                        cursor: pointer;
-                    ">
-                Cancelar
-            </button>
-        `;
+        botonesDiv.innerHTML = 
+            '<button onclick="TareasProyectos.guardarEdicionComentario(' + comentarioId + ')" ' +
+                    'style="' +
+                        'padding: 0.25rem 0.75rem; ' +
+                        'font-size: 0.75rem; ' +
+                        'color: white; ' +
+                        'background: #3B82F6; ' +
+                        'border: none; ' +
+                        'border-radius: 0.25rem; ' +
+                        'cursor: pointer;' +
+                    '">' +
+                'Guardar' +
+            '</button>' +
+            '<button onclick="TareasProyectos.cancelarEdicionComentario(' + comentarioId + ')" ' +
+                    'style="' +
+                        'padding: 0.25rem 0.75rem; ' +
+                        'font-size: 0.75rem; ' +
+                        'color: #9CA3AF; ' +
+                        'background: none; ' +
+                        'border: 1px solid rgba(156, 163, 175, 0.3); ' +
+                        'border-radius: 0.25rem; ' +
+                        'cursor: pointer;' +
+                    '">' +
+                'Cancelar' +
+            '</button>';
 
         // Reemplazar contenido con editor
         contenidoElement.style.display = 'none';
@@ -4567,7 +4558,7 @@ Object.assign(TareasProyectos, {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error('HTTP error! status: ' + response.status);
             }
 
             const data = await response.json();
@@ -4606,7 +4597,7 @@ Object.assign(TareasProyectos, {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error('HTTP error! status: ' + response.status);
             }
 
             const data = await response.json();
@@ -4884,7 +4875,7 @@ function handleFiles(files) {
         }
         
         if (file.size > 10 * 1024 * 1024) { // 10MB
-            alert(`El archivo ${file.name} es muy grande (máximo 10MB)`);
+            alert('El archivo ' + file.name + ' es muy grande (máximo 10MB)');
             continue;
         }
         
@@ -4908,10 +4899,9 @@ function actualizarArchivosAdjuntos() {
     attachedFiles.forEach((file, index) => {
         const div = document.createElement('div');
         div.className = 'archivo-adjunto';
-        div.innerHTML = `
-            <span>📎 ${file.name}</span>
-            <button class="archivo-remove" onclick="removeFile(${index})">×</button>
-        `;
+        div.innerHTML = 
+            '<span>📎 ' + file.name + '</span>' +
+            '<button class="archivo-remove" onclick="removeFile(' + index + ')">×</button>';
         container.appendChild(div);
     });
 }
@@ -4943,7 +4933,7 @@ async function cargarComentarios() {
         const response = await fetch('/app/api/proyecto/' + PROYECTO_ID + '/comentarios/');
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error('HTTP error! status: ' + response.status);
         }
         
         const data = await response.json();
@@ -4973,7 +4963,7 @@ async function cargarComentarios() {
                     </svg>
                     <h3>Error cargando comentarios</h3>
                     <p>No se pudieron cargar los comentarios del proyecto.</p>
-                    <p style="font-size: 0.8em; color: var(--apple-label-secondary);">${error.message}</p>
+                    <p style="font-size: 0.8em; color: var(--apple-label-secondary);">' + error.message + '</p>
                 </div>
             `;
         }
@@ -5012,14 +5002,14 @@ function renderizarComentarios(comentarios) {
         const actionsHtml = comentario.puede_editar || comentario.puede_eliminar ? `
             <div class="feed-item-actions">
                 ${comentario.puede_editar ? `
-                    <button class="btn-action" onclick="editarComentario(${comentario.id})" title="Editar">
+                    <button class="btn-action" onclick="editarComentario(' + comentario.id + ')" title="Editar">
                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                             <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
                         </svg>
                     </button>
                 ` : ''}
                 ${comentario.puede_eliminar ? `
-                    <button class="btn-action" onclick="eliminarComentario(${comentario.id})" title="Eliminar">
+                    <button class="btn-action" onclick="eliminarComentario(' + comentario.id + ')" title="Eliminar">
                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                             <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                         </svg>
@@ -5033,18 +5023,18 @@ function renderizarComentarios(comentarios) {
                 <div class="feed-user-info">
                     <div class="feed-avatar" style="background: ${getAvatarColor(comentario.usuario.id)}">
                         ${comentario.usuario.avatar_url ? 
-                            `<img src="${comentario.usuario.avatar_url}" alt="${comentario.usuario.nombre}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 
+                            `<img src="${comentario.usuario.avatar_url}" alt="' + comentario.usuario.nombre + '" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 
                             comentario.usuario.iniciales
                         }
                     </div>
                     <div class="feed-user-details">
-                        <h4>${comentario.usuario.nombre}</h4>
+                        <h4>' + comentario.usuario.nombre + '</h4>
                         <div class="feed-date">${comentario.fecha}${comentario.editado && comentario.fecha_edicion ? ` • Editado ${comentario.fecha_edicion}` : ''}</div>
                     </div>
                 </div>
                 ${actionsHtml}
             </div>
-            <div class="feed-content" id="content-${comentario.id}">
+            <div class="feed-content" id="content-' + comentario.id + '">
                 ${comentario.contenido}
             </div>
             ${archivosHtml}
@@ -5079,7 +5069,7 @@ async function enviarComentario() {
         formData.append('contenido', contenido);
         
         attachedFiles.forEach((file, index) => {
-            formData.append(`archivo_${index}`, file);
+            formData.append('archivo_' + index, file);
         });
         
         const response = await fetch('/app/api/proyecto/' + PROYECTO_ID + '/comentarios/agregar/', {
@@ -5120,7 +5110,7 @@ function editarComentario(comentarioId) {
         cancelarEdicion();
     }
     
-    const contentDiv = document.getElementById(`content-${comentarioId}`);
+    const contentDiv = document.getElementById('content-' + comentarioId);
     if (!contentDiv || comentarioEnEdicion === comentarioId) return;
     
     // Guardar contenido original
@@ -5131,7 +5121,7 @@ function editarComentario(comentarioId) {
     const textarea = document.createElement('textarea');
     textarea.className = 'edit-textarea';
     textarea.value = contenidoOriginal;
-    textarea.id = `edit-textarea-${comentarioId}`;
+    textarea.id = 'edit-textarea-' + comentarioId;
     
     // Crear botones de acción
     const actionsDiv = document.createElement('div');
@@ -5144,7 +5134,7 @@ function editarComentario(comentarioId) {
     // Crear contenedor de edición
     const editContainer = document.createElement('div');
     editContainer.className = 'edit-mode';
-    editContainer.id = `edit-container-${comentarioId}`;
+    editContainer.id = 'edit-container-' + comentarioId;
     editContainer.appendChild(textarea);
     editContainer.appendChild(actionsDiv);
     
@@ -5186,8 +5176,8 @@ function editarComentario(comentarioId) {
 function cancelarEdicion() {
     if (!comentarioEnEdicion) return;
     
-    const editContainer = document.getElementById(`edit-container-${comentarioEnEdicion}`);
-    const contentDiv = document.getElementById(`content-${comentarioEnEdicion}`);
+    const editContainer = document.getElementById('edit-container-' + comentarioEnEdicion);
+    const contentDiv = document.getElementById('content-' + comentarioEnEdicion);
     
     if (editContainer) {
         editContainer.remove();
@@ -5203,7 +5193,7 @@ function cancelarEdicion() {
 
 // Guardar edición
 async function guardarEdicion(comentarioId) {
-    const textarea = document.getElementById(`edit-textarea-${comentarioId}`);
+    const textarea = document.getElementById('edit-textarea-' + comentarioId);
     const saveBtn = document.querySelector('.btn-edit-save');
     
     if (!textarea || !saveBtn) return;
@@ -5234,7 +5224,7 @@ async function guardarEdicion(comentarioId) {
         
         if (data.success) {
             // Actualizar contenido en la interfaz
-            const contentDiv = document.getElementById(`content-${comentarioId}`);
+            const contentDiv = document.getElementById('content-' + comentarioId);
             if (contentDiv) {
                 contentDiv.innerHTML = data.contenido || nuevoContenido;
                 
@@ -5243,7 +5233,7 @@ async function guardarEdicion(comentarioId) {
                 const dateElement = feedItem.querySelector('.feed-date');
                 if (dateElement && data.fecha_edicion) {
                     const currentDate = dateElement.textContent.split(' • ')[0];
-                    dateElement.textContent = `${currentDate} • Editado ${data.fecha_edicion}`;
+                    dateElement.textContent = currentDate + ' • Editado ' + data.fecha_edicion;
                 }
             }
             
@@ -5295,7 +5285,7 @@ async function confirmarEliminacion() {
     btnConfirm.textContent = 'Eliminando...';
     
     try {
-        const response = await fetch(`/app/api/comentario-proyecto/${comentarioAEliminar}/eliminar/`, {
+        const response = await fetch('/app/api/comentario-proyecto/' + comentarioAEliminar + '/eliminar/', {
             method: 'POST',
             headers: {
                 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken')
@@ -5612,7 +5602,7 @@ async function updateExistingTask(tareaId) {
                 closeCreateTaskModal();
                 
                 // Mostrar notificación de éxito
-                showSuccessNotification(`Tarea "${taskData.title}" actualizada exitosamente`);
+                showSuccessNotification('Tarea "' + taskData.title + '" actualizada exitosamente');
                 
                 // Recargar la lista de tareas
                 cargarTareasDelProyecto();
@@ -5899,8 +5889,8 @@ function selectDate(year, month, day, inputElement) {
         year: 'numeric'
     });
     
-    inputElement.value = `${formattedDate} a las ${time}`;
-    inputElement.setAttribute('data-datetime', `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${time}`);
+    inputElement.value = formattedDate + ' a las ' + time;
+    inputElement.setAttribute('data-datetime', year + '-' + (month + 1).toString().padStart(2, '0') + '-' + day.toString().padStart(2, '0') + 'T' + time);
 }
 
 function executeFormatCommand(command) {
@@ -5946,7 +5936,7 @@ function switchAssignmentTab(tabName) {
     document.querySelectorAll('.assignment-panel').forEach(panel => {
         panel.classList.remove('active');
     });
-    document.getElementById(`${tabName}-panel`).classList.add('active');
+    document.getElementById(tabName + '-panel').classList.add('active');
 }
 
 function resetPowerTaskForm() {
@@ -6017,7 +6007,7 @@ function setupUserSearchInputs() {
                 const query = this.value.toLowerCase();
                 const matchedUser = window.availableUsers.find(user => 
                     user.username.toLowerCase().includes(query) || 
-                    `${user.first_name} ${user.last_name}`.toLowerCase().includes(query)
+                    (user.first_name + ' ' + user.last_name).toLowerCase().includes(query)
                 );
                 
                 if (matchedUser) {
@@ -6051,7 +6041,7 @@ function showUserSuggestions(query, containerId, inputElement, showAll = false) 
         ? window.availableUsers.slice(0, 8) // Mostrar primeros 8 usuarios cuando showAll=true
         : window.availableUsers.filter(user => 
             user.username.toLowerCase().includes(query) || 
-            `${user.first_name} ${user.last_name}`.toLowerCase().includes(query)
+            (user.first_name + ' ' + user.last_name).toLowerCase().includes(query)
           ).slice(0, 5); // Mostrar máximo 5 sugerencias cuando se busca
     
     if (matchedUsers.length > 0) {
@@ -6172,7 +6162,7 @@ function showUserSuggestions(query, containerId, inputElement, showAll = false) 
 }
 
 function addUserToSelection(user, containerId) {
-    const container = document.getElementById(`selected${containerId.charAt(0).toUpperCase() + containerId.slice(1)}`);
+    const container = document.getElementById('selected' + containerId.charAt(0).toUpperCase() + containerId.slice(1));
     
     // Verificar si el usuario ya está seleccionado
     const existingPill = container.querySelector('[data-user-id="' + user.id + '"]');
@@ -6194,8 +6184,8 @@ function addUserToSelection(user, containerId) {
 }
 
 function removeUserFromSelection(userId, containerId) {
-    const container = document.getElementById(`selected${containerId.charAt(0).toUpperCase() + containerId.slice(1)}`);
-    const pill = container.querySelector(`[data-user-id="${userId}"]`);
+    const container = document.getElementById('selected' + containerId.charAt(0).toUpperCase() + containerId.slice(1));
+    const pill = container.querySelector('[data-user-id="' + userId + '"]');
     if (pill) {
         pill.remove();
     }
@@ -6269,7 +6259,7 @@ async function submitPowerTaskForm() {
                 closeCreateTaskModal();
                 
                 // Mostrar notificación de éxito
-                showSuccessNotification(`Tarea "${taskData.title}" creada exitosamente`);
+                showSuccessNotification('Tarea "' + taskData.title + '" creada exitosamente');
                 
                 // Recargar la lista de tareas
                 cargarTareasDelProyecto();
@@ -6420,7 +6410,7 @@ async function populateUserDropdowns() {
 // Función para cargar tareas del proyecto
 async function cargarTareasDelProyecto() {
     try {
-        const response = await fetch(`/app/api/tareas/?proyecto_id=${PROYECTO_ID}`);
+        const response = await fetch('/app/api/tareas/?proyecto_id=' + PROYECTO_ID);
         const data = await response.json();
         
         if (data.success && data.tareas) {
@@ -6557,7 +6547,7 @@ async function abrirDetallesTareaLegacy(tareaId) {
         TareasProyectos.currentTaskId = tareaId;
         
         // Obtener datos de la tarea
-        const response = await fetch(`/app/api/tareas/?proyecto_id=${PROYECTO_ID}`);
+        const response = await fetch('/app/api/tareas/?proyecto_id=' + PROYECTO_ID);
         const data = await response.json();
         
         if (data.success && data.tareas) {
@@ -6724,7 +6714,7 @@ function configurarBotonesAvanzadosSegunPermisos(tarea) {
 async function editTask(tareaId) {
     try {
         // Obtener datos de la tarea
-        const response = await fetch(`/app/api/tareas/?proyecto_id=${PROYECTO_ID}`);
+        const response = await fetch('/app/api/tareas/?proyecto_id=' + PROYECTO_ID);
         const data = await response.json();
         
         if (data.success && data.tareas) {
@@ -7029,7 +7019,7 @@ async function handleCreateFolder(event) {
     if (!folderName) return;
 
     try {
-        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/carpetas/`, {
+        const response = await fetch('/app/api/proyecto/' + PROYECTO_ID + '/carpetas/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -7062,8 +7052,8 @@ async function cargarCarpetas() {
         updateFoldersView();
         
         const url = currentFolder 
-            ? `/app/api/proyecto/${PROYECTO_ID}/carpetas/?parent=${currentFolder}`
-            : `/app/api/proyecto/${PROYECTO_ID}/carpetas/`;
+            ? '/app/api/proyecto/' + PROYECTO_ID + '/carpetas/?parent=' + currentFolder
+            : '/app/api/proyecto/' + PROYECTO_ID + '/carpetas/';
             
         const response = await fetch(url, {
             headers: {
@@ -7292,7 +7282,7 @@ async function renombrarCarpeta(folderId) {
     if (!nuevoNombre || nuevoNombre.trim() === carpeta.nombre) return;
     
     try {
-        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/carpeta/${folderId}/`, {
+        const response = await fetch('/app/api/proyecto/' + PROYECTO_ID + '/carpeta/' + folderId + '/', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -7318,10 +7308,10 @@ async function eliminarCarpeta(folderId) {
     const carpeta = currentFolders.find(c => c.id === folderId);
     if (!carpeta) return;
     
-    if (!confirm(`¿Estás seguro de que quieres eliminar la carpeta "${carpeta.nombre}"?`)) return;
+    if (!confirm('¿Estás seguro de que quieres eliminar la carpeta "' + carpeta.nombre + '"?')) return;
     
     try {
-        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/carpeta/${folderId}/`, {
+        const response = await fetch('/app/api/proyecto/' + PROYECTO_ID + '/carpeta/' + folderId + '/', {
             method: 'DELETE',
             headers: {
                 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
@@ -7606,17 +7596,16 @@ function getEstadoBadgeHTML(estado) {
         if (!container) return;
         
         if (responsable) {
-            container.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
-                    <div style="width: 40px; height: 40px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(responsable)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem;">
-                        ${TareasProyectos.getInitials(responsable)}
-                    </div>
-                    <div>
-                        <div style="color: var(--apple-label); font-weight: 500; font-size: 0.95rem;">${responsable}</div>
-                        <div style="color: var(--apple-label-secondary); font-size: 0.8rem;">Responsable</div>
-                    </div>
-                </div>
-            `;
+            container.innerHTML = 
+                '<div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">' +
+                    '<div style="width: 40px; height: 40px; border-radius: 50%; background: ' + TareasProyectos.getAvatarColor(responsable) + '; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.9rem;">' +
+                        TareasProyectos.getInitials(responsable) +
+                    '</div>' +
+                    '<div>' +
+                        '<div style="color: var(--apple-label); font-weight: 500; font-size: 0.95rem;">' + responsable + '</div>' +
+                        '<div style="color: var(--apple-label-secondary); font-size: 0.8rem;">Responsable</div>' +
+                    '</div>' +
+                '</div>';
         } else {
             container.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px dashed rgba(255, 255, 255, 0.2);">
@@ -7646,8 +7635,8 @@ function getEstadoBadgeHTML(estado) {
                     // Fallback for string names
                     const nombre = typeof participante === 'string' ? participante : participante.toString();
                     return `
-                        <div style="width: 28px; height: 28px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;" title="${nombre}">
-                            ${TareasProyectos.getInitials(nombre)}
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: ' + TareasProyectos.getAvatarColor(nombre) + '; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;" title="' + nombre + '">
+                            ' + TareasProyectos.getInitials(nombre) + '
                         </div>
                     `;
                 }
@@ -7701,7 +7690,7 @@ function getEstadoBadgeHTML(estado) {
     // Function to create user avatar HTML with real images or fallback initials
     createUserAvatarHTML(userData, size = 40) {
         if (!userData) {
-            return `<div style="width: ${size}px; height: ${size}px; border-radius: 50%; background: rgba(142, 142, 147, 0.3); display: flex; align-items: center; justify-content: center; color: var(--apple-label-secondary); font-weight: 600; font-size: 0.9rem;">?</div>`;
+            return '<div style="width: ' + size + 'px; height: ' + size + 'px; border-radius: 50%; background: rgba(142, 142, 147, 0.3); display: flex; align-items: center; justify-content: center; color: var(--apple-label-secondary); font-weight: 600; font-size: 0.9rem;">?</div>';
         }
         
         if (userData.avatar_url) {
@@ -7785,8 +7774,8 @@ function getEstadoBadgeHTML(estado) {
                     // Fallback for string names
                     const nombre = typeof observador === 'string' ? observador : observador.toString();
                     return `
-                        <div style="width: 28px; height: 28px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;" title="${nombre}">
-                            ${TareasProyectos.getInitials(nombre)}
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: ' + TareasProyectos.getAvatarColor(nombre) + '; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;" title="' + nombre + '">
+                            ' + TareasProyectos.getInitials(nombre) + '
                         </div>
                     `;
                 }
@@ -7946,10 +7935,10 @@ function getEstadoBadgeHTML(estado) {
 
     // Función para mostrar usuarios en el dropdown
     displayUsers(users, type) {
-        console.log(`displayUsers llamado con ${users.length} usuarios para tipo ${type}`);
-        const usersList = document.getElementById(`${type}-results`);
+        console.log('displayUsers llamado con ' + users.length + ' usuarios para tipo ' + type);
+        const usersList = document.getElementById(type + '-results');
         if (!usersList) {
-            console.error(`No se encontró elemento ${type}-results`);
+            console.error('No se encontró elemento ' + type + '-results');
             return;
         }
         console.log('Elemento usersList encontrado:', usersList);
@@ -7999,7 +7988,7 @@ function getEstadoBadgeHTML(estado) {
         
         // Cerrar dropdown al hacer clic fuera
         const closeHandler = function(event) {
-            if (!dropdown.contains(event.target) && !event.target.closest(`button[onclick*="${type}"]`)) {
+            if (!dropdown.contains(event.target) && !event.target.closest('button[onclick*="' + type + '"]')) {
                 dropdown.style.display = 'none';
                 document.removeEventListener('click', closeHandler);
             }
@@ -8013,7 +8002,7 @@ function getEstadoBadgeHTML(estado) {
     // Función para añadir usuario a la tarea
     async addUserToTask(userId, type) {
         console.log('🟦 === INICIANDO addUserToTask ===');
-        console.log(`🟦 userId: ${userId}, type: ${type}, currentTaskId: ${TareasProyectos.currentTaskId}`);
+        console.log('🟦 userId: ' + userId + ', type: ' + type + ', currentTaskId: ' + TareasProyectos.currentTaskId);
         
         if (!TareasProyectos.currentTaskId) {
             console.error('❌ No hay tarea seleccionada');
@@ -8063,7 +8052,7 @@ function getEstadoBadgeHTML(estado) {
                 
             } else {
                 console.error('❌ Error del servidor:', result.error);
-                alert(`Error: ${result.error}`);
+                alert('Error: ' + result.error);
             }
             
         } catch (error) {
@@ -8084,14 +8073,14 @@ function getEstadoBadgeHTML(estado) {
     // Función para actualizar la visualización de miembros
     async updateMembersDisplay(type, userData) {
         console.log(`🔄 === INICIANDO updateMembersDisplay ===`);
-        console.log(`🔄 type: ${type}, userData:`, userData);
-        console.log(`🔄 currentTaskId: ${TareasProyectos.currentTaskId}`);
+        console.log('🔄 type: ' + type + ', userData:', userData);
+        console.log('🔄 currentTaskId: ' + TareasProyectos.currentTaskId);
         
         // Recargar los detalles de la tarea para mostrar cambios
         if (TareasProyectos.currentTaskId) {
             try {
-                console.log(`🔄 Recargando datos de tarea ${TareasProyectos.currentTaskId}...`);
-                const response = await fetch(`/app/api/tarea/${TareasProyectos.currentTaskId}/`);
+                console.log('🔄 Recargando datos de tarea ' + TareasProyectos.currentTaskId + '...');
+                const response = await fetch('/app/api/tarea/' + TareasProyectos.currentTaskId + '/');
                 
                 if (response.ok) {
                     const tareaData = await response.json();
@@ -8102,7 +8091,7 @@ function getEstadoBadgeHTML(estado) {
                     // Actualizar solo los miembros sin recargar todo el modal
                     TareasProyectos.updateTaskMembersUI(tareaData);
                 } else {
-                    console.error(`🔄 Error en respuesta: ${response.status}`);
+                    console.error('🔄 Error en respuesta: ' + response.status);
                 }
             } catch (error) {
                 console.error('🔄 Error recargando datos de tarea:', error);
@@ -8162,12 +8151,12 @@ function getEstadoBadgeHTML(estado) {
     // Función para mostrar miembros (participantes u observadores)
     displayMembers(type, members) {
         console.log(`🖼️ === INICIANDO displayMembers ===`);
-        console.log(`🖼️ type: ${type}, members:`, members);
+        console.log('🖼️ type: ' + type + ', members:', members);
         
-        const container = document.getElementById(`task-detail-${type}-container`);
+        const container = document.getElementById('task-detail-' + type + '-container');
         console.log(`🖼️ Container encontrado:`, container);
         if (!container) {
-            console.error(`🖼️ Container no encontrado: task-detail-${type}-container`);
+            console.error('🖼️ Container no encontrado: task-detail-' + type + '-container');
             return;
         }
         
@@ -8179,53 +8168,52 @@ function getEstadoBadgeHTML(estado) {
             
             membersHTML = displayMembers.map(member => {
                 const iniciales = TareasProyectos.getInitials(member.nombre);
-                return `
-                <div class="task-member" title="${member.nombre}">
-                    ${member.avatar_url ? 
-                        `<img src="${member.avatar_url}" alt="${member.nombre}" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.1);">` :
-                        `<div style="width: 28px; height: 28px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(member.nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem; border: 2px solid rgba(255, 255, 255, 0.1);">${iniciales}</div>`
-                    }
-                </div>`;
+                return 
+                '<div class="task-member" title="' + member.nombre + '">' +
+                    (member.avatar_url ? 
+                        '<img src="' + member.avatar_url + '" alt="' + member.nombre + '" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.1);">' :
+                        '<div style="width: 28px; height: 28px; border-radius: 50%; background: ' + TareasProyectos.getAvatarColor(member.nombre) + '; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem; border: 2px solid rgba(255, 255, 255, 0.1);">' + iniciales + '</div>'
+                    ) +
+                '</div>';
             }).join('');
             
             // Si hay más de 3, mostrar contador
             if (members.length > 3) {
-                membersHTML += `
-                <div class="task-member-count" title="${members.length - 3} más">
-                    +${members.length - 3}
-                </div>`;
+                membersHTML += 
+                '<div class="task-member-count" title="' + (members.length - 3) + ' más">' +
+                    '+' + (members.length - 3) +
+                '</div>';
             }
         }
         
         // Agregar botón de añadir
-        membersHTML += `
-            <button onclick="TareasProyectos.toggleDropdown('${type}')" style="
-                width: 28px; 
-                height: 28px; 
-                border-radius: 50%; 
-                background: rgba(255, 255, 255, 0.1); 
-                border: 1px solid rgba(255, 255, 255, 0.2); 
-                color: rgba(255, 255, 255, 0.8); 
-                display: flex; 
-                align-items: center; 
-                justify-content: center; 
-                cursor: pointer; 
-                transition: all 0.2s ease;
-                font-size: 14px;
-                font-weight: 500;
-            " 
-            onmouseover="this.style.background='rgba(255, 255, 255, 0.15)'; this.style.color='white';" 
-            onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'; this.style.color='rgba(255, 255, 255, 0.8)';"
-            title="Agregar ${type === 'participantes' ? 'participante' : 'observador'}">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-            </button>
-        `;
+        membersHTML += 
+            '<button onclick="TareasProyectos.toggleDropdown(\'' + type + '\')" style="' +
+                'width: 28px; ' +
+                'height: 28px; ' +
+                'border-radius: 50%; ' +
+                'background: rgba(255, 255, 255, 0.1); ' +
+                'border: 1px solid rgba(255, 255, 255, 0.2); ' +
+                'color: rgba(255, 255, 255, 0.8); ' +
+                'display: flex; ' +
+                'align-items: center; ' +
+                'justify-content: center; ' +
+                'cursor: pointer; ' +
+                'transition: all 0.2s ease;' +
+                'font-size: 14px;' +
+                'font-weight: 500;' +
+            '" ' +
+            'onmouseover="this.style.background=\'rgba(255, 255, 255, 0.15)\'; this.style.color=\'white\';" ' +
+            'onmouseout="this.style.background=\'rgba(255, 255, 255, 0.1)\'; this.style.color=\'rgba(255, 255, 255, 0.8)\';"' +
+            'title="Agregar ' + (type === 'participantes' ? 'participante' : 'observador') + '">' +
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                    '<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />' +
+                '</svg>' +
+            '</button>';
         
-        console.log(`🖼️ HTML generado:`, membersHTML);
+        console.log('🖼️ HTML generado:', membersHTML);
         container.innerHTML = membersHTML;
-        console.log(`🖼️ === FIN displayMembers ===`);
+        console.log('🖼️ === FIN displayMembers ===');
     },
     
     // Función para obtener iniciales del nombre
@@ -8288,14 +8276,14 @@ function getEstadoBadgeHTML(estado) {
         systemComment.style.cssText = 'display: flex; gap: 1rem;';
         systemComment.innerHTML = `
             <div style="flex-shrink: 0;">
-                <div style="width: 2.5rem; height: 2.5rem; background-color: ${color}; color: white; font-weight: 700; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.875rem;">S</div>
+                <div style="width: 2.5rem; height: 2.5rem; background-color: ' + color + '; color: white; font-weight: 700; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.875rem;">S</div>
             </div>
             <div style="flex: 1; min-width: 0; background-color: rgba(37, 42, 51, 0.7); border: 1px solid rgba(45, 55, 72, 0.3); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); padding: 1rem; border-radius: 0.75rem;">
                 <div style="display: flex; align-items: baseline; gap: 0.5rem; border-bottom: 1px solid rgba(45, 55, 72, 0.5); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
                     <span style="font-weight: 600; color: #E0E7FF;">Sistema</span>
                     <span style="font-size: 0.75rem; color: #9CA3AF;">Justo ahora</span>
                 </div>
-                <p style="color: rgba(224, 231, 255, 0.9); white-space: pre-wrap; line-height: 1.625; font-size: 0.875rem; margin: 0;">${text}</p>
+                <p style="color: rgba(224, 231, 255, 0.9); white-space: pre-wrap; line-height: 1.625; font-size: 0.875rem; margin: 0;">' + text + '</p>
             </div>
         `;
         
@@ -8460,7 +8448,7 @@ async function subirArchivoACarpeta(file, targetFolderId = null) {
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+            throw new Error('HTTP ' + response.status);
         }
 
         const data = await response.json();
@@ -8585,8 +8573,8 @@ const originalCargarCarpetas = cargarCarpetas;
 cargarCarpetas = async function() {
     try {
         const url = currentFolder 
-            ? `/app/api/proyecto/${PROYECTO_ID}/carpetas/?parent=${currentFolder}`
-            : `/app/api/proyecto/${PROYECTO_ID}/carpetas/`;
+            ? '/app/api/proyecto/' + PROYECTO_ID + '/carpetas/?parent=' + currentFolder
+            : '/app/api/proyecto/' + PROYECTO_ID + '/carpetas/';
         
         const response = await fetch(url);
         if (!response.ok) throw new Error('Error al cargar carpetas');
