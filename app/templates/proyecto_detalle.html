@@ -2863,7 +2863,7 @@
             <!-- Carpetas Tab -->
             <div class="tab-content" id="carpetas-content">
                 <div class="folders-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                    <button class="btn-nuevo-comentario" id="btnCrearCarpeta" style="background: var(--apple-blue); border-color: rgba(10, 132, 255, 0.3);">
+                    <button class="btn-nuevo-comentario" id="btnCrearCarpeta" onclick="openCreateFolderModal()" style="background: var(--apple-blue); border-color: rgba(10, 132, 255, 0.3);">
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                             <path d="M12 4v16m8-8H4"/>
                         </svg>
@@ -8796,6 +8796,14 @@ function getEstadoBadgeHTML(estado) {
 
 // Variables globales para carpetas
 let currentFolder = null;
+console.log('🔵 Funciones de carpetas cargadas correctamente');
+
+// Test para verificar que las funciones estén disponibles
+setTimeout(function() {
+    console.log('🔵 Verificando funciones...');
+    console.log('🔵 openCreateFolderModal disponible:', typeof window.openCreateFolderModal);
+    console.log('🔵 closeCreateFolderModal disponible:', typeof window.closeCreateFolderModal);
+}, 1000);
 
 // Funciones básicas para subida de archivos a carpetas
 async function subirArchivosACarpeta(files, targetFolderId = null) {
@@ -8839,9 +8847,13 @@ async function subirArchivoACarpeta(file, targetFolderId = null) {
 }
 
 // Funciones para el modal de crear carpeta
-function openCreateFolderModal() {
+window.openCreateFolderModal = function openCreateFolderModal() {
+    console.log('🔵 openCreateFolderModal ejecutándose...');
     const modal = document.getElementById('createFolderModal');
     const folderNameInput = document.getElementById('folderName');
+    
+    console.log('🔵 Modal encontrado:', modal);
+    console.log('🔵 Input encontrado:', folderNameInput);
     
     if (modal && folderNameInput) {
         // Limpiar el campo
@@ -8851,12 +8863,18 @@ function openCreateFolderModal() {
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
         
+        console.log('🔵 Modal debería estar visible ahora');
+        
         // Focus en el input
         setTimeout(() => folderNameInput.focus(), 100);
+    } else {
+        console.error('❌ No se encontró el modal o el input');
+        if (!modal) console.error('❌ Modal createFolderModal no encontrado');
+        if (!folderNameInput) console.error('❌ Input folderName no encontrado');
     }
 }
 
-function closeCreateFolderModal() {
+window.closeCreateFolderModal = function closeCreateFolderModal() {
     const modal = document.getElementById('createFolderModal');
     if (modal) {
         modal.classList.remove('active');
