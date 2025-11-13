@@ -3149,6 +3149,9 @@ window.recargarCarpetas = async function(parentFolderId = null) {
                     openFolderViewModal(carpeta);
                 });
                 
+                // Configurar drag & drop para la carpeta
+                window.setupFolderDragDrop(folderElement, carpeta);
+                
                 foldersContainer.appendChild(folderElement);
             });
         }
@@ -3276,6 +3279,9 @@ window.loadFolderContent = async function(folderId) {
                     folderElement.style.background = 'rgba(255, 255, 255, 0.05)';
                 });
                 
+                // Configurar drag & drop para la subcarpeta en el modal
+                window.setupFolderDragDrop(folderElement, subcarpeta);
+                
                 contentGrid.appendChild(folderElement);
             });
         }
@@ -3321,8 +3327,11 @@ window.loadFolderContent = async function(folderId) {
         
         // Si no hay contenido, mostrar mensaje
         if ((!data.carpetas || data.carpetas.length === 0) && (!data.archivos || data.archivos.length === 0)) {
-            contentGrid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: rgba(255, 255, 255, 0.6);"><svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1" style="margin: 0 auto 1rem; display: block;"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg><h3>Carpeta vacía</h3><p>Esta carpeta no contiene archivos ni subcarpetas.</p></div>';
+            contentGrid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: rgba(255, 255, 255, 0.6);"><svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1" style="margin: 0 auto 1rem; display: block;"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg><h3>Carpeta vacía</h3><p>Esta carpeta no contiene archivos ni subcarpetas.</p><p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.7;">Arrastra archivos aquí para subirlos</p></div>';
         }
+        
+        // Configurar drag & drop para el área general del modal
+        setupModalDragDrop(contentGrid, folderId);
         
     } catch (error) {
         console.error('Error cargando contenido de carpeta:', error);
@@ -3619,6 +3628,342 @@ window.uploadSingleFile = async function(file, proyectoId, carpetaId = null) {
     return result;
 };
 
+// ===== SISTEMA DE DRAG & DROP DIRECTO EN CARPETAS =====
+// Variables para drag & drop directo
+window.isDraggingOverFolder = false;
+window.dragDropOverlay = null;
+
+// Función para crear overlay de drag & drop
+window.createDragDropOverlay = function() {
+    if (window.dragDropOverlay) {
+        return window.dragDropOverlay;
+    }
+    
+    const overlay = document.createElement('div');
+    overlay.id = 'dragDropOverlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(10, 132, 255, 0.1);
+        backdrop-filter: blur(8px);
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        pointer-events: none;
+    `;
+    
+    overlay.innerHTML = `
+        <div style="text-align: center; color: white; font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">
+            <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1" style="margin-bottom: 1rem; color: var(--apple-blue);">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m7-10v16m4-12l-4-4-4 4"/>
+            </svg>
+            <div>Suelta los archivos aquí</div>
+            <div style="font-size: 1rem; font-weight: 400; margin-top: 0.5rem; opacity: 0.8;">para subirlos al proyecto</div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    window.dragDropOverlay = overlay;
+    return overlay;
+};
+
+// Función para mostrar overlay
+window.showDragDropOverlay = function(targetFolder = null) {
+    const overlay = window.createDragDropOverlay();
+    const messageDiv = overlay.querySelector('div > div:last-child');
+    
+    if (targetFolder) {
+        messageDiv.textContent = `para subirlos a "${targetFolder}"`;
+    } else {
+        messageDiv.textContent = 'para subirlos al proyecto';
+    }
+    
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+};
+
+// Función para ocultar overlay
+window.hideDragDropOverlay = function() {
+    if (window.dragDropOverlay) {
+        window.dragDropOverlay.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+};
+
+// Función para subir archivos directamente a una carpeta
+window.uploadFilesToFolder = async function(files, folderId = null, folderName = null) {
+    console.log('🔵 Subiendo archivos directamente a carpeta:', folderName || 'raíz');
+    
+    const PROYECTO_ID = {{ proyecto.id }};
+    let uploadedCount = 0;
+    let failedCount = 0;
+    const filesList = Array.from(files);
+    
+    // Mostrar notificación de inicio
+    showUploadNotification(`Subiendo ${filesList.length} archivo${filesList.length > 1 ? 's' : ''} a ${folderName || 'proyecto'}...`, 'info');
+    
+    try {
+        for (let i = 0; i < filesList.length; i++) {
+            const file = filesList[i];
+            
+            try {
+                await window.uploadSingleFile(file, PROYECTO_ID, folderId);
+                uploadedCount++;
+                console.log('✅ Archivo subido:', file.name);
+            } catch (error) {
+                console.error('❌ Error subiendo archivo:', file.name, error);
+                failedCount++;
+            }
+            
+            // Pequeña pausa
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        
+        // Mostrar resultado
+        if (failedCount === 0) {
+            showUploadNotification(`✅ ${uploadedCount} archivo${uploadedCount > 1 ? 's' : ''} subido${uploadedCount > 1 ? 's' : ''} exitosamente`, 'success');
+        } else {
+            showUploadNotification(`⚠️ ${uploadedCount} exitoso${uploadedCount > 1 ? 's' : ''}, ${failedCount} con errores`, 'warning');
+        }
+        
+        // Refrescar vistas
+        setTimeout(() => {
+            window.recargarCarpetas();
+            if (window.currentFolderView && window.currentFolderView.id === folderId) {
+                window.loadFolderContent(folderId);
+            }
+        }, 500);
+        
+    } catch (error) {
+        console.error('Error general en subida directa:', error);
+        showUploadNotification('❌ Error durante la subida', 'error');
+    }
+};
+
+// Sistema de notificaciones para uploads
+window.showUploadNotification = function(message, type = 'info') {
+    // Remover notificación anterior si existe
+    const existingNotification = document.getElementById('uploadNotification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    const notification = document.createElement('div');
+    notification.id = 'uploadNotification';
+    
+    let bgColor = 'var(--apple-blue)';
+    if (type === 'success') bgColor = 'var(--apple-green)';
+    if (type === 'warning') bgColor = 'var(--apple-orange)';
+    if (type === 'error') bgColor = 'var(--apple-red)';
+    
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${bgColor};
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        z-index: 10000;
+        font-weight: 500;
+        max-width: 350px;
+        animation: slideInRight 0.3s ease;
+    `;
+    
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Auto-remover después de 4 segundos
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        }
+    }, 4000);
+};
+
+// Función para configurar drag & drop en carpetas
+window.setupFolderDragDrop = function(folderElement, carpeta) {
+    if (!folderElement || !carpeta) return;
+    
+    // Prevenir comportamiento por defecto
+    folderElement.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Efecto visual en la carpeta
+        folderElement.style.background = 'rgba(10, 132, 255, 0.2)';
+        folderElement.style.borderColor = 'var(--apple-blue)';
+        folderElement.style.transform = 'scale(1.05)';
+    });
+    
+    folderElement.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Restaurar apariencia normal
+        folderElement.style.background = 'rgba(255, 255, 255, 0.05)';
+        folderElement.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        folderElement.style.transform = 'scale(1)';
+    });
+    
+    folderElement.addEventListener('drop', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Restaurar apariencia
+        folderElement.style.background = 'rgba(255, 255, 255, 0.05)';
+        folderElement.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        folderElement.style.transform = 'scale(1)';
+        
+        // Ocultar overlay
+        window.hideDragDropOverlay();
+        
+        // Obtener archivos
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            // Validar archivos
+            const validFiles = Array.from(files).filter(file => {
+                const extension = file.name.split('.').pop().toLowerCase();
+                return ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'doc', 'docx', 'txt'].includes(extension);
+            });
+            
+            if (validFiles.length > 0) {
+                window.uploadFilesToFolder(validFiles, carpeta.id, carpeta.nombre);
+            } else {
+                showUploadNotification('❌ Tipos de archivo no permitidos', 'error');
+            }
+            
+            if (validFiles.length < files.length) {
+                showUploadNotification(`⚠️ ${files.length - validFiles.length} archivo${files.length - validFiles.length > 1 ? 's' : ''} ignorado${files.length - validFiles.length > 1 ? 's' : ''} (tipo no permitido)`, 'warning');
+            }
+        }
+    });
+};
+
+// Función para configurar drag & drop global
+window.setupGlobalDragDrop = function() {
+    let dragCounter = 0;
+    
+    // Detectar cuando se inicia drag sobre la ventana
+    document.addEventListener('dragenter', function(e) {
+        e.preventDefault();
+        dragCounter++;
+        
+        // Solo mostrar overlay si son archivos externos
+        if (e.dataTransfer.types.includes('Files')) {
+            window.showDragDropOverlay();
+        }
+    });
+    
+    document.addEventListener('dragover', function(e) {
+        e.preventDefault();
+    });
+    
+    document.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        dragCounter--;
+        
+        if (dragCounter === 0) {
+            window.hideDragDropOverlay();
+        }
+    });
+    
+    // Drop global (para área general del proyecto)
+    document.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dragCounter = 0;
+        window.hideDragDropOverlay();
+        
+        // Solo procesar si estamos en la tab de carpetas
+        const carpetasTab = document.getElementById('carpetas-content');
+        const isInCarpetasTab = carpetasTab && carpetasTab.classList.contains('active');
+        
+        if (isInCarpetasTab && e.target.closest('#foldersContainer')) {
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && !e.target.closest('.folder-item')) {
+                // Drop en área general = subir a raíz del proyecto
+                const validFiles = Array.from(files).filter(file => {
+                    const extension = file.name.split('.').pop().toLowerCase();
+                    return ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'doc', 'docx', 'txt'].includes(extension);
+                });
+                
+                if (validFiles.length > 0) {
+                    window.uploadFilesToFolder(validFiles, null, null);
+                }
+                
+                if (validFiles.length < files.length) {
+                    showUploadNotification(`⚠️ ${files.length - validFiles.length} archivo${files.length - validFiles.length > 1 ? 's' : ''} ignorado${files.length - validFiles.length > 1 ? 's' : ''} (tipo no permitido)`, 'warning');
+                }
+            }
+        }
+    });
+};
+
+// Función para configurar drag & drop en el modal de carpetas
+window.setupModalDragDrop = function(contentGrid, folderId) {
+    if (!contentGrid) return;
+    
+    contentGrid.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Solo si no estamos sobre una carpeta específica
+        if (!e.target.closest('.folder-item-modal')) {
+            contentGrid.style.background = 'rgba(10, 132, 255, 0.05)';
+            contentGrid.style.borderColor = 'var(--apple-blue)';
+        }
+    });
+    
+    contentGrid.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Restaurar apariencia si no estamos sobre un elemento específico
+        if (!contentGrid.contains(e.relatedTarget)) {
+            contentGrid.style.background = '';
+            contentGrid.style.borderColor = '';
+        }
+    });
+    
+    contentGrid.addEventListener('drop', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Restaurar apariencia
+        contentGrid.style.background = '';
+        contentGrid.style.borderColor = '';
+        
+        // Solo procesar si no estamos sobre una carpeta específica
+        if (!e.target.closest('.folder-item-modal')) {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const validFiles = Array.from(files).filter(file => {
+                    const extension = file.name.split('.').pop().toLowerCase();
+                    return ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'doc', 'docx', 'txt'].includes(extension);
+                });
+                
+                if (validFiles.length > 0) {
+                    const folderName = window.currentFolderView ? window.currentFolderView.nombre : 'proyecto';
+                    window.uploadFilesToFolder(validFiles, folderId, folderName);
+                }
+                
+                if (validFiles.length < files.length) {
+                    showUploadNotification(`⚠️ ${files.length - validFiles.length} archivo${files.length - validFiles.length > 1 ? 's' : ''} ignorado${files.length - validFiles.length > 1 ? 's' : ''} (tipo no permitido)`, 'warning');
+                }
+            }
+        }
+    });
+};
+
 // Event listeners de seguridad
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔵 Configurando event listeners...');
@@ -3685,6 +4030,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Configurar drag & drop global
+    window.setupGlobalDragDrop();
+    
+    console.log('🔵 Drag & drop global configurado');
 });
 
 console.log('🔵 Funciones críticas cargadas correctamente');
