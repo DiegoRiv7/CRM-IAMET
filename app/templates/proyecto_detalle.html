@@ -2903,15 +2903,86 @@
                 </div>
             </div>
 
+            <!-- Modal para Subir Archivos -->
+            <div class="modal-overlay" id="fileUploadModal">
+                <div class="modal-content" style="width: 90%; max-width: 600px;">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Subir Archivos</h3>
+                        <button class="modal-close" onclick="closeFileUploadModal()">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body" style="padding: 1.5rem;">
+                        <div class="upload-info" style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(52, 199, 89, 0.1); border: 1px solid rgba(52, 199, 89, 0.3); border-radius: 8px;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="color: var(--apple-green);">
+                                    <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                                </svg>
+                                <strong id="uploadDestinationText">Subiendo a: Proyecto</strong>
+                            </div>
+                            <p style="margin: 0; font-size: 0.9rem; color: rgba(255, 255, 255, 0.8);">Los archivos se guardarán en esta ubicación</p>
+                        </div>
+
+                        <form id="fileUploadForm" enctype="multipart/form-data">
+                            <div class="file-drop-zone" id="fileDropZone" style="border: 2px dashed rgba(255, 255, 255, 0.3); border-radius: 12px; padding: 2rem; text-align: center; transition: all 0.3s ease; cursor: pointer; margin-bottom: 1.5rem;">
+                                <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1" style="margin: 0 auto 1rem; display: block; color: rgba(255, 255, 255, 0.6);">
+                                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m7-10v16m4-12l-4-4-4 4"/>
+                                </svg>
+                                <h3 style="margin: 0 0 0.5rem; color: rgba(255, 255, 255, 0.9);">Arrastra archivos aquí</h3>
+                                <p style="margin: 0 0 1rem; color: rgba(255, 255, 255, 0.6);">o haz clic para seleccionar</p>
+                                <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.txt" style="display: none;">
+                                <button type="button" class="btn-nuevo-comentario" onclick="document.getElementById('fileInput').click()" style="background: var(--apple-blue); border-color: rgba(10, 132, 255, 0.3);">
+                                    Seleccionar Archivos
+                                </button>
+                            </div>
+
+                            <div id="selectedFiles" style="margin-bottom: 1.5rem; display: none;">
+                                <h4 style="margin: 0 0 1rem; font-size: 1rem;">Archivos seleccionados:</h4>
+                                <div id="filesList" style="max-height: 200px; overflow-y: auto;"></div>
+                            </div>
+
+                            <div class="upload-progress" id="uploadProgress" style="margin-bottom: 1.5rem; display: none;">
+                                <h4 style="margin: 0 0 1rem; font-size: 1rem;">Progreso de subida:</h4>
+                                <div class="progress-bar-container" style="background: rgba(255, 255, 255, 0.1); border-radius: 8px; overflow: hidden; height: 8px; margin-bottom: 0.5rem;">
+                                    <div class="progress-bar" id="progressBar" style="background: var(--apple-green); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                                </div>
+                                <div id="uploadStatus" style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.8);"></div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn-cancelar" onclick="closeFileUploadModal()">Cancelar</button>
+                                <button type="submit" class="btn-enviar" id="btnUploadFiles" style="background: var(--apple-green); border-color: rgba(52, 199, 89, 0.3);" disabled>
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m7-10v16m4-12l-4-4-4 4"/>
+                                    </svg>
+                                    Subir Archivos
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
             <!-- Carpetas Tab -->
             <div class="tab-content" id="carpetas-content">
                 <div class="folders-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                    <button class="btn-nuevo-comentario" id="btnCrearCarpeta" onclick="openCreateFolderModal()" style="background: var(--apple-blue); border-color: rgba(10, 132, 255, 0.3);">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path d="M12 4v16m8-8H4"/>
-                        </svg>
-                        Crear Carpeta
-                    </button>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn-nuevo-comentario" id="btnCrearCarpeta" onclick="openCreateFolderModal()" style="background: var(--apple-blue); border-color: rgba(10, 132, 255, 0.3);">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Crear Carpeta
+                        </button>
+                        <button class="btn-nuevo-comentario" id="btnSubirArchivos" onclick="openFileUploadModal()" style="background: var(--apple-green); border-color: rgba(52, 199, 89, 0.3);">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m7-10v16m4-12l-4-4-4 4"/>
+                            </svg>
+                            Subir Archivos
+                        </button>
+                    </div>
                     <div class="search-widget-container" id="search-widget-carpetas">
                         <input type="text" id="searchCarpetas" placeholder="Buscar carpetas..." class="search-input" value="">
                         <div class="search-icon-container" id="search-icon-carpetas">
@@ -3321,8 +3392,231 @@ window.openCreateFolderModalFromViewer = function() {
 };
 
 window.openFileUploadFromViewer = function() {
-    // TODO: Implementar subida de archivos desde el viewer
-    alert('Función de subir archivos desde viewer - por implementar');
+    console.log('🔵 Abriendo modal de subida desde viewer');
+    openFileUploadModal();
+};
+
+// ===== FUNCIONES PARA SUBIDA DE ARCHIVOS =====
+// Variables globales para subida
+window.selectedFilesForUpload = [];
+window.uploadTargetFolder = null;
+
+// Función para abrir modal de subida de archivos
+window.openFileUploadModal = function() {
+    console.log('🔵 Abriendo modal de subida de archivos');
+    
+    // Establecer carpeta de destino
+    window.uploadTargetFolder = window.currentFolderView ? window.currentFolderView.id : null;
+    
+    // Actualizar texto de destino
+    const destinationText = document.getElementById('uploadDestinationText');
+    if (window.currentFolderView) {
+        destinationText.textContent = 'Subiendo a: ' + window.currentFolderView.nombre;
+    } else {
+        destinationText.textContent = 'Subiendo a: Proyecto (raíz)';
+    }
+    
+    // Limpiar estado anterior
+    resetFileUploadModal();
+    
+    // Mostrar modal
+    const modal = document.getElementById('fileUploadModal');
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+};
+
+// Función para cerrar modal de subida
+window.closeFileUploadModal = function() {
+    console.log('🔵 Cerrando modal de subida');
+    
+    const modal = document.getElementById('fileUploadModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+    
+    // Limpiar estado
+    resetFileUploadModal();
+};
+
+// Función para resetear el modal de subida
+window.resetFileUploadModal = function() {
+    window.selectedFilesForUpload = [];
+    document.getElementById('fileInput').value = '';
+    document.getElementById('selectedFiles').style.display = 'none';
+    document.getElementById('uploadProgress').style.display = 'none';
+    document.getElementById('filesList').innerHTML = '';
+    document.getElementById('btnUploadFiles').disabled = true;
+    document.getElementById('progressBar').style.width = '0%';
+    document.getElementById('uploadStatus').textContent = '';
+    
+    // Resetear zona de drop
+    const dropZone = document.getElementById('fileDropZone');
+    dropZone.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+    dropZone.style.background = 'transparent';
+};
+
+// Función para manejar selección de archivos
+window.handleFileSelection = function(files) {
+    console.log('🔵 Archivos seleccionados:', files);
+    
+    window.selectedFilesForUpload = Array.from(files);
+    displaySelectedFiles();
+    
+    // Habilitar botón de subida
+    document.getElementById('btnUploadFiles').disabled = false;
+};
+
+// Función para mostrar archivos seleccionados
+window.displaySelectedFiles = function() {
+    const container = document.getElementById('selectedFiles');
+    const filesList = document.getElementById('filesList');
+    
+    if (window.selectedFilesForUpload.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    container.style.display = 'block';
+    filesList.innerHTML = '';
+    
+    window.selectedFilesForUpload.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; margin-bottom: 0.5rem;';
+        
+        // Determinar icono por tipo de archivo
+        let iconColor = 'var(--apple-gray)';
+        if (file.type.startsWith('image/')) {
+            iconColor = 'var(--apple-green)';
+        } else if (file.type === 'application/pdf') {
+            iconColor = 'var(--apple-red)';
+        }
+        
+        fileItem.innerHTML = '<div style="display: flex; align-items: center; gap: 0.75rem;"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="color: ' + iconColor + ';"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2l6 6"/></svg><div><div style="font-weight: 500; margin-bottom: 2px;">' + file.name + '</div><div style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.6);">' + formatFileSize(file.size) + '</div></div></div><button onclick="removeFile(' + index + ')" style="background: none; border: none; color: var(--apple-red); cursor: pointer; padding: 0.25rem;"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg></button>';
+        
+        filesList.appendChild(fileItem);
+    });
+};
+
+// Función para remover archivo de la selección
+window.removeFile = function(index) {
+    window.selectedFilesForUpload.splice(index, 1);
+    displaySelectedFiles();
+    
+    // Deshabilitar botón si no hay archivos
+    if (window.selectedFilesForUpload.length === 0) {
+        document.getElementById('btnUploadFiles').disabled = true;
+    }
+};
+
+// Función para formatear tamaño de archivo
+window.formatFileSize = function(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+// Función principal para subir archivos
+window.uploadFiles = async function(event) {
+    event.preventDefault();
+    console.log('🔵 Iniciando subida de archivos');
+    
+    if (window.selectedFilesForUpload.length === 0) {
+        alert('Por favor selecciona al menos un archivo');
+        return;
+    }
+    
+    // Mostrar progreso
+    document.getElementById('uploadProgress').style.display = 'block';
+    document.getElementById('btnUploadFiles').disabled = true;
+    
+    const PROYECTO_ID = {{ proyecto.id }};
+    let uploadedCount = 0;
+    let failedCount = 0;
+    
+    try {
+        for (let i = 0; i < window.selectedFilesForUpload.length; i++) {
+            const file = window.selectedFilesForUpload[i];
+            
+            // Actualizar estado
+            const progress = ((i + 1) / window.selectedFilesForUpload.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('uploadStatus').textContent = 'Subiendo ' + (i + 1) + ' de ' + window.selectedFilesForUpload.length + ': ' + file.name;
+            
+            try {
+                await uploadSingleFile(file, PROYECTO_ID, window.uploadTargetFolder);
+                uploadedCount++;
+                console.log('✅ Archivo subido:', file.name);
+            } catch (error) {
+                console.error('❌ Error subiendo archivo:', file.name, error);
+                failedCount++;
+            }
+            
+            // Pequeña pausa para evitar saturar el servidor
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        
+        // Mostrar resultado final
+        const totalFiles = window.selectedFilesForUpload.length;
+        if (failedCount === 0) {
+            document.getElementById('uploadStatus').textContent = '✅ Todos los archivos subidos exitosamente (' + uploadedCount + '/' + totalFiles + ')';
+        } else {
+            document.getElementById('uploadStatus').textContent = '⚠️ Subida completada con ' + failedCount + ' errores (' + uploadedCount + '/' + totalFiles + ' exitosos)';
+        }
+        
+        // Recargar contenido del modal de carpeta si está abierto
+        if (window.currentFolderView) {
+            setTimeout(() => {
+                window.loadFolderContent(window.currentFolderView.id);
+            }, 1000);
+        }
+        
+        // Recargar vista principal de carpetas
+        setTimeout(() => {
+            window.recargarCarpetas();
+        }, 1000);
+        
+        // Auto-cerrar modal después de 3 segundos si todo fue exitoso
+        if (failedCount === 0) {
+            setTimeout(() => {
+                window.closeFileUploadModal();
+            }, 2000);
+        }
+        
+    } catch (error) {
+        console.error('Error general en subida:', error);
+        document.getElementById('uploadStatus').textContent = '❌ Error durante la subida';
+        document.getElementById('btnUploadFiles').disabled = false;
+    }
+};
+
+// Función para subir un archivo individual
+window.uploadSingleFile = async function(file, proyectoId, carpetaId = null) {
+    const formData = new FormData();
+    formData.append('archivo', file);
+    if (carpetaId) {
+        formData.append('carpeta_id', carpetaId);
+    }
+    
+    const response = await fetch('/app/api/proyecto/' + proyectoId + '/archivos/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+        },
+        body: formData
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error('HTTP ' + response.status + ': ' + errorData);
+    }
+    
+    const result = await response.json();
+    if (!result.success) {
+        throw new Error(result.error || 'Error desconocido');
+    }
+    
+    return result;
 };
 
 // Event listeners de seguridad
@@ -3345,6 +3639,52 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         window.recargarCarpetas();
     }, 1000);
+    
+    // Event listeners para subida de archivos
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                window.handleFileSelection(e.target.files);
+            }
+        });
+    }
+    
+    const fileUploadForm = document.getElementById('fileUploadForm');
+    if (fileUploadForm) {
+        fileUploadForm.addEventListener('submit', window.uploadFiles);
+    }
+    
+    // Event listeners para drag & drop
+    const dropZone = document.getElementById('fileDropZone');
+    if (dropZone) {
+        dropZone.addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+        
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--apple-blue)';
+            dropZone.style.background = 'rgba(10, 132, 255, 0.1)';
+        });
+        
+        dropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            dropZone.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+            dropZone.style.background = 'transparent';
+        });
+        
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            dropZone.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+            dropZone.style.background = 'transparent';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                window.handleFileSelection(files);
+            }
+        });
+    }
 });
 
 console.log('🔵 Funciones críticas cargadas correctamente');
