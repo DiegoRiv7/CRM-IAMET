@@ -2971,6 +2971,10 @@ window.handleCreateFolder = async function(event) {
         if (data.success) {
             window.closeCreateFolderModal();
             console.log('✅ Carpeta creada: ' + folderName);
+            
+            // Recargar la vista de carpetas
+            window.recargarCarpetas();
+            
             alert('✅ Carpeta creada exitosamente');
         } else {
             alert('Error: ' + data.error);
@@ -2979,6 +2983,99 @@ window.handleCreateFolder = async function(event) {
     } catch (error) {
         console.error('Error creando carpeta:', error);
         alert('❌ Error creando la carpeta');
+    }
+};
+
+// Función para recargar carpetas y archivos
+window.recargarCarpetas = async function(parentFolderId = null) {
+    console.log('🔵 recargarCarpetas ejecutándose...');
+    const PROYECTO_ID = {{ proyecto.id }};
+    
+    try {
+        let url = '/app/api/proyecto/' + PROYECTO_ID + '/carpetas/';
+        if (parentFolderId) {
+            url += '?parent=' + parentFolderId;
+        }
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status);
+        }
+        
+        const data = await response.json();
+        console.log('🔵 Datos de carpetas recibidos:', data);
+        
+        // Actualizar la vista de carpetas
+        const foldersContainer = document.getElementById('foldersContainer');
+        if (!foldersContainer) {
+            console.error('❌ No se encontró el contenedor de carpetas');
+            return;
+        }
+        
+        // Limpiar el contenedor
+        foldersContainer.innerHTML = '';
+        
+        // Si no hay carpetas ni archivos, mostrar estado vacío
+        if ((!data.carpetas || data.carpetas.length === 0) && (!data.archivos || data.archivos.length === 0)) {
+            foldersContainer.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;"><svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg><h3>No hay carpetas creadas.</h3><p>Crea tu primera carpeta para organizar los archivos del proyecto.</p></div>';
+            return;
+        }
+        
+        // Renderizar carpetas
+        if (data.carpetas && data.carpetas.length > 0) {
+            data.carpetas.forEach(carpeta => {
+                const folderElement = document.createElement('div');
+                folderElement.className = 'folder-item';
+                folderElement.style.cssText = 'display: flex; flex-direction: column; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer; transition: all 0.2s ease;';
+                
+                folderElement.innerHTML = '<svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="color: var(--apple-blue); margin-bottom: 0.5rem;"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg><span style="font-size: 0.9rem; text-align: center; word-break: break-word;">' + carpeta.nombre + '</span>';
+                
+                // Agregar evento para abrir carpeta
+                folderElement.addEventListener('click', () => {
+                    window.currentFolder = carpeta.id;
+                    window.recargarCarpetas(carpeta.id);
+                });
+                
+                foldersContainer.appendChild(folderElement);
+            });
+        }
+        
+        // Renderizar archivos
+        if (data.archivos && data.archivos.length > 0) {
+            data.archivos.forEach(archivo => {
+                const fileElement = document.createElement('div');
+                fileElement.className = 'file-item';
+                fileElement.style.cssText = 'display: flex; flex-direction: column; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer; transition: all 0.2s ease;';
+                
+                // Determinar icono según tipo de archivo
+                let iconColor = 'var(--apple-gray)';
+                let iconPath = 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2l6 6 M16 13H8 M16 17H8 M10 9H8';
+                
+                if (archivo.tipo_archivo === 'image') {
+                    iconColor = 'var(--apple-green)';
+                    iconPath = 'M21 19V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2z M8.5 8.5l5.5 5.5L21 7';
+                } else if (archivo.tipo_archivo === 'pdf') {
+                    iconColor = 'var(--apple-red)';
+                    iconPath = 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2l6 6 M16 13H8 M16 17H8 M10 9H8';
+                }
+                
+                fileElement.innerHTML = '<svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="color: ' + iconColor + '; margin-bottom: 0.5rem;"><path d="' + iconPath + '"/></svg><span style="font-size: 0.8rem; text-align: center; word-break: break-word;">' + archivo.nombre + '</span>';
+                
+                // Agregar evento para abrir archivo
+                if (archivo.url) {
+                    fileElement.addEventListener('click', () => {
+                        window.open(archivo.url, '_blank');
+                    });
+                }
+                
+                foldersContainer.appendChild(fileElement);
+            });
+        }
+        
+        console.log('✅ Vista de carpetas actualizada');
+        
+    } catch (error) {
+        console.error('Error recargando carpetas:', error);
     }
 };
 
@@ -2997,6 +3094,11 @@ document.addEventListener('DOMContentLoaded', function() {
         btnCrearCarpeta.addEventListener('click', window.openCreateFolderModal);
         console.log('🔵 Event listener del botón configurado');
     }
+    
+    // Cargar carpetas inicialmente cuando se carga la página
+    setTimeout(() => {
+        window.recargarCarpetas();
+    }, 1000);
 });
 
 console.log('🔵 Funciones críticas cargadas correctamente');
@@ -3581,6 +3683,15 @@ document.addEventListener('DOMContentLoaded', function() {
             // Cargar tareas cuando se activa la tab de tareas
             if (tabName === 'tareas') {
                 cargarTareasDelProyecto();
+            }
+            
+            // Cargar carpetas cuando se activa la tab de carpetas
+            if (tabName === 'carpetas') {
+                if (typeof window.recargarCarpetas === 'function') {
+                    window.recargarCarpetas();
+                } else {
+                    console.log('🔵 recargarCarpetas no disponible aún');
+                }
             }
         });
     });
