@@ -3221,15 +3221,14 @@ Object.assign(TareasProyectos, {
         if (responsableData) {
             container.innerHTML = '                ' + TareasProyectos.createUserAvatarHTML(responsableData, 32) + '                <span style="color: #E0E7FF; font-weight: 500;">' + responsableData.nombre + '</span>                <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem; margin-left: auto; color: #9CA3AF;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />                </svg>            ';
         } else {
-            container.innerHTML = `
-                <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(142, 142, 147, 0.3); display: flex; align-items: center; justify-content: center; color: #9CA3AF; font-weight: 600; font-size: 0.875rem;">
-                    ?
-                </div>
-                <span style="color: #9CA3AF; font-weight: 500;">Sin asignar</span>
-                <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem; margin-left: auto; color: #9CA3AF;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-            `;
+            container.innerHTML = 
+                '<div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(142, 142, 147, 0.3); display: flex; align-items: center; justify-content: center; color: #9CA3AF; font-weight: 600; font-size: 0.875rem;">' +
+                    '?' +
+                '</div>' +
+                '<span style="color: #9CA3AF; font-weight: 500;">Sin asignar</span>' +
+                '<svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem; margin-left: auto; color: #9CA3AF;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">' +
+                    '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />' +
+                '</svg>';
         }
     },
 
@@ -3269,56 +3268,50 @@ Object.assign(TareasProyectos, {
                 } else {
                     // Fallback for string names
                     const nombre = typeof observador === 'string' ? observador : observador.toString();
-                    return `
-                        <div style="width: 28px; height: 28px; border-radius: 50%; background: ' + TareasProyectos.getAvatarColor(nombre) + '; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;" title="' + nombre + '">
-                            ' + TareasProyectos.getInitials(nombre) + '
-                        </div>
-                    `;
+                    return '<div style="width: 28px; height: 28px; border-radius: 50%; background: ' + TareasProyectos.getAvatarColor(nombre) + '; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;" title="' + nombre + '">' + TareasProyectos.getInitials(nombre) + '</div>';
                 }
             }).join('');
             
             // Add button to add observers
-            container.innerHTML = observadoresHTML + `
-                <button onclick="TareasProyectos.toggleDropdown('observadores')" style="
-                    width: 28px; 
-                    height: 28px; 
-                    background: rgba(45, 55, 72, 1); 
-                    color: #9CA3AF; 
-                    border-radius: 50%; 
-                    display: flex; 
-                    align-items: center; 
-                    justify-content: center; 
-                    font-size: 0.75rem; 
-                    border: none; 
-                    cursor: pointer;
-                    transition: background-color 0.2s;
-                " title="Añadir observador" onmouseover="this.style.backgroundColor='rgba(45, 55, 72, 0.5)'" onmouseout="this.style.backgroundColor='rgba(45, 55, 72, 1)'">
-                    <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
-                </button>
-            `;
+            container.innerHTML = observadoresHTML + 
+                '<button onclick="TareasProyectos.toggleDropdown(\\'observadores\\')" style="' +
+                    'width: 28px; ' +
+                    'height: 28px; ' +
+                    'background: rgba(45, 55, 72, 1); ' +
+                    'color: #9CA3AF; ' +
+                    'border-radius: 50%; ' +
+                    'display: flex; ' +
+                    'align-items: center; ' +
+                    'justify-content: center; ' +
+                    'font-size: 0.75rem; ' +
+                    'border: none; ' +
+                    'cursor: pointer;' +
+                    'transition: background-color 0.2s;' +
+                '" title="Añadir observador" onmouseover="this.style.backgroundColor=\\'rgba(45, 55, 72, 0.5)\\'" onmouseout="this.style.backgroundColor=\\'rgba(45, 55, 72, 1)\\'">' +
+                    '<svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">' +
+                        '<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />' +
+                    '</svg>' +
+                '</button>';
         } else {
-            container.innerHTML = `
-                <button onclick="TareasProyectos.toggleDropdown('observadores')" style="
-                    width: 28px; 
-                    height: 28px; 
-                    background: rgba(45, 55, 72, 1); 
-                    color: #9CA3AF; 
-                    border-radius: 50%; 
-                    display: flex; 
-                    align-items: center; 
-                    justify-content: center; 
-                    font-size: 0.75rem; 
-                    border: none; 
-                    cursor: pointer;
-                    transition: background-color 0.2s;
-                " title="Añadir observador" onmouseover="this.style.backgroundColor='rgba(45, 55, 72, 0.5)'" onmouseout="this.style.backgroundColor='rgba(45, 55, 72, 1)'">
-                    <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
-                </button>
-            `;
+            container.innerHTML = 
+                '<button onclick="TareasProyectos.toggleDropdown(\\'observadores\\')" style="' +
+                    'width: 28px; ' +
+                    'height: 28px; ' +
+                    'background: rgba(45, 55, 72, 1); ' +
+                    'color: #9CA3AF; ' +
+                    'border-radius: 50%; ' +
+                    'display: flex; ' +
+                    'align-items: center; ' +
+                    'justify-content: center; ' +
+                    'font-size: 0.75rem; ' +
+                    'border: none; ' +
+                    'cursor: pointer;' +
+                    'transition: background-color 0.2s;' +
+                '" title="Añadir observador" onmouseover="this.style.backgroundColor=\\'rgba(45, 55, 72, 0.5)\\'" onmouseout="this.style.backgroundColor=\\'rgba(45, 55, 72, 1)\\'">' +
+                    '<svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">' +
+                        '<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />' +
+                    '</svg>' +
+                '</button>';
         }
     },
 
@@ -3403,11 +3396,10 @@ Object.assign(TareasProyectos, {
         if (!resultsContainer) return;
 
         if (users.length === 0) {
-            resultsContainer.innerHTML = `
-                <div style="padding: 1rem; text-align: center; color: #9CA3AF; font-size: 0.875rem;">
-                    No se encontraron usuarios
-                </div>
-            `;
+            resultsContainer.innerHTML = 
+                '<div style="padding: 1rem; text-align: center; color: #9CA3AF; font-size: 0.875rem;">' +
+                    'No se encontraron usuarios' +
+                '</div>';
             return;
         }
 
@@ -4214,11 +4206,7 @@ Object.assign(TareasProyectos, {
                 } else {
                     // Fallback for string names
                     const nombre = typeof participante === 'string' ? participante : participante.toString();
-                    return `
-                        <div style="width: 28px; height: 28px; border-radius: 50%; background: ' + TareasProyectos.getAvatarColor(nombre) + '; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;" title="' + nombre + '">
-                            ' + TareasProyectos.getInitials(nombre) + '
-                        </div>
-                    `;
+                    return '<div style="width: 28px; height: 28px; border-radius: 50%; background: ' + TareasProyectos.getAvatarColor(nombre) + '; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;" title="' + nombre + '">' + TareasProyectos.getInitials(nombre) + '</div>';
                 }
             }).join('');
             
@@ -4980,65 +4968,61 @@ function renderizarComentarios(comentarios) {
         div.className = 'feed-item';
         div.dataset.comentarioId = comentario.id;
         
-        const archivosHtml = comentario.archivos.length > 0 ? `
-            <div class="comment-attachments">
-                ${comentario.archivos.map(archivo => `
-                    <div class="attachment-item">
-                        <div class="attachment-icon">${archivo.icono}</div>
-                        <div class="attachment-info">
-                            <div class="attachment-name">${archivo.nombre}</div>
-                            <div class="attachment-meta">${archivo.tamaño}</div>
-                        </div>
-                        <button class="attachment-download" onclick="window.open('${archivo.url}', '_blank')">
-                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-                            </svg>
-                        </button>
-                    </div>
-                `).join('')}
-            </div>
-        ` : '';
+        const archivosHtml = comentario.archivos.length > 0 ? 
+            '<div class="comment-attachments">' +
+                comentario.archivos.map(archivo => 
+                    '<div class="attachment-item">' +
+                        '<div class="attachment-icon">' + archivo.icono + '</div>' +
+                        '<div class="attachment-info">' +
+                            '<div class="attachment-name">' + archivo.nombre + '</div>' +
+                            '<div class="attachment-meta">' + archivo.tamaño + '</div>' +
+                        '</div>' +
+                        '<button class="attachment-download" onclick="window.open(\'' + archivo.url + '\', \'_blank\')">' +
+                            '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">' +
+                                '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>' +
+                            '</svg>' +
+                        '</button>' +
+                    '</div>'
+                ).join('') +
+            '</div>'
+        : '';
         
-        const actionsHtml = comentario.puede_editar || comentario.puede_eliminar ? `
-            <div class="feed-item-actions">
-                ${comentario.puede_editar ? `
-                    <button class="btn-action" onclick="editarComentario(' + comentario.id + ')" title="Editar">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                        </svg>
-                    </button>
-                ` : ''}
-                ${comentario.puede_eliminar ? `
-                    <button class="btn-action" onclick="eliminarComentario(' + comentario.id + ')" title="Eliminar">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                        </svg>
-                    </button>
-                ` : ''}
-            </div>
-        ` : '';
+        const actionsHtml = comentario.puede_editar || comentario.puede_eliminar ? 
+            '<div class="feed-item-actions">' +
+                (comentario.puede_editar ? 
+                    '<button class="btn-action" onclick="editarComentario(' + comentario.id + ')" title="Editar">' +
+                        '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">' +
+                            '<path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>' +
+                        '</svg>' +
+                    '</button>' : '') +
+                (comentario.puede_eliminar ? 
+                    '<button class="btn-action" onclick="eliminarComentario(' + comentario.id + ')" title="Eliminar">' +
+                        '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">' +
+                            '<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' +
+                        '</svg>' +
+                    '</button>' : '') +
+            '</div>' : '';
         
-        div.innerHTML = `
-            <div class="feed-item-header">
-                <div class="feed-user-info">
-                    <div class="feed-avatar" style="background: ${getAvatarColor(comentario.usuario.id)}">
-                        ${comentario.usuario.avatar_url ? 
-                            `<img src="${comentario.usuario.avatar_url}" alt="' + comentario.usuario.nombre + '" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 
+        div.innerHTML = 
+            '<div class="feed-item-header">' +
+                '<div class="feed-user-info">' +
+                    '<div class="feed-avatar" style="background: ' + getAvatarColor(comentario.usuario.id) + '">' +
+                        (comentario.usuario.avatar_url ? 
+                            '<img src="' + comentario.usuario.avatar_url + '" alt="' + comentario.usuario.nombre + '" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">' : 
                             comentario.usuario.iniciales
-                        }
-                    </div>
-                    <div class="feed-user-details">
-                        <h4>' + comentario.usuario.nombre + '</h4>
-                        <div class="feed-date">${comentario.fecha}${comentario.editado && comentario.fecha_edicion ? ` • Editado ${comentario.fecha_edicion}` : ''}</div>
-                    </div>
-                </div>
-                ${actionsHtml}
-            </div>
-            <div class="feed-content" id="content-' + comentario.id + '">
-                ${comentario.contenido}
-            </div>
-            ${archivosHtml}
-        `;
+                        ) +
+                    '</div>' +
+                    '<div class="feed-user-details">' +
+                        '<h4>' + comentario.usuario.nombre + '</h4>' +
+                        '<div class="feed-date">' + comentario.fecha + (comentario.editado && comentario.fecha_edicion ? ' • Editado ' + comentario.fecha_edicion : '') + '</div>' +
+                    '</div>' +
+                '</div>' +
+                actionsHtml +
+            '</div>' +
+            '<div class="feed-content" id="content-' + comentario.id + '">' +
+                comentario.contenido +
+            '</div>' +
+            archivosHtml;
         
         container.appendChild(div);
     });
@@ -5126,10 +5110,9 @@ function editarComentario(comentarioId) {
     // Crear botones de acción
     const actionsDiv = document.createElement('div');
     actionsDiv.className = 'edit-actions';
-    actionsDiv.innerHTML = `
-        <button class="btn-edit-action btn-edit-cancel" onclick="cancelarEdicion()">Cancelar</button>
-        <button class="btn-edit-action btn-edit-save" onclick="guardarEdicion(${comentarioId})" disabled>Guardar</button>
-    `;
+    actionsDiv.innerHTML = 
+        '<button class="btn-edit-action btn-edit-cancel" onclick="cancelarEdicion()">Cancelar</button>' +
+        '<button class="btn-edit-action btn-edit-save" onclick="guardarEdicion(' + comentarioId + ')" disabled>Guardar</button>';
     
     // Crear contenedor de edición
     const editContainer = document.createElement('div');
@@ -6173,12 +6156,11 @@ function addUserToSelection(user, containerId) {
     const userPill = document.createElement('div');
     userPill.className = 'user-pill';
     userPill.setAttribute('data-user-id', user.id);
-    userPill.innerHTML = `
-        <span>${displayName}</span>
-        <button class="user-pill-remove" onclick="removeUserFromSelection(${user.id}, '${containerId}')">
-            ×
-        </button>
-    `;
+    userPill.innerHTML = 
+        '<span>' + displayName + '</span>' +
+        '<button class="user-pill-remove" onclick="removeUserFromSelection(' + user.id + ', \'' + containerId + '\')">' +
+            '×' +
+        '</button>';
     
     container.appendChild(userPill);
 }
@@ -6425,32 +6407,32 @@ async function cargarTareasDelProyecto() {
                     </tr>
                 `;
             } else {
-                tbody.innerHTML = data.tareas.map(tarea => `
-                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); cursor: pointer;" 
-                        onclick="TareasProyectos.verDetallesTarea(${tarea.id})" 
-                        onmouseover="this.style.background='rgba(255, 255, 255, 0.05)'" 
-                        onmouseout="this.style.background='transparent'">
-                        <td style="padding: 1rem; color: var(--apple-label); font-weight: 500;">
-                            ${tarea.titulo}
-                            ${tarea.prioridad === 'alta' ? '<span style="color: #FF9500; margin-left: 0.5rem;">●</span>' : ''}
-                        </td>
-                        <td style="padding: 1rem;">
-                            ${getEstadoBadge(tarea.estado)}
-                        </td>
-                        <td style="padding: 1rem; color: var(--apple-label-secondary);">
-                            ${tarea.fecha_limite ? formatearFecha(tarea.fecha_limite) : 'Sin fecha límite'}
-                        </td>
-                        <td style="padding: 1rem; color: var(--apple-label-secondary);">
-                            ${tarea.creado_por}
-                        </td>
-                        <td style="padding: 1rem; color: var(--apple-label-secondary);">
-                            ${tarea.responsable || 'Sin asignar'}
-                        </td>
-                        <td style="padding: 1rem; color: var(--apple-label-secondary);">
-                            ${PROYECTO_NOMBRE}
-                        </td>
-                    </tr>
-                `).join('');
+                tbody.innerHTML = data.tareas.map(tarea => 
+                    '<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); cursor: pointer;" ' +
+                        'onclick="TareasProyectos.verDetallesTarea(' + tarea.id + ')" ' +
+                        'onmouseover="this.style.background=\'rgba(255, 255, 255, 0.05)\'" ' +
+                        'onmouseout="this.style.background=\'transparent\'">' +
+                        '<td style="padding: 1rem; color: var(--apple-label); font-weight: 500;">' +
+                            tarea.titulo +
+                            (tarea.prioridad === 'alta' ? '<span style="color: #FF9500; margin-left: 0.5rem;">●</span>' : '') +
+                        '</td>' +
+                        '<td style="padding: 1rem;">' +
+                            getEstadoBadge(tarea.estado) +
+                        '</td>' +
+                        '<td style="padding: 1rem; color: var(--apple-label-secondary);">' +
+                            (tarea.fecha_limite ? formatearFecha(tarea.fecha_limite) : 'Sin fecha límite') +
+                        '</td>' +
+                        '<td style="padding: 1rem; color: var(--apple-label-secondary);">' +
+                            tarea.creado_por +
+                        '</td>' +
+                        '<td style="padding: 1rem; color: var(--apple-label-secondary);">' +
+                            (tarea.responsable || 'Sin asignar') +
+                        '</td>' +
+                        '<td style="padding: 1rem; color: var(--apple-label-secondary);">' +
+                            PROYECTO_NOMBRE +
+                        '</td>' +
+                    '</tr>'
+                ).join('');
             }
         }
     } catch (error) {
@@ -6517,24 +6499,22 @@ function getEstadoBadge(estado) {
     
     const config = estadosConfig[estado] || estadosConfig['pendiente'];
     
-    return `
-        <span style="
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.375rem 0.75rem;
-            border-radius: 8px;
-            background: ${config.bgColor};
-            color: ${config.color};
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        ">
-            <span style="font-size: 0.875rem;">${config.icon}</span>
-            ${config.label}
-        </span>
-    `;
+    return '<span style="' +
+            'display: inline-flex;' +
+            'align-items: center;' +
+            'gap: 0.5rem;' +
+            'padding: 0.375rem 0.75rem;' +
+            'border-radius: 8px;' +
+            'background: ' + config.bgColor + ';' +
+            'color: ' + config.color + ';' +
+            'font-size: 0.75rem;' +
+            'font-weight: 600;' +
+            'text-transform: uppercase;' +
+            'letter-spacing: 0.5px;' +
+        '">' +
+            '<span style="font-size: 0.875rem;">' + config.icon + '</span>' +
+            config.label +
+        '</span>';
 }
 
 // Función legacy para abrir detalles de tarea (HABILITADA PARA PROYECTO)
@@ -6602,18 +6582,16 @@ async function abrirDetallesTareaLegacy(tareaId) {
                     if (tarea.responsable && typeof tarea.responsable === 'object') {
                         // Si responsable es un objeto con datos completos
                         const avatarContent = tarea.responsable.avatar_url ? 
-                            `<img src="${tarea.responsable.avatar_url}" alt="${tarea.responsable.nombre}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">` : 
-                            `<div style="width: 24px; height: 24px; border-radius: 50%; background: ${getAvatarColor(tarea.responsable.id)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.7rem;">${tarea.responsable.iniciales}</div>`;
-                        responsibleEl.innerHTML = `
-                            ${avatarContent}
-                            <span>${tarea.responsable.nombre}</span>
-                        `;
+                            '<img src="' + tarea.responsable.avatar_url + '" alt="' + tarea.responsable.nombre + '" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">' : 
+                            '<div style="width: 24px; height: 24px; border-radius: 50%; background: ' + getAvatarColor(tarea.responsable.id) + '; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.7rem;">' + tarea.responsable.iniciales + '</div>';
+                        responsibleEl.innerHTML = 
+                            avatarContent +
+                            '<span>' + tarea.responsable.nombre + '</span>';
                     } else {
                         // Fallback para responsable como string
-                        responsibleEl.innerHTML = `
-                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxjaXJjbGUgY3g9IjEyIiBjeT0iOCIgcj0iNSIgZmlsbD0iIzRCNzY4OCIvPgo8cGF0aCBkPSJtMjAgMjEtMi0yLTEuMi0xLjIiIHN0cm9rZT0iIzRCNzY4OCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+" alt="${tarea.responsable}" />
-                            <span>${tarea.responsable || tarea.creado_por}</span>
-                        `;
+                        responsibleEl.innerHTML = 
+                            '<img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxjaXJjbGUgY3g9IjEyIiBjeT0iOCIgcj0iNSIgZmlsbD0iIzRCNzY4OCIvPgo8cGF0aCBkPSJtMjAgMjEtMi0yLTEuMi0xLjIiIHN0cm9rZT0iIzRCNzY4OCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+" alt="' + (tarea.responsable || '') + '" />' +
+                            '<span>' + (tarea.responsable || tarea.creado_por) + '</span>';
                     }
                 }
                 
@@ -6822,20 +6800,19 @@ function submitTaskComment() {
     const timeline = document.getElementById('taskCommentsTimeline');
     const newComment = document.createElement('div');
     newComment.className = 'timeline-item';
-    newComment.innerHTML = `
-        <div class="timeline-avatar">
-            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxjaXJjbGUgY3g9IjEyIiBjeT0iOCIgcj0iNSIgZmlsbD0iIzRCNzY4OCIvPgo8cGF0aCBkPSJtMjAgMjEtMi0yLTEuMi0xLjIiIHN0cm9rZT0iIzRCNzY4OCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+" alt="Usuario" />
-        </div>
-        <div class="timeline-content">
-            <div class="timeline-header">
-                <span class="timeline-user">Tú</span>
-                <span class="timeline-date">ahora</span>
-            </div>
-            <div class="timeline-text">
-                ${comment}
-            </div>
-        </div>
-    `;
+    newComment.innerHTML = 
+        '<div class="timeline-avatar">' +
+            '<img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxjaXJjbGUgY3g9IjEyIiBjeT0iOCIgcj0iNSIgZmlsbD0iIzRCNzY4OCIvPgo8cGF0aCBkPSJtMjAgMjEtMi0yLTEuMi0xLjIiIHN0cm9rZT0iIzRCNzY4OCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+" alt="Usuario" />' +
+        '</div>' +
+        '<div class="timeline-content">' +
+            '<div class="timeline-header">' +
+                '<span class="timeline-user">Tú</span>' +
+                '<span class="timeline-date">ahora</span>' +
+            '</div>' +
+            '<div class="timeline-text">' +
+                comment +
+            '</div>' +
+        '</div>';
     
     timeline.insertBefore(newComment, timeline.firstChild);
     commentInput.value = '';
@@ -7114,54 +7091,54 @@ function renderizarCarpetas() {
     }
 
     // Renderizar carpetas
-    const carpetasHTML = currentFolders.map(carpeta => `
-        <div class="folder-item" data-folder-id="${carpeta.id}" style="
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 1rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-align: center;
-            position: relative;
-        " onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'" 
-           onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'"
-           ondblclick="abrirCarpeta(${carpeta.id})">
+    const carpetasHTML = currentFolders.map(carpeta => 
+        '<div class="folder-item" data-folder-id="' + carpeta.id + '" style="' +
+            'background: rgba(255, 255, 255, 0.05);' +
+            'border: 1px solid rgba(255, 255, 255, 0.1);' +
+            'border-radius: 12px;' +
+            'padding: 1rem;' +
+            'cursor: pointer;' +
+            'transition: all 0.2s ease;' +
+            'text-align: center;' +
+            'position: relative;' +
+        '" onmouseover="this.style.background=\'rgba(255, 255, 255, 0.1)\'" ' +
+           'onmouseout="this.style.background=\'rgba(255, 255, 255, 0.05)\'" ' +
+           'ondblclick="abrirCarpeta(' + carpeta.id + ')">' +
             
-            <!-- Icono de carpeta -->
-            <div style="margin-bottom: 0.75rem;">
-                <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="color: var(--apple-blue);">
-                    <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-                </svg>
-            </div>
+            '<!-- Icono de carpeta -->' +
+            '<div style="margin-bottom: 0.75rem;">' +
+                '<svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="color: var(--apple-blue);">' +
+                    '<path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>' +
+                '</svg>' +
+            '</div>' +
             
-            <!-- Nombre de carpeta -->
-            <div style="color: var(--apple-label); font-weight: 500; font-size: 0.875rem; margin-bottom: 0.5rem; word-break: break-word;">
-                ${carpeta.nombre}
-            </div>
+            '<!-- Nombre de carpeta -->' +
+            '<div style="color: var(--apple-label); font-weight: 500; font-size: 0.875rem; margin-bottom: 0.5rem; word-break: break-word;">' +
+                carpeta.nombre +
+            '</div>' +
             
-            <!-- Información adicional -->
-            <div style="color: var(--apple-label-secondary); font-size: 0.75rem;">
-                ${carpeta.archivos_count || 0} archivos
-            </div>
+            '<!-- Información adicional -->' +
+            '<div style="color: var(--apple-label-secondary); font-size: 0.75rem;">' +
+                (carpeta.archivos_count || 0) + ' archivos' +
+            '</div>' +
             
-            <!-- Menú de opciones -->
-            <div class="folder-menu" style="position: absolute; top: 0.5rem; right: 0.5rem; opacity: 0; transition: opacity 0.2s;">
-                <button onclick="mostrarMenuCarpeta(event, ${carpeta.id})" style="
-                    background: rgba(255, 255, 255, 0.1);
-                    border: none;
-                    border-radius: 6px;
-                    padding: 0.25rem;
-                    color: var(--apple-label-secondary);
-                    cursor: pointer;
-                ">
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    `).join('');
+            '<!-- Menú de opciones -->' +
+            '<div class="folder-menu" style="position: absolute; top: 0.5rem; right: 0.5rem; opacity: 0; transition: opacity 0.2s;">' +
+                '<button onclick="mostrarMenuCarpeta(event, ' + carpeta.id + ')" style="' +
+                    'background: rgba(255, 255, 255, 0.1);' +
+                    'border: none;' +
+                    'border-radius: 6px;' +
+                    'padding: 0.25rem;' +
+                    'color: var(--apple-label-secondary);' +
+                    'cursor: pointer;' +
+                '">' +
+                    '<svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">' +
+                        '<path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>' +
+                    '</svg>' +
+                '</button>' +
+            '</div>' +
+        '</div>'
+    ).join('');
 
     container.innerHTML = breadcrumbHTML + carpetasHTML;
     
@@ -7217,47 +7194,45 @@ function mostrarMenuCarpeta(event, folderId) {
     // Crear menú contextual
     const menu = document.createElement('div');
     menu.className = 'context-menu';
-    menu.style.cssText = `
-        position: fixed;
-        top: ${event.clientY}px;
-        left: ${event.clientX}px;
-        background: rgba(28, 28, 30, 0.95);
-        backdrop-filter: blur(20px);
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 0.5rem 0;
-        z-index: 10000;
-        min-width: 150px;
-    `;
+    menu.style.cssText = 
+        'position: fixed;' +
+        'top: ' + event.clientY + 'px;' +
+        'left: ' + event.clientX + 'px;' +
+        'background: rgba(28, 28, 30, 0.95);' +
+        'backdrop-filter: blur(20px);' +
+        'border-radius: 8px;' +
+        'border: 1px solid rgba(255, 255, 255, 0.1);' +
+        'padding: 0.5rem 0;' +
+        'z-index: 10000;' +
+        'min-width: 150px;';
     
-    menu.innerHTML = `
-        <button onclick="renombrarCarpeta(${folderId}); removeContextMenu()" style="
-            width: 100%; 
-            background: none; 
-            border: none; 
-            color: var(--apple-label); 
-            padding: 0.5rem 1rem; 
-            text-align: left; 
-            cursor: pointer;
-            font-size: 0.875rem;
-        " onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'" 
-           onmouseout="this.style.background='none'">
-            Renombrar
-        </button>
-        <button onclick="eliminarCarpeta(${folderId}); removeContextMenu()" style="
-            width: 100%; 
-            background: none; 
-            border: none; 
-            color: var(--apple-red); 
-            padding: 0.5rem 1rem; 
-            text-align: left; 
-            cursor: pointer;
-            font-size: 0.875rem;
-        " onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'" 
-           onmouseout="this.style.background='none'">
-            Eliminar
-        </button>
-    `;
+    menu.innerHTML = 
+        '<button onclick="renombrarCarpeta(' + folderId + '); removeContextMenu()" style="' +
+            'width: 100%; ' +
+            'background: none; ' +
+            'border: none; ' +
+            'color: var(--apple-label); ' +
+            'padding: 0.5rem 1rem; ' +
+            'text-align: left; ' +
+            'cursor: pointer;' +
+            'font-size: 0.875rem;' +
+        '" onmouseover="this.style.background=\'rgba(255, 255, 255, 0.1)\'" ' +
+           'onmouseout="this.style.background=\'none\'">' +
+            'Renombrar' +
+        '</button>' +
+        '<button onclick="eliminarCarpeta(' + folderId + '); removeContextMenu()" style="' +
+            'width: 100%; ' +
+            'background: none; ' +
+            'border: none; ' +
+            'color: var(--apple-red); ' +
+            'padding: 0.5rem 1rem; ' +
+            'text-align: left; ' +
+            'cursor: pointer;' +
+            'font-size: 0.875rem;' +
+        '" onmouseover="this.style.background=\'rgba(255, 255, 255, 0.1)\'" ' +
+           'onmouseout="this.style.background=\'none\'">' +
+            'Eliminar' +
+        '</button>';
     
     document.body.appendChild(menu);
     
@@ -7333,18 +7308,17 @@ async function eliminarCarpeta(folderId) {
 // Mostrar notificaciones
 function mostrarNotificacion(mensaje, tipo = 'info') {
     const notif = document.createElement('div');
-    notif.style.cssText = `
-        position: fixed;
-        top: 2rem;
-        right: 2rem;
-        background: ${tipo === 'success' ? 'var(--apple-green)' : tipo === 'error' ? 'var(--apple-red)' : 'var(--apple-blue)'};
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 8px;
-        z-index: 10000;
-        font-size: 0.875rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    `;
+    notif.style.cssText = 
+        'position: fixed;' +
+        'top: 2rem;' +
+        'right: 2rem;' +
+        'background: ' + (tipo === 'success' ? 'var(--apple-green)' : tipo === 'error' ? 'var(--apple-red)' : 'var(--apple-blue)') + ';' +
+        'color: white;' +
+        'padding: 1rem 1.5rem;' +
+        'border-radius: 8px;' +
+        'z-index: 10000;' +
+        'font-size: 0.875rem;' +
+        'box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);';
     notif.textContent = mensaje;
     
     document.body.appendChild(notif);
@@ -7491,24 +7465,22 @@ function getEstadoBadgeHTML(estado) {
     
     const config = estadosConfig[estado] || estadosConfig['pendiente'];
     
-    return `
-        <span style="
-            display: inline-flex;
-            align-items: center;
-            gap: 0.375rem;
-            padding: 0.25rem 0.625rem;
-            border-radius: 6px;
-            background: ${config.bgColor};
-            color: ${config.color};
-            font-size: 0.75rem;
-            font-weight: 600;
-            border: 1px solid ${config.color}33;
-            text-transform: capitalize;
-        ">
-            <span style="font-size: 0.5rem;">${config.icon}</span>
-            ${config.label}
-        </span>
-    `;
+    return '<span style="' +
+            'display: inline-flex;' +
+            'align-items: center;' +
+            'gap: 0.375rem;' +
+            'padding: 0.25rem 0.625rem;' +
+            'border-radius: 6px;' +
+            'background: ' + config.bgColor + ';' +
+            'color: ' + config.color + ';' +
+            'font-size: 0.75rem;' +
+            'font-weight: 600;' +
+            'border: 1px solid ' + config.color + '33;' +
+            'text-transform: capitalize;' +
+        '">' +
+            '<span style="font-size: 0.5rem;">' + config.icon + '</span>' +
+            config.label +
+        '</span>';
 }
 
 // Funciones auxiliares para el namespace TareasProyectos
@@ -7634,11 +7606,7 @@ function getEstadoBadgeHTML(estado) {
                 } else {
                     // Fallback for string names
                     const nombre = typeof participante === 'string' ? participante : participante.toString();
-                    return `
-                        <div style="width: 28px; height: 28px; border-radius: 50%; background: ' + TareasProyectos.getAvatarColor(nombre) + '; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;" title="' + nombre + '">
-                            ' + TareasProyectos.getInitials(nombre) + '
-                        </div>
-                    `;
+                    return '<div style="width: 28px; height: 28px; border-radius: 50%; background: ' + TareasProyectos.getAvatarColor(nombre) + '; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;" title="' + nombre + '">' + TareasProyectos.getInitials(nombre) + '</div>';
                 }
             }).join('');
             
@@ -7724,15 +7692,14 @@ function getEstadoBadgeHTML(estado) {
         if (responsableData) {
             container.innerHTML = '                ' + TareasProyectos.createUserAvatarHTML(responsableData, 32) + '                <span style="color: #E0E7FF; font-weight: 500;">' + responsableData.nombre + '</span>                <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem; margin-left: auto; color: #9CA3AF;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />                </svg>            ';
         } else {
-            container.innerHTML = `
-                <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(142, 142, 147, 0.3); display: flex; align-items: center; justify-content: center; color: #9CA3AF; font-weight: 600; font-size: 0.875rem;">
-                    ?
-                </div>
-                <span style="color: #9CA3AF; font-weight: 500;">Sin asignar</span>
-                <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem; margin-left: auto; color: #9CA3AF;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-            `;
+            container.innerHTML = 
+                '<div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(142, 142, 147, 0.3); display: flex; align-items: center; justify-content: center; color: #9CA3AF; font-weight: 600; font-size: 0.875rem;">' +
+                    '?' +
+                '</div>' +
+                '<span style="color: #9CA3AF; font-weight: 500;">Sin asignar</span>' +
+                '<svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem; margin-left: auto; color: #9CA3AF;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">' +
+                    '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />' +
+                '</svg>';
         }
     },
 
@@ -7773,56 +7740,50 @@ function getEstadoBadgeHTML(estado) {
                 } else {
                     // Fallback for string names
                     const nombre = typeof observador === 'string' ? observador : observador.toString();
-                    return `
-                        <div style="width: 28px; height: 28px; border-radius: 50%; background: ' + TareasProyectos.getAvatarColor(nombre) + '; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;" title="' + nombre + '">
-                            ' + TareasProyectos.getInitials(nombre) + '
-                        </div>
-                    `;
+                    return '<div style="width: 28px; height: 28px; border-radius: 50%; background: ' + TareasProyectos.getAvatarColor(nombre) + '; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.75rem;" title="' + nombre + '">' + TareasProyectos.getInitials(nombre) + '</div>';
                 }
             }).join('');
             
             // Add button to add observers
-            container.innerHTML = observadoresHTML + `
-                <button onclick="TareasProyectos.toggleDropdown('observadores')" style="
-                    width: 28px; 
-                    height: 28px; 
-                    background: rgba(45, 55, 72, 1); 
-                    color: #9CA3AF; 
-                    border-radius: 50%; 
-                    display: flex; 
-                    align-items: center; 
-                    justify-content: center; 
-                    font-size: 0.75rem; 
-                    border: none; 
-                    cursor: pointer;
-                    transition: background-color 0.2s;
-                " title="Añadir observador" onmouseover="this.style.backgroundColor='rgba(45, 55, 72, 0.5)'" onmouseout="this.style.backgroundColor='rgba(45, 55, 72, 1)'">
-                    <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
-                </button>
-            `;
+            container.innerHTML = observadoresHTML + 
+                '<button onclick="TareasProyectos.toggleDropdown(\\'observadores\\')" style="' +
+                    'width: 28px; ' +
+                    'height: 28px; ' +
+                    'background: rgba(45, 55, 72, 1); ' +
+                    'color: #9CA3AF; ' +
+                    'border-radius: 50%; ' +
+                    'display: flex; ' +
+                    'align-items: center; ' +
+                    'justify-content: center; ' +
+                    'font-size: 0.75rem; ' +
+                    'border: none; ' +
+                    'cursor: pointer;' +
+                    'transition: background-color 0.2s;' +
+                '" title="Añadir observador" onmouseover="this.style.backgroundColor=\\'rgba(45, 55, 72, 0.5)\\'" onmouseout="this.style.backgroundColor=\\'rgba(45, 55, 72, 1)\\'">' +
+                    '<svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">' +
+                        '<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />' +
+                    '</svg>' +
+                '</button>';
         } else {
-            container.innerHTML = `
-                <button onclick="TareasProyectos.toggleDropdown('observadores')" style="
-                    width: 28px; 
-                    height: 28px; 
-                    background: rgba(45, 55, 72, 1); 
-                    color: #9CA3AF; 
-                    border-radius: 50%; 
-                    display: flex; 
-                    align-items: center; 
-                    justify-content: center; 
-                    font-size: 0.75rem; 
-                    border: none; 
-                    cursor: pointer;
-                    transition: background-color 0.2s;
-                " title="Añadir observador" onmouseover="this.style.backgroundColor='rgba(45, 55, 72, 0.5)'" onmouseout="this.style.backgroundColor='rgba(45, 55, 72, 1)'">
-                    <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
-                </button>
-            `;
+            container.innerHTML = 
+                '<button onclick="TareasProyectos.toggleDropdown(\\'observadores\\')" style="' +
+                    'width: 28px; ' +
+                    'height: 28px; ' +
+                    'background: rgba(45, 55, 72, 1); ' +
+                    'color: #9CA3AF; ' +
+                    'border-radius: 50%; ' +
+                    'display: flex; ' +
+                    'align-items: center; ' +
+                    'justify-content: center; ' +
+                    'font-size: 0.75rem; ' +
+                    'border: none; ' +
+                    'cursor: pointer;' +
+                    'transition: background-color 0.2s;' +
+                '" title="Añadir observador" onmouseover="this.style.backgroundColor=\\'rgba(45, 55, 72, 0.5)\\'" onmouseout="this.style.backgroundColor=\\'rgba(45, 55, 72, 1)\\'">' +
+                    '<svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">' +
+                        '<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />' +
+                    '</svg>' +
+                '</button>';
         }
     },
 
@@ -8498,41 +8459,37 @@ async function abrirVistaPrevia(archivoId, archivo) {
         // Información del archivo
         const tamaño = formatearTamaño(archivo.tamaño);
         const fecha = new Date(archivo.fecha_subida).toLocaleDateString('es-ES');
-        fileInfo.innerHTML = `
-            <div style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.7);">
-                <div>Tamaño: ${tamaño}</div>
-                <div>Subido: ${fecha}</div>
-                <div>Tipo: ${archivo.tipo_archivo}</div>
-            </div>
-        `;
+        fileInfo.innerHTML = 
+            '<div style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.7);">' +
+                '<div>Tamaño: ' + tamaño + '</div>' +
+                '<div>Subido: ' + fecha + '</div>' +
+                '<div>Tipo: ' + archivo.tipo_archivo + '</div>' +
+            '</div>';
 
         // Generar vista previa según tipo
         if (archivo.tipo_archivo === 'imagen') {
-            previewContent.innerHTML = `
-                <img src="${archivo.url}" 
-                     style="max-width: 100%; max-height: 70vh; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);"
-                     alt="${archivo.nombre}">
-            `;
+            previewContent.innerHTML = 
+                '<img src="' + archivo.url + '" ' +
+                     'style="max-width: 100%; max-height: 70vh; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);" ' +
+                     'alt="' + archivo.nombre + '">';
         } else if (archivo.extension === 'pdf') {
-            previewContent.innerHTML = `
-                <iframe src="${archivo.url}" 
-                        style="width: 100%; height: 70vh; border: none; border-radius: 8px;"
-                        frameborder="0">
-                </iframe>
-            `;
+            previewContent.innerHTML = 
+                '<iframe src="' + archivo.url + '" ' +
+                        'style="width: 100%; height: 70vh; border: none; border-radius: 8px;" ' +
+                        'frameborder="0">' +
+                '</iframe>';
         } else {
             // Para otros tipos, mostrar icono e información
             const icono = obtenerIconoArchivo(archivo.extension, archivo.tipo_archivo);
-            previewContent.innerHTML = `
-                <div style="padding: 2rem; text-align: center;">
-                    <div style="font-size: 4rem; margin-bottom: 1rem;">${icono}</div>
-                    <h3 style="margin-bottom: 0.5rem;">${archivo.nombre}</h3>
-                    <p style="color: rgba(255, 255, 255, 0.7);">No se puede mostrar vista previa de este tipo de archivo</p>
-                    <button onclick="downloadFile()" class="btn-nuevo-comentario" style="margin-top: 1rem;">
-                        Descargar Archivo
-                    </button>
-                </div>
-            `;
+            previewContent.innerHTML = 
+                '<div style="padding: 2rem; text-align: center;">' +
+                    '<div style="font-size: 4rem; margin-bottom: 1rem;">' + icono + '</div>' +
+                    '<h3 style="margin-bottom: 0.5rem;">' + archivo.nombre + '</h3>' +
+                    '<p style="color: rgba(255, 255, 255, 0.7);">No se puede mostrar vista previa de este tipo de archivo</p>' +
+                    '<button onclick="downloadFile()" class="btn-nuevo-comentario" style="margin-top: 1rem;">' +
+                        'Descargar Archivo' +
+                    '</button>' +
+                '</div>';
         }
 
         modal.style.display = 'flex';
@@ -8605,12 +8562,11 @@ cargarCarpetas = async function() {
                 justify-content: center;
             `;
             
-            folderElement.innerHTML = `
-                <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--apple-blue); margin-bottom: 0.5rem;">
-                    <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-                </svg>
-                <span style="font-weight: 500; text-align: center; word-break: break-word;">${carpeta.nombre}</span>
-            `;
+            folderElement.innerHTML = 
+                '<svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--apple-blue); margin-bottom: 0.5rem;">' +
+                    '<path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>' +
+                '</svg>' +
+                '<span style="font-weight: 500; text-align: center; word-break: break-word;">' + carpeta.nombre + '</span>';
             
             folderElement.addEventListener('click', () => {
                 currentFolder = carpeta.id;
@@ -8644,13 +8600,12 @@ cargarCarpetas = async function() {
             
             const icono = obtenerIconoArchivo(archivo.extension, archivo.tipo_archivo);
             
-            fileElement.innerHTML = `
-                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">${icono}</div>
-                <span style="font-weight: 500; text-align: center; word-break: break-word; font-size: 0.875rem;">${archivo.nombre}</span>
-                <div style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.6); margin-top: 0.25rem;">
-                    ${formatearTamaño(archivo.tamaño)}
-                </div>
-            `;
+            fileElement.innerHTML = 
+                '<div style="font-size: 2.5rem; margin-bottom: 0.5rem;">' + icono + '</div>' +
+                '<span style="font-weight: 500; text-align: center; word-break: break-word; font-size: 0.875rem;">' + archivo.nombre + '</span>' +
+                '<div style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.6); margin-top: 0.25rem;">' +
+                    formatearTamaño(archivo.tamaño) +
+                '</div>';
             
             fileElement.addEventListener('click', () => {
                 abrirVistaPrevia(archivo.id, archivo);
