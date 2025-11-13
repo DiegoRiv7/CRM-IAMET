@@ -2860,6 +2860,49 @@
                 </div>
             </div>
 
+            <!-- Modal para Ver Contenido de Carpeta -->
+            <div class="modal-overlay" id="folderViewModal">
+                <div class="modal-content" style="width: 90%; max-width: 1000px; height: 80%; max-height: 800px;">
+                    <div class="modal-header">
+                        <div style="display: flex; align-items: center; gap: 1rem; flex: 1;">
+                            <button id="btnBackToParent" class="modal-back-btn" onclick="goBackToParentFolder()" style="display: none; background: none; border: none; color: var(--apple-blue); cursor: pointer; padding: 0.5rem; border-radius: 6px; transition: background-color 0.2s;">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                                </svg>
+                            </button>
+                            <h3 class="modal-title" id="folderModalTitle">Carpeta</h3>
+                            <div class="breadcrumb" id="folderBreadcrumb" style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);"></div>
+                        </div>
+                        <button class="modal-close" onclick="closeFolderViewModal()">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 1.5rem;">
+                        <div class="folder-actions" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                            <button class="btn-nuevo-comentario" onclick="openCreateFolderModalFromViewer()" style="background: var(--apple-blue); border-color: rgba(10, 132, 255, 0.3);">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                                </svg>
+                                Nueva Carpeta
+                            </button>
+                            <button class="btn-nuevo-comentario" onclick="openFileUploadFromViewer()" style="background: var(--apple-green); border-color: rgba(52, 199, 89, 0.3);">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m7-10v16m4-12l-4-4-4 4"/>
+                                </svg>
+                                Subir Archivos
+                            </button>
+                        </div>
+                        
+                        <div class="folder-content-grid" id="folderContentGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; min-height: 300px;">
+                            <!-- El contenido de la carpeta se cargará aquí -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Carpetas Tab -->
             <div class="tab-content" id="carpetas-content">
                 <div class="folders-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
@@ -3030,10 +3073,9 @@ window.recargarCarpetas = async function(parentFolderId = null) {
                 
                 folderElement.innerHTML = '<svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="color: var(--apple-blue); margin-bottom: 0.5rem;"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg><span style="font-size: 0.9rem; text-align: center; word-break: break-word;">' + carpeta.nombre + '</span>';
                 
-                // Agregar evento para abrir carpeta
+                // Agregar evento para abrir carpeta en modal
                 folderElement.addEventListener('click', () => {
-                    window.currentFolder = carpeta.id;
-                    window.recargarCarpetas(carpeta.id);
+                    openFolderViewModal(carpeta);
                 });
                 
                 foldersContainer.appendChild(folderElement);
@@ -3077,6 +3119,210 @@ window.recargarCarpetas = async function(parentFolderId = null) {
     } catch (error) {
         console.error('Error recargando carpetas:', error);
     }
+};
+
+// ===== FUNCIONES PARA MODAL DE VISTA DE CARPETA =====
+// Variables para la navegación en el modal de carpeta
+window.folderViewStack = [];
+window.currentFolderView = null;
+
+// Función para abrir el modal de vista de carpeta
+window.openFolderViewModal = async function(carpeta) {
+    console.log('🔵 Abriendo modal de carpeta:', carpeta);
+    
+    // Reiniciar el stack de navegación
+    window.folderViewStack = [];
+    window.currentFolderView = carpeta;
+    
+    // Actualizar UI del modal
+    document.getElementById('folderModalTitle').textContent = carpeta.nombre;
+    document.getElementById('folderBreadcrumb').textContent = '';
+    document.getElementById('btnBackToParent').style.display = 'none';
+    
+    // Cargar contenido de la carpeta
+    await loadFolderContent(carpeta.id);
+    
+    // Mostrar modal
+    const modal = document.getElementById('folderViewModal');
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+};
+
+// Función para cerrar el modal de vista de carpeta
+window.closeFolderViewModal = function() {
+    console.log('🔵 Cerrando modal de carpeta');
+    
+    const modal = document.getElementById('folderViewModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+    
+    // Limpiar variables
+    window.folderViewStack = [];
+    window.currentFolderView = null;
+};
+
+// Función para cargar el contenido de una carpeta en el modal
+window.loadFolderContent = async function(folderId) {
+    console.log('🔵 Cargando contenido de carpeta:', folderId);
+    
+    try {
+        const PROYECTO_ID = {{ proyecto.id }};
+        let url = '/app/api/proyecto/' + PROYECTO_ID + '/carpetas/';
+        if (folderId) {
+            url += '?parent=' + folderId;
+        }
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status);
+        }
+        
+        const data = await response.json();
+        console.log('🔵 Datos recibidos:', data);
+        
+        const contentGrid = document.getElementById('folderContentGrid');
+        contentGrid.innerHTML = '';
+        
+        // Crear elementos para subcarpetas
+        if (data.carpetas && data.carpetas.length > 0) {
+            data.carpetas.forEach(subcarpeta => {
+                const folderElement = document.createElement('div');
+                folderElement.className = 'folder-item-modal';
+                folderElement.style.cssText = 'display: flex; flex-direction: column; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer; transition: all 0.2s ease;';
+                
+                folderElement.innerHTML = '<svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="color: var(--apple-blue); margin-bottom: 0.5rem;"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg><span style="font-size: 0.9rem; text-align: center; word-break: break-word;">' + subcarpeta.nombre + '</span>';
+                
+                // Agregar evento para navegar a subcarpeta
+                folderElement.addEventListener('click', () => {
+                    navigateToSubfolder(subcarpeta);
+                });
+                
+                folderElement.addEventListener('mouseenter', () => {
+                    folderElement.style.background = 'rgba(255, 255, 255, 0.1)';
+                });
+                
+                folderElement.addEventListener('mouseleave', () => {
+                    folderElement.style.background = 'rgba(255, 255, 255, 0.05)';
+                });
+                
+                contentGrid.appendChild(folderElement);
+            });
+        }
+        
+        // Crear elementos para archivos
+        if (data.archivos && data.archivos.length > 0) {
+            data.archivos.forEach(archivo => {
+                const fileElement = document.createElement('div');
+                fileElement.className = 'file-item-modal';
+                fileElement.style.cssText = 'display: flex; flex-direction: column; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer; transition: all 0.2s ease;';
+                
+                // Determinar icono y color según tipo de archivo
+                let iconColor = 'var(--apple-gray)';
+                let iconPath = 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2l6 6 M16 13H8 M16 17H8 M10 9H8';
+                
+                if (archivo.tipo_archivo === 'image') {
+                    iconColor = 'var(--apple-green)';
+                    iconPath = 'M21 19V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2z M8.5 8.5l5.5 5.5L21 7';
+                } else if (archivo.tipo_archivo === 'pdf') {
+                    iconColor = 'var(--apple-red)';
+                }
+                
+                fileElement.innerHTML = '<svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="color: ' + iconColor + '; margin-bottom: 0.5rem;"><path d="' + iconPath + '"/></svg><span style="font-size: 0.8rem; text-align: center; word-break: break-word;">' + archivo.nombre + '</span>';
+                
+                // Agregar evento para abrir archivo
+                if (archivo.url) {
+                    fileElement.addEventListener('click', () => {
+                        window.open(archivo.url, '_blank');
+                    });
+                }
+                
+                fileElement.addEventListener('mouseenter', () => {
+                    fileElement.style.background = 'rgba(255, 255, 255, 0.1)';
+                });
+                
+                fileElement.addEventListener('mouseleave', () => {
+                    fileElement.style.background = 'rgba(255, 255, 255, 0.05)';
+                });
+                
+                contentGrid.appendChild(fileElement);
+            });
+        }
+        
+        // Si no hay contenido, mostrar mensaje
+        if ((!data.carpetas || data.carpetas.length === 0) && (!data.archivos || data.archivos.length === 0)) {
+            contentGrid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: rgba(255, 255, 255, 0.6);"><svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1" style="margin: 0 auto 1rem; display: block;"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg><h3>Carpeta vacía</h3><p>Esta carpeta no contiene archivos ni subcarpetas.</p></div>';
+        }
+        
+    } catch (error) {
+        console.error('Error cargando contenido de carpeta:', error);
+        const contentGrid = document.getElementById('folderContentGrid');
+        contentGrid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--apple-red);"><h3>Error</h3><p>No se pudo cargar el contenido de la carpeta.</p></div>';
+    }
+};
+
+// Función para navegar a una subcarpeta
+window.navigateToSubfolder = async function(subcarpeta) {
+    console.log('🔵 Navegando a subcarpeta:', subcarpeta);
+    
+    // Agregar carpeta actual al stack
+    window.folderViewStack.push(window.currentFolderView);
+    
+    // Establecer nueva carpeta actual
+    window.currentFolderView = subcarpeta;
+    
+    // Actualizar UI
+    updateFolderBreadcrumb();
+    document.getElementById('folderModalTitle').textContent = subcarpeta.nombre;
+    document.getElementById('btnBackToParent').style.display = 'block';
+    
+    // Cargar contenido
+    await loadFolderContent(subcarpeta.id);
+};
+
+// Función para volver a la carpeta padre
+window.goBackToParentFolder = async function() {
+    console.log('🔵 Volviendo a carpeta padre');
+    
+    if (window.folderViewStack.length > 0) {
+        // Obtener carpeta padre del stack
+        const parentFolder = window.folderViewStack.pop();
+        window.currentFolderView = parentFolder;
+        
+        // Actualizar UI
+        updateFolderBreadcrumb();
+        document.getElementById('folderModalTitle').textContent = parentFolder.nombre;
+        
+        // Ocultar botón back si estamos en la raíz
+        if (window.folderViewStack.length === 0) {
+            document.getElementById('btnBackToParent').style.display = 'none';
+        }
+        
+        // Cargar contenido
+        await loadFolderContent(parentFolder.id);
+    }
+};
+
+// Función para actualizar el breadcrumb
+window.updateFolderBreadcrumb = function() {
+    const breadcrumb = document.getElementById('folderBreadcrumb');
+    
+    if (window.folderViewStack.length === 0) {
+        breadcrumb.textContent = '';
+    } else {
+        const path = window.folderViewStack.map(folder => folder.nombre).join(' > ');
+        breadcrumb.textContent = path + ' > ';
+    }
+};
+
+// Funciones placeholder para las acciones del modal (se implementarán después)
+window.openCreateFolderModalFromViewer = function() {
+    // TODO: Implementar creación de carpeta desde el viewer
+    alert('Función de crear carpeta desde viewer - por implementar');
+};
+
+window.openFileUploadFromViewer = function() {
+    // TODO: Implementar subida de archivos desde el viewer
+    alert('Función de subir archivos desde viewer - por implementar');
 };
 
 // Event listeners de seguridad
