@@ -8794,6 +8794,9 @@ function getEstadoBadgeHTML(estado) {
     }
 });
 
+// Variables globales para carpetas
+let currentFolder = null;
+
 // Funciones básicas para subida de archivos a carpetas
 async function subirArchivosACarpeta(files, targetFolderId = null) {
     for (let file of files) {
@@ -8834,6 +8837,89 @@ async function subirArchivoACarpeta(file, targetFolderId = null) {
         alert('❌ Error subiendo ' + file.name);
     }
 }
+
+// Funciones para el modal de crear carpeta
+function openCreateFolderModal() {
+    const modal = document.getElementById('createFolderModal');
+    const folderNameInput = document.getElementById('folderName');
+    
+    if (modal && folderNameInput) {
+        // Limpiar el campo
+        folderNameInput.value = '';
+        
+        // Mostrar modal
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        
+        // Focus en el input
+        setTimeout(() => folderNameInput.focus(), 100);
+    }
+}
+
+function closeCreateFolderModal() {
+    const modal = document.getElementById('createFolderModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+// Manejar la creación de carpeta
+async function handleCreateFolder(event) {
+    event.preventDefault();
+    
+    const folderName = document.getElementById('folderName').value.trim();
+    if (!folderName) return;
+
+    try {
+        const response = await fetch('/app/api/proyecto/' + PROYECTO_ID + '/carpetas/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            },
+            body: JSON.stringify({
+                nombre: folderName,
+                parent: currentFolder || null
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status);
+        }
+
+        const data = await response.json();
+        
+        if (data.success) {
+            closeCreateFolderModal();
+            // Recargar carpetas si la función existe
+            if (typeof cargarCarpetas === 'function') {
+                cargarCarpetas();
+            }
+            console.log('✅ Carpeta creada: ' + folderName);
+        } else {
+            alert('Error: ' + data.error);
+        }
+        
+    } catch (error) {
+        console.error('Error creando carpeta:', error);
+        alert('❌ Error creando la carpeta');
+    }
+}
+
+// Event listener para el formulario de crear carpeta
+document.addEventListener('DOMContentLoaded', function() {
+    const createFolderForm = document.getElementById('createFolderForm');
+    if (createFolderForm) {
+        createFolderForm.addEventListener('submit', handleCreateFolder);
+    }
+    
+    // Event listener para el botón de crear carpeta
+    const btnCrearCarpeta = document.getElementById('btnCrearCarpeta');
+    if (btnCrearCarpeta) {
+        btnCrearCarpeta.addEventListener('click', openCreateFolderModal);
+    }
+});
 </script>
 
 <!-- Modal para ver detalles de tarea - Glassmorphism Design -->
