@@ -2695,6 +2695,90 @@
         transform: none;
         box-shadow: none;
     }
+
+    /* 🎄 ESTILOS PARA INTERCAMBIO NAVIDEÑO 🎄 */
+    .christmas-gift-dock {
+        position: relative;
+        overflow: visible !important;
+    }
+    
+    .christmas-gift-icon {
+        color: #dc2626 !important; /* Rojo navideño */
+        transition: all 0.3s ease;
+    }
+    
+    .christmas-gift-dock:hover .christmas-gift-icon {
+        color: #16a34a !important; /* Verde navideño */
+        transform: scale(1.1) rotateZ(5deg);
+    }
+    
+    .christmas-sparkles {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        overflow: visible;
+    }
+    
+    .sparkle {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background: #fbbf24; /* Dorado */
+        border-radius: 50%;
+        animation: sparkleAnimation 2s infinite ease-in-out;
+    }
+    
+    .sparkle:nth-child(1) {
+        top: 10%;
+        left: 20%;
+        animation-delay: 0s;
+    }
+    
+    .sparkle:nth-child(2) {
+        top: 20%;
+        right: 15%;
+        animation-delay: 0.7s;
+    }
+    
+    .sparkle:nth-child(3) {
+        bottom: 15%;
+        left: 15%;
+        animation-delay: 1.4s;
+    }
+    
+    @keyframes sparkleAnimation {
+        0%, 100% {
+            opacity: 0;
+            transform: scale(0);
+        }
+        50% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+    
+    /* Efecto especial de hover para el botón navideño */
+    .christmas-gift-dock:hover {
+        background: linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(22, 163, 74, 0.1)) !important;
+        border-radius: 12px;
+    }
+    
+    /* Animación especial de pulso suave para llamar la atención */
+    @keyframes christmasGlow {
+        0%, 100% {
+            box-shadow: 0 0 5px rgba(220, 38, 38, 0.3);
+        }
+        50% {
+            box-shadow: 0 0 20px rgba(22, 163, 74, 0.5), 0 0 30px rgba(220, 38, 38, 0.3);
+        }
+    }
+    
+    .christmas-gift-dock {
+        animation: christmasGlow 3s infinite ease-in-out;
+    }
 </style>
 
 <!-- Dock Left -->
@@ -2709,6 +2793,22 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
         </svg>
         <span class="tooltip">Oportunidades</span>
+    </a>
+
+    <!-- Intercambio Navideño - Visible para todos los usuarios -->
+    <a href="{% url 'intercambio_navidad' %}" class="dock-item christmas-gift-dock">
+        <svg class="dock-icon christmas-gift-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <rect x="3" y="8" width="18" height="4" rx="1" stroke-width="2" fill="none"/>
+            <rect x="4" y="12" width="16" height="8" rx="1" stroke-width="2" fill="none"/>
+            <path d="M12 8V4m0 0c-1.1 0-2 .9-2 2s.9 2 2 2m0-4c1.1 0 2 .9 2 2s-.9 2-2 2" stroke-width="2" fill="none"/>
+            <path d="M8 4c0-1.1-.9-2-2-2s-2 .9-2 2 .9 2 2 2h4M16 4c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2h-4" stroke-width="2" fill="none"/>
+        </svg>
+        <span class="tooltip">Intercambio Navideño 🎄</span>
+        <div class="christmas-sparkles">
+            <span class="sparkle"></span>
+            <span class="sparkle"></span>
+            <span class="sparkle"></span>
+        </div>
     </a>
 
     <!-- Botones específicos según el rol -->
