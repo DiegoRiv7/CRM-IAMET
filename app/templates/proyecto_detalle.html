@@ -3693,6 +3693,17 @@ window.hideDragDropOverlay = function() {
         window.dragDropOverlay.style.display = 'none';
         document.body.style.overflow = '';
     }
+    
+    // Resetear cualquier estado de overflow bloqueado
+    setTimeout(() => {
+        if (document.body.style.overflow === 'hidden') {
+            // Solo restaurar si no hay modales abiertos
+            const activeModals = document.querySelectorAll('.modal-overlay.active');
+            if (activeModals.length === 0) {
+                document.body.style.overflow = '';
+            }
+        }
+    }, 100);
 };
 
 // Función para subir archivos directamente a una carpeta
@@ -3799,6 +3810,9 @@ window.setupFolderDragDrop = function(folderElement, carpeta) {
         e.preventDefault();
         e.stopPropagation();
         
+        // Ocultar overlay global si está visible
+        window.hideDragDropOverlay();
+        
         // Efecto visual en la carpeta
         folderElement.style.background = 'rgba(10, 132, 255, 0.2)';
         folderElement.style.borderColor = 'var(--apple-blue)';
@@ -3824,7 +3838,7 @@ window.setupFolderDragDrop = function(folderElement, carpeta) {
         folderElement.style.borderColor = 'rgba(255, 255, 255, 0.1)';
         folderElement.style.transform = 'scale(1)';
         
-        // Ocultar overlay
+        // Asegurarse de que el overlay esté oculto
         window.hideDragDropOverlay();
         
         // Obtener archivos
@@ -3858,9 +3872,15 @@ window.setupGlobalDragDrop = function() {
         e.preventDefault();
         dragCounter++;
         
-        // Solo mostrar overlay si son archivos externos
+        // Solo mostrar overlay si son archivos externos Y no estamos en el modal de carpetas
         if (e.dataTransfer.types.includes('Files')) {
-            window.showDragDropOverlay();
+            const folderModal = document.getElementById('folderViewModal');
+            const isModalOpen = folderModal && folderModal.classList.contains('active');
+            
+            // No mostrar overlay si el modal de carpetas está abierto
+            if (!isModalOpen) {
+                window.showDragDropOverlay();
+            }
         }
     });
     
@@ -3882,6 +3902,15 @@ window.setupGlobalDragDrop = function() {
         e.preventDefault();
         dragCounter = 0;
         window.hideDragDropOverlay();
+        
+        // Verificar si el modal de carpetas está abierto
+        const folderModal = document.getElementById('folderViewModal');
+        const isModalOpen = folderModal && folderModal.classList.contains('active');
+        
+        // Si el modal está abierto, no procesar aquí (lo maneja setupModalDragDrop)
+        if (isModalOpen) {
+            return;
+        }
         
         // Solo procesar si estamos en la tab de carpetas
         const carpetasTab = document.getElementById('carpetas-content');
@@ -3916,6 +3945,9 @@ window.setupModalDragDrop = function(contentGrid, folderId) {
         e.preventDefault();
         e.stopPropagation();
         
+        // Ocultar overlay global si está visible
+        window.hideDragDropOverlay();
+        
         // Solo si no estamos sobre una carpeta específica
         if (!e.target.closest('.folder-item-modal')) {
             contentGrid.style.background = 'rgba(10, 132, 255, 0.05)';
@@ -3937,6 +3969,9 @@ window.setupModalDragDrop = function(contentGrid, folderId) {
     contentGrid.addEventListener('drop', function(e) {
         e.preventDefault();
         e.stopPropagation();
+        
+        // Asegurarse de que el overlay esté oculto
+        window.hideDragDropOverlay();
         
         // Restaurar apariencia
         contentGrid.style.background = '';
