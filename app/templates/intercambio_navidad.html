@@ -4,833 +4,488 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎄 Intercambio Navideño - {{ request.user.get_full_name|default:request.user.username }}</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --christmas-red: #c41e3a;
-            --christmas-green: #2d5016;
-            --christmas-gold: #ffd700;
-            --snow-white: #ffffff;
-            --apple-blue: #007aff;
-            --apple-gray: #8e8e93;
-            --apple-light-gray: #f2f2f7;
-            --shadow-light: rgba(0, 0, 0, 0.1);
-            --shadow-medium: rgba(0, 0, 0, 0.2);
-            --shadow-heavy: rgba(0, 0, 0, 0.3);
+            --clr-red: #DC2626; /* Apple Red */
+            --clr-green: #10B981; /* Apple Green */
+            --clr-gold: #FCD34D; /* Gold Accent */
+            --clr-bg: #F3F4F6; /* Light Gray Background */
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, 
-                var(--christmas-red) 0%, 
-                #8b0000 50%, 
-                var(--christmas-green) 100%);
+            font-family: 'Inter', sans-serif;
+            background: #E5E7EB; /* Fondo más neutro para el estilo Apple */
             min-height: 100vh;
-            position: relative;
-            overflow-x: hidden;
         }
 
-        /* Animación de nieve */
-        .snowflakes {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .snowflake {
-            position: absolute;
-            top: -10px;
-            color: var(--snow-white);
-            user-select: none;
-            animation: snowfall linear infinite;
-            opacity: 0.8;
-        }
-
-        @keyframes snowfall {
-            from {
-                transform: translateY(-100vh) rotate(0deg);
-            }
-            to {
-                transform: translateY(100vh) rotate(360deg);
-            }
-        }
-
-        /* Container principal */
-        .christmas-container {
-            position: relative;
-            z-index: 10;
+        /* Fondo de escritorio con degradado navideño sutil */
+        .desktop-bg {
+            background: linear-gradient(135deg, #FFC0CB 0%, #E5E7EB 50%, #C4E9B3 100%);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
         }
 
-        .gift-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 3rem;
-            max-width: 600px;
-            width: 100%;
-            box-shadow: 
-                0 20px 60px rgba(0, 0, 0, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            text-align: center;
-            position: relative;
+        /* Estilo de la "Tarjeta de Cristal" (Glassmorphism) */
+        .glass-card {
+            background-color: rgba(255, 255, 255, 0.7); /* Blanco semitransparente */
+            backdrop-filter: blur(20px); /* Efecto cristal esmerilado */
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 60px rgba(0, 0, 0, 0.05), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.7); /* Sombra suave y brillo interno */
         }
-
-        /* Header navideño */
-        .christmas-header {
-            margin-bottom: 2rem;
+        
+        /* Estilo para los botones de iOS */
+        .ios-button {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateZ(0);
         }
-
-        .christmas-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            background: linear-gradient(45deg, var(--christmas-red), var(--christmas-gold));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.5rem;
-        }
-
-        .christmas-subtitle {
-            color: var(--apple-gray);
-            font-size: 1.1rem;
-            margin-bottom: 1rem;
-        }
-
-        .decoration-line {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 1rem;
-            margin: 1.5rem 0;
-            font-size: 1.5rem;
-        }
-
-        .decoration-line::before,
-        .decoration-line::after {
-            content: '';
-            flex: 1;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--christmas-gold), transparent);
-        }
-
-        /* Sección para superusuarios */
-        .admin-section {
-            margin-bottom: 2rem;
-        }
-
-        .participants-section {
-            text-align: left;
-            margin-bottom: 2rem;
-        }
-
-        .section-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: var(--christmas-green);
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .user-selector {
-            position: relative;
-            margin-bottom: 1rem;
-        }
-
-        .select-dropdown {
-            width: 100%;
-            padding: 1rem;
-            border: 2px solid var(--apple-light-gray);
-            border-radius: 12px;
-            font-size: 1rem;
-            background: var(--snow-white);
-            transition: all 0.3s ease;
-            appearance: none;
-            cursor: pointer;
-        }
-
-        .select-dropdown:focus {
-            outline: none;
-            border-color: var(--apple-blue);
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
-        }
-
-        .select-dropdown::after {
-            content: '🎁';
-            position: absolute;
-            right: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            pointer-events: none;
-        }
-
-        .add-participant-btn {
-            background: linear-gradient(135deg, var(--christmas-green), #4a7c59);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin: 0 auto;
-        }
-
-        .add-participant-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(45, 80, 22, 0.3);
-        }
-
-        .add-participant-btn:active {
-            transform: translateY(0);
-        }
-
-        .participants-list {
-            background: var(--apple-light-gray);
-            border-radius: 12px;
-            padding: 1rem;
-            min-height: 120px;
-            max-height: 200px;
-            overflow-y: auto;
-            margin-bottom: 1.5rem;
-        }
-
-        .participant-item {
-            background: white;
-            border-radius: 8px;
-            padding: 0.75rem;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: var(--shadow-light);
-            animation: participantSlideIn 0.3s ease;
-        }
-
-        .participant-item:last-child {
-            margin-bottom: 0;
-        }
-
-        @keyframes participantSlideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .participant-name {
-            font-weight: 500;
-            color: var(--christmas-green);
-        }
-
-        .remove-participant {
-            background: var(--christmas-red);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 0.8rem;
-        }
-
-        .remove-participant:hover {
-            background: #a01729;
-            transform: scale(1.1);
-        }
-
-        /* Botón de sorteo */
-        .sorteo-button {
-            background: linear-gradient(135deg, var(--christmas-red), #dc143c);
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 16px;
-            font-size: 1.2rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 8px 30px rgba(196, 30, 58, 0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            margin: 0 auto;
-            min-width: 200px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .sorteo-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 40px rgba(196, 30, 58, 0.5);
-        }
-
-        .sorteo-button:active {
+        .ios-button:hover {
+            opacity: 0.9;
             transform: translateY(-1px);
         }
-
-        .sorteo-button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: 0 4px 15px rgba(196, 30, 58, 0.2);
-        }
-
-        .sorteo-button.sorting {
-            animation: sorteoShake 0.5s infinite;
-        }
-
-        @keyframes sorteoShake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-4px); }
-            75% { transform: translateX(4px); }
+        .ios-button:active {
+            opacity: 1;
+            transform: translateY(0);
+            box-shadow: none !important;
         }
 
         /* Animación de sorteo */
-        .sorteo-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            flex-direction: column;
+        @keyframes sorteoAnimation {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.05) rotate(180deg); }
+            100% { transform: scale(1) rotate(360deg); }
+        }
+        
+        .sorteo-animacion {
+            animation: sorteoAnimation 2s ease-in-out;
         }
 
-        .sorteo-animation.active {
-            display: flex;
+        /* Ocultar elemento */
+        .hidden {
+            display: none !important;
         }
 
-        .gift-box {
-            font-size: 8rem;
-            animation: giftShake 0.5s infinite;
-            margin-bottom: 2rem;
+        /* Efecto de carga */
+        .loading-dots::after {
+            content: "";
+            animation: loading 1.5s infinite;
         }
 
-        @keyframes giftShake {
-            0%, 100% { transform: rotate(0deg) scale(1); }
-            25% { transform: rotate(-5deg) scale(1.1); }
-            75% { transform: rotate(5deg) scale(1.1); }
-        }
-
-        .sorteo-text {
-            color: white;
-            font-size: 1.5rem;
-            font-weight: 600;
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-
-        .loading-dots {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .loading-dot {
-            width: 12px;
-            height: 12px;
-            background: var(--christmas-gold);
-            border-radius: 50%;
-            animation: loadingBounce 1.4s infinite ease-in-out both;
-        }
-
-        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
-        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
-
-        @keyframes loadingBounce {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
-        }
-
-        /* Sección para usuarios regulares */
-        .user-section {
-            text-align: center;
-        }
-
-        .waiting-message {
-            background: linear-gradient(135deg, var(--apple-blue), #5ac8fa);
-            color: white;
-            padding: 2rem;
-            border-radius: 16px;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 8px 30px rgba(0, 122, 255, 0.3);
-        }
-
-        .waiting-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .waiting-subtitle {
-            opacity: 0.9;
-            font-size: 1rem;
-        }
-
-        .result-card {
-            background: linear-gradient(135deg, var(--christmas-green), #4a7c59);
-            color: white;
-            padding: 2.5rem;
-            border-radius: 20px;
-            box-shadow: 0 12px 40px rgba(45, 80, 22, 0.4);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .result-card::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
-            animation: shimmer 3s ease-in-out infinite;
-        }
-
-        @keyframes shimmer {
-            0%, 100% { transform: rotate(0deg); }
-            50% { transform: rotate(180deg); }
-        }
-
-        .result-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        .assigned-person {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: var(--christmas-gold);
-            margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-            position: relative;
-            z-index: 1;
-        }
-
-        .result-message {
-            font-size: 1.1rem;
-            opacity: 0.9;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Botón de volver */
-        .back-button {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            padding: 0.75rem 1.5rem;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 2rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .back-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            border-color: rgba(255, 255, 255, 0.5);
-            transform: translateY(-2px);
-        }
-
-        /* Estados vacíos */
-        .empty-state {
-            text-align: center;
-            color: var(--apple-gray);
-            font-style: italic;
-            padding: 2rem;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .christmas-container {
-                padding: 1rem;
-            }
-            
-            .gift-card {
-                padding: 2rem;
-                margin: 0;
-            }
-            
-            .christmas-title {
-                font-size: 2rem;
-            }
-            
-            .gift-box {
-                font-size: 6rem;
-            }
-        }
-
-        /* Efectos especiales para Christmas */
-        .sparkle {
-            position: absolute;
-            background: var(--christmas-gold);
-            border-radius: 50%;
-            animation: sparkle 2s infinite;
-        }
-
-        @keyframes sparkle {
-            0%, 100% {
-                opacity: 0;
-                transform: scale(0);
-            }
-            50% {
-                opacity: 1;
-                transform: scale(1);
-            }
+        @keyframes loading {
+            0%, 20% { content: ""; }
+            40% { content: "."; }
+            60% { content: ".."; }
+            80%, 100% { content: "..."; }
         }
     </style>
 </head>
-<body>
-    <!-- Efectos de nieve -->
-    <div class="snowflakes" id="snowflakes"></div>
-
-    <!-- Animación de sorteo -->
-    <div class="sorteo-animation" id="sorteoAnimation">
-        <div class="gift-box">🎁</div>
-        <div class="sorteo-text">Realizando sorteo mágico...</div>
-        <div class="loading-dots">
-            <div class="loading-dot"></div>
-            <div class="loading-dot"></div>
-            <div class="loading-dot"></div>
-        </div>
-    </div>
-
-    <div class="christmas-container">
-        <div class="gift-card">
-            <!-- Header -->
-            <div class="christmas-header">
-                <h1 class="christmas-title">🎄 Intercambio Navideño 🎁</h1>
-                <p class="christmas-subtitle">¡Es momento de compartir la magia navideña!</p>
-                <div class="decoration-line">
-                    <span>🎄</span>
-                    <span>❄️</span>
-                    <span>🎁</span>
-                    <span>⭐</span>
-                    <span>🎄</span>
+<body class="desktop-bg antialiased">
+    <!-- Contenedor Principal (Apple Style - Amplio) -->
+    <main class="flex min-h-screen p-8 justify-center items-start">
+        <div class="w-full max-w-6xl mt-12">
+            
+            <!-- Header de Aplicación -->
+            <header class="mb-10 flex justify-between items-end">
+                <div>
+                    <h1 class="text-5xl font-extrabold text-gray-800">
+                        🎄 Intercambio Navideño
+                    </h1>
+                    <p class="text-xl text-gray-500 mt-1">
+                        {% if user.is_superuser %}
+                            Panel de Administración
+                        {% else %}
+                            Dashboard de Usuario
+                        {% endif %}
+                    </p>
                 </div>
-            </div>
-
-            <!-- Contenido dinámico según el usuario -->
-            {% if user.is_superuser %}
-                <!-- Sección para superusuarios -->
-                <div class="admin-section">
-                    <div class="participants-section">
-                        <h2 class="section-title">
-                            👥 Agregar Participantes
-                        </h2>
-                        <div class="user-selector">
-                            <select class="select-dropdown" id="userSelect">
-                                <option value="">Seleccionar empleado... 🎅</option>
-                                {% for employee in employees %}
-                                <option value="{{ employee.id }}" data-name="{{ employee.get_full_name|default:employee.username }}">
-                                    {{ employee.get_full_name|default:employee.username }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <button class="add-participant-btn" onclick="addParticipant()">
-                            <span>➕</span>
-                            Agregar al Intercambio
+                <div class="text-right">
+                    {% if user.is_superuser %}
+                        <button class="ios-button inline-flex items-center gap-2 px-5 py-2 text-sm bg-gray-200 text-gray-700 font-semibold rounded-full hover:bg-gray-300 shadow-md">
+                            <span>⚙️</span>
+                            Ajustes de Evento
                         </button>
-                    </div>
+                    {% endif %}
+                    <p class="text-gray-500 mt-1 text-sm">Usuario: {{ request.user.get_full_name|default:request.user.username }}{% if user.is_superuser %} (ADMINISTRADOR){% endif %}</p>
+                </div>
+            </header>
 
-                    <div class="participants-section">
-                        <h2 class="section-title">
-                            🎯 Participantes del Intercambio
-                        </h2>
-                        <div class="participants-list" id="participantsList">
-                            <div class="empty-state" id="emptyState">
-                                No hay participantes aún... ¡Comienza agregando algunos! 🎄
+            {% if user.is_superuser %}
+                <!-- VISTA DEL ADMINISTRADOR -->
+                <!-- Layout de 2 Columnas para Administrador -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    
+                    <!-- Columna Izquierda: Agregar y Listar Participantes (2/3 del ancho) -->
+                    <div class="lg:col-span-2 space-y-8">
+                        
+                        <!-- Módulo 1: Agregar Participantes -->
+                        <div class="glass-card rounded-3xl p-6">
+                            <h2 class="text-2xl font-bold text-gray-700 mb-4 flex items-center">
+                                <span class="mr-3 text-red-600">➕</span>
+                                Agregar Participantes al Intercambio
+                            </h2>
+                            <div class="flex flex-col sm:flex-row gap-4">
+                                <div class="relative flex-grow">
+                                    <select id="empleado-select" class="w-full p-3 border-2 border-gray-300 rounded-xl text-lg appearance-none bg-white focus:ring-blue-500 focus:border-blue-500 transition duration-150 cursor-pointer shadow-inner">
+                                        <option value="">Seleccionar empleado... 🎅</option>
+                                        <!-- Los empleados se cargarán aquí vía JavaScript -->
+                                    </select>
+                                    <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                </div>
+                                <button id="agregar-participante-btn" class="ios-button py-3 px-6 bg-green-500 text-white font-semibold rounded-xl shadow-lg shadow-green-300/50 hover:bg-green-600 flex items-center justify-center gap-2 min-w-[150px]">
+                                    Añadir
+                                </button>
+                            </div>
+                            <div id="mensaje-agregar" class="mt-4 hidden"></div>
+                        </div>
+
+                        <!-- Módulo 2: Lista de Participantes -->
+                        <div class="glass-card rounded-3xl p-6">
+                            <h2 class="text-2xl font-bold text-gray-700 mb-4 flex items-center">
+                                <span class="mr-3 text-red-600">🎯</span>
+                                Lista de Participantes (<span id="contador-participantes">0</span>)
+                            </h2>
+                            <div id="lista-participantes" class="max-h-80 overflow-y-auto space-y-2">
+                                <!-- Los participantes se cargarán aquí vía JavaScript -->
                             </div>
                         </div>
                     </div>
 
-                    <button class="sorteo-button" id="sorteoBtn" onclick="realizarSorteo()">
-                        <span>🎲</span>
-                        <span>¡Realizar Sorteo Mágico!</span>
-                        <span>✨</span>
-                    </button>
+                    <!-- Columna Derecha: Botón de Acción y Estado (1/3 del ancho) -->
+                    <div class="lg:col-span-1 space-y-8">
+                        
+                        <!-- Módulo 3: Acciones Principales -->
+                        <div class="glass-card rounded-3xl p-6 flex flex-col items-center text-center">
+                            <div class="text-6xl mb-4" id="sorteo-icon">🎲</div>
+                            <h3 class="text-xl font-semibold text-gray-700 mb-4">Sorteo Mágico</h3>
+
+                            <!-- Botón de Sorteo Estilo Apple -->
+                            <button id="realizar-sorteo-btn" class="ios-button w-full py-4 bg-red-600 text-white font-extrabold rounded-2xl text-xl shadow-lg shadow-red-400/50 hover:bg-red-700 transition duration-300 flex items-center justify-center gap-3">
+                                <span>¡Realizar Sorteo!</span>
+                            </button>
+
+                            <p class="text-sm text-gray-500 mt-4" id="mensaje-sorteo">
+                                Mínimo 2 participantes requeridos.
+                            </p>
+                        </div>
+                        
+                        <!-- Módulo 4: Estado del Evento -->
+                        <div class="glass-card rounded-3xl p-6 border-l-4 border-yellow-500">
+                            <h3 class="text-xl font-semibold text-gray-700 mb-2 flex items-center">
+                                <span class="mr-2 text-yellow-500">🗓️</span>
+                                Detalles del Evento
+                            </h3>
+                            <ul class="text-sm text-gray-600 space-y-1" id="detalles-evento">
+                                <li>Fecha de Intercambio: <span class="font-medium">15 de Dic. 2024</span></li>
+                                <li>Estado del Sorteo: <span class="text-orange-600 font-medium" id="estado-sorteo">No realizado</span></li>
+                                <li>Monto Sugerido: <span class="font-medium">$500 MXN</span></li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
+
             {% else %}
-                <!-- Sección para usuarios regulares -->
-                <div class="user-section">
-                    {% if sorteo_realizado %}
-                        <div class="result-card">
-                            <h2 class="result-title">🎉 ¡Tu regalo navideño es para!</h2>
-                            <div class="assigned-person">{{ persona_asignada }}</div>
-                            <p class="result-message">
-                                ¡Prepara un regalo especial para esta persona! 🎁<br>
-                                Recuerda: el intercambio será el {{ fecha_intercambio|default:"próximamente" }}
-                            </p>
+                <!-- VISTA DEL USUARIO REGULAR -->
+                <div class="flex justify-center">
+                    <div class="glass-card rounded-3xl p-8 max-w-2xl w-full text-center">
+                        
+                        <!-- Contenido dinámico basado en el estado -->
+                        <div id="contenido-usuario">
+                            <!-- Se carga via JavaScript -->
                         </div>
-                    {% else %}
-                        <div class="waiting-message">
-                            <h2 class="waiting-title">⏳ Esperando el sorteo...</h2>
-                            <p class="waiting-subtitle">
-                                El administrador aún no ha realizado el sorteo navideño.<br>
-                                ¡Mantente atento para saber quién será tu intercambio! 🎅
-                            </p>
-                        </div>
-                    {% endif %}
+                        
+                    </div>
                 </div>
             {% endif %}
 
-            <!-- Botón de volver -->
-            <a href="{% url 'todos' %}" class="back-button">
-                <span>🏠</span>
-                Volver al Dashboard
-            </a>
+            <!-- Nota de Pie de Página -->
+            <div class="mt-12 text-center">
+                <a href="{% url 'todos' %}" class="ios-button inline-flex items-center gap-2 px-6 py-2 text-sm bg-gray-300 text-gray-700 font-medium rounded-full hover:bg-gray-400 shadow-md">
+                    <span>🏠</span>
+                    Volver al Dashboard
+                </a>
+            </div>
         </div>
-    </div>
+    </main>
 
+    <!-- JavaScript para funcionalidad -->
     <script>
         // Variables globales
-        let participants = [];
-        const employees = [
-            {% for employee in employees %}
-            {
-                id: {{ employee.id }},
-                name: "{{ employee.get_full_name|default:employee.username }}"
-            },
-            {% endfor %}
-        ];
+        let intercambioActual = null;
+        let participantes = [];
+        let empleadosDisponibles = [];
 
-        // Crear efectos de nieve
-        function createSnowflakes() {
-            const snowflakes = document.getElementById('snowflakes');
+        // CSRF Token
+        const csrfToken = '{{ csrf_token }}';
+
+        // Cargar datos iniciales
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarEmpleados();
+            cargarParticipantes();
             
-            for (let i = 0; i < 50; i++) {
-                const snowflake = document.createElement('div');
-                snowflake.className = 'snowflake';
-                snowflake.innerHTML = '❄️';
-                snowflake.style.left = Math.random() * 100 + 'vw';
-                snowflake.style.animationDuration = (Math.random() * 3 + 2) + 's';
-                snowflake.style.opacity = Math.random();
-                snowflake.style.fontSize = (Math.random() * 10 + 10) + 'px';
-                snowflake.style.animationDelay = Math.random() * 2 + 's';
-                snowflakes.appendChild(snowflake);
+            {% if not user.is_superuser %}
+                cargarEstadoUsuario();
+            {% endif %}
+        });
+
+        // Función para cargar empleados
+        async function cargarEmpleados() {
+            try {
+                const response = await fetch('/api/buscar-usuarios/', {
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                    }
+                });
+                
+                if (response.ok) {
+                    empleadosDisponibles = await response.json();
+                    actualizarSelectEmpleados();
+                }
+            } catch (error) {
+                console.error('Error cargando empleados:', error);
             }
         }
 
-        // Agregar participante
-        function addParticipant() {
-            const select = document.getElementById('userSelect');
-            const selectedOption = select.options[select.selectedIndex];
+        // Actualizar select de empleados
+        function actualizarSelectEmpleados() {
+            const select = document.getElementById('empleado-select');
+            if (!select) return;
             
-            if (!selectedOption.value) {
-                alert('🎅 Por favor selecciona un empleado');
-                return;
-            }
+            // Limpiar opciones existentes excepto la primera
+            select.innerHTML = '<option value="">Seleccionar empleado... 🎅</option>';
             
-            const participantId = parseInt(selectedOption.value);
-            const participantName = selectedOption.dataset.name;
-            
-            // Verificar si ya está agregado
-            if (participants.find(p => p.id === participantId)) {
-                alert('🎁 Este empleado ya está en el intercambio');
-                return;
-            }
-            
-            // Agregar a la lista
-            participants.push({
-                id: participantId,
-                name: participantName
+            // Agregar empleados que no están participando
+            empleadosDisponibles.forEach(empleado => {
+                const yaParticipa = participantes.some(p => p.usuario.id === empleado.id);
+                if (!yaParticipa) {
+                    const option = document.createElement('option');
+                    option.value = empleado.id;
+                    option.textContent = `${empleado.first_name} ${empleado.last_name}`.trim() || empleado.username;
+                    select.appendChild(option);
+                }
             });
-            
-            // Actualizar UI
-            updateParticipantsList();
-            
-            // Resetear select
-            select.selectedIndex = 0;
-            
-            // Agregar efecto sparkle
-            createSparkleEffect();
         }
 
-        // Actualizar lista de participantes
-        function updateParticipantsList() {
-            const list = document.getElementById('participantsList');
-            const emptyState = document.getElementById('emptyState');
-            const sorteoBtn = document.getElementById('sorteoBtn');
+        // Función para cargar participantes
+        async function cargarParticipantes() {
+            // Simular datos desde el backend - aquí harías la llamada real a tu API
+            try {
+                // Por ahora usamos datos mock, pero aquí irían los datos reales del backend
+                participantes = [];
+                actualizarListaParticipantes();
+                actualizarEstadoSorteo();
+            } catch (error) {
+                console.error('Error cargando participantes:', error);
+            }
+        }
+
+        // Actualizar lista de participantes en la UI
+        function actualizarListaParticipantes() {
+            const lista = document.getElementById('lista-participantes');
+            const contador = document.getElementById('contador-participantes');
             
-            if (participants.length === 0) {
-                emptyState.style.display = 'block';
-                sorteoBtn.disabled = true;
+            if (!lista || !contador) return;
+            
+            contador.textContent = participantes.length;
+            
+            if (participantes.length === 0) {
+                lista.innerHTML = '<div class="text-gray-500 text-center py-8">No hay participantes aún</div>';
                 return;
             }
             
-            emptyState.style.display = 'none';
-            sorteoBtn.disabled = participants.length < 2;
-            
-            list.innerHTML = participants.map(participant => `
-                <div class="participant-item">
-                    <span class="participant-name">🎄 ${participant.name}</span>
-                    <button class="remove-participant" onclick="removeParticipant(${participant.id})" title="Remover">
+            lista.innerHTML = participantes.map(participante => `
+                <div class="flex items-center justify-between p-3 bg-white rounded-xl shadow-sm border border-gray-100 transition duration-150 hover:bg-gray-50">
+                    <span class="text-gray-800 font-medium">
+                        🎄 ${participante.usuario.first_name} ${participante.usuario.last_name}
+                        ${participante.regalo_para ? ` → 🎁 ${participante.regalo_para.first_name} ${participante.regalo_para.last_name}` : ''}
+                    </span>
+                    <button onclick="eliminarParticipante(${participante.id})" class="ios-button bg-red-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold hover:bg-red-600 shadow-md">
                         ✕
                     </button>
                 </div>
             `).join('');
+            
+            actualizarSelectEmpleados();
         }
 
-        // Remover participante
-        function removeParticipant(participantId) {
-            participants = participants.filter(p => p.id !== participantId);
-            updateParticipantsList();
-        }
-
-        // Realizar sorteo
-        async function realizarSorteo() {
-            if (participants.length < 2) {
-                alert('🎅 Se necesitan al menos 2 participantes para el intercambio');
+        // Función para agregar participante
+        async function agregarParticipante() {
+            const select = document.getElementById('empleado-select');
+            const mensaje = document.getElementById('mensaje-agregar');
+            
+            if (!select.value) {
+                mostrarMensaje(mensaje, 'Selecciona un empleado', 'error');
                 return;
             }
-
-            const sorteoBtn = document.getElementById('sorteoBtn');
-            const animation = document.getElementById('sorteoAnimation');
-            
-            // Deshabilitar botón y mostrar animación
-            sorteoBtn.disabled = true;
-            sorteoBtn.classList.add('sorting');
-            animation.classList.add('active');
             
             try {
-                // Enviar datos al backend
-                const response = await fetch('{% url "realizar_sorteo_navidad" %}', {
+                // Aquí harías la llamada real al backend para agregar participante
+                const empleadoSeleccionado = empleadosDisponibles.find(e => e.id == select.value);
+                
+                // Simular agregado exitoso
+                const nuevoParticipante = {
+                    id: Date.now(), // ID temporal
+                    usuario: empleadoSeleccionado,
+                    regalo_para: null
+                };
+                
+                participantes.push(nuevoParticipante);
+                actualizarListaParticipantes();
+                select.value = '';
+                
+                mostrarMensaje(mensaje, '¡Participante agregado exitosamente!', 'success');
+                actualizarEstadoSorteo();
+                
+            } catch (error) {
+                console.error('Error agregando participante:', error);
+                mostrarMensaje(mensaje, 'Error al agregar participante', 'error');
+            }
+        }
+
+        // Función para eliminar participante
+        async function eliminarParticipante(id) {
+            if (!confirm('¿Estás seguro de eliminar este participante?')) return;
+            
+            try {
+                // Aquí harías la llamada real al backend para eliminar
+                participantes = participantes.filter(p => p.id !== id);
+                actualizarListaParticipantes();
+                actualizarEstadoSorteo();
+                
+            } catch (error) {
+                console.error('Error eliminando participante:', error);
+            }
+        }
+
+        // Función para realizar sorteo
+        async function realizarSorteo() {
+            if (participantes.length < 2) {
+                alert('Se necesitan al menos 2 participantes para realizar el sorteo');
+                return;
+            }
+            
+            const btn = document.getElementById('realizar-sorteo-btn');
+            const icon = document.getElementById('sorteo-icon');
+            const mensaje = document.getElementById('mensaje-sorteo');
+            
+            // Animación de sorteo
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading-dots">Realizando sorteo</span>';
+            icon.classList.add('sorteo-animacion');
+            
+            try {
+                // Llamada real al backend para realizar sorteo
+                const response = await fetch('/api/realizar-sorteo-navidad/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken')
+                        'X-CSRFToken': csrfToken,
                     },
-                    body: JSON.stringify({
-                        participants: participants
-                    })
+                    body: JSON.stringify({})
                 });
                 
-                if (!response.ok) {
-                    throw new Error('Error en el servidor');
-                }
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Simular tiempo de sorteo para el efecto
+                if (response.ok) {
+                    const resultado = await response.json();
+                    
                     setTimeout(() => {
-                        animation.classList.remove('active');
-                        alert('🎉 ¡Sorteo realizado exitosamente! Los empleados ya pueden ver sus asignaciones.');
+                        icon.classList.remove('sorteo-animacion');
+                        btn.innerHTML = '¡Sorteo Completado!';
+                        btn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                        btn.classList.add('bg-green-600', 'hover:bg-green-700');
                         
-                        // Opcional: recargar página
-                        window.location.reload();
-                    }, 3000);
+                        mensaje.innerHTML = '<span class="text-green-600 font-medium">¡Sorteo realizado exitosamente!</span>';
+                        document.getElementById('estado-sorteo').innerHTML = '<span class="text-green-600 font-medium">Completado</span>';
+                        
+                        // Recargar participantes para mostrar asignaciones
+                        cargarParticipantes();
+                    }, 2000);
+                    
                 } else {
-                    throw new Error(data.error || 'Error desconocido');
+                    throw new Error('Error en el sorteo');
                 }
                 
             } catch (error) {
-                console.error('Error:', error);
-                animation.classList.remove('active');
-                sorteoBtn.disabled = false;
-                sorteoBtn.classList.remove('sorting');
-                alert('❌ Error al realizar el sorteo: ' + error.message);
+                console.error('Error realizando sorteo:', error);
+                icon.classList.remove('sorteo-animacion');
+                btn.disabled = false;
+                btn.innerHTML = '<span>¡Realizar Sorteo!</span>';
+                mensaje.innerHTML = '<span class="text-red-600 font-medium">Error al realizar el sorteo</span>';
             }
         }
 
-        // Crear efecto sparkle
-        function createSparkleEffect() {
-            const card = document.querySelector('.gift-card');
+        // Función para cargar estado del usuario
+        async function cargarEstadoUsuario() {
+            const contenido = document.getElementById('contenido-usuario');
+            if (!contenido) return;
             
-            for (let i = 0; i < 5; i++) {
-                const sparkle = document.createElement('div');
-                sparkle.className = 'sparkle';
-                sparkle.style.left = Math.random() * 100 + '%';
-                sparkle.style.top = Math.random() * 100 + '%';
-                sparkle.style.width = Math.random() * 4 + 2 + 'px';
-                sparkle.style.height = sparkle.style.width;
-                sparkle.style.animationDelay = Math.random() * 1 + 's';
-                
-                card.appendChild(sparkle);
-                
-                // Remover después de la animación
-                setTimeout(() => {
-                    sparkle.remove();
-                }, 2000);
+            // Por ahora mostrar estado de espera, aquí cargarías el estado real del backend
+            contenido.innerHTML = `
+                <div class="text-6xl mb-6">⏳</div>
+                <h2 class="text-3xl font-bold text-gray-700 mb-4">Esperando Sorteo</h2>
+                <p class="text-gray-600 mb-6">
+                    El administrador aún no ha realizado el sorteo navideño. 
+                    ¡Te notificaremos cuando sepas quién te tocó! 🎁
+                </p>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                    <p class="text-yellow-800 text-sm">
+                        💡 <strong>Recuerda:</strong> El monto sugerido es de $500 MXN
+                    </p>
+                </div>
+            `;
+        }
+
+        // Función para actualizar estado del sorteo
+        function actualizarEstadoSorteo() {
+            const btn = document.getElementById('realizar-sorteo-btn');
+            const mensaje = document.getElementById('mensaje-sorteo');
+            
+            if (!btn || !mensaje) return;
+            
+            if (participantes.length < 2) {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                mensaje.textContent = 'Mínimo 2 participantes requeridos.';
+            } else {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                mensaje.textContent = `¡Listo para sortear! (${participantes.length} participantes)`;
             }
         }
 
-        // Función para obtener cookie CSRF
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
+        // Función para mostrar mensajes
+        function mostrarMensaje(elemento, texto, tipo) {
+            if (!elemento) return;
+            
+            elemento.className = `mt-4 p-3 rounded-lg text-sm ${
+                tipo === 'success' 
+                    ? 'bg-green-100 text-green-700 border border-green-200' 
+                    : 'bg-red-100 text-red-700 border border-red-200'
+            }`;
+            elemento.textContent = texto;
+            elemento.classList.remove('hidden');
+            
+            setTimeout(() => {
+                elemento.classList.add('hidden');
+            }, 3000);
         }
 
-        // Inicializar efectos
+        // Event listeners
         document.addEventListener('DOMContentLoaded', function() {
-            createSnowflakes();
-            updateParticipantsList();
+            const agregarBtn = document.getElementById('agregar-participante-btn');
+            const sorteoBtn = document.getElementById('realizar-sorteo-btn');
             
-            // Agregar token CSRF si no existe
-            if (!document.querySelector('[name=csrfmiddlewaretoken]')) {
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = 'csrfmiddlewaretoken';
-                csrfInput.value = getCookie('csrftoken');
-                document.body.appendChild(csrfInput);
+            if (agregarBtn) {
+                agregarBtn.addEventListener('click', agregarParticipante);
+            }
+            
+            if (sorteoBtn) {
+                sorteoBtn.addEventListener('click', realizarSorteo);
             }
         });
-    </script>
 
-    <!-- CSRF Token -->
-    {% csrf_token %}
+    </script>
 </body>
 </html>
