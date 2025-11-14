@@ -59,6 +59,10 @@ urlpatterns = [
     # URLs para Intercambio Navideño 🎄
     path("intercambio-navidad/", views.intercambio_navidad, name="intercambio_navidad"),
     path("api/realizar-sorteo-navidad/", views.realizar_sorteo_navidad, name="realizar_sorteo_navidad"),
+    path("api/agregar-participante-navidad/", views.agregar_participante_navidad, name="agregar_participante_navidad"),
+    path("api/eliminar-participante-navidad/", views.eliminar_participante_navidad, name="eliminar_participante_navidad"),
+    path("api/listar-participantes-navidad/", views.listar_participantes_navidad, name="listar_participantes_navidad"),
+    path("api/actualizar-evento-navidad/", views.actualizar_evento_navidad, name="actualizar_evento_navidad"),
 
     # Ruta para la lista de todas las oportunidades de venta (o las del usuario)
     path("todos/", views.todos, name="todos"),

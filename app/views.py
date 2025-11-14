@@ -10939,3 +10939,179 @@ def realizar_sorteo_navidad(request):
         print(traceback.format_exc())
         return JsonResponse({'error': f'Error interno del servidor: {str(e)}'}, status=500)
 
+
+@csrf_exempt
+def agregar_participante_navidad(request):
+    """Agregar participante al intercambio navideño"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+        
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        empleado_id = data.get('empleado_id')
+        
+        if not empleado_id:
+            return JsonResponse({'error': 'ID de empleado requerido'}, status=400)
+        
+        # Obtener usuario
+        empleado = User.objects.get(id=empleado_id)
+        
+        # Crear o obtener intercambio del año actual
+        año_actual = datetime.now().year
+        intercambio, created = IntercambioNavidad.objects.get_or_create(
+            año=año_actual,
+            defaults={'fecha_intercambio': datetime(año_actual, 12, 15).date()}
+        )
+        
+        # Verificar si ya está participando
+        if ParticipanteIntercambio.objects.filter(intercambio=intercambio, usuario=empleado).exists():
+            return JsonResponse({'error': 'El empleado ya está participando'}, status=400)
+        
+        # Agregar participante
+        participante = ParticipanteIntercambio.objects.create(
+            intercambio=intercambio,
+            usuario=empleado
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'participante': {
+                'id': participante.id,
+                'usuario': {
+                    'id': empleado.id,
+                    'first_name': empleado.first_name,
+                    'last_name': empleado.last_name,
+                    'username': empleado.username
+                }
+            }
+        })
+        
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+def eliminar_participante_navidad(request):
+    """Eliminar participante del intercambio navideño"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+        
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        participante_id = data.get('participante_id')
+        
+        if not participante_id:
+            return JsonResponse({'error': 'ID de participante requerido'}, status=400)
+        
+        # Eliminar participante
+        participante = ParticipanteIntercambio.objects.get(id=participante_id)
+        participante.delete()
+        
+        return JsonResponse({'success': True})
+        
+    except ParticipanteIntercambio.DoesNotExist:
+        return JsonResponse({'error': 'Participante no encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+def listar_participantes_navidad(request):
+    """Listar participantes del intercambio navideño"""
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        año_actual = datetime.now().year
+        intercambio = IntercambioNavidad.objects.filter(año=año_actual).first()
+        
+        if not intercambio:
+            return JsonResponse({'participantes': []})
+        
+        participantes = ParticipanteIntercambio.objects.filter(intercambio=intercambio)
+        
+        data = []
+        for participante in participantes:
+            regalo_para = None
+            if participante.regalo_para:
+                regalo_para = {
+                    'id': participante.regalo_para.id,
+                    'first_name': participante.regalo_para.first_name,
+                    'last_name': participante.regalo_para.last_name,
+                    'username': participante.regalo_para.username
+                }
+            
+            data.append({
+                'id': participante.id,
+                'usuario': {
+                    'id': participante.usuario.id,
+                    'first_name': participante.usuario.first_name,
+                    'last_name': participante.usuario.last_name,
+                    'username': participante.usuario.username
+                },
+                'regalo_para': regalo_para
+            })
+        
+        return JsonResponse({'participantes': data})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+def actualizar_evento_navidad(request):
+    """Actualizar configuración del evento navideño"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+        
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        fecha_intercambio = data.get('fecha_intercambio')
+        monto_sugerido = data.get('monto_sugerido', 500)
+        descripcion = data.get('descripcion', '')
+        
+        if not fecha_intercambio:
+            return JsonResponse({'error': 'Fecha del intercambio es requerida'}, status=400)
+        
+        # Crear o obtener intercambio del año actual
+        año_actual = datetime.now().year
+        intercambio, created = IntercambioNavidad.objects.get_or_create(
+            año=año_actual,
+            defaults={
+                'fecha_intercambio': fecha_intercambio,
+                'monto_sugerido': monto_sugerido,
+                'descripcion': descripcion
+            }
+        )
+        
+        # Si ya existe, actualizar los valores
+        if not created:
+            intercambio.fecha_intercambio = fecha_intercambio
+            intercambio.monto_sugerido = monto_sugerido
+            intercambio.descripcion = descripcion
+            intercambio.save()
+        
+        return JsonResponse({
+            'success': True,
+            'intercambio': {
+                'id': intercambio.id,
+                'fecha_intercambio': intercambio.fecha_intercambio.strftime('%Y-%m-%d'),
+                'monto_sugerido': intercambio.monto_sugerido,
+                'descripcion': intercambio.descripcion
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+

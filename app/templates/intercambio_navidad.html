@@ -102,7 +102,7 @@
                 </div>
                 <div class="text-right">
                     {% if user.is_superuser %}
-                        <button class="ios-button inline-flex items-center gap-2 px-5 py-2 text-sm bg-gray-200 text-gray-700 font-semibold rounded-full hover:bg-gray-300 shadow-md">
+                        <button id="ajustes-evento-btn" class="ios-button inline-flex items-center gap-2 px-5 py-2 text-sm bg-gray-200 text-gray-700 font-semibold rounded-full hover:bg-gray-300 shadow-md">
                             <span>⚙️</span>
                             Ajustes de Evento
                         </button>
@@ -211,6 +211,89 @@
         </div>
     </main>
 
+    <!-- Modal de Ajustes del Evento -->
+    <div id="modal-ajustes" class="fixed inset-0 z-50 hidden">
+        <!-- Overlay -->
+        <div class="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+        
+        <!-- Modal Content -->
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="glass-card rounded-3xl p-8 max-w-md w-full mx-4 relative">
+                <!-- Botón cerrar -->
+                <button id="cerrar-modal-ajustes" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl leading-none">
+                    ×
+                </button>
+                
+                <!-- Header del modal -->
+                <div class="text-center mb-6">
+                    <div class="text-4xl mb-4">⚙️</div>
+                    <h3 class="text-2xl font-bold text-gray-800">Ajustes del Evento</h3>
+                    <p class="text-gray-600 mt-2">Configura los detalles del intercambio navideño</p>
+                </div>
+                
+                <!-- Formulario -->
+                <form id="form-ajustes-evento" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            📅 Fecha del Intercambio
+                        </label>
+                        <input 
+                            type="date" 
+                            id="fecha-intercambio" 
+                            class="w-full p-3 border-2 border-gray-300 rounded-xl text-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                            required
+                        >
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            💰 Monto Sugerido (MXN)
+                        </label>
+                        <input 
+                            type="number" 
+                            id="monto-sugerido" 
+                            class="w-full p-3 border-2 border-gray-300 rounded-xl text-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                            placeholder="500"
+                            min="1"
+                            step="1"
+                        >
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            📝 Descripción (Opcional)
+                        </label>
+                        <textarea 
+                            id="descripcion-evento" 
+                            class="w-full p-3 border-2 border-gray-300 rounded-xl text-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 resize-none"
+                            placeholder="Detalles adicionales del evento..."
+                            rows="3"
+                        ></textarea>
+                    </div>
+                    
+                    <!-- Botones -->
+                    <div class="flex gap-3 mt-6">
+                        <button 
+                            type="button" 
+                            id="cancelar-ajustes"
+                            class="ios-button flex-1 py-3 px-4 bg-gray-500 text-white font-semibold rounded-xl hover:bg-gray-600 transition duration-300"
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            type="submit"
+                            class="ios-button flex-1 py-3 px-4 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 transition duration-300"
+                        >
+                            Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+                
+                <div id="mensaje-ajustes" class="mt-4 hidden"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript para funcionalidad -->
     <script>
         // Variables globales
@@ -234,15 +317,22 @@
         // Función para cargar empleados
         async function cargarEmpleados() {
             try {
-                const response = await fetch('/api/buscar-usuarios/', {
+                const response = await fetch('/app/api/buscar-usuarios/', {
                     headers: {
                         'X-CSRFToken': csrfToken,
                     }
                 });
                 
                 if (response.ok) {
-                    empleadosDisponibles = await response.json();
-                    actualizarSelectEmpleados();
+                    const data = await response.json();
+                    if (data.success && data.usuarios) {
+                        empleadosDisponibles = data.usuarios;
+                        actualizarSelectEmpleados();
+                    } else {
+                        console.error('Formato de respuesta inesperado:', data);
+                    }
+                } else {
+                    console.error('Error en respuesta:', response.status);
                 }
             } catch (error) {
                 console.error('Error cargando empleados:', error);
@@ -263,7 +353,7 @@
                 if (!yaParticipa) {
                     const option = document.createElement('option');
                     option.value = empleado.id;
-                    option.textContent = `${empleado.first_name} ${empleado.last_name}`.trim() || empleado.username;
+                    option.textContent = empleado.nombre || `${empleado.first_name || ''} ${empleado.last_name || ''}`.trim() || empleado.username;
                     select.appendChild(option);
                 }
             });
@@ -271,12 +361,21 @@
 
         // Función para cargar participantes
         async function cargarParticipantes() {
-            // Simular datos desde el backend - aquí harías la llamada real a tu API
             try {
-                // Por ahora usamos datos mock, pero aquí irían los datos reales del backend
-                participantes = [];
-                actualizarListaParticipantes();
-                actualizarEstadoSorteo();
+                const response = await fetch('/app/api/listar-participantes-navidad/', {
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    participantes = data.participantes || [];
+                    actualizarListaParticipantes();
+                    actualizarEstadoSorteo();
+                } else {
+                    console.error('Error obteniendo participantes:', response.status);
+                }
             } catch (error) {
                 console.error('Error cargando participantes:', error);
             }
@@ -322,22 +421,27 @@
             }
             
             try {
-                // Aquí harías la llamada real al backend para agregar participante
-                const empleadoSeleccionado = empleadosDisponibles.find(e => e.id == select.value);
+                const response = await fetch('/app/api/agregar-participante-navidad/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken,
+                    },
+                    body: JSON.stringify({
+                        empleado_id: select.value
+                    })
+                });
                 
-                // Simular agregado exitoso
-                const nuevoParticipante = {
-                    id: Date.now(), // ID temporal
-                    usuario: empleadoSeleccionado,
-                    regalo_para: null
-                };
+                const data = await response.json();
                 
-                participantes.push(nuevoParticipante);
-                actualizarListaParticipantes();
-                select.value = '';
-                
-                mostrarMensaje(mensaje, '¡Participante agregado exitosamente!', 'success');
-                actualizarEstadoSorteo();
+                if (response.ok && data.success) {
+                    // Recargar participantes para mostrar el nuevo
+                    await cargarParticipantes();
+                    select.value = '';
+                    mostrarMensaje(mensaje, '¡Participante agregado exitosamente!', 'success');
+                } else {
+                    mostrarMensaje(mensaje, data.error || 'Error al agregar participante', 'error');
+                }
                 
             } catch (error) {
                 console.error('Error agregando participante:', error);
@@ -350,10 +454,25 @@
             if (!confirm('¿Estás seguro de eliminar este participante?')) return;
             
             try {
-                // Aquí harías la llamada real al backend para eliminar
-                participantes = participantes.filter(p => p.id !== id);
-                actualizarListaParticipantes();
-                actualizarEstadoSorteo();
+                const response = await fetch('/app/api/eliminar-participante-navidad/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken,
+                    },
+                    body: JSON.stringify({
+                        participante_id: id
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Recargar participantes para refrescar la lista
+                    await cargarParticipantes();
+                } else {
+                    console.error('Error eliminando participante:', data.error);
+                }
                 
             } catch (error) {
                 console.error('Error eliminando participante:', error);
@@ -378,7 +497,7 @@
             
             try {
                 // Llamada real al backend para realizar sorteo
-                const response = await fetch('/api/realizar-sorteo-navidad/', {
+                const response = await fetch('/app/api/realizar-sorteo-navidad/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -472,10 +591,102 @@
             }, 3000);
         }
 
+        // Funciones para el modal de ajustes
+        function abrirModalAjustes() {
+            const modal = document.getElementById('modal-ajustes');
+            modal.classList.remove('hidden');
+            cargarDatosEventoActual();
+        }
+        
+        function cerrarModalAjustes() {
+            const modal = document.getElementById('modal-ajustes');
+            modal.classList.add('hidden');
+        }
+        
+        async function cargarDatosEventoActual() {
+            // Cargar datos del evento actual si existen
+            const fechaInput = document.getElementById('fecha-intercambio');
+            const montoInput = document.getElementById('monto-sugerido');
+            const descripcionInput = document.getElementById('descripcion-evento');
+            
+            // Establecer fecha por defecto (15 de diciembre del año actual)
+            const añoActual = new Date().getFullYear();
+            fechaInput.value = `${añoActual}-12-15`;
+            montoInput.value = '500';
+            descripcionInput.value = '';
+        }
+        
+        async function guardarAjustesEvento(event) {
+            event.preventDefault();
+            
+            const fechaInput = document.getElementById('fecha-intercambio');
+            const montoInput = document.getElementById('monto-sugerido');
+            const descripcionInput = document.getElementById('descripcion-evento');
+            const mensaje = document.getElementById('mensaje-ajustes');
+            
+            if (!fechaInput.value) {
+                mostrarMensajeModal(mensaje, 'La fecha es requerida', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/app/api/actualizar-evento-navidad/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken,
+                    },
+                    body: JSON.stringify({
+                        fecha_intercambio: fechaInput.value,
+                        monto_sugerido: parseFloat(montoInput.value) || 500,
+                        descripcion: descripcionInput.value
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    mostrarMensajeModal(mensaje, '¡Ajustes guardados exitosamente!', 'success');
+                    setTimeout(() => {
+                        cerrarModalAjustes();
+                        location.reload(); // Recargar para mostrar cambios
+                    }, 1500);
+                } else {
+                    mostrarMensajeModal(mensaje, data.error || 'Error al guardar ajustes', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error guardando ajustes:', error);
+                mostrarMensajeModal(mensaje, 'Error de conexión', 'error');
+            }
+        }
+        
+        function mostrarMensajeModal(elemento, texto, tipo) {
+            if (!elemento) return;
+            
+            elemento.className = `mt-4 p-3 rounded-lg text-sm ${
+                tipo === 'success' 
+                    ? 'bg-green-100 text-green-700 border border-green-200' 
+                    : 'bg-red-100 text-red-700 border border-red-200'
+            }`;
+            elemento.textContent = texto;
+            elemento.classList.remove('hidden');
+            
+            if (tipo === 'success') {
+                setTimeout(() => {
+                    elemento.classList.add('hidden');
+                }, 3000);
+            }
+        }
+
         // Event listeners
         document.addEventListener('DOMContentLoaded', function() {
             const agregarBtn = document.getElementById('agregar-participante-btn');
             const sorteoBtn = document.getElementById('realizar-sorteo-btn');
+            const ajustesBtn = document.getElementById('ajustes-evento-btn');
+            const cerrarModalBtn = document.getElementById('cerrar-modal-ajustes');
+            const cancelarBtn = document.getElementById('cancelar-ajustes');
+            const formAjustes = document.getElementById('form-ajustes-evento');
             
             if (agregarBtn) {
                 agregarBtn.addEventListener('click', agregarParticipante);
@@ -483,6 +694,32 @@
             
             if (sorteoBtn) {
                 sorteoBtn.addEventListener('click', realizarSorteo);
+            }
+            
+            if (ajustesBtn) {
+                ajustesBtn.addEventListener('click', abrirModalAjustes);
+            }
+            
+            if (cerrarModalBtn) {
+                cerrarModalBtn.addEventListener('click', cerrarModalAjustes);
+            }
+            
+            if (cancelarBtn) {
+                cancelarBtn.addEventListener('click', cerrarModalAjustes);
+            }
+            
+            if (formAjustes) {
+                formAjustes.addEventListener('submit', guardarAjustesEvento);
+            }
+            
+            // Cerrar modal al hacer clic en el overlay
+            const modal = document.getElementById('modal-ajustes');
+            if (modal) {
+                modal.addEventListener('click', function(event) {
+                    if (event.target === modal) {
+                        cerrarModalAjustes();
+                    }
+                });
             }
         });
 
