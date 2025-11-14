@@ -335,4 +335,3 @@ class HistorialIntercambioAdmin(admin.ModelAdmin):
     
     def has_change_permission(self, request, obj=None):
         return False  # No permitir editar registros
-EOF < /dev/null
