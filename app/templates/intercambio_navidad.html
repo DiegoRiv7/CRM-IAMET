@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎄 Intercambio Navideño - {{ request.user.get_full_name|default:request.user.username }}</title>
+    <style>
+        :root {
+            --christmas-red: #c41e3a;
+            --christmas-green: #2d5016;
+            --christmas-gold: #ffd700;
+            --snow-white: #ffffff;
+            --apple-blue: #007aff;
+            --apple-gray: #8e8e93;
+            --apple-light-gray: #f2f2f7;
+            --shadow-light: rgba(0, 0, 0, 0.1);
+            --shadow-medium: rgba(0, 0, 0, 0.2);
+            --shadow-heavy: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, 
+                var(--christmas-red) 0%, 
+                #8b0000 50%, 
+                var(--christmas-green) 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animación de nieve */
+        .snowflakes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .snowflake {
+            position: absolute;
+            top: -10px;
+            color: var(--snow-white);
+            user-select: none;
+            animation: snowfall linear infinite;
+            opacity: 0.8;
+        }
+
+        @keyframes snowfall {
+            from {
+                transform: translateY(-100vh) rotate(0deg);
+            }
+            to {
+                transform: translateY(100vh) rotate(360deg);
+            }
+        }
+
+        /* Container principal */
+        .christmas-container {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .gift-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 3rem;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            position: relative;
+        }
+
+        /* Header navideño */
+        .christmas-header {
+            margin-bottom: 2rem;
+        }
+
+        .christmas-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--christmas-red), var(--christmas-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .christmas-subtitle {
+            color: var(--apple-gray);
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .decoration-line {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin: 1.5rem 0;
+            font-size: 1.5rem;
+        }
+
+        .decoration-line::before,
+        .decoration-line::after {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--christmas-gold), transparent);
+        }
+
+        /* Sección para superusuarios */
+        .admin-section {
+            margin-bottom: 2rem;
+        }
+
+        .participants-section {
+            text-align: left;
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--christmas-green);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-selector {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .select-dropdown {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid var(--apple-light-gray);
+            border-radius: 12px;
+            font-size: 1rem;
+            background: var(--snow-white);
+            transition: all 0.3s ease;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .select-dropdown:focus {
+            outline: none;
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
+        .select-dropdown::after {
+            content: '🎁';
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        .add-participant-btn {
+            background: linear-gradient(135deg, var(--christmas-green), #4a7c59);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0 auto;
+        }
+
+        .add-participant-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(45, 80, 22, 0.3);
+        }
+
+        .add-participant-btn:active {
+            transform: translateY(0);
+        }
+
+        .participants-list {
+            background: var(--apple-light-gray);
+            border-radius: 12px;
+            padding: 1rem;
+            min-height: 120px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 1.5rem;
+        }
+
+        .participant-item {
+            background: white;
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow-light);
+            animation: participantSlideIn 0.3s ease;
+        }
+
+        .participant-item:last-child {
+            margin-bottom: 0;
+        }
+
+        @keyframes participantSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .participant-name {
+            font-weight: 500;
+            color: var(--christmas-green);
+        }
+
+        .remove-participant {
+            background: var(--christmas-red);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.8rem;
+        }
+
+        .remove-participant:hover {
+            background: #a01729;
+            transform: scale(1.1);
+        }
+
+        /* Botón de sorteo */
+        .sorteo-button {
+            background: linear-gradient(135deg, var(--christmas-red), #dc143c);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 30px rgba(196, 30, 58, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin: 0 auto;
+            min-width: 200px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sorteo-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(196, 30, 58, 0.5);
+        }
+
+        .sorteo-button:active {
+            transform: translateY(-1px);
+        }
+
+        .sorteo-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 4px 15px rgba(196, 30, 58, 0.2);
+        }
+
+        .sorteo-button.sorting {
+            animation: sorteoShake 0.5s infinite;
+        }
+
+        @keyframes sorteoShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+
+        /* Animación de sorteo */
+        .sorteo-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            flex-direction: column;
+        }
+
+        .sorteo-animation.active {
+            display: flex;
+        }
+
+        .gift-box {
+            font-size: 8rem;
+            animation: giftShake 0.5s infinite;
+            margin-bottom: 2rem;
+        }
+
+        @keyframes giftShake {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(-5deg) scale(1.1); }
+            75% { transform: rotate(5deg) scale(1.1); }
+        }
+
+        .sorteo-text {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .loading-dots {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .loading-dot {
+            width: 12px;
+            height: 12px;
+            background: var(--christmas-gold);
+            border-radius: 50%;
+            animation: loadingBounce 1.4s infinite ease-in-out both;
+        }
+
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes loadingBounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* Sección para usuarios regulares */
+        .user-section {
+            text-align: center;
+        }
+
+        .waiting-message {
+            background: linear-gradient(135deg, var(--apple-blue), #5ac8fa);
+            color: white;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 30px rgba(0, 122, 255, 0.3);
+        }
+
+        .waiting-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .waiting-subtitle {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, var(--christmas-green), #4a7c59);
+            color: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 12px 40px rgba(45, 80, 22, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+        }
+
+        .result-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .assigned-person {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--christmas-gold);
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .result-message {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Botón de volver */
+        .back-button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 2rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        /* Estados vacíos */
+        .empty-state {
+            text-align: center;
+            color: var(--apple-gray);
+            font-style: italic;
+            padding: 2rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .christmas-container {
+                padding: 1rem;
+            }
+            
+            .gift-card {
+                padding: 2rem;
+                margin: 0;
+            }
+            
+            .christmas-title {
+                font-size: 2rem;
+            }
+            
+            .gift-box {
+                font-size: 6rem;
+            }
+        }
+
+        /* Efectos especiales para Christmas */
+        .sparkle {
+            position: absolute;
+            background: var(--christmas-gold);
+            border-radius: 50%;
+            animation: sparkle 2s infinite;
+        }
+
+        @keyframes sparkle {
+            0%, 100% {
+                opacity: 0;
+                transform: scale(0);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Efectos de nieve -->
+    <div class="snowflakes" id="snowflakes"></div>
+
+    <!-- Animación de sorteo -->
+    <div class="sorteo-animation" id="sorteoAnimation">
+        <div class="gift-box">🎁</div>
+        <div class="sorteo-text">Realizando sorteo mágico...</div>
+        <div class="loading-dots">
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+        </div>
+    </div>
+
+    <div class="christmas-container">
+        <div class="gift-card">
+            <!-- Header -->
+            <div class="christmas-header">
+                <h1 class="christmas-title">🎄 Intercambio Navideño 🎁</h1>
+                <p class="christmas-subtitle">¡Es momento de compartir la magia navideña!</p>
+                <div class="decoration-line">
+                    <span>🎄</span>
+                    <span>❄️</span>
+                    <span>🎁</span>
+                    <span>⭐</span>
+                    <span>🎄</span>
+                </div>
+            </div>
+
+            <!-- Contenido dinámico según el usuario -->
+            {% if user.is_superuser %}
+                <!-- Sección para superusuarios -->
+                <div class="admin-section">
+                    <div class="participants-section">
+                        <h2 class="section-title">
+                            👥 Agregar Participantes
+                        </h2>
+                        <div class="user-selector">
+                            <select class="select-dropdown" id="userSelect">
+                                <option value="">Seleccionar empleado... 🎅</option>
+                                {% for employee in employees %}
+                                <option value="{{ employee.id }}" data-name="{{ employee.get_full_name|default:employee.username }}">
+                                    {{ employee.get_full_name|default:employee.username }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button class="add-participant-btn" onclick="addParticipant()">
+                            <span>➕</span>
+                            Agregar al Intercambio
+                        </button>
+                    </div>
+
+                    <div class="participants-section">
+                        <h2 class="section-title">
+                            🎯 Participantes del Intercambio
+                        </h2>
+                        <div class="participants-list" id="participantsList">
+                            <div class="empty-state" id="emptyState">
+                                No hay participantes aún... ¡Comienza agregando algunos! 🎄
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="sorteo-button" id="sorteoBtn" onclick="realizarSorteo()">
+                        <span>🎲</span>
+                        <span>¡Realizar Sorteo Mágico!</span>
+                        <span>✨</span>
+                    </button>
+                </div>
+            {% else %}
+                <!-- Sección para usuarios regulares -->
+                <div class="user-section">
+                    {% if sorteo_realizado %}
+                        <div class="result-card">
+                            <h2 class="result-title">🎉 ¡Tu regalo navideño es para!</h2>
+                            <div class="assigned-person">{{ persona_asignada }}</div>
+                            <p class="result-message">
+                                ¡Prepara un regalo especial para esta persona! 🎁<br>
+                                Recuerda: el intercambio será el {{ fecha_intercambio|default:"próximamente" }}
+                            </p>
+                        </div>
+                    {% else %}
+                        <div class="waiting-message">
+                            <h2 class="waiting-title">⏳ Esperando el sorteo...</h2>
+                            <p class="waiting-subtitle">
+                                El administrador aún no ha realizado el sorteo navideño.<br>
+                                ¡Mantente atento para saber quién será tu intercambio! 🎅
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <!-- Botón de volver -->
+            <a href="{% url 'todos' %}" class="back-button">
+                <span>🏠</span>
+                Volver al Dashboard
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let participants = [];
+        const employees = [
+            {% for employee in employees %}
+            {
+                id: {{ employee.id }},
+                name: "{{ employee.get_full_name|default:employee.username }}"
+            },
+            {% endfor %}
+        ];
+
+        // Crear efectos de nieve
+        function createSnowflakes() {
+            const snowflakes = document.getElementById('snowflakes');
+            
+            for (let i = 0; i < 50; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.className = 'snowflake';
+                snowflake.innerHTML = '❄️';
+                snowflake.style.left = Math.random() * 100 + 'vw';
+                snowflake.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                snowflake.style.opacity = Math.random();
+                snowflake.style.fontSize = (Math.random() * 10 + 10) + 'px';
+                snowflake.style.animationDelay = Math.random() * 2 + 's';
+                snowflakes.appendChild(snowflake);
+            }
+        }
+
+        // Agregar participante
+        function addParticipant() {
+            const select = document.getElementById('userSelect');
+            const selectedOption = select.options[select.selectedIndex];
+            
+            if (!selectedOption.value) {
+                alert('🎅 Por favor selecciona un empleado');
+                return;
+            }
+            
+            const participantId = parseInt(selectedOption.value);
+            const participantName = selectedOption.dataset.name;
+            
+            // Verificar si ya está agregado
+            if (participants.find(p => p.id === participantId)) {
+                alert('🎁 Este empleado ya está en el intercambio');
+                return;
+            }
+            
+            // Agregar a la lista
+            participants.push({
+                id: participantId,
+                name: participantName
+            });
+            
+            // Actualizar UI
+            updateParticipantsList();
+            
+            // Resetear select
+            select.selectedIndex = 0;
+            
+            // Agregar efecto sparkle
+            createSparkleEffect();
+        }
+
+        // Actualizar lista de participantes
+        function updateParticipantsList() {
+            const list = document.getElementById('participantsList');
+            const emptyState = document.getElementById('emptyState');
+            const sorteoBtn = document.getElementById('sorteoBtn');
+            
+            if (participants.length === 0) {
+                emptyState.style.display = 'block';
+                sorteoBtn.disabled = true;
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            sorteoBtn.disabled = participants.length < 2;
+            
+            list.innerHTML = participants.map(participant => `
+                <div class="participant-item">
+                    <span class="participant-name">🎄 ${participant.name}</span>
+                    <button class="remove-participant" onclick="removeParticipant(${participant.id})" title="Remover">
+                        ✕
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Remover participante
+        function removeParticipant(participantId) {
+            participants = participants.filter(p => p.id !== participantId);
+            updateParticipantsList();
+        }
+
+        // Realizar sorteo
+        async function realizarSorteo() {
+            if (participants.length < 2) {
+                alert('🎅 Se necesitan al menos 2 participantes para el intercambio');
+                return;
+            }
+
+            const sorteoBtn = document.getElementById('sorteoBtn');
+            const animation = document.getElementById('sorteoAnimation');
+            
+            // Deshabilitar botón y mostrar animación
+            sorteoBtn.disabled = true;
+            sorteoBtn.classList.add('sorting');
+            animation.classList.add('active');
+            
+            try {
+                // Enviar datos al backend
+                const response = await fetch('{% url "realizar_sorteo_navidad" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        participants: participants
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Error en el servidor');
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Simular tiempo de sorteo para el efecto
+                    setTimeout(() => {
+                        animation.classList.remove('active');
+                        alert('🎉 ¡Sorteo realizado exitosamente! Los empleados ya pueden ver sus asignaciones.');
+                        
+                        // Opcional: recargar página
+                        window.location.reload();
+                    }, 3000);
+                } else {
+                    throw new Error(data.error || 'Error desconocido');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                animation.classList.remove('active');
+                sorteoBtn.disabled = false;
+                sorteoBtn.classList.remove('sorting');
+                alert('❌ Error al realizar el sorteo: ' + error.message);
+            }
+        }
+
+        // Crear efecto sparkle
+        function createSparkleEffect() {
+            const card = document.querySelector('.gift-card');
+            
+            for (let i = 0; i < 5; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.className = 'sparkle';
+                sparkle.style.left = Math.random() * 100 + '%';
+                sparkle.style.top = Math.random() * 100 + '%';
+                sparkle.style.width = Math.random() * 4 + 2 + 'px';
+                sparkle.style.height = sparkle.style.width;
+                sparkle.style.animationDelay = Math.random() * 1 + 's';
+                
+                card.appendChild(sparkle);
+                
+                // Remover después de la animación
+                setTimeout(() => {
+                    sparkle.remove();
+                }, 2000);
+            }
+        }
+
+        // Función para obtener cookie CSRF
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Inicializar efectos
+        document.addEventListener('DOMContentLoaded', function() {
+            createSnowflakes();
+            updateParticipantsList();
+            
+            // Agregar token CSRF si no existe
+            if (!document.querySelector('[name=csrfmiddlewaretoken]')) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = getCookie('csrftoken');
+                document.body.appendChild(csrfInput);
+            }
+        });
+    </script>
+
+    <!-- CSRF Token -->
+    {% csrf_token %}
+</body>
+</html>

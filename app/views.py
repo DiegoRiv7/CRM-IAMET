@@ -10787,3 +10787,155 @@ def api_archivo_detalle(request, proyecto_id, archivo_id):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+
+# =============================================
+# VIEWS PARA INTERCAMBIO NAVIDEÑO 🎄
+# =============================================
+
+@login_required
+def intercambio_navidad(request):
+    """Vista principal del intercambio navideño"""
+    from datetime import datetime
+    from .models import IntercambioNavidad, ParticipanteIntercambio
+    
+    # Obtener el intercambio del año actual
+    año_actual = datetime.now().year
+    intercambio = IntercambioNavidad.objects.filter(año=año_actual).first()
+    
+    # Variables para el template
+    context = {
+        'employees': User.objects.filter(is_active=True).order_by('first_name', 'last_name'),
+        'sorteo_realizado': False,
+        'persona_asignada': None,
+        'fecha_intercambio': None,
+    }
+    
+    # Si existe intercambio, obtener información
+    if intercambio:
+        context['intercambio'] = intercambio
+        context['sorteo_realizado'] = intercambio.sorteo_realizado
+        context['fecha_intercambio'] = intercambio.fecha_intercambio
+        
+        # Si el usuario no es superusuario y ya se realizó el sorteo
+        if not request.user.is_superuser and intercambio.sorteo_realizado:
+            # Buscar la asignación del usuario actual
+            participante = ParticipanteIntercambio.objects.filter(
+                intercambio=intercambio,
+                usuario=request.user
+            ).first()
+            
+            if participante and participante.regalo_para:
+                context['persona_asignada'] = participante.regalo_para.get_full_name() or participante.regalo_para.username
+    
+    return render(request, 'intercambio_navidad.html', context)
+
+
+@csrf_exempt
+@login_required
+def realizar_sorteo_navidad(request):
+    """API para realizar el sorteo navideño (solo superusuarios)"""
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'No tienes permisos para realizar el sorteo'}, status=403)
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        import json
+        import random
+        from datetime import datetime
+        from .models import IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio
+        
+        data = json.loads(request.body)
+        participants_data = data.get('participants', [])
+        
+        if len(participants_data) < 2:
+            return JsonResponse({'error': 'Se necesitan al menos 2 participantes'}, status=400)
+        
+        # Crear o obtener intercambio del año actual
+        año_actual = datetime.now().year
+        intercambio, created = IntercambioNavidad.objects.get_or_create(
+            año=año_actual,
+            defaults={
+                'creado_por': request.user,
+                'estado': 'preparacion'
+            }
+        )
+        
+        # Si ya se realizó el sorteo, no permitir hacerlo de nuevo
+        if intercambio.sorteo_realizado:
+            return JsonResponse({'error': 'El sorteo ya fue realizado para este año'}, status=400)
+        
+        # Limpiar participantes anteriores
+        intercambio.participantes.all().delete()
+        
+        # Crear participantes
+        participantes = []
+        for participant_data in participants_data:
+            user = User.objects.get(id=participant_data['id'])
+            participante = ParticipanteIntercambio.objects.create(
+                intercambio=intercambio,
+                usuario=user
+            )
+            participantes.append(participante)
+        
+        # Realizar el algoritmo de sorteo (amigo invisible)
+        usuarios = [p.usuario for p in participantes]
+        usuarios_disponibles = usuarios.copy()
+        
+        # Mezclar para randomizar
+        random.shuffle(usuarios_disponibles)
+        
+        asignaciones = []
+        for i, participante in enumerate(participantes):
+            # Filtrar usuarios disponibles (no puede regalarse a sí mismo)
+            opciones = [u for u in usuarios_disponibles if u != participante.usuario]
+            
+            if not opciones:
+                # Si no hay opciones, reiniciar el proceso
+                return JsonResponse({'error': 'Error en el sorteo, intenta de nuevo'}, status=500)
+            
+            # Seleccionar usuario aleatorio
+            usuario_asignado = random.choice(opciones)
+            usuarios_disponibles.remove(usuario_asignado)
+            
+            # Guardar asignación
+            participante.regalo_para = usuario_asignado
+            participante.save()
+            
+            asignaciones.append({
+                'participante': participante.usuario.get_full_name(),
+                'regalo_para': usuario_asignado.get_full_name()
+            })
+        
+        # Actualizar estado del intercambio
+        intercambio.estado = 'sorteo_realizado'
+        intercambio.fecha_sorteo = datetime.now()
+        intercambio.save()
+        
+        # Registrar en historial
+        HistorialIntercambio.objects.create(
+            intercambio=intercambio,
+            accion='sorteo_realizado',
+            usuario=request.user,
+            detalles={
+                'total_participantes': len(participantes),
+                'asignaciones': asignaciones
+            }
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Sorteo realizado exitosamente',
+            'total_participantes': len(participantes),
+            'intercambio_id': intercambio.id
+        })
+        
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
+    except Exception as e:
+        print(f"Error en sorteo navideño: {e}")
+        import traceback
+        print(traceback.format_exc())
+        return JsonResponse({'error': f'Error interno del servidor: {str(e)}'}, status=500)
+

@@ -772,6 +772,17 @@
     }
 }
 
+@keyframes sparkle {
+    0%, 100% {
+        opacity: 0;
+        transform: scale(0);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
 .filter-box {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -2431,6 +2442,10 @@
                 </div>
                 <a href="{% url 'crear_cotizacion' %}" class="create-btn">+ Nueva Cotización</a>
                 <a href="{% url 'nueva_oportunidad' %}" class="create-btn secondary">+ Nueva Oportunidad</a>
+                <a href="{% url 'intercambio_navidad' %}" class="create-btn christmas" style="background: linear-gradient(135deg, #c41e3a, #2d5016); border-color: rgba(196, 30, 58, 0.3); position: relative; overflow: hidden;">
+                    <span style="position: relative; z-index: 2;">🎄 Intercambio Navideño</span>
+                    <div style="position: absolute; top: -10px; right: -10px; width: 20px; height: 20px; background: #ffd700; border-radius: 50%; animation: sparkle 2s infinite; z-index: 1;"></div>
+                </a>
             </div>
             {% else %}
                         <div class="compact-filters-container">

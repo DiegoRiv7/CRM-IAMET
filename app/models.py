@@ -2321,3 +2321,177 @@ class CompartirArchivo(models.Model):
     
     def __str__(self):
         return f"{self.archivo.nombre_original} → {self.usuario.get_full_name()}"
+
+
+# ============= SISTEMA DE INTERCAMBIO NAVIDEÑO =============
+
+class IntercambioNavidad(models.Model):
+    """Modelo para gestionar intercambios navideños"""
+    
+    ESTADO_CHOICES = [
+        ('preparacion', 'En Preparación'),
+        ('sorteo_realizado', 'Sorteo Realizado'),
+        ('finalizado', 'Finalizado'),
+    ]
+    
+    año = models.PositiveIntegerField(
+        verbose_name="Año del Intercambio",
+        help_text="Año del intercambio navideño"
+    )
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de Creación"
+    )
+    fecha_sorteo = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha del Sorteo"
+    )
+    fecha_intercambio = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha del Intercambio"
+    )
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADO_CHOICES,
+        default='preparacion',
+        verbose_name="Estado"
+    )
+    creado_por = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='intercambios_creados',
+        verbose_name="Creado por"
+    )
+    descripcion = models.TextField(
+        blank=True,
+        verbose_name="Descripción",
+        help_text="Descripción opcional del intercambio"
+    )
+    monto_sugerido = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Monto Sugerido",
+        help_text="Monto sugerido para los regalos"
+    )
+    
+    class Meta:
+        verbose_name = "Intercambio Navideño"
+        verbose_name_plural = "Intercambios Navideños"
+        unique_together = [('año',)]  # Solo un intercambio por año
+        ordering = ['-año']
+    
+    def __str__(self):
+        return f"Intercambio Navideño {self.año}"
+    
+    @property
+    def total_participantes(self):
+        return self.participantes.count()
+    
+    @property
+    def sorteo_realizado(self):
+        return self.estado == 'sorteo_realizado' or self.estado == 'finalizado'
+
+
+class ParticipanteIntercambio(models.Model):
+    """Modelo para los participantes del intercambio navideño"""
+    
+    intercambio = models.ForeignKey(
+        IntercambioNavidad,
+        on_delete=models.CASCADE,
+        related_name='participantes',
+        verbose_name="Intercambio"
+    )
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name="Usuario Participante"
+    )
+    fecha_inscripcion = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de Inscripción"
+    )
+    regalo_para = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='recibe_regalo_de',
+        verbose_name="Regalo Para",
+        help_text="Usuario para quien debe comprar el regalo"
+    )
+    regalo_entregado = models.BooleanField(
+        default=False,
+        verbose_name="Regalo Entregado"
+    )
+    fecha_entrega = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Entrega"
+    )
+    comentarios = models.TextField(
+        blank=True,
+        verbose_name="Comentarios",
+        help_text="Comentarios adicionales del participante"
+    )
+    
+    class Meta:
+        verbose_name = "Participante del Intercambio"
+        verbose_name_plural = "Participantes del Intercambio"
+        unique_together = [('intercambio', 'usuario')]
+        ordering = ['usuario__first_name', 'usuario__last_name']
+    
+    def __str__(self):
+        regalo_texto = f" → {self.regalo_para.get_full_name()}" if self.regalo_para else ""
+        return f"{self.usuario.get_full_name()}{regalo_texto} ({self.intercambio.año})"
+
+
+class HistorialIntercambio(models.Model):
+    """Modelo para guardar el historial de acciones del intercambio"""
+    
+    ACCION_CHOICES = [
+        ('intercambio_creado', 'Intercambio Creado'),
+        ('participante_agregado', 'Participante Agregado'),
+        ('participante_removido', 'Participante Removido'),
+        ('sorteo_realizado', 'Sorteo Realizado'),
+        ('regalo_entregado', 'Regalo Entregado'),
+        ('intercambio_finalizado', 'Intercambio Finalizado'),
+    ]
+    
+    intercambio = models.ForeignKey(
+        IntercambioNavidad,
+        on_delete=models.CASCADE,
+        related_name='historial',
+        verbose_name="Intercambio"
+    )
+    accion = models.CharField(
+        max_length=30,
+        choices=ACCION_CHOICES,
+        verbose_name="Acción"
+    )
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name="Usuario que realizó la acción"
+    )
+    fecha = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha y Hora"
+    )
+    detalles = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Detalles",
+        help_text="Detalles adicionales de la acción en formato JSON"
+    )
+    
+    class Meta:
+        verbose_name = "Historial del Intercambio"
+        verbose_name_plural = "Historiales del Intercambio"
+        ordering = ['-fecha']
+    
+    def __str__(self):
+        return f"{self.intercambio.año} - {self.get_accion_display()} por {self.usuario.get_full_name()}"

@@ -261,3 +261,78 @@ class VolumetriaAdmin(admin.ModelAdmin):
         if not obj.pk:
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
+
+# ============= ADMIN PARA INTERCAMBIO NAVIDEÑO 🎄 =============
+
+from .models import IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio
+
+@admin.register(IntercambioNavidad)
+class IntercambioNavidadAdmin(admin.ModelAdmin):
+    list_display = ('año', 'estado', 'total_participantes', 'fecha_sorteo', 'creado_por', 'fecha_creacion')
+    list_filter = ('estado', 'año', 'fecha_creacion')
+    search_fields = ('año', 'descripcion', 'creado_por__username', 'creado_por__first_name', 'creado_por__last_name')
+    readonly_fields = ('fecha_creacion', 'fecha_sorteo', 'total_participantes')
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('año', 'estado', 'descripcion')
+        }),
+        ('Detalles del Intercambio', {
+            'fields': ('fecha_intercambio', 'monto_sugerido')
+        }),
+        ('Información del Sistema', {
+            'fields': ('creado_por', 'fecha_creacion', 'fecha_sorteo', 'total_participantes'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def total_participantes(self, obj):
+        return obj.total_participantes
+    total_participantes.short_description = 'Participantes'
+
+
+@admin.register(ParticipanteIntercambio)
+class ParticipanteIntercambioAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'intercambio', 'regalo_para', 'regalo_entregado', 'fecha_inscripcion')
+    list_filter = ('intercambio__año', 'regalo_entregado', 'fecha_inscripcion')
+    search_fields = ('usuario__username', 'usuario__first_name', 'usuario__last_name', 
+                    'regalo_para__username', 'regalo_para__first_name', 'regalo_para__last_name')
+    readonly_fields = ('fecha_inscripcion', 'fecha_entrega')
+    
+    fieldsets = (
+        ('Información del Participante', {
+            'fields': ('intercambio', 'usuario', 'fecha_inscripcion')
+        }),
+        ('Asignación de Regalo', {
+            'fields': ('regalo_para', 'regalo_entregado', 'fecha_entrega')
+        }),
+        ('Comentarios', {
+            'fields': ('comentarios',),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(HistorialIntercambio)
+class HistorialIntercambioAdmin(admin.ModelAdmin):
+    list_display = ('intercambio', 'accion', 'usuario', 'fecha')
+    list_filter = ('accion', 'intercambio__año', 'fecha')
+    search_fields = ('intercambio__año', 'usuario__username', 'usuario__first_name', 'usuario__last_name')
+    readonly_fields = ('fecha', 'detalles')
+    
+    fieldsets = (
+        ('Información de la Acción', {
+            'fields': ('intercambio', 'accion', 'usuario', 'fecha')
+        }),
+        ('Detalles', {
+            'fields': ('detalles',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        return False  # No permitir crear registros manuales
+    
+    def has_change_permission(self, request, obj=None):
+        return False  # No permitir editar registros
+EOF < /dev/null

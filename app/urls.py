@@ -56,6 +56,10 @@ urlpatterns = [
     path("api/crear-proyecto/", views.api_crear_proyecto, name="api_crear_proyecto"),
     path("api/crear-tarea/", views.api_crear_tarea, name="api_crear_tarea"),
 
+    # URLs para Intercambio Navideño 🎄
+    path("intercambio-navidad/", views.intercambio_navidad, name="intercambio_navidad"),
+    path("api/realizar-sorteo-navidad/", views.realizar_sorteo_navidad, name="realizar_sorteo_navidad"),
+
     # Ruta para la lista de todas las oportunidades de venta (o las del usuario)
     path("todos/", views.todos, name="todos"),
 
