@@ -230,8 +230,8 @@
     {% endif %}
     
     <!-- Contenedor Principal (Apple Style - Amplio) -->
-    <main class="flex min-h-screen p-8 justify-center items-start">
-        <div class="w-full max-w-6xl mt-12">
+    <main class="flex min-h-screen p-2 sm:p-4 md:p-8 justify-center items-start">
+        <div class="w-full {% if user.is_superuser %}max-w-6xl mt-12{% else %}max-w-7xl mt-4 sm:mt-8 lg:mt-12{% endif %}">
             
             <!-- Header de Aplicación -->
             <header class="mb-10 flex justify-between items-end">
