@@ -520,6 +520,11 @@
                         
                         // Recargar participantes para mostrar asignaciones
                         cargarParticipantes();
+                        
+                        // Si no es superusuario, recargar su estado personal
+                        {% if not user.is_superuser %}
+                            cargarEstadoUsuario();
+                        {% endif %}
                     }, 2000);
                     
                 } else {
@@ -540,20 +545,88 @@
             const contenido = document.getElementById('contenido-usuario');
             if (!contenido) return;
             
-            // Por ahora mostrar estado de espera, aquí cargarías el estado real del backend
-            contenido.innerHTML = `
-                <div class="text-6xl mb-6">⏳</div>
-                <h2 class="text-3xl font-bold text-gray-700 mb-4">Esperando Sorteo</h2>
-                <p class="text-gray-600 mb-6">
-                    El administrador aún no ha realizado el sorteo navideño. 
-                    ¡Te notificaremos cuando sepas quién te tocó! 🎁
-                </p>
-                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                    <p class="text-yellow-800 text-sm">
-                        💡 <strong>Recuerda:</strong> El monto sugerido es de $500 MXN
-                    </p>
-                </div>
-            `;
+            try {
+                const response = await fetch('/app/api/estado-usuario-navidad/', {
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.participa && data.sorteo_realizado && data.regalo_para) {
+                        // Usuario participa y ya se realizó el sorteo
+                        contenido.innerHTML = `
+                            <div class="text-6xl mb-6">🎁</div>
+                            <h2 class="text-3xl font-bold text-gray-700 mb-4">¡Tu Amigo Secreto!</h2>
+                            <div class="bg-gradient-to-r from-red-50 to-green-50 border border-red-200 rounded-xl p-6 mb-6">
+                                <p class="text-lg text-gray-700 mb-2">Tu regalo es para:</p>
+                                <p class="text-2xl font-bold text-red-600">
+                                    🎅 ${data.regalo_para.first_name} ${data.regalo_para.last_name}
+                                </p>
+                            </div>
+                            <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                                <p class="text-blue-800 text-sm">
+                                    📅 <strong>Fecha del intercambio:</strong> ${data.fecha_intercambio || '15 de Diciembre'}
+                                </p>
+                                <p class="text-blue-800 text-sm">
+                                    💰 <strong>Monto sugerido:</strong> $${data.monto_sugerido || '500'} MXN
+                                </p>
+                            </div>
+                            <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+                                <p class="text-green-800 text-sm">
+                                    ✨ <strong>Consejo:</strong> ¡Mantén el secreto y busca un regalo especial! 
+                                </p>
+                            </div>
+                        `;
+                    } else if (data.participa && !data.sorteo_realizado) {
+                        // Usuario participa pero aún no hay sorteo
+                        contenido.innerHTML = `
+                            <div class="text-6xl mb-6">⏳</div>
+                            <h2 class="text-3xl font-bold text-gray-700 mb-4">Esperando Sorteo</h2>
+                            <p class="text-gray-600 mb-6">
+                                ¡Ya estás registrado en el intercambio navideño! 
+                                El administrador realizará el sorteo pronto. 🎁
+                            </p>
+                            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                                <p class="text-yellow-800 text-sm">
+                                    💡 <strong>Recuerda:</strong> El monto sugerido es de $${data.monto_sugerido || '500'} MXN
+                                </p>
+                            </div>
+                        `;
+                    } else {
+                        // Usuario no participa
+                        contenido.innerHTML = `
+                            <div class="text-6xl mb-6">😔</div>
+                            <h2 class="text-3xl font-bold text-gray-700 mb-4">No Estás Participando</h2>
+                            <p class="text-gray-600 mb-6">
+                                Aún no estás registrado en el intercambio navideño de este año.
+                                Contacta al administrador para unirte. 🎄
+                            </p>
+                            <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                                <p class="text-gray-600 text-sm">
+                                    📞 <strong>¿Quieres participar?</strong> Habla con tu administrador
+                                </p>
+                            </div>
+                        `;
+                    }
+                } else {
+                    console.error('Error obteniendo estado del usuario:', response.status);
+                    contenido.innerHTML = `
+                        <div class="text-6xl mb-6">⚠️</div>
+                        <h2 class="text-xl font-bold text-gray-700 mb-4">Error</h2>
+                        <p class="text-gray-600">No se pudo cargar la información del intercambio.</p>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error cargando estado del usuario:', error);
+                contenido.innerHTML = `
+                    <div class="text-6xl mb-6">⚠️</div>
+                    <h2 class="text-xl font-bold text-gray-700 mb-4">Error</h2>
+                    <p class="text-gray-600">No se pudo cargar la información del intercambio.</p>
+                `;
+            }
         }
 
         // Función para actualizar estado del sorteo

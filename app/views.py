@@ -11125,3 +11125,62 @@ def actualizar_evento_navidad(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+
+@csrf_exempt
+def estado_usuario_navidad(request):
+    """Obtener estado del usuario en el intercambio navideño"""
+    from datetime import datetime
+    from .models import IntercambioNavidad, ParticipanteIntercambio
+    
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        año_actual = datetime.now().year
+        intercambio = IntercambioNavidad.objects.filter(año=año_actual).first()
+        
+        if not intercambio:
+            return JsonResponse({
+                'participa': False,
+                'sorteo_realizado': False,
+                'regalo_para': None,
+                'monto_sugerido': 500,
+                'fecha_intercambio': None
+            })
+        
+        # Buscar si el usuario participa
+        participante = ParticipanteIntercambio.objects.filter(
+            intercambio=intercambio,
+            usuario=request.user
+        ).first()
+        
+        if not participante:
+            return JsonResponse({
+                'participa': False,
+                'sorteo_realizado': intercambio.sorteo_realizado,
+                'regalo_para': None,
+                'monto_sugerido': float(intercambio.monto_sugerido) if intercambio.monto_sugerido else 500,
+                'fecha_intercambio': intercambio.fecha_intercambio.strftime('%d de %B') if intercambio.fecha_intercambio else None
+            })
+        
+        # El usuario participa
+        regalo_para_data = None
+        if participante.regalo_para:
+            regalo_para_data = {
+                'id': participante.regalo_para.id,
+                'first_name': participante.regalo_para.first_name,
+                'last_name': participante.regalo_para.last_name,
+                'username': participante.regalo_para.username
+            }
+        
+        return JsonResponse({
+            'participa': True,
+            'sorteo_realizado': intercambio.sorteo_realizado,
+            'regalo_para': regalo_para_data,
+            'monto_sugerido': float(intercambio.monto_sugerido) if intercambio.monto_sugerido else 500,
+            'fecha_intercambio': intercambio.fecha_intercambio.strftime('%d de %B') if intercambio.fecha_intercambio else None
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+

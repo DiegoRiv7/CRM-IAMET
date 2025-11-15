@@ -63,6 +63,7 @@ urlpatterns = [
     path("api/eliminar-participante-navidad/", views.eliminar_participante_navidad, name="eliminar_participante_navidad"),
     path("api/listar-participantes-navidad/", views.listar_participantes_navidad, name="listar_participantes_navidad"),
     path("api/actualizar-evento-navidad/", views.actualizar_evento_navidad, name="actualizar_evento_navidad"),
+    path("api/estado-usuario-navidad/", views.estado_usuario_navidad, name="estado_usuario_navidad"),
 
     # Ruta para la lista de todas las oportunidades de venta (o las del usuario)
     path("todos/", views.todos, name="todos"),
