@@ -10846,38 +10846,30 @@ def realizar_sorteo_navidad(request):
         from datetime import datetime
         from .models import IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio
         
-        data = json.loads(request.body)
-        participants_data = data.get('participants', [])
-        
-        if len(participants_data) < 2:
-            return JsonResponse({'error': 'Se necesitan al menos 2 participantes'}, status=400)
-        
-        # Crear o obtener intercambio del año actual
+        # Crear o obtener intercambio del año actual para verificar participantes
         año_actual = datetime.now().year
-        intercambio, created = IntercambioNavidad.objects.get_or_create(
-            año=año_actual,
-            defaults={
-                'creado_por': request.user,
-                'estado': 'preparacion'
-            }
-        )
+        intercambio = IntercambioNavidad.objects.filter(año=año_actual).first()
+        
+        if not intercambio:
+            return JsonResponse({'error': 'No hay intercambio configurado para este año'}, status=400)
+        
+        # Obtener participantes existentes de la base de datos
+        participantes_db = list(ParticipanteIntercambio.objects.filter(intercambio=intercambio))
+        
+        if len(participantes_db) < 2:
+            return JsonResponse({'error': 'Se necesitan al menos 2 participantes'}, status=400)
         
         # Si ya se realizó el sorteo, no permitir hacerlo de nuevo
         if intercambio.sorteo_realizado:
             return JsonResponse({'error': 'El sorteo ya fue realizado para este año'}, status=400)
         
-        # Limpiar participantes anteriores
-        intercambio.participantes.all().delete()
+        # Limpiar asignaciones anteriores (por si se vuelve a ejecutar)
+        for participante in participantes_db:
+            participante.regalo_para = None
+            participante.save()
         
-        # Crear participantes
-        participantes = []
-        for participant_data in participants_data:
-            user = User.objects.get(id=participant_data['id'])
-            participante = ParticipanteIntercambio.objects.create(
-                intercambio=intercambio,
-                usuario=user
-            )
-            participantes.append(participante)
+        # Los participantes ya están en la base de datos
+        participantes = participantes_db
         
         # Realizar el algoritmo de sorteo (amigo invisible)
         usuarios = [p.usuario for p in participantes]
