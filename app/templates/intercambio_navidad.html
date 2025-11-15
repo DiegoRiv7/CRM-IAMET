@@ -878,15 +878,22 @@
                         // Usuario participa y ya se realizó el sorteo - Diseño oscuro elegante con revelación
                         // Guardar los datos para la función de revelación
                         const nombreCompleto = `${data.regalo_para.first_name} ${data.regalo_para.last_name}`;
+                        const monto = data.monto_sugerido || '500';
                         
-                        // Asegurar que la variable global se establezca correctamente
-                        if (typeof window !== 'undefined') {
-                            window.nombreAsignado = nombreCompleto;
-                            window.montoSugerido = data.monto_sugerido || '500';
-                            
-                            // Depuración
-                            console.log('Nombre asignado guardado:', window.nombreAsignado);
+                        // Establecer variables globales de forma explícita
+                        window.nombreAsignado = nombreCompleto;
+                        window.montoSugerido = monto;
+                        
+                        // También guardar en localStorage como respaldo
+                        try {
+                            localStorage.setItem('nombreAsignado', nombreCompleto);
+                            localStorage.setItem('montoSugerido', monto);
+                        } catch (e) {
+                            console.log('Error guardando en localStorage:', e);
                         }
+                        
+                        // Depuración
+                        console.log('Nombre asignado guardado:', window.nombreAsignado);
                         
                         // Mostrar la vista inicial con el botón de revelación
                         document.getElementById('hidden-view').style.display = 'block';
@@ -895,7 +902,7 @@
                         // Actualizar el monto en la vista revelada
                         const montoDisplay = document.getElementById('monto-display');
                         if (montoDisplay) {
-                            montoDisplay.textContent = `$${window.montoSugerido} MXN`;
+                            montoDisplay.textContent = `$${monto} MXN`;
                         }
                         
                         // También actualizar el nombre directamente en el elemento por si acaban de cargar la página
@@ -1171,10 +1178,23 @@
             // 3. Colocar el nombre en el elemento
             const assignedName = document.getElementById('assigned-name');
             
-            // Verificar si la variable global existe y tiene contenido
-            if (window.nombreAsignado && window.nombreAsignado.trim() !== '') {
-                console.log('Asignando nombre:', window.nombreAsignado);
-                assignedName.textContent = window.nombreAsignado;
+            // Intentar obtener el nombre de múltiples fuentes
+            let nombre = window.nombreAsignado;
+            
+            // Si no está en window, intentar obtenerlo de localStorage
+            if (!nombre || nombre.trim() === '') {
+                try {
+                    nombre = localStorage.getItem('nombreAsignado');
+                    console.log('Nombre obtenido de localStorage:', nombre);
+                } catch (e) {
+                    console.log('Error obteniendo nombre de localStorage:', e);
+                }
+            }
+            
+            // Verificar si tenemos un nombre válido
+            if (nombre && nombre.trim() !== '') {
+                console.log('Asignando nombre:', nombre);
+                assignedName.textContent = nombre;
                 
                 // 4. Aplicar la clase de animación al nombre
                 setTimeout(() => {
