@@ -10967,7 +10967,10 @@ def agregar_participante_navidad(request):
         año_actual = datetime.now().year
         intercambio, created = IntercambioNavidad.objects.get_or_create(
             año=año_actual,
-            defaults={'fecha_intercambio': datetime(año_actual, 12, 15).date()}
+            defaults={
+                'fecha_intercambio': datetime(año_actual, 12, 15).date(),
+                'creado_por': request.user
+            }
         )
         
         # Verificar si ya está participando
@@ -11105,7 +11108,8 @@ def actualizar_evento_navidad(request):
             defaults={
                 'fecha_intercambio': fecha_intercambio,
                 'monto_sugerido': monto_sugerido,
-                'descripcion': descripcion
+                'descripcion': descripcion,
+                'creado_por': request.user
             }
         )
         
