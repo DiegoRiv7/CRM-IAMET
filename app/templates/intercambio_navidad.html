@@ -715,7 +715,7 @@
                 <div class="flex items-center justify-between p-3 bg-white rounded-xl shadow-sm border border-gray-100 transition duration-150 hover:bg-gray-50">
                     <span class="text-gray-800 font-medium">
                         🎄 ${participante.usuario.first_name} ${participante.usuario.last_name}
-                        ${participante.regalo_para ? ` → 🎁 ${participante.regalo_para.first_name} ${participante.regalo_para.last_name}` : ''}
+                        ${participante.regalo_para ? ` → 🎁 [Asignado]` : ''}
                     </span>
                     <button onclick="eliminarParticipante(${participante.id})" class="ios-button bg-red-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold hover:bg-red-600 shadow-md">
                         ✕
@@ -861,8 +861,6 @@
 
         // Función para cargar estado del usuario
         async function cargarEstadoUsuario() {
-            const contenido = document.getElementById('contenido-usuario');
-            if (!contenido) return;
             
             try {
                 const response = await fetch('/app/api/estado-usuario-navidad/', {
@@ -914,6 +912,8 @@
                             }
                         }, 100);
                     } else if (data.participa && !data.sorteo_realizado) {
+                        const contenido = document.getElementById('contenido-usuario');
+                        if (!contenido) return;
                         // Usuario participa pero aún no hay sorteo - Diseño fresco y moderno
                         contenido.innerHTML = `
                             <div class="space-y-8">
@@ -958,6 +958,8 @@
                             </div>
                         `;
                     } else {
+                        const contenido = document.getElementById('contenido-usuario');
+                        if (!contenido) return;
                         // Usuario no participa - Diseño fresco y moderno
                         contenido.innerHTML = `
                             <div class="space-y-8">
@@ -1001,6 +1003,8 @@
                     }
                 } else {
                     console.error('Error obteniendo estado del usuario:', response.status);
+                    const contenido = document.getElementById('contenido-usuario');
+                    if (!contenido) return;
                     contenido.innerHTML = `
                         <div class="text-6xl mb-6">⚠️</div>
                         <h2 class="text-xl font-bold text-gray-700 mb-4">Error</h2>
@@ -1009,6 +1013,8 @@
                 }
             } catch (error) {
                 console.error('Error cargando estado del usuario:', error);
+                const contenido = document.getElementById('contenido-usuario');
+                if (!contenido) return;
                 contenido.innerHTML = `
                     <div class="text-6xl mb-6">⚠️</div>
                     <h2 class="text-xl font-bold text-gray-700 mb-4">Error</h2>
