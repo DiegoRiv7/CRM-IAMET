@@ -335,16 +335,16 @@
                 </div>
 
             {% else %}
-                <!-- VISTA DEL USUARIO REGULAR CON DISEÑO NAVIDEÑO -->
-                <div class="flex justify-center">
-                    <div class="christmas-card christmas-glow p-12 max-w-3xl w-full text-center relative overflow-hidden">
+                <!-- VISTA DEL USUARIO REGULAR - DISEÑO MINIMALISTA -->
+                <div class="flex justify-center px-4">
+                    <div class="w-full max-w-6xl bg-white/80 backdrop-blur-md rounded-2xl shadow-xl p-8 md:p-12 text-center relative">
                         
-                        <!-- Título navideño especial -->
-                        <div class="mb-8">
-                            <h1 class="text-5xl font-bold christmas-text mb-4">
-                                🎄 Intercambio Navideño 🎄
+                        <!-- Título minimalista -->
+                        <div class="mb-10">
+                            <h1 class="text-4xl md:text-5xl font-light text-gray-800 mb-3">
+                                Intercambio Navideño
                             </h1>
-                            <p class="text-lg text-gray-600">
+                            <p class="text-lg text-gray-500">
                                 {{ request.user.get_full_name|default:request.user.username }}
                             </p>
                         </div>
@@ -353,12 +353,6 @@
                         <div id="contenido-usuario" class="relative z-10">
                             <!-- Se carga via JavaScript -->
                         </div>
-                        
-                        <!-- Efectos navideños adicionales dentro de la tarjeta -->
-                        <div class="absolute top-4 left-4 text-2xl opacity-20">🎅</div>
-                        <div class="absolute top-6 right-6 text-xl opacity-20">🎁</div>
-                        <div class="absolute bottom-6 left-8 text-lg opacity-20">⭐</div>
-                        <div class="absolute bottom-4 right-4 text-2xl opacity-20">🔔</div>
                         
                     </div>
                 </div>
@@ -372,7 +366,7 @@
                     Volver al Dashboard
                 </a>
                 {% else %}
-                <a href="{% url 'todos' %}" class="christmas-button ios-button inline-flex items-center gap-2 px-8 py-3 text-sm text-white font-bold rounded-full hover:scale-105 transition-transform duration-200">
+                <a href="{% url 'todos' %}" class="inline-flex items-center gap-2 px-6 py-3 text-sm text-gray-600 font-medium rounded-full border border-gray-300 hover:bg-gray-50 transition-colors duration-200">
                     <span>🏠</span>
                     Volver al Dashboard
                 </a>
@@ -729,130 +723,79 @@
                     const data = await response.json();
                     
                     if (data.participa && data.sorteo_realizado && data.regalo_para) {
-                        // Usuario participa y ya se realizó el sorteo
+                        // Usuario participa y ya se realizó el sorteo - Diseño minimalista
                         contenido.innerHTML = `
-                            <div class="text-8xl mb-8 animate-pulse">🎁</div>
-                            <h2 class="text-4xl font-bold christmas-text mb-6">¡Tu Amigo Secreto!</h2>
-                            
-                            <div class="bg-gradient-to-br from-red-50 via-white to-green-50 border-3 border-red-300 rounded-2xl p-8 mb-8 shadow-2xl relative overflow-hidden">
-                                <!-- Decoración navideña en el fondo -->
-                                <div class="absolute top-2 left-2 text-lg opacity-20">❄️</div>
-                                <div class="absolute top-2 right-2 text-lg opacity-20">⭐</div>
-                                <div class="absolute bottom-2 left-2 text-lg opacity-20">🎄</div>
-                                <div class="absolute bottom-2 right-2 text-lg opacity-20">🔔</div>
+                            <div class="mb-12">
+                                <div class="text-6xl mb-6 opacity-80">🎁</div>
+                                <h2 class="text-3xl font-light text-gray-800 mb-8">Tu Amigo Secreto</h2>
                                 
-                                <p class="text-xl text-gray-800 mb-4 font-semibold">🎯 Tu regalo es para:</p>
-                                <p class="text-4xl font-extrabold christmas-text mb-2">
-                                    🎅 ${data.regalo_para.first_name} ${data.regalo_para.last_name}
-                                </p>
-                                <div class="w-20 h-1 bg-gradient-to-r from-red-500 to-green-500 mx-auto rounded-full"></div>
-                            </div>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                                <div class="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-300 rounded-xl p-6 shadow-lg">
-                                    <div class="text-3xl mb-2">📅</div>
-                                    <p class="text-blue-800 font-bold">
-                                        Fecha del intercambio
+                                <div class="bg-gray-50 border border-gray-200 rounded-xl p-10 mb-10 max-w-2xl mx-auto">
+                                    <p class="text-lg text-gray-600 mb-6">Tu regalo es para:</p>
+                                    <p class="text-4xl font-light text-gray-900 mb-4">
+                                        ${data.regalo_para.first_name} ${data.regalo_para.last_name}
                                     </p>
-                                    <p class="text-blue-600 text-lg">
-                                        ${data.fecha_intercambio || '15 de Diciembre'}
+                                    <div class="w-16 h-0.5 bg-gray-300 mx-auto"></div>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+                                    <div class="text-center">
+                                        <div class="text-2xl mb-3 opacity-70">📅</div>
+                                        <p class="text-sm text-gray-500 uppercase tracking-wide mb-2">Fecha del intercambio</p>
+                                        <p class="text-xl text-gray-800">
+                                            ${data.fecha_intercambio || '15 de Diciembre'}
+                                        </p>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-2xl mb-3 opacity-70">💰</div>
+                                        <p class="text-sm text-gray-500 uppercase tracking-wide mb-2">Monto sugerido</p>
+                                        <p class="text-xl text-gray-800">
+                                            $${data.monto_sugerido || '500'} MXN
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else if (data.participa && !data.sorteo_realizado) {
+                        // Usuario participa pero aún no hay sorteo - Diseño minimalista
+                        contenido.innerHTML = `
+                            <div class="mb-12">
+                                <div class="text-6xl mb-6 opacity-80">
+                                    <span class="inline-block animate-pulse">⏳</span>
+                                </div>
+                                <h2 class="text-3xl font-light text-gray-800 mb-8">Esperando el sorteo</h2>
+                                
+                                <div class="bg-gray-50 border border-gray-200 rounded-xl p-10 mb-8 max-w-2xl mx-auto">
+                                    <p class="text-lg text-gray-600 mb-4">
+                                        Ya estás registrado en el intercambio navideño.
+                                    </p>
+                                    <p class="text-gray-600">
+                                        El administrador realizará el sorteo pronto.
                                     </p>
                                 </div>
-                                <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-300 rounded-xl p-6 shadow-lg">
-                                    <div class="text-3xl mb-2">💰</div>
-                                    <p class="text-emerald-800 font-bold">
-                                        Monto sugerido
-                                    </p>
-                                    <p class="text-emerald-600 text-lg">
+                                
+                                <div class="text-center">
+                                    <p class="text-sm text-gray-500 uppercase tracking-wide mb-2">Monto sugerido</p>
+                                    <p class="text-2xl text-gray-800">
                                         $${data.monto_sugerido || '500'} MXN
                                     </p>
                                 </div>
                             </div>
-                            
-                            <div class="bg-gradient-to-r from-yellow-50 via-orange-50 to-red-50 border border-orange-300 rounded-xl p-6 shadow-lg">
-                                <div class="text-3xl mb-4">✨</div>
-                                <p class="text-orange-800 text-lg font-semibold mb-2">
-                                    Consejos mágicos navideños:
-                                </p>
-                                <ul class="text-orange-700 text-left space-y-2">
-                                    <li>🤫 ¡Mantén el secreto hasta el intercambio!</li>
-                                    <li>🎁 Busca algo especial que le guste</li>
-                                    <li>💝 El amor se mide en detalles, no en precio</li>
-                                    <li>🎄 ¡Disfruta la magia de dar!</li>
-                                </ul>
-                            </div>
-                        `;
-                    } else if (data.participa && !data.sorteo_realizado) {
-                        // Usuario participa pero aún no hay sorteo
-                        contenido.innerHTML = `
-                            <div class="text-8xl mb-8">
-                                <span class="inline-block animate-spin">⏳</span>
-                            </div>
-                            <h2 class="text-4xl font-bold christmas-text mb-6">¡Esperando la Magia!</h2>
-                            
-                            <div class="bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50 border border-yellow-300 rounded-2xl p-8 mb-8 shadow-xl relative overflow-hidden">
-                                <!-- Decoración navideña -->
-                                <div class="absolute top-3 left-3 text-xl opacity-25">🎄</div>
-                                <div class="absolute top-3 right-3 text-xl opacity-25">⭐</div>
-                                <div class="absolute bottom-3 left-3 text-xl opacity-25">🎅</div>
-                                <div class="absolute bottom-3 right-3 text-xl opacity-25">🎁</div>
-                                
-                                <p class="text-xl text-orange-800 mb-4 font-bold">
-                                    ¡Ya estás en la lista de Santa! 🎅
-                                </p>
-                                <p class="text-lg text-orange-700 mb-4">
-                                    El administrador realizará el sorteo mágico muy pronto.
-                                </p>
-                                <div class="w-24 h-1 bg-gradient-to-r from-yellow-400 to-orange-500 mx-auto rounded-full"></div>
-                            </div>
-                            
-                            <div class="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-300 rounded-xl p-6 shadow-lg">
-                                <div class="text-4xl mb-4">💡</div>
-                                <p class="text-amber-800 text-lg font-bold mb-2">
-                                    Mientras esperas...
-                                </p>
-                                <p class="text-amber-700">
-                                    El monto sugerido es de <span class="font-bold text-green-600">$${data.monto_sugerido || '500'} MXN</span>
-                                </p>
-                                <p class="text-amber-700 text-sm mt-2">
-                                    ¡Empieza a pensar en ideas de regalos! 🎁✨
-                                </p>
-                            </div>
                         `;
                     } else {
-                        // Usuario no participa
+                        // Usuario no participa - Diseño minimalista
                         contenido.innerHTML = `
-                            <div class="text-8xl mb-8 animate-bounce">🎄</div>
-                            <h2 class="text-4xl font-bold christmas-text mb-6">¡Únete a la Magia!</h2>
-                            
-                            <div class="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 border border-blue-300 rounded-2xl p-8 mb-8 shadow-xl relative overflow-hidden">
-                                <!-- Decoración navideña -->
-                                <div class="absolute top-3 left-3 text-xl opacity-25">⭐</div>
-                                <div class="absolute top-3 right-3 text-xl opacity-25">🎁</div>
-                                <div class="absolute bottom-3 left-3 text-xl opacity-25">🔔</div>
-                                <div class="absolute bottom-3 right-3 text-xl opacity-25">❄️</div>
+                            <div class="mb-12">
+                                <div class="text-6xl mb-6 opacity-80">🎄</div>
+                                <h2 class="text-3xl font-light text-gray-800 mb-8">No estás participando</h2>
                                 
-                                <div class="text-4xl mb-4">🎅</div>
-                                <p class="text-xl text-blue-800 mb-4 font-bold">
-                                    ¡La Navidad es mejor cuando se comparte!
-                                </p>
-                                <p class="text-lg text-blue-700 mb-4">
-                                    Aún no estás en nuestro intercambio navideño de este año.
-                                </p>
-                                <div class="w-32 h-1 bg-gradient-to-r from-blue-400 to-purple-500 mx-auto rounded-full"></div>
-                            </div>
-                            
-                            <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-300 rounded-xl p-6 shadow-lg">
-                                <div class="text-4xl mb-4">📞</div>
-                                <p class="text-green-800 text-lg font-bold mb-2">
-                                    ¿Quieres participar en la magia?
-                                </p>
-                                <p class="text-green-700">
-                                    Habla con tu administrador para unirte al intercambio
-                                </p>
-                                <p class="text-green-600 text-sm mt-2">
-                                    ¡Aún hay tiempo para ser parte de esta tradición! ✨
-                                </p>
+                                <div class="bg-gray-50 border border-gray-200 rounded-xl p-10 mb-8 max-w-2xl mx-auto">
+                                    <p class="text-lg text-gray-600 mb-6">
+                                        Aún no estás registrado en el intercambio navideño de este año.
+                                    </p>
+                                    <p class="text-gray-600">
+                                        Contacta al administrador si deseas participar.
+                                    </p>
+                                </div>
                             </div>
                         `;
                     }
