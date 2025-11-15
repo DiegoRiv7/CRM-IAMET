@@ -16,7 +16,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
@@ -10943,6 +10943,10 @@ def realizar_sorteo_navidad(request):
 @csrf_exempt
 def agregar_participante_navidad(request):
     """Agregar participante al intercambio navideño"""
+    import json
+    from datetime import datetime
+    from .models import IntercambioNavidad, ParticipanteIntercambio
+    
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
         
@@ -10998,6 +11002,9 @@ def agregar_participante_navidad(request):
 @csrf_exempt
 def eliminar_participante_navidad(request):
     """Eliminar participante del intercambio navideño"""
+    import json
+    from .models import ParticipanteIntercambio
+    
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
         
@@ -11026,6 +11033,9 @@ def eliminar_participante_navidad(request):
 @csrf_exempt
 def listar_participantes_navidad(request):
     """Listar participantes del intercambio navideño"""
+    from datetime import datetime
+    from .models import IntercambioNavidad, ParticipanteIntercambio
+    
     if request.method != 'GET':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
     
@@ -11069,6 +11079,10 @@ def listar_participantes_navidad(request):
 @csrf_exempt
 def actualizar_evento_navidad(request):
     """Actualizar configuración del evento navideño"""
+    import json
+    from datetime import datetime
+    from .models import IntercambioNavidad
+    
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
         
