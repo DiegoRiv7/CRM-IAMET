@@ -236,10 +236,10 @@
             <!-- Header de Aplicación -->
             <header class="mb-10 flex justify-between items-end">
                 <div>
-                    <h1 class="text-5xl font-extrabold text-gray-800">
+                    <h1 class="text-5xl font-extrabold text-white">
                         🎄 Intercambio Navideño
                     </h1>
-                    <p class="text-xl text-gray-500 mt-1">
+                    <p class="text-xl text-white/80 mt-1">
                         {% if user.is_superuser %}
                             Panel de Administración
                         {% else %}
@@ -476,7 +476,6 @@
                                 <!-- Reveal Button -->
                                 <button id="reveal-btn" onclick="revealAssignment()"
                                         class="glass-btn-reveal w-full py-5 text-2xl flex items-center justify-center gap-4">
-                                    <span class="text-4xl">🔮</span>
                                     Tocar para Revelar
                                 </button>
                             </div>
