@@ -881,6 +881,9 @@
                         window.nombreAsignado = nombreCompleto;
                         window.montoSugerido = data.monto_sugerido || '500';
                         
+                        // Depuración
+                        console.log('Nombre asignado guardado:', window.nombreAsignado);
+                        
                         // Mostrar la vista inicial con el botón de revelación
                         document.getElementById('hidden-view').style.display = 'block';
                         document.getElementById('revealed-view').style.display = 'none';
@@ -893,6 +896,7 @@
                             const assignedName = document.getElementById('assigned-name');
                             if (assignedName) {
                                 assignedName.textContent = nombreCompleto;
+                                console.log('Nombre actualizado directamente:', nombreCompleto);
                             }
                         }, 100);
                     } else if (data.participa && !data.sorteo_realizado) {
@@ -1146,6 +1150,10 @@
 
         // Función para manejar la animación de revelación
         function revealAssignment() {
+            // Depuración
+            console.log('Función revealAssignment ejecutada');
+            console.log('Variable global window.nombreAsignado:', window.nombreAsignado);
+            
             // 1. Ocultar la vista inicial
             document.getElementById('hidden-view').style.display = 'none';
             
@@ -1155,12 +1163,23 @@
 
             // 3. Colocar el nombre en el elemento
             const assignedName = document.getElementById('assigned-name');
-            assignedName.textContent = window.nombreAsignado || 'Cargando...';
-
-            // 4. Aplicar la clase de animación al nombre
-            setTimeout(() => {
+            
+            // Verificar si la variable global existe y tiene contenido
+            if (window.nombreAsignado && window.nombreAsignado.trim() !== '') {
+                console.log('Asignando nombre:', window.nombreAsignado);
+                assignedName.textContent = window.nombreAsignado;
+                
+                // 4. Aplicar la clase de animación al nombre
+                setTimeout(() => {
+                    assignedName.classList.add('revealed');
+                    console.log('Clase revealed aplicada');
+                }, 50);
+            } else {
+                // Si no hay nombre, mostrar mensaje de error
+                console.log('No hay nombre asignado disponible');
+                assignedName.textContent = 'No disponible';
                 assignedName.classList.add('revealed');
-            }, 50);
+            }
         }
 
         // Función para crear y animar los copos de nieve (nueva versión)
