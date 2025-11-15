@@ -335,37 +335,174 @@
                 </div>
 
             {% else %}
-                <!-- VISTA DEL USUARIO REGULAR - DISEÑO FRESCO Y MODERNO -->
-                <div class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-                    <!-- Elementos decorativos flotantes -->
-                    <div class="fixed inset-0 overflow-hidden pointer-events-none">
-                        <div class="absolute top-20 left-10 w-32 h-32 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-                        <div class="absolute top-40 right-20 w-40 h-40 bg-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style="animation-delay: 2s;"></div>
-                        <div class="absolute bottom-20 left-1/4 w-36 h-36 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style="animation-delay: 4s;"></div>
-                    </div>
+                <!-- VISTA DEL USUARIO REGULAR - DISEÑO OSCURO ELEGANTE -->
+                <style>
+                    /* Base Colors & Variables */
+                    :root {
+                        --clr-dark-bg: #1f2937; /* Gris oscuro elegante (Slate) */
+                        --clr-accent-blue: #3b82f6; /* Azul de sistema (similar a Apple) */
+                        --clr-card-bg: rgba(31, 41, 55, 0.5); /* Gris oscuro 50% transparente */
+                        --clr-border: rgba(255, 255, 255, 0.2);
+                        --clr-glow: rgba(59, 130, 246, 0.4); /* Azul para la sombra */
+                    }
                     
-                    <div class="relative z-10 px-6 py-12">
-                        <div class="max-w-5xl mx-auto">
-                            <!-- Header minimalista -->
-                            <header class="text-center mb-16">
-                                <div class="inline-flex items-center gap-3 mb-6">
-                                    <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg">
-                                        🎄
-                                    </div>
-                                    <h1 class="text-3xl font-light text-gray-900 tracking-tight">Intercambio Navideño</h1>
-                                </div>
-                                <p class="text-gray-500 text-lg">{{ request.user.get_full_name|default:request.user.username }}</p>
-                            </header>
+                    /* Card Style: Glassmorphism / Liquid Style */
+                    .glass-card {
+                        background-color: var(--clr-card-bg);
+                        backdrop-filter: blur(25px); /* Efecto cristal líquido fuerte */
+                        border-radius: 35px; /* Bordes redondeados modernos */
+                        border: 1px solid var(--clr-border);
+                        /* Sombra profunda para destacar la elevación */
+                        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
+                                    0 0 40px var(--clr-glow); /* Sombra de acento azul */
+                        transition: all 0.4s ease-out;
+                        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+                        position: relative; /* Asegura que la tarjeta esté sobre la nieve */
+                        z-index: 10;
+                    }
+
+                    /* Hover effect */
+                    .glass-card:hover {
+                        box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4),
+                                    0 0 50px var(--clr-glow);
+                        transform: scale(1.01);
+                    }
+
+                    /* ------------------ Reveal Animation Styles ------------------ */
+
+                    /* Initial state of name: blurred, slightly transparent, and scaled down */
+                    .assigned-name {
+                        opacity: 0;
+                        filter: blur(12px); /* Blur ligeramente aumentado */
+                        transition: all 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Curva suave de animación (Estilo Apple) */
+                        transform: scale(0.95);
+                        color: var(--clr-accent-blue); /* El nombre en color de acento */
+                    }
+
+                    /* Final state: fully visible and sharp */
+                    .assigned-name.revealed {
+                        opacity: 1;
+                        filter: blur(0);
+                        transform: scale(1);
+                    }
+                    
+                    /* Interactive Button Style (iOS/Glass-like) */
+                    .glass-btn-reveal {
+                        background-color: rgba(255, 255, 255, 0.15); /* Botón semitransparente claro */
+                        border-radius: 25px;
+                        border: 1px solid var(--clr-border);
+                        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+                        transition: all 0.2s ease-in-out;
+                        color: white;
+                        font-weight: 700;
+                        backdrop-filter: blur(10px); /* Botón también tiene blur */
+                    }
+
+                    .glass-btn-reveal:hover {
+                        background-color: rgba(255, 255, 255, 0.25);
+                        transform: translateY(-2px);
+                        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+                    }
+
+                    .glass-btn-reveal:active {
+                        background-color: rgba(255, 255, 255, 0.1);
+                        transform: translateY(0);
+                        box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
+                    }
+                    
+                    /* ------------------ SNOWFLAKE ANIMATION STYLES ------------------ */
+                    
+                    /* Contenedor de nieve */
+                    #snow-container {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        pointer-events: none;
+                        z-index: 0;
+                    }
+
+                    /* Estilo base del copo de nieve */
+                    .snowflake {
+                        position: absolute;
+                        background: white;
+                        border-radius: 50%;
+                        opacity: 0.8;
+                        filter: blur(1px);
+                        /* Se definen dos animaciones en la clase: caída (fall) y deriva (drift) */
+                        animation-name: fall, drift;
+                        animation-timing-function: linear;
+                        animation-iteration-count: infinite;
+                        pointer-events: none;
+                    }
+
+                    /* Keyframes para la caída (vertical, usa translateY) */
+                    @keyframes fall {
+                        to {
+                            /* Usamos transform para combinar con el movimiento lateral */
+                            transform: translateY(100vh);
+                        }
+                    }
+                    
+                    /* Keyframes para la deriva lateral (horizontal, usa translateX) */
+                    @keyframes drift {
+                        0% { transform: translateX(0); }
+                        /* Usa la variable CSS --drift-amplitude definida en JS para el movimiento lateral aleatorio */
+                        50% { transform: translateX(var(--drift-amplitude, 5vw)); }
+                        100% { transform: translateX(0); }
+                    }
+                </style>
+                
+                <body style="font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #111827 0%, #374151 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; color: white; padding: 2rem; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; overflow: hidden;">
+                    <!-- Contenedor para la animación de nieve -->
+                    <div id="snow-container"></div>
+                    
+                    <!-- Main Content Container: Centered Result Card (max-w-3xl) -->
+                    <div class="max-w-3xl w-full">
+                        
+                        <!-- Result Card: Employee Assignment (Glassmorphism) -->
+                        <div class="glass-card p-16 text-center">
                             
-                            <!-- Contenedor principal -->
-                            <main>
-                                <div id="contenido-usuario" class="w-full">
-                                    <!-- Se carga via JavaScript -->
+                            <!-- Hidden View: Shows prompt and reveal button -->
+                            <div id="hidden-view">
+                                <div class="text-7xl mb-6 text-white/90">🔒</div>
+                                <h3 class="text-4xl font-light mb-10 tracking-tight">¿Listo para conocer a tu persona asignada?</h3>
+                                
+                                <!-- Reveal Button -->
+                                <button id="reveal-btn" onclick="revealAssignment()"
+                                        class="glass-btn-reveal w-full py-5 text-2xl flex items-center justify-center gap-4">
+                                    <span class="text-4xl">🔮</span>
+                                    Tocar para Revelar
+                                </button>
+                            </div>
+
+                            <!-- Revealed Content: Initially hidden using inline style -->
+                            <div id="revealed-view" style="display: none;">
+                                <div class="text-7xl mb-6 text-green-400">🎉</div>
+                                <h3 class="text-4xl font-light mb-4 tracking-tight text-white/80">¡Felicidades! Tu amigo secreto es...</h3>
+                                
+                                <!-- Assigned Name: Highlighted in System Blue and animated -->
+                                <div id="assigned-name" class="assigned-name text-7xl font-black mb-10
+                                            drop-shadow-lg leading-tight tracking-wider">
+                                    <!-- Nombre se cargará dinámicamente -->
                                 </div>
-                            </main>
+                                
+                                <!-- Instructions -->
+                                <p class="text-2xl opacity-90 font-medium text-white/80">
+                                    Máximo de presupuesto: <span id="monto-display">$500 MXN</span>.
+                                </p>
+                                
+                                <!-- Confidentiality Note -->
+                                <p class="text-lg mt-8 opacity-60 text-white/70">
+                                    *Asegúrate de no revelar tu asignación. ¡Es un secreto!
+                                </p>
+                            </div>
+                            
                         </div>
+                        
                     </div>
-                </div>
+                </body>
             {% endif %}
 
             <!-- Nota de Pie de Página -->
@@ -735,59 +872,17 @@
                     const data = await response.json();
                     
                     if (data.participa && data.sorteo_realizado && data.regalo_para) {
-                        // Usuario participa y ya se realizó el sorteo - Diseño fresco y moderno
-                        contenido.innerHTML = `
-                            <div class="space-y-8">
-                                <!-- Tarjeta principal con resultado -->
-                                <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-12 text-center border border-white/50">
-                                    <div class="relative inline-block mb-8">
-                                        <div class="absolute inset-0 bg-gradient-to-br from-indigo-400 to-purple-600 rounded-3xl blur-lg opacity-30"></div>
-                                        <div class="relative bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-8 text-white">
-                                            <div class="text-6xl mb-4">🎁</div>
-                                            <h2 class="text-2xl font-light mb-2">¡Revelado!</h2>
-                                            <p class="text-sm opacity-90">Tu amigo secreto es</p>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="space-y-4">
-                                        <p class="text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                                            ${data.regalo_para.first_name} ${data.regalo_para.last_name}
-                                        </p>
-                                        <div class="flex items-center justify-center gap-2 text-gray-500">
-                                            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                            <span class="text-sm">Sorteo completado</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Tarjetas de información en grid -->
-                                <div class="grid md:grid-cols-3 gap-6">
-                                    <div class="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/50 hover:bg-white/80 transition-all duration-300">
-                                        <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center text-white text-xl mb-4">
-                                            📅
-                                        </div>
-                                        <h3 class="text-sm font-medium text-gray-500 mb-1">Fecha</h3>
-                                        <p class="text-lg font-semibold text-gray-900">${data.fecha_intercambio || '15 de Diciembre'}</p>
-                                    </div>
-                                    
-                                    <div class="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/50 hover:bg-white/80 transition-all duration-300">
-                                        <div class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-white text-xl mb-4">
-                                            💰
-                                        </div>
-                                        <h3 class="text-sm font-medium text-gray-500 mb-1">Monto sugerido</h3>
-                                        <p class="text-lg font-semibold text-gray-900">$${data.monto_sugerido || '500'} MXN</p>
-                                    </div>
-                                    
-                                    <div class="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/50 hover:bg-white/80 transition-all duration-300">
-                                        <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center text-white text-xl mb-4">
-                                            🤫
-                                        </div>
-                                        <h3 class="text-sm font-medium text-gray-500 mb-1">Secreto</h3>
-                                        <p class="text-lg font-semibold text-gray-900">Mantenido</p>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
+                        // Usuario participa y ya se realizó el sorteo - Diseño oscuro elegante con revelación
+                        // Guardar los datos para la función de revelación
+                        window.nombreAsignado = `${data.regalo_para.first_name} ${data.regalo_para.last_name}`;
+                        window.montoSugerido = data.monto_sugerido || '500';
+                        
+                        // Mostrar la vista inicial con el botón de revelación
+                        document.getElementById('hidden-view').style.display = 'block';
+                        document.getElementById('revealed-view').style.display = 'none';
+                        
+                        // Actualizar el monto en la vista revelada
+                        document.getElementById('monto-display').textContent = `$${window.montoSugerido} MXN`;
                     } else if (data.participa && !data.sorteo_realizado) {
                         // Usuario participa pero aún no hay sorteo - Diseño fresco y moderno
                         contenido.innerHTML = `
@@ -1037,27 +1132,61 @@
             }
         }
 
-        // Función para crear copos de nieve (solo para usuarios no administradores)
-        function createSnowfall() {
+        // Función para manejar la animación de revelación
+        function revealAssignment() {
+            // 1. Ocultar la vista inicial
+            document.getElementById('hidden-view').style.display = 'none';
+            
+            // 2. Mostrar la vista revelada
+            const revealedView = document.getElementById('revealed-view');
+            revealedView.style.display = 'block';
+
+            // 3. Colocar el nombre en el elemento
+            const assignedName = document.getElementById('assigned-name');
+            assignedName.textContent = window.nombreAsignado;
+
+            // 4. Aplicar la clase de animación al nombre
+            setTimeout(() => {
+                assignedName.classList.add('revealed');
+            }, 50);
+        }
+
+        // Función para crear y animar los copos de nieve (nueva versión)
+        function createSnowflakes() {
             {% if not user.is_superuser %}
-            const container = document.getElementById('snowfall-container');
+            const container = document.getElementById('snow-container');
             if (!container) return;
             
-            const snowflakes = ['❄', '❅', '❆', '✳', '✸', '✦'];
-            const numberOfSnowflakes = 50;
-            
+            const numberOfSnowflakes = 120; // Aumentado para mayor densidad
+
             for (let i = 0; i < numberOfSnowflakes; i++) {
-                const snowflake = document.createElement('div');
-                snowflake.className = 'snowflake';
-                snowflake.innerHTML = snowflakes[Math.floor(Math.random() * snowflakes.length)];
+                const flake = document.createElement('div');
+                flake.className = 'snowflake';
                 
-                // Posición y timing aleatorio
-                snowflake.style.left = Math.random() * 100 + '%';
-                snowflake.style.fontSize = (Math.random() * 0.8 + 0.8) + 'em';
-                snowflake.style.animationDuration = (Math.random() * 8 + 6) + 's';
-                snowflake.style.animationDelay = Math.random() * 8 + 's';
+                // Tamaño aleatorio (5px a 12px)
+                const size = Math.random() * 7 + 5;
+                flake.style.width = `${size}px`;
+                flake.style.height = `${size}px`;
                 
-                container.appendChild(snowflake);
+                // Posición inicial aleatoria (x) que cubre todo el ancho
+                flake.style.left = `${Math.random() * 100}vw`;
+
+                // Duración de la caída aleatoria (velocidad vertical: 10s a 20s)
+                const duration = Math.random() * 10 + 10;
+                // Retraso negativo más amplio para que empiecen dispersos en pantalla (0s a -30s)
+                const delay = Math.random() * -30;
+
+                // Amplitud de deriva lateral aleatoria (4vw a 12vw, con dirección +/-)
+                const amplitude = (Math.random() * 8 + 4) * (Math.random() < 0.5 ? 1 : -1);
+                // Duración de la deriva lateral (velocidad horizontal: 2s a 6s)
+                const driftDuration = Math.random() * 4 + 2;
+
+                // Asignar variables CSS y duraciones de animación
+                flake.style.setProperty('--drift-amplitude', `${amplitude}vw`);
+                flake.style.animationDuration = `${duration}s, ${driftDuration}s`; /* Caída, luego deriva */
+                flake.style.animationDelay = `${delay}s, ${Math.random() * 3}s`;
+                
+                container.appendChild(flake);
             }
             {% endif %}
         }
@@ -1065,7 +1194,7 @@
         // Event listeners
         document.addEventListener('DOMContentLoaded', function() {
             // Inicializar copos de nieve para usuarios no administradores
-            createSnowfall();
+            createSnowflakes();
             
             const agregarBtn = document.getElementById('agregar-participante-btn');
             const sorteoBtn = document.getElementById('realizar-sorteo-btn');
