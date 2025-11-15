@@ -439,9 +439,13 @@
 
                     /* Keyframes para la caída (vertical, usa translateY) */
                     @keyframes fall {
+                        0% {
+                            /* Posición inicial arriba de la pantalla */
+                            transform: translateY(-100px);
+                        }
                         to {
-                            /* Usamos transform para combinar con el movimiento lateral */
-                            transform: translateY(100vh);
+                            /* Posición final abajo de la pantalla */
+                            transform: translateY(calc(100vh + 100px));
                         }
                     }
                     
@@ -1143,7 +1147,7 @@
 
             // 3. Colocar el nombre en el elemento
             const assignedName = document.getElementById('assigned-name');
-            assignedName.textContent = window.nombreAsignado;
+            assignedName.textContent = window.nombreAsignado || 'Cargando...';
 
             // 4. Aplicar la clase de animación al nombre
             setTimeout(() => {
@@ -1169,7 +1173,9 @@
                 flake.style.height = `${size}px`;
                 
                 // Posición inicial aleatoria (x) que cubre todo el ancho
-                flake.style.left = `${Math.random() * 100}vw`;
+                flake.style.left = `${Math.random() * 100}%`;
+                // Posición inicial arriba de la pantalla para que caigan desde arriba
+                flake.style.top = '-100px';
 
                 // Duración de la caída aleatoria (velocidad vertical: 10s a 20s)
                 const duration = Math.random() * 10 + 10;
