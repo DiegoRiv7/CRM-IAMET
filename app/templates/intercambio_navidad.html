@@ -335,35 +335,34 @@
                 </div>
 
             {% else %}
-                <!-- VISTA DEL USUARIO REGULAR - DISEÑO NUEVO ANCHO -->
-                <div class="min-h-screen px-4 py-8">
-                    <div class="w-full max-w-7xl mx-auto">
-                        <!-- Contenedor principal ancho -->
-                        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
-                            
-                            <!-- Header ancho con fondo gradiente -->
-                            <div class="bg-gradient-to-r from-slate-50 to-gray-100 px-8 py-12 border-b border-gray-200">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <h1 class="text-4xl font-bold text-gray-900 mb-2">
-                                            🎄 Intercambio Navideño
-                                        </h1>
-                                        <p class="text-xl text-gray-600">
-                                            {{ request.user.get_full_name|default:request.user.username }}
-                                        </p>
+                <!-- VISTA DEL USUARIO REGULAR - DISEÑO FRESCO Y MODERNO -->
+                <div class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+                    <!-- Elementos decorativos flotantes -->
+                    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+                        <div class="absolute top-20 left-10 w-32 h-32 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+                        <div class="absolute top-40 right-20 w-40 h-40 bg-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style="animation-delay: 2s;"></div>
+                        <div class="absolute bottom-20 left-1/4 w-36 h-36 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style="animation-delay: 4s;"></div>
+                    </div>
+                    
+                    <div class="relative z-10 px-6 py-12">
+                        <div class="max-w-5xl mx-auto">
+                            <!-- Header minimalista -->
+                            <header class="text-center mb-16">
+                                <div class="inline-flex items-center gap-3 mb-6">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg">
+                                        🎄
                                     </div>
-                                    <div class="text-6xl opacity-20">
-                                        🎅
-                                    </div>
+                                    <h1 class="text-3xl font-light text-gray-900 tracking-tight">Intercambio Navideño</h1>
                                 </div>
-                            </div>
+                                <p class="text-gray-500 text-lg">{{ request.user.get_full_name|default:request.user.username }}</p>
+                            </header>
                             
-                            <!-- Contenido principal ancho -->
-                            <div class="p-8 md:p-12">
+                            <!-- Contenedor principal -->
+                            <main>
                                 <div id="contenido-usuario" class="w-full">
                                     <!-- Se carga via JavaScript -->
                                 </div>
-                            </div>
+                            </main>
                         </div>
                     </div>
                 </div>
@@ -377,10 +376,10 @@
                     Volver al Dashboard
                 </a>
                 {% else %}
-                <div class="px-8 pb-8">
-                    <a href="{% url 'todos' %}" class="inline-flex items-center gap-3 px-8 py-4 text-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors duration-200">
+                <div class="fixed bottom-8 right-8 z-20">
+                    <a href="{% url 'todos' %}" class="inline-flex items-center gap-2 px-6 py-3 bg-white/90 backdrop-blur-sm text-gray-700 font-medium rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-white/50">
                         <span>🏠</span>
-                        Volver al Dashboard
+                        <span>Volver</span>
                     </a>
                 </div>
                 {% endif %}
@@ -736,143 +735,140 @@
                     const data = await response.json();
                     
                     if (data.participa && data.sorteo_realizado && data.regalo_para) {
-                        // Usuario participa y ya se realizó el sorteo - Diseño nuevo ancho
+                        // Usuario participa y ya se realizó el sorteo - Diseño fresco y moderno
                         contenido.innerHTML = `
-                            <div class="grid md:grid-cols-3 gap-8">
-                                <!-- Columna izquierda: Resultado principal -->
-                                <div class="md:col-span-2">
-                                    <div class="bg-gradient-to-br from-green-50 to-red-50 rounded-2xl p-10 text-center">
-                                        <div class="text-8xl mb-6">🎁</div>
-                                        <h2 class="text-3xl font-bold text-gray-900 mb-6">¡Tu Amigo Secreto!</h2>
-                                        
-                                        <div class="bg-white rounded-2xl p-8 shadow-lg">
-                                            <p class="text-lg text-gray-600 mb-4">Tu regalo es para:</p>
-                                            <p class="text-5xl font-bold text-gray-900 mb-4">
-                                                ${data.regalo_para.first_name} ${data.regalo_para.last_name}
-                                            </p>
-                                            <div class="w-32 h-1 bg-gradient-to-r from-green-500 to-red-500 mx-auto rounded-full"></div>
+                            <div class="space-y-8">
+                                <!-- Tarjeta principal con resultado -->
+                                <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-12 text-center border border-white/50">
+                                    <div class="relative inline-block mb-8">
+                                        <div class="absolute inset-0 bg-gradient-to-br from-indigo-400 to-purple-600 rounded-3xl blur-lg opacity-30"></div>
+                                        <div class="relative bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-8 text-white">
+                                            <div class="text-6xl mb-4">🎁</div>
+                                            <h2 class="text-2xl font-light mb-2">¡Revelado!</h2>
+                                            <p class="text-sm opacity-90">Tu amigo secreto es</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="space-y-4">
+                                        <p class="text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                                            ${data.regalo_para.first_name} ${data.regalo_para.last_name}
+                                        </p>
+                                        <div class="flex items-center justify-center gap-2 text-gray-500">
+                                            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                            <span class="text-sm">Sorteo completado</span>
                                         </div>
                                     </div>
                                 </div>
                                 
-                                <!-- Columna derecha: Información del evento -->
-                                <div class="space-y-6">
-                                    <div class="bg-blue-50 rounded-2xl p-6">
-                                        <div class="text-3xl mb-4">📅</div>
-                                        <h3 class="text-lg font-bold text-gray-900 mb-2">Fecha del intercambio</h3>
-                                        <p class="text-xl text-gray-700">
-                                            ${data.fecha_intercambio || '15 de Diciembre'}
-                                        </p>
+                                <!-- Tarjetas de información en grid -->
+                                <div class="grid md:grid-cols-3 gap-6">
+                                    <div class="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/50 hover:bg-white/80 transition-all duration-300">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center text-white text-xl mb-4">
+                                            📅
+                                        </div>
+                                        <h3 class="text-sm font-medium text-gray-500 mb-1">Fecha</h3>
+                                        <p class="text-lg font-semibold text-gray-900">${data.fecha_intercambio || '15 de Diciembre'}</p>
                                     </div>
                                     
-                                    <div class="bg-yellow-50 rounded-2xl p-6">
-                                        <div class="text-3xl mb-4">💰</div>
-                                        <h3 class="text-lg font-bold text-gray-900 mb-2">Monto sugerido</h3>
-                                        <p class="text-xl text-gray-700">
-                                            $${data.monto_sugerido || '500'} MXN
-                                        </p>
+                                    <div class="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/50 hover:bg-white/80 transition-all duration-300">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-white text-xl mb-4">
+                                            💰
+                                        </div>
+                                        <h3 class="text-sm font-medium text-gray-500 mb-1">Monto sugerido</h3>
+                                        <p class="text-lg font-semibold text-gray-900">$${data.monto_sugerido || '500'} MXN</p>
                                     </div>
                                     
-                                    <div class="bg-purple-50 rounded-2xl p-6">
-                                        <div class="text-3xl mb-4">🤫</div>
-                                        <h3 class="text-lg font-bold text-gray-900 mb-2">Recuerda</h3>
-                                        <p class="text-gray-700">
-                                            Mantén el secreto hasta el día del intercambio
-                                        </p>
+                                    <div class="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/50 hover:bg-white/80 transition-all duration-300">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center text-white text-xl mb-4">
+                                            🤫
+                                        </div>
+                                        <h3 class="text-sm font-medium text-gray-500 mb-1">Secreto</h3>
+                                        <p class="text-lg font-semibold text-gray-900">Mantenido</p>
                                     </div>
                                 </div>
                             </div>
                         `;
                     } else if (data.participa && !data.sorteo_realizado) {
-                        // Usuario participa pero aún no hay sorteo - Diseño nuevo ancho
+                        // Usuario participa pero aún no hay sorteo - Diseño fresco y moderno
                         contenido.innerHTML = `
-                            <div class="grid md:grid-cols-2 gap-8">
-                                <!-- Columna izquierda: Estado principal -->
-                                <div class="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl p-10 text-center">
-                                    <div class="text-8xl mb-6 animate-pulse">⏳</div>
-                                    <h2 class="text-3xl font-bold text-gray-900 mb-6">Esperando el sorteo</h2>
+                            <div class="space-y-8">
+                                <!-- Tarjeta principal de espera -->
+                                <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-12 text-center border border-white/50">
+                                    <div class="relative inline-block mb-8">
+                                        <div class="absolute inset-0 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-3xl blur-lg opacity-30 animate-pulse"></div>
+                                        <div class="relative bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl p-8 text-white">
+                                            <div class="text-6xl mb-4 animate-bounce">⏳</div>
+                                            <h2 class="text-2xl font-light mb-2">En espera</h2>
+                                            <p class="text-sm opacity-90">Sorteo pendiente</p>
+                                        </div>
+                                    </div>
                                     
-                                    <div class="bg-white rounded-2xl p-8 shadow-lg">
-                                        <p class="text-xl text-gray-700 mb-4">
-                                            ✅ Ya estás registrado en el intercambio
-                                        </p>
-                                        <p class="text-lg text-gray-600">
-                                            El administrador realizará el sorteo muy pronto
-                                        </p>
+                                    <div class="space-y-4">
+                                        <p class="text-xl text-gray-700">Estás registrado en el intercambio</p>
+                                        <div class="flex items-center justify-center gap-2 text-gray-500">
+                                            <span class="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
+                                            <span class="text-sm">Esperando sorteo</span>
+                                        </div>
                                     </div>
                                 </div>
                                 
-                                <!-- Columna derecha: Información y consejos -->
-                                <div class="space-y-6">
-                                    <div class="bg-yellow-50 rounded-2xl p-6">
-                                        <div class="text-3xl mb-4">💰</div>
-                                        <h3 class="text-lg font-bold text-gray-900 mb-2">Monto sugerido</h3>
-                                        <p class="text-2xl font-bold text-gray-900">
-                                            $${data.monto_sugerido || '500'} MXN
-                                        </p>
+                                <!-- Tarjetas de información -->
+                                <div class="grid md:grid-cols-2 gap-6">
+                                    <div class="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/50 hover:bg-white/80 transition-all duration-300">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-white text-xl mb-4">
+                                            💰
+                                        </div>
+                                        <h3 class="text-sm font-medium text-gray-500 mb-1">Monto sugerido</h3>
+                                        <p class="text-2xl font-bold text-gray-900">$${data.monto_sugerido || '500'} MXN</p>
                                     </div>
                                     
-                                    <div class="bg-green-50 rounded-2xl p-6">
-                                        <div class="text-3xl mb-4">💡</div>
-                                        <h3 class="text-lg font-bold text-gray-900 mb-2">Mientras esperas</h3>
-                                        <p class="text-gray-700">
-                                            Puedes empezar a pensar en ideas de regalos para tu amigo secreto
-                                        </p>
-                                    </div>
-                                    
-                                    <div class="bg-purple-50 rounded-2xl p-6">
-                                        <div class="text-3xl mb-4">🎁</div>
-                                        <h3 class="text-lg font-bold text-gray-900 mb-2">Consejo</h3>
-                                        <p class="text-gray-700">
-                                            Los mejores regalos son aquellos que vienen del corazón
-                                        </p>
+                                    <div class="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/50 hover:bg-white/80 transition-all duration-300">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center text-white text-xl mb-4">
+                                            💡
+                                        </div>
+                                        <h3 class="text-sm font-medium text-gray-500 mb-1">Consejo</h3>
+                                        <p class="text-gray-700">Piensa en regalos significativos</p>
                                     </div>
                                 </div>
                             </div>
                         `;
                     } else {
-                        // Usuario no participa - Diseño nuevo ancho
+                        // Usuario no participa - Diseño fresco y moderno
                         contenido.innerHTML = `
-                            <div class="grid md:grid-cols-2 gap-8">
-                                <!-- Columna izquierda: Mensaje principal -->
-                                <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-10 text-center">
-                                    <div class="text-8xl mb-6">🎄</div>
-                                    <h2 class="text-3xl font-bold text-gray-900 mb-6">No estás participando</h2>
+                            <div class="space-y-8">
+                                <!-- Tarjeta principal -->
+                                <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-12 text-center border border-white/50">
+                                    <div class="relative inline-block mb-8">
+                                        <div class="absolute inset-0 bg-gradient-to-br from-gray-400 to-gray-600 rounded-3xl blur-lg opacity-30"></div>
+                                        <div class="relative bg-gradient-to-br from-gray-500 to-gray-700 rounded-3xl p-8 text-white">
+                                            <div class="text-6xl mb-4">🎄</div>
+                                            <h2 class="text-2xl font-light mb-2">No participas</h2>
+                                            <p class="text-sm opacity-90">Aún no estás registrado</p>
+                                        </div>
+                                    </div>
                                     
-                                    <div class="bg-white rounded-2xl p-8 shadow-lg">
-                                        <p class="text-xl text-gray-700 mb-4">
-                                            Aún no estás registrado en el intercambio navideño
-                                        </p>
-                                        <p class="text-lg text-gray-600">
-                                            Contacta al administrador si deseas participar
-                                        </p>
+                                    <div class="space-y-4">
+                                        <p class="text-xl text-gray-700">No estás en el intercambio navideño</p>
+                                        <p class="text-gray-600">Contacta al administrador para participar</p>
                                     </div>
                                 </div>
                                 
-                                <!-- Columna derecha: Información del evento -->
-                                <div class="space-y-6">
-                                    <div class="bg-blue-50 rounded-2xl p-6">
-                                        <div class="text-3xl mb-4">📅</div>
-                                        <h3 class="text-lg font-bold text-gray-900 mb-2">Fecha del intercambio</h3>
-                                        <p class="text-xl text-gray-700">
-                                            ${data.fecha_intercambio || '15 de Diciembre'}
-                                        </p>
+                                <!-- Tarjetas de información -->
+                                <div class="grid md:grid-cols-2 gap-6">
+                                    <div class="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/50 hover:bg-white/80 transition-all duration-300">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center text-white text-xl mb-4">
+                                            📅
+                                        </div>
+                                        <h3 class="text-sm font-medium text-gray-500 mb-1">Fecha</h3>
+                                        <p class="text-lg font-semibold text-gray-900">${data.fecha_intercambio || '15 de Diciembre'}</p>
                                     </div>
                                     
-                                    <div class="bg-yellow-50 rounded-2xl p-6">
-                                        <div class="text-3xl mb-4">💰</div>
-                                        <h3 class="text-lg font-bold text-gray-900 mb-2">Monto sugerido</h3>
-                                        <p class="text-xl text-gray-700">
-                                            $${data.monto_sugerido || '500'} MXN
-                                        </p>
-                                    </div>
-                                    
-                                    <div class="bg-green-50 rounded-2xl p-6">
-                                        <div class="text-3xl mb-4">🎅</div>
-                                        <h3 class="text-lg font-bold text-gray-900 mb-2">¿Quieres unirte?</h3>
-                                        <p class="text-gray-700">
-                                            ¡Aún hay tiempo para ser parte de esta tradición navideña!
-                                        </p>
+                                    <div class="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/50 hover:bg-white/80 transition-all duration-300">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-white text-xl mb-4">
+                                            💰
+                                        </div>
+                                        <h3 class="text-sm font-medium text-gray-500 mb-1">Monto sugerido</h3>
+                                        <p class="text-lg font-semibold text-gray-900">$${data.monto_sugerido || '500'} MXN</p>
                                     </div>
                                 </div>
                             </div>
