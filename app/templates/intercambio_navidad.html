@@ -877,7 +877,8 @@
                     if (data.participa && data.sorteo_realizado && data.regalo_para) {
                         // Usuario participa y ya se realizó el sorteo - Diseño oscuro elegante con revelación
                         // Guardar los datos para la función de revelación
-                        window.nombreAsignado = `${data.regalo_para.first_name} ${data.regalo_para.last_name}`;
+                        const nombreCompleto = `${data.regalo_para.first_name} ${data.regalo_para.last_name}`;
+                        window.nombreAsignado = nombreCompleto;
                         window.montoSugerido = data.monto_sugerido || '500';
                         
                         // Mostrar la vista inicial con el botón de revelación
@@ -886,6 +887,14 @@
                         
                         // Actualizar el monto en la vista revelada
                         document.getElementById('monto-display').textContent = `$${window.montoSugerido} MXN`;
+                        
+                        // También actualizar el nombre directamente en el elemento por si acaban de cargar la página
+                        setTimeout(() => {
+                            const assignedName = document.getElementById('assigned-name');
+                            if (assignedName) {
+                                assignedName.textContent = nombreCompleto;
+                            }
+                        }, 100);
                     } else if (data.participa && !data.sorteo_realizado) {
                         // Usuario participa pero aún no hay sorteo - Diseño fresco y moderno
                         contenido.innerHTML = `
