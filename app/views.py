@@ -10859,9 +10859,10 @@ def realizar_sorteo_navidad(request):
         if len(participantes_db) < 2:
             return JsonResponse({'error': 'Se necesitan al menos 2 participantes'}, status=400)
         
-        # Si ya se realizó el sorteo, no permitir hacerlo de nuevo
+        # Permitir repetir el sorteo (útil cuando se agregan más participantes)
         if intercambio.sorteo_realizado:
-            return JsonResponse({'error': 'El sorteo ya fue realizado para este año'}, status=400)
+            # Solo mostrar una advertencia en consola, pero permitir continuar
+            print(f"Repitiendo sorteo para intercambio {intercambio.año}")
         
         # Limpiar asignaciones anteriores (por si se vuelve a ejecutar)
         for participante in participantes_db:
@@ -11086,12 +11087,19 @@ def actualizar_evento_navidad(request):
     
     try:
         data = json.loads(request.body)
-        fecha_intercambio = data.get('fecha_intercambio')
+        fecha_intercambio_str = data.get('fecha_intercambio')
         monto_sugerido = data.get('monto_sugerido', 500)
         descripcion = data.get('descripcion', '')
         
-        if not fecha_intercambio:
+        if not fecha_intercambio_str:
             return JsonResponse({'error': 'Fecha del intercambio es requerida'}, status=400)
+        
+        # Convertir la fecha string a objeto date
+        try:
+            from datetime import datetime as dt
+            fecha_intercambio = dt.strptime(fecha_intercambio_str, '%Y-%m-%d').date()
+        except ValueError:
+            return JsonResponse({'error': 'Formato de fecha inválido'}, status=400)
         
         # Crear o obtener intercambio del año actual
         año_actual = datetime.now().year
@@ -11123,7 +11131,10 @@ def actualizar_evento_navidad(request):
         })
         
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        print(f"Error en actualizar_evento_navidad: {e}")
+        import traceback
+        print(traceback.format_exc())
+        return JsonResponse({'error': f'Error interno del servidor: {str(e)}'}, status=500)
 
 
 @csrf_exempt

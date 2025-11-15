@@ -439,6 +439,9 @@
                     await cargarParticipantes();
                     select.value = '';
                     mostrarMensaje(mensaje, '¡Participante agregado exitosamente!', 'success');
+                    
+                    // Resetear el estado del botón de sorteo para permitir repetirlo
+                    resetearBotonSorteo();
                 } else {
                     mostrarMensaje(mensaje, data.error || 'Error al agregar participante', 'error');
                 }
@@ -644,6 +647,28 @@
                 btn.disabled = false;
                 btn.classList.remove('opacity-50', 'cursor-not-allowed');
                 mensaje.textContent = `¡Listo para sortear! (${participantes.length} participantes)`;
+            }
+        }
+        
+        // Función para resetear el botón de sorteo
+        function resetearBotonSorteo() {
+            const btn = document.getElementById('realizar-sorteo-btn');
+            const mensaje = document.getElementById('mensaje-sorteo');
+            const estadoSorteo = document.getElementById('estado-sorteo');
+            
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<span>¡Realizar Sorteo!</span>';
+                btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                btn.classList.add('bg-red-600', 'hover:bg-red-700');
+            }
+            
+            if (mensaje) {
+                mensaje.innerHTML = `¡Listo para sortear! (${participantes.length} participantes)`;
+            }
+            
+            if (estadoSorteo) {
+                estadoSorteo.innerHTML = '<span class="text-orange-600 font-medium">Pendiente</span>';
             }
         }
 
