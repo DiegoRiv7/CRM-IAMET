@@ -878,18 +878,25 @@
                         // Usuario participa y ya se realizó el sorteo - Diseño oscuro elegante con revelación
                         // Guardar los datos para la función de revelación
                         const nombreCompleto = `${data.regalo_para.first_name} ${data.regalo_para.last_name}`;
-                        window.nombreAsignado = nombreCompleto;
-                        window.montoSugerido = data.monto_sugerido || '500';
                         
-                        // Depuración
-                        console.log('Nombre asignado guardado:', window.nombreAsignado);
+                        // Asegurar que la variable global se establezca correctamente
+                        if (typeof window !== 'undefined') {
+                            window.nombreAsignado = nombreCompleto;
+                            window.montoSugerido = data.monto_sugerido || '500';
+                            
+                            // Depuración
+                            console.log('Nombre asignado guardado:', window.nombreAsignado);
+                        }
                         
                         // Mostrar la vista inicial con el botón de revelación
                         document.getElementById('hidden-view').style.display = 'block';
                         document.getElementById('revealed-view').style.display = 'none';
                         
                         // Actualizar el monto en la vista revelada
-                        document.getElementById('monto-display').textContent = `$${window.montoSugerido} MXN`;
+                        const montoDisplay = document.getElementById('monto-display');
+                        if (montoDisplay) {
+                            montoDisplay.textContent = `$${window.montoSugerido} MXN`;
+                        }
                         
                         // También actualizar el nombre directamente en el elemento por si acaban de cargar la página
                         setTimeout(() => {
