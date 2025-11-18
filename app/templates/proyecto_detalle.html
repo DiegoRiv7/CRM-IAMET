@@ -2960,6 +2960,354 @@
     .flex-1 {
         flex: 1;
     }
+
+    /* ==========================================
+       CONFIGURACIÓN DEL PROYECTO - ESTILOS
+       ========================================== */
+    
+    .configuracion-container {
+        padding: 1.5rem;
+        background: var(--apple-bg-secondary);
+        border-radius: 12px;
+        margin: 1rem 0;
+    }
+    
+    .config-header {
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--apple-separator);
+    }
+    
+    .config-header h3 {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--apple-label);
+        margin: 0 0 0.5rem 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+    
+    .config-header p {
+        color: var(--apple-label-secondary);
+        margin: 0;
+        font-size: 0.95rem;
+    }
+    
+    .config-form {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+    
+    .config-section {
+        background: var(--apple-bg-tertiary);
+        border-radius: 10px;
+        padding: 1.5rem;
+        border: 1px solid var(--apple-separator);
+    }
+    
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--apple-blue);
+        margin: 0 0 1.25rem 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+    
+    .form-group:last-child {
+        margin-bottom: 0;
+    }
+    
+    .form-group label {
+        display: block;
+        color: var(--apple-label);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        border: 1px solid var(--apple-separator);
+        border-radius: 8px;
+        background: var(--apple-bg);
+        color: var(--apple-label);
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: var(--apple-blue);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+    }
+    
+    .form-control::placeholder {
+        color: var(--apple-label-tertiary);
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    /* Estilos para gestión de miembros */
+    .miembros-container {
+        background: var(--apple-bg);
+        border-radius: 8px;
+        border: 1px solid var(--apple-separator);
+        overflow: hidden;
+    }
+    
+    .miembros-actuales {
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .miembro-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem;
+        background: var(--apple-bg-secondary);
+        border-radius: 8px;
+        border: 1px solid var(--apple-separator);
+    }
+    
+    .miembro-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .miembro-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--apple-blue);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .btn-remove-miembro {
+        background: var(--apple-red);
+        border: none;
+        border-radius: 6px;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-remove-miembro:hover {
+        background: #d70015;
+        transform: scale(1.05);
+    }
+    
+    .agregar-miembro {
+        padding: 1rem;
+        border-top: 1px solid var(--apple-separator);
+        background: var(--apple-bg-tertiary);
+    }
+    
+    /* Search containers */
+    .search-container {
+        position: relative;
+    }
+    
+    .search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--apple-bg);
+        border: 1px solid var(--apple-separator);
+        border-radius: 8px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+    
+    .search-results.active {
+        display: block;
+    }
+    
+    .search-result-item {
+        padding: 0.75rem;
+        cursor: pointer;
+        border-bottom: 1px solid var(--apple-separator);
+        transition: background-color 0.15s ease;
+    }
+    
+    .search-result-item:hover {
+        background: var(--apple-blue-light);
+    }
+    
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
+    
+    /* Oportunidad vinculada styles */
+    .oportunidad-actual {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background: var(--apple-bg-secondary);
+        border-radius: 8px;
+        border: 1px solid var(--apple-separator);
+    }
+    
+    .oportunidad-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .oportunidad-info strong {
+        color: var(--apple-label);
+        font-weight: 600;
+    }
+    
+    .oportunidad-cliente {
+        color: var(--apple-label-secondary);
+        font-size: 0.9rem;
+    }
+    
+    .oportunidad-monto {
+        color: var(--apple-green);
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+    
+    .btn-desvincular {
+        background: var(--apple-red);
+        border: none;
+        border-radius: 6px;
+        padding: 0.5rem 0.75rem;
+        color: white;
+        font-size: 0.85rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-desvincular:hover {
+        background: #d70015;
+        transform: translateY(-1px);
+    }
+    
+    .buscar-oportunidad .help-text {
+        margin: 0.75rem 0 0 0;
+        color: var(--apple-label-tertiary);
+        font-size: 0.85rem;
+        font-style: italic;
+    }
+    
+    /* Botones de acción */
+    .config-actions {
+        display: flex;
+        gap: 1rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--apple-separator);
+    }
+    
+    .btn-guardar-config {
+        background: var(--apple-blue);
+        border: none;
+        border-radius: 8px;
+        padding: 0.875rem 1.5rem;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        flex: 1;
+        justify-content: center;
+    }
+    
+    .btn-guardar-config:hover {
+        background: #0051d5;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
+    }
+    
+    .btn-cancelar-config {
+        background: transparent;
+        border: 1px solid var(--apple-separator);
+        border-radius: 8px;
+        padding: 0.875rem 1.5rem;
+        color: var(--apple-label-secondary);
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-cancelar-config:hover {
+        background: var(--apple-bg-secondary);
+        border-color: var(--apple-label-tertiary);
+        color: var(--apple-label);
+    }
+    
+    @media (max-width: 640px) {
+        .config-actions {
+            flex-direction: column;
+        }
+        
+        .configuracion-container {
+            padding: 1rem;
+            margin: 0.5rem 0;
+        }
+        
+        .config-section {
+            padding: 1rem;
+        }
+        
+        .oportunidad-actual {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+        
+        .btn-desvincular {
+            align-self: flex-end;
+        }
+    }
     }
 </style>
 
@@ -3435,13 +3783,173 @@
 
             <!-- Configuración Tab -->
             <div class="tab-content" id="configuracion-content">
-                <div class="empty-state">
-                    <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1">
-                        <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                    <h3>Configuración del Proyecto</h3>
-                    <p>Ajustes y configuración avanzada del proyecto.</p>
+                <div class="configuracion-container">
+                    <div class="config-header">
+                        <h3>
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            Configuración del Proyecto
+                        </h3>
+                        <p>Modificar configuración general del proyecto</p>
+                    </div>
+                    
+                    <form id="configProyectoForm" class="config-form">
+                        {% csrf_token %}
+                        
+                        <!-- Información Básica -->
+                        <div class="config-section">
+                            <h4 class="section-title">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Información Básica
+                            </h4>
+                            
+                            <div class="form-group">
+                                <label for="proyectoNombre">Nombre del Proyecto</label>
+                                <input type="text" id="proyectoNombre" name="nombre" value="{{ proyecto.nombre }}" class="form-control">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="proyectoDescripcion">Descripción</label>
+                                <textarea id="proyectoDescripcion" name="descripcion" class="form-control" rows="3">{{ proyecto.descripcion|default:"" }}</textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Configuración del Proyecto -->
+                        <div class="config-section">
+                            <h4 class="section-title">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/>
+                                </svg>
+                                Configuración General
+                            </h4>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="proyectoTipo">Tipo de Proyecto</label>
+                                    <select id="proyectoTipo" name="tipo" class="form-control">
+                                        <option value="runrate" {% if proyecto.tipo == 'runrate' %}selected{% endif %}>Runrate</option>
+                                        <option value="ingenieria" {% if proyecto.tipo == 'ingenieria' %}selected{% endif %}>Ingeniería</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="proyectoPrivacidad">Privacidad</label>
+                                    <select id="proyectoPrivacidad" name="privacidad" class="form-control">
+                                        <option value="publico" {% if proyecto.privacidad == 'publico' %}selected{% endif %}>Público</option>
+                                        <option value="privado" {% if proyecto.privacidad == 'privado' %}selected{% endif %}>Privado</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Gestión de Miembros -->
+                        <div class="config-section">
+                            <h4 class="section-title">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                                Gestión de Miembros
+                            </h4>
+                            
+                            <div class="form-group">
+                                <label for="proyectoResponsable">Responsable del Proyecto</label>
+                                <select id="proyectoResponsable" name="responsable" class="form-control">
+                                    {% for usuario in usuarios_disponibles %}
+                                        <option value="{{ usuario.id }}" 
+                                            {% if proyecto.responsable and proyecto.responsable.id == usuario.id %}selected{% endif %}>
+                                            {{ usuario.get_full_name|default:usuario.username }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Miembros del Proyecto</label>
+                                <div class="miembros-container">
+                                    <div class="miembros-actuales" id="miembrosActuales">
+                                        {% for miembro in proyecto.miembros.all %}
+                                            <div class="miembro-item" data-usuario-id="{{ miembro.id }}">
+                                                <div class="miembro-info">
+                                                    <div class="miembro-avatar">{{ miembro.get_full_name.0|default:miembro.username.0|upper }}</div>
+                                                    <span>{{ miembro.get_full_name|default:miembro.username }}</span>
+                                                </div>
+                                                <button type="button" class="btn-remove-miembro" onclick="removeMiembro({{ miembro.id }})">
+                                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    <div class="agregar-miembro">
+                                        <div class="search-container">
+                                            <input type="text" id="searchUsuarios" placeholder="Buscar usuarios..." class="form-control">
+                                            <div class="search-results" id="searchResults"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Vinculación con Oportunidad -->
+                        <div class="config-section">
+                            <h4 class="section-title">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                </svg>
+                                Ligar a Oportunidad
+                            </h4>
+                            
+                            <div class="form-group">
+                                <label>Oportunidad Vinculada</label>
+                                {% if proyecto.oportunidad_vinculada %}
+                                    <div class="oportunidad-actual">
+                                        <div class="oportunidad-info">
+                                            <strong>{{ proyecto.oportunidad_vinculada.titulo }}</strong>
+                                            <span class="oportunidad-cliente">{{ proyecto.oportunidad_vinculada.cliente.nombre_empresa }}</span>
+                                            <span class="oportunidad-monto">${{ proyecto.oportunidad_vinculada.monto|floatformat:0 }}</span>
+                                        </div>
+                                        <button type="button" class="btn-desvincular" onclick="desvincularOportunidad()">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                            </svg>
+                                            Desvincular
+                                        </button>
+                                    </div>
+                                {% else %}
+                                    <div class="buscar-oportunidad">
+                                        <div class="search-container">
+                                            <input type="text" id="searchOportunidades" placeholder="Buscar oportunidades..." class="form-control">
+                                            <div class="search-results" id="oportunidadesResults"></div>
+                                        </div>
+                                        <p class="help-text">Escribe el nombre de una oportunidad y presiona Enter para buscar</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Botones de Acción -->
+                        <div class="config-actions">
+                            <button type="submit" class="btn-guardar-config">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                Guardar Cambios
+                            </button>
+                            
+                            <button type="button" class="btn-cancelar-config" onclick="resetConfigForm()">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -11048,6 +11556,310 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btnCrearCarpeta) {
         btnCrearCarpeta.addEventListener('click', openCreateFolderModal);
     }
+
+    // ==========================================
+    // CONFIGURACIÓN DEL PROYECTO - JAVASCRIPT
+    // ==========================================
+
+    // Variables globales para configuración
+    window.miembrosActuales = new Set();
+    window.oportunidadVinculada = null;
+
+    // Función para buscar usuarios
+    window.searchUsuarios = async function(query) {
+        try {
+            const response = await fetch('/app/api/buscar-usuarios/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                },
+                body: JSON.stringify({ query: query })
+            });
+            
+            const data = await response.json();
+            return data.usuarios || [];
+        } catch (error) {
+            console.error('Error buscando usuarios:', error);
+            return [];
+        }
+    };
+
+    // Función para mostrar resultados de búsqueda de usuarios
+    window.displayUsuarioResults = function(usuarios) {
+        const resultsContainer = document.getElementById('searchResults');
+        resultsContainer.innerHTML = '';
+        
+        if (usuarios.length === 0) {
+            resultsContainer.style.display = 'none';
+            return;
+        }
+        
+        usuarios.forEach(usuario => {
+            // No mostrar usuarios que ya son miembros
+            if (window.miembrosActuales.has(usuario.id)) return;
+            
+            const item = document.createElement('div');
+            item.className = 'search-result-item';
+            item.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--apple-blue); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.8rem;">
+                        ${(usuario.nombre || usuario.username).charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <div style="font-weight: 500; color: var(--apple-label);">${usuario.nombre || usuario.username}</div>
+                        <div style="font-size: 0.85rem; color: var(--apple-label-secondary);">${usuario.email || ''}</div>
+                    </div>
+                </div>
+            `;
+            
+            item.addEventListener('click', () => {
+                addMiembroToProject(usuario);
+                document.getElementById('searchUsuarios').value = '';
+                resultsContainer.style.display = 'none';
+            });
+            
+            resultsContainer.appendChild(item);
+        });
+        
+        resultsContainer.classList.add('active');
+    };
+
+    // Función para agregar miembro al proyecto
+    window.addMiembroToProject = function(usuario) {
+        if (window.miembrosActuales.has(usuario.id)) return;
+        
+        window.miembrosActuales.add(usuario.id);
+        
+        const container = document.getElementById('miembrosActuales');
+        const miembroItem = document.createElement('div');
+        miembroItem.className = 'miembro-item';
+        miembroItem.setAttribute('data-usuario-id', usuario.id);
+        miembroItem.innerHTML = `
+            <div class="miembro-info">
+                <div class="miembro-avatar">${(usuario.nombre || usuario.username).charAt(0).toUpperCase()}</div>
+                <span>${usuario.nombre || usuario.username}</span>
+            </div>
+            <button type="button" class="btn-remove-miembro" onclick="removeMiembro(${usuario.id})">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        `;
+        
+        container.appendChild(miembroItem);
+    };
+
+    // Función para remover miembro
+    window.removeMiembro = function(usuarioId) {
+        window.miembrosActuales.delete(usuarioId);
+        const item = document.querySelector(`[data-usuario-id="${usuarioId}"]`);
+        if (item) item.remove();
+    };
+
+    // Función para buscar oportunidades
+    window.searchOportunidades = async function(query) {
+        try {
+            const response = await fetch(`/app/api/buscar-oportunidades-proyecto/?q=${encodeURIComponent(query)}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                }
+            });
+            
+            const data = await response.json();
+            return data.oportunidades || [];
+        } catch (error) {
+            console.error('Error buscando oportunidades:', error);
+            return [];
+        }
+    };
+
+    // Función para mostrar resultados de oportunidades
+    window.displayOportunidadResults = function(oportunidades) {
+        const resultsContainer = document.getElementById('oportunidadesResults');
+        resultsContainer.innerHTML = '';
+        
+        if (oportunidades.length === 0) {
+            resultsContainer.style.display = 'none';
+            return;
+        }
+        
+        oportunidades.forEach(oportunidad => {
+            const item = document.createElement('div');
+            item.className = 'search-result-item';
+            item.innerHTML = `
+                <div>
+                    <div style="font-weight: 600; color: var(--apple-label);">${oportunidad.titulo}</div>
+                    <div style="font-size: 0.85rem; color: var(--apple-label-secondary);">${oportunidad.cliente__nombre_empresa}</div>
+                    <div style="font-size: 0.85rem; color: var(--apple-green); font-weight: 500;">$${oportunidad.monto}</div>
+                </div>
+            `;
+            
+            item.addEventListener('click', () => {
+                vincularOportunidad(oportunidad);
+                document.getElementById('searchOportunidades').value = '';
+                resultsContainer.style.display = 'none';
+            });
+            
+            resultsContainer.appendChild(item);
+        });
+        
+        resultsContainer.classList.add('active');
+    };
+
+    // Función para vincular oportunidad
+    window.vincularOportunidad = function(oportunidad) {
+        window.oportunidadVinculada = oportunidad.id;
+        
+        // Reemplazar el buscador con la información de la oportunidad vinculada
+        const buscarContainer = document.querySelector('.buscar-oportunidad');
+        if (buscarContainer) {
+            buscarContainer.innerHTML = `
+                <div class="oportunidad-actual">
+                    <div class="oportunidad-info">
+                        <strong>${oportunidad.titulo}</strong>
+                        <span class="oportunidad-cliente">${oportunidad.cliente__nombre_empresa}</span>
+                        <span class="oportunidad-monto">$${oportunidad.monto}</span>
+                    </div>
+                    <button type="button" class="btn-desvincular" onclick="desvincularOportunidad()">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                        Desvincular
+                    </button>
+                </div>
+            `;
+        }
+    };
+
+    // Función para desvincular oportunidad
+    window.desvincularOportunidad = function() {
+        window.oportunidadVinculada = null;
+        
+        const actualContainer = document.querySelector('.oportunidad-actual').parentNode;
+        actualContainer.innerHTML = `
+            <div class="buscar-oportunidad">
+                <div class="search-container">
+                    <input type="text" id="searchOportunidades" placeholder="Buscar oportunidades..." class="form-control">
+                    <div class="search-results" id="oportunidadesResults"></div>
+                </div>
+                <p class="help-text">Escribe el nombre de una oportunidad y presiona Enter para buscar</p>
+            </div>
+        `;
+        
+        // Re-configurar event listener
+        setupOportunidadSearch();
+    };
+
+    // Función para configurar búsqueda de oportunidades
+    window.setupOportunidadSearch = function() {
+        const searchInput = document.getElementById('searchOportunidades');
+        if (searchInput) {
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const query = this.value.trim();
+                    if (query) {
+                        window.searchOportunidades(query).then(window.displayOportunidadResults);
+                    }
+                }
+            });
+        }
+    };
+
+    // Función para resetear formulario de configuración
+    window.resetConfigForm = function() {
+        document.getElementById('configProyectoForm').reset();
+        // Restaurar miembros originales
+        // Restaurar oportunidad vinculada original
+        location.reload(); // Simple reset por ahora
+    };
+
+    // Función principal para guardar configuración
+    window.guardarConfiguracion = async function(formData) {
+        try {
+            const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/configuracion/`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                },
+                body: JSON.stringify({
+                    nombre: formData.get('nombre'),
+                    descripcion: formData.get('descripcion'),
+                    tipo: formData.get('tipo'),
+                    privacidad: formData.get('privacidad'),
+                    responsable_id: formData.get('responsable'),
+                    miembros_ids: Array.from(window.miembrosActuales),
+                    oportunidad_vinculada_id: window.oportunidadVinculada
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                showUploadNotification('✅ Configuración guardada exitosamente', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                throw new Error(data.error || 'Error desconocido');
+            }
+        } catch (error) {
+            console.error('Error guardando configuración:', error);
+            showUploadNotification('❌ Error: ' + error.message, 'error');
+        }
+    };
+
+    // Event listeners para configuración
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar miembros actuales
+        document.querySelectorAll('.miembro-item').forEach(item => {
+            const usuarioId = parseInt(item.getAttribute('data-usuario-id'));
+            window.miembrosActuales.add(usuarioId);
+        });
+
+        // Configurar búsqueda de usuarios
+        const searchUsuarios = document.getElementById('searchUsuarios');
+        if (searchUsuarios) {
+            let searchTimeout;
+            searchUsuarios.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+                
+                if (query.length < 2) {
+                    document.getElementById('searchResults').style.display = 'none';
+                    return;
+                }
+                
+                searchTimeout = setTimeout(() => {
+                    window.searchUsuarios(query).then(window.displayUsuarioResults);
+                }, 300);
+            });
+        }
+
+        // Configurar búsqueda de oportunidades
+        window.setupOportunidadSearch();
+
+        // Configurar formulario de configuración
+        const configForm = document.getElementById('configProyectoForm');
+        if (configForm) {
+            configForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                window.guardarConfiguracion(formData);
+            });
+        }
+
+        // Cerrar resultados al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-container')) {
+                document.querySelectorAll('.search-results').forEach(container => {
+                    container.style.display = 'none';
+                });
+            }
+        });
+    });
 });
 </script>
 

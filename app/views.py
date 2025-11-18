@@ -1274,10 +1274,15 @@ def proyecto_detalle(request, proyecto_id):
             'mi_rol': proyecto.get_rol_usuario(request.user)
         }
         
+        # Obtener usuarios disponibles para asignar como responsables y miembros
+        from django.contrib.auth.models import User
+        usuarios_disponibles = User.objects.filter(is_active=True).order_by('first_name', 'username')
+
         context = {
-            'proyecto': proyecto_data,
+            'proyecto': proyecto,  # Pasar objeto completo para acceder a métodos
             'user': request.user,
-            'page_title': f'Proyecto: {proyecto.nombre}'
+            'page_title': f'Proyecto: {proyecto.nombre}',
+            'usuarios_disponibles': usuarios_disponibles
         }
         
         return render(request, 'proyecto_detalle.html', context)
@@ -1541,6 +1546,196 @@ def api_eliminar_comentario_proyecto(request, comentario_id):
     except Exception as e:
         print(f"Error eliminando comentario: {e}")
         return JsonResponse({'error': 'Error interno'}, status=500)
+
+
+@login_required
+def api_configuracion_proyecto(request, proyecto_id):
+    """
+    API para actualizar la configuración completa de un proyecto
+    """
+    print(f"🔍 api_configuracion_proyecto - Usuario: {request.user.username}, Proyecto ID: {proyecto_id}")
+    
+    if request.method != 'PUT':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+        
+        # Verificar permisos - solo el creador puede modificar la configuración
+        if proyecto.creado_por != request.user:
+            return JsonResponse({'error': 'Sin permisos para modificar este proyecto'}, status=403)
+        
+        import json
+        data = json.loads(request.body)
+        
+        # Actualizar información básica
+        if 'nombre' in data:
+            nombre = data['nombre'].strip()
+            if not nombre:
+                return JsonResponse({'error': 'El nombre del proyecto es requerido'}, status=400)
+            proyecto.nombre = nombre
+        
+        if 'descripcion' in data:
+            proyecto.descripcion = data['descripcion'].strip()
+        
+        if 'tipo' in data:
+            if data['tipo'] in ['runrate', 'ingenieria']:
+                proyecto.tipo = data['tipo']
+        
+        if 'privacidad' in data:
+            if data['privacidad'] in ['publico', 'privado']:
+                proyecto.privacidad = data['privacidad']
+        
+        # Actualizar responsable
+        if 'responsable_id' in data:
+            responsable_id = data['responsable_id']
+            if responsable_id:
+                try:
+                    from django.contrib.auth.models import User
+                    nuevo_responsable = User.objects.get(id=responsable_id)
+                    proyecto.responsable = nuevo_responsable
+                except User.DoesNotExist:
+                    return JsonResponse({'error': 'Responsable no encontrado'}, status=400)
+        
+        # Actualizar miembros
+        if 'miembros_ids' in data:
+            from django.contrib.auth.models import User
+            miembros_ids = data['miembros_ids']
+            
+            # Limpiar miembros actuales
+            proyecto.miembros.clear()
+            
+            # Agregar nuevos miembros
+            for miembro_id in miembros_ids:
+                try:
+                    usuario = User.objects.get(id=miembro_id)
+                    proyecto.miembros.add(usuario)
+                    
+                    # Enviar notificación si es un miembro nuevo
+                    notificar_miembro_agregado_proyecto(
+                        usuario_agregado=usuario,
+                        proyecto_nombre=proyecto.nombre,
+                        proyecto_id=proyecto.id,
+                        usuario_que_agrega=request.user
+                    )
+                except User.DoesNotExist:
+                    continue
+        
+        # Actualizar oportunidad vinculada
+        if 'oportunidad_vinculada_id' in data:
+            oportunidad_id = data['oportunidad_vinculada_id']
+            if oportunidad_id:
+                try:
+                    oportunidad = TodoItem.objects.get(id=oportunidad_id)
+                    proyecto.oportunidad_vinculada = oportunidad
+                except TodoItem.DoesNotExist:
+                    return JsonResponse({'error': 'Oportunidad no encontrada'}, status=400)
+            else:
+                proyecto.oportunidad_vinculada = None
+        
+        # Guardar cambios
+        proyecto.save()
+        
+        # Crear comentario de sistema con los cambios realizados
+        cambios = []
+        if 'nombre' in data:
+            cambios.append(f"Nombre actualizado a '{proyecto.nombre}'")
+        if 'tipo' in data:
+            cambios.append(f"Tipo cambiado a '{proyecto.get_tipo_display()}'")
+        if 'privacidad' in data:
+            cambios.append(f"Privacidad cambiada a '{proyecto.get_privacidad_display()}'")
+        if 'responsable_id' in data and proyecto.responsable:
+            cambios.append(f"Responsable asignado: {proyecto.responsable.get_full_name() or proyecto.responsable.username}")
+        if 'miembros_ids' in data:
+            cambios.append(f"Miembros actualizados ({len(miembros_ids)} miembros)")
+        if 'oportunidad_vinculada_id' in data:
+            if proyecto.oportunidad_vinculada:
+                cambios.append(f"Vinculado con oportunidad: {proyecto.oportunidad_vinculada.oportunidad}")
+            else:
+                cambios.append("Oportunidad desvinculada")
+        
+        if cambios:
+            ProyectoComentario.objects.create(
+                proyecto=proyecto,
+                usuario=request.user,
+                contenido=f"⚙️ Configuración actualizada:\n• " + "\n• ".join(cambios)
+            )
+        
+        print(f"✅ Configuración del proyecto '{proyecto.nombre}' actualizada exitosamente")
+        
+        return JsonResponse({
+            'success': True,
+            'mensaje': 'Configuración actualizada exitosamente',
+            'proyecto': {
+                'id': proyecto.id,
+                'nombre': proyecto.nombre,
+                'descripcion': proyecto.descripcion,
+                'tipo': proyecto.tipo,
+                'privacidad': proyecto.privacidad,
+                'responsable': proyecto.responsable.get_full_name() or proyecto.responsable.username if proyecto.responsable else None,
+                'miembros_count': proyecto.miembros.count(),
+                'oportunidad_vinculada': proyecto.oportunidad_vinculada.oportunidad if proyecto.oportunidad_vinculada else None
+            }
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Datos JSON inválidos'}, status=400)
+    except Exception as e:
+        print(f"❌ Error actualizando configuración: {e}")
+        return JsonResponse({'error': 'Error interno del servidor'}, status=500)
+
+
+@login_required
+def api_buscar_oportunidades_proyecto(request):
+    """
+    API para buscar oportunidades para vincular con un proyecto
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Usuario no autenticado'}, status=401)
+    
+    query = request.GET.get('q', '').strip()
+    
+    if not query or len(query) < 2:
+        return JsonResponse({'success': True, 'oportunidades': []})
+    
+    try:
+        # Buscar oportunidades por título, cliente o comentarios
+        if is_supervisor(request.user):
+            oportunidades = TodoItem.objects.filter(
+                Q(oportunidad__icontains=query) |
+                Q(cliente__nombre_empresa__icontains=query) |
+                Q(comentarios__icontains=query)
+            ).select_related('cliente')[:10]
+        else:
+            # Usuario regular solo ve sus oportunidades
+            oportunidades = TodoItem.objects.filter(
+                usuario=request.user
+            ).filter(
+                Q(oportunidad__icontains=query) |
+                Q(cliente__nombre_empresa__icontains=query) |
+                Q(comentarios__icontains=query)
+            ).select_related('cliente')[:10]
+        
+        oportunidades_data = []
+        for oportunidad in oportunidades:
+            oportunidades_data.append({
+                'id': oportunidad.id,
+                'titulo': oportunidad.oportunidad,
+                'cliente__nombre_empresa': oportunidad.cliente.nombre_empresa if oportunidad.cliente else 'Cliente no asignado',
+                'monto': float(oportunidad.monto) if oportunidad.monto else 0,
+                'probabilidad': oportunidad.probabilidad_cierre,
+                'mes_cierre': oportunidad.get_mes_cierre_display(),
+                'usuario': oportunidad.usuario.get_full_name() or oportunidad.usuario.username
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'oportunidades': oportunidades_data
+        })
+        
+    except Exception as e:
+        print(f"❌ Error buscando oportunidades: {e}")
+        return JsonResponse({'error': 'Error interno del servidor'}, status=500)
 
 
 

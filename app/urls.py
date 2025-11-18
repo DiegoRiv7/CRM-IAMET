@@ -42,6 +42,10 @@ urlpatterns = [
     path("api/proyecto/<int:proyecto_id>/archivos/", views.api_archivos_proyecto, name="api_archivos_proyecto"),
     path("api/proyecto/<int:proyecto_id>/archivo/<int:archivo_id>/", views.api_archivo_detalle, name="api_archivo_detalle"),
     
+    # API para configuración de proyecto
+    path("api/proyecto/<int:proyecto_id>/configuracion/", views.api_configuracion_proyecto, name="api_configuracion_proyecto"),
+    path("api/buscar-oportunidades-proyecto/", views.api_buscar_oportunidades_proyecto, name="api_buscar_oportunidades_proyecto"),
+    
     
     # APIs para Tareas y Proyectos
     path("api/proyectos/", views.api_proyectos, name="api_proyectos"),
