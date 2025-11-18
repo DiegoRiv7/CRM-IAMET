@@ -10620,12 +10620,44 @@ def api_carpeta_detalle(request, proyecto_id, carpeta_id):
             })
         
         elif request.method == 'DELETE':
-            # Verificar que la carpeta esté vacía
-            if carpeta.subcarpetas.exists() or carpeta.archivos.exists():
+            force_delete = request.GET.get('force', 'false').lower() == 'true'
+            
+            # Si no es forzado, verificar que la carpeta esté vacía
+            if not force_delete and (carpeta.subcarpetas.exists() or carpeta.archivos.exists()):
                 return JsonResponse({'error': 'No se puede eliminar una carpeta que contiene archivos o subcarpetas'}, status=400)
             
+            # Si es eliminación forzada, eliminar recursivamente todo el contenido
+            if force_delete:
+                # Eliminar todos los archivos de la carpeta
+                for archivo in carpeta.archivos.all():
+                    # Eliminar archivo físico
+                    if archivo.archivo:
+                        try:
+                            archivo.archivo.delete(save=False)
+                        except:
+                            pass  # Ignorar errores al eliminar archivo físico
+                    archivo.delete()
+                
+                # Eliminar subcarpetas recursivamente
+                def eliminar_carpeta_recursiva(carpeta_obj):
+                    # Eliminar archivos de esta carpeta
+                    for archivo in carpeta_obj.archivos.all():
+                        if archivo.archivo:
+                            try:
+                                archivo.archivo.delete(save=False)
+                            except:
+                                pass
+                        archivo.delete()
+                    
+                    # Eliminar subcarpetas recursivamente
+                    for subcarpeta in carpeta_obj.subcarpetas.all():
+                        eliminar_carpeta_recursiva(subcarpeta)
+                        subcarpeta.delete()
+                
+                eliminar_carpeta_recursiva(carpeta)
+            
             carpeta.delete()
-            return JsonResponse({'success': True, 'message': 'Carpeta eliminada'})
+            return JsonResponse({'success': True, 'message': 'Carpeta eliminada' + (' forzadamente' if force_delete else '')})
             
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

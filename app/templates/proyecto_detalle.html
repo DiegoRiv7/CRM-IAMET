@@ -4321,7 +4321,7 @@ window.deleteItem = async function(itemType, itemId, itemName) {
     console.log('🔵 deleteItem:', itemType, itemId, itemName);
     
     const itemTypeText = itemType === 'folder' ? 'carpeta' : 'archivo';
-    const confirmMessage = `¿Estás seguro de que quieres eliminar ${itemTypeText} "${itemName}"?${itemType === 'folder' ? '\n\nEsto también eliminará todo su contenido.' : ''}`;
+    const confirmMessage = `¿Estás seguro de que quieres eliminar ${itemTypeText} "${itemName}"?${itemType === 'folder' ? '\n\n⚠️ Si contiene archivos o subcarpetas, también se eliminarán.' : ''}`;
     
     if (!confirm(confirmMessage)) return;
     
@@ -4338,13 +4338,9 @@ window.deleteItem = async function(itemType, itemId, itemName) {
             }
         });
         
-        if (!response.ok) {
-            throw new Error('HTTP ' + response.status);
-        }
-        
         const data = await response.json();
         
-        if (data.success) {
+        if (response.ok && data.success) {
             console.log(`✅ ${itemType} eliminado exitosamente`);
             
             // Recargar vista según donde estemos
@@ -4355,7 +4351,44 @@ window.deleteItem = async function(itemType, itemId, itemName) {
             
             showUploadNotification(`✅ ${itemTypeText.charAt(0).toUpperCase() + itemTypeText.slice(1)} eliminado exitosamente`, 'success');
         } else {
-            throw new Error(data.error || 'Error desconocido');
+            // Manejar errores específicos
+            let errorMessage = data.error || 'Error desconocido';
+            
+            if (response.status === 400 && itemType === 'folder') {
+                if (errorMessage.includes('contiene archivos') || errorMessage.includes('subcarpetas')) {
+                    const forceDelete = confirm(`❌ ${errorMessage}\n\n¿Deseas forzar la eliminación de la carpeta y todo su contenido?\n\n⚠️ Esta acción no se puede deshacer.`);
+                    
+                    if (forceDelete) {
+                        // Intentar eliminación forzada
+                        const forceResponse = await fetch(url + '?force=true', {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                            }
+                        });
+                        
+                        const forceData = await forceResponse.json();
+                        
+                        if (forceResponse.ok && forceData.success) {
+                            console.log(`✅ ${itemType} eliminado forzadamente`);
+                            
+                            // Recargar vista según donde estemos
+                            if (window.currentFolderView) {
+                                await window.loadFolderContent(window.currentFolderView.id);
+                            }
+                            window.recargarCarpetas();
+                            
+                            showUploadNotification(`✅ Carpeta y su contenido eliminados exitosamente`, 'success');
+                        } else {
+                            throw new Error(forceData.error || 'Error al forzar eliminación');
+                        }
+                    }
+                    return;
+                }
+            }
+            
+            throw new Error(errorMessage);
         }
         
     } catch (error) {

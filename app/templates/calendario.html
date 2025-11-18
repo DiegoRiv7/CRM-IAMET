@@ -635,8 +635,6 @@ l{% extends 'base.html' %}
 {% endblock %}
 
 {% block extra_js %}
-    <!-- jQuery -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <!-- Select2 JS (depends on jQuery) -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <!-- FullCalendar JS -->
@@ -688,8 +686,8 @@ l{% extends 'base.html' %}
             calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
                 locale: 'es', // Set locale to Spanish
-                height: '85vh',
-                aspectRatio: 3.5,
+                height: '90vh',
+                aspectRatio: 4.0,
                 contentHeight: 'auto',
                 expandRows: true,
                 headerToolbar: {
@@ -708,7 +706,7 @@ l{% extends 'base.html' %}
                 selectable: true, // Allow selecting dates to create events
                 eventStartEditable: true,
                 eventDurationEditable: true,
-                eventMaxStack: 5,
+                eventMaxStack: 3,
                 dayMaxEventRows: true,
                 eventDisplay: 'block',
                 displayEventTime: true,
@@ -725,9 +723,8 @@ l{% extends 'base.html' %}
                 nowIndicator: true,
                 // Enhanced rendering options for high resolution
                 handleWindowResize: true,
-                windowResizeDelay: 50,
-                progressiveEventRendering: true,
-                eventRenderWaitMs: 30,
+                windowResizeDelay: 100,
+                progressiveEventRendering: false,
                 // Maximize width usage
                 allDaySlot: true,
                 slotEventOverlap: false,

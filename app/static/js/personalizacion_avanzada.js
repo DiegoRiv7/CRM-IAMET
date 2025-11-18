@@ -994,6 +994,8 @@ function initializeActiveTheme(theme) {
                 dot.style.boxShadow = '0 0 0 3px rgba(0, 169, 255, 0.5), 0 0 15px rgba(0, 169, 255, 0.7)';
             } else if (theme === 'coffee') {
                 dot.style.boxShadow = '0 0 0 3px rgba(139, 98, 57, 0.5), 0 0 15px rgba(139, 98, 57, 0.7)';
+            } else if (theme === 'perla') {
+                dot.style.boxShadow = '0 0 0 3px rgba(0, 82, 212, 0.5), 0 0 15px rgba(0, 82, 212, 0.7)';
             }
         }
         console.log('Theme option activated by ID:', theme, activeOption);
@@ -1021,6 +1023,8 @@ function initializeThemeDots(theme) {
                 dot.style.boxShadow = '0 0 0 3px rgba(0, 123, 255, 0.5), 0 0 15px rgba(0, 123, 255, 0.7)';
             } else if (theme === 'coffee') {
                 dot.style.boxShadow = '0 0 0 3px rgba(139, 98, 57, 0.5), 0 0 15px rgba(139, 98, 57, 0.7)';
+            } else if (theme === 'perla') {
+                dot.style.boxShadow = '0 0 0 3px rgba(0, 82, 212, 0.5), 0 0 15px rgba(0, 82, 212, 0.7)';
             }
             console.log('Theme dot illuminated for theme:', theme);
         } else {
