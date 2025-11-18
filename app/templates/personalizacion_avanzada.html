@@ -16,7 +16,7 @@
             html.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme');
             html.removeAttribute('data-theme');
 
-            if (theme === 'pink' || theme === 'white' || theme === 'coffee') {
+            if (theme === 'pink' || theme === 'white' || theme === 'coffee' || theme === 'perla') {
                 html.classList.add('light-theme');
             } else {
                 html.classList.add('dark-theme');
@@ -102,6 +102,20 @@ html[data-theme="coffee"] {
     --apple-blue-light: #a0724a;
     --apple-blue-dark: #6b4a30;
     --apple-separator: rgba(139, 69, 19, 0.1);
+}
+
+html[data-theme="perla"] {
+    --apple-background: #FFFFFF;
+    --apple-background-secondary: #F0F2F5;
+    --apple-background-tertiary: #E5E7EB;
+    --apple-background-quaternary: #D9DCE1;
+    --apple-label: #111827;
+    --apple-label-secondary: #374151;
+    --apple-label-tertiary: #6B7280;
+    --apple-blue: #0052D4;
+    --apple-blue-light: #4A90E2;
+    --apple-blue-dark: #003B9A;
+    --apple-separator: rgba(0, 0, 0, 0.1);
 }
 
 * {
@@ -1651,6 +1665,63 @@ color: #5d3d2a !important;
 background: rgba(139, 69, 19, 0.4) !important;
 }
 
+/* Tema Perla (Eléctrico) - colores fijos que no cambian */
+.perla-preview .mini-page {
+    background: #FFFFFF !important;
+}
+
+.perla-preview .mini-header {
+    background: rgba(240, 242, 245, 0.9) !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.perla-preview .mini-logo {
+    background: #0052D4 !important;
+}
+
+.perla-preview .mini-title {
+    color: #111827 !important;
+}
+
+.perla-preview .mini-subtitle {
+    color: #374151 !important;
+}
+
+.perla-preview .mini-avatar {
+    border-color: #0052D4 !important;
+    background: rgba(0, 82, 212, 0.1) !important;
+}
+
+.perla-preview .mini-search {
+    background: rgba(0, 0, 0, 0.05) !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.perla-preview .mini-search svg {
+    color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.perla-preview .mini-search-text {
+    color: #6B7280 !important;
+}
+
+.perla-preview .mini-card {
+    background: rgba(0, 0, 0, 0.05) !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.perla-preview .mini-card-avatar {
+    background: rgba(0, 82, 212, 0.2) !important;
+}
+
+.perla-preview .mini-card-title {
+    color: #374151 !important;
+}
+
+.perla-preview .mini-nav-dot {
+    background: rgba(0, 0, 0, 0.3) !important;
+}
+
 /* Language Modal Styles */
 .language-options {
 display: flex;
@@ -2310,6 +2381,12 @@ style="padding: 10px 20px;
 <div class="theme-dot-container" id="coffee-theme-dot" onclick="applyTheme('coffee')" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'" style="cursor: pointer; transition: transform 0.2s ease;">
 <div class="theme-dot" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #8b6239 0%, #a0724a 100%); box-shadow: 0 4px 12px rgba(139, 69, 19, 0.2); transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);"></div>
 <p style="text-align: center; margin-top: 8px; font-size: 14px; color: var(--apple-label); font-weight: 500;">Duna</p>
+</div>
+
+<!-- Tema Perla (Eléctrico) -->
+<div class="theme-dot-container" id="perla-theme-dot" onclick="applyTheme('perla')" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'" style="cursor: pointer; transition: transform 0.2s ease;">
+    <div class="theme-dot" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #0052D4 0%, #4A90E2 100%); box-shadow: 0 4px 12px rgba(0, 82, 212, 0.2); transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);"></div>
+    <p style="text-align: center; margin-top: 8px; font-size: 14px; color: var(--apple-label); font-weight: 500;">Perla</p>
 </div>
 </div>
 </div>

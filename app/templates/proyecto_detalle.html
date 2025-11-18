@@ -2069,6 +2069,86 @@
         transform: translateX(-320px);
     }
 
+    /* Menú de 3 puntos para archivos y carpetas */
+    .item-container {
+        position: relative;
+    }
+    
+    .item-menu {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 24px;
+        height: 24px;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        transition: all 0.2s ease;
+        z-index: 10;
+    }
+    
+    .item-container:hover .item-menu {
+        opacity: 1;
+    }
+    
+    .item-menu:hover {
+        background: rgba(0, 0, 0, 0.7);
+        transform: scale(1.1);
+    }
+    
+    .item-menu svg {
+        width: 14px;
+        height: 14px;
+        color: white;
+    }
+    
+    .context-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: rgba(28, 28, 30, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        overflow: hidden;
+        min-width: 150px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        z-index: 100;
+        display: none;
+    }
+    
+    .context-menu-item {
+        padding: 0.75rem 1rem;
+        color: var(--apple-label);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .context-menu-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .context-menu-item.danger:hover {
+        background: rgba(255, 59, 48, 0.2);
+        color: var(--apple-red);
+    }
+    
+    .context-menu-item svg {
+        width: 16px;
+        height: 16px;
+    }
+
     /* Pink Theme Styles for Project Details */
     html[data-theme="pink"] body,
     body[data-theme="pink"],
@@ -3145,10 +3225,28 @@ window.recargarCarpetas = async function(parentFolderId = null) {
         if (data.carpetas && data.carpetas.length > 0) {
             data.carpetas.forEach(carpeta => {
                 const folderElement = document.createElement('div');
-                folderElement.className = 'folder-item';
-                folderElement.style.cssText = 'display: flex; flex-direction: column; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer; transition: all 0.2s ease;';
+                folderElement.className = 'folder-item item-container';
+                folderElement.style.cssText = 'display: flex; flex-direction: column; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer; transition: all 0.2s ease; position: relative;';
                 
-                folderElement.innerHTML = '<svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="color: var(--apple-blue); margin-bottom: 0.5rem;"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg><span style="font-size: 0.9rem; text-align: center; word-break: break-word;">' + carpeta.nombre + '</span>';
+                folderElement.innerHTML = `
+                    <div class="item-menu" onclick="event.stopPropagation(); toggleContextMenu(this, 'folder', ${carpeta.id}, '${carpeta.nombre}')">
+                        <svg fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                        </svg>
+                        <div class="context-menu" id="menu-folder-${carpeta.id}">
+                            <div class="context-menu-item" onclick="renameItem('folder', ${carpeta.id}, '${carpeta.nombre}')">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                Renombrar
+                            </div>
+                            <div class="context-menu-item danger" onclick="deleteItem('folder', ${carpeta.id}, '${carpeta.nombre}')">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                Eliminar
+                            </div>
+                        </div>
+                    </div>
+                    <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="color: var(--apple-blue); margin-bottom: 0.5rem;"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                    <span style="font-size: 0.9rem; text-align: center; word-break: break-word;">${carpeta.nombre}</span>
+                `;
                 
                 // Agregar evento para abrir carpeta en modal
                 folderElement.addEventListener('click', () => {
@@ -3166,8 +3264,8 @@ window.recargarCarpetas = async function(parentFolderId = null) {
         if (data.archivos && data.archivos.length > 0) {
             data.archivos.forEach(archivo => {
                 const fileElement = document.createElement('div');
-                fileElement.className = 'file-item';
-                fileElement.style.cssText = 'display: flex; flex-direction: column; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer; transition: all 0.2s ease;';
+                fileElement.className = 'file-item item-container';
+                fileElement.style.cssText = 'display: flex; flex-direction: column; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer; transition: all 0.2s ease; position: relative;';
                 
                 // Determinar icono según tipo de archivo
                 let iconColor = 'var(--apple-gray)';
@@ -3181,7 +3279,25 @@ window.recargarCarpetas = async function(parentFolderId = null) {
                     iconPath = 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2l6 6 M16 13H8 M16 17H8 M10 9H8';
                 }
                 
-                fileElement.innerHTML = '<svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="color: ' + iconColor + '; margin-bottom: 0.5rem;"><path d="' + iconPath + '"/></svg><span style="font-size: 0.8rem; text-align: center; word-break: break-word;">' + archivo.nombre + '</span>';
+                fileElement.innerHTML = `
+                    <div class="item-menu" onclick="event.stopPropagation(); toggleContextMenu(this, 'file', ${archivo.id}, '${archivo.nombre}')">
+                        <svg fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                        </svg>
+                        <div class="context-menu" id="menu-file-${archivo.id}">
+                            <div class="context-menu-item" onclick="renameItem('file', ${archivo.id}, '${archivo.nombre}')">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                Renombrar
+                            </div>
+                            <div class="context-menu-item danger" onclick="deleteItem('file', ${archivo.id}, '${archivo.nombre}')">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                Eliminar
+                            </div>
+                        </div>
+                    </div>
+                    <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="color: ${iconColor}; margin-bottom: 0.5rem;"><path d="${iconPath}"/></svg>
+                    <span style="font-size: 0.8rem; text-align: center; word-break: break-word;">${archivo.nombre}</span>
+                `;
                 
                 // Agregar evento para abrir archivo
                 if (archivo.url) {
@@ -3267,10 +3383,28 @@ window.loadFolderContent = async function(folderId) {
         if (data.carpetas && data.carpetas.length > 0) {
             data.carpetas.forEach(subcarpeta => {
                 const folderElement = document.createElement('div');
-                folderElement.className = 'folder-item-modal';
-                folderElement.style.cssText = 'display: flex; flex-direction: column; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer; transition: all 0.2s ease;';
+                folderElement.className = 'folder-item-modal item-container';
+                folderElement.style.cssText = 'display: flex; flex-direction: column; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer; transition: all 0.2s ease; position: relative;';
                 
-                folderElement.innerHTML = '<svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="color: var(--apple-blue); margin-bottom: 0.5rem;"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg><span style="font-size: 0.9rem; text-align: center; word-break: break-word;">' + subcarpeta.nombre + '</span>';
+                folderElement.innerHTML = `
+                    <div class="item-menu" onclick="event.stopPropagation(); toggleContextMenu(this, 'folder', ${subcarpeta.id}, '${subcarpeta.nombre}')">
+                        <svg fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                        </svg>
+                        <div class="context-menu" id="menu-modal-folder-${subcarpeta.id}">
+                            <div class="context-menu-item" onclick="renameItem('folder', ${subcarpeta.id}, '${subcarpeta.nombre}')">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                Renombrar
+                            </div>
+                            <div class="context-menu-item danger" onclick="deleteItem('folder', ${subcarpeta.id}, '${subcarpeta.nombre}')">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                Eliminar
+                            </div>
+                        </div>
+                    </div>
+                    <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="color: var(--apple-blue); margin-bottom: 0.5rem;"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                    <span style="font-size: 0.9rem; text-align: center; word-break: break-word;">${subcarpeta.nombre}</span>
+                `;
                 
                 // Agregar evento para navegar a subcarpeta
                 folderElement.addEventListener('click', () => {
@@ -3296,8 +3430,8 @@ window.loadFolderContent = async function(folderId) {
         if (data.archivos && data.archivos.length > 0) {
             data.archivos.forEach(archivo => {
                 const fileElement = document.createElement('div');
-                fileElement.className = 'file-item-modal';
-                fileElement.style.cssText = 'display: flex; flex-direction: column; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer; transition: all 0.2s ease;';
+                fileElement.className = 'file-item-modal item-container';
+                fileElement.style.cssText = 'display: flex; flex-direction: column; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer; transition: all 0.2s ease; position: relative;';
                 
                 // Determinar icono y color según tipo de archivo
                 let iconColor = 'var(--apple-gray)';
@@ -3310,7 +3444,25 @@ window.loadFolderContent = async function(folderId) {
                     iconColor = 'var(--apple-red)';
                 }
                 
-                fileElement.innerHTML = '<svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="color: ' + iconColor + '; margin-bottom: 0.5rem;"><path d="' + iconPath + '"/></svg><span style="font-size: 0.8rem; text-align: center; word-break: break-word;">' + archivo.nombre + '</span>';
+                fileElement.innerHTML = `
+                    <div class="item-menu" onclick="event.stopPropagation(); toggleContextMenu(this, 'file', ${archivo.id}, '${archivo.nombre}')">
+                        <svg fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                        </svg>
+                        <div class="context-menu" id="menu-modal-file-${archivo.id}">
+                            <div class="context-menu-item" onclick="renameItem('file', ${archivo.id}, '${archivo.nombre}')">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                Renombrar
+                            </div>
+                            <div class="context-menu-item danger" onclick="deleteItem('file', ${archivo.id}, '${archivo.nombre}')">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                Eliminar
+                            </div>
+                        </div>
+                    </div>
+                    <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="color: ${iconColor}; margin-bottom: 0.5rem;"><path d="${iconPath}"/></svg>
+                    <span style="font-size: 0.8rem; text-align: center; word-break: break-word;">${archivo.nombre}</span>
+                `;
                 
                 // Agregar evento para abrir archivo
                 if (archivo.url) {
@@ -4048,6 +4200,181 @@ window.setupModalDragDrop = function(contentGrid, folderId) {
         }, 100);
     });
 };
+
+// ===== FUNCIONES PARA MENÚ CONTEXTUAL =====
+
+// Variable global para controlar menús abiertos
+window.currentOpenMenu = null;
+
+// Función para mostrar/ocultar el menú contextual
+window.toggleContextMenu = function(menuButton, itemType, itemId, itemName) {
+    console.log('🔵 toggleContextMenu:', itemType, itemId, itemName);
+    
+    // Cerrar cualquier menú abierto
+    if (window.currentOpenMenu && window.currentOpenMenu !== menuButton) {
+        const previousMenu = window.currentOpenMenu.querySelector('.context-menu');
+        if (previousMenu) {
+            previousMenu.style.display = 'none';
+        }
+    }
+    
+    const contextMenu = menuButton.querySelector('.context-menu');
+    if (!contextMenu) return;
+    
+    const isVisible = contextMenu.style.display === 'block';
+    
+    // Cerrar todos los menús primero
+    document.querySelectorAll('.context-menu').forEach(menu => {
+        menu.style.display = 'none';
+    });
+    
+    if (!isVisible) {
+        contextMenu.style.display = 'block';
+        window.currentOpenMenu = menuButton;
+        
+        // Posicionar el menú
+        const rect = menuButton.getBoundingClientRect();
+        const menuRect = contextMenu.getBoundingClientRect();
+        
+        // Ajustar posición si el menú se sale de la pantalla
+        if (rect.right + menuRect.width > window.innerWidth) {
+            contextMenu.style.right = '0';
+            contextMenu.style.left = 'auto';
+        } else {
+            contextMenu.style.left = '0';
+            contextMenu.style.right = 'auto';
+        }
+        
+        if (rect.bottom + menuRect.height > window.innerHeight) {
+            contextMenu.style.bottom = '100%';
+            contextMenu.style.top = 'auto';
+        } else {
+            contextMenu.style.top = '100%';
+            contextMenu.style.bottom = 'auto';
+        }
+    } else {
+        window.currentOpenMenu = null;
+    }
+};
+
+// Función para renombrar elemento
+window.renameItem = async function(itemType, itemId, currentName) {
+    console.log('🔵 renameItem:', itemType, itemId, currentName);
+    
+    const newName = prompt(`Renombrar ${itemType === 'folder' ? 'carpeta' : 'archivo'}:`, currentName);
+    if (!newName || newName === currentName) return;
+    
+    try {
+        const PROYECTO_ID = {{ proyecto.id }};
+        const endpoint = itemType === 'folder' ? 'carpetas' : 'archivos';
+        const url = `/app/api/proyecto/${PROYECTO_ID}/${endpoint}/${itemId}/`;
+        
+        const response = await fetch(url, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            },
+            body: JSON.stringify({
+                nombre: newName
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log(`✅ ${itemType} renombrado exitosamente`);
+            
+            // Recargar vista según donde estemos
+            if (window.currentFolderView) {
+                await window.loadFolderContent(window.currentFolderView.id);
+            }
+            window.recargarCarpetas();
+            
+            showUploadNotification(`✅ ${itemType === 'folder' ? 'Carpeta' : 'Archivo'} renombrado exitosamente`, 'success');
+        } else {
+            throw new Error(data.error || 'Error desconocido');
+        }
+        
+    } catch (error) {
+        console.error('Error renombrando:', error);
+        alert(`❌ Error al renombrar: ${error.message}`);
+    }
+    
+    // Cerrar menú
+    document.querySelectorAll('.context-menu').forEach(menu => {
+        menu.style.display = 'none';
+    });
+    window.currentOpenMenu = null;
+};
+
+// Función para eliminar elemento
+window.deleteItem = async function(itemType, itemId, itemName) {
+    console.log('🔵 deleteItem:', itemType, itemId, itemName);
+    
+    const itemTypeText = itemType === 'folder' ? 'carpeta' : 'archivo';
+    const confirmMessage = `¿Estás seguro de que quieres eliminar ${itemTypeText} "${itemName}"?${itemType === 'folder' ? '\n\nEsto también eliminará todo su contenido.' : ''}`;
+    
+    if (!confirm(confirmMessage)) return;
+    
+    try {
+        const PROYECTO_ID = {{ proyecto.id }};
+        const endpoint = itemType === 'folder' ? 'carpetas' : 'archivos';
+        const url = `/app/api/proyecto/${PROYECTO_ID}/${endpoint}/${itemId}/`;
+        
+        const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log(`✅ ${itemType} eliminado exitosamente`);
+            
+            // Recargar vista según donde estemos
+            if (window.currentFolderView) {
+                await window.loadFolderContent(window.currentFolderView.id);
+            }
+            window.recargarCarpetas();
+            
+            showUploadNotification(`✅ ${itemTypeText.charAt(0).toUpperCase() + itemTypeText.slice(1)} eliminado exitosamente`, 'success');
+        } else {
+            throw new Error(data.error || 'Error desconocido');
+        }
+        
+    } catch (error) {
+        console.error('Error eliminando:', error);
+        alert(`❌ Error al eliminar: ${error.message}`);
+    }
+    
+    // Cerrar menú
+    document.querySelectorAll('.context-menu').forEach(menu => {
+        menu.style.display = 'none';
+    });
+    window.currentOpenMenu = null;
+};
+
+// Cerrar menús al hacer clic fuera
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.item-menu')) {
+        document.querySelectorAll('.context-menu').forEach(menu => {
+            menu.style.display = 'none';
+        });
+        window.currentOpenMenu = null;
+    }
+});
 
 // Event listeners de seguridad
 document.addEventListener('DOMContentLoaded', function() {

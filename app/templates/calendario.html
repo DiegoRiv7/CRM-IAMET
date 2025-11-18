@@ -87,17 +87,28 @@ l{% extends 'base.html' %}
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             text-rendering: optimizeLegibility;
-            /* High DPI optimizations */
+            /* High DPI and resolution optimizations */
             -webkit-transform: translateZ(0);
             transform: translateZ(0);
             -webkit-backface-visibility: hidden;
             backface-visibility: hidden;
             -webkit-perspective: 1000px;
             perspective: 1000px;
-            /* Enhanced rendering */
+            /* Enhanced rendering for high resolution */
             image-rendering: -webkit-optimize-contrast;
             image-rendering: crisp-edges;
             image-rendering: pixelated;
+            /* Force high quality rendering */
+            -webkit-font-feature-settings: "kern" 1, "liga" 1;
+            font-feature-settings: "kern" 1, "liga" 1;
+            /* Subpixel rendering */
+            -webkit-font-smoothing: subpixel-antialiased;
+            /* Improve text clarity */
+            text-shadow: 0 0 1px rgba(0,0,0,0.1);
+            /* Maximize resolution */
+            max-width: 100%;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .fc .fc-toolbar-title {
@@ -502,13 +513,13 @@ l{% extends 'base.html' %}
 {% block content %}
 <div class="apple-bg"></div>
 <main class="flex flex-row items-start justify-start min-h-screen p-2 md:p-4">
-    <aside id="calendar-sidebar" class="w-80 p-6 apple-card mr-6">
-        <h3 class="text-xl font-bold mb-6">Calendarios</h3>
+    <aside id="calendar-sidebar" class="w-64 p-4 apple-card mr-4">
+        <h3 class="text-lg font-bold mb-4">Calendarios</h3>
         <div id="user-filter-container">
             <!-- User filters will be dynamically inserted here -->
         </div>
 
-        <h3 class="text-xl font-bold mt-8 mb-6">Tipos de Actividad</h3>
+        <h3 class="text-lg font-bold mt-6 mb-4">Tipos de Actividad</h3>
         <div id="activity-type-filter-container">
             <div class="filter-item">
                 <input type="checkbox" id="type-llamada" value="llamada" checked onchange="filterCalendarEvents()">
@@ -532,9 +543,9 @@ l{% extends 'base.html' %}
             </div>
         </div>
     </aside>
-    <section class="flex-grow mx-auto apple-fade-in" style="animation-delay:0.2s; width: calc(100% - 22rem);">
-        <div class="apple-card p-8 md:p-10" style="width: 100%; height: calc(100vh - 2rem);">
-            <div id='calendar' style="height: calc(100vh - 6rem); font-size: 18px; min-height: 900px;"></div>
+    <section class="flex-grow mx-auto apple-fade-in" style="animation-delay:0.2s; width: calc(100vw - 18rem);">
+        <div class="apple-card p-6 md:p-8" style="width: 100%; height: auto;">
+            <div id='calendar' style="height: 85vh; width: 100%; font-size: 16px;"></div>
         </div>
     </section>
 </main>
@@ -673,9 +684,10 @@ l{% extends 'base.html' %}
             calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
                 locale: 'es', // Set locale to Spanish
-                height: '100%',
-                aspectRatio: 2.5,
+                height: '85vh',
+                aspectRatio: 3.5,
                 contentHeight: 'auto',
+                expandRows: true,
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
@@ -692,7 +704,7 @@ l{% extends 'base.html' %}
                 selectable: true, // Allow selecting dates to create events
                 eventStartEditable: true,
                 eventDurationEditable: true,
-                eventMaxStack: 4,
+                eventMaxStack: 5,
                 dayMaxEventRows: true,
                 eventDisplay: 'block',
                 displayEventTime: true,
@@ -707,11 +719,16 @@ l{% extends 'base.html' %}
                 weekNumberCalculation: 'ISO',
                 navLinks: false,
                 nowIndicator: true,
-                // Enhanced rendering options
+                // Enhanced rendering options for high resolution
                 handleWindowResize: true,
-                windowResizeDelay: 100,
+                windowResizeDelay: 50,
                 progressiveEventRendering: true,
-                eventRenderWaitMs: 50,
+                eventRenderWaitMs: 30,
+                // Maximize width usage
+                allDaySlot: true,
+                slotEventOverlap: false,
+                dayMaxEvents: true,
+                moreLinkClick: 'popover',
                 events: function(fetchInfo, successCallback, failureCallback) {
                     fetch('/app/api/actividades/', {
                         method: 'GET',
