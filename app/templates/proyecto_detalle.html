@@ -2962,20 +2962,27 @@
     }
 
     /* ==========================================
-       CONFIGURACIÓN DEL PROYECTO - ESTILOS
+       CONFIGURACIÓN DEL PROYECTO - ESTILOS LIQUID GLASS
        ========================================== */
     
     .configuracion-container {
-        padding: 1.5rem;
-        background: var(--apple-bg-secondary);
-        border-radius: 12px;
+        padding: 0;
+        background: transparent;
+        border-radius: 0;
         margin: 1rem 0;
     }
     
     .config-header {
-        margin-bottom: 2rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid var(--apple-separator);
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(20px) saturate(1.8);
+        -webkit-backdrop-filter: blur(20px) saturate(1.8);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
     
     .config-header h3 {
@@ -2983,42 +2990,83 @@
         align-items: center;
         gap: 0.75rem;
         color: var(--apple-label);
-        margin: 0 0 0.5rem 0;
-        font-size: 1.5rem;
-        font-weight: 600;
+        margin: 0 0 0.75rem 0;
+        font-size: 1.75rem;
+        font-weight: 700;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
     
     .config-header p {
         color: var(--apple-label-secondary);
         margin: 0;
-        font-size: 0.95rem;
+        font-size: 1rem;
+        opacity: 0.8;
+        line-height: 1.5;
     }
     
     .config-form {
         display: flex;
         flex-direction: column;
-        gap: 2rem;
+        gap: 1.5rem;
     }
     
     .config-section {
-        background: var(--apple-bg-tertiary);
-        border-radius: 10px;
-        padding: 1.5rem;
-        border: 1px solid var(--apple-separator);
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(25px) saturate(1.8);
+        -webkit-backdrop-filter: blur(25px) saturate(1.8);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.12),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .config-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, 
+            transparent 0%, 
+            rgba(255, 255, 255, 0.2) 20%, 
+            rgba(255, 255, 255, 0.4) 50%, 
+            rgba(255, 255, 255, 0.2) 80%, 
+            transparent 100%);
     }
     
     .section-title {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.75rem;
         color: var(--apple-blue);
-        margin: 0 0 1.25rem 0;
-        font-size: 1.1rem;
+        margin: 0 0 1.5rem 0;
+        font-size: 1.25rem;
         font-weight: 600;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        position: relative;
+    }
+    
+    .section-title::after {
+        content: '';
+        position: absolute;
+        bottom: -0.5rem;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, 
+            var(--apple-blue) 0%, 
+            rgba(10, 132, 255, 0.3) 50%, 
+            transparent 100%);
     }
     
     .form-group {
-        margin-bottom: 1.25rem;
+        margin-bottom: 1.5rem;
+        position: relative;
     }
     
     .form-group:last-child {
@@ -3028,285 +3076,526 @@
     .form-group label {
         display: block;
         color: var(--apple-label);
-        font-weight: 500;
-        margin-bottom: 0.5rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
         font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 0.9;
     }
     
     .form-control {
         width: 100%;
-        padding: 0.875rem 1rem;
-        border: 1px solid var(--apple-separator);
-        border-radius: 8px;
-        background: var(--apple-bg);
+        padding: 1rem 1.25rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
         color: var(--apple-label);
-        font-size: 0.95rem;
-        transition: all 0.2s ease;
+        font-size: 1rem;
+        font-weight: 500;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         box-sizing: border-box;
+        box-shadow: 
+            inset 0 1px 3px rgba(0, 0, 0, 0.1),
+            0 1px 0 rgba(255, 255, 255, 0.05);
     }
     
     .form-control:focus {
         outline: none;
-        border-color: var(--apple-blue);
-        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+        border-color: rgba(10, 132, 255, 0.4);
+        background: rgba(255, 255, 255, 0.04);
+        box-shadow: 
+            0 0 0 3px rgba(10, 132, 255, 0.15),
+            0 8px 25px rgba(10, 132, 255, 0.1),
+            inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
     }
     
     .form-control::placeholder {
         color: var(--apple-label-tertiary);
+        opacity: 0.6;
+        font-style: italic;
+    }
+    
+    .form-control:hover:not(:focus) {
+        border-color: rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.03);
+        transform: translateY(-0.5px);
     }
     
     .form-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 1rem;
+        gap: 1.5rem;
     }
     
     @media (max-width: 768px) {
         .form-row {
             grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .config-header {
+            padding: 1.5rem;
+        }
+        
+        .config-section {
+            padding: 1.5rem;
         }
     }
     
-    /* Estilos para gestión de miembros */
+    /* Estilos para gestión de miembros con diseño liquid glass */
     .miembros-container {
-        background: var(--apple-bg);
-        border-radius: 8px;
-        border: 1px solid var(--apple-separator);
+        background: rgba(255, 255, 255, 0.01);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
         overflow: hidden;
+        box-shadow: 
+            0 4px 20px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
     
     .miembros-actuales {
-        padding: 1rem;
+        padding: 1.25rem;
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
+        gap: 1rem;
     }
     
     .miembro-item {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0.75rem;
-        background: var(--apple-bg-secondary);
-        border-radius: 8px;
-        border: 1px solid var(--apple-separator);
+        padding: 1rem 1.25rem;
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 
+            0 2px 8px rgba(0, 0, 0, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+    
+    .miembro-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+        transform: translateY(-1px);
+        box-shadow: 
+            0 4px 15px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
     
     .miembro-info {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: 1rem;
     }
     
     .miembro-avatar {
-        width: 32px;
-        height: 32px;
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
-        background: var(--apple-blue);
+        background: linear-gradient(135deg, var(--apple-blue) 0%, #007AFF 100%);
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
+        font-weight: 700;
+        font-size: 1rem;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        box-shadow: 
+            0 4px 15px rgba(10, 132, 255, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+    
+    .miembro-info span {
+        color: var(--apple-label);
         font-weight: 600;
-        font-size: 0.9rem;
+        font-size: 1rem;
     }
     
     .btn-remove-miembro {
-        background: var(--apple-red);
+        background: linear-gradient(135deg, var(--apple-red) 0%, #d70015 100%);
         border: none;
-        border-radius: 6px;
-        width: 28px;
-        height: 28px;
+        border-radius: 8px;
+        width: 32px;
+        height: 32px;
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 
+            0 2px 8px rgba(255, 69, 58, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
     
     .btn-remove-miembro:hover {
-        background: #d70015;
+        background: linear-gradient(135deg, #d70015 0%, #b8000f 100%);
+        transform: scale(1.1) translateY(-1px);
+        box-shadow: 
+            0 4px 15px rgba(255, 69, 58, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+    
+    .btn-remove-miembro:active {
         transform: scale(1.05);
     }
     
     .agregar-miembro {
-        padding: 1rem;
-        border-top: 1px solid var(--apple-separator);
-        background: var(--apple-bg-tertiary);
+        padding: 1.25rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.01);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
     }
     
-    /* Search containers */
+    /* Search containers con diseño liquid glass */
     .search-container {
         position: relative;
     }
     
     .search-results {
         position: absolute;
-        top: 100%;
+        top: calc(100% + 0.5rem);
         left: 0;
         right: 0;
-        background: var(--apple-bg);
-        border: 1px solid var(--apple-separator);
-        border-radius: 8px;
-        max-height: 200px;
+        background: rgba(20, 20, 20, 0.95);
+        backdrop-filter: blur(30px) saturate(1.8);
+        -webkit-backdrop-filter: blur(30px) saturate(1.8);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        max-height: 250px;
         overflow-y: auto;
         z-index: 1000;
         display: none;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        box-shadow: 
+            0 10px 40px rgba(0, 0, 0, 0.3),
+            0 2px 8px rgba(0, 0, 0, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
     
     .search-results.active {
         display: block;
+        animation: searchResultsAppear 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    @keyframes searchResultsAppear {
+        0% {
+            opacity: 0;
+            transform: translateY(-10px) scale(0.95);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
     }
     
     .search-result-item {
-        padding: 0.75rem;
+        padding: 1rem 1.25rem;
         cursor: pointer;
-        border-bottom: 1px solid var(--apple-separator);
-        transition: background-color 0.15s ease;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        color: var(--apple-label);
     }
     
     .search-result-item:hover {
-        background: var(--apple-blue-light);
+        background: rgba(10, 132, 255, 0.15);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        transform: translateX(4px);
     }
     
     .search-result-item:last-child {
         border-bottom: none;
     }
     
-    /* Oportunidad vinculada styles */
+    /* Oportunidad vinculada con diseño liquid glass */
     .oportunidad-actual {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 1rem;
-        background: var(--apple-bg-secondary);
-        border-radius: 8px;
-        border: 1px solid var(--apple-separator);
+        padding: 1.5rem;
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 
+            0 4px 20px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .oportunidad-actual:hover {
+        background: rgba(255, 255, 255, 0.04);
+        transform: translateY(-1px);
+        box-shadow: 
+            0 6px 25px rgba(0, 0, 0, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
     
     .oportunidad-info {
         display: flex;
         flex-direction: column;
-        gap: 0.25rem;
+        gap: 0.5rem;
     }
     
     .oportunidad-info strong {
         color: var(--apple-label);
-        font-weight: 600;
+        font-weight: 700;
+        font-size: 1.1rem;
     }
     
     .oportunidad-cliente {
         color: var(--apple-label-secondary);
-        font-size: 0.9rem;
+        font-size: 0.95rem;
+        font-weight: 500;
     }
     
     .oportunidad-monto {
         color: var(--apple-green);
-        font-weight: 600;
-        font-size: 0.95rem;
+        font-weight: 700;
+        font-size: 1rem;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
     
     .btn-desvincular {
-        background: var(--apple-red);
+        background: linear-gradient(135deg, var(--apple-red) 0%, #d70015 100%);
         border: none;
-        border-radius: 6px;
-        padding: 0.5rem 0.75rem;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
         color: white;
-        font-size: 0.85rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        transition: all 0.2s ease;
-    }
-    
-    .btn-desvincular:hover {
-        background: #d70015;
-        transform: translateY(-1px);
-    }
-    
-    .buscar-oportunidad .help-text {
-        margin: 0.75rem 0 0 0;
-        color: var(--apple-label-tertiary);
-        font-size: 0.85rem;
-        font-style: italic;
-    }
-    
-    /* Botones de acción */
-    .config-actions {
-        display: flex;
-        gap: 1rem;
-        padding-top: 1.5rem;
-        border-top: 1px solid var(--apple-separator);
-    }
-    
-    .btn-guardar-config {
-        background: var(--apple-blue);
-        border: none;
-        border-radius: 8px;
-        padding: 0.875rem 1.5rem;
-        color: white;
+        font-size: 0.9rem;
         font-weight: 600;
         cursor: pointer;
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        transition: all 0.2s ease;
-        flex: 1;
-        justify-content: center;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 
+            0 4px 15px rgba(255, 69, 58, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
     
-    .btn-guardar-config:hover {
-        background: #0051d5;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
+    .btn-desvincular:hover {
+        background: linear-gradient(135deg, #d70015 0%, #b8000f 100%);
+        transform: translateY(-2px);
+        box-shadow: 
+            0 6px 20px rgba(255, 69, 58, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
     }
     
-    .btn-cancelar-config {
-        background: transparent;
-        border: 1px solid var(--apple-separator);
-        border-radius: 8px;
-        padding: 0.875rem 1.5rem;
-        color: var(--apple-label-secondary);
-        font-weight: 500;
+    .buscar-oportunidad .help-text {
+        margin: 1rem 0 0 0;
+        color: var(--apple-label-tertiary);
+        font-size: 0.9rem;
+        font-style: italic;
+        opacity: 0.7;
+        line-height: 1.4;
+    }
+    
+    /* Botones de acción con diseño premium */
+    .config-actions {
+        display: flex;
+        gap: 1.5rem;
+        padding-top: 2rem;
+        margin-top: 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        position: relative;
+    }
+    
+    .config-actions::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, 
+            transparent 0%, 
+            rgba(255, 255, 255, 0.1) 20%, 
+            rgba(255, 255, 255, 0.2) 50%, 
+            rgba(255, 255, 255, 0.1) 80%, 
+            transparent 100%);
+    }
+    
+    .btn-guardar-config {
+        background: linear-gradient(135deg, var(--apple-blue) 0%, #007AFF 100%);
+        border: none;
+        border-radius: 12px;
+        padding: 1.125rem 2rem;
+        color: white;
+        font-weight: 700;
+        font-size: 1rem;
         cursor: pointer;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        transition: all 0.2s ease;
+        justify-content: center;
+        gap: 0.75rem;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        flex: 1;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        box-shadow: 
+            0 6px 20px rgba(10, 132, 255, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+    
+    .btn-guardar-config:hover {
+        background: linear-gradient(135deg, #007AFF 0%, #0051d5 100%);
+        transform: translateY(-2px);
+        box-shadow: 
+            0 8px 25px rgba(10, 132, 255, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+    
+    .btn-guardar-config:active {
+        transform: translateY(-1px);
+    }
+    
+    .btn-cancelar-config {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 1.125rem 2rem;
+        color: var(--apple-label-secondary);
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 
+            0 2px 8px rgba(0, 0, 0, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
     
     .btn-cancelar-config:hover {
-        background: var(--apple-bg-secondary);
-        border-color: var(--apple-label-tertiary);
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.15);
         color: var(--apple-label);
+        transform: translateY(-1px);
+        box-shadow: 
+            0 4px 15px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
     
     @media (max-width: 640px) {
         .config-actions {
             flex-direction: column;
+            gap: 1rem;
+            padding-top: 1.5rem;
         }
         
-        .configuracion-container {
-            padding: 1rem;
-            margin: 0.5rem 0;
+        .config-header {
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .config-header h3 {
+            font-size: 1.5rem;
         }
         
         .config-section {
+            padding: 1.5rem;
+            border-radius: 16px;
+        }
+        
+        .section-title {
+            font-size: 1.1rem;
+        }
+        
+        .form-control {
             padding: 1rem;
+            font-size: 16px; /* Evita zoom en iOS */
         }
         
         .oportunidad-actual {
             flex-direction: column;
             align-items: flex-start;
-            gap: 0.75rem;
+            gap: 1rem;
+            padding: 1.25rem;
         }
         
         .btn-desvincular {
             align-self: flex-end;
+            padding: 0.625rem 0.875rem;
         }
+        
+        .miembro-item {
+            padding: 1rem;
+        }
+        
+        .miembro-avatar {
+            width: 36px;
+            height: 36px;
+            font-size: 0.9rem;
+        }
+        
+        .btn-remove-miembro {
+            width: 30px;
+            height: 30px;
+        }
+        
+        .btn-guardar-config,
+        .btn-cancelar-config {
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+        }
+    }
+    
+    /* Animaciones adicionales para mejor UX */
+    @keyframes configSectionSlideIn {
+        0% {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .config-section {
+        animation: configSectionSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    
+    .config-section:nth-child(1) { animation-delay: 0.1s; }
+    .config-section:nth-child(2) { animation-delay: 0.2s; }
+    .config-section:nth-child(3) { animation-delay: 0.3s; }
+    .config-section:nth-child(4) { animation-delay: 0.4s; }
+    
+    /* Estados de loading para los botones */
+    .btn-guardar-config.loading {
+        pointer-events: none;
+        opacity: 0.7;
+        position: relative;
+    }
+    
+    .btn-guardar-config.loading::after {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border: 2px solid transparent;
+        border-top: 2px solid white;
+        border-radius: 50%;
+        animation: buttonSpinner 1s linear infinite;
+    }
+    
+    @keyframes buttonSpinner {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
     }
 </style>
