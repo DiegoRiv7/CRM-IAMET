@@ -2976,7 +2976,10 @@
                             </svg>
                             Crear Carpeta
                         </button>
-                        <button class="btn-nuevo-comentario" id="btnSubirArchivos" onclick="openFileUploadModal()" style="background: var(--apple-green); border-color: rgba(52, 199, 89, 0.3);">
+                        <!-- Input file oculto -->
+                        <input type="file" id="quickFileUpload" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.txt" style="display: none;">
+                        
+                        <button class="btn-nuevo-comentario" id="btnSubirArchivos" onclick="document.getElementById('quickFileUpload').click()" style="background: var(--apple-green); border-color: rgba(52, 199, 89, 0.3);">
                             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m7-10v16m4-12l-4-4-4 4"/>
                             </svg>
@@ -4108,6 +4111,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.handleFileSelection(files);
             }
         });
+    }
+    
+    // Configurar el input file para subida rápida
+    const quickFileUpload = document.getElementById('quickFileUpload');
+    if (quickFileUpload) {
+        quickFileUpload.addEventListener('change', function(e) {
+            const files = e.target.files;
+            if (files && files.length > 0) {
+                // Subir directamente a la raíz del proyecto
+                window.uploadFilesToFolder(files, null, 'proyecto');
+                
+                // Limpiar el input para permitir seleccionar los mismos archivos de nuevo
+                e.target.value = '';
+            }
+        });
+        console.log('🔵 Input file rápido configurado');
     }
     
     // Configurar drag & drop global
