@@ -113,7 +113,7 @@ function hideModal(modalId) {
 function applyTheme(theme) {
     console.log('applyTheme called with:', theme);
 
-    const validThemes = ['dark', 'pink', 'light', 'white', 'coffee'];
+    const validThemes = ['dark', 'pink', 'light', 'white', 'coffee', 'perla'];
     if (!validThemes.includes(theme)) {
         console.error('Invalid theme provided:', theme);
         theme = 'dark';
@@ -135,7 +135,8 @@ function applyTheme(theme) {
         'dark': 'Oscuro',
         'pink': 'Rosa',
         'white': 'Blanco',
-        'coffee': 'Café'
+        'coffee': 'Café',
+        'perla': 'Perla'
     };
     showNotification(`Tema cambiado a ${themeNames[theme] || theme}.`, 'success');
 }
@@ -380,6 +381,15 @@ function updateThemePreview(theme) {
             if (searchBar) searchBar.style.background = 'rgba(139, 69, 19, 0.1)';
             if (searchIcon) searchIcon.style.color = '#8b6239';
             if (searchText) searchText.style.color = '#8b6239';
+        } else if (theme === 'perla') {
+            welcomePreview.style.background = '#FFFFFF';
+            if (appleBg) appleBg.style.background = 'radial-gradient(ellipse at top left, rgba(0, 82, 212, 0.05) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(0, 82, 212, 0.03) 0%, transparent 50%), linear-gradient(180deg, #FFFFFF 0%, #F0F2F5 100%)';
+            if (userAvatar) userAvatar.style.borderColor = '#0052D4';
+            if (welcomeTitle) welcomeTitle.style.color = '#111827';
+            if (welcomeText) welcomeText.style.color = '#374151';
+            if (searchBar) searchBar.style.background = 'rgba(240, 242, 245, 0.8)';
+            if (searchIcon) searchIcon.style.color = '#6B7280';
+            if (searchText) searchText.style.color = '#6B7280';
         }
         
         welcomePreview.style.transform = 'scale(1.05)';

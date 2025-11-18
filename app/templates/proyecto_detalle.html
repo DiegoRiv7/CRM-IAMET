@@ -3228,17 +3228,18 @@ window.recargarCarpetas = async function(parentFolderId = null) {
                 folderElement.className = 'folder-item item-container';
                 folderElement.style.cssText = 'display: flex; flex-direction: column; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer; transition: all 0.2s ease; position: relative;';
                 
+                const carpetaNombreEscaped = carpeta.nombre.replace(/'/g, "\\'");
                 folderElement.innerHTML = `
-                    <div class="item-menu" onclick="event.stopPropagation(); toggleContextMenu(this, 'folder', ${carpeta.id}, '${carpeta.nombre}')">
+                    <div class="item-menu" onclick="event.stopPropagation(); toggleContextMenu(this, 'folder', ${carpeta.id}, '${carpetaNombreEscaped}')">
                         <svg fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
                         </svg>
                         <div class="context-menu" id="menu-folder-${carpeta.id}">
-                            <div class="context-menu-item" onclick="renameItem('folder', ${carpeta.id}, '${carpeta.nombre}')">
+                            <div class="context-menu-item" onclick="renameItem('folder', ${carpeta.id}, '${carpetaNombreEscaped}')">
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                 Renombrar
                             </div>
-                            <div class="context-menu-item danger" onclick="deleteItem('folder', ${carpeta.id}, '${carpeta.nombre}')">
+                            <div class="context-menu-item danger" onclick="deleteItem('folder', ${carpeta.id}, '${carpetaNombreEscaped}')">
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                 Eliminar
                             </div>
@@ -3279,17 +3280,18 @@ window.recargarCarpetas = async function(parentFolderId = null) {
                     iconPath = 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2l6 6 M16 13H8 M16 17H8 M10 9H8';
                 }
                 
+                const archivoNombreEscaped = archivo.nombre.replace(/'/g, "\\'");
                 fileElement.innerHTML = `
-                    <div class="item-menu" onclick="event.stopPropagation(); toggleContextMenu(this, 'file', ${archivo.id}, '${archivo.nombre}')">
+                    <div class="item-menu" onclick="event.stopPropagation(); toggleContextMenu(this, 'file', ${archivo.id}, '${archivoNombreEscaped}')">
                         <svg fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
                         </svg>
                         <div class="context-menu" id="menu-file-${archivo.id}">
-                            <div class="context-menu-item" onclick="renameItem('file', ${archivo.id}, '${archivo.nombre}')">
+                            <div class="context-menu-item" onclick="renameItem('file', ${archivo.id}, '${archivoNombreEscaped}')">
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                 Renombrar
                             </div>
-                            <div class="context-menu-item danger" onclick="deleteItem('file', ${archivo.id}, '${archivo.nombre}')">
+                            <div class="context-menu-item danger" onclick="deleteItem('file', ${archivo.id}, '${archivoNombreEscaped}')">
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                 Eliminar
                             </div>
@@ -3386,17 +3388,18 @@ window.loadFolderContent = async function(folderId) {
                 folderElement.className = 'folder-item-modal item-container';
                 folderElement.style.cssText = 'display: flex; flex-direction: column; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer; transition: all 0.2s ease; position: relative;';
                 
+                const subcarpetaNombreEscaped = subcarpeta.nombre.replace(/'/g, "\\'");
                 folderElement.innerHTML = `
-                    <div class="item-menu" onclick="event.stopPropagation(); toggleContextMenu(this, 'folder', ${subcarpeta.id}, '${subcarpeta.nombre}')">
+                    <div class="item-menu" onclick="event.stopPropagation(); toggleContextMenu(this, 'folder', ${subcarpeta.id}, '${subcarpetaNombreEscaped}')">
                         <svg fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
                         </svg>
                         <div class="context-menu" id="menu-modal-folder-${subcarpeta.id}">
-                            <div class="context-menu-item" onclick="renameItem('folder', ${subcarpeta.id}, '${subcarpeta.nombre}')">
+                            <div class="context-menu-item" onclick="renameItem('folder', ${subcarpeta.id}, '${subcarpetaNombreEscaped}')">
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                 Renombrar
                             </div>
-                            <div class="context-menu-item danger" onclick="deleteItem('folder', ${subcarpeta.id}, '${subcarpeta.nombre}')">
+                            <div class="context-menu-item danger" onclick="deleteItem('folder', ${subcarpeta.id}, '${subcarpetaNombreEscaped}')">
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                 Eliminar
                             </div>
@@ -3444,17 +3447,18 @@ window.loadFolderContent = async function(folderId) {
                     iconColor = 'var(--apple-red)';
                 }
                 
+                const archivoModalNombreEscaped = archivo.nombre.replace(/'/g, "\\'");
                 fileElement.innerHTML = `
-                    <div class="item-menu" onclick="event.stopPropagation(); toggleContextMenu(this, 'file', ${archivo.id}, '${archivo.nombre}')">
+                    <div class="item-menu" onclick="event.stopPropagation(); toggleContextMenu(this, 'file', ${archivo.id}, '${archivoModalNombreEscaped}')">
                         <svg fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
                         </svg>
                         <div class="context-menu" id="menu-modal-file-${archivo.id}">
-                            <div class="context-menu-item" onclick="renameItem('file', ${archivo.id}, '${archivo.nombre}')">
+                            <div class="context-menu-item" onclick="renameItem('file', ${archivo.id}, '${archivoModalNombreEscaped}')">
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                 Renombrar
                             </div>
-                            <div class="context-menu-item danger" onclick="deleteItem('file', ${archivo.id}, '${archivo.nombre}')">
+                            <div class="context-menu-item danger" onclick="deleteItem('file', ${archivo.id}, '${archivoModalNombreEscaped}')">
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                 Eliminar
                             </div>
@@ -4266,11 +4270,11 @@ window.renameItem = async function(itemType, itemId, currentName) {
     
     try {
         const PROYECTO_ID = {{ proyecto.id }};
-        const endpoint = itemType === 'folder' ? 'carpetas' : 'archivos';
+        const endpoint = itemType === 'folder' ? 'carpeta' : 'archivo';
         const url = `/app/api/proyecto/${PROYECTO_ID}/${endpoint}/${itemId}/`;
         
         const response = await fetch(url, {
-            method: 'PATCH',
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
@@ -4323,7 +4327,7 @@ window.deleteItem = async function(itemType, itemId, itemName) {
     
     try {
         const PROYECTO_ID = {{ proyecto.id }};
-        const endpoint = itemType === 'folder' ? 'carpetas' : 'archivos';
+        const endpoint = itemType === 'folder' ? 'carpeta' : 'archivo';
         const url = `/app/api/proyecto/${PROYECTO_ID}/${endpoint}/${itemId}/`;
         
         const response = await fetch(url, {

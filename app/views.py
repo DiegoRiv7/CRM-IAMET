@@ -10757,8 +10757,13 @@ def api_archivo_detalle(request, proyecto_id, archivo_id):
         
         elif request.method == 'PUT':
             data = json.loads(request.body)
+            nuevo_nombre = data.get('nombre')
             nueva_descripcion = data.get('descripcion', archivo.descripcion)
             nuevo_es_publico = data.get('es_publico', archivo.es_publico)
+            
+            # Si se proporciona un nuevo nombre, actualizarlo
+            if nuevo_nombre:
+                archivo.nombre_original = nuevo_nombre
             
             archivo.descripcion = nueva_descripcion
             archivo.es_publico = nuevo_es_publico
@@ -10768,6 +10773,7 @@ def api_archivo_detalle(request, proyecto_id, archivo_id):
                 'success': True,
                 'archivo': {
                     'id': archivo.id,
+                    'nombre': archivo.nombre_original,
                     'descripcion': archivo.descripcion,
                     'es_publico': archivo.es_publico
                 }
