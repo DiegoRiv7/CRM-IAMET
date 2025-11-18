@@ -3321,7 +3321,7 @@
             </div>
 
             <!-- Modal personalizado para confirmación de eliminación -->
-            <div class="custom-modal-overlay" id="deleteModal">
+            <div class="custom-modal-overlay" id="deleteItemModal">
                 <div class="custom-modal">
                     <div class="custom-modal-header">
                         <h3 class="custom-modal-title">Confirmar eliminación</h3>
@@ -3518,8 +3518,6 @@ window.handleCreateFolder = async function(event) {
             
             // Recargar la vista de carpetas
             window.recargarCarpetas();
-            
-            alert('✅ Carpeta creada exitosamente');
         } else {
             alert('Error: ' + data.error);
         }
@@ -4557,6 +4555,7 @@ window.currentDeleteData = null;
 
 // Modal de renombrar
 window.openRenameModal = function(itemType, itemId, itemName) {
+    console.log('🔄 Abriendo modal renombrar:', itemType, itemId, itemName);
     window.currentRenameData = { itemType, itemId, itemName };
     
     const modal = document.getElementById('renameModal');
@@ -4598,6 +4597,7 @@ window.confirmRename = async function() {
     const newName = input.value.trim();
     
     if (!newName || !window.currentRenameData) {
+        console.error('❌ No hay datos de renombrado o nombre vacío');
         return;
     }
     
@@ -4606,13 +4606,15 @@ window.confirmRename = async function() {
         return;
     }
     
+    // Guardar datos antes de cerrar el modal
+    const renameData = { ...window.currentRenameData };
     closeRenameModal();
     
     // Llamar a la función original de renombrar
     await performRename(
-        window.currentRenameData.itemType,
-        window.currentRenameData.itemId,
-        window.currentRenameData.itemName,
+        renameData.itemType,
+        renameData.itemId,
+        renameData.itemName,
         newName
     );
 };
@@ -4621,7 +4623,7 @@ window.confirmRename = async function() {
 window.openDeleteModal = function(itemType, itemId, itemName) {
     window.currentDeleteData = { itemType, itemId, itemName };
     
-    const modal = document.getElementById('deleteModal');
+    const modal = document.getElementById('deleteItemModal');
     const text = document.getElementById('deleteModalText');
     
     text.innerHTML = `¿Estás seguro de que quieres eliminar ${itemType === 'folder' ? 'la carpeta' : 'el archivo'} <strong>"${itemName}"</strong>?${itemType === 'folder' ? '<br><br>⚠️ Si contiene archivos o subcarpetas, también se eliminarán.' : ''}`;
@@ -4631,22 +4633,27 @@ window.openDeleteModal = function(itemType, itemId, itemName) {
 };
 
 window.closeDeleteModal = function() {
-    const modal = document.getElementById('deleteModal');
+    const modal = document.getElementById('deleteItemModal');
     modal.classList.remove('active');
     document.body.style.overflow = '';
     window.currentDeleteData = null;
 };
 
 window.confirmDelete = async function() {
-    if (!window.currentDeleteData) return;
+    if (!window.currentDeleteData) {
+        console.error('❌ No hay datos de eliminación');
+        return;
+    }
     
+    // Guardar datos antes de cerrar el modal
+    const deleteData = { ...window.currentDeleteData };
     closeDeleteModal();
     
     // Llamar a la función original de eliminar
     await performDelete(
-        window.currentDeleteData.itemType,
-        window.currentDeleteData.itemId,
-        window.currentDeleteData.itemName,
+        deleteData.itemType,
+        deleteData.itemId,
+        deleteData.itemName,
         false
     );
 };
@@ -4672,15 +4679,20 @@ window.closeForceDeleteModal = function() {
 };
 
 window.confirmForceDelete = async function() {
-    if (!window.currentDeleteData) return;
+    if (!window.currentDeleteData) {
+        console.error('❌ No hay datos de eliminación forzada');
+        return;
+    }
     
+    // Guardar datos antes de cerrar el modal
+    const deleteData = { ...window.currentDeleteData };
     closeForceDeleteModal();
     
     // Llamar a la función original de eliminar con force=true
     await performDelete(
-        window.currentDeleteData.itemType,
-        window.currentDeleteData.itemId,
-        window.currentDeleteData.itemName,
+        deleteData.itemType,
+        deleteData.itemId,
+        deleteData.itemName,
         true
     );
 };
