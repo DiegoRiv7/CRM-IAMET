@@ -2149,6 +2149,243 @@
         height: 16px;
     }
 
+    /* Liquid Glass Modal Styles */
+    .liquid-glass-modal {
+        backdrop-filter: blur(40px);
+        -webkit-backdrop-filter: blur(40px);
+        background: rgba(0, 0, 0, 0.3);
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    .liquid-glass-content {
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.1) 0%,
+            rgba(255, 255, 255, 0.05) 50%,
+            rgba(255, 255, 255, 0.02) 100%);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 24px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
+                    0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+                    0 2px 20px rgba(255, 255, 255, 0.1) inset;
+        animation: modalSlideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        overflow: hidden;
+    }
+    
+    /* Custom Modal Styles */
+    .custom-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        background: rgba(0, 0, 0, 0.4);
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    
+    .custom-modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .custom-modal {
+        background: linear-gradient(135deg, 
+            rgba(28, 28, 30, 0.95) 0%,
+            rgba(44, 44, 46, 0.9) 50%,
+            rgba(28, 28, 30, 0.95) 100%);
+        backdrop-filter: blur(40px);
+        -webkit-backdrop-filter: blur(40px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 20px;
+        padding: 0;
+        min-width: 400px;
+        max-width: 500px;
+        box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5),
+                    0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+                    0 2px 40px rgba(255, 255, 255, 0.08) inset;
+        transform: scale(0.9) translateY(20px);
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        overflow: hidden;
+    }
+    
+    .custom-modal-overlay.active .custom-modal {
+        transform: scale(1) translateY(0);
+    }
+    
+    .custom-modal-header {
+        padding: 1.5rem 1.5rem 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        position: relative;
+    }
+    
+    .custom-modal-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--apple-label);
+        margin: 0;
+        text-align: center;
+    }
+    
+    .custom-modal-close {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        width: 32px;
+        height: 32px;
+        border: none;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        color: var(--apple-label-secondary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+    
+    .custom-modal-close:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: var(--apple-label);
+        transform: scale(1.1);
+    }
+    
+    .custom-modal-body {
+        padding: 1.5rem;
+    }
+    
+    .custom-modal-text {
+        color: var(--apple-label);
+        font-size: 1rem;
+        line-height: 1.5;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    
+    .custom-modal-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        color: var(--apple-label);
+        font-size: 1rem;
+        font-family: var(--apple-font-family);
+        margin-bottom: 1.5rem;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+    
+    .custom-modal-input:focus {
+        outline: none;
+        border-color: var(--apple-blue);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
+    }
+    
+    .custom-modal-input::placeholder {
+        color: var(--apple-label-secondary);
+    }
+    
+    .custom-modal-actions {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+    }
+    
+    .custom-modal-btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 100px;
+        justify-content: center;
+        font-family: var(--apple-font-family);
+    }
+    
+    .custom-modal-btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--apple-label);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .custom-modal-btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.15);
+        transform: translateY(-1px);
+    }
+    
+    .custom-modal-btn-primary {
+        background: linear-gradient(135deg, var(--apple-blue), #4A90E2);
+        color: white;
+        border: 1px solid rgba(10, 132, 255, 0.3);
+        box-shadow: 0 4px 20px rgba(10, 132, 255, 0.25);
+    }
+    
+    .custom-modal-btn-primary:hover {
+        background: linear-gradient(135deg, #4A90E2, var(--apple-blue));
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(10, 132, 255, 0.35);
+    }
+    
+    .custom-modal-btn-danger {
+        background: linear-gradient(135deg, var(--apple-red), #FF5555);
+        color: white;
+        border: 1px solid rgba(255, 59, 48, 0.3);
+        box-shadow: 0 4px 20px rgba(255, 59, 48, 0.25);
+    }
+    
+    .custom-modal-btn-danger:hover {
+        background: linear-gradient(135deg, #FF5555, var(--apple-red));
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(255, 59, 48, 0.35);
+    }
+    
+    .warning-icon {
+        width: 60px;
+        height: 60px;
+        margin: 0 auto 1rem;
+        background: linear-gradient(135deg, var(--apple-orange), #FFAA00);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        box-shadow: 0 8px 25px rgba(255, 149, 0, 0.3);
+    }
+    
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95) translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
     /* Pink Theme Styles for Project Details */
     html[data-theme="pink"] body,
     body[data-theme="pink"],
@@ -2940,9 +3177,9 @@
                 </div>
             </div>
 
-            <!-- Modal para Ver Contenido de Carpeta -->
-            <div class="modal-overlay" id="folderViewModal">
-                <div class="modal-content" style="width: 90%; max-width: 1000px; height: 80%; max-height: 800px;">
+            <!-- Modal para Ver Contenido de Carpeta - Liquid Glass Style -->
+            <div class="modal-overlay liquid-glass-modal" id="folderViewModal">
+                <div class="modal-content liquid-glass-content" style="width: 95%; max-width: 1400px; height: 85%; max-height: 900px;">
                     <div class="modal-header">
                         <div style="display: flex; align-items: center; gap: 1rem; flex: 1;">
                             <button id="btnBackToParent" class="modal-back-btn" onclick="goBackToParentFolder()" style="display: none; background: none; border: none; color: var(--apple-blue); cursor: pointer; padding: 0.5rem; border-radius: 6px; transition: background-color 0.2s;">
@@ -3045,6 +3282,113 @@
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal personalizado para renombrar -->
+            <div class="custom-modal-overlay" id="renameModal">
+                <div class="custom-modal">
+                    <div class="custom-modal-header">
+                        <h3 class="custom-modal-title">Renombrar elemento</h3>
+                        <button class="custom-modal-close" onclick="closeRenameModal()">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="custom-modal-body">
+                        <div class="custom-modal-text">
+                            <svg width="50" height="50" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--apple-blue); margin: 0 auto 1rem; display: block;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            <p id="renameModalText">Introduce el nuevo nombre:</p>
+                        </div>
+                        <input type="text" class="custom-modal-input" id="renameInput" placeholder="Nombre del elemento">
+                        <div class="custom-modal-actions">
+                            <button class="custom-modal-btn custom-modal-btn-secondary" onclick="closeRenameModal()">
+                                Cancelar
+                            </button>
+                            <button class="custom-modal-btn custom-modal-btn-primary" onclick="confirmRename()">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                Renombrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal personalizado para confirmación de eliminación -->
+            <div class="custom-modal-overlay" id="deleteModal">
+                <div class="custom-modal">
+                    <div class="custom-modal-header">
+                        <h3 class="custom-modal-title">Confirmar eliminación</h3>
+                        <button class="custom-modal-close" onclick="closeDeleteModal()">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="custom-modal-body">
+                        <div class="warning-icon">
+                            <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="custom-modal-text">
+                            <p id="deleteModalText">¿Estás seguro de que quieres eliminar este elemento?</p>
+                        </div>
+                        <div class="custom-modal-actions">
+                            <button class="custom-modal-btn custom-modal-btn-secondary" onclick="closeDeleteModal()">
+                                Cancelar
+                            </button>
+                            <button class="custom-modal-btn custom-modal-btn-danger" onclick="confirmDelete()">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                                Eliminar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal para confirmación de eliminación forzada -->
+            <div class="custom-modal-overlay" id="forceDeleteModal">
+                <div class="custom-modal">
+                    <div class="custom-modal-header">
+                        <h3 class="custom-modal-title">Forzar eliminación</h3>
+                        <button class="custom-modal-close" onclick="closeForceDeleteModal()">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="custom-modal-body">
+                        <div class="warning-icon">
+                            <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                        </div>
+                        <div class="custom-modal-text">
+                            <p id="forceDeleteModalText">La carpeta contiene archivos. ¿Deseas forzar la eliminación?</p>
+                            <p style="color: var(--apple-red); font-size: 0.9rem; margin-top: 0.5rem;">
+                                ⚠️ Esta acción eliminará permanentemente la carpeta y todo su contenido.
+                            </p>
+                        </div>
+                        <div class="custom-modal-actions">
+                            <button class="custom-modal-btn custom-modal-btn-secondary" onclick="closeForceDeleteModal()">
+                                Cancelar
+                            </button>
+                            <button class="custom-modal-btn custom-modal-btn-danger" onclick="confirmForceDelete()">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                                Forzar eliminación
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -4205,6 +4549,142 @@ window.setupModalDragDrop = function(contentGrid, folderId) {
     });
 };
 
+// ===== FUNCIONES PARA MODALES PERSONALIZADOS =====
+
+// Variables globales para manejo de modales
+window.currentRenameData = null;
+window.currentDeleteData = null;
+
+// Modal de renombrar
+window.openRenameModal = function(itemType, itemId, itemName) {
+    window.currentRenameData = { itemType, itemId, itemName };
+    
+    const modal = document.getElementById('renameModal');
+    const input = document.getElementById('renameInput');
+    const text = document.getElementById('renameModalText');
+    
+    text.textContent = `Introduce el nuevo nombre para ${itemType === 'folder' ? 'la carpeta' : 'el archivo'}:`;
+    input.value = itemName;
+    input.placeholder = itemName;
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // Focus y selección del texto después de la animación
+    setTimeout(() => {
+        input.focus();
+        input.select();
+    }, 300);
+    
+    // Manejar Enter key
+    input.onkeydown = function(e) {
+        if (e.key === 'Enter') {
+            confirmRename();
+        } else if (e.key === 'Escape') {
+            closeRenameModal();
+        }
+    };
+};
+
+window.closeRenameModal = function() {
+    const modal = document.getElementById('renameModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+    window.currentRenameData = null;
+};
+
+window.confirmRename = async function() {
+    const input = document.getElementById('renameInput');
+    const newName = input.value.trim();
+    
+    if (!newName || !window.currentRenameData) {
+        return;
+    }
+    
+    if (newName === window.currentRenameData.itemName) {
+        closeRenameModal();
+        return;
+    }
+    
+    closeRenameModal();
+    
+    // Llamar a la función original de renombrar
+    await performRename(
+        window.currentRenameData.itemType,
+        window.currentRenameData.itemId,
+        window.currentRenameData.itemName,
+        newName
+    );
+};
+
+// Modal de eliminación normal
+window.openDeleteModal = function(itemType, itemId, itemName) {
+    window.currentDeleteData = { itemType, itemId, itemName };
+    
+    const modal = document.getElementById('deleteModal');
+    const text = document.getElementById('deleteModalText');
+    
+    text.innerHTML = `¿Estás seguro de que quieres eliminar ${itemType === 'folder' ? 'la carpeta' : 'el archivo'} <strong>"${itemName}"</strong>?${itemType === 'folder' ? '<br><br>⚠️ Si contiene archivos o subcarpetas, también se eliminarán.' : ''}`;
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+};
+
+window.closeDeleteModal = function() {
+    const modal = document.getElementById('deleteModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+    window.currentDeleteData = null;
+};
+
+window.confirmDelete = async function() {
+    if (!window.currentDeleteData) return;
+    
+    closeDeleteModal();
+    
+    // Llamar a la función original de eliminar
+    await performDelete(
+        window.currentDeleteData.itemType,
+        window.currentDeleteData.itemId,
+        window.currentDeleteData.itemName,
+        false
+    );
+};
+
+// Modal de eliminación forzada
+window.openForceDeleteModal = function(itemType, itemId, itemName, errorMessage) {
+    window.currentDeleteData = { itemType, itemId, itemName };
+    
+    const modal = document.getElementById('forceDeleteModal');
+    const text = document.getElementById('forceDeleteModalText');
+    
+    text.innerHTML = `${errorMessage}<br><br>¿Deseas forzar la eliminación de la carpeta <strong>"${itemName}"</strong> y todo su contenido?`;
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+};
+
+window.closeForceDeleteModal = function() {
+    const modal = document.getElementById('forceDeleteModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+    window.currentDeleteData = null;
+};
+
+window.confirmForceDelete = async function() {
+    if (!window.currentDeleteData) return;
+    
+    closeForceDeleteModal();
+    
+    // Llamar a la función original de eliminar con force=true
+    await performDelete(
+        window.currentDeleteData.itemType,
+        window.currentDeleteData.itemId,
+        window.currentDeleteData.itemName,
+        true
+    );
+};
+
 // ===== FUNCIONES PARA MENÚ CONTEXTUAL =====
 
 // Variable global para controlar menús abiertos
@@ -4261,12 +4741,23 @@ window.toggleContextMenu = function(menuButton, itemType, itemId, itemName) {
     }
 };
 
-// Función para renombrar elemento
-window.renameItem = async function(itemType, itemId, currentName) {
+// Función para renombrar elemento (ahora usa modal personalizado)
+window.renameItem = function(itemType, itemId, currentName) {
     console.log('🔵 renameItem:', itemType, itemId, currentName);
     
-    const newName = prompt(`Renombrar ${itemType === 'folder' ? 'carpeta' : 'archivo'}:`, currentName);
-    if (!newName || newName === currentName) return;
+    // Cerrar menú contextual
+    document.querySelectorAll('.context-menu').forEach(menu => {
+        menu.style.display = 'none';
+    });
+    window.currentOpenMenu = null;
+    
+    // Abrir modal personalizado
+    window.openRenameModal(itemType, itemId, currentName);
+};
+
+// Función auxiliar para realizar el renombrado
+window.performRename = async function(itemType, itemId, currentName, newName) {
+    console.log('🔵 performRename:', itemType, itemId, currentName, '->', newName);
     
     try {
         const PROYECTO_ID = {{ proyecto.id }};
@@ -4306,29 +4797,36 @@ window.renameItem = async function(itemType, itemId, currentName) {
         
     } catch (error) {
         console.error('Error renombrando:', error);
-        alert(`❌ Error al renombrar: ${error.message}`);
+        showUploadNotification(`❌ Error al renombrar: ${error.message}`, 'error');
     }
+};
+
+// Función para eliminar elemento (ahora usa modal personalizado)
+window.deleteItem = function(itemType, itemId, itemName) {
+    console.log('🔵 deleteItem:', itemType, itemId, itemName);
     
-    // Cerrar menú
+    // Cerrar menú contextual
     document.querySelectorAll('.context-menu').forEach(menu => {
         menu.style.display = 'none';
     });
     window.currentOpenMenu = null;
+    
+    // Abrir modal personalizado
+    window.openDeleteModal(itemType, itemId, itemName);
 };
 
-// Función para eliminar elemento
-window.deleteItem = async function(itemType, itemId, itemName) {
-    console.log('🔵 deleteItem:', itemType, itemId, itemName);
-    
-    const itemTypeText = itemType === 'folder' ? 'carpeta' : 'archivo';
-    const confirmMessage = `¿Estás seguro de que quieres eliminar ${itemTypeText} "${itemName}"?${itemType === 'folder' ? '\n\n⚠️ Si contiene archivos o subcarpetas, también se eliminarán.' : ''}`;
-    
-    if (!confirm(confirmMessage)) return;
+// Función auxiliar para realizar la eliminación
+window.performDelete = async function(itemType, itemId, itemName, forceDelete = false) {
+    console.log('🔵 performDelete:', itemType, itemId, itemName, 'force:', forceDelete);
     
     try {
         const PROYECTO_ID = {{ proyecto.id }};
         const endpoint = itemType === 'folder' ? 'carpeta' : 'archivo';
-        const url = `/app/api/proyecto/${PROYECTO_ID}/${endpoint}/${itemId}/`;
+        let url = `/app/api/proyecto/${PROYECTO_ID}/${endpoint}/${itemId}/`;
+        
+        if (forceDelete) {
+            url += '?force=true';
+        }
         
         const response = await fetch(url, {
             method: 'DELETE',
@@ -4349,41 +4847,20 @@ window.deleteItem = async function(itemType, itemId, itemName) {
             }
             window.recargarCarpetas();
             
-            showUploadNotification(`✅ ${itemTypeText.charAt(0).toUpperCase() + itemTypeText.slice(1)} eliminado exitosamente`, 'success');
+            const itemTypeText = itemType === 'folder' ? 'carpeta' : 'archivo';
+            const successMessage = forceDelete ? 
+                'Carpeta y su contenido eliminados exitosamente' : 
+                `${itemTypeText.charAt(0).toUpperCase() + itemTypeText.slice(1)} eliminado exitosamente`;
+            
+            showUploadNotification(`✅ ${successMessage}`, 'success');
         } else {
             // Manejar errores específicos
             let errorMessage = data.error || 'Error desconocido';
             
-            if (response.status === 400 && itemType === 'folder') {
+            if (response.status === 400 && itemType === 'folder' && !forceDelete) {
                 if (errorMessage.includes('contiene archivos') || errorMessage.includes('subcarpetas')) {
-                    const forceDelete = confirm(`❌ ${errorMessage}\n\n¿Deseas forzar la eliminación de la carpeta y todo su contenido?\n\n⚠️ Esta acción no se puede deshacer.`);
-                    
-                    if (forceDelete) {
-                        // Intentar eliminación forzada
-                        const forceResponse = await fetch(url + '?force=true', {
-                            method: 'DELETE',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
-                            }
-                        });
-                        
-                        const forceData = await forceResponse.json();
-                        
-                        if (forceResponse.ok && forceData.success) {
-                            console.log(`✅ ${itemType} eliminado forzadamente`);
-                            
-                            // Recargar vista según donde estemos
-                            if (window.currentFolderView) {
-                                await window.loadFolderContent(window.currentFolderView.id);
-                            }
-                            window.recargarCarpetas();
-                            
-                            showUploadNotification(`✅ Carpeta y su contenido eliminados exitosamente`, 'success');
-                        } else {
-                            throw new Error(forceData.error || 'Error al forzar eliminación');
-                        }
-                    }
+                    // Mostrar modal de confirmación para eliminación forzada
+                    window.openForceDeleteModal(itemType, itemId, itemName, errorMessage);
                     return;
                 }
             }
@@ -4393,14 +4870,8 @@ window.deleteItem = async function(itemType, itemId, itemName) {
         
     } catch (error) {
         console.error('Error eliminando:', error);
-        alert(`❌ Error al eliminar: ${error.message}`);
+        showUploadNotification(`❌ Error al eliminar: ${error.message}`, 'error');
     }
-    
-    // Cerrar menú
-    document.querySelectorAll('.context-menu').forEach(menu => {
-        menu.style.display = 'none';
-    });
-    window.currentOpenMenu = null;
 };
 
 // Cerrar menús al hacer clic fuera
