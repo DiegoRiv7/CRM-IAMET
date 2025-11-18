@@ -3706,18 +3706,23 @@ window.hideDragDropOverlay = function() {
     }, 100);
 };
 
-// Variable de control para prevenir múltiples subidas simultáneas
-window.isUploading = false;
+// Variables de control para prevenir múltiples subidas simultáneas
+window.currentUploads = new Set();
+window.isProcessingDrop = false;
 
 // Función para subir archivos directamente a una carpeta
 window.uploadFilesToFolder = async function(files, folderId = null, folderName = null) {
-    // Prevenir múltiples subidas simultáneas
-    if (window.isUploading) {
-        console.log('⚠️ Subida ya en progreso, ignorando duplicado');
+    // Crear un identificador único para esta subida
+    const fileSignature = Array.from(files).map(f => `${f.name}_${f.size}_${f.lastModified}`).join('|');
+    const uploadId = `${folderId || 'root'}_${fileSignature}`;
+    
+    // Verificar si esta misma subida ya está en progreso
+    if (window.currentUploads.has(uploadId)) {
+        console.log('⚠️ Subida duplicada ignorada:', folderName || 'raíz');
         return;
     }
     
-    window.isUploading = true;
+    window.currentUploads.add(uploadId);
     console.log('🔵 Subiendo archivos directamente a carpeta:', folderName || 'raíz');
     
     const PROYECTO_ID = {{ proyecto.id }};
@@ -3764,8 +3769,8 @@ window.uploadFilesToFolder = async function(files, folderId = null, folderName =
         console.error('Error general en subida directa:', error);
         showUploadNotification('❌ Error durante la subida', 'error');
     } finally {
-        // Liberar el control de subida
-        window.isUploading = false;
+        // Liberar el control de esta subida específica
+        window.currentUploads.delete(uploadId);
     }
 };
 
@@ -3917,11 +3922,12 @@ window.setupGlobalDragDrop = function() {
         dragCounter = 0;
         window.hideDragDropOverlay();
         
-        // Si ya se está subiendo, ignorar
-        if (window.isUploading) {
-            console.log('⚠️ Global drop ignorado - subida ya en progreso');
+        // Prevenir procesamiento múltiple del mismo evento drop
+        if (window.isProcessingDrop) {
+            console.log('⚠️ Global drop ignorado - ya procesando evento drop');
             return;
         }
+        window.isProcessingDrop = true;
         
         // Verificar si el modal de carpetas está abierto
         const folderModal = document.getElementById('folderViewModal');
@@ -3954,6 +3960,11 @@ window.setupGlobalDragDrop = function() {
                 }
             }
         }
+        
+        // Liberar el flag después de procesar
+        setTimeout(() => {
+            window.isProcessingDrop = false;
+        }, 100);
     });
 };
 
@@ -3991,11 +4002,12 @@ window.setupModalDragDrop = function(contentGrid, folderId) {
         e.stopPropagation();
         e.stopImmediatePropagation(); // Evitar que otros listeners se ejecuten
         
-        // Si ya se está subiendo, ignorar
-        if (window.isUploading) {
-            console.log('⚠️ Modal drop ignorado - subida ya en progreso');
+        // Prevenir procesamiento múltiple del mismo evento drop
+        if (window.isProcessingDrop) {
+            console.log('⚠️ Modal drop ignorado - ya procesando evento drop');
             return;
         }
+        window.isProcessingDrop = true;
         
         // Asegurarse de que el overlay esté oculto
         window.hideDragDropOverlay();
@@ -4023,6 +4035,11 @@ window.setupModalDragDrop = function(contentGrid, folderId) {
                 }
             }
         }
+        
+        // Liberar el flag después de procesar
+        setTimeout(() => {
+            window.isProcessingDrop = false;
+        }, 100);
     });
 };
 
