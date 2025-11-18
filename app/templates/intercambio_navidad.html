@@ -643,6 +643,7 @@
                     const data = await response.json();
                     if (data.success && data.usuarios) {
                         empleadosDisponibles = data.usuarios;
+                        console.log('Empleados cargados:', empleadosDisponibles.length);
                         actualizarSelectEmpleados();
                     } else {
                         console.error('Formato de respuesta inesperado:', data);
