@@ -3706,8 +3706,18 @@ window.hideDragDropOverlay = function() {
     }, 100);
 };
 
+// Variable de control para prevenir múltiples subidas simultáneas
+window.isUploading = false;
+
 // Función para subir archivos directamente a una carpeta
 window.uploadFilesToFolder = async function(files, folderId = null, folderName = null) {
+    // Prevenir múltiples subidas simultáneas
+    if (window.isUploading) {
+        console.log('⚠️ Subida ya en progreso, ignorando duplicado');
+        return;
+    }
+    
+    window.isUploading = true;
     console.log('🔵 Subiendo archivos directamente a carpeta:', folderName || 'raíz');
     
     const PROYECTO_ID = {{ proyecto.id }};
@@ -3753,6 +3763,9 @@ window.uploadFilesToFolder = async function(files, folderId = null, folderName =
     } catch (error) {
         console.error('Error general en subida directa:', error);
         showUploadNotification('❌ Error durante la subida', 'error');
+    } finally {
+        // Liberar el control de subida
+        window.isUploading = false;
     }
 };
 
@@ -3832,6 +3845,7 @@ window.setupFolderDragDrop = function(folderElement, carpeta) {
     folderElement.addEventListener('drop', function(e) {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation(); // Evitar que otros listeners se ejecuten
         
         // Restaurar apariencia
         folderElement.style.background = 'rgba(255, 255, 255, 0.05)';
@@ -3903,6 +3917,12 @@ window.setupGlobalDragDrop = function() {
         dragCounter = 0;
         window.hideDragDropOverlay();
         
+        // Si ya se está subiendo, ignorar
+        if (window.isUploading) {
+            console.log('⚠️ Global drop ignorado - subida ya en progreso');
+            return;
+        }
+        
         // Verificar si el modal de carpetas está abierto
         const folderModal = document.getElementById('folderViewModal');
         const isModalOpen = folderModal && folderModal.classList.contains('active');
@@ -3969,6 +3989,13 @@ window.setupModalDragDrop = function(contentGrid, folderId) {
     contentGrid.addEventListener('drop', function(e) {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation(); // Evitar que otros listeners se ejecuten
+        
+        // Si ya se está subiendo, ignorar
+        if (window.isUploading) {
+            console.log('⚠️ Modal drop ignorado - subida ya en progreso');
+            return;
+        }
         
         // Asegurarse de que el overlay esté oculto
         window.hideDragDropOverlay();
