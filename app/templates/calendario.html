@@ -87,66 +87,93 @@ l{% extends 'base.html' %}
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             text-rendering: optimizeLegibility;
+            /* High DPI optimizations */
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            -webkit-perspective: 1000px;
+            perspective: 1000px;
+            /* Enhanced rendering */
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
         }
 
         .fc .fc-toolbar-title {
             color: var(--apple-label);
-            font-weight: 600;
-            font-size: 2.25rem;
+            font-weight: 700;
+            font-size: 2.75rem;
             letter-spacing: -0.02em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            -webkit-font-smoothing: subpixel-antialiased;
         }
 
         .fc .fc-col-header-cell-cushion {
             color: var(--apple-gray-2);
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
-            font-size: 0.95rem;
-            letter-spacing: 0.05em;
-            padding: 12px 8px;
+            font-size: 1.1rem;
+            letter-spacing: 0.08em;
+            padding: 16px 12px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
 
         .fc .fc-daygrid-day-number {
             color: var(--apple-label-secondary);
-            font-size: 1.1rem;
-            font-weight: 500;
-            padding: 12px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            padding: 16px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
 
         .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
             color: var(--apple-blue-light);
-            font-weight: 700;
-            font-size: 1.2rem;
+            font-weight: 800;
+            font-size: 1.4rem;
+            text-shadow: 0 2px 4px rgba(0, 122, 255, 0.4);
         }
 
         .fc .fc-daygrid-event {
-            border-radius: 8px;
-            padding: 6px 10px;
-            font-weight: 500;
-            font-size: 14px;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 8px 14px;
+            font-weight: 600;
+            font-size: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
             transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             border: none;
-            margin: 2px 0;
-            line-height: 1.4;
+            margin: 3px 0;
+            line-height: 1.5;
+            /* High DPI enhancements */
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+            will-change: transform, box-shadow;
         }
 
         .fc .fc-daygrid-event:hover {
-            transform: scale(1.02) translateY(-1px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            transform: scale(1.03) translateY(-2px);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.5);
             z-index: 1000;
             backface-visibility: hidden;
             perspective: 1000px;
         }
 
         .fc .fc-daygrid-day-frame {
-            min-height: 100px;
+            min-height: 140px;
             position: relative;
+            /* Enhanced rendering */
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
         }
 
         .fc .fc-daygrid-day {
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(255, 255, 255, 0.03);
             border: 1px solid var(--apple-separator);
             transition: all 0.2s ease;
+            /* High DPI enhancements */
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+            will-change: background-color, border-color;
         }
 
         .fc .fc-daygrid-day:hover {
@@ -160,7 +187,8 @@ l{% extends 'base.html' %}
         }
 
         .fc .fc-toolbar {
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
+            padding: 0 1rem;
         }
 
         .fc .fc-toolbar-chunk {
@@ -169,13 +197,17 @@ l{% extends 'base.html' %}
         }
 
         .fc .fc-button {
-            font-size: 14px;
-            font-weight: 500;
-            padding: 8px 16px;
-            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 10px;
             transition: all 0.2s ease;
             text-transform: none;
             letter-spacing: 0.01em;
+            /* Enhanced rendering */
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+            will-change: transform, background-color;
         }
 
         .fc .fc-button:hover {
@@ -469,14 +501,14 @@ l{% extends 'base.html' %}
 
 {% block content %}
 <div class="apple-bg"></div>
-<main class="flex flex-row items-start justify-start min-h-screen p-4 md:p-6">
-    <aside id="calendar-sidebar" class="w-1/4 max-w-xs p-4 apple-card mr-4">
-        <h3 class="text-lg font-semibold mb-4">Calendarios</h3>
+<main class="flex flex-row items-start justify-start min-h-screen p-2 md:p-4">
+    <aside id="calendar-sidebar" class="w-80 p-6 apple-card mr-6">
+        <h3 class="text-xl font-bold mb-6">Calendarios</h3>
         <div id="user-filter-container">
             <!-- User filters will be dynamically inserted here -->
         </div>
 
-        <h3 class="text-lg font-semibold mt-6 mb-4">Tipos de Actividad</h3>
+        <h3 class="text-xl font-bold mt-8 mb-6">Tipos de Actividad</h3>
         <div id="activity-type-filter-container">
             <div class="filter-item">
                 <input type="checkbox" id="type-llamada" value="llamada" checked onchange="filterCalendarEvents()">
@@ -500,9 +532,9 @@ l{% extends 'base.html' %}
             </div>
         </div>
     </aside>
-    <section class="w-full flex-grow mx-auto apple-fade-in" style="animation-delay:0.2s;">
-        <div class="apple-card p-6 md:p-8" style="width: 95%; max-width: 1400px; margin: 0 auto;">
-            <div id='calendar' style="height: 800px; font-size: 16px;"></div>
+    <section class="flex-grow mx-auto apple-fade-in" style="animation-delay:0.2s; width: calc(100% - 22rem);">
+        <div class="apple-card p-8 md:p-10" style="width: 100%; height: calc(100vh - 2rem);">
+            <div id='calendar' style="height: calc(100vh - 6rem); font-size: 18px; min-height: 900px;"></div>
         </div>
     </section>
 </main>
@@ -641,8 +673,9 @@ l{% extends 'base.html' %}
             calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
                 locale: 'es', // Set locale to Spanish
-                height: 'auto',
-                aspectRatio: 2.2,
+                height: '100%',
+                aspectRatio: 2.5,
+                contentHeight: 'auto',
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
@@ -659,7 +692,7 @@ l{% extends 'base.html' %}
                 selectable: true, // Allow selecting dates to create events
                 eventStartEditable: true,
                 eventDurationEditable: true,
-                eventMaxStack: 3,
+                eventMaxStack: 4,
                 dayMaxEventRows: true,
                 eventDisplay: 'block',
                 displayEventTime: true,
@@ -674,6 +707,11 @@ l{% extends 'base.html' %}
                 weekNumberCalculation: 'ISO',
                 navLinks: false,
                 nowIndicator: true,
+                // Enhanced rendering options
+                handleWindowResize: true,
+                windowResizeDelay: 100,
+                progressiveEventRendering: true,
+                eventRenderWaitMs: 50,
                 events: function(fetchInfo, successCallback, failureCallback) {
                     fetch('/app/api/actividades/', {
                         method: 'GET',
