@@ -5351,10 +5351,10 @@
     /* ===== CONFIGURACIÓN EXACTA COMO EL DISEÑO PROPORCIONADO ===== */
     
     .config-card {
-        width: 90%;
-        margin: 40px auto;
-        padding: 45px;
-        border-radius: 32px;
+        width: 100%;
+        margin: 0;
+        padding: 2rem;
+        border-radius: 16px;
         background: linear-gradient(135deg, rgba(45, 45, 45, 0.95), rgba(35, 35, 35, 0.98)) !important;
         backdrop-filter: blur(20px) saturate(180%) !important;
         -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
@@ -5364,6 +5364,8 @@
             0px 20px 40px rgba(0,0,0,0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
         position: relative !important;
+        min-height: 600px;
+        overflow: hidden;
         
         /* Tab content functionality */
         display: none !important;
@@ -5380,7 +5382,7 @@
         display: flex;
         justify-content: flex-end;
         gap: 15px;
-        margin-bottom: 25px;
+        margin-bottom: 35px;
     }
 
     .config-btn {
@@ -5416,6 +5418,7 @@
     /* Títulos */
     .config-title {
         margin-top: 0;
+        margin-bottom: 0.5rem;
         font-size: 36px;
         font-weight: 700;
         color: #ffffff !important;
@@ -5423,11 +5426,11 @@
 
     .config-subtitle {
         color: #c9c9c9 !important;
-        margin-bottom: 30px !important;
+        margin-bottom: 40px !important;
     }
 
     .config-section-title {
-        margin: 30px 0 15px 0;
+        margin: 40px 0 20px 0;
         font-size: 20px;
         font-weight: 600;
         color: #ffffff !important;
