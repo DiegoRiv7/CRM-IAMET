@@ -5293,6 +5293,45 @@
             inset 0 1px 0 rgba(255, 255, 255, 0.15);
         border-color: rgba(255, 255, 255, 0.3);
     }
+    
+    /* Ultimate override for stubborn blue arrows */
+    select#proyecto-tipo,
+    select#proyecto-privacidad,
+    #proyecto-tipo,
+    #proyecto-privacidad,
+    select[id*="proyecto"],
+    select[name*="tipo"],
+    select[name*="privacidad"] {
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
+        background-position: right 1rem center !important;
+        background-repeat: no-repeat !important;
+        background-size: 1rem !important;
+        padding-right: 3rem !important;
+    }
+    
+    /* Force remove ALL select styling */
+    select#proyecto-tipo::-ms-expand,
+    select#proyecto-privacidad::-ms-expand {
+        display: none !important;
+    }
+    
+    /* Remove any Tailwind/Bootstrap select styling */
+    .form-select:not([multiple]):not([size]) {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
+        background-position: right 0.75rem center !important;
+        background-size: 16px 12px !important;
+        background-repeat: no-repeat !important;
+    }
+    
+    /* Remove blue repetitive elements */
+    select *,
+    select option {
+        background: none !important;
+        color: white !important;
+    }
     }
 </style>
 
@@ -13553,7 +13592,7 @@ function getEstadoBadgeHTML(estado) {
                         console.log('🧑 Usuario API: ' + user.nombre + ', Avatar: ' + (user.avatar_url || 'SIN AVATAR'));
                         return {
                             id: user.id,
-                            nombre: user.nombre || (((user.first_name || '') + ' ' + (user.last_name || '')).trim() || user.username),
+                            nombre: user.nombre || ((user.first_name || '') + ' ' + (user.last_name || '')).trim() || user.username,
                             email: user.email || '',
                             username: user.username,
                             first_name: user.first_name,
@@ -14389,6 +14428,71 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Setup opportunity search 
         setupOportunidadSearchForm();
+        
+        // Debug and force select styling
+        setTimeout(() => {
+            const selects = document.querySelectorAll('#proyecto-tipo, #proyecto-privacidad');
+            console.log('🔧 Found selects:', selects.length);
+            selects.forEach((select, index) => {
+                console.log(`🔧 Select ${index}:`, select);
+                select.style.appearance = 'none';
+                select.style.webkitAppearance = 'none';
+                select.style.mozAppearance = 'none';
+                select.style.backgroundImage = `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`;
+                select.style.backgroundPosition = 'right 1rem center';
+                select.style.backgroundRepeat = 'no-repeat';
+                select.style.backgroundSize = '1rem';
+                select.style.paddingRight = '3rem';
+            });
+        }, 100);
+        
+        // Force glassmorphism styling
+        setTimeout(() => {
+            const configContainer = document.querySelector('.config-container');
+            const formSections = document.querySelectorAll('.form-section');
+            const formInputs = document.querySelectorAll('.form-input, .form-select');
+            
+            console.log('🎨 Forcing glassmorphism styling...');
+            console.log('Config container:', configContainer);
+            console.log('Form sections:', formSections.length);
+            console.log('Form inputs:', formInputs.length);
+            
+            // Force config container styles
+            if (configContainer) {
+                configContainer.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)';
+                configContainer.style.backdropFilter = 'blur(30px) saturate(180%)';
+                configContainer.style.webkitBackdropFilter = 'blur(30px) saturate(180%)';
+                configContainer.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+                configContainer.style.borderRadius = '24px';
+                configContainer.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 25px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 rgba(255, 255, 255, 0.05)';
+            }
+            
+            // Force form section styles
+            formSections.forEach((section, index) => {
+                console.log(`🎨 Styling section ${index}`);
+                section.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%)';
+                section.style.backdropFilter = 'blur(25px) saturate(180%)';
+                section.style.webkitBackdropFilter = 'blur(25px) saturate(180%)';
+                section.style.border = '1px solid rgba(255, 255, 255, 0.12)';
+                section.style.borderRadius = '20px';
+                section.style.padding = '2rem';
+                section.style.boxShadow = '0 12px 35px rgba(0, 0, 0, 0.12), 0 4px 15px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
+                section.style.marginBottom = '2rem';
+            });
+            
+            // Force form input styles
+            formInputs.forEach((input, index) => {
+                console.log(`🎨 Styling input ${index}`);
+                input.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)';
+                input.style.backdropFilter = 'blur(15px) saturate(180%)';
+                input.style.webkitBackdropFilter = 'blur(15px) saturate(180%)';
+                input.style.border = '1px solid rgba(255, 255, 255, 0.15)';
+                input.style.borderRadius = '16px';
+                input.style.padding = '1.25rem 1.5rem';
+                input.style.color = '#F2F2F7';
+                input.style.boxShadow = 'inset 0 2px 8px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05)';
+            });
+        }, 200);
 
         // Cerrar resultados al hacer clic fuera
         document.addEventListener('click', function(e) {
