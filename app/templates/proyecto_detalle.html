@@ -3569,8 +3569,8 @@
         display: block !important;
     }
     
-    /* Force widget styling with maximum specificity */
-    html body #configuracion-content .config-widget {
+    /* Force widget styling ONLY when configuration tab is active */
+    #configuracion-content.tab-content.active .config-widget {
         display: block !important;
         background: rgba(255, 255, 255, 0.05) !important;
         backdrop-filter: blur(25px) saturate(1.8) !important;
@@ -5423,41 +5423,22 @@
 // ===== FUNCIONES CRÍTICAS PARA CARPETAS - CARGA TEMPRANA =====
 console.log('🔵 Cargando funciones críticas de carpetas...');
 
-// Inicialización de configuración de widgets
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ Sistema de widgets de configuración inicializado');
-    
-    // Verificar que todos los widgets estén disponibles
+// Función para aplicar estilos de widgets de configuración
+function applyConfigurationWidgetStyles() {
     const configContent = document.getElementById('configuracion-content');
-    if (configContent) {
+    if (configContent && configContent.classList.contains('active')) {
         const widgets = configContent.querySelectorAll('.config-widget');
-        console.log(`✅ ${widgets.length} widgets de configuración detectados y listos`);
-        
-        // Forzar activación del tab de configuración si no está activo
-        if (!configContent.classList.contains('active')) {
-            console.log('🔧 Activando tab de configuración...');
-            configContent.classList.add('active');
-            configContent.style.display = 'block';
-            
-            // También activar el botón de la tab si existe
-            const configTab = document.querySelector('[data-tab="configuracion"]');
-            if (configTab) {
-                configTab.classList.add('active');
-            }
-        }
-        
-        // Aplicar efectos visuales inmediatos
         const widgetsGrid = configContent.querySelector('.config-widgets-grid');
+        
+        console.log('🎨 Aplicando estilos de widgets de configuración...');
+        
         if (widgetsGrid) {
-            widgetsGrid.style.opacity = '1';
             widgetsGrid.style.display = 'grid';
             widgetsGrid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(320px, 1fr))';
             widgetsGrid.style.gap = '1.5rem';
             widgetsGrid.style.padding = '1.5rem';
-            console.log('✅ Grid de widgets activado');
         }
         
-        // Aplicar estilos a cada widget individual
         widgets.forEach((widget, index) => {
             widget.style.background = 'rgba(255, 255, 255, 0.05)';
             widget.style.backdropFilter = 'blur(25px) saturate(1.8)';
@@ -5469,10 +5450,21 @@ document.addEventListener('DOMContentLoaded', function() {
             widget.style.overflow = 'hidden';
             widget.style.transition = 'all 0.3s ease';
             widget.style.marginBottom = '1.5rem';
-            console.log(`🎨 Widget ${index} estilizado`);
         });
-    } else {
-        console.error('❌ Error: No se encontró el contenedor de configuración');
+        
+        console.log(`✅ ${widgets.length} widgets de configuración estilizados`);
+    }
+}
+
+// Inicialización básica de widgets
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ Sistema de widgets de configuración listo');
+    
+    // Solo verificar que existan, no aplicar estilos automáticamente
+    const configContent = document.getElementById('configuracion-content');
+    if (configContent) {
+        const widgets = configContent.querySelectorAll('.config-widget');
+        console.log(`✅ ${widgets.length} widgets de configuración detectados`);
     }
 });
 
@@ -7778,6 +7770,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Cargar comentarios cuando se activa el feed
             if (tabName === 'feed') {
                 cargarComentarios();
+            }
+            
+            // Aplicar estilos de widgets cuando se activa configuración
+            if (tabName === 'configuracion') {
+                setTimeout(applyConfigurationWidgetStyles, 100);
             }
             
             // Cargar tareas cuando se activa la tab de tareas
