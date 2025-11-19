@@ -1161,15 +1161,16 @@ DAHUA &quot;DH-IPC HFW5541E-ZE&quot; 8 Camara IP Bullet de 5 MP $7,185.00 0% 7,1
                 // Detectar formato automáticamente y extraer datos
                 let marca, noParte, quantity, description, price, discount;
                 
-                // Formato detectado: MARCA "MODELO" CANTIDAD DESCRIPCION $PRECIO %DESC UNITARIO TOTAL
+                // Formato detectado: MARCA "MODELO" CANTIDAD DESCRIPCION $PRECIO_LISTA %DESC UNITARIO TOTAL
                 if (columns.length >= 8) {
                     marca = columns[0].replace(/"/g, '').trim();
                     noParte = columns[1].replace(/"/g, '').trim();
                     quantity = parseMoneyField(columns[2]);
                     description = columns[3].trim();
-                    // Saltar precio lista (columns[4]) y usar unitario
+                    price = parseMoneyField(columns[4]); // Precio de lista
                     discount = parseMoneyField(columns[5]); // Descuento
-                    price = parseMoneyField(columns[6]); // Precio unitario
+                    // El último valor numérico es el total (columns[7] o el último)
+                    // Calculamos el unitario a partir del precio de lista y descuento
                 } 
                 // Formato estándar: Marca, No. Parte, Cantidad, Descripcion, Precio Lista, Desc, Unitario, Total
                 else if (columns.length >= 6) {
