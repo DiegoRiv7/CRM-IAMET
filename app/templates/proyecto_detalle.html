@@ -14414,25 +14414,69 @@ document.addEventListener('DOMContentLoaded', function() {
         // Configurar búsqueda de oportunidades
         window.setupOportunidadSearch();
 
+        console.log('🚀🚀🚀 DOCUMENT READY - CONFIGURATION SETUP STARTING');
+
+        // MAXIMUM LOGGING - Configuration Setup
+        console.log('🔥 STARTING CONFIGURATION SETUP');
+        console.log('🔥 DOM Ready State:', document.readyState);
+        console.log('🔥 Current URL:', window.location.href);
+        
         // Configurar formulario de configuración
         const configForm = document.getElementById('configForm');
+        console.log('🔥 Config Form Found:', !!configForm);
         if (configForm) {
+            console.log('🔥 Adding event listener to form');
             configForm.addEventListener('submit', function(e) {
+                console.log('🔥 Form submitted!');
                 e.preventDefault();
                 guardarConfiguracionProyecto();
             });
         }
         
+        console.log('🔥 About to setup member search');
         // Setup member search
         setupMemberSearch();
         
+        console.log('🔥 About to setup opportunity search');
         // Setup opportunity search 
         setupOportunidadSearchForm();
         
         // Debug and force select styling
+        console.log('🔥 Setting up select styling timeout (100ms)');
         setTimeout(() => {
+            console.log('🔧 TIMEOUT 100ms - Starting select styling');
             const selects = document.querySelectorAll('#proyecto-tipo, #proyecto-privacidad');
-            console.log('🔧 Found selects:', selects.length);
+            console.log('🔧 Found selects by ID:', selects.length);
+            
+            const allSelects = document.querySelectorAll('select');
+            console.log('🔧 Found ALL selects:', allSelects.length);
+            
+            const configSection = document.getElementById('configuracion-content');
+            console.log('🔧 Config section exists:', !!configSection);
+            
+            if (configSection) {
+                const configSelects = configSection.querySelectorAll('select');
+                console.log('🔧 Selects in config section:', configSelects.length);
+                
+                configSelects.forEach((select, index) => {
+                    console.log(`🔧 Config Select ${index}:`, select);
+                    console.log(`🔧 Select ID: ${select.id}, Name: ${select.name}, Classes: ${select.className}`);
+                    
+                    // Force styles directly
+                    select.style.appearance = 'none';
+                    select.style.webkitAppearance = 'none';
+                    select.style.mozAppearance = 'none';
+                    select.style.backgroundImage = `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`;
+                    select.style.backgroundPosition = 'right 1rem center';
+                    select.style.backgroundRepeat = 'no-repeat';
+                    select.style.backgroundSize = '1rem';
+                    select.style.paddingRight = '3rem';
+                    select.style.backgroundColor = 'transparent';
+                    
+                    console.log(`🔧 Applied styles to select ${index}`);
+                });
+            }
+            
             selects.forEach((select, index) => {
                 console.log(`🔧 Select ${index}:`, select);
                 select.style.appearance = 'none';
@@ -14444,18 +14488,45 @@ document.addEventListener('DOMContentLoaded', function() {
                 select.style.backgroundSize = '1rem';
                 select.style.paddingRight = '3rem';
             });
+            console.log('🔧 TIMEOUT 100ms - Finished select styling');
         }, 100);
         
         // Force glassmorphism styling
+        console.log('🔥 Setting up glassmorphism styling timeout (200ms)');
         setTimeout(() => {
+            console.log('🎨 TIMEOUT 200ms - Starting glassmorphism styling');
+            
             const configContainer = document.querySelector('.config-container');
             const formSections = document.querySelectorAll('.form-section');
             const formInputs = document.querySelectorAll('.form-input, .form-select');
             
-            console.log('🎨 Forcing glassmorphism styling...');
-            console.log('Config container:', configContainer);
-            console.log('Form sections:', formSections.length);
-            console.log('Form inputs:', formInputs.length);
+            console.log('🎨 Config container found:', !!configContainer);
+            console.log('🎨 Form sections found:', formSections.length);
+            console.log('🎨 Form inputs found:', formInputs.length);
+            
+            // Try different selectors
+            const configContent = document.getElementById('configuracion-content');
+            console.log('🎨 Config content element:', !!configContent);
+            
+            if (configContent) {
+                const containerInConfig = configContent.querySelector('.config-container');
+                const sectionsInConfig = configContent.querySelectorAll('.form-section');
+                const inputsInConfig = configContent.querySelectorAll('.form-input, .form-select');
+                
+                console.log('🎨 Container in config:', !!containerInConfig);
+                console.log('🎨 Sections in config:', sectionsInConfig.length);
+                console.log('🎨 Inputs in config:', inputsInConfig.length);
+                
+                if (containerInConfig) {
+                    console.log('🎨 Applying styles to container in config');
+                    containerInConfig.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)';
+                    containerInConfig.style.backdropFilter = 'blur(30px) saturate(180%)';
+                    containerInConfig.style.webkitBackdropFilter = 'blur(30px) saturate(180%)';
+                    containerInConfig.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+                    containerInConfig.style.borderRadius = '24px';
+                    containerInConfig.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 25px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 rgba(255, 255, 255, 0.05)';
+                }
+            }
             
             // Force config container styles
             if (configContainer) {
@@ -14629,6 +14700,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+console.log('🚀🚀🚀 CONFIGURATION SCRIPT LOADED - START OF FUNCTIONS');
 
 // Configuration form functions
 function guardarConfiguracionProyecto() {
