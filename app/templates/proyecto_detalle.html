@@ -15861,8 +15861,12 @@ setTimeout(() => {
     console.log('🚨 ADDING PERSISTENT STYLES');
     const style = document.createElement('style');
     style.innerHTML = `
-        /* EMERGENCY PERSISTENT STYLES */
-        select {
+        /* NUCLEAR EMERGENCY PERSISTENT STYLES */
+        select,
+        select.form-select,
+        #proyecto-tipo,
+        #proyecto-privacidad,
+        .form-select {
             appearance: none !important;
             -webkit-appearance: none !important;
             -moz-appearance: none !important;
@@ -15871,6 +15875,37 @@ setTimeout(() => {
             background-repeat: no-repeat !important;
             background-size: 1rem !important;
             padding-right: 3rem !important;
+        }
+        
+        /* Remove ALL possible pseudo-elements that create arrows */
+        select::after,
+        select::before,
+        select.form-select::after,
+        select.form-select::before,
+        .form-select::after,
+        .form-select::before {
+            display: none !important;
+            content: none !important;
+            background: none !important;
+            border: none !important;
+        }
+        
+        /* Specifically target Tailwind/Bootstrap select styling */
+        .form-select:not([multiple]):not([size]),
+        select:not([multiple]):not([size]) {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
+            background-position: right 1rem center !important;
+            background-repeat: no-repeat !important;
+            background-size: 1rem !important;
+            padding-right: 3rem !important;
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+        }
+        
+        /* Override specific Tailwind classes that might be interfering */
+        .form-select:not([multiple]):not([size]):focus {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
         }
         
         .config-container {
@@ -15970,6 +16005,67 @@ window.forceSelectStyles = function() {
 };
 
 console.log('🔥 Use window.forceSelectStyles() in console to manually force styles');
+
+// Function to completely remove blue arrow decorations
+window.nukeBlueArrows = function() {
+    console.log('💥 NUKING BLUE ARROWS');
+    const selects = document.querySelectorAll('select');
+    
+    selects.forEach((select, index) => {
+        console.log(`💥 Nuking select ${index}`);
+        
+        // Remove ALL background properties
+        select.style.removeProperty('background');
+        select.style.removeProperty('background-image');
+        select.style.removeProperty('background-color');
+        select.style.removeProperty('background-repeat');
+        select.style.removeProperty('background-position');
+        select.style.removeProperty('background-size');
+        
+        // Force clear any computed styles
+        select.style.background = 'none';
+        select.style.backgroundImage = 'none';
+        
+        // Wait and reapply our styles
+        setTimeout(() => {
+            select.style.setProperty('background', 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)', 'important');
+            select.style.setProperty('background-image', 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%23ffffff\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")', 'important');
+            select.style.setProperty('background-position', 'right 1rem center', 'important');
+            select.style.setProperty('background-repeat', 'no-repeat', 'important');
+            select.style.setProperty('background-size', '1rem', 'important');
+            select.style.setProperty('appearance', 'none', 'important');
+            select.style.setProperty('-webkit-appearance', 'none', 'important');
+            select.style.setProperty('-moz-appearance', 'none', 'important');
+        }, 50);
+    });
+    
+    console.log('💥 Blue arrows nuked');
+};
+
+// Function to analyze what's actually happening
+window.debugSelects = function() {
+    console.log('🔍 DEBUGGING SELECT STYLES');
+    const selects = document.querySelectorAll('select');
+    
+    selects.forEach((select, index) => {
+        const computedStyle = window.getComputedStyle(select);
+        console.log(`🔍 Select ${index}:`);
+        console.log('  - appearance:', computedStyle.appearance);
+        console.log('  - background:', computedStyle.background);
+        console.log('  - background-image:', computedStyle.backgroundImage);
+        console.log('  - background-position:', computedStyle.backgroundPosition);
+        console.log('  - background-repeat:', computedStyle.backgroundRepeat);
+        console.log('  - background-size:', computedStyle.backgroundSize);
+        console.log('  - classes:', select.className);
+        console.log('  - inline styles:', select.style.cssText);
+        console.log('---');
+    });
+};
+
+console.log('🔥 Available debug functions:');
+console.log('  - window.forceSelectStyles() - Force apply our styles');
+console.log('  - window.nukeBlueArrows() - Nuclear remove all background styles');
+console.log('  - window.debugSelects() - Show detailed style analysis');
 
 </script>
 
