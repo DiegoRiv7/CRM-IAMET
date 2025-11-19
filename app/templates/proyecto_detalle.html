@@ -5350,6 +5350,15 @@
             0px 20px 40px rgba(0,0,0,0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
         position: relative !important;
+        
+        /* Tab content functionality */
+        display: none !important;
+        color: #ffffff !important;
+    }
+
+    .config-card.active {
+        display: block !important;
+        animation: fadeIn 0.5s ease !important;
     }
 
     /* Botones superiores */
@@ -6031,8 +6040,7 @@
             </div>
 
             <!-- Configuración Tab -->
-            <div class="tab-content" id="configuracion-content">
-                <div class="config-card">
+            <div class="config-card tab-content" id="configuracion-content">
                     
                     <div class="config-top-buttons">
                         <button type="submit" form="configForm" class="config-btn config-btn-save">Guardar Cambios</button>
@@ -6131,7 +6139,6 @@
                             </div>
                         </div>
                     </form>
-                </div>
             </div>
         </div>
     </div>
