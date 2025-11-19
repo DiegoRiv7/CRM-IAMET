@@ -15909,22 +15909,307 @@ setTimeout(() => {
         }
         
         .config-container {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%) !important;
-            backdrop-filter: blur(30px) saturate(180%) !important;
-            -webkit-backdrop-filter: blur(30px) saturate(180%) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            border-radius: 24px !important;
-            padding: 1.5rem !important;
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.1) 0%, 
+                rgba(255, 255, 255, 0.05) 50%,
+                rgba(255, 255, 255, 0.02) 100%) !important;
+            backdrop-filter: blur(40px) saturate(200%) contrast(120%) !important;
+            -webkit-backdrop-filter: blur(40px) saturate(200%) contrast(120%) !important;
+            border: 2px solid rgba(255, 255, 255, 0.15) !important;
+            border-radius: 28px !important;
+            padding: 1.25rem !important;
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
+            position: relative !important;
+        }
+        
+        .config-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.6) 20%, 
+                rgba(255, 255, 255, 0.8) 50%, 
+                rgba(255, 255, 255, 0.6) 80%, 
+                transparent 100%);
+            border-radius: 28px 28px 0 0;
         }
         
         .form-section {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
-            backdrop-filter: blur(25px) saturate(180%) !important;
-            -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
-            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.12) 0%, 
+                rgba(255, 255, 255, 0.08) 30%,
+                rgba(255, 255, 255, 0.04) 70%,
+                rgba(255, 255, 255, 0.02) 100%) !important;
+            backdrop-filter: blur(30px) saturate(180%) brightness(110%) !important;
+            -webkit-backdrop-filter: blur(30px) saturate(180%) brightness(110%) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 18px !important;
+            padding: 1.25rem !important;
+            margin-bottom: 1rem !important;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.15),
+                0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.05) !important;
+            position: relative !important;
+            overflow: hidden !important;
+        }
+        
+        .form-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.4) 30%, 
+                rgba(255, 255, 255, 0.6) 50%, 
+                rgba(255, 255, 255, 0.4) 70%, 
+                transparent 100%);
+        }
+        
+        /* Compact grid layout for multiple fields */
+        .form-grid {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 1rem !important;
+            margin: 0 !important;
+        }
+        
+        .form-grid-full {
+            grid-column: 1 / -1 !important;
+        }
+        
+        /* Compact form sections */
+        .form-section label {
+            color: rgba(10, 132, 255, 0.9) !important;
+            font-weight: 700 !important;
+            font-size: 0.9rem !important;
+            margin-bottom: 0.5rem !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+        }
+        
+        .form-section label::before {
+            content: '';
+            width: 3px;
+            height: 3px;
+            background: linear-gradient(45deg, rgba(10, 132, 255, 0.8), rgba(139, 69, 218, 0.8));
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(10, 132, 255, 0.6);
+        }
+        
+        /* Enhanced inputs with more liquid glass */
+        .form-input, .form-select, input, textarea, select {
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.08) 0%, 
+                rgba(255, 255, 255, 0.04) 50%,
+                rgba(255, 255, 255, 0.02) 100%) !important;
+            backdrop-filter: blur(20px) saturate(150%) brightness(105%) !important;
+            -webkit-backdrop-filter: blur(20px) saturate(150%) brightness(105%) !important;
+            border: 1.5px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 14px !important;
+            padding: 0.875rem 1rem !important;
+            color: rgba(242, 242, 247, 0.95) !important;
+            font-size: 0.9rem !important;
+            font-weight: 500 !important;
+            box-shadow: 
+                inset 0 2px 8px rgba(0, 0, 0, 0.1),
+                0 1px 0 rgba(255, 255, 255, 0.1),
+                0 4px 12px rgba(0, 0, 0, 0.08) !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            position: relative !important;
+        }
+        
+        .form-input:focus, .form-select:focus, input:focus, textarea:focus, select:focus {
+            outline: none !important;
+            border-color: rgba(10, 132, 255, 0.5) !important;
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.12) 0%, 
+                rgba(255, 255, 255, 0.08) 50%,
+                rgba(255, 255, 255, 0.04) 100%) !important;
+            box-shadow: 
+                0 0 0 3px rgba(10, 132, 255, 0.2),
+                0 8px 25px rgba(10, 132, 255, 0.15),
+                inset 0 2px 8px rgba(0, 0, 0, 0.1),
+                0 1px 0 rgba(255, 255, 255, 0.15) !important;
+            transform: translateY(-1px) !important;
+        }
+        
+        /* Compact member tags */
+        .member-tag {
+            background: linear-gradient(135deg, 
+                rgba(48, 209, 88, 0.25) 0%, 
+                rgba(48, 209, 88, 0.15) 100%) !important;
+            backdrop-filter: blur(15px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(15px) saturate(180%) !important;
+            border: 1px solid rgba(48, 209, 88, 0.4) !important;
             border-radius: 20px !important;
-            padding: 2rem !important;
-            margin-bottom: 2rem !important;
+            padding: 0.4rem 0.8rem !important;
+            color: rgba(48, 209, 88, 0.95) !important;
+            font-weight: 600 !important;
+            font-size: 0.8rem !important;
+            box-shadow: 
+                0 2px 8px rgba(48, 209, 88, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        }
+        
+        /* Compact current members container */
+        .current-members {
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.05) 0%, 
+                rgba(255, 255, 255, 0.02) 100%) !important;
+            backdrop-filter: blur(15px) !important;
+            -webkit-backdrop-filter: blur(15px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 12px !important;
+            padding: 0.75rem !important;
+            margin-bottom: 1rem !important;
+            min-height: auto !important;
+        }
+        
+        /* Compact buttons */
+        .form-actions {
+            margin-top: 1.5rem !important;
+            padding-top: 1.5rem !important;
+            gap: 0.75rem !important;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem !important;
+            border-radius: 14px !important;
+            font-size: 0.9rem !important;
+            font-weight: 700 !important;
+            backdrop-filter: blur(20px) saturate(150%) !important;
+            -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+            box-shadow: 
+                0 4px 16px rgba(0, 0, 0, 0.15),
+                0 1px 0 rgba(255, 255, 255, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, 
+                rgba(10, 132, 255, 0.9) 0%, 
+                rgba(10, 132, 255, 0.7) 100%) !important;
+            border: 1px solid rgba(10, 132, 255, 0.6) !important;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.15) 0%, 
+                rgba(255, 255, 255, 0.08) 100%) !important;
+            border: 1px solid rgba(255, 255, 255, 0.25) !important;
+        }
+        
+        /* Compact info section specific styling */
+        .compact-info-section {
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.15) 0%, 
+                rgba(255, 255, 255, 0.1) 30%,
+                rgba(255, 255, 255, 0.06) 70%,
+                rgba(255, 255, 255, 0.03) 100%) !important;
+            backdrop-filter: blur(35px) saturate(190%) brightness(115%) !important;
+            -webkit-backdrop-filter: blur(35px) saturate(190%) brightness(115%) !important;
+            border: 2px solid rgba(255, 255, 255, 0.25) !important;
+            border-radius: 20px !important;
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.2),
+                0 2px 8px rgba(255, 255, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.25),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.05) !important;
+        }
+        
+        .grid-item {
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+        }
+        
+        .grid-item label {
+            color: rgba(10, 132, 255, 0.95) !important;
+            font-weight: 700 !important;
+            font-size: 0.85rem !important;
+            margin-bottom: 0.5rem !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+        }
+        
+        .grid-item label::before {
+            content: '';
+            width: 2px;
+            height: 2px;
+            background: linear-gradient(45deg, rgba(10, 132, 255, 0.9), rgba(139, 69, 218, 0.9));
+            border-radius: 50%;
+            box-shadow: 0 0 6px rgba(10, 132, 255, 0.8);
+            margin-right: 0.5rem;
+        }
+        
+        /* Enhanced glass morphism header */
+        .config-header {
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.15) 0%, 
+                rgba(255, 255, 255, 0.1) 50%,
+                rgba(255, 255, 255, 0.05) 100%) !important;
+            backdrop-filter: blur(45px) saturate(200%) contrast(125%) !important;
+            -webkit-backdrop-filter: blur(45px) saturate(200%) contrast(125%) !important;
+            border: 2px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 24px !important;
+            padding: 1.5rem !important;
+            margin-bottom: 1.25rem !important;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.2),
+                0 4px 12px rgba(255, 255, 255, 0.1),
+                inset 0 2px 0 rgba(255, 255, 255, 0.2),
+                inset 0 -2px 0 rgba(0, 0, 0, 0.05) !important;
+            position: relative !important;
+        }
+        
+        .config-header::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                rgba(10, 132, 255, 0.8) 0%, 
+                rgba(139, 69, 218, 0.8) 30%, 
+                rgba(236, 72, 153, 0.8) 60%, 
+                rgba(10, 132, 255, 0.8) 100%);
+            border-radius: 24px 24px 0 0;
+            filter: blur(0.5px);
+        }
+        
+        .config-header h3 {
+            color: rgba(255, 255, 255, 0.95) !important;
+            font-size: 1.5rem !important;
+            font-weight: 800 !important;
+            margin: 0 0 0.5rem 0 !important;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+            letter-spacing: -0.02em !important;
+        }
+        
+        .config-header p {
+            color: rgba(255, 255, 255, 0.75) !important;
+            font-size: 0.95rem !important;
+            margin: 0 !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
         }
     `;
     document.head.appendChild(style);
@@ -16066,6 +16351,67 @@ console.log('🔥 Available debug functions:');
 console.log('  - window.forceSelectStyles() - Force apply our styles');
 console.log('  - window.nukeBlueArrows() - Nuclear remove all background styles');
 console.log('  - window.debugSelects() - Show detailed style analysis');
+
+// Apply compact grid layout
+setTimeout(() => {
+    console.log('📱 Applying compact grid layout');
+    
+    // Get form sections
+    const formSections = document.querySelectorAll('.form-section');
+    console.log('📱 Found form sections:', formSections.length);
+    
+    if (formSections.length >= 3) {
+        // Combine first three sections (nombre, tipo, privacidad) into one compact section
+        const firstSection = formSections[0];
+        const secondSection = formSections[1];
+        const thirdSection = formSections[2];
+        
+        console.log('📱 Combining first 3 sections into compact grid');
+        
+        // Create grid container
+        const gridContainer = document.createElement('div');
+        gridContainer.className = 'form-grid';
+        
+        // Move content from first three sections
+        const firstField = firstSection.cloneNode(true);
+        const secondField = secondSection.cloneNode(true);
+        const thirdField = thirdSection.cloneNode(true);
+        
+        // Remove old section styling and add grid item styling
+        [firstField, secondField, thirdField].forEach(field => {
+            field.className = 'grid-item';
+            field.style.background = 'transparent';
+            field.style.border = 'none';
+            field.style.padding = '0';
+            field.style.margin = '0';
+            field.style.boxShadow = 'none';
+        });
+        
+        // Append to grid
+        gridContainer.appendChild(firstField);
+        gridContainer.appendChild(secondField);
+        
+        // Third field goes full width below
+        const fullWidthContainer = document.createElement('div');
+        fullWidthContainer.className = 'form-grid-full';
+        fullWidthContainer.appendChild(thirdField);
+        
+        // Replace first section with new grid layout
+        const newSection = document.createElement('div');
+        newSection.className = 'form-section compact-info-section';
+        newSection.appendChild(gridContainer);
+        newSection.appendChild(fullWidthContainer);
+        
+        // Replace in DOM
+        firstSection.parentNode.replaceChild(newSection, firstSection);
+        
+        // Remove the now-redundant second and third sections
+        if (secondSection.parentNode) secondSection.remove();
+        if (thirdSection.parentNode) thirdSection.remove();
+        
+        console.log('📱 Compact grid layout applied');
+    }
+}, 2500);
 
 </script>
 
