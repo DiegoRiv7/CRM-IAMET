@@ -2962,7 +2962,589 @@
     }
 
     /* ==========================================
-       CONFIGURACIÓN DEL PROYECTO - ESTILOS LIQUID GLASS
+       CONFIGURACIÓN DEL PROYECTO - WIDGETS FLOTANTES
+       ========================================== */
+
+    /* Grid layout para widgets */
+    .config-widgets-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 1.5rem;
+        padding: 1.5rem;
+        max-width: none;
+    }
+
+    /* Widget base styles */
+    .config-widget {
+        background: rgba(255, 255, 255, 0.02) !important;
+        backdrop-filter: blur(25px) saturate(1.8) !important;
+        -webkit-backdrop-filter: blur(25px) saturate(1.8) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 20px !important;
+        padding: 0 !important;
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.12),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+        position: relative !important;
+        overflow: hidden !important;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        min-height: 200px;
+    }
+
+    .config-widget:hover {
+        transform: translateY(-4px);
+        box-shadow: 
+            0 16px 48px rgba(0, 0, 0, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        border-color: rgba(255, 255, 255, 0.12) !important;
+    }
+
+    /* Widget header */
+    .widget-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1.5rem 1.5rem 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.01);
+    }
+
+    .widget-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: rgba(10, 132, 255, 0.1);
+        border: 1px solid rgba(10, 132, 255, 0.2);
+        flex-shrink: 0;
+    }
+
+    .widget-icon svg {
+        width: 24px;
+        height: 24px;
+        stroke: var(--apple-blue);
+    }
+
+    .widget-title {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .widget-title h3 {
+        margin: 0 0 0.25rem 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #ffffff;
+        line-height: 1.3;
+    }
+
+    .widget-title p {
+        margin: 0;
+        font-size: 0.875rem;
+        color: rgba(255, 255, 255, 0.7);
+        line-height: 1.4;
+    }
+
+    .widget-actions {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .widget-edit-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: #ffffff;
+    }
+
+    .widget-edit-btn:hover {
+        background: rgba(10, 132, 255, 0.15);
+        border-color: rgba(10, 132, 255, 0.3);
+        transform: scale(1.05);
+    }
+
+    .widget-edit-btn svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
+    }
+
+    /* Widget content */
+    .widget-content {
+        padding: 1rem 1.5rem 1.5rem;
+        position: relative;
+    }
+
+    /* Widget display mode */
+    .widget-display {
+        transition: all 0.3s ease;
+    }
+
+    .field-display {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .field-display:last-child {
+        margin-bottom: 0;
+    }
+
+    .field-display label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.6);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .field-display span {
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: #ffffff;
+        line-height: 1.4;
+    }
+
+    .field-display-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    /* Status badges */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.375rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-badge.status-runrate {
+        background: rgba(52, 211, 153, 0.15);
+        color: #34d399;
+        border: 1px solid rgba(52, 211, 153, 0.2);
+    }
+
+    .status-badge.status-ingenieria {
+        background: rgba(168, 85, 247, 0.15);
+        color: #a855f7;
+        border: 1px solid rgba(168, 85, 247, 0.2);
+    }
+
+    .status-badge.status-publico {
+        background: rgba(59, 130, 246, 0.15);
+        color: #3b82f6;
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
+    .status-badge.status-privado {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    /* User card styles */
+    .user-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .user-avatar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--apple-blue) 0%, #007AFF 100%);
+        font-weight: 700;
+        font-size: 1.25rem;
+        color: white;
+        text-transform: uppercase;
+        flex-shrink: 0;
+    }
+
+    .user-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .user-name {
+        display: block;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #ffffff;
+        line-height: 1.3;
+    }
+
+    .user-email {
+        display: block;
+        font-size: 0.875rem;
+        color: rgba(255, 255, 255, 0.7);
+        line-height: 1.3;
+        margin-top: 0.25rem;
+    }
+
+    /* Members grid */
+    .members-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .member-card {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        transition: all 0.2s ease;
+    }
+
+    .member-card:hover {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .member-avatar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--apple-blue) 0%, #007AFF 100%);
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: white;
+        text-transform: uppercase;
+        flex-shrink: 0;
+    }
+
+    .member-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .member-name {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #ffffff;
+        line-height: 1.3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .member-role {
+        display: block;
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.6);
+        line-height: 1.3;
+        margin-top: 0.125rem;
+    }
+
+    /* Empty state */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        text-align: center;
+        opacity: 0.7;
+    }
+
+    .empty-state svg {
+        margin-bottom: 1rem;
+        stroke: rgba(255, 255, 255, 0.4);
+    }
+
+    .empty-state p {
+        margin: 0;
+        font-size: 0.875rem;
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* Widget edit mode */
+    .widget-edit {
+        transition: all 0.3s ease;
+    }
+
+    .widget-input, .widget-select {
+        width: 100% !important;
+        padding: 0.875rem 1rem !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 10px !important;
+        background: rgba(255, 255, 255, 0.02) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        color: #ffffff !important;
+        font-size: 0.9rem !important;
+        font-weight: 500 !important;
+        transition: all 0.2s ease !important;
+        box-sizing: border-box !important;
+    }
+
+    .widget-input:focus, .widget-select:focus {
+        outline: none !important;
+        border-color: rgba(10, 132, 255, 0.4) !important;
+        background: rgba(255, 255, 255, 0.04) !important;
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15) !important;
+    }
+
+    .widget-input::placeholder {
+        color: rgba(255, 255, 255, 0.5) !important;
+        font-style: italic;
+    }
+
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .form-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .form-group label {
+        display: block;
+        color: rgba(255, 255, 255, 0.8) !important;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    /* Widget buttons */
+    .widget-buttons {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .btn-save {
+        flex: 1;
+        padding: 0.875rem 1.5rem;
+        background: linear-gradient(135deg, var(--apple-blue) 0%, #007AFF 100%);
+        border: none;
+        border-radius: 10px;
+        color: white;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-save:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(10, 132, 255, 0.4);
+    }
+
+    .btn-cancel {
+        flex: 1;
+        padding: 0.875rem 1.5rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        color: #ffffff;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-cancel:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Widget large variant */
+    .widget-large {
+        grid-column: span 2;
+        min-height: 300px;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .config-widgets-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            padding: 1rem;
+        }
+        
+        .widget-large {
+            grid-column: span 1;
+        }
+        
+        .field-display-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .members-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (min-width: 1200px) {
+        .config-widgets-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    /* Search results styling */
+    .search-results {
+        margin-top: 0.5rem;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        max-height: 200px;
+        overflow-y: auto;
+        display: none;
+    }
+
+    .search-results.active {
+        display: block;
+    }
+
+    .search-result-item {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        transition: background-color 0.2s ease;
+        color: #ffffff;
+        font-size: 0.875rem;
+    }
+
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
+
+    .search-result-item:hover {
+        background: rgba(10, 132, 255, 0.1);
+    }
+
+    /* Member management styles */
+    .current-members h4, .add-member h4 {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin: 0 0 0.75rem 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .members-list {
+        margin-bottom: 1.5rem;
+    }
+
+    .member-item {
+        display: flex;
+        align-items: center;
+        justify-content: between;
+        padding: 0.625rem 0.875rem;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .member-item .member-name {
+        flex: 1;
+        color: #ffffff;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .remove-member {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: #ef4444;
+        margin-left: 0.5rem;
+    }
+
+    .remove-member:hover {
+        background: rgba(239, 68, 68, 0.25);
+        border-color: rgba(239, 68, 68, 0.4);
+        transform: scale(1.1);
+    }
+
+    .remove-member svg {
+        width: 12px;
+        height: 12px;
+        stroke: currentColor;
+    }
+
+    /* Opportunity status styling */
+    .opportunity-info {
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .opportunity-status {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.9rem;
+    }
+
+    .opportunity-status svg {
+        stroke: rgba(255, 255, 255, 0.5);
+        flex-shrink: 0;
+    }
+
+    /* ==========================================
+       CONFIGURACIÓN DEL PROYECTO - ESTILOS LEGACY (mantener compatibilidad)
        ========================================== */
     
     /* Forzar tema oscuro para la configuración */
@@ -4211,173 +4793,297 @@
 
             <!-- Configuración Tab -->
             <div class="tab-content" id="configuracion-content">
-                <div class="configuracion-container">
-                    <div class="config-header">
-                        <h3>
-                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                                <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                            Configuración del Proyecto
-                        </h3>
-                        <p>Modificar configuración general del proyecto</p>
+                <div class="config-widgets-grid">
+                    <!-- Widget: Información Básica -->
+                    <div class="config-widget" data-widget="info-basica">
+                        <div class="widget-header">
+                            <div class="widget-icon">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                            <div class="widget-title">
+                                <h3>Información Básica</h3>
+                                <p>Nombre y descripción del proyecto</p>
+                            </div>
+                            <div class="widget-actions">
+                                <button class="widget-edit-btn" onclick="toggleWidgetEdit('info-basica')">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="widget-content">
+                            <div class="widget-display">
+                                <div class="field-display">
+                                    <label>Nombre del Proyecto:</label>
+                                    <span id="display-nombre">{{ proyecto.nombre }}</span>
+                                </div>
+                                <div class="field-display">
+                                    <label>Descripción:</label>
+                                    <span id="display-descripcion">{{ proyecto.descripcion|default:"Sin descripción" }}</span>
+                                </div>
+                            </div>
+                            <div class="widget-edit" style="display: none;">
+                                <div class="form-group">
+                                    <label for="edit-nombre">Nombre del Proyecto</label>
+                                    <input type="text" id="edit-nombre" value="{{ proyecto.nombre }}" class="widget-input">
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-descripcion">Descripción</label>
+                                    <textarea id="edit-descripcion" class="widget-input" rows="3">{{ proyecto.descripcion|default_if_none:"" }}</textarea>
+                                </div>
+                                <div class="widget-buttons">
+                                    <button class="btn-save" onclick="saveWidget('info-basica')">Guardar</button>
+                                    <button class="btn-cancel" onclick="cancelWidgetEdit('info-basica')">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <form id="configProyectoForm" class="config-form">
-                        {% csrf_token %}
-                        
-                        <!-- Información Básica -->
-                        <div class="config-section">
-                            <h4 class="section-title">
-                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+
+                    <!-- Widget: Configuración General -->
+                    <div class="config-widget" data-widget="config-general">
+                        <div class="widget-header">
+                            <div class="widget-icon">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/>
                                 </svg>
-                                Información Básica
-                            </h4>
-                            
-                            <div class="form-group">
-                                <label for="proyectoNombre">Nombre del Proyecto</label>
-                                <input type="text" id="proyectoNombre" name="nombre" value="{{ proyecto.nombre }}" class="form-control">
                             </div>
-                            
-                            <div class="form-group">
-                                <label for="proyectoDescripcion">Descripción</label>
-                                <textarea id="proyectoDescripcion" name="descripcion" class="form-control" rows="3">{{ proyecto.descripcion|default:"" }}</textarea>
+                            <div class="widget-title">
+                                <h3>Configuración General</h3>
+                                <p>Tipo y privacidad del proyecto</p>
+                            </div>
+                            <div class="widget-actions">
+                                <button class="widget-edit-btn" onclick="toggleWidgetEdit('config-general')">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
                             </div>
                         </div>
-                        
-                        <!-- Configuración del Proyecto -->
-                        <div class="config-section">
-                            <h4 class="section-title">
-                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/>
-                                </svg>
-                                Configuración General
-                            </h4>
-                            
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="proyectoTipo">Tipo de Proyecto</label>
-                                    <select id="proyectoTipo" name="tipo" class="form-control">
-                                        <option value="runrate" {% if proyecto.tipo == 'runrate' %}selected{% endif %}>Runrate</option>
-                                        <option value="ingenieria" {% if proyecto.tipo == 'ingenieria' %}selected{% endif %}>Ingeniería</option>
-                                    </select>
+                        <div class="widget-content">
+                            <div class="widget-display">
+                                <div class="field-display-grid">
+                                    <div class="field-display">
+                                        <label>Tipo:</label>
+                                        <span id="display-tipo" class="status-badge status-{{ proyecto.tipo }}">
+                                            {% if proyecto.tipo == 'runrate' %}Runrate{% elif proyecto.tipo == 'ingenieria' %}Ingeniería{% else %}Proyecto{% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="field-display">
+                                        <label>Privacidad:</label>
+                                        <span id="display-privacidad" class="status-badge status-{% if proyecto.privacidad == 'privado' %}privado{% else %}publico{% endif %}">
+                                            {% if proyecto.privacidad == 'privado' %}Privado{% else %}Público{% endif %}
+                                        </span>
+                                    </div>
                                 </div>
-                                
-                                <div class="form-group">
-                                    <label for="proyectoPrivacidad">Privacidad</label>
-                                    <select id="proyectoPrivacidad" name="privacidad" class="form-control">
-                                        <option value="publico" {% if proyecto.privacidad == 'publico' %}selected{% endif %}>Público</option>
-                                        <option value="privado" {% if proyecto.privacidad == 'privado' %}selected{% endif %}>Privado</option>
-                                    </select>
+                            </div>
+                            <div class="widget-edit" style="display: none;">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="edit-tipo">Tipo de Proyecto</label>
+                                        <select id="edit-tipo" class="widget-select">
+                                            <option value="runrate" {% if proyecto.tipo == 'runrate' %}selected{% endif %}>Runrate</option>
+                                            <option value="ingenieria" {% if proyecto.tipo == 'ingenieria' %}selected{% endif %}>Ingeniería</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="edit-privacidad">Privacidad</label>
+                                        <select id="edit-privacidad" class="widget-select">
+                                            <option value="publico" {% if proyecto.privacidad == 'publico' %}selected{% endif %}>Público</option>
+                                            <option value="privado" {% if proyecto.privacidad == 'privado' %}selected{% endif %}>Privado</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="widget-buttons">
+                                    <button class="btn-save" onclick="saveWidget('config-general')">Guardar</button>
+                                    <button class="btn-cancel" onclick="cancelWidgetEdit('config-general')">Cancelar</button>
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Gestión de Miembros -->
-                        <div class="config-section">
-                            <h4 class="section-title">
-                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </div>
+                    <!-- Widget: Responsable -->
+                    <div class="config-widget" data-widget="responsable">
+                        <div class="widget-header">
+                            <div class="widget-icon">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                 </svg>
-                                Gestión de Miembros
-                            </h4>
-                            
-                            <div class="form-group">
-                                <label for="proyectoResponsable">Responsable del Proyecto</label>
-                                <select id="proyectoResponsable" name="responsable" class="form-control">
-                                    {% for usuario in usuarios_disponibles %}
-                                        <option value="{{ usuario.id }}" 
-                                            {% if proyecto.responsable and proyecto.responsable.id == usuario.id %}selected{% endif %}>
-                                            {{ usuario.get_full_name|default:usuario.username }}
-                                        </option>
+                            </div>
+                            <div class="widget-title">
+                                <h3>Responsable</h3>
+                                <p>Persona a cargo del proyecto</p>
+                            </div>
+                            <div class="widget-actions">
+                                <button class="widget-edit-btn" onclick="toggleWidgetEdit('responsable')">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="widget-content">
+                            <div class="widget-display">
+                                <div class="user-card">
+                                    <div class="user-avatar">
+                                        {% if proyecto.responsable %}
+                                            <span>{{ proyecto.responsable.first_name.0|default:proyecto.responsable.username.0 }}</span>
+                                        {% else %}
+                                            <span>?</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="user-info">
+                                        <span class="user-name" id="display-responsable">
+                                            {% if proyecto.responsable %}
+                                                {{ proyecto.responsable.get_full_name|default:proyecto.responsable.username }}
+                                            {% else %}
+                                                Sin asignar
+                                            {% endif %}
+                                        </span>
+                                        {% if proyecto.responsable %}
+                                            <span class="user-email">{{ proyecto.responsable.email }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="widget-edit" style="display: none;">
+                                <div class="form-group">
+                                    <label for="edit-responsable">Responsable del Proyecto</label>
+                                    <select id="edit-responsable" class="widget-select">
+                                        <option value="">Sin asignar</option>
+                                        {% for usuario in usuarios_disponibles %}
+                                            <option value="{{ usuario.id }}" {% if usuario == proyecto.responsable %}selected{% endif %}>
+                                                {{ usuario.get_full_name|default:usuario.username }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="widget-buttons">
+                                    <button class="btn-save" onclick="saveWidget('responsable')">Guardar</button>
+                                    <button class="btn-cancel" onclick="cancelWidgetEdit('responsable')">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Widget: Miembros del Equipo -->
+                    <div class="config-widget widget-large" data-widget="miembros">
+                        <div class="widget-header">
+                            <div class="widget-icon">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                </svg>
+                            </div>
+                            <div class="widget-title">
+                                <h3>Miembros del Equipo</h3>
+                                <p>Usuarios asignados al proyecto</p>
+                            </div>
+                            <div class="widget-actions">
+                                <button class="widget-edit-btn" onclick="toggleWidgetEdit('miembros')">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="widget-content">
+                            <div class="widget-display">
+                                <div class="members-grid">
+                                    {% for miembro in proyecto.miembros.all %}
+                                        <div class="member-card" data-member-id="{{ miembro.id }}">
+                                            <div class="member-avatar">
+                                                <span>{{ miembro.first_name.0|default:miembro.username.0 }}</span>
+                                            </div>
+                                            <div class="member-info">
+                                                <span class="member-name">{{ miembro.get_full_name|default:miembro.username }}</span>
+                                                <span class="member-role">Miembro</span>
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <div class="empty-state">
+                                            <svg width="40" height="40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                            </svg>
+                                            <p>No hay miembros asignados</p>
+                                        </div>
                                     {% endfor %}
-                                </select>
+                                </div>
                             </div>
-                            
-                            <div class="form-group">
-                                <label>Miembros del Proyecto</label>
-                                <div class="miembros-container">
-                                    <div class="miembros-actuales" id="miembrosActuales">
+                            <div class="widget-edit" style="display: none;">
+                                <div class="current-members">
+                                    <h4>Miembros Actuales</h4>
+                                    <div class="members-list" id="currentMembersList">
                                         {% for miembro in proyecto.miembros.all %}
-                                            <div class="miembro-item" data-usuario-id="{{ miembro.id }}">
-                                                <div class="miembro-info">
-                                                    <div class="miembro-avatar">{{ miembro.get_full_name.0|default:miembro.username.0|upper }}</div>
-                                                    <span>{{ miembro.get_full_name|default:miembro.username }}</span>
-                                                </div>
-                                                <button type="button" class="btn-remove-miembro" onclick="removeMiembro({{ miembro.id }})">
-                                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <div class="member-item" data-user-id="{{ miembro.id }}">
+                                                <span class="member-name">{{ miembro.get_full_name|default:miembro.username }}</span>
+                                                <button type="button" class="remove-member" onclick="removeMiembro({{ miembro.id }})">
+                                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                                                     </svg>
                                                 </button>
                                             </div>
                                         {% endfor %}
                                     </div>
-                                    
-                                    <div class="agregar-miembro">
-                                        <div class="search-container">
-                                            <input type="text" id="searchUsuarios" placeholder="Buscar usuarios..." class="form-control">
-                                            <div class="search-results" id="searchResults"></div>
-                                        </div>
-                                    </div>
+                                </div>
+                                <div class="add-member">
+                                    <h4>Agregar Miembros</h4>
+                                    <input type="text" id="searchUsuarios" placeholder="Buscar usuarios..." class="widget-input">
+                                    <div id="searchResults" class="search-results"></div>
+                                </div>
+                                <div class="widget-buttons">
+                                    <button class="btn-save" onclick="saveWidget('miembros')">Guardar</button>
+                                    <button class="btn-cancel" onclick="cancelWidgetEdit('miembros')">Cancelar</button>
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Vinculación con Oportunidad -->
-                        <div class="config-section">
-                            <h4 class="section-title">
-                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </div>
+
+                    <!-- Widget: Oportunidad Ligada -->
+                    <div class="config-widget" data-widget="oportunidad">
+                        <div class="widget-header">
+                            <div class="widget-icon">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
                                 </svg>
-                                Ligar a Oportunidad
-                            </h4>
-                            
-                            <div class="form-group">
-                                <label>Oportunidad Vinculada</label>
-                                {% if proyecto.oportunidad_vinculada %}
-                                    <div class="oportunidad-actual">
-                                        <div class="oportunidad-info">
-                                            <strong>{{ proyecto.oportunidad_vinculada.titulo }}</strong>
-                                            <span class="oportunidad-cliente">{{ proyecto.oportunidad_vinculada.cliente.nombre_empresa }}</span>
-                                            <span class="oportunidad-monto">${{ proyecto.oportunidad_vinculada.monto|floatformat:0 }}</span>
-                                        </div>
-                                        <button type="button" class="btn-desvincular" onclick="desvincularOportunidad()">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                            </svg>
-                                            Desvincular
-                                        </button>
-                                    </div>
-                                {% else %}
-                                    <div class="buscar-oportunidad">
-                                        <div class="search-container">
-                                            <input type="text" id="searchOportunidades" placeholder="Buscar oportunidades..." class="form-control">
-                                            <div class="search-results" id="oportunidadesResults"></div>
-                                        </div>
-                                        <p class="help-text">Escribe el nombre de una oportunidad y presiona Enter para buscar</p>
-                                    </div>
-                                {% endif %}
+                            </div>
+                            <div class="widget-title">
+                                <h3>Oportunidad Ligada</h3>
+                                <p>Conectar con una oportunidad de venta</p>
+                            </div>
+                            <div class="widget-actions">
+                                <button class="widget-edit-btn" onclick="toggleWidgetEdit('oportunidad')">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
                             </div>
                         </div>
-                        
-                        <!-- Botones de Acción -->
-                        <div class="config-actions">
-                            <button type="submit" class="btn-guardar-config">
-                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                Guardar Cambios
-                            </button>
-                            
-                            <button type="button" class="btn-cancelar-config" onclick="resetConfigForm()">
-                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                                Cancelar
-                            </button>
+                        <div class="widget-content">
+                            <div class="widget-display">
+                                <div class="opportunity-info">
+                                    <div class="opportunity-status">
+                                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <span>Sin oportunidad ligada</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="widget-edit" style="display: none;">
+                                <div class="form-group">
+                                    <label for="buscarOportunidad">Buscar Oportunidad</label>
+                                    <input type="text" id="buscarOportunidad" placeholder="Escribe el nombre de la oportunidad..." class="widget-input">
+                                    <div id="resultadosOportunidades" class="search-results"></div>
+                                    <input type="hidden" id="oportunidadSeleccionada" value="">
+                                </div>
+                                <div class="widget-buttons">
+                                    <button class="btn-save" onclick="saveWidget('oportunidad')">Guardar</button>
+                                    <button class="btn-cancel" onclick="cancelWidgetEdit('oportunidad')">Cancelar</button>
+                                </div>
+                            </div>
                         </div>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -4387,6 +5093,180 @@
 <script>
 // ===== FUNCIONES CRÍTICAS PARA CARPETAS - CARGA TEMPRANA =====
 console.log('🔵 Cargando funciones críticas de carpetas...');
+
+// ===============================================
+// FUNCIONES PARA WIDGETS FLOTANTES DE CONFIGURACIÓN
+// ===============================================
+
+// Toggle widget edit mode
+window.toggleWidgetEdit = function(widgetType) {
+    console.log(`🔵 Toggling edit mode for widget: ${widgetType}`);
+    const widget = document.querySelector(`[data-widget="${widgetType}"]`);
+    if (!widget) {
+        console.warn(`🔴 Widget ${widgetType} not found`);
+        return;
+    }
+    
+    const displayMode = widget.querySelector('.widget-display');
+    const editMode = widget.querySelector('.widget-edit');
+    
+    if (!displayMode || !editMode) {
+        console.warn(`🔴 Display or edit mode not found for widget ${widgetType}`);
+        return;
+    }
+    
+    if (editMode.style.display === 'none' || editMode.style.display === '') {
+        // Entrar en modo edición
+        displayMode.style.display = 'none';
+        editMode.style.display = 'block';
+        console.log(`🔵 Widget ${widgetType} entered edit mode`);
+    } else {
+        // Volver a modo display
+        displayMode.style.display = 'block';
+        editMode.style.display = 'none';
+        console.log(`🔵 Widget ${widgetType} exited edit mode`);
+    }
+}
+
+// Cancel widget edit
+window.cancelWidgetEdit = function(widgetType) {
+    console.log(`🔵 Canceling edit for widget: ${widgetType}`);
+    const widget = document.querySelector(`[data-widget="${widgetType}"]`);
+    if (!widget) return;
+    
+    const displayMode = widget.querySelector('.widget-display');
+    const editMode = widget.querySelector('.widget-edit');
+    
+    if (displayMode && editMode) {
+        displayMode.style.display = 'block';
+        editMode.style.display = 'none';
+    }
+    
+    // Reset form values to original
+    // TODO: Implement reset logic for each widget type
+}
+
+// Save widget changes
+window.saveWidget = function(widgetType) {
+    console.log(`🔵 Guardando widget: ${widgetType}`);
+    
+    switch(widgetType) {
+        case 'info-basica':
+            saveBasicInfo();
+            break;
+        case 'config-general':
+            saveGeneralConfig();
+            break;
+        case 'responsable':
+            saveResponsable();
+            break;
+        case 'miembros':
+            saveMiembros();
+            break;
+        case 'oportunidad':
+            saveOportunidad();
+            break;
+        default:
+            console.warn(`🔴 Widget type ${widgetType} not recognized`);
+    }
+}
+
+// Save basic info widget
+function saveBasicInfo() {
+    const nombre = document.getElementById('edit-nombre')?.value || '';
+    const descripcion = document.getElementById('edit-descripcion')?.value || '';
+    
+    // Update display
+    const displayNombre = document.getElementById('display-nombre');
+    const displayDescripcion = document.getElementById('display-descripcion');
+    
+    if (displayNombre) displayNombre.textContent = nombre;
+    if (displayDescripcion) displayDescripcion.textContent = descripcion || 'Sin descripción';
+    
+    // TODO: Send AJAX request to backend
+    console.log('🔵 Basic info updated:', { nombre, descripcion });
+    
+    // Exit edit mode
+    cancelWidgetEdit('info-basica');
+}
+
+// Save general config widget
+function saveGeneralConfig() {
+    const tipo = document.getElementById('edit-tipo')?.value || '';
+    const privacidad = document.getElementById('edit-privacidad')?.value || '';
+    
+    // Update display
+    const tipoDisplay = document.getElementById('display-tipo');
+    const privacidadDisplay = document.getElementById('display-privacidad');
+    
+    if (tipoDisplay) {
+        tipoDisplay.textContent = tipo === 'runrate' ? 'Runrate' : 'Ingeniería';
+        tipoDisplay.className = `status-badge status-${tipo}`;
+    }
+    
+    if (privacidadDisplay) {
+        privacidadDisplay.textContent = privacidad === 'publico' ? 'Público' : 'Privado';
+        privacidadDisplay.className = `status-badge status-${privacidad}`;
+    }
+    
+    // TODO: Send AJAX request to backend
+    console.log('🔵 General config updated:', { tipo, privacidad });
+    
+    // Exit edit mode
+    cancelWidgetEdit('config-general');
+}
+
+// Save responsable widget
+function saveResponsable() {
+    const responsableSelect = document.getElementById('edit-responsable');
+    if (!responsableSelect) return;
+    
+    const responsableId = responsableSelect.value;
+    const responsableText = responsableSelect.options[responsableSelect.selectedIndex]?.text || 'Sin asignar';
+    
+    // Update display
+    const displayResponsable = document.getElementById('display-responsable');
+    if (displayResponsable) {
+        displayResponsable.textContent = responsableText;
+    }
+    
+    // TODO: Send AJAX request to backend
+    console.log('🔵 Responsable updated:', { responsableId, responsableText });
+    
+    // Exit edit mode
+    cancelWidgetEdit('responsable');
+}
+
+// Save members widget
+function saveMiembros() {
+    // TODO: Implement member management save
+    console.log('🔵 Saving members...');
+    
+    // Exit edit mode
+    cancelWidgetEdit('miembros');
+}
+
+// Save opportunity widget
+function saveOportunidad() {
+    // TODO: Implement opportunity linking save
+    console.log('🔵 Saving opportunity...');
+    
+    // Exit edit mode
+    cancelWidgetEdit('oportunidad');
+}
+
+// Remove member function
+window.removeMiembro = function(userId) {
+    console.log(`🔵 Removing member: ${userId}`);
+    // TODO: Implement remove member functionality
+    
+    // Remove member from UI temporarily
+    const memberElement = document.querySelector(`[data-user-id="${userId}"]`);
+    if (memberElement) {
+        memberElement.remove();
+        console.log(`🔵 Member ${userId} removed from UI`);
+    }
+}
 
 // Variables globales para carpetas
 window.currentFolder = null;
