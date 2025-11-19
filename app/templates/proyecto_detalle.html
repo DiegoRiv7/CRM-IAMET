@@ -3569,22 +3569,49 @@
         display: block !important;
     }
     
-    /* Force widget styling ONLY when configuration tab is active */
+    /* Enhanced widget styling ONLY when configuration tab is active */
     #configuracion-content.tab-content.active .config-widget {
         display: block !important;
-        background: rgba(255, 255, 255, 0.05) !important;
-        backdrop-filter: blur(25px) saturate(1.8) !important;
-        -webkit-backdrop-filter: blur(25px) saturate(1.8) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 20px !important;
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)) !important;
+        backdrop-filter: blur(40px) saturate(2) !important;
+        -webkit-backdrop-filter: blur(40px) saturate(2) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 24px !important;
         padding: 0 !important;
         margin-bottom: 1.5rem !important;
         box-shadow: 
-            0 8px 32px rgba(0, 0, 0, 0.15),
-            inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
-        min-height: 180px !important;
+            0 12px 40px rgba(0, 0, 0, 0.2),
+            0 4px 16px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1),
+            inset 0 -1px 0 rgba(255, 255, 255, 0.05) !important;
+        min-height: 200px !important;
         overflow: hidden !important;
-        transition: all 0.3s ease !important;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        position: relative !important;
+    }
+    
+    #configuracion-content.tab-content.active .config-widget:hover {
+        transform: translateY(-8px) scale(1.02) !important;
+        box-shadow: 
+            0 20px 60px rgba(0, 0, 0, 0.3),
+            0 8px 24px rgba(0, 0, 0, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+        border-color: rgba(255, 255, 255, 0.2) !important;
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)) !important;
+    }
+    
+    #configuracion-content.tab-content.active .config-widget::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 3px !important;
+        background: linear-gradient(90deg, 
+            rgba(59, 130, 246, 0.8), 
+            rgba(139, 69, 218, 0.8), 
+            rgba(236, 72, 153, 0.8)) !important;
+        border-radius: 24px 24px 0 0 !important;
     }
     
     /* Override light theme forcing with maximum specificity */
@@ -4156,25 +4183,58 @@
         position: relative !important;
     }
 
-    #configuracion-content .widget-header {
+    #configuracion-content.tab-content.active .widget-header {
         display: flex !important;
         align-items: flex-start !important;
         gap: 1rem !important;
-        padding: 1.5rem 1.5rem 1rem !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
-        background: rgba(255, 255, 255, 0.01) !important;
+        padding: 1.8rem 2rem 1.2rem !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent) !important;
+        position: relative !important;
+        z-index: 2 !important;
     }
 
-    #configuracion-content .widget-icon {
+    #configuracion-content.tab-content.active .widget-icon {
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        width: 48px !important;
-        height: 48px !important;
-        border-radius: 12px !important;
-        background: rgba(10, 132, 255, 0.1) !important;
-        border: 1px solid rgba(10, 132, 255, 0.2) !important;
+        width: 56px !important;
+        height: 56px !important;
+        border-radius: 20px !important;
+        background: linear-gradient(135deg, 
+            rgba(59, 130, 246, 0.3), 
+            rgba(139, 69, 218, 0.3)) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        color: rgba(255, 255, 255, 0.95) !important;
         flex-shrink: 0 !important;
+        box-shadow: 
+            0 6px 20px rgba(59, 130, 246, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    #configuracion-content.tab-content.active .widget-icon svg {
+        width: 24px !important;
+        height: 24px !important;
+        stroke: rgba(255, 255, 255, 0.95) !important;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3)) !important;
+    }
+    
+    #configuracion-content.tab-content.active .widget-title h3 {
+        font-size: 1.25rem !important;
+        font-weight: 700 !important;
+        color: rgba(255, 255, 255, 0.95) !important;
+        margin: 0 0 0.25rem 0 !important;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+        letter-spacing: -0.02em !important;
+    }
+    
+    #configuracion-content.tab-content.active .widget-title p {
+        font-size: 0.875rem !important;
+        color: rgba(255, 255, 255, 0.7) !important;
+        margin: 0 !important;
+        font-weight: 500 !important;
+        opacity: 0.9 !important;
     }
 
     #configuracion-content .widget-title h3 {
@@ -4192,9 +4252,56 @@
         line-height: 1.4 !important;
     }
 
-    #configuracion-content .widget-content {
-        padding: 1rem 1.5rem 1.5rem !important;
+    #configuracion-content.tab-content.active .widget-content {
+        padding: 1.5rem 2rem 2rem !important;
         position: relative !important;
+        background: rgba(0, 0, 0, 0.02) !important;
+    }
+    
+    #configuracion-content.tab-content.active .field-display {
+        margin-bottom: 1rem !important;
+    }
+    
+    #configuracion-content.tab-content.active .field-display label {
+        font-size: 0.75rem !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        color: rgba(255, 255, 255, 0.6) !important;
+        margin-bottom: 0.5rem !important;
+        display: block !important;
+    }
+    
+    #configuracion-content.tab-content.active .field-display span {
+        font-size: 1rem !important;
+        font-weight: 500 !important;
+        color: rgba(255, 255, 255, 0.9) !important;
+        display: block !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        padding: 0.75rem 1rem !important;
+        border-radius: 12px !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        backdrop-filter: blur(10px) !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    #configuracion-content.tab-content.active .widget-edit-btn {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 12px !important;
+        padding: 0.5rem !important;
+        color: rgba(255, 255, 255, 0.8) !important;
+        transition: all 0.3s ease !important;
+        backdrop-filter: blur(10px) !important;
+        cursor: pointer !important;
+    }
+    
+    #configuracion-content.tab-content.active .widget-edit-btn:hover {
+        background: rgba(255, 255, 255, 0.15) !important;
+        border-color: rgba(255, 255, 255, 0.25) !important;
+        color: rgba(255, 255, 255, 1) !important;
+        transform: scale(1.05) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
     }
 
     #configuracion-content .field-display {
@@ -5440,16 +5547,36 @@ function applyConfigurationWidgetStyles() {
         }
         
         widgets.forEach((widget, index) => {
-            widget.style.background = 'rgba(255, 255, 255, 0.05)';
-            widget.style.backdropFilter = 'blur(25px) saturate(1.8)';
-            widget.style.WebkitBackdropFilter = 'blur(25px) saturate(1.8)';
-            widget.style.border = '1px solid rgba(255, 255, 255, 0.1)';
-            widget.style.borderRadius = '20px';
-            widget.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05)';
-            widget.style.minHeight = '180px';
+            // Aplicar estilo base del widget
+            widget.style.background = 'linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02))';
+            widget.style.backdropFilter = 'blur(40px) saturate(2)';
+            widget.style.WebkitBackdropFilter = 'blur(40px) saturate(2)';
+            widget.style.border = '1px solid rgba(255, 255, 255, 0.15)';
+            widget.style.borderRadius = '24px';
+            widget.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
+            widget.style.minHeight = '200px';
             widget.style.overflow = 'hidden';
-            widget.style.transition = 'all 0.3s ease';
+            widget.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
             widget.style.marginBottom = '1.5rem';
+            widget.style.position = 'relative';
+            
+            // Crear el borde colorido superior
+            const topBorder = document.createElement('div');
+            topBorder.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 3px;
+                background: linear-gradient(90deg, rgba(59, 130, 246, 0.8), rgba(139, 69, 218, 0.8), rgba(236, 72, 153, 0.8));
+                border-radius: 24px 24px 0 0;
+                z-index: 1;
+            `;
+            
+            if (!widget.querySelector('.widget-top-border')) {
+                topBorder.className = 'widget-top-border';
+                widget.appendChild(topBorder);
+            }
         });
         
         console.log(`✅ ${widgets.length} widgets de configuración estilizados`);
