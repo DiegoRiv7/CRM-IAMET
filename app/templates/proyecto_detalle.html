@@ -2965,24 +2965,50 @@
        CONFIGURACIÓN DEL PROYECTO - ESTILOS LIQUID GLASS
        ========================================== */
     
-    .configuracion-container {
-        padding: 0;
-        background: transparent;
-        border-radius: 0;
-        margin: 1rem 0;
+    /* Forzar tema oscuro para la configuración */
+    #configuracion-content,
+    #configuracion-content *,
+    #configuracion-content .config-header,
+    #configuracion-content .config-section,
+    #configuracion-content .config-form,
+    #configuracion-content .configuracion-container {
+        color: #ffffff !important;
+        background-color: transparent !important;
+    }
+
+    /* Ensure tab-content base has proper styling */
+    #configuracion-content.tab-content {
+        padding: 1rem !important;
+        background: transparent !important;
     }
     
-    .config-header {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(20px) saturate(1.8);
-        -webkit-backdrop-filter: blur(20px) saturate(1.8);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
-        padding: 2rem;
-        margin-bottom: 1.5rem;
+    /* Override light theme forcing */
+    html[data-theme="pink"] #configuracion-content *,
+    body[data-theme="pink"] #configuracion-content *,
+    html.light-theme[data-theme="pink"] #configuracion-content *,
+    .light-theme #configuracion-content * {
+        color: #ffffff !important;
+        background-color: transparent !important;
+    }
+    
+    #configuracion-content .configuracion-container {
+        padding: 0 !important;
+        background: transparent !important;
+        border-radius: 0 !important;
+        margin: 1rem 0 !important;
+    }
+    
+    #configuracion-content .config-header {
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(20px) saturate(1.8) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(1.8) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 16px !important;
+        padding: 2rem !important;
+        margin-bottom: 1.5rem !important;
         box-shadow: 
             0 8px 32px rgba(0, 0, 0, 0.15),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
     }
     
     .config-header h3 {
@@ -3010,18 +3036,28 @@
         gap: 1.5rem;
     }
     
-    .config-section {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(25px) saturate(1.8);
-        -webkit-backdrop-filter: blur(25px) saturate(1.8);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 20px;
-        padding: 2rem;
+    #configuracion-content .config-section {
+        background: rgba(255, 255, 255, 0.02) !important;
+        backdrop-filter: blur(25px) saturate(1.8) !important;
+        -webkit-backdrop-filter: blur(25px) saturate(1.8) !important;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        border-radius: 20px !important;
+        padding: 2rem !important;
         box-shadow: 
             0 8px 32px rgba(0, 0, 0, 0.12),
-            inset 0 1px 0 rgba(255, 255, 255, 0.05);
-        position: relative;
-        overflow: hidden;
+            inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+        position: relative !important;
+        overflow: hidden !important;
+    }
+
+    /* Additional override for config-section in light theme */
+    html[data-theme="pink"] #configuracion-content .config-section,
+    body[data-theme="pink"] #configuracion-content .config-section,
+    html.light-theme[data-theme="pink"] #configuracion-content .config-section,
+    .light-theme #configuracion-content .config-section {
+        background: rgba(255, 255, 255, 0.02) !important;
+        backdrop-filter: blur(25px) saturate(1.8) !important;
+        -webkit-backdrop-filter: blur(25px) saturate(1.8) !important;
     }
     
     .config-section::before {
@@ -3084,22 +3120,33 @@
         opacity: 0.9;
     }
     
-    .form-control {
-        width: 100%;
-        padding: 1rem 1.25rem;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        color: var(--apple-label);
-        font-size: 1rem;
-        font-weight: 500;
-        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        box-sizing: border-box;
+    #configuracion-content .form-control {
+        width: 100% !important;
+        padding: 1rem 1.25rem !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 12px !important;
+        background: rgba(255, 255, 255, 0.02) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        color: #ffffff !important;
+        font-size: 1rem !important;
+        font-weight: 500 !important;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        box-sizing: border-box !important;
         box-shadow: 
             inset 0 1px 3px rgba(0, 0, 0, 0.1),
-            0 1px 0 rgba(255, 255, 255, 0.05);
+            0 1px 0 rgba(255, 255, 255, 0.05) !important;
+    }
+
+    /* Form control override for light theme */
+    html[data-theme="pink"] #configuracion-content .form-control,
+    body[data-theme="pink"] #configuracion-content .form-control,
+    html.light-theme[data-theme="pink"] #configuracion-content .form-control,
+    .light-theme #configuracion-content .form-control {
+        color: #ffffff !important;
+        background: rgba(255, 255, 255, 0.02) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
     }
     
     .form-control:focus {
@@ -3409,6 +3456,38 @@
         margin-top: 2rem;
         border-top: 1px solid rgba(255, 255, 255, 0.06);
         position: relative;
+    }
+
+    /* Override light theme for config buttons and elements */
+    html[data-theme="pink"] #configuracion-content .config-actions button,
+    body[data-theme="pink"] #configuracion-content .config-actions button,
+    html.light-theme[data-theme="pink"] #configuracion-content .config-actions button,
+    .light-theme #configuracion-content .config-actions button,
+    html[data-theme="pink"] #configuracion-content .btn,
+    body[data-theme="pink"] #configuracion-content .btn,
+    html.light-theme[data-theme="pink"] #configuracion-content .btn,
+    .light-theme #configuracion-content .btn {
+        color: #ffffff !important;
+    }
+
+    /* Section titles and labels override for light theme */
+    html[data-theme="pink"] #configuracion-content .section-title,
+    body[data-theme="pink"] #configuracion-content .section-title,
+    html.light-theme[data-theme="pink"] #configuracion-content .section-title,
+    .light-theme #configuracion-content .section-title,
+    html[data-theme="pink"] #configuracion-content .form-group label,
+    body[data-theme="pink"] #configuracion-content .form-group label,
+    html.light-theme[data-theme="pink"] #configuracion-content .form-group label,
+    .light-theme #configuracion-content .form-group label,
+    html[data-theme="pink"] #configuracion-content .config-header h3,
+    body[data-theme="pink"] #configuracion-content .config-header h3,
+    html.light-theme[data-theme="pink"] #configuracion-content .config-header h3,
+    .light-theme #configuracion-content .config-header h3,
+    html[data-theme="pink"] #configuracion-content .config-header p,
+    body[data-theme="pink"] #configuracion-content .config-header p,
+    html.light-theme[data-theme="pink"] #configuracion-content .config-header p,
+    .light-theme #configuracion-content .config-header p {
+        color: #ffffff !important;
     }
     
     .config-actions::before {
