@@ -5333,6 +5333,473 @@
         color: white !important;
     }
     }
+
+    /* ===== PREMIUM LIQUID GLASS CONFIGURATION STYLES ===== */
+    
+    .premium-glass-card {
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.12) 0%, 
+            rgba(255, 255, 255, 0.05) 50%,
+            rgba(255, 255, 255, 0.02) 100%) !important;
+        backdrop-filter: blur(40px) saturate(200%) contrast(120%) !important;
+        -webkit-backdrop-filter: blur(40px) saturate(200%) contrast(120%) !important;
+        border: 2px solid rgba(255, 255, 255, 0.18) !important;
+        border-radius: 28px !important;
+        padding: 2rem !important;
+        margin-bottom: 2rem !important;
+        box-shadow: 
+            0 25px 50px rgba(0, 0, 0, 0.2),
+            0 12px 25px rgba(0, 0, 0, 0.15),
+            inset 0 2px 0 rgba(255, 255, 255, 0.2),
+            inset 0 -2px 0 rgba(0, 0, 0, 0.1) !important;
+        position: relative !important;
+        overflow: hidden !important;
+        animation: glassEntrance 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    }
+    
+    .premium-glass-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, 
+            transparent 0%, 
+            rgba(255, 255, 255, 0.6) 20%, 
+            rgba(255, 255, 255, 0.8) 50%, 
+            rgba(255, 255, 255, 0.6) 80%, 
+            transparent 100%) !important;
+    }
+    
+    .premium-glass-card::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, 
+            rgba(255, 255, 255, 0.03) 0%, 
+            transparent 70%) !important;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        animation: subtleRotate 20s linear infinite;
+    }
+    
+    .glass-header {
+        margin-bottom: 2rem !important;
+        position: relative !important;
+    }
+    
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative !important;
+    }
+    
+    .title-section h2 {
+        font-size: 2rem !important;
+        font-weight: 700 !important;
+        background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        background-clip: text !important;
+        margin: 0 !important;
+        letter-spacing: -0.02em !important;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .title-section p {
+        color: rgba(255, 255, 255, 0.7) !important;
+        font-size: 1rem !important;
+        margin: 0.5rem 0 0 0 !important;
+        font-weight: 400 !important;
+    }
+    
+    .header-accent {
+        width: 60px;
+        height: 4px;
+        background: linear-gradient(90deg, #0A84FF 0%, #30D158 50%, #FF6B9D 100%) !important;
+        border-radius: 2px !important;
+        box-shadow: 0 0 20px rgba(10, 132, 255, 0.5) !important;
+        animation: accentPulse 3s ease-in-out infinite !important;
+    }
+    
+    .form-grid {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 1.5rem !important;
+        margin-bottom: 2rem !important;
+    }
+    
+    @media (max-width: 1200px) {
+        .form-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .form-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
+    
+    .grid-section {
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.08) 0%, 
+            rgba(255, 255, 255, 0.03) 100%) !important;
+        backdrop-filter: blur(25px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 20px !important;
+        padding: 1.5rem !important;
+        position: relative !important;
+        overflow: hidden !important;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    }
+    
+    .grid-section:hover {
+        transform: translateY(-3px) !important;
+        box-shadow: 
+            0 20px 40px rgba(0, 0, 0, 0.2),
+            0 8px 25px rgba(0, 0, 0, 0.15),
+            inset 0 2px 0 rgba(255, 255, 255, 0.2) !important;
+        border-color: rgba(255, 255, 255, 0.25) !important;
+    }
+    
+    .grid-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, 
+            transparent 0%, 
+            rgba(255, 255, 255, 0.4) 50%, 
+            transparent 100%) !important;
+    }
+    
+    .section-header h3 {
+        font-size: 1.1rem !important;
+        font-weight: 600 !important;
+        color: #0A84FF !important;
+        margin: 0 0 1.5rem 0 !important;
+        letter-spacing: -0.01em !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+    }
+    
+    .glass-field {
+        margin-bottom: 1.5rem !important;
+    }
+    
+    .glass-field:last-child {
+        margin-bottom: 0 !important;
+    }
+    
+    .glass-field label {
+        display: block !important;
+        font-size: 0.9rem !important;
+        font-weight: 600 !important;
+        color: rgba(255, 255, 255, 0.9) !important;
+        margin-bottom: 0.75rem !important;
+        letter-spacing: -0.01em !important;
+    }
+    
+    .premium-input, .premium-select, .premium-textarea {
+        width: 100% !important;
+        padding: 1rem 1.25rem !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 14px !important;
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.08) 0%, 
+            rgba(255, 255, 255, 0.04) 100%) !important;
+        backdrop-filter: blur(20px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+        color: #ffffff !important;
+        font-size: 1rem !important;
+        font-weight: 500 !important;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        box-sizing: border-box !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        box-shadow: 
+            inset 0 2px 8px rgba(0, 0, 0, 0.1),
+            0 2px 4px rgba(0, 0, 0, 0.05) !important;
+    }
+    
+    .premium-select {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
+        background-position: right 1rem center !important;
+        background-repeat: no-repeat !important;
+        background-size: 1rem !important;
+        padding-right: 3rem !important;
+    }
+    
+    .premium-input:focus, .premium-select:focus, .premium-textarea:focus {
+        outline: none !important;
+        border-color: #0A84FF !important;
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.12) 0%, 
+            rgba(255, 255, 255, 0.06) 100%) !important;
+        box-shadow: 
+            0 0 0 4px rgba(10, 132, 255, 0.25),
+            0 8px 30px rgba(10, 132, 255, 0.2),
+            inset 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+        transform: translateY(-2px) !important;
+    }
+    
+    .premium-input:hover:not(:focus), .premium-select:hover:not(:focus), .premium-textarea:hover:not(:focus) {
+        border-color: rgba(255, 255, 255, 0.3) !important;
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.1) 0%, 
+            rgba(255, 255, 255, 0.05) 100%) !important;
+        transform: translateY(-1px) !important;
+    }
+    
+    .premium-input::placeholder, .premium-textarea::placeholder {
+        color: rgba(255, 255, 255, 0.5) !important;
+        opacity: 1 !important;
+        font-style: italic !important;
+    }
+    
+    .premium-members {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 0.75rem !important;
+        margin-bottom: 1rem !important;
+        padding: 1rem !important;
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.05) 0%, 
+            rgba(255, 255, 255, 0.02) 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 12px !important;
+        backdrop-filter: blur(15px) !important;
+        -webkit-backdrop-filter: blur(15px) !important;
+    }
+    
+    .premium-member-tag {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        background: linear-gradient(135deg, 
+            rgba(48, 209, 88, 0.25) 0%, 
+            rgba(48, 209, 88, 0.15) 100%) !important;
+        border: 1px solid rgba(48, 209, 88, 0.4) !important;
+        border-radius: 20px !important;
+        padding: 0.5rem 1rem !important;
+        color: #30D158 !important;
+        font-weight: 600 !important;
+        font-size: 0.85rem !important;
+        backdrop-filter: blur(15px) !important;
+        -webkit-backdrop-filter: blur(15px) !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .premium-member-tag:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 15px rgba(48, 209, 88, 0.3) !important;
+    }
+    
+    .premium-remove-btn {
+        background: none !important;
+        border: none !important;
+        color: rgba(255, 255, 255, 0.8) !important;
+        font-size: 1.2rem !important;
+        cursor: pointer !important;
+        padding: 0.2rem !important;
+        line-height: 1 !important;
+        border-radius: 50% !important;
+        width: 20px !important;
+        height: 20px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    .premium-remove-btn:hover {
+        background: rgba(255, 69, 58, 0.2) !important;
+        color: #FF453A !important;
+    }
+    
+    .no-members-premium {
+        color: rgba(255, 255, 255, 0.5) !important;
+        font-style: italic !important;
+        text-align: center !important;
+        margin: 0 !important;
+        padding: 1rem !important;
+    }
+    
+    .premium-search-results {
+        position: absolute !important;
+        top: 100% !important;
+        left: 0 !important;
+        right: 0 !important;
+        background: linear-gradient(135deg, 
+            rgba(28, 28, 30, 0.95) 0%, 
+            rgba(28, 28, 30, 0.9) 100%) !important;
+        backdrop-filter: blur(30px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(30px) saturate(180%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 12px !important;
+        margin-top: 0.5rem !important;
+        max-height: 200px !important;
+        overflow-y: auto !important;
+        z-index: 1000 !important;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    .selected-item-premium {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        background: linear-gradient(135deg, 
+            rgba(10, 132, 255, 0.2) 0%, 
+            rgba(10, 132, 255, 0.1) 100%) !important;
+        border: 1px solid rgba(10, 132, 255, 0.4) !important;
+        border-radius: 12px !important;
+        padding: 0.75rem 1rem !important;
+        margin-top: 0.5rem !important;
+        color: #0A84FF !important;
+        font-weight: 600 !important;
+    }
+    
+    .premium-clear-btn {
+        background: none !important;
+        border: none !important;
+        color: rgba(255, 255, 255, 0.8) !important;
+        font-size: 1.2rem !important;
+        cursor: pointer !important;
+        padding: 0.2rem !important;
+        line-height: 1 !important;
+        border-radius: 50% !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    .premium-clear-btn:hover {
+        background: rgba(255, 69, 58, 0.2) !important;
+        color: #FF453A !important;
+    }
+    
+    .premium-actions {
+        display: flex !important;
+        justify-content: center !important;
+        gap: 1rem !important;
+        margin-top: 2rem !important;
+        padding-top: 2rem !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+        position: relative !important;
+    }
+    
+    .premium-actions::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 20%;
+        right: 20%;
+        height: 1px;
+        background: linear-gradient(90deg, 
+            transparent 0%, 
+            rgba(255, 255, 255, 0.3) 50%, 
+            transparent 100%) !important;
+    }
+    
+    .premium-btn {
+        padding: 0.875rem 2rem !important;
+        border-radius: 14px !important;
+        font-size: 1rem !important;
+        font-weight: 600 !important;
+        cursor: pointer !important;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        border: none !important;
+        position: relative !important;
+        overflow: hidden !important;
+        text-transform: none !important;
+        letter-spacing: -0.01em !important;
+    }
+    
+    .premium-btn.primary {
+        background: linear-gradient(135deg, #0A84FF 0%, #4A90E2 100%) !important;
+        color: white !important;
+        box-shadow: 
+            0 8px 25px rgba(10, 132, 255, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    }
+    
+    .premium-btn.primary:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 
+            0 12px 35px rgba(10, 132, 255, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+    }
+    
+    .premium-btn.secondary {
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.1) 0%, 
+            rgba(255, 255, 255, 0.05) 100%) !important;
+        color: rgba(255, 255, 255, 0.9) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+    }
+    
+    .premium-btn.secondary:hover {
+        transform: translateY(-2px) !important;
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.15) 0%, 
+            rgba(255, 255, 255, 0.08) 100%) !important;
+        border-color: rgba(255, 255, 255, 0.3) !important;
+    }
+    
+    /* Animations */
+    @keyframes glassEntrance {
+        0% {
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+            backdrop-filter: blur(0px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            backdrop-filter: blur(40px);
+        }
+    }
+    
+    @keyframes accentPulse {
+        0%, 100% { opacity: 1; transform: scaleX(1); }
+        50% { opacity: 0.7; transform: scaleX(1.1); }
+    }
+    
+    @keyframes subtleRotate {
+        0% { transform: translate(-50%, -50%) rotate(0deg); }
+        100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    
+    /* Scrollbar Styling for Premium Elements */
+    .premium-search-results::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .premium-search-results::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 3px;
+    }
+    
+    .premium-search-results::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.2) 100%);
+        border-radius: 3px;
+    }
+    
+    .premium-search-results::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.3) 100%);
+    }
 </style>
 
 <div class="proyecto-container">
@@ -5807,79 +6274,102 @@
 
             <!-- Configuración Tab -->
             <div class="tab-content" id="configuracion-content">
-                <div class="config-container">
-                    <div class="config-header">
-                        <h3>Configuración del Proyecto</h3>
-                        <p>Administrar la configuración básica del proyecto</p>
+                <div class="premium-glass-card">
+                    <div class="glass-header">
+                        <div class="header-content">
+                            <div class="title-section">
+                                <h2>Configuración del Proyecto</h2>
+                                <p>Administrar la configuración básica con estilo premium</p>
+                            </div>
+                            <div class="header-accent"></div>
+                        </div>
                     </div>
 
-                    <form id="configForm" class="config-form">
+                    <form id="configForm" class="premium-form">
                         {% csrf_token %}
                         
-                        <!-- Nombre del Proyecto -->
-                        <div class="form-section">
-                            <label for="proyecto-nombre">Nombre del Proyecto</label>
-                            <input type="text" id="proyecto-nombre" name="nombre" value="{{ proyecto.nombre }}" 
-                                   class="form-input" required>
-                        </div>
-
-                        <!-- Tipo de Proyecto -->
-                        <div class="form-section">
-                            <label for="proyecto-tipo">Tipo de Proyecto</label>
-                            <select id="proyecto-tipo" name="tipo" class="form-select">
-                                <option value="runrate" {% if proyecto.tipo == 'runrate' %}selected{% endif %}>Runrate</option>
-                                <option value="ingenieria" {% if proyecto.tipo == 'ingenieria' %}selected{% endif %}>Ingeniería</option>
-                            </select>
-                        </div>
-
-                        <!-- Privacidad -->
-                        <div class="form-section">
-                            <label for="proyecto-privacidad">Privacidad</label>
-                            <select id="proyecto-privacidad" name="privacidad" class="form-select">
-                                <option value="publico" {% if proyecto.privacidad == 'publico' %}selected{% endif %}>Público</option>
-                                <option value="privado" {% if proyecto.privacidad == 'privado' %}selected{% endif %}>Privado</option>
-                            </select>
-                        </div>
-
-                        <!-- Miembros del Proyecto -->
-                        <div class="form-section">
-                            <label>Miembros del Proyecto</label>
-                            <div class="members-section">
-                                <div class="current-members">
-                                    {% for miembro in proyecto.miembros.all %}
-                                        <div class="member-tag" data-user-id="{{ miembro.id }}">
-                                            <span>{{ miembro.get_full_name|default:miembro.username }}</span>
-                                            <button type="button" class="remove-member-btn" onclick="removeMember({{ miembro.id }})">&times;</button>
-                                        </div>
-                                    {% empty %}
-                                        <p class="no-members">No hay miembros asignados</p>
-                                    {% endfor %}
+                        <div class="form-grid">
+                            <!-- Columna 1: Información Básica -->
+                            <div class="grid-section">
+                                <div class="section-header">
+                                    <h3>📋 Información Básica</h3>
                                 </div>
-                                <div class="add-member">
-                                    <input type="text" id="member-search" placeholder="Buscar usuarios para agregar..." 
-                                           class="form-input">
-                                    <div id="member-search-results" class="search-results"></div>
+                                
+                                <div class="glass-field">
+                                    <label for="proyecto-nombre">Nombre del Proyecto</label>
+                                    <input type="text" id="proyecto-nombre" name="nombre" value="{{ proyecto.nombre }}" 
+                                           class="premium-input" required>
+                                </div>
+
+                                <div class="glass-field">
+                                    <label for="proyecto-tipo">Tipo de Proyecto</label>
+                                    <select id="proyecto-tipo" name="tipo" class="premium-select">
+                                        <option value="runrate" {% if proyecto.tipo == 'runrate' %}selected{% endif %}>Runrate</option>
+                                        <option value="ingenieria" {% if proyecto.tipo == 'ingenieria' %}selected{% endif %}>Ingeniería</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Columna 2: Configuración -->
+                            <div class="grid-section">
+                                <div class="section-header">
+                                    <h3>⚙️ Configuración</h3>
+                                </div>
+                                
+                                <div class="glass-field">
+                                    <label for="proyecto-privacidad">Privacidad</label>
+                                    <select id="proyecto-privacidad" name="privacidad" class="premium-select">
+                                        <option value="publico" {% if proyecto.privacidad == 'publico' %}selected{% endif %}>Público</option>
+                                        <option value="privado" {% if proyecto.privacidad == 'privado' %}selected{% endif %}>Privado</option>
+                                    </select>
+                                </div>
+
+                                <div class="glass-field">
+                                    <label for="oportunidad-search">Oportunidad Ligada</label>
+                                    <input type="text" id="oportunidad-search" placeholder="Buscar oportunidad..." 
+                                           class="premium-input">
+                                    <input type="hidden" id="oportunidad-selected" name="oportunidad_id" value="">
+                                    <div id="oportunidad-search-results" class="premium-search-results"></div>
+                                    <div id="selected-oportunidad" class="selected-item-premium" style="display: none;">
+                                        <span id="selected-oportunidad-name"></span>
+                                        <button type="button" class="premium-clear-btn" onclick="clearOportunidad()">&times;</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Columna 3: Miembros -->
+                            <div class="grid-section">
+                                <div class="section-header">
+                                    <h3>👥 Miembros del Equipo</h3>
+                                </div>
+                                
+                                <div class="glass-field">
+                                    <label>Miembros Actuales</label>
+                                    <div class="premium-members">
+                                        {% for miembro in proyecto.miembros.all %}
+                                            <div class="premium-member-tag" data-user-id="{{ miembro.id }}">
+                                                <span>{{ miembro.get_full_name|default:miembro.username }}</span>
+                                                <button type="button" class="premium-remove-btn" onclick="removeMember({{ miembro.id }})">&times;</button>
+                                            </div>
+                                        {% empty %}
+                                            <p class="no-members-premium">No hay miembros asignados</p>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <div class="glass-field">
+                                    <label for="member-search">Agregar Miembros</label>
+                                    <input type="text" id="member-search" placeholder="Buscar usuarios..." 
+                                           class="premium-input">
+                                    <div id="member-search-results" class="premium-search-results"></div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Oportunidad Ligada -->
-                        <div class="form-section">
-                            <label for="oportunidad-search">Oportunidad Ligada</label>
-                            <input type="text" id="oportunidad-search" placeholder="Buscar oportunidad para ligar..." 
-                                   class="form-input">
-                            <input type="hidden" id="oportunidad-selected" name="oportunidad_id" value="">
-                            <div id="oportunidad-search-results" class="search-results"></div>
-                            <div id="selected-oportunidad" class="selected-item" style="display: none;">
-                                <span id="selected-oportunidad-name"></span>
-                                <button type="button" onclick="clearOportunidad()">&times;</button>
-                            </div>
-                        </div>
-
-                        <!-- Botones -->
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
-                            <button type="reset" class="btn btn-secondary">Cancelar</button>
+                        <!-- Botones de Acción -->
+                        <div class="premium-actions">
+                            <button type="submit" class="premium-btn primary">Guardar Cambios</button>
+                            <button type="reset" class="premium-btn secondary">Cancelar</button>
                         </div>
                     </form>
                 </div>
@@ -8657,11 +9147,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 cargarComentarios();
             }
             
-            // Aplicar estilos de widgets cuando se activa configuración
+            // Aplicar estilos premium cuando se activa configuración
             if (tabName === 'configuracion') {
                 setTimeout(() => {
+                    // Apply premium design compatibility
+                    applyPremiumDesignCompatibility();
+                    
+                    // Legacy widget cleanup (if any old widgets exist)
                     forceWidgetCleanup();
-                    applyConfigurationWidgetStyles();
+                    
+                    // Ensure premium glass effects are active
+                    const premiumCard = document.querySelector('.premium-glass-card');
+                    if (premiumCard) {
+                        premiumCard.style.animation = 'glassEntrance 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                    }
+                    
+                    console.log('✨ Premium configuration design activated');
                 }, 100);
             }
             
@@ -14441,6 +14942,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Setup opportunity search 
         setupOportunidadSearchForm();
         
+        // Apply premium design compatibility
+        applyPremiumDesignCompatibility();
+        
         // Debug and force select styling
         console.log('🔥 Setting up select styling timeout (100ms)');
         setTimeout(() => {
@@ -14702,6 +15206,64 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 console.log('🚀🚀🚀 CONFIGURATION SCRIPT LOADED - START OF FUNCTIONS');
+
+// Premium Design Compatibility Function
+function applyPremiumDesignCompatibility() {
+    console.log('🎨 Aplicando compatibilidad con diseño premium...');
+    
+    // Ensure premium select elements have proper arrows removed
+    const premiumSelects = document.querySelectorAll('.premium-select');
+    premiumSelects.forEach(select => {
+        select.style.appearance = 'none';
+        select.style.webkitAppearance = 'none';
+        select.style.mozAppearance = 'none';
+        select.style.backgroundImage = 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%23ffffff\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")';
+        select.style.backgroundPosition = 'right 1rem center';
+        select.style.backgroundRepeat = 'no-repeat';
+        select.style.backgroundSize = '1rem';
+        select.style.paddingRight = '3rem';
+    });
+    
+    // Apply glassmorphism effects to the main container
+    const premiumCard = document.querySelector('.premium-glass-card');
+    if (premiumCard) {
+        console.log('✅ Premium glass card encontrada y estilos aplicados');
+        // Force immediate application of styles
+        premiumCard.style.display = 'block';
+        premiumCard.style.opacity = '1';
+    }
+    
+    // Ensure grid sections are properly styled
+    const gridSections = document.querySelectorAll('.grid-section');
+    gridSections.forEach(section => {
+        section.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+    });
+    
+    // Update search functionality class mappings
+    updateSearchResultsClasses();
+    
+    console.log('✅ Compatibilidad premium aplicada exitosamente');
+}
+
+function updateSearchResultsClasses() {
+    // Update member search results
+    const memberSearchResults = document.getElementById('member-search-results');
+    if (memberSearchResults) {
+        memberSearchResults.className = 'premium-search-results';
+    }
+    
+    // Update opportunity search results  
+    const oportunidadSearchResults = document.getElementById('oportunidad-search-results');
+    if (oportunidadSearchResults) {
+        oportunidadSearchResults.className = 'premium-search-results';
+    }
+    
+    // Update selected opportunity display
+    const selectedOportunidad = document.getElementById('selected-oportunidad');
+    if (selectedOportunidad) {
+        selectedOportunidad.className = 'selected-item-premium';
+    }
+}
 
 // Configuration form functions
 function guardarConfiguracionProyecto() {
