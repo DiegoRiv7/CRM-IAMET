@@ -5398,6 +5398,27 @@
 // ===== FUNCIONES CRÍTICAS PARA CARPETAS - CARGA TEMPRANA =====
 console.log('🔵 Cargando funciones críticas de carpetas...');
 
+// Inicialización de configuración de widgets
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ Sistema de widgets de configuración inicializado');
+    
+    // Verificar que todos los widgets estén disponibles
+    const configContent = document.getElementById('configuracion-content');
+    if (configContent) {
+        const widgets = configContent.querySelectorAll('.config-widget');
+        console.log(`✅ ${widgets.length} widgets de configuración detectados y listos`);
+        
+        // Aplicar efectos visuales inmediatos
+        const widgetsGrid = configContent.querySelector('.config-widgets-grid');
+        if (widgetsGrid) {
+            widgetsGrid.style.opacity = '1';
+            console.log('✅ Grid de widgets activado');
+        }
+    } else {
+        console.error('❌ Error: No se encontró el contenedor de configuración');
+    }
+});
+
 // ===============================================
 // FUNCIONES PARA WIDGETS FLOTANTES DE CONFIGURACIÓN
 // ===============================================
@@ -12694,9 +12715,7 @@ function getEstadoBadgeHTML(estado) {
                     <div class="user-email">${user.email || ''}</div>
                 </div>
             </div>`
-        })
-            </div>
-        `).join('');
+        }).join('');
         
         console.log('HTML generado para usuarios:', usersHTML);
         usersList.innerHTML = usersHTML;
