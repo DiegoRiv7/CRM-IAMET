@@ -5341,11 +5341,15 @@
         margin: 40px auto;
         padding: 45px;
         border-radius: 32px;
-        background: rgba(255, 255, 255, 0.06) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.18) !important;
-        box-shadow: 0px 0px 60px rgba(0,0,0,0.4) !important;
+        background: linear-gradient(135deg, rgba(45, 45, 45, 0.95), rgba(35, 35, 35, 0.98)) !important;
+        backdrop-filter: blur(20px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        box-shadow: 
+            0px 0px 80px rgba(0,0,0,0.6),
+            0px 20px 40px rgba(0,0,0,0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        position: relative !important;
     }
 
     /* Botones superiores */
@@ -5427,8 +5431,8 @@
     .config-input, .config-select {
         padding: 14px !important;
         border-radius: 14px !important;
-        background: rgba(255,255,255,0.10) !important;
-        border: 1px solid rgba(255,255,255,0.18) !important;
+        background: rgba(255,255,255,0.08) !important;
+        border: 1px solid rgba(255,255,255,0.12) !important;
         color: #fff !important;
         outline: none !important;
         appearance: none !important;
@@ -5436,6 +5440,17 @@
         -moz-appearance: none !important;
         font-size: 14px !important;
         box-sizing: border-box !important;
+        box-shadow: 
+            inset 0 2px 4px rgba(0, 0, 0, 0.1),
+            0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .config-input:focus, .config-select:focus {
+        border-color: rgba(255, 255, 255, 0.3) !important;
+        background: rgba(255,255,255,0.12) !important;
+        box-shadow: 
+            0 0 0 2px rgba(255, 255, 255, 0.1),
+            inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
     }
 
     .config-input::placeholder {
@@ -5462,8 +5477,11 @@
     .config-box {
         padding: 25px;
         border-radius: 22px;
-        background: rgba(255, 255, 255, 0.07) !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        background: rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
     }
 
     .config-team-item, .config-opp-item {
