@@ -14493,6 +14493,131 @@ document.addEventListener('DOMContentLoaded', function() {
                 input.style.boxShadow = 'inset 0 2px 8px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05)';
             });
         }, 200);
+        
+        // Nuclear option - inject styles directly into head
+        const nuclearStyles = document.createElement('style');
+        nuclearStyles.innerHTML = `
+            /* NUCLEAR OVERRIDE - Maximum priority */
+            select#proyecto-tipo,
+            select#proyecto-privacidad {
+                appearance: none !important;
+                -webkit-appearance: none !important;
+                -moz-appearance: none !important;
+                background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
+                background-position: right 1rem center !important;
+                background-repeat: no-repeat !important;
+                background-size: 1rem !important;
+                padding-right: 3rem !important;
+                background-color: transparent !important;
+            }
+            
+            .config-container {
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%) !important;
+                backdrop-filter: blur(30px) saturate(180%) !important;
+                -webkit-backdrop-filter: blur(30px) saturate(180%) !important;
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                border-radius: 24px !important;
+                padding: 1.5rem !important;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 25px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 rgba(255, 255, 255, 0.05) !important;
+            }
+            
+            .form-section {
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
+                backdrop-filter: blur(25px) saturate(180%) !important;
+                -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
+                border: 1px solid rgba(255, 255, 255, 0.12) !important;
+                border-radius: 20px !important;
+                padding: 2rem !important;
+                margin-bottom: 2rem !important;
+                box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12), 0 4px 15px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+            }
+            
+            .form-input, .form-select {
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%) !important;
+                backdrop-filter: blur(15px) saturate(180%) !important;
+                -webkit-backdrop-filter: blur(15px) saturate(180%) !important;
+                border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                border-radius: 16px !important;
+                padding: 1.25rem 1.5rem !important;
+                color: #F2F2F7 !important;
+                box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+            }
+            
+            .form-section label {
+                color: #0A84FF !important;
+                font-weight: 700 !important;
+                font-size: 1.1rem !important;
+                margin-bottom: 1rem !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 0.5rem !important;
+            }
+            
+            .form-section label::before {
+                content: '' !important;
+                width: 4px !important;
+                height: 4px !important;
+                background: #0A84FF !important;
+                border-radius: 50% !important;
+                box-shadow: 0 0 10px rgba(10, 132, 255, 0.5) !important;
+            }
+        `;
+        document.head.appendChild(nuclearStyles);
+        
+        // Force remove any blue decoration
+        setTimeout(() => {
+            const allSelects = document.querySelectorAll('select');
+            console.log('🚀 Nuclear styling of selects:', allSelects.length);
+            allSelects.forEach(select => {
+                // Remove all possible decorations
+                select.style.backgroundImage = 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%23ffffff\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")';
+                select.style.backgroundPosition = 'right 1rem center';
+                select.style.backgroundRepeat = 'no-repeat';
+                select.style.backgroundSize = '1rem';
+                select.style.paddingRight = '3rem';
+                select.style.appearance = 'none';
+                select.style.webkitAppearance = 'none';
+                select.style.mozAppearance = 'none';
+                
+                // Remove any blue elements in background
+                const computedStyle = window.getComputedStyle(select);
+                console.log('🔍 Select background:', computedStyle.backgroundImage);
+            });
+        }, 500);
+        
+        // Mutation observer to re-apply styles if they get overridden
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                    const target = mutation.target;
+                    if (target.tagName === 'SELECT') {
+                        console.log('🔄 Re-applying select styles due to mutation');
+                        target.style.appearance = 'none';
+                        target.style.webkitAppearance = 'none';
+                        target.style.mozAppearance = 'none';
+                        target.style.backgroundImage = 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%23ffffff\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")';
+                        target.style.backgroundPosition = 'right 1rem center';
+                        target.style.backgroundRepeat = 'no-repeat';
+                        target.style.backgroundSize = '1rem';
+                        target.style.paddingRight = '3rem';
+                    }
+                }
+            });
+        });
+        
+        // Start observing
+        setTimeout(() => {
+            const configSection = document.getElementById('configuracion-content');
+            if (configSection) {
+                observer.observe(configSection, {
+                    attributes: true,
+                    childList: true,
+                    subtree: true,
+                    attributeFilter: ['style', 'class']
+                });
+                console.log('🔍 Mutation observer started for configuration section');
+            }
+        }, 1000);
 
         // Cerrar resultados al hacer clic fuera
         document.addEventListener('click', function(e) {
