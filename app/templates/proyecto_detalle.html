@@ -5699,32 +5699,142 @@ function applyConfigurationWidgetStyles() {
                         span.style.cssText = `
                             font-size: 1rem !important;
                             font-weight: 500 !important;
-                            color: rgba(255, 255, 255, 0.9) !important;
+                            color: rgba(255, 255, 255, 0.95) !important;
                             display: block !important;
-                            background: rgba(255, 255, 255, 0.05) !important;
-                            padding: 0.75rem 1rem !important;
-                            border-radius: 12px !important;
-                            border: 1px solid rgba(255, 255, 255, 0.08) !important;
-                            backdrop-filter: blur(10px) !important;
+                            background: rgba(255, 255, 255, 0.08) !important;
+                            padding: 0.875rem 1.25rem !important;
+                            border-radius: 14px !important;
+                            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+                            backdrop-filter: blur(15px) !important;
                             transition: all 0.2s ease !important;
+                            line-height: 1.5 !important;
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+                            text-rendering: optimizeLegibility !important;
+                            -webkit-font-smoothing: antialiased !important;
+                            white-space: nowrap !important;
+                            overflow: hidden !important;
+                            text-overflow: ellipsis !important;
                         `;
                     }
                 });
+                
+                // Estilar formularios de edición
+                const editMode = content.querySelector('.widget-edit');
+                if (editMode) {
+                    editMode.style.cssText = `
+                        padding: 1rem 0 !important;
+                    `;
+                    
+                    const formGroups = editMode.querySelectorAll('.form-group');
+                    formGroups.forEach(group => {
+                        group.style.marginBottom = '1.25rem';
+                        
+                        const label = group.querySelector('label');
+                        if (label) {
+                            label.style.cssText = `
+                                font-size: 0.875rem !important;
+                                font-weight: 600 !important;
+                                color: rgba(255, 255, 255, 0.8) !important;
+                                margin-bottom: 0.5rem !important;
+                                display: block !important;
+                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+                            `;
+                        }
+                        
+                        const input = group.querySelector('input, select, textarea');
+                        if (input) {
+                            input.style.cssText = `
+                                width: 100% !important;
+                                padding: 0.875rem 1rem !important;
+                                background: rgba(255, 255, 255, 0.08) !important;
+                                border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                                border-radius: 12px !important;
+                                color: rgba(255, 255, 255, 0.95) !important;
+                                font-size: 1rem !important;
+                                font-weight: 500 !important;
+                                backdrop-filter: blur(10px) !important;
+                                transition: all 0.2s ease !important;
+                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+                                box-sizing: border-box !important;
+                            `;
+                            
+                            // Focus effects
+                            input.addEventListener('focus', function() {
+                                this.style.borderColor = 'rgba(59, 130, 246, 0.5)';
+                                this.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                                this.style.background = 'rgba(255, 255, 255, 0.12)';
+                            });
+                            
+                            input.addEventListener('blur', function() {
+                                this.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                                this.style.boxShadow = 'none';
+                                this.style.background = 'rgba(255, 255, 255, 0.08)';
+                            });
+                        }
+                    });
+                    
+                    // Estilar botones de formulario
+                    const buttons = editMode.querySelectorAll('.btn-save, .btn-cancel');
+                    buttons.forEach(btn => {
+                        const isCancel = btn.classList.contains('btn-cancel');
+                        btn.style.cssText = `
+                            padding: 0.75rem 1.5rem !important;
+                            border-radius: 10px !important;
+                            font-weight: 600 !important;
+                            font-size: 0.875rem !important;
+                            cursor: pointer !important;
+                            transition: all 0.2s ease !important;
+                            border: 1px solid ${isCancel ? 'rgba(255, 255, 255, 0.2)' : 'rgba(34, 197, 94, 0.3)'} !important;
+                            background: ${isCancel ? 'rgba(255, 255, 255, 0.08)' : 'rgba(34, 197, 94, 0.15)'} !important;
+                            color: rgba(255, 255, 255, 0.9) !important;
+                            margin-right: 0.75rem !important;
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+                        `;
+                    });
+                }
             }
             
-            // Estilar botón de edición
+            // Estilar botón de edición y asegurar funcionalidad
             const editBtn = widget.querySelector('.widget-edit-btn');
             if (editBtn) {
                 editBtn.style.cssText = `
-                    background: rgba(255, 255, 255, 0.1) !important;
-                    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                    background: rgba(59, 130, 246, 0.15) !important;
+                    border: 1px solid rgba(59, 130, 246, 0.25) !important;
                     border-radius: 12px !important;
-                    padding: 0.5rem !important;
-                    color: rgba(255, 255, 255, 0.8) !important;
-                    transition: all 0.3s ease !important;
-                    backdrop-filter: blur(10px) !important;
+                    padding: 0.6rem !important;
+                    color: rgba(255, 255, 255, 0.9) !important;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                    backdrop-filter: blur(12px) !important;
                     cursor: pointer !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    width: 40px !important;
+                    height: 40px !important;
+                    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15) !important;
                 `;
+                
+                // Asegurar que el botón tenga la función onclick
+                const widgetType = widget.getAttribute('data-widget');
+                if (widgetType && !editBtn.getAttribute('onclick')) {
+                    editBtn.setAttribute('onclick', `toggleWidgetEdit('${widgetType}')`);
+                    console.log(`🔧 Función de edición asignada a widget: ${widgetType}`);
+                }
+                
+                // Agregar hover effect
+                editBtn.addEventListener('mouseenter', function() {
+                    this.style.background = 'rgba(59, 130, 246, 0.25)';
+                    this.style.borderColor = 'rgba(59, 130, 246, 0.4)';
+                    this.style.transform = 'scale(1.05)';
+                    this.style.boxShadow = '0 8px 24px rgba(59, 130, 246, 0.25)';
+                });
+                
+                editBtn.addEventListener('mouseleave', function() {
+                    this.style.background = 'rgba(59, 130, 246, 0.15)';
+                    this.style.borderColor = 'rgba(59, 130, 246, 0.25)';
+                    this.style.transform = 'scale(1)';
+                    this.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.15)';
+                });
             }
         });
         
