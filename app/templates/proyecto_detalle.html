@@ -15895,6 +15895,82 @@ setTimeout(() => {
     document.head.appendChild(style);
     console.log('🚨 PERSISTENT STYLES ADDED');
 }, 1500);
+
+// ULTRA AGGRESSIVE MODE - Continuous monitoring and re-applying
+let aggressiveInterval;
+setTimeout(() => {
+    console.log('🔥 ULTRA AGGRESSIVE MODE - Starting continuous monitoring');
+    
+    aggressiveInterval = setInterval(() => {
+        const selects = document.querySelectorAll('select');
+        
+        selects.forEach((select, index) => {
+            // Check if styles are being overridden
+            const computedStyle = window.getComputedStyle(select);
+            
+            // Force re-application if needed
+            if (computedStyle.appearance !== 'none') {
+                console.log(`🔥 Re-applying styles to select ${index} (appearance was: ${computedStyle.appearance})`);
+                
+                // Nuclear force
+                select.style.setProperty('appearance', 'none', 'important');
+                select.style.setProperty('-webkit-appearance', 'none', 'important');
+                select.style.setProperty('-moz-appearance', 'none', 'important');
+                select.style.setProperty('background-image', 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%23ffffff\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")', 'important');
+                select.style.setProperty('background-position', 'right 1rem center', 'important');
+                select.style.setProperty('background-repeat', 'no-repeat', 'important');
+                select.style.setProperty('background-size', '1rem', 'important');
+                select.style.setProperty('padding-right', '3rem', 'important');
+            }
+            
+            // Also check background image
+            if (!computedStyle.backgroundImage.includes('svg')) {
+                console.log(`🔥 Background image missing on select ${index}, re-applying`);
+                select.style.setProperty('background-image', 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%23ffffff\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")', 'important');
+                select.style.setProperty('background-position', 'right 1rem center', 'important');
+                select.style.setProperty('background-repeat', 'no-repeat', 'important');
+                select.style.setProperty('background-size', '1rem', 'important');
+                select.style.setProperty('padding-right', '3rem', 'important');
+            }
+        });
+    }, 500); // Check every 500ms
+    
+    console.log('🔥 Aggressive monitoring started - will check every 500ms');
+}, 2000);
+
+// Manual override function for debugging
+window.forceSelectStyles = function() {
+    console.log('🔥 MANUAL FORCE - Applying select styles');
+    const selects = document.querySelectorAll('select');
+    
+    selects.forEach((select, index) => {
+        console.log(`🔥 Manual force on select ${index}`);
+        
+        // Remove ALL possible background styles first
+        select.style.background = 'none';
+        select.style.backgroundColor = 'transparent';
+        
+        // Remove appearance
+        select.style.setProperty('appearance', 'none', 'important');
+        select.style.setProperty('-webkit-appearance', 'none', 'important');
+        select.style.setProperty('-moz-appearance', 'none', 'important');
+        
+        // Add our custom styles
+        setTimeout(() => {
+            select.style.setProperty('background', 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)', 'important');
+            select.style.setProperty('background-image', 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%23ffffff\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")', 'important');
+            select.style.setProperty('background-position', 'right 1rem center', 'important');
+            select.style.setProperty('background-repeat', 'no-repeat', 'important');
+            select.style.setProperty('background-size', '1rem', 'important');
+            select.style.setProperty('padding-right', '3rem', 'important');
+        }, 100);
+    });
+    
+    console.log('🔥 Manual force complete');
+};
+
+console.log('🔥 Use window.forceSelectStyles() in console to manually force styles');
+
 </script>
 
 {% endblock %}
