@@ -5360,72 +5360,9 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Widget: Responsable -->
-                    <div class="config-widget" data-widget="responsable">
-                        <div class="widget-header">
-                            <div class="widget-icon">
-                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                    <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                </svg>
-                            </div>
-                            <div class="widget-title">
-                                <h3>Responsable</h3>
-                                <p>Persona a cargo del proyecto</p>
-                            </div>
-                            <div class="widget-actions">
-                                <button class="widget-edit-btn" onclick="toggleWidgetEdit('responsable')">
-                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="widget-content">
-                            <div class="widget-display">
-                                <div class="user-card">
-                                    <div class="user-avatar">
-                                        {% if proyecto.responsable %}
-                                            <span>{{ proyecto.responsable.first_name.0|default:proyecto.responsable.username.0 }}</span>
-                                        {% else %}
-                                            <span>?</span>
-                                        {% endif %}
-                                    </div>
-                                    <div class="user-info">
-                                        <span class="user-name" id="display-responsable">
-                                            {% if proyecto.responsable %}
-                                                {{ proyecto.responsable.get_full_name|default:proyecto.responsable.username }}
-                                            {% else %}
-                                                Sin asignar
-                                            {% endif %}
-                                        </span>
-                                        {% if proyecto.responsable %}
-                                            <span class="user-email">{{ proyecto.responsable.email }}</span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="widget-edit" style="display: none;">
-                                <div class="form-group">
-                                    <label for="edit-responsable">Responsable del Proyecto</label>
-                                    <select id="edit-responsable" class="widget-select">
-                                        <option value="">Sin asignar</option>
-                                        {% for usuario in usuarios_disponibles %}
-                                            <option value="{{ usuario.id }}" {% if usuario == proyecto.responsable %}selected{% endif %}>
-                                                {{ usuario.get_full_name|default:usuario.username }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="widget-buttons">
-                                    <button class="btn-save" onclick="saveWidget('responsable')">Guardar</button>
-                                    <button class="btn-cancel" onclick="cancelWidgetEdit('responsable')">Cancelar</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Widget: Miembros del Equipo -->
-                    <div class="config-widget widget-large" data-widget="miembros">
+                    <!-- Widget: Agregar Miembros -->
+                    <div class="config-widget" data-widget="miembros">
                         <div class="widget-header">
                             <div class="widget-icon">
                                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -5433,8 +5370,8 @@
                                 </svg>
                             </div>
                             <div class="widget-title">
-                                <h3>Miembros del Equipo</h3>
-                                <p>Usuarios asignados al proyecto</p>
+                                <h3>Agregar Miembros</h3>
+                                <p>Gestionar usuarios del proyecto</p>
                             </div>
                             <div class="widget-actions">
                                 <button class="widget-edit-btn" onclick="toggleWidgetEdit('miembros')">
@@ -5446,45 +5383,31 @@
                         </div>
                         <div class="widget-content">
                             <div class="widget-display">
-                                <div class="members-grid">
-                                    {% for miembro in proyecto.miembros.all %}
-                                        <div class="member-card" data-member-id="{{ miembro.id }}">
-                                            <div class="member-avatar">
-                                                <span>{{ miembro.first_name.0|default:miembro.username.0 }}</span>
-                                            </div>
-                                            <div class="member-info">
-                                                <span class="member-name">{{ miembro.get_full_name|default:miembro.username }}</span>
-                                                <span class="member-role">Miembro</span>
-                                            </div>
-                                        </div>
-                                    {% empty %}
-                                        <div class="empty-state">
-                                            <svg width="40" height="40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a4 4 0 11-8 0 4 4 0 018 0z"/>
-                                            </svg>
-                                            <p>No hay miembros asignados</p>
-                                        </div>
-                                    {% endfor %}
+                                <div class="field-display">
+                                    <label>Miembros Actuales:</label>
+                                    <span id="display-miembros">
+                                        {% if proyecto.miembros.all %}
+                                            {{ proyecto.miembros.count }} miembro{{ proyecto.miembros.count|pluralize:"s" }}
+                                        {% else %}
+                                            Sin miembros asignados
+                                        {% endif %}
+                                    </span>
                                 </div>
                             </div>
                             <div class="widget-edit" style="display: none;">
-                                <div class="current-members">
-                                    <h4>Miembros Actuales</h4>
+                                <div class="form-group">
+                                    <label>Miembros Actuales</label>
                                     <div class="members-list" id="currentMembersList">
                                         {% for miembro in proyecto.miembros.all %}
                                             <div class="member-item" data-user-id="{{ miembro.id }}">
                                                 <span class="member-name">{{ miembro.get_full_name|default:miembro.username }}</span>
-                                                <button type="button" class="remove-member" onclick="removeMiembro({{ miembro.id }})">
-                                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                                    </svg>
-                                                </button>
+                                                <button type="button" class="remove-member" onclick="removeMiembro({{ miembro.id }})">×</button>
                                             </div>
                                         {% endfor %}
                                     </div>
                                 </div>
-                                <div class="add-member">
-                                    <h4>Agregar Miembros</h4>
+                                <div class="form-group">
+                                    <label for="searchUsuarios">Buscar Usuarios</label>
                                     <input type="text" id="searchUsuarios" placeholder="Buscar usuarios..." class="widget-input">
                                     <div id="searchResults" class="search-results"></div>
                                 </div>
@@ -5875,6 +5798,20 @@ document.addEventListener('DOMContentLoaded', function() {
 // Toggle widget edit mode
 window.toggleWidgetEdit = function(widgetType) {
     console.log(`🔵 Toggling edit mode for widget: ${widgetType}`);
+    
+    // Primero cerrar todos los demás widgets que estén en modo edición
+    const allWidgets = document.querySelectorAll('.config-widget');
+    allWidgets.forEach(w => {
+        if (w.getAttribute('data-widget') !== widgetType) {
+            const displayMode = w.querySelector('.widget-display');
+            const editMode = w.querySelector('.widget-edit');
+            if (displayMode && editMode) {
+                displayMode.style.display = 'block';
+                editMode.style.display = 'none';
+            }
+        }
+    });
+    
     const widget = document.querySelector(`[data-widget="${widgetType}"]`);
     if (!widget) {
         console.warn(`🔴 Widget ${widgetType} not found`);
@@ -5930,9 +5867,6 @@ window.saveWidget = function(widgetType) {
             break;
         case 'config-general':
             saveGeneralConfig();
-            break;
-        case 'responsable':
-            saveResponsable();
             break;
         case 'miembros':
             saveMiembros();
@@ -6042,26 +5976,6 @@ async function saveGeneralConfig() {
     }
 }
 
-// Save responsable widget
-function saveResponsable() {
-    const responsableSelect = document.getElementById('edit-responsable');
-    if (!responsableSelect) return;
-    
-    const responsableId = responsableSelect.value;
-    const responsableText = responsableSelect.options[responsableSelect.selectedIndex]?.text || 'Sin asignar';
-    
-    // Update display
-    const displayResponsable = document.getElementById('display-responsable');
-    if (displayResponsable) {
-        displayResponsable.textContent = responsableText;
-    }
-    
-    // TODO: Send AJAX request to backend
-    console.log('🔵 Responsable updated:', { responsableId, responsableText });
-    
-    // Exit edit mode
-    cancelWidgetEdit('responsable');
-}
 
 // Save members widget
 async function saveMiembros() {
