@@ -5946,48 +5946,100 @@ window.saveWidget = function(widgetType) {
 }
 
 // Save basic info widget
-function saveBasicInfo() {
+async function saveBasicInfo() {
     const nombre = document.getElementById('edit-nombre')?.value || '';
     const descripcion = document.getElementById('edit-descripcion')?.value || '';
     
-    // Update display
-    const displayNombre = document.getElementById('display-nombre');
-    const displayDescripcion = document.getElementById('display-descripcion');
+    if (!nombre.trim()) {
+        alert('El nombre del proyecto es obligatorio');
+        return;
+    }
     
-    if (displayNombre) displayNombre.textContent = nombre;
-    if (displayDescripcion) displayDescripcion.textContent = descripcion || 'Sin descripción';
-    
-    // TODO: Send AJAX request to backend
-    console.log('🔵 Basic info updated:', { nombre, descripcion });
-    
-    // Exit edit mode
-    cancelWidgetEdit('info-basica');
+    try {
+        const PROYECTO_ID = {{ proyecto.id }};
+        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/configuracion/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            },
+            body: JSON.stringify({
+                nombre: nombre.trim(),
+                descripcion: descripcion.trim()
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            // Update display
+            const displayNombre = document.getElementById('display-nombre');
+            const displayDescripcion = document.getElementById('display-descripcion');
+            
+            if (displayNombre) displayNombre.textContent = nombre;
+            if (displayDescripcion) displayDescripcion.textContent = descripcion || 'Sin descripción';
+            
+            console.log('✅ Información básica actualizada');
+            cancelWidgetEdit('info-basica');
+        } else {
+            alert('Error: ' + (data.error || 'No se pudo guardar la información'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error al guardar los cambios');
+    }
 }
 
 // Save general config widget
-function saveGeneralConfig() {
+async function saveGeneralConfig() {
     const tipo = document.getElementById('edit-tipo')?.value || '';
     const privacidad = document.getElementById('edit-privacidad')?.value || '';
     
-    // Update display
-    const tipoDisplay = document.getElementById('display-tipo');
-    const privacidadDisplay = document.getElementById('display-privacidad');
-    
-    if (tipoDisplay) {
-        tipoDisplay.textContent = tipo === 'runrate' ? 'Runrate' : 'Ingeniería';
-        tipoDisplay.className = `status-badge status-${tipo}`;
+    if (!tipo || !privacidad) {
+        alert('Todos los campos son obligatorios');
+        return;
     }
     
-    if (privacidadDisplay) {
-        privacidadDisplay.textContent = privacidad === 'publico' ? 'Público' : 'Privado';
-        privacidadDisplay.className = `status-badge status-${privacidad}`;
+    try {
+        const PROYECTO_ID = {{ proyecto.id }};
+        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/configuracion/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            },
+            body: JSON.stringify({
+                tipo: tipo,
+                privacidad: privacidad
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            // Update display
+            const tipoDisplay = document.getElementById('display-tipo');
+            const privacidadDisplay = document.getElementById('display-privacidad');
+            
+            if (tipoDisplay) {
+                tipoDisplay.textContent = tipo === 'runrate' ? 'Runrate' : 'Ingeniería';
+                tipoDisplay.className = `status-badge status-${tipo}`;
+            }
+            
+            if (privacidadDisplay) {
+                privacidadDisplay.textContent = privacidad === 'publico' ? 'Público' : 'Privado';
+                privacidadDisplay.className = `status-badge status-${privacidad}`;
+            }
+            
+            console.log('✅ Configuración general actualizada');
+            cancelWidgetEdit('config-general');
+        } else {
+            alert('Error: ' + (data.error || 'No se pudo guardar la configuración'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error al guardar los cambios');
     }
-    
-    // TODO: Send AJAX request to backend
-    console.log('🔵 General config updated:', { tipo, privacidad });
-    
-    // Exit edit mode
-    cancelWidgetEdit('config-general');
 }
 
 // Save responsable widget
@@ -6012,21 +6064,79 @@ function saveResponsable() {
 }
 
 // Save members widget
-function saveMiembros() {
-    // TODO: Implement member management save
-    console.log('🔵 Saving members...');
-    
-    // Exit edit mode
-    cancelWidgetEdit('miembros');
+async function saveMiembros() {
+    try {
+        // Obtener la lista de miembros actuales del DOM
+        const memberItems = document.querySelectorAll('#currentMembersList .member-item');
+        const miembrosIds = Array.from(memberItems).map(item => 
+            parseInt(item.getAttribute('data-user-id'))
+        ).filter(id => !isNaN(id));
+        
+        const PROYECTO_ID = {{ proyecto.id }};
+        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/configuracion/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            },
+            body: JSON.stringify({
+                miembros_ids: miembrosIds
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('✅ Miembros actualizados');
+            // Recargar la página para reflejar los cambios
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'No se pudieron actualizar los miembros'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error al guardar los miembros');
+    }
 }
 
 // Save opportunity widget
-function saveOportunidad() {
-    // TODO: Implement opportunity linking save
-    console.log('🔵 Saving opportunity...');
-    
-    // Exit edit mode
-    cancelWidgetEdit('oportunidad');
+async function saveOportunidad() {
+    try {
+        const oportunidadId = document.getElementById('oportunidadSeleccionada')?.value || null;
+        
+        const PROYECTO_ID = {{ proyecto.id }};
+        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/configuracion/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            },
+            body: JSON.stringify({
+                oportunidad_vinculada_id: oportunidadId
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('✅ Oportunidad ligada actualizada');
+            // Actualizar la vista sin recargar
+            const statusElement = document.querySelector('.opportunity-status span');
+            if (statusElement) {
+                if (oportunidadId) {
+                    statusElement.textContent = 'Oportunidad ligada';
+                } else {
+                    statusElement.textContent = 'Sin oportunidad ligada';
+                }
+            }
+            cancelWidgetEdit('oportunidad');
+        } else {
+            alert('Error: ' + (data.error || 'No se pudo actualizar la oportunidad'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error al guardar la oportunidad');
+    }
 }
 
 // Remove member function
