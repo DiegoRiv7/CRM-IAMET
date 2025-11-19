@@ -3564,6 +3564,11 @@
         background: transparent !important;
     }
     
+    /* Ensure configuration content is visible when active */
+    #configuracion-content.tab-content.active {
+        display: block !important;
+    }
+    
     /* Override light theme forcing with maximum specificity */
     html[data-theme="pink"] #configuracion-content *,
     body[data-theme="pink"] #configuracion-content *,
@@ -5407,6 +5412,19 @@ document.addEventListener('DOMContentLoaded', function() {
     if (configContent) {
         const widgets = configContent.querySelectorAll('.config-widget');
         console.log(`✅ ${widgets.length} widgets de configuración detectados y listos`);
+        
+        // Forzar activación del tab de configuración si no está activo
+        if (!configContent.classList.contains('active')) {
+            console.log('🔧 Activando tab de configuración...');
+            configContent.classList.add('active');
+            configContent.style.display = 'block';
+            
+            // También activar el botón de la tab si existe
+            const configTab = document.querySelector('[data-tab="configuracion"]');
+            if (configTab) {
+                configTab.classList.add('active');
+            }
+        }
         
         // Aplicar efectos visuales inmediatos
         const widgetsGrid = configContent.querySelector('.config-widgets-grid');
@@ -12740,7 +12758,7 @@ function getEstadoBadgeHTML(estado) {
         
         // Cerrar dropdown al hacer clic fuera
         const closeHandler = function(event) {
-            if (!dropdown.contains(event.target) && !event.target.closest(`button[onclick*="${type}"]`)) {
+            if (!dropdown.contains(event.target) && !event.target.closest('button[onclick*="' + type + '"]')) {
                 dropdown.style.display = 'none';
                 document.removeEventListener('click', closeHandler);
             }
