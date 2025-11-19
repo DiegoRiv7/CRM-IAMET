@@ -3614,6 +3614,27 @@
         border-radius: 24px 24px 0 0 !important;
     }
     
+    /* Force better text rendering and layout for ALL widget elements */
+    #configuracion-content.tab-content.active .config-widget * {
+        box-sizing: border-box !important;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+        text-rendering: optimizeLegibility !important;
+        -webkit-font-smoothing: antialiased !important;
+        -moz-osx-font-smoothing: grayscale !important;
+    }
+    
+    /* Specific styling for better visual hierarchy */
+    #configuracion-content.tab-content.active .config-widget .widget-actions {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+    }
+    
+    #configuracion-content.tab-content.active .config-widget .widget-title {
+        flex: 1 !important;
+        min-width: 0 !important;
+    }
+    
     /* Override light theme forcing with maximum specificity */
     html[data-theme="pink"] #configuracion-content *,
     body[data-theme="pink"] #configuracion-content *,
@@ -5577,9 +5598,151 @@ function applyConfigurationWidgetStyles() {
                 topBorder.className = 'widget-top-border';
                 widget.appendChild(topBorder);
             }
+            
+            // Aplicar estilos a los elementos internos
+            const header = widget.querySelector('.widget-header');
+            if (header) {
+                header.style.cssText = `
+                    display: flex !important;
+                    align-items: flex-start !important;
+                    gap: 1rem !important;
+                    padding: 1.8rem 2rem 1.2rem !important;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+                    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent) !important;
+                    position: relative !important;
+                    z-index: 2 !important;
+                `;
+            }
+            
+            const icon = widget.querySelector('.widget-icon');
+            if (icon) {
+                icon.style.cssText = `
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    width: 56px !important;
+                    height: 56px !important;
+                    border-radius: 20px !important;
+                    background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(139, 69, 218, 0.3)) !important;
+                    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                    color: rgba(255, 255, 255, 0.95) !important;
+                    flex-shrink: 0 !important;
+                    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+                    transition: all 0.3s ease !important;
+                `;
+                
+                const svg = icon.querySelector('svg');
+                if (svg) {
+                    svg.style.cssText = `
+                        width: 24px !important;
+                        height: 24px !important;
+                        stroke: rgba(255, 255, 255, 0.95) !important;
+                        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3)) !important;
+                    `;
+                }
+            }
+            
+            const title = widget.querySelector('.widget-title');
+            if (title) {
+                const h3 = title.querySelector('h3');
+                if (h3) {
+                    h3.style.cssText = `
+                        font-size: 1.25rem !important;
+                        font-weight: 700 !important;
+                        color: rgba(255, 255, 255, 0.95) !important;
+                        margin: 0 0 0.25rem 0 !important;
+                        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+                        letter-spacing: -0.02em !important;
+                    `;
+                }
+                
+                const p = title.querySelector('p');
+                if (p) {
+                    p.style.cssText = `
+                        font-size: 0.875rem !important;
+                        color: rgba(255, 255, 255, 0.7) !important;
+                        margin: 0 !important;
+                        font-weight: 500 !important;
+                        opacity: 0.9 !important;
+                    `;
+                }
+            }
+            
+            const content = widget.querySelector('.widget-content');
+            if (content) {
+                content.style.cssText = `
+                    padding: 1.5rem 2rem 2rem !important;
+                    position: relative !important;
+                    background: rgba(0, 0, 0, 0.02) !important;
+                `;
+                
+                // Estilar cada field-display
+                const fieldDisplays = content.querySelectorAll('.field-display');
+                fieldDisplays.forEach(field => {
+                    field.style.marginBottom = '1rem';
+                    
+                    const label = field.querySelector('label');
+                    if (label) {
+                        label.style.cssText = `
+                            font-size: 0.75rem !important;
+                            font-weight: 600 !important;
+                            text-transform: uppercase !important;
+                            letter-spacing: 0.05em !important;
+                            color: rgba(255, 255, 255, 0.6) !important;
+                            margin-bottom: 0.5rem !important;
+                            display: block !important;
+                        `;
+                    }
+                    
+                    const span = field.querySelector('span');
+                    if (span) {
+                        span.style.cssText = `
+                            font-size: 1rem !important;
+                            font-weight: 500 !important;
+                            color: rgba(255, 255, 255, 0.9) !important;
+                            display: block !important;
+                            background: rgba(255, 255, 255, 0.05) !important;
+                            padding: 0.75rem 1rem !important;
+                            border-radius: 12px !important;
+                            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                            backdrop-filter: blur(10px) !important;
+                            transition: all 0.2s ease !important;
+                        `;
+                    }
+                });
+            }
+            
+            // Estilar botón de edición
+            const editBtn = widget.querySelector('.widget-edit-btn');
+            if (editBtn) {
+                editBtn.style.cssText = `
+                    background: rgba(255, 255, 255, 0.1) !important;
+                    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                    border-radius: 12px !important;
+                    padding: 0.5rem !important;
+                    color: rgba(255, 255, 255, 0.8) !important;
+                    transition: all 0.3s ease !important;
+                    backdrop-filter: blur(10px) !important;
+                    cursor: pointer !important;
+                `;
+            }
         });
         
-        console.log(`✅ ${widgets.length} widgets de configuración estilizados`);
+        // Asegurar que no hay estilos conflictivos
+        setTimeout(() => {
+            widgets.forEach(widget => {
+                // Limpiar cualquier estilo inline que pueda estar causando problemas
+                const allElements = widget.querySelectorAll('*');
+                allElements.forEach(el => {
+                    // Forzar font-family y anti-aliasing
+                    el.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+                    el.style.webkitFontSmoothing = 'antialiased';
+                    el.style.mozOsxFontSmoothing = 'grayscale';
+                });
+            });
+        }, 200);
+        
+        console.log(`✅ ${widgets.length} widgets de configuración estilizados completamente`);
     }
 }
 
