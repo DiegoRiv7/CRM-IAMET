@@ -2982,13 +2982,46 @@
         background: transparent !important;
     }
     
-    /* Override light theme forcing */
+    /* Override light theme forcing with maximum specificity */
     html[data-theme="pink"] #configuracion-content *,
     body[data-theme="pink"] #configuracion-content *,
     html.light-theme[data-theme="pink"] #configuracion-content *,
-    .light-theme #configuracion-content * {
+    .light-theme #configuracion-content *,
+    html[data-theme="dark"] #configuracion-content *,
+    body[data-theme="dark"] #configuracion-content *,
+    html.dark-theme #configuracion-content *,
+    .dark-theme #configuracion-content *,
+    body.dark #configuracion-content *,
+    html.dark #configuracion-content * {
         color: #ffffff !important;
         background-color: transparent !important;
+    }
+
+    /* Force liquid glass appearance for all configuration elements regardless of theme */
+    body #configuracion-content .config-header,
+    body #configuracion-content .config-section {
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(20px) saturate(1.8) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(1.8) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 16px !important;
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    }
+
+    /* Ultra-specific form control override */
+    body #configuracion-content input[type="text"],
+    body #configuracion-content input[type="email"], 
+    body #configuracion-content select,
+    body #configuracion-content textarea,
+    body #configuracion-content .form-control {
+        color: #ffffff !important;
+        background: rgba(255, 255, 255, 0.02) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 12px !important;
     }
     
     #configuracion-content .configuracion-container {
@@ -3054,10 +3087,19 @@
     html[data-theme="pink"] #configuracion-content .config-section,
     body[data-theme="pink"] #configuracion-content .config-section,
     html.light-theme[data-theme="pink"] #configuracion-content .config-section,
-    .light-theme #configuracion-content .config-section {
+    .light-theme #configuracion-content .config-section,
+    html[data-theme="pink"] #configuracion-content .config-header,
+    body[data-theme="pink"] #configuracion-content .config-header,
+    html.light-theme[data-theme="pink"] #configuracion-content .config-header,
+    .light-theme #configuracion-content .config-header {
         background: rgba(255, 255, 255, 0.02) !important;
         backdrop-filter: blur(25px) saturate(1.8) !important;
         -webkit-backdrop-filter: blur(25px) saturate(1.8) !important;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        border-radius: 20px !important;
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.12),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
     }
     
     .config-section::before {
@@ -3138,15 +3180,33 @@
             0 1px 0 rgba(255, 255, 255, 0.05) !important;
     }
 
-    /* Form control override for light theme */
+    /* Form control override for light theme and all inputs */
+    #configuracion-content input,
+    #configuracion-content select,
+    #configuracion-content textarea,
+    #configuracion-content .form-control,
     html[data-theme="pink"] #configuracion-content .form-control,
     body[data-theme="pink"] #configuracion-content .form-control,
     html.light-theme[data-theme="pink"] #configuracion-content .form-control,
-    .light-theme #configuracion-content .form-control {
+    .light-theme #configuracion-content .form-control,
+    html[data-theme="pink"] #configuracion-content input,
+    body[data-theme="pink"] #configuracion-content input,
+    html.light-theme[data-theme="pink"] #configuracion-content input,
+    .light-theme #configuracion-content input,
+    html[data-theme="pink"] #configuracion-content select,
+    body[data-theme="pink"] #configuracion-content select,
+    html.light-theme[data-theme="pink"] #configuracion-content select,
+    .light-theme #configuracion-content select,
+    html[data-theme="pink"] #configuracion-content textarea,
+    body[data-theme="pink"] #configuracion-content textarea,
+    html.light-theme[data-theme="pink"] #configuracion-content textarea,
+    .light-theme #configuracion-content textarea {
         color: #ffffff !important;
         background: rgba(255, 255, 255, 0.02) !important;
         backdrop-filter: blur(10px) !important;
         -webkit-backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 12px !important;
     }
     
     .form-control:focus {
