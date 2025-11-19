@@ -44,9 +44,18 @@
         font-family: var(--apple-font-family);
     }
 
-    /* Remove background when configuration is active */
+    /* Remove backgrounds when configuration is active */
     .proyecto-container.config-active {
         background: transparent;
+    }
+
+    .proyecto-container.config-active .proyecto-content {
+        background: transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
     }
 
     /* Header */
