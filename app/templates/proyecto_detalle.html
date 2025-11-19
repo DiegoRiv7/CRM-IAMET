@@ -44,6 +44,11 @@
         font-family: var(--apple-font-family);
     }
 
+    /* Remove background when configuration is active */
+    .proyecto-container.config-active {
+        background: transparent;
+    }
+
     /* Header */
     .proyecto-header {
         display: flex;
@@ -8915,6 +8920,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Aplicar estilos premium cuando se activa configuración
             if (tabName === 'configuracion') {
+                // Remove project container background for configuration
+                const proyectoContainer = document.querySelector('.proyecto-container');
+                if (proyectoContainer) {
+                    proyectoContainer.classList.add('config-active');
+                }
+                
                 setTimeout(() => {
                     // Apply config design compatibility
                     applyConfigDesignCompatibility();
@@ -8930,6 +8941,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     console.log('✨ Configuration design activated');
                 }, 100);
+            } else {
+                // Restore project container background for other tabs
+                const proyectoContainer = document.querySelector('.proyecto-container');
+                if (proyectoContainer) {
+                    proyectoContainer.classList.remove('config-active');
+                }
             }
             
             // Cargar tareas cuando se activa la tab de tareas
