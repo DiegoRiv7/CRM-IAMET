@@ -1636,33 +1636,9 @@ def api_configuracion_proyecto(request, proyecto_id):
         # Guardar cambios
         proyecto.save()
         
-        # Crear comentario de sistema con los cambios realizados (en un try-catch separado)
-        try:
-            cambios = []
-            if 'nombre' in data:
-                cambios.append(f"Nombre actualizado a '{proyecto.nombre}'")
-            if 'tipo' in data:
-                cambios.append(f"Tipo cambiado a '{proyecto.get_tipo_display()}'")
-            if 'privacidad' in data:
-                cambios.append(f"Privacidad cambiada a '{proyecto.get_privacidad_display()}'")
-            if 'responsable_id' in data and proyecto.responsable:
-                cambios.append(f"Responsable asignado: {proyecto.responsable.get_full_name() or proyecto.responsable.username}")
-            if 'miembros_ids' in data:
-                cambios.append(f"Miembros actualizados ({len(data.get('miembros_ids', []))} miembros)")
-            if 'oportunidad_vinculada_id' in data:
-                if proyecto.oportunidad_vinculada:
-                    cambios.append(f"Vinculado con oportunidad: {proyecto.oportunidad_vinculada.oportunidad}")
-                else:
-                    cambios.append("Oportunidad desvinculada")
-            
-            if cambios:
-                ProyectoComentario.objects.create(
-                    proyecto=proyecto,
-                    usuario=request.user,
-                    contenido=f"⚙️ Configuración actualizada:\n• " + "\n• ".join(cambios)
-                )
-        except Exception as comment_error:
-            print(f"⚠️ Error creando comentario (pero proyecto guardado): {comment_error}")
+        # Comentarios del sistema temporalmente deshabilitados para evitar errores
+        # TODO: Reactivar cuando se resuelvan los problemas de modelo ProyectoComentario
+        print(f"📝 Cambios realizados en proyecto '{proyecto.nombre}': {list(data.keys())}")
         
         print(f"✅ Configuración del proyecto '{proyecto.nombre}' actualizada exitosamente")
         

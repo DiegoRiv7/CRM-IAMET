@@ -15156,14 +15156,24 @@ function updateOpportunityDisplay() {
 }
 
 // Configuration form functions
+let isSaving = false; // Prevent multiple saves
+
 function guardarConfiguracionProyecto() {
     console.log('📤📤📤 guardarConfiguracionProyecto INICIADO 📤📤📤');
+    
+    // Prevent multiple simultaneous saves
+    if (isSaving) {
+        console.log('📤 Save already in progress, skipping...');
+        return;
+    }
+    isSaving = true;
     
     const form = document.getElementById('configForm');
     console.log('📤 Form element:', form);
     
     if (!form) {
         console.error('📤 ERROR: Form not found!');
+        isSaving = false;
         return;
     }
     
@@ -15227,10 +15237,14 @@ function guardarConfiguracionProyecto() {
             console.error('❌ Server error:', data);
             showNotification('Error al actualizar configuración: ' + (data.error || data.message || 'Error desconocido'), 'error');
         }
+        // Reset saving flag
+        isSaving = false;
     })
     .catch(error => {
         console.error('💥 Network/Parse error:', error);
         showNotification('Error al actualizar configuración: ' + error.message, 'error');
+        // Reset saving flag
+        isSaving = false;
     });
 }
 
