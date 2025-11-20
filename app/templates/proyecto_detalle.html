@@ -15209,7 +15209,11 @@ function guardarConfiguracionProyecto() {
         console.log('📥 Response ok:', response.ok);
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            // Try to get error details from server
+            return response.text().then(text => {
+                console.log('📥 Server error response:', text);
+                throw new Error(`HTTP error! status: ${response.status} - ${text}`);
+            });
         }
         return response.json();
     })
