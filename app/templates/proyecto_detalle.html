@@ -13477,8 +13477,8 @@ function getEstadoBadgeHTML(estado) {
     `;
 }
 
-// Funciones auxiliares para el namespace TareasProyectos
-
+// Funciones auxiliares para el namespace TareasProyectos - Extendiendo el objeto
+Object.assign(TareasProyectos, {
     getPrioridadBadgeHTML(prioridad) {
         const prioridadColors = {
             'baja': '#30D158',
@@ -14289,7 +14289,7 @@ function getEstadoBadgeHTML(estado) {
         // Insertar al principio del feed para que aparezca arriba
         activityFeed.insertBefore(systemComment, activityFeed.firstChild);
     }
-};
+});
 
 // Variables globales para carpetas
 let currentFolder = null;
@@ -14502,8 +14502,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         resultsContainer.classList.add('active');
     }
-
-};
 
     // Función para agregar miembro al proyecto
     window.addMiembroToProject = function(usuario) {
@@ -15141,19 +15139,29 @@ function guardarConfiguracionProyecto() {
             'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('📥 Response status:', response.status);
+        console.log('📥 Response ok:', response.ok);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
+        console.log('✅ Response data:', data);
         if (data.success) {
             showNotification('Configuración actualizada correctamente', 'success');
             // Reload page to reflect changes
             setTimeout(() => location.reload(), 1000);
         } else {
-            showNotification('Error al actualizar configuración: ' + (data.message || 'Error desconocido'), 'error');
+            console.error('❌ Server error:', data);
+            showNotification('Error al actualizar configuración: ' + (data.error || data.message || 'Error desconocido'), 'error');
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        showNotification('Error al actualizar configuración', 'error');
+        console.error('💥 Network/Parse error:', error);
+        showNotification('Error al actualizar configuración: ' + error.message, 'error');
     });
 }
 
