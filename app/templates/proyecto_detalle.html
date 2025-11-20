@@ -15398,6 +15398,76 @@ function showNotification(message, type = 'info') {
     alert(message);
 }
 
+// ====================================================
+// IMMEDIATE CONFIG FORM SETUP - EMERGENCY SOLUTION
+// ====================================================
+console.log('🆘🆘🆘 IMMEDIATE CONFIG SETUP STARTING 🆘🆘🆘');
+
+function setupConfigFormImmediate() {
+    console.log('🔴 setupConfigFormImmediate called');
+    console.log('🔴 Document ready state:', document.readyState);
+    
+    const configForm = document.getElementById('configForm');
+    console.log('🔴 Config Form Found:', !!configForm);
+    console.log('🔴 Config Form element:', configForm);
+    
+    if (!configForm) {
+        console.log('🔴 Form not found yet, will retry in 1 second...');
+        setTimeout(setupConfigFormImmediate, 1000);
+        return;
+    }
+    
+    // Form found, add event listeners
+    console.log('🔴 Adding submit listener to form');
+    configForm.addEventListener('submit', function(e) {
+        console.log('🔴🔴🔴 FORM SUBMIT FIRED! 🔴🔴🔴');
+        e.preventDefault();
+        
+        console.log('🔴 Calling guardarConfiguracionProyecto...');
+        try {
+            guardarConfiguracionProyecto();
+        } catch (error) {
+            console.error('🔴 ERROR:', error);
+        }
+    });
+    
+    // Also try the button
+    const saveButton = document.querySelector('button[form="configForm"][type="submit"]');
+    console.log('🔴 Save button found:', !!saveButton);
+    
+    if (saveButton) {
+        console.log('🔴 Adding click listener to save button');
+        saveButton.addEventListener('click', function(e) {
+            console.log('🔴🔴🔴 SAVE BUTTON CLICKED! 🔴🔴🔴');
+            e.preventDefault();
+            
+            try {
+                guardarConfiguracionProyecto();
+            } catch (error) {
+                console.error('🔴 BUTTON ERROR:', error);
+            }
+        });
+    }
+    
+    console.log('🔴 Config form setup complete!');
+}
+
+// Run immediately
+console.log('🔴 Running setup immediately...');
+setupConfigFormImmediate();
+
+// Also run when DOM is ready as backup
+console.log('🔴 Setting up DOM ready backup...');
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🔴 DOM ready backup triggered');
+        setupConfigFormImmediate();
+    });
+} else {
+    console.log('🔴 DOM already ready, running backup');
+    setupConfigFormImmediate();
+}
+
 </script>
 
 <!-- Modal para ver detalles de tarea - Glassmorphism Design -->
