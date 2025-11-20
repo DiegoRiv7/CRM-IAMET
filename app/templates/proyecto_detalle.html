@@ -4829,7 +4829,8 @@
     .config-form {
         display: flex;
         flex-direction: column;
-        gap: 2rem;
+        gap: 1.5rem;
+        margin-top: -10px;
     }
     
     body #configuracion-content .form-section,
@@ -6080,9 +6081,6 @@
 
                     <form id="configForm" class="config-form">
                         {% csrf_token %}
-                        
-                        <!-- Identificación y Visibilidad -->
-                        <div class="config-section-title">Identificación y Visibilidad</div>
                         
                         <div class="config-grid">
                             <div class="config-input-group">
@@ -14291,7 +14289,7 @@ function getEstadoBadgeHTML(estado) {
         // Insertar al principio del feed para que aparezca arriba
         activityFeed.insertBefore(systemComment, activityFeed.firstChild);
     }
-});
+};
 
 // Variables globales para carpetas
 let currentFolder = null;
@@ -14503,7 +14501,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         resultsContainer.classList.add('active');
-    };
+    }
 
 };
 
@@ -15113,10 +15111,16 @@ function guardarConfiguracionProyecto() {
     const form = document.getElementById('configForm');
     const formData = new FormData(form);
     
+    // Convert FormData to JSON object
+    const data = {};
+    for (let [key, value] of formData.entries()) {
+        data[key] = value;
+    }
+    
     // Add selected opportunity ID
-    const selectedOportunidadId = document.getElementById('oportunidad-selected').value;
+    const selectedOportunidadId = document.getElementById('oportunidad-selected')?.value;
     if (selectedOportunidadId) {
-        formData.append('oportunidad_vinculada_id', selectedOportunidadId);
+        data['oportunidad_vinculada_id'] = selectedOportunidadId;
     }
     
     // Add selected members
@@ -15125,12 +15129,15 @@ function guardarConfiguracionProyecto() {
         const userId = tag.dataset.userId;
         if (userId) selectedMembers.push(userId);
     });
-    formData.append('miembros_ids', JSON.stringify(selectedMembers));
+    data['miembros_ids'] = selectedMembers;
+    
+    console.log('📤 Datos a enviar:', data);
     
     fetch(`/app/api/proyecto/{{ proyecto.id }}/configuracion/`, {
         method: 'PUT',
-        body: formData,
+        body: JSON.stringify(data),
         headers: {
+            'Content-Type': 'application/json',
             'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
         }
     })
