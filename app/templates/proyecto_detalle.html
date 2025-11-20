@@ -5377,12 +5377,17 @@
         animation: fadeIn 0.5s ease !important;
     }
 
-    /* Botones superiores */
+    /* Header con botones y título alineados */
+    .config-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
     .config-top-buttons {
         display: flex;
-        justify-content: flex-end;
         gap: 15px;
-        margin-bottom: 20px;
     }
 
     .config-btn {
@@ -5417,8 +5422,7 @@
 
     /* Títulos */
     .config-title {
-        margin-top: 0;
-        margin-bottom: 0.5rem;
+        margin: 0;
         font-size: 36px;
         font-weight: 700;
         color: #ffffff !important;
@@ -5426,11 +5430,11 @@
 
     .config-subtitle {
         color: #c9c9c9 !important;
-        margin-bottom: 25px !important;
+        margin: 0.5rem 0 20px 0 !important;
     }
 
     .config-section-title {
-        margin: 25px 0 20px 0;
+        margin: 20px 0 15px 0;
         font-size: 20px;
         font-weight: 600;
         color: #ffffff !important;
@@ -5444,7 +5448,7 @@
     .config-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 30px;
+        gap: 25px;
     }
 
     .config-input-group {
@@ -5500,8 +5504,8 @@
     .config-row {
         display: grid;
         grid-template-columns: 2fr 1fr;
-        gap: 30px;
-        margin-top: 25px;
+        gap: 25px;
+        margin-top: 20px;
     }
 
     .config-box {
@@ -6063,13 +6067,16 @@
             <!-- Configuración Tab -->
             <div class="config-card tab-content" id="configuracion-content">
                     
-                    <div class="config-top-buttons">
-                        <button type="submit" form="configForm" class="config-btn config-btn-save">Guardar Cambios</button>
-                        <button type="reset" form="configForm" class="config-btn config-btn-cancel">Cancelar</button>
+                    <div class="config-header-row">
+                        <div>
+                            <h1 class="config-title">Ajustes del Proyecto</h1>
+                            <p class="config-subtitle">Configura el detalle principal del proyecto.</p>
+                        </div>
+                        <div class="config-top-buttons">
+                            <button type="submit" form="configForm" class="config-btn config-btn-save">Guardar Cambios</button>
+                            <button type="reset" form="configForm" class="config-btn config-btn-cancel">Cancelar</button>
+                        </div>
                     </div>
-
-                    <h1 class="config-title">Ajustes del Proyecto</h1>
-                    <p class="config-subtitle">Configura el detalle principal del proyecto.</p>
 
                     <form id="configForm" class="config-form">
                         {% csrf_token %}
@@ -14497,6 +14504,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         resultsContainer.classList.add('active');
     };
+
+};
 
     // Función para agregar miembro al proyecto
     window.addMiembroToProject = function(usuario) {
