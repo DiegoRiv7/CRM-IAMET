@@ -14768,11 +14768,32 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('🔥 DOM Ready State:', document.readyState);
         console.log('🔥 Current URL:', window.location.href);
         
+        // Verificar estado de tabs
+        console.log('🔥 Configuracion tab exists:', !!document.getElementById('configuracion-tab'));
+        console.log('🔥 Configuracion content exists:', !!document.getElementById('configuracion-content'));
+        console.log('🔥 Active tab classes:', document.querySelector('.tab-link.active')?.textContent);
+        
+        // Verificar si el tab de configuracion está visible
+        const configContent = document.getElementById('configuracion-content');
+        if (configContent) {
+            console.log('🔥 Config content display:', window.getComputedStyle(configContent).display);
+            console.log('🔥 Config content visibility:', window.getComputedStyle(configContent).visibility);
+            console.log('🔥 Config content class list:', configContent.classList.toString());
+        }
+        
         // Configurar formulario de configuración
+        console.log('🔥 Searching for configForm...');
         const configForm = document.getElementById('configForm');
         console.log('🔥 Config Form Found:', !!configForm);
+        console.log('🔥 Config Form element:', configForm);
+        console.log('🔥 All forms on page:', document.querySelectorAll('form'));
+        console.log('🔥 Form by querySelector:', document.querySelector('#configForm'));
+        
         if (configForm) {
             console.log('🔥 Adding event listener to form');
+            console.log('🔥 Form ID:', configForm.id);
+            console.log('🔥 Form action:', configForm.action);
+            console.log('🔥 Form method:', configForm.method);
             configForm.addEventListener('submit', function(e) {
                 console.log('🔥🔥🔥 FORM SUBMIT EVENT FIRED! 🔥🔥🔥');
                 console.log('🔥 Event object:', e);
@@ -14788,8 +14809,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Also add listener to the save button directly
+        console.log('🔥 Searching for save button...');
         const saveButton = document.querySelector('button[form="configForm"][type="submit"]');
         console.log('🔥 Save Button Found:', !!saveButton);
+        console.log('🔥 Save Button element:', saveButton);
+        console.log('🔥 All buttons on page:', document.querySelectorAll('button'));
+        console.log('🔥 All submit buttons:', document.querySelectorAll('button[type="submit"]'));
+        console.log('🔥 All form buttons:', document.querySelectorAll('button[form="configForm"]'));
         if (saveButton) {
             saveButton.addEventListener('click', function(e) {
                 console.log('🔥🔥🔥 SAVE BUTTON CLICKED! 🔥🔥🔥');
