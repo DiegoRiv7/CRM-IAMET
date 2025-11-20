@@ -15398,8 +15398,30 @@ function clearOportunidad() {
 }
 
 function showNotification(message, type = 'info') {
-    // Simple notification - you can enhance this with a proper notification system
-    alert(message);
+    // Enhanced notification with success/error styling
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        z-index: 10000;
+        max-width: 300px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        ${type === 'success' ? 'background: linear-gradient(135deg, #4ade80, #16a34a);' : 'background: linear-gradient(135deg, #ef4444, #dc2626);'}
+    `;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 3000);
 }
 
 // ====================================================
