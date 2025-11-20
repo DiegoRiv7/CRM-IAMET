@@ -8892,6 +8892,48 @@ const TareasProyectos = {
         console.log('updateTaskMembersUI called with:', tarea);
     }
 };
+
+// Config Design Compatibility Function - Moved here to fix scope issues
+function applyConfigDesignCompatibility() {
+    console.log('🎨 Aplicando compatibilidad con diseño de configuración...');
+    
+    // Ensure config select elements have proper arrows
+    const configSelects = document.querySelectorAll('.config-select');
+    configSelects.forEach(select => {
+        select.style.appearance = 'none';
+        select.style.webkitAppearance = 'none';
+        select.style.mozAppearance = 'none';
+        // The background image is already set in CSS
+    });
+    
+    // Apply effects to the main config container
+    const configCard = document.querySelector('.config-card');
+    if (configCard) {
+        console.log('✅ Config card encontrada y estilos aplicados');
+        configCard.style.display = 'block';
+        configCard.style.opacity = '1';
+    }
+    
+    // Update search functionality class mappings
+    updateConfigSearchResultsClasses();
+    
+    console.log('✅ Compatibilidad de configuración aplicada exitosamente');
+}
+
+function updateConfigSearchResultsClasses() {
+    // Update member search results
+    const memberSearchResults = document.getElementById('member-search-results');
+    if (memberSearchResults) {
+        memberSearchResults.className = 'config-search-results';
+    }
+    
+    // Update opportunity search results  
+    const oportunidadSearchResults = document.getElementById('oportunidad-search-results');
+    if (oportunidadSearchResults) {
+        oportunidadSearchResults.className = 'config-search-results';
+    }
+}
+
 const PROYECTO_NOMBRE = "{{ proyecto.nombre|escapejs }}";
 const CURRENT_USER_ID = {{ user.id }};
 const CURRENT_USER_NAME = "{{ user.first_name }} {{ user.last_name }}".trim() || "{{ user.username }}" || "Usuario";
@@ -14732,9 +14774,33 @@ document.addEventListener('DOMContentLoaded', function() {
         if (configForm) {
             console.log('🔥 Adding event listener to form');
             configForm.addEventListener('submit', function(e) {
-                console.log('🔥 Form submitted!');
+                console.log('🔥🔥🔥 FORM SUBMIT EVENT FIRED! 🔥🔥🔥');
+                console.log('🔥 Event object:', e);
+                console.log('🔥 Preventing default...');
                 e.preventDefault();
-                guardarConfiguracionProyecto();
+                console.log('🔥 Calling guardarConfiguracionProyecto...');
+                try {
+                    guardarConfiguracionProyecto();
+                } catch (error) {
+                    console.error('🔥 ERROR calling guardarConfiguracionProyecto:', error);
+                }
+            });
+        }
+        
+        // Also add listener to the save button directly
+        const saveButton = document.querySelector('button[form="configForm"][type="submit"]');
+        console.log('🔥 Save Button Found:', !!saveButton);
+        if (saveButton) {
+            saveButton.addEventListener('click', function(e) {
+                console.log('🔥🔥🔥 SAVE BUTTON CLICKED! 🔥🔥🔥');
+                console.log('🔥 Button event:', e);
+                e.preventDefault();
+                console.log('🔥 Calling guardarConfiguracionProyecto from button...');
+                try {
+                    guardarConfiguracionProyecto();
+                } catch (error) {
+                    console.error('🔥 ERROR from button:', error);
+                }
             });
         }
         
@@ -15011,47 +15077,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 console.log('🚀🚀🚀 CONFIGURATION SCRIPT LOADED - START OF FUNCTIONS');
 
-// Config Design Compatibility Function
-function applyConfigDesignCompatibility() {
-    console.log('🎨 Aplicando compatibilidad con diseño de configuración...');
-    
-    // Ensure config select elements have proper arrows
-    const configSelects = document.querySelectorAll('.config-select');
-    configSelects.forEach(select => {
-        select.style.appearance = 'none';
-        select.style.webkitAppearance = 'none';
-        select.style.mozAppearance = 'none';
-        // The background image is already set in CSS
-    });
-    
-    // Apply effects to the main config container
-    const configCard = document.querySelector('.config-card');
-    if (configCard) {
-        console.log('✅ Config card encontrada y estilos aplicados');
-        configCard.style.display = 'block';
-        configCard.style.opacity = '1';
-    }
-    
-    // Update search functionality class mappings
-    updateConfigSearchResultsClasses();
-    
-    console.log('✅ Compatibilidad de configuración aplicada exitosamente');
-}
-
-function updateConfigSearchResultsClasses() {
-    // Update member search results
-    const memberSearchResults = document.getElementById('member-search-results');
-    if (memberSearchResults) {
-        memberSearchResults.className = 'config-search-results';
-    }
-    
-    // Update opportunity search results  
-    const oportunidadSearchResults = document.getElementById('oportunidad-search-results');
-    if (oportunidadSearchResults) {
-        oportunidadSearchResults.className = 'config-search-results';
-    }
-}
-
 // Function to update team members list in the new design
 function updateTeamMembersList() {
     const teamList = document.getElementById('team-members-list');
@@ -15106,14 +15131,26 @@ function updateOpportunityDisplay() {
 
 // Configuration form functions
 function guardarConfiguracionProyecto() {
+    console.log('📤📤📤 guardarConfiguracionProyecto INICIADO 📤📤📤');
+    
     const form = document.getElementById('configForm');
+    console.log('📤 Form element:', form);
+    
+    if (!form) {
+        console.error('📤 ERROR: Form not found!');
+        return;
+    }
+    
     const formData = new FormData(form);
+    console.log('📤 FormData created:', formData);
     
     // Convert FormData to JSON object
     const data = {};
     for (let [key, value] of formData.entries()) {
+        console.log(`📤 Form field: ${key} = ${value}`);
         data[key] = value;
     }
+    console.log('📤 Data object created:', data);
     
     // Add selected opportunity ID
     const selectedOportunidadId = document.getElementById('oportunidad-selected')?.value;
@@ -15130,6 +15167,8 @@ function guardarConfiguracionProyecto() {
     data['miembros_ids'] = selectedMembers;
     
     console.log('📤 Datos a enviar:', data);
+    console.log('📤 URL de envío:', `/app/api/proyecto/{{ proyecto.id }}/configuracion/`);
+    console.log('📤 Iniciando fetch request...');
     
     fetch(`/app/api/proyecto/{{ proyecto.id }}/configuracion/`, {
         method: 'PUT',
