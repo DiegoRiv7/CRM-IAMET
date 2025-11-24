@@ -9059,6 +9059,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.log('✅ Config card activated');
                     }
                     
+                    // Initialize member search when configuration tab opens
+                    console.log('🔍 Inicializando búsqueda de miembros desde tab configuración...');
+                    if (typeof setupMemberSearch === 'function') {
+                        setupMemberSearch();
+                    }
+                    
                     console.log('✨ Configuration design activated');
                 }, 100);
             } else {
@@ -15313,26 +15319,36 @@ function setupMemberSearch() {
     const searchInput = document.getElementById('member-search');
     const resultsContainer = document.getElementById('member-search-results');
     
+    console.log('🔍 searchInput encontrado:', !!searchInput);
+    console.log('🔍 resultsContainer encontrado:', !!resultsContainer);
+    
     if (!searchInput || !resultsContainer) {
         console.error('❌ No se encontraron elementos de búsqueda de miembros');
+        console.log('❌ searchInput:', searchInput);
+        console.log('❌ resultsContainer:', resultsContainer);
         return;
     }
     
     let searchTimeout;
     
+    console.log('✅ Configurando eventos del input de búsqueda...');
+    
     // Configurar input de búsqueda
     searchInput.addEventListener('input', function() {
         clearTimeout(searchTimeout);
         const query = this.value.trim();
+        console.log('🔍 Input evento disparado, query:', query);
         
         if (query.length === 0) {
             // Si no hay query, mostrar todos los usuarios
             searchTimeout = setTimeout(() => {
+                console.log('⏱️ Cargando todos los usuarios (input vacío)');
                 cargarTodosLosUsuariosConfig();
             }, 200);
         } else if (query.length >= 2) {
             // Si hay 2 o más caracteres, buscar
             searchTimeout = setTimeout(() => {
+                console.log('🔍 Buscando usuarios con query:', query);
                 buscarUsuariosConfig(query);
             }, 300);
         } else {
@@ -15342,7 +15358,18 @@ function setupMemberSearch() {
     
     // Mostrar todos los usuarios al enfocar (como en el sistema original)
     searchInput.addEventListener('focus', function() {
+        console.log('🎯 Input enfocado');
         if (this.value.trim().length === 0) {
+            console.log('⏱️ Cargando todos los usuarios (focus)');
+            cargarTodosLosUsuariosConfig();
+        }
+    });
+    
+    // También al hacer click
+    searchInput.addEventListener('click', function() {
+        console.log('🖱️ Input clickeado');
+        if (this.value.trim().length === 0) {
+            console.log('⏱️ Cargando todos los usuarios (click)');
             cargarTodosLosUsuariosConfig();
         }
     });
@@ -15394,12 +15421,17 @@ async function cargarTodosLosUsuariosConfig() {
 }
 
 function mostrarResultadosUsuariosConfig(usuarios) {
+    console.log('📋 Mostrando resultados de usuarios:', usuarios);
     const resultsContainer = document.getElementById('member-search-results');
-    if (!resultsContainer) return;
+    if (!resultsContainer) {
+        console.error('❌ No se encontró el contenedor de resultados');
+        return;
+    }
     
     resultsContainer.innerHTML = '';
     
     if (usuarios.length === 0) {
+        console.log('⚠️ No hay usuarios para mostrar');
         resultsContainer.innerHTML = '<div class="config-search-item">No hay usuarios disponibles</div>';
         resultsContainer.classList.add('show');
         return;
