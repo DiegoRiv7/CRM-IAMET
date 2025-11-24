@@ -1554,19 +1554,25 @@ def api_configuracion_proyecto(request, proyecto_id):
     API para actualizar la configuración completa de un proyecto
     """
     print(f"🔍 api_configuracion_proyecto - Usuario: {request.user.username}, Proyecto ID: {proyecto_id}")
+    print(f"🔍 Método de request: {request.method}")
+    print(f"🔍 Content-Type: {request.content_type}")
+    print(f"🔍 Request body: {request.body}")
     
     if request.method != 'PUT':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
     
     try:
         proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+        print(f"🔍 Proyecto encontrado: {proyecto.nombre}")
         
         # Verificar permisos - solo el creador puede modificar la configuración
         if proyecto.creado_por != request.user:
+            print(f"❌ Sin permisos: proyecto creado por {proyecto.creado_por}, usuario actual {request.user}")
             return JsonResponse({'error': 'Sin permisos para modificar este proyecto'}, status=403)
         
         import json
         data = json.loads(request.body)
+        print(f"🔍 Datos recibidos: {data}")
         
         # Actualizar información básica
         if 'nombre' in data:
@@ -1611,13 +1617,18 @@ def api_configuracion_proyecto(request, proyecto_id):
                     usuario = User.objects.get(id=miembro_id)
                     proyecto.miembros.add(usuario)
                     
-                    # Enviar notificación si es un miembro nuevo
-                    notificar_miembro_agregado_proyecto(
-                        usuario_agregado=usuario,
-                        proyecto_nombre=proyecto.nombre,
-                        proyecto_id=proyecto.id,
-                        usuario_que_agrega=request.user
-                    )
+                    # Enviar notificación si es un miembro nuevo (con try/catch para evitar errores)
+                    try:
+                        notificar_miembro_agregado_proyecto(
+                            usuario_agregado=usuario,
+                            proyecto_nombre=proyecto.nombre,
+                            proyecto_id=proyecto.id,
+                            usuario_que_agrega=request.user
+                        )
+                    except Exception as notif_error:
+                        print(f"⚠️ Error enviando notificación: {notif_error}")
+                        # Continuar sin fallar el guardado por error de notificación
+                        
                 except User.DoesNotExist:
                     continue
         
@@ -1657,11 +1668,14 @@ def api_configuracion_proyecto(request, proyecto_id):
             }
         })
         
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        print(f"❌ Error de JSON: {e}")
         return JsonResponse({'error': 'Datos JSON inválidos'}, status=400)
     except Exception as e:
+        import traceback
         print(f"❌ Error actualizando configuración: {e}")
-        return JsonResponse({'error': 'Error interno del servidor'}, status=500)
+        print(f"❌ Traceback completo: {traceback.format_exc()}")
+        return JsonResponse({'error': f'Error interno del servidor: {str(e)}'}, status=500)
 
 
 @login_required
