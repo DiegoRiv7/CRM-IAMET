@@ -5548,22 +5548,23 @@
         background: rgba(230, 20, 30, 0.7) !important;
     }
 
-    /* Search results styling - Positioned to the right but closer */
+    /* Search results styling - Positioned below but within the container */
     .config-search-results {
         position: absolute;
-        top: 0;
-        left: calc(100% + 8px); /* Justo al lado del input con 8px de separación */
+        top: 100%;
+        left: 0;
+        right: 0;
         background: rgba(28, 28, 30, 0.95) !important;
         backdrop-filter: blur(30px) !important;
         -webkit-backdrop-filter: blur(30px) !important;
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
         border-radius: 12px !important;
-        max-height: 240px !important; /* Altura para 4 usuarios */
-        width: 260px !important; /* Ancho fijo más compacto */
+        margin-top: 4px !important;
+        max-height: 200px !important; /* Altura controlada */
         overflow-y: auto !important;
         overflow-x: hidden !important;
-        z-index: 1000 !important;
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3) !important;
+        z-index: 1001 !important; /* Mayor z-index para asegurar que esté encima */
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important;
         display: none;
         box-sizing: border-box !important;
     }
