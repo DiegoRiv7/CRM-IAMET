@@ -1592,16 +1592,8 @@ def api_configuracion_proyecto(request, proyecto_id):
             if data['privacidad'] in ['publico', 'privado']:
                 proyecto.privacidad = data['privacidad']
         
-        # Actualizar responsable
-        if 'responsable_id' in data:
-            responsable_id = data['responsable_id']
-            if responsable_id:
-                try:
-                    from django.contrib.auth.models import User
-                    nuevo_responsable = User.objects.get(id=responsable_id)
-                    proyecto.responsable = nuevo_responsable
-                except User.DoesNotExist:
-                    return JsonResponse({'error': 'Responsable no encontrado'}, status=400)
+        # El campo responsable no existe en el modelo Proyecto
+        # Se usa creado_por como responsable del proyecto
         
         # Actualizar miembros
         if 'miembros_ids' in data:
@@ -1632,17 +1624,8 @@ def api_configuracion_proyecto(request, proyecto_id):
                 except User.DoesNotExist:
                     continue
         
-        # Actualizar oportunidad vinculada
-        if 'oportunidad_vinculada_id' in data:
-            oportunidad_id = data['oportunidad_vinculada_id']
-            if oportunidad_id:
-                try:
-                    oportunidad = TodoItem.objects.get(id=oportunidad_id)
-                    proyecto.oportunidad_vinculada = oportunidad
-                except TodoItem.DoesNotExist:
-                    return JsonResponse({'error': 'Oportunidad no encontrada'}, status=400)
-            else:
-                proyecto.oportunidad_vinculada = None
+        # El modelo Proyecto no tiene relación directa con TodoItem (oportunidades)
+        # Esta funcionalidad requiere agregar el campo al modelo si se desea
         
         # Guardar cambios
         proyecto.save()
@@ -1662,9 +1645,9 @@ def api_configuracion_proyecto(request, proyecto_id):
                 'descripcion': proyecto.descripcion,
                 'tipo': proyecto.tipo,
                 'privacidad': proyecto.privacidad,
-                'responsable': proyecto.responsable.get_full_name() or proyecto.responsable.username if proyecto.responsable else None,
+                'creado_por': proyecto.creado_por.get_full_name() or proyecto.creado_por.username,
                 'miembros_count': proyecto.miembros.count(),
-                'oportunidad_vinculada': proyecto.oportunidad_vinculada.oportunidad if proyecto.oportunidad_vinculada else None
+                'miembros': list(proyecto.miembros.values_list('id', flat=True))
             }
         })
         
