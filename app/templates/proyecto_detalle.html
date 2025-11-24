@@ -15675,7 +15675,7 @@ function mostrarResultadosOportunidadesConfig(oportunidades) {
     oportunidades.forEach(oportunidad => {
         const item = document.createElement('div');
         item.className = 'config-search-item';
-        item.onclick = () => seleccionarOportunidadConfig(oportunidad);
+        item.onclick = () => selectOportunidad(oportunidad);
         
         // Crear avatar con iniciales del cliente o icono de oportunidad
         const iniciales = oportunidad.cliente__nombre_empresa 
