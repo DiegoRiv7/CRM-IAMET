@@ -5560,15 +5560,37 @@
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
         border-radius: 12px !important;
         margin-top: 8px !important;
-        max-height: 200px !important;
+        max-height: 185px !important; /* Altura para exactamente 3 usuarios (3 x ~61px) */
         overflow-y: auto !important;
+        overflow-x: hidden !important;
         z-index: 1000 !important;
         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3) !important;
         display: none;
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
 
     .config-search-results.show {
         display: block !important;
+    }
+    
+    /* Personalizar scrollbar del dropdown */
+    .config-search-results::-webkit-scrollbar {
+        width: 6px !important;
+    }
+    
+    .config-search-results::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-radius: 3px !important;
+    }
+    
+    .config-search-results::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2) !important;
+        border-radius: 3px !important;
+    }
+    
+    .config-search-results::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3) !important;
     }
     
     /* Estilos para elementos de usuario en búsqueda de configuración */
@@ -5580,6 +5602,9 @@
         cursor: pointer !important;
         transition: background-color 0.2s ease !important;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        min-height: 60px !important; /* Altura fija para consistencia */
+        max-height: 60px !important;
+        box-sizing: border-box !important;
     }
     
     .config-search-item:hover {
@@ -5591,8 +5616,8 @@
     }
     
     .config-user-avatar {
-        width: 32px !important;
-        height: 32px !important;
+        width: 36px !important;
+        height: 36px !important;
         border-radius: 50% !important;
         display: flex !important;
         align-items: center !important;
@@ -5606,26 +5631,36 @@
     .config-user-info {
         flex: 1 !important;
         min-width: 0 !important;
+        overflow: hidden !important;
     }
     
     .config-user-name {
-        font-size: 0.9rem !important;
+        font-size: 0.875rem !important;
         font-weight: 600 !important;
         color: var(--apple-label) !important;
-        margin-bottom: 0.25rem !important;
+        margin-bottom: 0.15rem !important;
+        line-height: 1.2 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
     }
     
     .config-user-email {
-        font-size: 0.8rem !important;
+        font-size: 0.75rem !important;
         color: var(--apple-label-secondary) !important;
-        margin-bottom: 0.25rem !important;
+        margin-bottom: 0.1rem !important;
+        line-height: 1.2 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
     }
     
     .config-user-role {
-        font-size: 0.75rem !important;
+        font-size: 0.7rem !important;
         color: var(--apple-label-tertiary) !important;
         text-transform: uppercase !important;
-        letter-spacing: 0.5px !important;
+        letter-spacing: 0.3px !important;
+        line-height: 1.1 !important;
     }
 
     /* Responsiveness */
