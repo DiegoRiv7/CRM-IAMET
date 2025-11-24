@@ -5570,6 +5570,63 @@
     .config-search-results.show {
         display: block !important;
     }
+    
+    /* Estilos para elementos de usuario en búsqueda de configuración */
+    .config-search-item {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.75rem !important;
+        padding: 0.75rem 1rem !important;
+        cursor: pointer !important;
+        transition: background-color 0.2s ease !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
+    
+    .config-search-item:hover {
+        background: rgba(255, 255, 255, 0.08) !important;
+    }
+    
+    .config-search-item:last-child {
+        border-bottom: none !important;
+    }
+    
+    .config-user-avatar {
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        color: white !important;
+        font-size: 0.85rem !important;
+        font-weight: 600 !important;
+        flex-shrink: 0 !important;
+    }
+    
+    .config-user-info {
+        flex: 1 !important;
+        min-width: 0 !important;
+    }
+    
+    .config-user-name {
+        font-size: 0.9rem !important;
+        font-weight: 600 !important;
+        color: var(--apple-label) !important;
+        margin-bottom: 0.25rem !important;
+    }
+    
+    .config-user-email {
+        font-size: 0.8rem !important;
+        color: var(--apple-label-secondary) !important;
+        margin-bottom: 0.25rem !important;
+    }
+    
+    .config-user-role {
+        font-size: 0.75rem !important;
+        color: var(--apple-label-tertiary) !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+    }
 
     /* Responsiveness */
     @media (max-width: 1200px) {
@@ -6130,7 +6187,7 @@
                                 </div>
                                 
                                 <!-- Buscar miembros -->
-                                <div style="margin-top: 20px;">
+                                <div style="margin-top: 20px; position: relative;">
                                     <input type="text" id="member-search" placeholder="Buscar usuarios para agregar..." 
                                            class="config-input" style="margin-bottom: 10px;">
                                     <div id="member-search-results" class="config-search-results"></div>
@@ -15194,13 +15251,16 @@ function guardarConfiguracionProyecto() {
         data['oportunidad_vinculada_id'] = selectedOportunidadId;
     }
     
-    // Add selected members
+    // Add selected members from configuration
     const selectedMembers = [];
-    document.querySelectorAll('.member-tag').forEach(tag => {
-        const userId = tag.dataset.userId;
-        if (userId) selectedMembers.push(userId);
+    document.querySelectorAll('#team-members-list [data-user-id]').forEach(memberElement => {
+        const userId = memberElement.dataset.userId;
+        if (userId && userId !== '') {
+            selectedMembers.push(parseInt(userId));
+        }
     });
     data['miembros_ids'] = selectedMembers;
+    console.log('📤 Miembros seleccionados:', selectedMembers);
     
     console.log('📤 Datos a enviar:', data);
     console.log('📤 URL de envío:', `/app/api/proyecto/{{ proyecto.id }}/configuracion/`);
@@ -15249,53 +15309,220 @@ function guardarConfiguracionProyecto() {
 }
 
 function setupMemberSearch() {
+    console.log('🔍 Configurando búsqueda de miembros...');
     const searchInput = document.getElementById('member-search');
     const resultsContainer = document.getElementById('member-search-results');
     
-    if (!searchInput || !resultsContainer) return;
+    if (!searchInput || !resultsContainer) {
+        console.error('❌ No se encontraron elementos de búsqueda de miembros');
+        return;
+    }
     
     let searchTimeout;
     
+    // Configurar input de búsqueda
     searchInput.addEventListener('input', function() {
         clearTimeout(searchTimeout);
         const query = this.value.trim();
         
-        if (query.length < 2) {
+        if (query.length === 0) {
+            // Si no hay query, mostrar todos los usuarios
+            searchTimeout = setTimeout(() => {
+                cargarTodosLosUsuariosConfig();
+            }, 200);
+        } else if (query.length >= 2) {
+            // Si hay 2 o más caracteres, buscar
+            searchTimeout = setTimeout(() => {
+                buscarUsuariosConfig(query);
+            }, 300);
+        } else {
             resultsContainer.classList.remove('show');
-            return;
         }
-        
-        searchTimeout = setTimeout(() => {
-            fetch(`/app/api/buscar-usuarios/?q=${encodeURIComponent(query)}`)
-            .then(response => response.json())
-            .then(users => {
-                resultsContainer.innerHTML = '';
-                
-                if (users.length === 0) {
-                    resultsContainer.innerHTML = '<div class="search-result-item">No se encontraron usuarios</div>';
-                } else {
-                    users.forEach(user => {
-                        // Check if user is already added
-                        const existingMember = document.querySelector(`[data-user-id="${user.id}"]`);
-                        if (existingMember) return;
-                        
-                        const item = document.createElement('div');
-                        item.className = 'search-result-item';
-                        item.textContent = user.full_name || user.username;
-                        item.addEventListener('click', () => addMember(user));
-                        resultsContainer.appendChild(item);
-                    });
-                }
-                
-                resultsContainer.classList.add('show');
-            })
-            .catch(error => {
-                console.error('Error searching users:', error);
-                resultsContainer.innerHTML = '<div class="search-result-item">Error en la búsqueda</div>';
-                resultsContainer.classList.add('show');
-            });
-        }, 300);
     });
+    
+    // Mostrar todos los usuarios al enfocar (como en el sistema original)
+    searchInput.addEventListener('focus', function() {
+        if (this.value.trim().length === 0) {
+            cargarTodosLosUsuariosConfig();
+        }
+    });
+    
+    // Ocultar al perder foco
+    searchInput.addEventListener('blur', function() {
+        setTimeout(() => {
+            if (!resultsContainer.matches(':hover')) {
+                resultsContainer.classList.remove('show');
+            }
+        }, 150);
+    });
+    
+    // Cerrar dropdown al hacer click fuera
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
+            resultsContainer.classList.remove('show');
+        }
+    });
+}
+
+// Funciones auxiliares para búsqueda de usuarios en configuración
+async function buscarUsuariosConfig(query) {
+    try {
+        const response = await fetch(`/app/api/buscar-usuarios/?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarResultadosUsuariosConfig(data.usuarios);
+        } else {
+            console.error('Error en la búsqueda:', data.error);
+        }
+    } catch (error) {
+        console.error('Error de red:', error);
+    }
+}
+
+async function cargarTodosLosUsuariosConfig() {
+    try {
+        const response = await fetch('/app/api/buscar-usuarios/');
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarResultadosUsuariosConfig(data.usuarios);
+        }
+    } catch (error) {
+        console.error('Error cargando usuarios:', error);
+    }
+}
+
+function mostrarResultadosUsuariosConfig(usuarios) {
+    const resultsContainer = document.getElementById('member-search-results');
+    if (!resultsContainer) return;
+    
+    resultsContainer.innerHTML = '';
+    
+    if (usuarios.length === 0) {
+        resultsContainer.innerHTML = '<div class="config-search-item">No hay usuarios disponibles</div>';
+        resultsContainer.classList.add('show');
+        return;
+    }
+    
+    // Filtrar usuarios que ya son miembros
+    const currentMembers = Array.from(document.querySelectorAll('#team-members-list [data-user-id]'))
+        .map(el => parseInt(el.dataset.userId));
+    
+    const usuariosDisponibles = usuarios.filter(usuario => !currentMembers.includes(usuario.id));
+    
+    usuariosDisponibles.forEach(usuario => {
+        const item = document.createElement('div');
+        item.className = 'config-search-item';
+        item.onclick = () => agregarMiembroConfig(usuario);
+        
+        // Generar color de avatar consistente
+        const avatarColor = getAvatarColorConfig(usuario.id - 1);
+        const avatarContent = usuario.avatar_url ? 
+            `<img src="${usuario.avatar_url}" alt="${usuario.nombre}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 
+            usuario.iniciales;
+        
+        item.innerHTML = `
+            <div class="config-user-avatar" style="background-color: ${avatarColor};">
+                ${avatarContent}
+            </div>
+            <div class="config-user-info">
+                <div class="config-user-name">${usuario.nombre}</div>
+                <div class="config-user-email">${usuario.email || usuario.username}</div>
+                <div class="config-user-role">${usuario.rol}</div>
+            </div>
+        `;
+        
+        resultsContainer.appendChild(item);
+    });
+    
+    resultsContainer.classList.add('show');
+}
+
+// Función para obtener colores consistentes de avatares (igual que en el sistema original)
+function getAvatarColorConfig(index) {
+    const colors = [
+        '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', 
+        '#F7DC6F', '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA',
+        '#FF8A65', '#64B5F6', '#81C784', '#FFB74D', '#F06292'
+    ];
+    return colors[index % colors.length];
+}
+
+function agregarMiembroConfig(usuario) {
+    console.log('👥 Agregando miembro:', usuario);
+    
+    // Ocultar resultados de búsqueda
+    const resultsContainer = document.getElementById('member-search-results');
+    if (resultsContainer) {
+        resultsContainer.classList.remove('show');
+    }
+    
+    // Limpiar input de búsqueda
+    const searchInput = document.getElementById('member-search');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    
+    // Agregar el miembro a la lista visual
+    const teamMembersList = document.getElementById('team-members-list');
+    if (!teamMembersList) return;
+    
+    // Verificar si ya existe
+    if (document.querySelector(`[data-user-id="${usuario.id}"]`)) {
+        console.warn('Usuario ya existe en la lista');
+        return;
+    }
+    
+    // Remover mensaje de "no hay miembros" si existe
+    const noMembersMsg = teamMembersList.querySelector('span[style*="color: #bbbbbb"]');
+    if (noMembersMsg) {
+        noMembersMsg.parentElement.remove();
+    }
+    
+    // Crear elemento del miembro
+    const memberElement = document.createElement('div');
+    memberElement.className = 'config-team-item';
+    memberElement.setAttribute('data-user-id', usuario.id);
+    
+    memberElement.innerHTML = `
+        <span>${usuario.nombre}</span>
+        <span class="config-danger" onclick="removerMiembroConfig(${usuario.id})">Remover</span>
+    `;
+    
+    teamMembersList.appendChild(memberElement);
+}
+
+function removerMiembroConfig(userId) {
+    console.log('👥 Removiendo miembro:', userId);
+    
+    // Remover del DOM
+    const memberElement = document.querySelector(`#team-members-list [data-user-id="${userId}"]`);
+    if (memberElement) {
+        memberElement.remove();
+    }
+    
+    // Verificar si no hay miembros y mostrar mensaje
+    const teamMembersList = document.getElementById('team-members-list');
+    if (teamMembersList && teamMembersList.children.length === 0) {
+        const noMembersElement = document.createElement('div');
+        noMembersElement.className = 'config-team-item';
+        noMembersElement.innerHTML = `
+            <span style="color: #bbbbbb; font-style: italic;">No hay miembros asignados</span>
+            <span></span>
+        `;
+        teamMembersList.appendChild(noMembersElement);
+    }
+    
+    // Actualizar lista de búsqueda si está visible
+    const resultsContainer = document.getElementById('member-search-results');
+    if (resultsContainer && resultsContainer.classList.contains('show')) {
+        // Recargar la lista para mostrar al usuario removido
+        const searchInput = document.getElementById('member-search');
+        if (searchInput && searchInput.value.trim().length === 0) {
+            cargarTodosLosUsuariosConfig();
+        }
+    }
 }
 
 function addMember(user) {
