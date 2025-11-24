@@ -5548,20 +5548,18 @@
         background: rgba(230, 20, 30, 0.7) !important;
     }
 
-    /* Search results styling - Positioned to the right */
+    /* Search results styling - Positioned to the right but closer */
     .config-search-results {
         position: absolute;
         top: 0;
-        left: 100%;
+        left: calc(100% + 8px); /* Justo al lado del input con 8px de separación */
         background: rgba(28, 28, 30, 0.95) !important;
         backdrop-filter: blur(30px) !important;
         -webkit-backdrop-filter: blur(30px) !important;
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
         border-radius: 12px !important;
-        margin-left: 12px !important;
         max-height: 240px !important; /* Altura para 4 usuarios */
-        min-width: 280px !important; /* Ancho mínimo para mostrar información completa */
-        max-width: 320px !important; /* Ancho máximo */
+        width: 260px !important; /* Ancho fijo más compacto */
         overflow-y: auto !important;
         overflow-x: hidden !important;
         z-index: 1000 !important;
