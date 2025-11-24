@@ -6249,8 +6249,8 @@
                                 </div>
                                 
                                 <!-- Buscar oportunidades -->
-                                <div style="margin-top: 20px;">
-                                    <input type="text" id="oportunidad-search" placeholder="Buscar oportunidad para ligar..." 
+                                <div style="margin-top: 20px; position: relative;">
+                                    <input type="text" id="oportunidad-search" placeholder="Buscar oportunidades" 
                                            class="config-input" style="margin-bottom: 10px;">
                                     <input type="hidden" id="oportunidad-selected" name="oportunidad_vinculada_id" value="{{ proyecto.oportunidad_ligada.id|default:'' }}">
                                     <div id="oportunidad-search-results" class="config-search-results"></div>
@@ -15593,6 +15593,146 @@ function removerMiembroConfig(userId) {
     }
 }
 
+// ===============================================
+// FUNCIONES PARA BÚSQUEDA DE OPORTUNIDADES
+// ===============================================
+
+async function buscarOportunidadesConfig(query) {
+    try {
+        const response = await fetch(`/app/api/buscar-oportunidades-proyecto/?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarResultadosOportunidadesConfig(data.oportunidades);
+        } else {
+            console.error('Error en la búsqueda de oportunidades:', data.error);
+        }
+    } catch (error) {
+        console.error('Error de red buscando oportunidades:', error);
+    }
+}
+
+async function cargarUltimasOportunidades() {
+    try {
+        const response = await fetch('/app/api/buscar-oportunidades-proyecto/');
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarResultadosOportunidadesConfig(data.oportunidades);
+        }
+    } catch (error) {
+        console.error('Error cargando últimas oportunidades:', error);
+    }
+}
+
+function mostrarResultadosOportunidadesConfig(oportunidades) {
+    console.log('📋 Mostrando resultados de oportunidades:', oportunidades);
+    const resultsContainer = document.getElementById('oportunidad-search-results');
+    if (!resultsContainer) {
+        console.error('❌ No se encontró el contenedor de resultados de oportunidades');
+        return;
+    }
+    
+    resultsContainer.innerHTML = '';
+    
+    if (oportunidades.length === 0) {
+        console.log('⚠️ No hay oportunidades para mostrar');
+        resultsContainer.innerHTML = '<div class="config-search-item">No hay oportunidades disponibles</div>';
+        resultsContainer.classList.add('show');
+        return;
+    }
+    
+    oportunidades.forEach(oportunidad => {
+        const item = document.createElement('div');
+        item.className = 'config-search-item';
+        item.onclick = () => seleccionarOportunidadConfig(oportunidad);
+        
+        // Crear avatar con iniciales del cliente o icono de oportunidad
+        const iniciales = oportunidad.cliente__nombre_empresa 
+            ? oportunidad.cliente__nombre_empresa.substring(0, 2).toUpperCase() 
+            : 'OP';
+        const avatarColor = getOportunidadColor(oportunidad.id);
+        
+        item.innerHTML = `
+            <div class="config-user-avatar" style="background-color: ${avatarColor};">
+                ${iniciales}
+            </div>
+            <div class="config-user-info">
+                <div class="config-user-name">${oportunidad.titulo}</div>
+                <div class="config-user-email">${oportunidad.cliente__nombre_empresa}</div>
+                <div class="config-user-role">$${oportunidad.monto.toLocaleString()} • ${oportunidad.probabilidad}% • ${oportunidad.usuario}</div>
+            </div>
+        `;
+        
+        resultsContainer.appendChild(item);
+    });
+    
+    resultsContainer.classList.add('show');
+}
+
+function seleccionarOportunidadConfig(oportunidad) {
+    console.log('🎯 Seleccionando oportunidad:', oportunidad);
+    
+    // Ocultar resultados de búsqueda
+    const resultsContainer = document.getElementById('oportunidad-search-results');
+    if (resultsContainer) {
+        resultsContainer.classList.remove('show');
+    }
+    
+    // Limpiar input de búsqueda
+    const searchInput = document.getElementById('oportunidad-search');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    
+    // Actualizar el input hidden
+    const hiddenInput = document.getElementById('oportunidad-selected');
+    if (hiddenInput) {
+        hiddenInput.value = oportunidad.id;
+    }
+    
+    // Actualizar la visualización de oportunidades ligadas
+    const linkedOpportunities = document.getElementById('linked-opportunities');
+    if (linkedOpportunities) {
+        linkedOpportunities.innerHTML = `
+            <div class="config-opp-item">
+                <span>${oportunidad.titulo} (${oportunidad.cliente__nombre_empresa})</span>
+                <span class="config-danger" onclick="clearOportunidad()">Desligar</span>
+            </div>
+        `;
+    }
+}
+
+function clearOportunidad() {
+    console.log('🗑️ Limpiando oportunidad ligada');
+    
+    // Limpiar el input hidden
+    const hiddenInput = document.getElementById('oportunidad-selected');
+    if (hiddenInput) {
+        hiddenInput.value = '';
+    }
+    
+    // Restaurar mensaje de "no hay oportunidades ligadas"
+    const linkedOpportunities = document.getElementById('linked-opportunities');
+    if (linkedOpportunities) {
+        linkedOpportunities.innerHTML = `
+            <div class="config-opp-item">
+                <span style="color: #bbbbbb; font-style: italic;">No hay oportunidades ligadas</span>
+                <span></span>
+            </div>
+        `;
+    }
+}
+
+function getOportunidadColor(id) {
+    const colors = [
+        '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', 
+        '#F7DC6F', '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA',
+        '#FF8A65', '#64B5F6', '#81C784', '#FFB74D', '#F06292'
+    ];
+    return colors[(id - 1) % colors.length];
+}
+
 function addMember(user) {
     const currentMembers = document.querySelector('.current-members');
     const noMembers = currentMembers.querySelector('.no-members');
@@ -15630,53 +15770,78 @@ function removeMember(userId) {
 }
 
 function setupOportunidadSearchForm() {
+    console.log('🔍 Configurando búsqueda de oportunidades...');
     const searchInput = document.getElementById('oportunidad-search');
     const resultsContainer = document.getElementById('oportunidad-search-results');
-    const selectedContainer = document.getElementById('selected-oportunidad');
     const hiddenInput = document.getElementById('oportunidad-selected');
     
-    if (!searchInput || !resultsContainer) return;
+    console.log('🔍 searchInput oportunidades encontrado:', !!searchInput);
+    console.log('🔍 resultsContainer oportunidades encontrado:', !!resultsContainer);
+    
+    if (!searchInput || !resultsContainer) {
+        console.error('❌ No se encontraron elementos de búsqueda de oportunidades');
+        return;
+    }
     
     let searchTimeout;
     
+    console.log('✅ Configurando eventos del input de búsqueda de oportunidades...');
+    
+    // Configurar input de búsqueda
     searchInput.addEventListener('input', function() {
         clearTimeout(searchTimeout);
         const query = this.value.trim();
+        console.log('🔍 Input oportunidades evento disparado, query:', query);
         
-        if (query.length < 2) {
+        if (query.length === 0) {
+            // Si no hay query, mostrar las últimas 5 oportunidades
+            searchTimeout = setTimeout(() => {
+                console.log('⏱️ Cargando últimas 5 oportunidades');
+                cargarUltimasOportunidades();
+            }, 200);
+        } else if (query.length >= 2) {
+            // Si hay 2 o más caracteres, buscar
+            searchTimeout = setTimeout(() => {
+                console.log('🔍 Buscando oportunidades con query:', query);
+                buscarOportunidadesConfig(query);
+            }, 300);
+        } else {
             resultsContainer.classList.remove('show');
-            return;
         }
-        
-        searchTimeout = setTimeout(() => {
-            fetch(`/app/api/buscar-oportunidades-proyecto/?q=${encodeURIComponent(query)}`)
-            .then(response => response.json())
-            .then(opportunities => {
-                resultsContainer.innerHTML = '';
-                
-                if (opportunities.length === 0) {
-                    resultsContainer.innerHTML = '<div class="search-result-item">No se encontraron oportunidades</div>';
-                } else {
-                    opportunities.forEach(opp => {
-                        const item = document.createElement('div');
-                        item.className = 'search-result-item';
-                        item.innerHTML = `
-                            <strong>${opp.nombre}</strong><br>
-                            <small>${opp.cliente_nombre || 'Sin cliente'}</small>
-                        `;
-                        item.addEventListener('click', () => selectOportunidad(opp));
-                        resultsContainer.appendChild(item);
-                    });
-                }
-                
-                resultsContainer.classList.add('show');
-            })
-            .catch(error => {
-                console.error('Error searching opportunities:', error);
-                resultsContainer.innerHTML = '<div class="search-result-item">Error en la búsqueda</div>';
-                resultsContainer.classList.add('show');
-            });
-        }, 300);
+    });
+    
+    // Mostrar últimas oportunidades al enfocar
+    searchInput.addEventListener('focus', function() {
+        console.log('🎯 Input oportunidades enfocado');
+        if (this.value.trim().length === 0) {
+            console.log('⏱️ Cargando últimas oportunidades (focus)');
+            cargarUltimasOportunidades();
+        }
+    });
+    
+    // También al hacer click
+    searchInput.addEventListener('click', function() {
+        console.log('🖱️ Input oportunidades clickeado');
+        if (this.value.trim().length === 0) {
+            console.log('⏱️ Cargando últimas oportunidades (click)');
+            cargarUltimasOportunidades();
+        }
+    });
+    
+    // Ocultar al perder foco
+    searchInput.addEventListener('blur', function() {
+        setTimeout(() => {
+            if (!resultsContainer.matches(':hover')) {
+                resultsContainer.classList.remove('show');
+            }
+        }, 150);
+    });
+    
+    // Cerrar dropdown al hacer click fuera
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
+            resultsContainer.classList.remove('show');
+        }
     });
 }
 

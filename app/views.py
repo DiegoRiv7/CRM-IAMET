@@ -1624,8 +1624,20 @@ def api_configuracion_proyecto(request, proyecto_id):
                 except User.DoesNotExist:
                     continue
         
-        # El modelo Proyecto no tiene relación directa con TodoItem (oportunidades)
-        # Esta funcionalidad requiere agregar el campo al modelo si se desea
+        # Actualizar oportunidad ligada
+        if 'oportunidad_vinculada_id' in data:
+            oportunidad_id = data['oportunidad_vinculada_id']
+            if oportunidad_id:
+                try:
+                    oportunidad = TodoItem.objects.get(id=oportunidad_id)
+                    proyecto.oportunidad_ligada = oportunidad
+                    print(f"✅ Oportunidad ligada: {oportunidad.oportunidad}")
+                except TodoItem.DoesNotExist:
+                    print(f"❌ Oportunidad con ID {oportunidad_id} no encontrada")
+                    return JsonResponse({'error': 'Oportunidad no encontrada'}, status=400)
+            else:
+                proyecto.oportunidad_ligada = None
+                print("✅ Oportunidad desligada")
         
         # Guardar cambios
         proyecto.save()
@@ -1647,7 +1659,12 @@ def api_configuracion_proyecto(request, proyecto_id):
                 'privacidad': proyecto.privacidad,
                 'creado_por': proyecto.creado_por.get_full_name() or proyecto.creado_por.username,
                 'miembros_count': proyecto.miembros.count(),
-                'miembros': list(proyecto.miembros.values_list('id', flat=True))
+                'miembros': list(proyecto.miembros.values_list('id', flat=True)),
+                'oportunidad_ligada': {
+                    'id': proyecto.oportunidad_ligada.id,
+                    'titulo': proyecto.oportunidad_ligada.oportunidad,
+                    'cliente': proyecto.oportunidad_ligada.cliente.nombre_empresa if proyecto.oportunidad_ligada.cliente else 'Sin cliente'
+                } if proyecto.oportunidad_ligada else None
             }
         })
         
@@ -1671,26 +1688,33 @@ def api_buscar_oportunidades_proyecto(request):
     
     query = request.GET.get('q', '').strip()
     
-    if not query or len(query) < 2:
-        return JsonResponse({'success': True, 'oportunidades': []})
-    
     try:
-        # Buscar oportunidades por título, cliente o comentarios
-        if is_supervisor(request.user):
-            oportunidades = TodoItem.objects.filter(
-                Q(oportunidad__icontains=query) |
-                Q(cliente__nombre_empresa__icontains=query) |
-                Q(comentarios__icontains=query)
-            ).select_related('cliente')[:10]
+        if not query or len(query) < 2:
+            # Si no hay query, devolver las últimas 5 oportunidades
+            if is_supervisor(request.user):
+                oportunidades = TodoItem.objects.select_related('cliente').order_by('-fecha_creacion')[:5]
+            else:
+                # Usuario regular solo ve sus oportunidades
+                oportunidades = TodoItem.objects.filter(
+                    usuario=request.user
+                ).select_related('cliente').order_by('-fecha_creacion')[:5]
         else:
-            # Usuario regular solo ve sus oportunidades
-            oportunidades = TodoItem.objects.filter(
-                usuario=request.user
-            ).filter(
-                Q(oportunidad__icontains=query) |
-                Q(cliente__nombre_empresa__icontains=query) |
-                Q(comentarios__icontains=query)
-            ).select_related('cliente')[:10]
+            # Buscar oportunidades por título, cliente o comentarios
+            if is_supervisor(request.user):
+                oportunidades = TodoItem.objects.filter(
+                    Q(oportunidad__icontains=query) |
+                    Q(cliente__nombre_empresa__icontains=query) |
+                    Q(comentarios__icontains=query)
+                ).select_related('cliente').order_by('-fecha_creacion')[:10]
+            else:
+                # Usuario regular solo ve sus oportunidades
+                oportunidades = TodoItem.objects.filter(
+                    usuario=request.user
+                ).filter(
+                    Q(oportunidad__icontains=query) |
+                    Q(cliente__nombre_empresa__icontains=query) |
+                    Q(comentarios__icontains=query)
+                ).select_related('cliente').order_by('-fecha_creacion')[:10]
         
         oportunidades_data = []
         for oportunidad in oportunidades:
