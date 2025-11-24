@@ -1625,19 +1625,26 @@ def api_configuracion_proyecto(request, proyecto_id):
                     continue
         
         # Actualizar oportunidad ligada
-        if 'oportunidad_vinculada_id' in data:
-            oportunidad_id = data['oportunidad_vinculada_id']
-            if oportunidad_id:
-                try:
-                    oportunidad = TodoItem.objects.get(id=oportunidad_id)
-                    proyecto.oportunidad_ligada = oportunidad
-                    print(f"✅ Oportunidad ligada: {oportunidad.oportunidad}")
-                except TodoItem.DoesNotExist:
-                    print(f"❌ Oportunidad con ID {oportunidad_id} no encontrada")
-                    return JsonResponse({'error': 'Oportunidad no encontrada'}, status=400)
+        # Manejar oportunidades ligadas
+        if 'oportunidades_ids' in data:
+            oportunidades_ids = data['oportunidades_ids']
+            print(f"🔗 Oportunidades a ligar: {oportunidades_ids}")
+            
+            # Limpiar oportunidades actuales
+            proyecto.oportunidades_ligadas.clear()
+            
+            # Agregar nuevas oportunidades
+            if oportunidades_ids:
+                for oportunidad_id in oportunidades_ids:
+                    try:
+                        oportunidad = TodoItem.objects.get(id=oportunidad_id)
+                        proyecto.oportunidades_ligadas.add(oportunidad)
+                        print(f"✅ Oportunidad ligada: {oportunidad.oportunidad}")
+                    except TodoItem.DoesNotExist:
+                        print(f"❌ Oportunidad con ID {oportunidad_id} no encontrada")
+                        return JsonResponse({'error': f'Oportunidad con ID {oportunidad_id} no encontrada'}, status=400)
             else:
-                proyecto.oportunidad_ligada = None
-                print("✅ Oportunidad desligada")
+                print("✅ Todas las oportunidades desligadas")
         
         # Guardar cambios
         proyecto.save()
@@ -4856,7 +4863,7 @@ def cotizaciones_por_oportunidad_view(request, oportunidad_id):
         # Verificar si la oportunidad está ligada a un proyecto
         try:
             from app.models import Proyecto
-            proyecto_ligado = Proyecto.objects.filter(oportunidad_ligada=oportunidad).first()
+            proyecto_ligado = Proyecto.objects.filter(oportunidades_ligadas=oportunidad).first()
         except:
             proyecto_ligado = None
         

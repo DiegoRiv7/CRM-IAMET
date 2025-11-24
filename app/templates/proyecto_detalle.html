@@ -3964,6 +3964,28 @@
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
     
+    .oportunidad-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        margin-bottom: 0.75rem;
+    }
+    
+    .oportunidad-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+        transform: translateY(-1px);
+        box-shadow: 
+            0 4px 15px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    
     .miembro-info {
         display: flex;
         align-items: center;
@@ -6234,36 +6256,28 @@
                             <div class="config-box">
                                 <h3 style="margin-top: 0; margin-bottom: 20px; font-size: 18px;">Oportunidades Ligadas</h3>
                                 
-                                <div id="linked-opportunities">
-                                    {% if proyecto.oportunidad_ligada %}
-                                        <div class="config-opp-item">
-                                            <span>{{ proyecto.oportunidad_ligada.titulo }}</span>
-                                            <span class="config-danger" onclick="clearOportunidad()">Desligar</span>
+                                <!-- Lista de oportunidades actuales -->
+                                <div id="current-opportunities">
+                                    {% for oportunidad in proyecto.oportunidades_ligadas.all %}
+                                        <div class="oportunidad-item" data-oportunidad-id="{{ oportunidad.id }}">
+                                            <span title="{{ oportunidad.oportunidad }}">
+                                                {% if oportunidad.oportunidad|length > 30 %}
+                                                    {{ oportunidad.oportunidad|truncatechars:30 }}
+                                                {% else %}
+                                                    {{ oportunidad.oportunidad }}
+                                                {% endif %}
+                                            </span>
+                                            <span class="config-danger" onclick="removeOportunidad({{ oportunidad.id }})">Remover</span>
                                         </div>
-                                    {% else %}
-                                        <div class="config-opp-item">
-                                            <span style="color: #bbbbbb; font-style: italic;">No hay oportunidades ligadas</span>
-                                            <span></span>
-                                        </div>
-                                    {% endif %}
+                                    {% empty %}
+                                        <div id="no-opportunities-message" style="color: #bbbbbb; font-style: italic; padding: 10px;">No hay oportunidades ligadas</div>
+                                    {% endfor %}
                                 </div>
                                 
-                                <!-- Buscar oportunidades -->
+                                <!-- Buscar oportunidades - siempre visible -->
                                 <div style="margin-top: 20px; position: relative;">
                                     <input type="text" id="oportunidad-search" placeholder="Buscar oportunidades" 
-                                           class="config-input" style="margin-bottom: 10px; {% if proyecto.oportunidad_ligada %}display: none;{% endif %}">
-                                    
-                                    <!-- Contenedor para oportunidad seleccionada -->
-                                    <div id="selected-oportunidad" style="display: {% if proyecto.oportunidad_ligada %}flex{% else %}none{% endif %}; align-items: center; justify-content: space-between; padding: 12px; background: rgba(48, 209, 88, 0.1); border: 1px solid rgba(48, 209, 88, 0.3); border-radius: 12px; margin-bottom: 10px;">
-                                        <span id="selected-oportunidad-name">
-                                            {% if proyecto.oportunidad_ligada %}
-                                                {{ proyecto.oportunidad_ligada.titulo }} - {{ proyecto.oportunidad_ligada.cliente.nombre_empresa|default:"Sin cliente" }}
-                                            {% endif %}
-                                        </span>
-                                        <button type="button" onclick="clearOportunidad()" style="background: rgba(255, 59, 48, 0.8); border: none; border-radius: 6px; color: white; padding: 4px 8px; cursor: pointer; font-size: 12px;">Quitar</button>
-                                    </div>
-                                    
-                                    <input type="hidden" id="oportunidad-selected" name="oportunidad_vinculada_id" value="{{ proyecto.oportunidad_ligada.id|default:'' }}">
+                                           class="config-input" style="margin-bottom: 10px;">
                                     <div id="oportunidad-search-results" class="config-search-results"></div>
                                 </div>
                             </div>
@@ -15298,11 +15312,16 @@ function guardarConfiguracionProyecto() {
     }
     console.log('📤 Data object created:', data);
     
-    // Add selected opportunity ID
-    const selectedOportunidadId = document.getElementById('oportunidad-selected')?.value;
-    if (selectedOportunidadId) {
-        data['oportunidad_vinculada_id'] = selectedOportunidadId;
-    }
+    // Add selected opportunities IDs
+    const selectedOportunidades = [];
+    document.querySelectorAll('#current-opportunities [data-oportunidad-id]').forEach(oppElement => {
+        const oportunidadId = oppElement.dataset.oportunidadId;
+        if (oportunidadId && oportunidadId !== '') {
+            selectedOportunidades.push(parseInt(oportunidadId));
+        }
+    });
+    data['oportunidades_ids'] = selectedOportunidades;
+    console.log('📤 Oportunidades seleccionadas:', selectedOportunidades);
     
     // Add selected members from configuration
     const selectedMembers = [];
@@ -15857,29 +15876,79 @@ function setupOportunidadSearchForm() {
 }
 
 function selectOportunidad(opp) {
-    const searchInput = document.getElementById('oportunidad-search');
+    console.log('🎯 Agregando oportunidad:', opp);
+    
+    const currentOpportunities = document.getElementById('current-opportunities');
     const resultsContainer = document.getElementById('oportunidad-search-results');
-    const selectedContainer = document.getElementById('selected-oportunidad');
-    const hiddenInput = document.getElementById('oportunidad-selected');
-    const selectedName = document.getElementById('selected-oportunidad-name');
+    const searchInput = document.getElementById('oportunidad-search');
+    const noOpportunitiesMessage = document.getElementById('no-opportunities-message');
     
-    hiddenInput.value = opp.id;
-    selectedName.textContent = `${opp.nombre} - ${opp.cliente_nombre || 'Sin cliente'}`;
+    // Limpiar el ID removiendo espacios no-separables y otros caracteres
+    const cleanId = String(opp.id).replace(/\u00a0/g, '').replace(/\s+/g, '').trim();
     
-    searchInput.style.display = 'none';
-    selectedContainer.style.display = 'flex';
+    // Verificar si ya está agregada
+    if (document.querySelector(`[data-oportunidad-id="${cleanId}"]`)) {
+        console.log('⚠️ Oportunidad ya agregada');
+        resultsContainer.classList.remove('show');
+        searchInput.value = '';
+        return;
+    }
+    
+    // Remover mensaje de "no hay oportunidades"
+    if (noOpportunitiesMessage) {
+        noOpportunitiesMessage.remove();
+    }
+    
+    // Crear elemento de oportunidad
+    const oportunidadItem = document.createElement('div');
+    oportunidadItem.className = 'oportunidad-item';
+    oportunidadItem.setAttribute('data-oportunidad-id', cleanId);
+    
+    // Truncar nombre si es muy largo
+    const nombreTruncado = opp.titulo.length > 30 ? opp.titulo.substring(0, 30) + '...' : opp.titulo;
+    
+    oportunidadItem.innerHTML = `
+        <span title="${opp.titulo}">${nombreTruncado}</span>
+        <span class="config-danger" onclick="removeOportunidad(${cleanId})">Remover</span>
+    `;
+    
+    currentOpportunities.appendChild(oportunidadItem);
+    
+    // Limpiar búsqueda
     resultsContainer.classList.remove('show');
+    searchInput.value = '';
+    
+    // Notificar
+    showNotification(`Oportunidad "${opp.titulo}" agregada al proyecto`, 'success');
 }
 
-function clearOportunidad() {
-    const searchInput = document.getElementById('oportunidad-search');
-    const selectedContainer = document.getElementById('selected-oportunidad');
-    const hiddenInput = document.getElementById('oportunidad-selected');
+function removeOportunidad(oportunidadId) {
+    console.log('🗑️ Removiendo oportunidad:', oportunidadId);
     
-    hiddenInput.value = '';
-    searchInput.value = '';
-    searchInput.style.display = 'block';
-    selectedContainer.style.display = 'none';
+    const oportunidadElement = document.querySelector(`[data-oportunidad-id="${oportunidadId}"]`);
+    const currentOpportunities = document.getElementById('current-opportunities');
+    
+    if (oportunidadElement) {
+        const nombreOportunidad = oportunidadElement.querySelector('span').textContent;
+        oportunidadElement.remove();
+        
+        // Si no quedan oportunidades, mostrar mensaje
+        if (currentOpportunities.children.length === 0) {
+            const noMessage = document.createElement('div');
+            noMessage.id = 'no-opportunities-message';
+            noMessage.style.cssText = 'color: #bbbbbb; font-style: italic; padding: 10px;';
+            noMessage.textContent = 'No hay oportunidades ligadas';
+            currentOpportunities.appendChild(noMessage);
+        }
+        
+        showNotification(`Oportunidad "${nombreOportunidad}" removida del proyecto`, 'success');
+    }
+}
+
+// Función legacy para compatibilidad
+function clearOportunidad() {
+    // Esta función ya no se usa, pero mantenemos para evitar errores
+    console.log('⚠️ clearOportunidad legacy llamada');
 }
 
 function showNotification(message, type = 'info') {
