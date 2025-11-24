@@ -1667,11 +1667,14 @@ def api_configuracion_proyecto(request, proyecto_id):
                 'creado_por': proyecto.creado_por.get_full_name() or proyecto.creado_por.username,
                 'miembros_count': proyecto.miembros.count(),
                 'miembros': list(proyecto.miembros.values_list('id', flat=True)),
-                'oportunidad_ligada': {
-                    'id': proyecto.oportunidad_ligada.id,
-                    'titulo': proyecto.oportunidad_ligada.oportunidad,
-                    'cliente': proyecto.oportunidad_ligada.cliente.nombre_empresa if proyecto.oportunidad_ligada.cliente else 'Sin cliente'
-                } if proyecto.oportunidad_ligada else None
+                'oportunidades_ligadas': [
+                    {
+                        'id': oportunidad.id,
+                        'titulo': oportunidad.oportunidad,
+                        'cliente': oportunidad.cliente.nombre_empresa if oportunidad.cliente else 'Sin cliente'
+                    }
+                    for oportunidad in proyecto.oportunidades_ligadas.all()
+                ]
             }
         })
         
