@@ -6251,7 +6251,18 @@
                                 <!-- Buscar oportunidades -->
                                 <div style="margin-top: 20px; position: relative;">
                                     <input type="text" id="oportunidad-search" placeholder="Buscar oportunidades" 
-                                           class="config-input" style="margin-bottom: 10px;">
+                                           class="config-input" style="margin-bottom: 10px; {% if proyecto.oportunidad_ligada %}display: none;{% endif %}">
+                                    
+                                    <!-- Contenedor para oportunidad seleccionada -->
+                                    <div id="selected-oportunidad" style="display: {% if proyecto.oportunidad_ligada %}flex{% else %}none{% endif %}; align-items: center; justify-content: space-between; padding: 12px; background: rgba(48, 209, 88, 0.1); border: 1px solid rgba(48, 209, 88, 0.3); border-radius: 12px; margin-bottom: 10px;">
+                                        <span id="selected-oportunidad-name">
+                                            {% if proyecto.oportunidad_ligada %}
+                                                {{ proyecto.oportunidad_ligada.titulo }} - {{ proyecto.oportunidad_ligada.cliente.nombre_empresa|default:"Sin cliente" }}
+                                            {% endif %}
+                                        </span>
+                                        <button type="button" onclick="clearOportunidad()" style="background: rgba(255, 59, 48, 0.8); border: none; border-radius: 6px; color: white; padding: 4px 8px; cursor: pointer; font-size: 12px;">Quitar</button>
+                                    </div>
+                                    
                                     <input type="hidden" id="oportunidad-selected" name="oportunidad_vinculada_id" value="{{ proyecto.oportunidad_ligada.id|default:'' }}">
                                     <div id="oportunidad-search-results" class="config-search-results"></div>
                                 </div>

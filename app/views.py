@@ -4853,6 +4853,13 @@ def cotizaciones_por_oportunidad_view(request, oportunidad_id):
         except Exception as e:
             print(f"❌ Error en detección de cotizaciones nuevas: {e}")
     
+        # Verificar si la oportunidad está ligada a un proyecto
+        try:
+            from app.models import Proyecto
+            proyecto_ligado = Proyecto.objects.filter(oportunidad_ligada=oportunidad).first()
+        except:
+            proyecto_ligado = None
+        
         context = {
     
             'oportunidad': oportunidad,
@@ -4868,6 +4875,8 @@ def cotizaciones_por_oportunidad_view(request, oportunidad_id):
             'tipo_contenido': tipo_contenido,
     
             'is_engineer': True,
+            
+            'proyecto_ligado': proyecto_ligado,
     
         }
     
