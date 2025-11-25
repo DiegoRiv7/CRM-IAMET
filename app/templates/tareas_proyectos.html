@@ -690,7 +690,94 @@
     .name-cell:hover { text-decoration: underline; }
 
     /* Member Avatars */
-    .members-cell { padding-left: 1.5rem; }
+    .members-cell { 
+        padding-left: 1.5rem; 
+        cursor: pointer; 
+        position: relative; 
+    }
+    
+    /* Popup de miembros */
+    .members-popup {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: rgba(26, 31, 39, 0.98);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        z-index: 1000;
+        min-width: 250px;
+        max-width: 300px;
+        display: none;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: all 0.2s ease;
+        padding: 0.75rem 0;
+    }
+    
+    .members-popup.show {
+        display: block;
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    .members-popup-header {
+        padding: 0 1rem 0.5rem 1rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--apple-label-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 0.5rem;
+    }
+    
+    .members-popup-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 1rem;
+        transition: background 0.2s ease;
+    }
+    
+    .members-popup-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .members-popup-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.8rem;
+        flex-shrink: 0;
+    }
+    
+    .members-popup-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .members-popup-name {
+        font-weight: 500;
+        color: var(--apple-label);
+        font-size: 0.9rem;
+    }
+    
+    .members-popup-role {
+        font-size: 0.75rem;
+        color: var(--apple-label-secondary);
+    }
+    
+    .creator-badge {
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        border: 2px solid #FFD700;
+    }
     .member-avatar {
         width: 32px; height: 32px; border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
@@ -3082,7 +3169,7 @@ function mostrarProyectosTabla(proyectos) {
         row.innerHTML = `
             <div class="table-cell name-cell" onclick="abrirProyecto(${proyecto.id})">${proyecto.nombre}</div>
             <div class="table-cell activity-cell">${proyecto.fecha_creacion}</div>
-            <div class="table-cell members-cell">${creadorAvatar}${avatarsHtml}${extraCountHtml}</div>
+            <div class="table-cell members-cell" onclick="mostrarPopupMiembros(event, ${proyecto.id})" data-proyecto='${JSON.stringify(proyecto)}'>${creadorAvatar}${avatarsHtml}${extraCountHtml}</div>
             <div class="table-cell role-cell"><span class="role-badge ${rolClass}">${proyecto.mi_rol}</span></div>
             <div class="table-cell privacy-cell"><span class="privacy-badge ${proyecto.privacidad}">${proyecto.privacidad}</span></div>
         `;
@@ -6725,6 +6812,98 @@ function cancelEdit() {
 // Función para establecer el ID de la tarea actual cuando se abre el modal
 function setCurrentTaskId(taskId) {
     currentTaskId = taskId;
+}
+
+// Función para mostrar popup de miembros
+function mostrarPopupMiembros(event, proyectoId) {
+    event.stopPropagation();
+    
+    // Obtener datos del proyecto del atributo data
+    const membersCell = event.currentTarget;
+    const proyectoData = JSON.parse(membersCell.getAttribute('data-proyecto'));
+    
+    // Cerrar cualquier popup existente
+    document.querySelectorAll('.members-popup').forEach(popup => popup.remove());
+    
+    // Crear el popup
+    const popup = document.createElement('div');
+    popup.className = 'members-popup';
+    
+    // Preparar lista de todos los miembros (creador + miembros)
+    const todosMiembros = [];
+    
+    // Agregar creador
+    if (proyectoData.creador) {
+        todosMiembros.push({
+            ...proyectoData.creador,
+            esCreador: true
+        });
+    }
+    
+    // Agregar miembros regulares
+    if (proyectoData.miembros) {
+        proyectoData.miembros.forEach(miembro => {
+            todosMiembros.push({
+                ...miembro,
+                esCreador: false
+            });
+        });
+    }
+    
+    // Generar HTML del popup
+    let membersHtml = `
+        <div class="members-popup-header">
+            Miembros del proyecto (${todosMiembros.length})
+        </div>
+    `;
+    
+    todosMiembros.forEach(miembro => {
+        const avatarStyle = miembro.esCreador ? 
+            `background: ${TareasProyectos.getAvatarColor(miembro.nombre)}; border: 2px solid #FFD700;` :
+            `background: ${TareasProyectos.getAvatarColor(miembro.nombre)};`;
+            
+        const avatarContent = miembro.avatar_url ? 
+            `<img src="${miembro.avatar_url}" alt="${miembro.nombre}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 
+            TareasProyectos.getInitials(miembro.nombre || miembro.username);
+            
+        const rol = miembro.esCreador ? 'Creador del proyecto' : 'Miembro';
+        
+        membersHtml += `
+            <div class="members-popup-item">
+                <div class="members-popup-avatar" style="${avatarStyle}">
+                    ${avatarContent}
+                </div>
+                <div class="members-popup-info">
+                    <div class="members-popup-name">${miembro.nombre || miembro.username}</div>
+                    <div class="members-popup-role">${rol}</div>
+                </div>
+            </div>
+        `;
+    });
+    
+    popup.innerHTML = membersHtml;
+    
+    // Posicionar el popup
+    membersCell.appendChild(popup);
+    
+    // Mostrar con animación
+    requestAnimationFrame(() => {
+        popup.classList.add('show');
+    });
+    
+    // Cerrar popup al hacer click fuera
+    function cerrarPopup(e) {
+        if (!popup.contains(e.target)) {
+            popup.classList.remove('show');
+            setTimeout(() => popup.remove(), 200);
+            document.removeEventListener('click', cerrarPopup);
+        }
+    }
+    
+    // Agregar listener para cerrar popup
+    setTimeout(() => {
+        document.addEventListener('click', cerrarPopup);
+    }, 100);
 }
 
 </script>
