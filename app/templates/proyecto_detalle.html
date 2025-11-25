@@ -15348,7 +15348,7 @@ function guardarConfiguracionProyecto() {
     }
     console.log('📤 Data object created:', data);
     
-    // Add selected opportunities IDs
+    // Add selected opportunities IDs (solo las que están visiblemente en el DOM)
     const selectedOportunidades = [];
     document.querySelectorAll('#current-opportunities [data-oportunidad-id]').forEach((oppElement, index) => {
         const oportunidadId = oppElement.dataset.oportunidadId;
@@ -15368,6 +15368,12 @@ function guardarConfiguracionProyecto() {
     });
     data['oportunidades_ids'] = selectedOportunidades;
     console.log('📤 Oportunidades seleccionadas finales:', selectedOportunidades);
+    
+    // También enviar las oportunidades removidas para tener control explícito
+    if (window.oportunidadesRemovidasTemp && window.oportunidadesRemovidasTemp.length > 0) {
+        data['oportunidades_removidas'] = window.oportunidadesRemovidasTemp;
+        console.log('📤 Oportunidades marcadas para remover:', window.oportunidadesRemovidasTemp);
+    }
     
     // Add selected members from configuration
     const selectedMembers = [];
@@ -15409,6 +15415,11 @@ function guardarConfiguracionProyecto() {
         console.log('✅ Response data:', data);
         if (data.success) {
             showNotification('Configuración actualizada correctamente', 'success');
+            
+            // Limpiar la lista de oportunidades removidas después de guardar exitosamente
+            window.oportunidadesRemovidasTemp = [];
+            console.log('✅ Lista de oportunidades removidas limpiada');
+            
             // Reload page to reflect changes
             setTimeout(() => location.reload(), 1000);
         } else {
@@ -15968,8 +15979,8 @@ function selectOportunidad(opp) {
     showNotification(`Oportunidad "${opp.titulo}" agregada al proyecto`, 'success');
 }
 
-async function removeOportunidad(oportunidadId) {
-    console.log('🗑️ Removiendo oportunidad:', oportunidadId);
+function removeOportunidad(oportunidadId) {
+    console.log('🗑️ Removiendo oportunidad visualmente:', oportunidadId);
     
     // Validar que el ID es válido
     if (!oportunidadId || isNaN(oportunidadId)) {
@@ -15987,77 +15998,26 @@ async function removeOportunidad(oportunidadId) {
     
     const nombreOportunidad = oportunidadElement.querySelector('span').textContent;
     
-    // Aplicar efecto visual de eliminación inmediata
-    oportunidadElement.style.transition = 'all 0.3s ease-out';
-    oportunidadElement.style.opacity = '0.5';
-    oportunidadElement.style.transform = 'translateX(-10px)';
+    // Eliminar el elemento del DOM inmediatamente (solo visual)
+    oportunidadElement.remove();
+    console.log(`✅ Oportunidad ${oportunidadId} removida visualmente`);
     
-    // Deshabilitar el botón para evitar clics múltiples
-    const removeBtn = oportunidadElement.querySelector('.config-danger');
-    if (removeBtn) {
-        removeBtn.style.pointerEvents = 'none';
-        removeBtn.textContent = 'Removiendo...';
+    // Si no quedan oportunidades, mostrar mensaje
+    if (currentOpportunities.children.length === 0) {
+        const noMessage = document.createElement('div');
+        noMessage.id = 'no-opportunities-message';
+        noMessage.style.cssText = 'color: #bbbbbb; font-style: italic; padding: 10px;';
+        noMessage.textContent = 'No hay oportunidades ligadas';
+        currentOpportunities.appendChild(noMessage);
     }
     
-    try {
-        // Enviar petición al servidor para eliminar la oportunidad del proyecto
-        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/remove-oportunidad/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: JSON.stringify({
-                oportunidad_id: oportunidadId
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok && data.success) {
-            // Eliminación exitosa - remover elemento del DOM con animación
-            setTimeout(() => {
-                oportunidadElement.remove();
-                console.log(`✅ Oportunidad ${oportunidadId} removida exitosamente`);
-                
-                // Si no quedan oportunidades, mostrar mensaje
-                if (currentOpportunities.children.length === 0 || 
-                    (currentOpportunities.children.length === 1 && currentOpportunities.querySelector('#no-opportunities-message'))) {
-                    
-                    // Remover mensaje previo si existe
-                    const existingMessage = document.getElementById('no-opportunities-message');
-                    if (existingMessage) {
-                        existingMessage.remove();
-                    }
-                    
-                    const noMessage = document.createElement('div');
-                    noMessage.id = 'no-opportunities-message';
-                    noMessage.style.cssText = 'color: #bbbbbb; font-style: italic; padding: 10px;';
-                    noMessage.textContent = 'No hay oportunidades ligadas';
-                    currentOpportunities.appendChild(noMessage);
-                }
-                
-                showNotification(`Oportunidad "${nombreOportunidad}" removida del proyecto`, 'success');
-            }, 300);
-            
-        } else {
-            throw new Error(data.error || 'Error al remover la oportunidad');
-        }
-        
-    } catch (error) {
-        console.error('❌ Error removiendo oportunidad:', error);
-        
-        // Revertir efectos visuales en caso de error
-        oportunidadElement.style.opacity = '1';
-        oportunidadElement.style.transform = 'translateX(0)';
-        
-        if (removeBtn) {
-            removeBtn.style.pointerEvents = 'auto';
-            removeBtn.textContent = 'Remover';
-        }
-        
-        showNotification(`Error al remover oportunidad: ${error.message}`, 'error');
+    // Agregar a lista de oportunidades removidas para persistir al guardar
+    if (!window.oportunidadesRemovidasTemp) {
+        window.oportunidadesRemovidasTemp = [];
     }
+    window.oportunidadesRemovidasTemp.push(oportunidadId);
+    
+    console.log('📝 Oportunidades marcadas para remover:', window.oportunidadesRemovidasTemp);
 }
 
 // Función legacy para compatibilidad
