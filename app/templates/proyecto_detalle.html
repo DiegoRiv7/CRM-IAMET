@@ -6262,7 +6262,7 @@
                                         <div class="oportunidad-item" data-oportunidad-id="{{ oportunidad.id }}">
                                             <span title="{{ oportunidad.oportunidad }}">
                                                 {% if oportunidad.oportunidad|length > 30 %}
-                                                    {{ oportunidad.oportunidad|truncatechars:30 }}
+                                                    {{ oportunidad.oportunidad|slice:":30" }}...
                                                 {% else %}
                                                     {{ oportunidad.oportunidad }}
                                                 {% endif %}
