@@ -124,7 +124,7 @@
         color: var(--apple-label-secondary);
         font-weight: 500;
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: all 0.15s ease;
         position: relative;
         display: flex;
         align-items: center;
@@ -182,11 +182,11 @@
     }
     .tab-content.active {
         display: block !important;
-        animation: fadeIn 0.5s ease !important;
+        animation: fadeIn 0.25s ease !important;
     }
 
     @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
+        from { opacity: 0; transform: translateY(5px); }
         to { opacity: 1; transform: translateY(0); }
     }
 
@@ -5821,7 +5821,7 @@
                 
                 <!-- Feed de comentarios -->
                 <div class="feed-container" id="feedContainer">
-                    <div class="feed-loading" id="feedLoading">
+                    <div class="feed-loading" id="feedLoading" style="display: none;">
                         <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                             <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
                         </svg>
@@ -9192,25 +9192,58 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Restaurar tab activo desde localStorage
+    // Restaurar tab activo desde localStorage sin animación
     const savedTab = localStorage.getItem(`proyecto_${PROYECTO_ID}_active_tab`);
     if (savedTab) {
-        console.log(`🔄 Restaurando tab desde localStorage: ${savedTab}`);
         // Verificar que el tab existe
         const targetButton = document.querySelector(`[data-tab="${savedTab}"]`);
         if (targetButton) {
-            switchToTab(savedTab);
+            // Restaurar sin animación para evitar el arrastre visual
+            restoreTabInstantly(savedTab);
         } else {
-            console.log(`⚠️ Tab guardado no existe: ${savedTab}, usando feed por defecto`);
-            switchToTab('feed');
+            restoreTabInstantly('feed');
         }
     } else {
-        console.log('📍 No hay tab guardado, usando feed por defecto');
-        switchToTab('feed');
+        restoreTabInstantly('feed');
+    }
+    
+    // Función para restaurar tab sin animación
+    function restoreTabInstantly(tabName) {
+        // Deshabilitar temporalmente las transiciones
+        const style = document.createElement('style');
+        style.textContent = '* { transition: none !important; animation: none !important; }';
+        document.head.appendChild(style);
+        
+        // Cambiar tab
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        tabContents.forEach(content => content.classList.remove('active'));
+        
+        const targetButton = document.querySelector(`[data-tab="${tabName}"]`);
+        if (targetButton) {
+            targetButton.classList.add('active');
+        }
+        
+        const activeContent = document.getElementById(`${tabName}-content`);
+        if (activeContent) {
+            activeContent.classList.add('active');
+        }
+        
+        // Restaurar transiciones después de un frame
+        requestAnimationFrame(() => {
+            document.head.removeChild(style);
+        });
+        
+        executeTabActions(tabName);
     }
     
     // Inicializar sistema de comentarios
     initFeedSystem();
+    
+    // Cargar comentarios inmediatamente si estamos en el tab feed
+    const activeTab = document.querySelector('.tab-button.active');
+    if (activeTab && activeTab.dataset.tab === 'feed') {
+        cargarComentarios();
+    }
 });
 
 // Inicializar sistema de feed
@@ -9378,16 +9411,14 @@ function removeFile(index) {
 
 // Cargar comentarios
 async function cargarComentarios() {
-    const feedLoading = document.getElementById('feedLoading');
     const feedItems = document.getElementById('feedItems');
     const feedEmpty = document.getElementById('feedEmpty');
     
+    // No mostrar loading - carga instantánea
+    feedEmpty.style.display = 'none';
+    feedItems.style.display = 'block';
+    
     try {
-        feedLoading.style.display = 'flex';
-        feedItems.style.display = 'none';
-        feedEmpty.style.display = 'none';
-        
-        console.log('Cargando comentarios para proyecto:', PROYECTO_ID);
         const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/comentarios/`);
         
         if (!response.ok) {
@@ -9395,21 +9426,17 @@ async function cargarComentarios() {
         }
         
         const data = await response.json();
-        console.log('Respuesta del servidor:', data);
-        
-        feedLoading.style.display = 'none';
         
         if (data.success && data.comentarios && data.comentarios.length > 0) {
-            feedItems.style.display = 'block';
             renderizarComentarios(data.comentarios);
         } else {
+            feedItems.style.display = 'none';
             feedEmpty.style.display = 'block';
-            console.log('No hay comentarios o data.success es false');
         }
         
     } catch (error) {
         console.error('Error cargando comentarios:', error);
-        feedLoading.style.display = 'none';
+        feedItems.style.display = 'none';
         feedEmpty.style.display = 'block';
         
         // Mostrar el error al usuario
@@ -9431,7 +9458,7 @@ async function cargarComentarios() {
 // Renderizar comentarios
 function renderizarComentarios(comentarios) {
     const container = document.getElementById('feedItems');
-    container.innerHTML = '';
+    const fragment = document.createDocumentFragment();
     
     comentarios.forEach(comentario => {
         const div = document.createElement('div');
@@ -9498,8 +9525,12 @@ function renderizarComentarios(comentarios) {
             ${archivosHtml}
         `;
         
-        container.appendChild(div);
+        fragment.appendChild(div);
     });
+    
+    // Limpiar y agregar todo de una vez para mejor rendimiento
+    container.innerHTML = '';
+    container.appendChild(fragment);
 }
 
 // Obtener color del avatar
