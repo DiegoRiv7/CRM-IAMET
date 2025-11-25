@@ -3167,26 +3167,14 @@ function mostrarProyectosTabla(proyectos) {
         const extraCountHtml = hiddenMembersCount > 0 ? `<div class="member-count">+${hiddenMembersCount}</div>` : '';
         let rolClass = proyecto.mi_rol === 'Jefe de proyecto' ? 'jefe' : 'miembro';
         
-        // Generar contenido de oportunidades
+        // Generar contenido de oportunidades (simple)
         let oportunidadesHtml = '';
         if (proyecto.oportunidades && proyecto.oportunidades.length > 0) {
-            if (proyecto.oportunidades.length === 1) {
-                const oportunidad = proyecto.oportunidades[0];
-                oportunidadesHtml = `
-                    <div style="font-size: 0.85rem; color: var(--apple-label);">
-                        <div style="font-weight: 500; margin-bottom: 2px;">${oportunidad.titulo}</div>
-                        <div style="font-size: 0.75rem; color: var(--apple-label-secondary);">${oportunidad.empresa || 'Sin empresa'}</div>
-                    </div>
-                `;
-            } else {
-                oportunidadesHtml = `
-                    <div style="font-size: 0.85rem; color: var(--apple-label);">
-                        <span style="font-weight: 500;">${proyecto.oportunidades.length} oportunidades</span>
-                    </div>
-                `;
-            }
+            // Mostrar solo el nombre de la primera oportunidad
+            const oportunidad = proyecto.oportunidades[0];
+            oportunidadesHtml = oportunidad.titulo;
         } else {
-            oportunidadesHtml = `<span style="color: var(--apple-label-secondary); font-style: italic; font-size: 0.8rem;">Sin oportunidades</span>`;
+            oportunidadesHtml = `<span style="color: var(--apple-label-secondary); font-style: italic;">Sin oportunidad</span>`;
         }
         
         row.innerHTML = `
