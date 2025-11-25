@@ -6825,26 +6825,22 @@ function mostrarPopupMiembros(event, proyectoId) {
     const membersCell = event.currentTarget;
     const proyectoData = JSON.parse(membersCell.getAttribute('data-proyecto'));
     
-    console.log('Datos del proyecto:', proyectoData);
-    console.log('Creador:', proyectoData.creador);
-    console.log('Miembros:', proyectoData.miembros);
-    console.log('Tipo de miembros:', typeof proyectoData.miembros);
-    if (proyectoData.miembros) {
-        console.log('Es array:', Array.isArray(proyectoData.miembros));
-        console.log('Longitud:', proyectoData.miembros.length);
-    }
+    // Cerrar cualquier popup existente primero
+    document.querySelectorAll('.members-popup').forEach(popup => popup.remove());
     
-    // Prevenir múltiples activaciones
+    // Prevenir múltiples activaciones rápidas
     if (popupTimeout) {
         return;
     }
     
     popupTimeout = setTimeout(() => {
         popupTimeout = null;
-    }, 500);
+    }, 300);
     
-    // Cerrar cualquier popup existente
-    document.querySelectorAll('.members-popup').forEach(popup => popup.remove());
+    // Debug: ver estructura de miembros
+    if (proyectoData.miembros && proyectoData.miembros.length > 0) {
+        console.log('Primer miembro:', proyectoData.miembros[0]);
+    }
     
     // Crear el popup
     const popup = document.createElement('div');
