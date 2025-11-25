@@ -2215,6 +2215,7 @@
                         <div class="table-cell">Miembros</div>
                         <div class="table-cell">Tu Rol</div>
                         <div class="table-cell">Privacidad</div>
+                        <div class="table-cell">Oportunidad</div>
                     </div>
                 </div>
                 <div class="table-body" id="projects-table-body"></div>
@@ -3166,12 +3167,35 @@ function mostrarProyectosTabla(proyectos) {
         const extraCountHtml = hiddenMembersCount > 0 ? `<div class="member-count">+${hiddenMembersCount}</div>` : '';
         let rolClass = proyecto.mi_rol === 'Jefe de proyecto' ? 'jefe' : 'miembro';
         
+        // Generar contenido de oportunidades
+        let oportunidadesHtml = '';
+        if (proyecto.oportunidades && proyecto.oportunidades.length > 0) {
+            if (proyecto.oportunidades.length === 1) {
+                const oportunidad = proyecto.oportunidades[0];
+                oportunidadesHtml = `
+                    <div style="font-size: 0.85rem; color: var(--apple-label);">
+                        <div style="font-weight: 500; margin-bottom: 2px;">${oportunidad.titulo}</div>
+                        <div style="font-size: 0.75rem; color: var(--apple-label-secondary);">${oportunidad.empresa || 'Sin empresa'}</div>
+                    </div>
+                `;
+            } else {
+                oportunidadesHtml = `
+                    <div style="font-size: 0.85rem; color: var(--apple-label);">
+                        <span style="font-weight: 500;">${proyecto.oportunidades.length} oportunidades</span>
+                    </div>
+                `;
+            }
+        } else {
+            oportunidadesHtml = `<span style="color: var(--apple-label-secondary); font-style: italic; font-size: 0.8rem;">Sin oportunidades</span>`;
+        }
+        
         row.innerHTML = `
             <div class="table-cell name-cell" onclick="abrirProyecto(${proyecto.id})">${proyecto.nombre}</div>
             <div class="table-cell activity-cell">${proyecto.fecha_creacion}</div>
             <div class="table-cell members-cell" onclick="mostrarPopupMiembros(event, ${proyecto.id})" data-proyecto='${JSON.stringify(proyecto)}'>${creadorAvatar}${avatarsHtml}${extraCountHtml}</div>
             <div class="table-cell role-cell"><span class="role-badge ${rolClass}">${proyecto.mi_rol}</span></div>
             <div class="table-cell privacy-cell"><span class="privacy-badge ${proyecto.privacidad}">${proyecto.privacidad}</span></div>
+            <div class="table-cell opportunity-cell">${oportunidadesHtml}</div>
         `;
         tableBody.appendChild(row);
     });

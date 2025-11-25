@@ -516,7 +516,15 @@ def api_proyectos(request):
                 'miembros': proyecto.get_miembros_display(),
                 'privacidad': proyecto.privacidad,
                 'tipo': proyecto.tipo,
-                'mi_rol': proyecto.get_rol_usuario(request.user)
+                'mi_rol': proyecto.get_rol_usuario(request.user),
+                'oportunidades': [
+                    {
+                        'id': oportunidad.id,
+                        'titulo': oportunidad.oportunidad,
+                        'empresa': oportunidad.empresa,
+                        'monto': oportunidad.monto_estimado
+                    } for oportunidad in proyecto.oportunidades_ligadas.all()
+                ]
             })
 
         return JsonResponse({
