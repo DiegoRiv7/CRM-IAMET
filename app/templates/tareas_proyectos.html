@@ -6924,10 +6924,16 @@ function mostrarPopupMiembros(event, proyectoId) {
     
     // Posicionar el popup
     membersCell.appendChild(popup);
+    console.log('Popup creado y agregado al DOM:', popup);
+    console.log('Clases del popup:', popup.className);
+    console.log('Contenido del popup:', popup.innerHTML);
     
     // Mostrar con animación
     requestAnimationFrame(() => {
         popup.classList.add('show');
+        console.log('Clase "show" agregada al popup');
+        console.log('Estilo display del popup:', getComputedStyle(popup).display);
+        console.log('Estilo opacity del popup:', getComputedStyle(popup).opacity);
     });
     
     // Cerrar popup al hacer click fuera
