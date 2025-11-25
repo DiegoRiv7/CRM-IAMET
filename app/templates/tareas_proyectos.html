@@ -689,9 +689,6 @@
     .name-cell { font-weight: 600; color: var(--apple-blue); cursor: pointer; }
     .name-cell:hover { text-decoration: underline; }
 
-    /* Creator cell spacing */
-    .creator-cell { padding-right: 2.5rem; }
-    
     /* Member Avatars */
     .members-cell { padding-left: 1.5rem; }
     .member-avatar {
@@ -2127,7 +2124,6 @@
                 <div class="table-header">
                     <div class="table-row header-row">
                         <div class="table-cell">Nombre del Proyecto</div>
-                        <div class="table-cell">Creador del Proyecto</div>
                         <div class="table-cell">Fecha de Creación</div>
                         <div class="table-cell">Miembros</div>
                         <div class="table-cell">Tu Rol</div>
@@ -3058,7 +3054,15 @@ function mostrarProyectosTabla(proyectos) {
     proyectos.forEach(proyecto => {
         const row = document.createElement('div');
         row.className = 'table-row';
-        const maxVisibleAvatars = 3;
+        // Avatar del creador (siempre primero en la columna de miembros)
+        const creadorAvatar = proyecto.creador ? `
+            <div class="member-avatar" title="Creador: ${proyecto.creador.nombre}" style="background: ${TareasProyectos.getAvatarColor(proyecto.creador.nombre)}; border: 2px solid #FFD700; margin-left: 0;">
+                ${TareasProyectos.getInitials(proyecto.creador.nombre)}
+            </div>
+        ` : '';
+        
+        // Mostrar hasta 2 avatares de miembros (para dar espacio al creador)
+        const maxVisibleAvatars = 2;
         const visibleMembers = proyecto.miembros.slice(0, maxVisibleAvatars);
         const hiddenMembersCount = proyecto.miembros.length - maxVisibleAvatars;
         const avatarColors = ['#0A84FF', '#30D158', '#AF52DE', '#FF9500', '#FF3B30'];
@@ -3072,20 +3076,10 @@ function mostrarProyectosTabla(proyectos) {
         const extraCountHtml = hiddenMembersCount > 0 ? `<div class="member-count">+${hiddenMembersCount}</div>` : '';
         let rolClass = proyecto.mi_rol === 'Jefe de proyecto' ? 'jefe' : 'miembro';
         
-        // Avatar del creador
-        const creadorAvatar = proyecto.creador ? `
-            <div style="display: flex; justify-content: center; align-items: center; width: 100%;">
-                <div style="width: 40px; height: 40px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(proyecto.creador.nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);" title="${proyecto.creador.nombre}">
-                    ${TareasProyectos.getInitials(proyecto.creador.nombre)}
-                </div>
-            </div>
-        ` : `<div style="display: flex; justify-content: center; align-items: center; width: 100%;"><span style="color: var(--apple-label-secondary);">?</span></div>`;
-        
         row.innerHTML = `
             <div class="table-cell name-cell" onclick="abrirProyecto(${proyecto.id})">${proyecto.nombre}</div>
-            <div class="table-cell creator-cell">${creadorAvatar}</div>
             <div class="table-cell activity-cell">${proyecto.fecha_creacion}</div>
-            <div class="table-cell members-cell">${avatarsHtml}${extraCountHtml}</div>
+            <div class="table-cell members-cell">${creadorAvatar}${avatarsHtml}${extraCountHtml}</div>
             <div class="table-cell role-cell"><span class="role-badge ${rolClass}">${proyecto.mi_rol}</span></div>
             <div class="table-cell privacy-cell"><span class="privacy-badge ${proyecto.privacidad}">${proyecto.privacidad}</span></div>
         `;
