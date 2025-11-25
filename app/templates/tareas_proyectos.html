@@ -6875,9 +6875,9 @@ function mostrarPopupMiembros(event, proyectoId) {
         });
     }
     
-    // Generar HTML del popup
+    // Generar HTML del popup con estilos inline
     let membersHtml = `
-        <div class="members-popup-header">
+        <div style="padding: 0 1rem 0.5rem 1rem; font-size: 0.8rem; font-weight: 600; color: rgba(235, 235, 245, 0.6); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 0.5rem;">
             Miembros del proyecto (${todosMiembros.length})
         </div>
     `;
@@ -6904,13 +6904,13 @@ function mostrarPopupMiembros(event, proyectoId) {
             const nombreMostrar = miembro.nombre || miembro.username || 'Usuario';
             
             membersHtml += `
-                <div class="members-popup-item">
-                    <div class="members-popup-avatar" style="${avatarStyle}">
+                <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1rem; transition: background 0.2s ease;" onmouseover="this.style.background='rgba(255, 255, 255, 0.05)'" onmouseout="this.style.background=''">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.8rem; flex-shrink: 0; ${avatarStyle}">
                         ${avatarContent}
                     </div>
-                    <div class="members-popup-info">
-                        <div class="members-popup-name">${nombreMostrar}</div>
-                        <div class="members-popup-role">${rol}</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 500; color: #F2F2F7; font-size: 0.9rem;">${nombreMostrar}</div>
+                        <div style="font-size: 0.75rem; color: rgba(235, 235, 245, 0.6);">${rol}</div>
                     </div>
                 </div>
             `;
@@ -6919,21 +6919,24 @@ function mostrarPopupMiembros(event, proyectoId) {
     
     popup.innerHTML = membersHtml;
     
-    // Resetear estilos para usar los del CSS
-    popup.style.position = '';
-    popup.style.background = '';
-    popup.style.border = '';
-    popup.style.top = '';
-    popup.style.left = '';
-    popup.style.zIndex = '';
+    // Aplicar estilos inline que sabemos que funcionan
+    popup.style.position = 'absolute';
+    popup.style.top = '100%';
+    popup.style.left = '0';
+    popup.style.background = 'rgba(26, 31, 39, 0.98)';
+    popup.style.backdropFilter = 'blur(20px)';
+    popup.style.border = '1px solid rgba(255, 255, 255, 0.15)';
+    popup.style.borderRadius = '12px';
+    popup.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.4)';
+    popup.style.zIndex = '1000';
+    popup.style.minWidth = '250px';
+    popup.style.maxWidth = '300px';
+    popup.style.padding = '0.75rem 0';
+    popup.style.display = 'block';
+    popup.style.opacity = '1';
     
     // Posicionar el popup
     membersCell.appendChild(popup);
-    
-    // Mostrar con animación
-    requestAnimationFrame(() => {
-        popup.classList.add('show');
-    });
     
     // Cerrar popup al hacer click fuera
     function cerrarPopup(e) {
