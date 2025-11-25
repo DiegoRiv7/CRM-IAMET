@@ -6267,7 +6267,7 @@
                                                     {{ oportunidad.oportunidad }}
                                                 {% endif %}
                                             </span>
-                                            <span class="config-danger" onclick="removeOportunidad({{ oportunidad.id }})">Remover</span>
+                                            <span class="config-danger remove-oportunidad-btn" data-oportunidad-id="{{ oportunidad.id }}">Remover</span>
                                         </div>
                                     {% empty %}
                                         <div id="no-opportunities-message" style="color: #bbbbbb; font-style: italic; padding: 10px;">No hay oportunidades ligadas</div>
@@ -16016,10 +16016,15 @@ function selectOportunidad(opp) {
     
     oportunidadItem.innerHTML = `
         <span title="${opp.titulo}">${nombreTruncado}</span>
-        <span class="config-danger" onclick="removeOportunidad(${cleanId})">Remover</span>
+        <span class="config-danger remove-oportunidad-btn" data-oportunidad-id="${cleanId}">Remover</span>
     `;
     
     currentOpportunities.appendChild(oportunidadItem);
+    
+    // Reconfigurar event listeners para el nuevo elemento
+    if (window.refreshRemoveButtons) {
+        window.refreshRemoveButtons();
+    }
     
     // Limpiar búsqueda
     resultsContainer.classList.remove('show');
@@ -16100,6 +16105,76 @@ window.testRemove = function() {
 };
 
 console.log('🔍 Test function disponible:', typeof window.testRemove);
+
+// SOLUCIÓN DEFINITIVA: Event listeners en lugar de onclick
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎯 Configurando event listeners para botones de remover oportunidades...');
+    
+    function setupRemoveButtons() {
+        // Remover listeners existentes
+        document.querySelectorAll('.remove-oportunidad-btn').forEach(btn => {
+            btn.removeEventListener('click', handleRemoveOportunidad);
+        });
+        
+        // Agregar nuevos listeners
+        document.querySelectorAll('.remove-oportunidad-btn').forEach(btn => {
+            btn.addEventListener('click', handleRemoveOportunidad);
+            console.log('📌 Listener agregado para oportunidad:', btn.dataset.oportunidadId);
+        });
+    }
+    
+    function handleRemoveOportunidad(event) {
+        event.preventDefault();
+        const oportunidadId = this.dataset.oportunidadId;
+        console.log('🚀 CLICK DETECTADO EN REMOVER OPORTUNIDAD:', oportunidadId);
+        
+        if (oportunidadId) {
+            removeOportunidadVisual(oportunidadId);
+        }
+    }
+    
+    function removeOportunidadVisual(oportunidadId) {
+        console.log('🗑️ Removiendo oportunidad visual:', oportunidadId);
+        
+        const oportunidadElement = document.querySelector(`[data-oportunidad-id="${oportunidadId}"].oportunidad-item`);
+        const currentOpportunities = document.getElementById('current-opportunities');
+        
+        if (!oportunidadElement) {
+            console.error('❌ No se encontró elemento:', oportunidadId);
+            return;
+        }
+        
+        // Remover elemento
+        oportunidadElement.remove();
+        console.log('✅ Elemento removido del DOM');
+        
+        // Si no quedan oportunidades, mostrar mensaje
+        if (currentOpportunities.children.length === 0) {
+            const noMessage = document.createElement('div');
+            noMessage.id = 'no-opportunities-message';
+            noMessage.style.cssText = 'color: #bbbbbb; font-style: italic; padding: 10px;';
+            noMessage.textContent = 'No hay oportunidades ligadas';
+            currentOpportunities.appendChild(noMessage);
+        }
+        
+        // Marcar para persistencia
+        if (!window.oportunidadesRemovidasTemp) {
+            window.oportunidadesRemovidasTemp = [];
+        }
+        window.oportunidadesRemovidasTemp.push(parseInt(oportunidadId));
+        
+        console.log('📝 Oportunidades para remover:', window.oportunidadesRemovidasTemp);
+        updatePendingChangesIndicator();
+    }
+    
+    // Setup inicial
+    setupRemoveButtons();
+    
+    // Re-setup cuando se agregan nuevas oportunidades
+    window.refreshRemoveButtons = setupRemoveButtons;
+    
+    console.log('✅ Event listeners configurados exitosamente');
+});
 
 // Función legacy para compatibilidad
 function clearOportunidad() {
