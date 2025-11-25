@@ -511,7 +511,7 @@ def api_proyectos(request):
                     'id': proyecto.creado_por.id,
                     'nombre': proyecto.creado_por.get_full_name() or proyecto.creado_por.username,
                     'iniciales': ''.join([palabra[0].upper() for palabra in (proyecto.creado_por.get_full_name() or proyecto.creado_por.username).split()[:2]]),
-                    'avatar_url': proyecto.creado_por.userprofile.avatar.url if hasattr(proyecto.creado_por, 'userprofile') and proyecto.creado_por.userprofile.avatar else None
+                    'avatar_url': proyecto.creado_por.userprofile.get_avatar_url() if hasattr(proyecto.creado_por, 'userprofile') else None
                 },
                 'miembros': proyecto.get_miembros_display(),
                 'privacidad': proyecto.privacidad,
