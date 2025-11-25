@@ -6675,7 +6675,7 @@ window.toggleWidgetEdit = function(widgetType) {
     
     const widget = document.querySelector(`[data-widget="${widgetType}"]`);
     if (!widget) {
-        console.warn(`🔴 Widget ${widgetType} not found`);
+        console.warn(`[ERROR] Widget ${widgetType} not found`);
         return;
     }
     
@@ -6683,7 +6683,7 @@ window.toggleWidgetEdit = function(widgetType) {
     const editMode = widget.querySelector('.widget-edit');
     
     if (!displayMode || !editMode) {
-        console.warn(`🔴 Display or edit mode not found for widget ${widgetType}`);
+        console.warn(`[ERROR] Display or edit mode not found for widget ${widgetType}`);
         return;
     }
     
@@ -6736,7 +6736,7 @@ window.saveWidget = function(widgetType) {
             saveOportunidad();
             break;
         default:
-            console.warn(`🔴 Widget type ${widgetType} not recognized`);
+            console.warn(`[ERROR] Widget type ${widgetType} not recognized`);
     }
 }
 
