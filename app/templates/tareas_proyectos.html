@@ -6814,15 +6814,33 @@ function setCurrentTaskId(taskId) {
     currentTaskId = taskId;
 }
 
+// Variable para prevenir múltiples activaciones
+let popupTimeout = null;
+
 // Función para mostrar popup de miembros
 function mostrarPopupMiembros(event, proyectoId) {
     event.stopPropagation();
+    
+    // Prevenir múltiples activaciones
+    if (popupTimeout) {
+        clearTimeout(popupTimeout);
+    }
+    
+    popupTimeout = setTimeout(() => {
+        popupTimeout = null;
     
     // Obtener datos del proyecto del atributo data
     const membersCell = event.currentTarget;
     const proyectoData = JSON.parse(membersCell.getAttribute('data-proyecto'));
     
     console.log('Datos del proyecto:', proyectoData);
+    console.log('Creador:', proyectoData.creador);
+    console.log('Miembros:', proyectoData.miembros);
+    console.log('Tipo de miembros:', typeof proyectoData.miembros);
+    if (proyectoData.miembros) {
+        console.log('Es array:', Array.isArray(proyectoData.miembros));
+        console.log('Longitud:', proyectoData.miembros.length);
+    }
     
     // Cerrar cualquier popup existente
     document.querySelectorAll('.members-popup').forEach(popup => popup.remove());
@@ -6928,6 +6946,8 @@ function mostrarPopupMiembros(event, proyectoId) {
     setTimeout(() => {
         document.addEventListener('click', cerrarPopup);
     }, 100);
+    
+    }, 200); // Cierre del setTimeout de prevención
 }
 
 </script>
