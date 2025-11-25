@@ -6822,6 +6822,8 @@ function mostrarPopupMiembros(event, proyectoId) {
     const membersCell = event.currentTarget;
     const proyectoData = JSON.parse(membersCell.getAttribute('data-proyecto'));
     
+    console.log('Datos del proyecto:', proyectoData);
+    
     // Cerrar cualquier popup existente
     document.querySelectorAll('.members-popup').forEach(popup => popup.remove());
     
@@ -6829,24 +6831,35 @@ function mostrarPopupMiembros(event, proyectoId) {
     const popup = document.createElement('div');
     popup.className = 'members-popup';
     
-    // Preparar lista de todos los miembros (creador + miembros)
+    // Preparar lista de todos los miembros únicos
     const todosMiembros = [];
+    const idsVistos = new Set();
     
-    // Agregar creador
-    if (proyectoData.creador) {
+    // Agregar creador primero
+    if (proyectoData.creador && !idsVistos.has(proyectoData.creador.id)) {
         todosMiembros.push({
-            ...proyectoData.creador,
+            id: proyectoData.creador.id,
+            nombre: proyectoData.creador.nombre,
+            avatar_url: proyectoData.creador.avatar_url,
+            username: proyectoData.creador.username,
             esCreador: true
         });
+        idsVistos.add(proyectoData.creador.id);
     }
     
-    // Agregar miembros regulares
-    if (proyectoData.miembros) {
+    // Agregar miembros regulares (evitando duplicados)
+    if (proyectoData.miembros && Array.isArray(proyectoData.miembros)) {
         proyectoData.miembros.forEach(miembro => {
-            todosMiembros.push({
-                ...miembro,
-                esCreador: false
-            });
+            if (!idsVistos.has(miembro.id)) {
+                todosMiembros.push({
+                    id: miembro.id,
+                    nombre: miembro.nombre,
+                    avatar_url: miembro.avatar_url,
+                    username: miembro.username,
+                    esCreador: false
+                });
+                idsVistos.add(miembro.id);
+            }
         });
     }
     
@@ -6857,29 +6870,40 @@ function mostrarPopupMiembros(event, proyectoId) {
         </div>
     `;
     
-    todosMiembros.forEach(miembro => {
-        const avatarStyle = miembro.esCreador ? 
-            `background: ${TareasProyectos.getAvatarColor(miembro.nombre)}; border: 2px solid #FFD700;` :
-            `background: ${TareasProyectos.getAvatarColor(miembro.nombre)};`;
-            
-        const avatarContent = miembro.avatar_url ? 
-            `<img src="${miembro.avatar_url}" alt="${miembro.nombre}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 
-            TareasProyectos.getInitials(miembro.nombre || miembro.username);
-            
-        const rol = miembro.esCreador ? 'Creador del proyecto' : 'Miembro';
-        
+    if (todosMiembros.length === 0) {
         membersHtml += `
             <div class="members-popup-item">
-                <div class="members-popup-avatar" style="${avatarStyle}">
-                    ${avatarContent}
-                </div>
                 <div class="members-popup-info">
-                    <div class="members-popup-name">${miembro.nombre || miembro.username}</div>
-                    <div class="members-popup-role">${rol}</div>
+                    <div class="members-popup-name" style="color: var(--apple-label-secondary);">Sin miembros</div>
                 </div>
             </div>
         `;
-    });
+    } else {
+        todosMiembros.forEach(miembro => {
+            const avatarStyle = miembro.esCreador ? 
+                `background: ${TareasProyectos.getAvatarColor(miembro.nombre || miembro.username)}; border: 2px solid #FFD700;` :
+                `background: ${TareasProyectos.getAvatarColor(miembro.nombre || miembro.username)};`;
+                
+            const avatarContent = miembro.avatar_url ? 
+                `<img src="${miembro.avatar_url}" alt="${miembro.nombre}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 
+                TareasProyectos.getInitials(miembro.nombre || miembro.username);
+                
+            const rol = miembro.esCreador ? 'Creador del proyecto' : 'Miembro';
+            const nombreMostrar = miembro.nombre || miembro.username || 'Usuario';
+            
+            membersHtml += `
+                <div class="members-popup-item">
+                    <div class="members-popup-avatar" style="${avatarStyle}">
+                        ${avatarContent}
+                    </div>
+                    <div class="members-popup-info">
+                        <div class="members-popup-name">${nombreMostrar}</div>
+                        <div class="members-popup-role">${rol}</div>
+                    </div>
+                </div>
+            `;
+        });
+    }
     
     popup.innerHTML = membersHtml;
     
