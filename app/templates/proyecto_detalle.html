@@ -162,12 +162,27 @@
     }
 
     .tab-content {
-        padding: 2rem;
-        display: none;
+        width: 100%;
+        margin: 0;
+        padding: 1.5rem 2rem 2rem 2rem;
+        border-radius: 16px;
+        background: linear-gradient(135deg, rgba(45, 45, 45, 0.95), rgba(35, 35, 35, 0.98)) !important;
+        backdrop-filter: blur(20px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        box-shadow: 
+            0px 0px 80px rgba(0,0,0,0.6),
+            0px 20px 40px rgba(0,0,0,0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        position: relative !important;
+        min-height: 680px;
+        overflow: hidden;
+        display: none !important;
+        color: #ffffff !important;
     }
     .tab-content.active {
-        display: block;
-        animation: fadeIn 0.5s ease;
+        display: block !important;
+        animation: fadeIn 0.5s ease !important;
     }
 
     @keyframes fadeIn {
@@ -8980,6 +8995,9 @@ const TareasProyectos = {
             '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
             '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
         ];
+        
+        if (!name) return colors[0];
+        
         let hash = 0;
         for (let i = 0; i < name.length; i++) {
             hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -14436,6 +14454,8 @@ Object.assign(TareasProyectos, {
             '#4834DF', '#686de0', '#eb4d4b', '#6c5ce7',
             '#a29bfe', '#fd79a8', '#e84393', '#00b894'
         ];
+        
+        if (!nombre) return colors[0];
         
         let hash = 0;
         for (let i = 0; i < nombre.length; i++) {
