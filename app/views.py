@@ -1304,7 +1304,24 @@ def api_comentarios_proyecto(request, proyecto_id):
             if request.user != proyecto.creado_por and request.user not in proyecto.miembros.all():
                 return JsonResponse({'error': 'Sin permisos'}, status=403)
         
-        comentarios = ProyectoComentario.objects.filter(proyecto=proyecto).order_by('-fecha_creacion')
+        # Filtrar comentarios excluyendo los automáticos de configuración
+        # PERO manteniendo comentarios de creación del proyecto y manuales
+        comentarios = ProyectoComentario.objects.filter(
+            proyecto=proyecto
+        ).exclude(
+            # Excluir comentarios que empiecen con patrones de configuración automática
+            Q(contenido__startswith='📋 Configuración actualizada') |
+            Q(contenido__startswith='⚙️ Configuración') |
+            Q(contenido__startswith='🔧 Configuración') |
+            Q(contenido__startswith='📊 Configuración') |
+            Q(contenido__startswith='Configuración actualizada') |
+            Q(contenido__startswith='Proyecto actualizado') |
+            Q(contenido__startswith='Configuración modificada') |
+            Q(contenido__contains='Miembro agregado al proyecto') |
+            Q(contenido__contains='Miembro removido del proyecto') |
+            Q(contenido__contains='Oportunidad ligada al proyecto') |
+            Q(contenido__contains='Oportunidad removida del proyecto')
+        ).order_by('-fecha_creacion')
         
         comentarios_data = []
         for comentario in comentarios:
