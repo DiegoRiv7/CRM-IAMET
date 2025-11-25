@@ -16085,8 +16085,21 @@ console.log('🔍 removeOportunidad global existe:', typeof removeOportunidad);
 // Crear una versión global adicional por si acaso
 function removeOportunidad(id) {
     console.log('🔥 FUNCIÓN GLOBAL REMOVEOPORTUINIDAD LLAMADA:', id);
-    return window.removeOportunidad(id);
+    try {
+        return window.removeOportunidad(id);
+    } catch (error) {
+        console.error('❌ Error en removeOportunidad:', error);
+        alert('Error al remover oportunidad: ' + error.message);
+    }
 }
+
+// Test function para verificar que JavaScript funciona
+window.testRemove = function() {
+    console.log('🧪 Test function ejecutándose');
+    alert('JavaScript está funcionando!');
+};
+
+console.log('🔍 Test function disponible:', typeof window.testRemove);
 
 // Función legacy para compatibilidad
 function clearOportunidad() {
