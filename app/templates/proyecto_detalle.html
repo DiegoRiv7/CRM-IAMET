@@ -14990,6 +14990,25 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
+        // Add listener to cancel button
+        console.log('🔥 Searching for cancel button...');
+        const cancelButton = document.querySelector('button[form="configForm"][type="reset"]');
+        console.log('🔥 Cancel Button Found:', !!cancelButton);
+        if (cancelButton) {
+            cancelButton.addEventListener('click', function(e) {
+                console.log('🔥🔥🔥 CANCEL BUTTON CLICKED! 🔥🔥🔥');
+                e.preventDefault();
+                
+                // Limpiar variables temporales
+                if (window.oportunidadesRemovidasTemp) {
+                    window.oportunidadesRemovidasTemp = [];
+                }
+                
+                console.log('🔄 Recargando página para cancelar cambios...');
+                location.reload();
+            });
+        }
+        
         console.log('🔥 About to setup member search');
         // Setup member search
         setupMemberSearch();
@@ -15844,14 +15863,18 @@ function addMember(user) {
 }
 
 function removeMember(userId) {
-    const memberTag = document.querySelector(`[data-user-id="${userId}"]`);
-    if (memberTag) {
-        memberTag.remove();
+    const memberElement = document.querySelector(`#team-members-list [data-user-id="${userId}"]`);
+    if (memberElement) {
+        memberElement.remove();
+        console.log(`✅ Miembro ${userId} removido visualmente`);
         
         // Check if no members left
-        const currentMembers = document.querySelector('.current-members');
-        if (currentMembers.children.length === 0) {
-            currentMembers.innerHTML = '<p class="no-members">No hay miembros asignados</p>';
+        const teamMembersList = document.getElementById('team-members-list');
+        if (teamMembersList && teamMembersList.children.length === 0) {
+            const noMembersElement = document.createElement('div');
+            noMembersElement.className = 'config-team-item';
+            noMembersElement.innerHTML = '<span style="color: #bbbbbb; font-style: italic;">No hay miembros asignados</span><span></span>';
+            teamMembersList.appendChild(noMembersElement);
         }
     }
 }
@@ -16018,12 +16041,33 @@ function removeOportunidad(oportunidadId) {
     window.oportunidadesRemovidasTemp.push(oportunidadId);
     
     console.log('📝 Oportunidades marcadas para remover:', window.oportunidadesRemovidasTemp);
+    
+    // Mostrar indicador de cambios pendientes
+    updatePendingChangesIndicator();
 }
 
 // Función legacy para compatibilidad
 function clearOportunidad() {
     // Esta función ya no se usa, pero mantenemos para evitar errores
     console.log('⚠️ clearOportunidad legacy llamada');
+}
+
+// Función para actualizar indicador de cambios pendientes
+function updatePendingChangesIndicator() {
+    const saveButton = document.querySelector('.config-btn-save');
+    const hasPendingChanges = window.oportunidadesRemovidasTemp && window.oportunidadesRemovidasTemp.length > 0;
+    
+    if (saveButton) {
+        if (hasPendingChanges) {
+            saveButton.textContent = 'Guardar Cambios*';
+            saveButton.style.background = 'rgba(255, 149, 0, 0.2)';
+            saveButton.style.borderColor = 'rgba(255, 149, 0, 0.3)';
+        } else {
+            saveButton.textContent = 'Guardar Cambios';
+            saveButton.style.background = '';
+            saveButton.style.borderColor = '';
+        }
+    }
 }
 
 function showNotification(message, type = 'info') {
