@@ -3057,7 +3057,10 @@ function mostrarProyectosTabla(proyectos) {
         // Avatar del creador (siempre primero en la columna de miembros)
         const creadorAvatar = proyecto.creador ? `
             <div class="member-avatar" title="Creador: ${proyecto.creador.nombre}" style="background: ${TareasProyectos.getAvatarColor(proyecto.creador.nombre)}; border: 2px solid #FFD700; margin-left: 0;">
-                ${TareasProyectos.getInitials(proyecto.creador.nombre)}
+                ${proyecto.creador.avatar_url ? 
+                    `<img src="${proyecto.creador.avatar_url}" alt="${proyecto.creador.nombre}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 
+                    TareasProyectos.getInitials(proyecto.creador.nombre)
+                }
             </div>
         ` : '';
         
