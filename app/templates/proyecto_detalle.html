@@ -14992,9 +14992,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add listener to cancel button
         console.log('🔥 Searching for cancel button...');
+        console.log('🔥 All buttons on page:', document.querySelectorAll('button'));
+        console.log('🔥 All reset buttons:', document.querySelectorAll('button[type="reset"]'));
+        console.log('🔥 All buttons with form configForm:', document.querySelectorAll('button[form="configForm"]'));
         const cancelButton = document.querySelector('button[form="configForm"][type="reset"]');
         console.log('🔥 Cancel Button Found:', !!cancelButton);
+        console.log('🔥 Cancel Button Element:', cancelButton);
         if (cancelButton) {
+            console.log('🔥 Adding event listener to cancel button');
             cancelButton.addEventListener('click', function(e) {
                 console.log('🔥🔥🔥 CANCEL BUTTON CLICKED! 🔥🔥🔥');
                 e.preventDefault();
@@ -15007,6 +15012,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('🔄 Recargando página para cancelar cambios...');
                 location.reload();
             });
+        } else {
+            console.error('❌ Cancel button not found!');
+            
+            // Intentar buscar por clase como backup
+            console.log('🔥 Trying to find cancel button by class...');
+            const cancelButtonByClass = document.querySelector('.config-btn-cancel');
+            console.log('🔥 Cancel Button by class found:', !!cancelButtonByClass);
+            if (cancelButtonByClass) {
+                console.log('🔥 Adding event listener to cancel button by class');
+                cancelButtonByClass.addEventListener('click', function(e) {
+                    console.log('🔥🔥🔥 CANCEL BUTTON BY CLASS CLICKED! 🔥🔥🔥');
+                    e.preventDefault();
+                    
+                    // Limpiar variables temporales
+                    if (window.oportunidadesRemovidasTemp) {
+                        window.oportunidadesRemovidasTemp = [];
+                    }
+                    
+                    console.log('🔄 Recargando página para cancelar cambios...');
+                    location.reload();
+                });
+            }
         }
         
         console.log('🔥 About to setup member search');
@@ -16002,8 +16029,10 @@ function selectOportunidad(opp) {
     showNotification(`Oportunidad "${opp.titulo}" agregada al proyecto`, 'success');
 }
 
-function removeOportunidad(oportunidadId) {
-    console.log('🗑️ Removiendo oportunidad visualmente:', oportunidadId);
+window.removeOportunidad = function(oportunidadId) {
+    console.log('🗑️🗑️🗑️ REMOVE OPORTUNIDAD LLAMADA:', oportunidadId);
+    console.log('🗑️ Tipo de oportunidadId:', typeof oportunidadId);
+    console.log('🗑️ Valor de oportunidadId:', oportunidadId);
     
     // Validar que el ID es válido
     if (!oportunidadId || isNaN(oportunidadId)) {
@@ -16044,7 +16073,9 @@ function removeOportunidad(oportunidadId) {
     
     // Mostrar indicador de cambios pendientes
     updatePendingChangesIndicator();
-}
+    
+    console.log('✅✅✅ REMOVE OPORTUNIDAD COMPLETADA');
+};
 
 // Función legacy para compatibilidad
 function clearOportunidad() {
