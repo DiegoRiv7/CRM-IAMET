@@ -482,11 +482,9 @@ def api_proyectos(request):
     per_page = int(request.GET.get('per_page', 30))
     search = request.GET.get('search', '').strip()
     
-    # Obtener proyectos reales de la base de datos filtrados por usuario
+    # Obtener proyectos reales de la base de datos
     try:
-        proyectos_query = Proyecto.objects.filter(
-            Q(creado_por=request.user) | Q(miembros=request.user)
-        ).distinct()
+        proyectos_query = Proyecto.objects.all()
         
         # Filtrar por búsqueda si hay término
         if search:
