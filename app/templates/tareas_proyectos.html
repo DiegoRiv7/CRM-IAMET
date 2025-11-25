@@ -6837,10 +6837,7 @@ function mostrarPopupMiembros(event, proyectoId) {
         popupTimeout = null;
     }, 300);
     
-    // Debug: ver estructura de miembros
-    if (proyectoData.miembros && proyectoData.miembros.length > 0) {
-        console.log('Primer miembro:', proyectoData.miembros[0]);
-    }
+    // Limpiar logs de debug
     
     // Crear el popup
     const popup = document.createElement('div');
@@ -6922,40 +6919,20 @@ function mostrarPopupMiembros(event, proyectoId) {
     
     popup.innerHTML = membersHtml;
     
-    // TEMPORAL: Estilo de debug para hacer visible el popup
-    popup.style.background = 'red';
-    popup.style.border = '3px solid yellow';
-    popup.style.position = 'fixed';
-    popup.style.top = '50px';
-    popup.style.left = '50px';
-    popup.style.zIndex = '9999';
+    // Resetear estilos para usar los del CSS
+    popup.style.position = '';
+    popup.style.background = '';
+    popup.style.border = '';
+    popup.style.top = '';
+    popup.style.left = '';
+    popup.style.zIndex = '';
     
     // Posicionar el popup
     membersCell.appendChild(popup);
-    console.log('Popup creado y agregado al DOM:', popup);
-    console.log('Clases del popup:', popup.className);
-    console.log('Contenido del popup:', popup.innerHTML);
     
     // Mostrar con animación
     requestAnimationFrame(() => {
         popup.classList.add('show');
-        console.log('Clase "show" agregada al popup');
-        console.log('Estilo display del popup:', getComputedStyle(popup).display);
-        console.log('Estilo opacity del popup:', getComputedStyle(popup).opacity);
-        
-        // Debug posicionamiento
-        const rect = popup.getBoundingClientRect();
-        console.log('Posición del popup:', rect);
-        console.log('Z-index del popup:', getComputedStyle(popup).zIndex);
-        console.log('Position del popup:', getComputedStyle(popup).position);
-        
-        // Verificar si está dentro del viewport
-        console.log('¿Dentro del viewport?', {
-            top: rect.top >= 0,
-            left: rect.left >= 0,
-            bottom: rect.bottom <= window.innerHeight,
-            right: rect.right <= window.innerWidth
-        });
     });
     
     // Cerrar popup al hacer click fuera
