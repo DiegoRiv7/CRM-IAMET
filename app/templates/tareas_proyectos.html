@@ -2918,6 +2918,11 @@ async function cargarProyectos(page = 1, search = '') {
         const data = await response.json();
         
         if (data.success) {
+            console.log('🔍 Datos recibidos del API:', data);
+            console.log('🔍 Número de proyectos:', data.proyectos ? data.proyectos.length : 0);
+            if (data.proyectos && data.proyectos.length > 0) {
+                console.log('🔍 Primer proyecto:', data.proyectos[0]);
+            }
             totalProjects = data.total || 0;
             mostrarProyectosTabla(data.proyectos || []);
             actualizarPaginacion();

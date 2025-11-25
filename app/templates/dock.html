@@ -3648,54 +3648,12 @@ window.applyThemeImmediate = function(theme) {
 // Immediate theme and dock position application to prevent flash
 (function() {
     try {
-        // Apply saved theme immediately using the same logic as applyTheme
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        const preservedTheme = localStorage.getItem('preservedTheme') || savedTheme;
-        console.log('Applying saved theme immediately:', preservedTheme);
-        
-        // Apply theme based on the original logic
-        if (preservedTheme === 'light' || preservedTheme === 'white') {
-            document.documentElement.classList.add('light-theme');
-            document.body.classList.add('light-theme');
-        } else {
-            document.documentElement.classList.remove('light-theme');
-            document.body.classList.remove('light-theme');
-        }
-        
-        // Apply theme-specific CSS variables
-        if (preservedTheme === 'pink') {
-            document.documentElement.classList.add('light-theme');
-            document.documentElement.setAttribute('data-theme', 'pink');
-            document.documentElement.style.setProperty('--apple-background', 'linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%)');
-            document.documentElement.style.setProperty('--apple-blue', '#FF6B9D');
-            document.documentElement.style.setProperty('--apple-label', '#2D1B2E');
-            document.documentElement.style.setProperty('--apple-pink-gradient', 'linear-gradient(135deg, #FF6B9D 0%, #FFB6C1 50%, #FFC0CB 100%)');
-        } else if (preservedTheme === 'blue') {
-            document.documentElement.style.setProperty('--apple-blue', '#007AFF');
-            document.documentElement.style.setProperty('--apple-background', '#f0f7ff');
-        } else if (preservedTheme === 'light' || preservedTheme === 'white') {
-            document.documentElement.style.setProperty('--apple-background', '#ffffff');
-            document.documentElement.style.setProperty('--apple-label', '#212529');
-        } else {
-            // Modo oscuro (tema por defecto)
-            document.documentElement.classList.remove('light-theme');
-            document.documentElement.removeAttribute('data-theme');
-            document.documentElement.style.setProperty('--apple-background', '#000000');
-            document.documentElement.style.setProperty('--apple-blue', '#007AFF');
-            document.documentElement.style.setProperty('--apple-label', '#EBEBF5');
-        }
-        
         const saved = localStorage.getItem('designPreferences');
         let dockPosition = 'left'; // default
         
         if (saved) {
             const preferences = JSON.parse(saved);
-            const isDarkMode = preferences.isDarkMode !== undefined ? preferences.isDarkMode : true;
             dockPosition = preferences.dockPosition || 'left';
-            
-            if (!isDarkMode) {
-                document.documentElement.classList.add('light-theme');
-            }
         }
         
         // Apply dock position immediately by writing CSS

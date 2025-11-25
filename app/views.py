@@ -474,7 +474,7 @@ def api_proyectos(request):
     """
     API para obtener proyectos con paginación
     """
-    if not request.user.is_superuser:
+    if not request.user.is_authenticated:
         return JsonResponse({'error': 'Sin permisos'}, status=403)
     
     # Obtener parámetros de paginación
@@ -484,7 +484,10 @@ def api_proyectos(request):
     
     # Obtener proyectos reales de la base de datos
     try:
-        proyectos_query = Proyecto.objects.all()
+        # Filtrar proyectos donde el usuario es creador o miembro
+        proyectos_query = Proyecto.objects.filter(
+            Q(creado_por=request.user) | Q(miembros=request.user)
+        ).distinct()
         
         # Filtrar por búsqueda si hay término
         if search:
