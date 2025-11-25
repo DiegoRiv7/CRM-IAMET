@@ -2124,9 +2124,9 @@
                 <div class="table-header">
                     <div class="table-row header-row">
                         <div class="table-cell">Nombre del Proyecto</div>
-                        <div class="table-cell">Miembros</div>
+                        <div class="table-cell">Creador del Proyecto</div>
                         <div class="table-cell">Fecha de Creación</div>
-                        <div class="table-cell">Avance</div>
+                        <div class="table-cell">Miembros</div>
                         <div class="table-cell">Tu Rol</div>
                         <div class="table-cell">Privacidad</div>
                     </div>
@@ -3068,14 +3068,22 @@ function mostrarProyectosTabla(proyectos) {
         }).join('');
         const extraCountHtml = hiddenMembersCount > 0 ? `<div class="member-count">+${hiddenMembersCount}</div>` : '';
         let rolClass = proyecto.mi_rol === 'Jefe de proyecto' ? 'jefe' : 'miembro';
+        
+        // Avatar del creador
+        const creadorAvatar = proyecto.creador ? `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(proyecto.creador.nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.8rem;">
+                    ${TareasProyectos.getInitials(proyecto.creador.nombre)}
+                </div>
+                <span>${proyecto.creador.nombre}</span>
+            </div>
+        ` : `<span style="color: var(--apple-label-secondary);">Sin información</span>`;
+        
         row.innerHTML = `
             <div class="table-cell name-cell" onclick="abrirProyecto(${proyecto.id})">${proyecto.nombre}</div>
-            <div class="table-cell members-cell">${avatarsHtml}${extraCountHtml}</div>
+            <div class="table-cell creator-cell">${creadorAvatar}</div>
             <div class="table-cell activity-cell">${proyecto.fecha_creacion}</div>
-            <div class="table-cell performance-cell">
-                <div class="performance-bar"><div class="performance-fill" style="width: ${proyecto.avance}%;"></div></div>
-                <span class="performance-text">${proyecto.avance}%</span>
-            </div>
+            <div class="table-cell members-cell">${avatarsHtml}${extraCountHtml}</div>
             <div class="table-cell role-cell"><span class="role-badge ${rolClass}">${proyecto.mi_rol}</span></div>
             <div class="table-cell privacy-cell"><span class="privacy-badge ${proyecto.privacidad}">${proyecto.privacidad}</span></div>
         `;
