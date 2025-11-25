@@ -111,6 +111,7 @@ function hideModal(modalId) {
 }
 
 function applyTheme(theme) {
+    debugger;
     console.log('applyTheme called with:', theme);
 
     const validThemes = ['dark', 'pink', 'light', 'white', 'coffee', 'perla'];

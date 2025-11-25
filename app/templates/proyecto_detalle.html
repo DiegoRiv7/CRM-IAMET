@@ -16077,6 +16077,17 @@ window.removeOportunidad = function(oportunidadId) {
     console.log('✅✅✅ REMOVE OPORTUNIDAD COMPLETADA');
 };
 
+// Debug: Verificar que las funciones están disponibles
+console.log('🔍 Verificando funciones disponibles:');
+console.log('🔍 window.removeOportunidad existe:', typeof window.removeOportunidad);
+console.log('🔍 removeOportunidad global existe:', typeof removeOportunidad);
+
+// Crear una versión global adicional por si acaso
+function removeOportunidad(id) {
+    console.log('🔥 FUNCIÓN GLOBAL REMOVEOPORTUINIDAD LLAMADA:', id);
+    return window.removeOportunidad(id);
+}
+
 // Función legacy para compatibilidad
 function clearOportunidad() {
     // Esta función ya no se usa, pero mantenemos para evitar errores
