@@ -3071,13 +3071,12 @@ function mostrarProyectosTabla(proyectos) {
         
         // Avatar del creador
         const creadorAvatar = proyecto.creador ? `
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="width: 32px; height: 32px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(proyecto.creador.nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.8rem;">
+            <div style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: ${TareasProyectos.getAvatarColor(proyecto.creador.nombre)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);" title="${proyecto.creador.nombre}">
                     ${TareasProyectos.getInitials(proyecto.creador.nombre)}
                 </div>
-                <span>${proyecto.creador.nombre}</span>
             </div>
-        ` : `<span style="color: var(--apple-label-secondary);">Sin información</span>`;
+        ` : `<div style="display: flex; justify-content: center; align-items: center; width: 100%;"><span style="color: var(--apple-label-secondary);">?</span></div>`;
         
         row.innerHTML = `
             <div class="table-cell name-cell" onclick="abrirProyecto(${proyecto.id})">${proyecto.nombre}</div>
