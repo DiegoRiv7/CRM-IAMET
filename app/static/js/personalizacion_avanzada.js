@@ -119,6 +119,21 @@ function applyTheme(theme) {
         theme = 'dark';
     }
 
+    // Apply the theme to the main document
+    const html = document.documentElement;
+    html.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme', 'perla-theme');
+    html.removeAttribute('data-theme');
+
+    if (theme === 'pink' || theme === 'white' || theme === 'coffee' || theme === 'perla') {
+        html.classList.add('light-theme');
+    } else {
+        html.classList.add('dark-theme');
+    }
+
+    if (theme !== 'dark') {
+        html.setAttribute('data-theme', theme);
+    }
+
     updateThemePreview(theme);
 
     document.querySelectorAll('.theme-dot-container').forEach(container => {
