@@ -15314,14 +15314,24 @@ function guardarConfiguracionProyecto() {
     
     // Add selected opportunities IDs
     const selectedOportunidades = [];
-    document.querySelectorAll('#current-opportunities [data-oportunidad-id]').forEach(oppElement => {
+    document.querySelectorAll('#current-opportunities [data-oportunidad-id]').forEach((oppElement, index) => {
         const oportunidadId = oppElement.dataset.oportunidadId;
-        if (oportunidadId && oportunidadId !== '') {
-            selectedOportunidades.push(parseInt(oportunidadId));
+        console.log(`📤 Revisando oportunidad ${index}: ID=${oportunidadId}, element:`, oppElement);
+        
+        if (oportunidadId && oportunidadId !== '' && !isNaN(oportunidadId)) {
+            const numericId = parseInt(oportunidadId);
+            if (numericId > 0) { // Solo IDs positivos válidos
+                selectedOportunidades.push(numericId);
+                console.log(`✅ ID válido agregado: ${numericId}`);
+            } else {
+                console.log(`❌ ID inválido ignorado: ${oportunidadId}`);
+            }
+        } else {
+            console.log(`❌ ID vacío o NaN ignorado: ${oportunidadId}`);
         }
     });
     data['oportunidades_ids'] = selectedOportunidades;
-    console.log('📤 Oportunidades seleccionadas:', selectedOportunidades);
+    console.log('📤 Oportunidades seleccionadas finales:', selectedOportunidades);
     
     // Add selected members from configuration
     const selectedMembers = [];
@@ -15925,12 +15935,19 @@ function selectOportunidad(opp) {
 function removeOportunidad(oportunidadId) {
     console.log('🗑️ Removiendo oportunidad:', oportunidadId);
     
+    // Validar que el ID es válido
+    if (!oportunidadId || isNaN(oportunidadId)) {
+        console.error('❌ ID de oportunidad inválido:', oportunidadId);
+        return;
+    }
+    
     const oportunidadElement = document.querySelector(`[data-oportunidad-id="${oportunidadId}"]`);
     const currentOpportunities = document.getElementById('current-opportunities');
     
     if (oportunidadElement) {
         const nombreOportunidad = oportunidadElement.querySelector('span').textContent;
         oportunidadElement.remove();
+        console.log(`✅ Oportunidad ${oportunidadId} removida del DOM`);
         
         // Si no quedan oportunidades, mostrar mensaje
         if (currentOpportunities.children.length === 0) {
@@ -15942,6 +15959,8 @@ function removeOportunidad(oportunidadId) {
         }
         
         showNotification(`Oportunidad "${nombreOportunidad}" removida del proyecto`, 'success');
+    } else {
+        console.error('❌ No se encontró elemento con data-oportunidad-id:', oportunidadId);
     }
 }
 
