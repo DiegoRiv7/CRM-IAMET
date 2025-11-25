@@ -15968,7 +15968,7 @@ function selectOportunidad(opp) {
     showNotification(`Oportunidad "${opp.titulo}" agregada al proyecto`, 'success');
 }
 
-function removeOportunidad(oportunidadId) {
+async function removeOportunidad(oportunidadId) {
     console.log('🗑️ Removiendo oportunidad:', oportunidadId);
     
     // Validar que el ID es válido
@@ -15980,23 +15980,83 @@ function removeOportunidad(oportunidadId) {
     const oportunidadElement = document.querySelector(`[data-oportunidad-id="${oportunidadId}"]`);
     const currentOpportunities = document.getElementById('current-opportunities');
     
-    if (oportunidadElement) {
-        const nombreOportunidad = oportunidadElement.querySelector('span').textContent;
-        oportunidadElement.remove();
-        console.log(`✅ Oportunidad ${oportunidadId} removida del DOM`);
+    if (!oportunidadElement) {
+        console.error('❌ No se encontró elemento con data-oportunidad-id:', oportunidadId);
+        return;
+    }
+    
+    const nombreOportunidad = oportunidadElement.querySelector('span').textContent;
+    
+    // Aplicar efecto visual de eliminación inmediata
+    oportunidadElement.style.transition = 'all 0.3s ease-out';
+    oportunidadElement.style.opacity = '0.5';
+    oportunidadElement.style.transform = 'translateX(-10px)';
+    
+    // Deshabilitar el botón para evitar clics múltiples
+    const removeBtn = oportunidadElement.querySelector('.config-danger');
+    if (removeBtn) {
+        removeBtn.style.pointerEvents = 'none';
+        removeBtn.textContent = 'Removiendo...';
+    }
+    
+    try {
+        // Enviar petición al servidor para eliminar la oportunidad del proyecto
+        const response = await fetch(`/app/api/proyecto/${PROYECTO_ID}/remove-oportunidad/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                oportunidad_id: oportunidadId
+            })
+        });
         
-        // Si no quedan oportunidades, mostrar mensaje
-        if (currentOpportunities.children.length === 0) {
-            const noMessage = document.createElement('div');
-            noMessage.id = 'no-opportunities-message';
-            noMessage.style.cssText = 'color: #bbbbbb; font-style: italic; padding: 10px;';
-            noMessage.textContent = 'No hay oportunidades ligadas';
-            currentOpportunities.appendChild(noMessage);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            // Eliminación exitosa - remover elemento del DOM con animación
+            setTimeout(() => {
+                oportunidadElement.remove();
+                console.log(`✅ Oportunidad ${oportunidadId} removida exitosamente`);
+                
+                // Si no quedan oportunidades, mostrar mensaje
+                if (currentOpportunities.children.length === 0 || 
+                    (currentOpportunities.children.length === 1 && currentOpportunities.querySelector('#no-opportunities-message'))) {
+                    
+                    // Remover mensaje previo si existe
+                    const existingMessage = document.getElementById('no-opportunities-message');
+                    if (existingMessage) {
+                        existingMessage.remove();
+                    }
+                    
+                    const noMessage = document.createElement('div');
+                    noMessage.id = 'no-opportunities-message';
+                    noMessage.style.cssText = 'color: #bbbbbb; font-style: italic; padding: 10px;';
+                    noMessage.textContent = 'No hay oportunidades ligadas';
+                    currentOpportunities.appendChild(noMessage);
+                }
+                
+                showNotification(`Oportunidad "${nombreOportunidad}" removida del proyecto`, 'success');
+            }, 300);
+            
+        } else {
+            throw new Error(data.error || 'Error al remover la oportunidad');
         }
         
-        showNotification(`Oportunidad "${nombreOportunidad}" removida del proyecto`, 'success');
-    } else {
-        console.error('❌ No se encontró elemento con data-oportunidad-id:', oportunidadId);
+    } catch (error) {
+        console.error('❌ Error removiendo oportunidad:', error);
+        
+        // Revertir efectos visuales en caso de error
+        oportunidadElement.style.opacity = '1';
+        oportunidadElement.style.transform = 'translateX(0)';
+        
+        if (removeBtn) {
+            removeBtn.style.pointerEvents = 'auto';
+            removeBtn.textContent = 'Remover';
+        }
+        
+        showNotification(`Error al remover oportunidad: ${error.message}`, 'error');
     }
 }
 
