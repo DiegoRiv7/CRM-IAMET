@@ -5234,17 +5234,19 @@ function applySavedDockOrder() {
 
 // Inicializar estados de UI una vez que el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
+    // INMEDIATO: Marcar docks como listos y hacerlos visibles
+    const allDocks = document.querySelectorAll('.macos-dock');
+    allDocks.forEach(dock => {
+        dock.classList.add('dock-ready');
+        dock.style.opacity = '1';
+        dock.style.visibility = 'visible';
+    });
+    console.log('✅ Marked', allDocks.length, 'docks as ready immediately');
+    
     setTimeout(function() {
         const currentPosition = localStorage.getItem('dockPosition') || 'bottom';
         const currentType = localStorage.getItem('dockType') || 'normal';
         console.log('Setting UI states for dock position:', currentPosition, 'type:', currentType);
-        
-        // Marcar docks como listos para habilitar transiciones normales
-        const allDocks = document.querySelectorAll('.macos-dock');
-        allDocks.forEach(dock => {
-            dock.classList.add('dock-ready');
-        });
-        console.log('Marked', allDocks.length, 'docks as ready');
         
         // Asegurar que solo esté visible el dock correcto
         if (typeof ensureCorrectDockVisibility === 'function') {
