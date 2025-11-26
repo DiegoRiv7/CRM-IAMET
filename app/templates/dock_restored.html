@@ -1,0 +1,152 @@
+<style>
+    /* Dock básico pero funcional */
+    .macos-dock {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(29, 29, 31, 0.9);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 25px;
+        padding: 10px 15px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        z-index: 9999;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .dock-item {
+        width: 56px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 15px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        text-decoration: none;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .dock-item:hover {
+        transform: translateY(-8px) scale(1.1);
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .dock-item.home-icon {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .dock-item.todos-icon {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .dock-item.clientes-icon {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .dock-item.cotizaciones-icon {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+
+    .dock-item.dashboard-icon {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+
+    .dock-icon {
+        font-size: 24px;
+        color: white;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .dock-label {
+        position: absolute;
+        bottom: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+
+    .dock-item:hover .dock-label {
+        opacity: 1;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .macos-dock {
+            bottom: 10px;
+            padding: 8px 12px;
+        }
+        
+        .dock-item {
+            width: 48px;
+            height: 48px;
+        }
+        
+        .dock-icon {
+            font-size: 20px;
+        }
+    }
+</style>
+
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<!-- Dock HTML -->
+<nav class="macos-dock" id="dock-bottom">
+    <a href="/app/home/" class="dock-item home-icon" title="Home">
+        <i class="dock-icon fas fa-home"></i>
+        <span class="dock-label">Home</span>
+    </a>
+    
+    <a href="/app/todos/" class="dock-item todos-icon" title="Oportunidades">
+        <i class="dock-icon fas fa-tasks"></i>
+        <span class="dock-label">Oportunidades</span>
+    </a>
+    
+    <a href="/app/tareas-proyectos/" class="dock-item clientes-icon" title="Tareas y Proyectos">
+        <i class="dock-icon fas fa-project-diagram"></i>
+        <span class="dock-label">Tareas y Proyectos</span>
+    </a>
+    
+    <a href="/app/clientes/" class="dock-item clientes-icon" title="Clientes">
+        <i class="dock-icon fas fa-users"></i>
+        <span class="dock-label">Clientes</span>
+    </a>
+    
+    <a href="/app/cotizaciones/" class="dock-item cotizaciones-icon" title="Cotizaciones">
+        <i class="dock-icon fas fa-file-invoice-dollar"></i>
+        <span class="dock-label">Cotizaciones</span>
+    </a>
+    
+    <a href="/app/dashboard/" class="dock-item dashboard-icon" title="Dashboard">
+        <i class="dock-icon fas fa-chart-bar"></i>
+        <span class="dock-label">Dashboard</span>
+    </a>
+</nav>
+
+<script>
+// Script simple y funcional
+document.addEventListener('DOMContentLoaded', function() {
+    const dock = document.getElementById('dock-bottom');
+    if (dock) {
+        dock.style.opacity = '1';
+        dock.style.visibility = 'visible';
+        console.log('✅ Dock restaurado y funcionando');
+    }
+});
+</script>
