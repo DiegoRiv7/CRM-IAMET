@@ -164,9 +164,13 @@
     /* Estilos para proyectos privados sin acceso */
     .proyecto-content-privado {
         position: relative;
-        filter: blur(8px);
         pointer-events: none;
         user-select: none;
+    }
+
+    /* Aplicar blur solo al contenido, no a los pseudo-elementos */
+    .proyecto-content-privado > * {
+        filter: blur(8px);
     }
 
     .proyecto-content-privado::after {
@@ -187,12 +191,20 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        font-size: 4rem;
-        color: rgba(255, 255, 255, 0.9);
-        z-index: 12;
-        text-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+        font-size: 5rem;
+        color: #ffffff;
+        z-index: 15;
+        text-shadow: 
+            0 0 50px rgba(255, 255, 255, 0.8),
+            0 0 30px rgba(255, 255, 255, 0.6),
+            0 0 15px rgba(255, 255, 255, 0.4);
         animation: lockPulse 2s ease-in-out infinite;
-        filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+        filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.7));
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 20px;
+        padding: 1rem;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
     }
 
     @keyframes lockPulse {
@@ -17915,10 +17927,13 @@ setTimeout(() => {
 // Sistema de privacidad para proyectos
 {% if not tiene_acceso and puede_solicitar_acceso %}
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔒 Inicializando sistema de privacidad...');
     const btnSolicitarAcceso = document.getElementById('btnSolicitarAcceso');
+    console.log('🔒 Botón encontrado:', btnSolicitarAcceso);
     
     if (btnSolicitarAcceso) {
         btnSolicitarAcceso.addEventListener('click', function() {
+            console.log('🔒 Clic en botón Solicitar Unirse!');
             // Crear modal de confirmación
             const modal = document.createElement('div');
             modal.style.cssText = `
