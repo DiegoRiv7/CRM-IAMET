@@ -422,6 +422,28 @@ html[data-theme="coffee"] {
     </div>
     {% include 'dock.html' %}
 
+    <!-- DOCK GLOBAL FIX: Asegurar que dock funcione en todas las páginas -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            // Ocultar todos los docks primero
+            const allDocks = document.querySelectorAll('.macos-dock');
+            allDocks.forEach(dock => {
+                dock.style.display = 'none';
+            });
+            
+            // Mostrar solo dock-bottom (el dock principal)
+            const bottomDock = document.getElementById('dock-bottom');
+            if (bottomDock) {
+                bottomDock.style.display = 'flex';
+                bottomDock.style.opacity = '1';
+                bottomDock.style.visibility = 'visible';
+                bottomDock.classList.add('dock-ready');
+            }
+        }, 50);
+    });
+    </script>
+
     <!-- Responsive utilities (solo las que necesitamos) -->
     <script>
         // Responsive utilities básicas
