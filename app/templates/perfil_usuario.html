@@ -33,7 +33,7 @@
             <h2 class="text-lg font-bold text-blue-300 mb-2" style="font-size: clamp(1.1rem, 2vw, 1.3rem);">Oportunidad más grande</h2>
             {% if oportunidad_mayor %}
                 <p class="text-xl font-extrabold text-white mb-1">{{ oportunidad_mayor.oportunidad }}</p>
-                <p class="text-gray-300">Monto: <span class="font-bold text-blue-400">${{ oportunidad_mayor.monto|floatformat:2 }}</span></p>
+                <p class="text-gray-300">Monto: <span class="font-bold text-blue-400">${{ oportunidad_mayor.monto|format_currency_es }}</span></p>
                 <span class="text-xs text-blue-200">Probabilidad: {{ oportunidad_mayor.probabilidad_cierre }}%</span>
                 <a href="#oportunidades" class="text-blue-400 hover:underline text-sm mt-2">Ver todas ordenadas por monto</a>
             {% else %}
@@ -43,7 +43,7 @@
         <!-- Total cobrado del mes actual -->
         <div class="bg-gray-800/80 p-6 rounded-2xl shadow border border-indigo-600 flex flex-col justify-between">
             <h2 class="text-lg font-bold text-indigo-300 mb-2" style="font-size: clamp(1.1rem, 2vw, 1.3rem);">Total cobrado ({{ mes_actual }})</h2>
-            <p class="text-indigo-200 mb-2">Monto total cobrado: <span class="font-bold text-indigo-400">${{ monto_total_cobrado_mes|floatformat:2 }}</span></p>
+            <p class="text-indigo-200 mb-2">Monto total cobrado: <span class="font-bold text-indigo-400">${{ monto_total_cobrado_mes|format_currency_es }}</span></p>
             {% if oportunidades_cobradas_mes %}
                 <a href="#cobradas" class="text-indigo-400 hover:underline text-sm mt-2">Ver oportunidades cobradas</a>
             {% else %}
@@ -53,12 +53,12 @@
         <!-- Oportunidades por cobrar -->
         <div class="bg-gray-800/80 p-6 rounded-2xl shadow border border-green-600 flex flex-col justify-between">
             <h2 class="text-lg font-bold text-green-300 mb-2" style="font-size: clamp(1.1rem, 2vw, 1.3rem);">Oportunidades por cobrar ({{ mes_actual }})</h2>
-            <p class="text-green-200 mb-2">Monto total por cobrar: <span class="font-bold text-green-400">${{ monto_total_por_cobrar_mes|floatformat:2 }}</span></p>
+            <p class="text-green-200 mb-2">Monto total por cobrar: <span class="font-bold text-green-400">${{ monto_total_por_cobrar_mes|format_currency_es }}</span></p>
             {% if oportunidades_por_cobrar_mes %}
                 <ul class="text-sm text-green-200 space-y-1">
                     {% for op in oportunidades_por_cobrar_mes %}
                         <li>
-                            <span class="font-bold">{{ op.oportunidad }}</span> — ${{ op.monto|floatformat:2 }}
+                            <span class="font-bold">{{ op.oportunidad }}</span> — ${{ op.monto|format_currency_es }}
                             <span class="ml-2 text-xs text-green-400">({{ op.probabilidad_cierre }}% prob.)</span>
                         </li>
                     {% endfor %}
@@ -75,7 +75,7 @@
                 <ul class="mb-2 text-yellow-200">
                     {% for op in oportunidades_creadas_mes %}
                         <li>
-                            <span class="font-bold">{{ op.oportunidad }}</span> — ${{ op.monto|floatformat:2 }}
+                            <span class="font-bold">{{ op.oportunidad }}</span> — ${{ op.monto|format_currency_es }}
                             <span class="ml-2 text-xs text-yellow-400">({{ op.probabilidad_cierre }}% prob.)</span>
                         </li>
                     {% endfor %}
@@ -108,7 +108,7 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ oportunidad.get_area_display }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ oportunidad.contacto }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ oportunidad.get_producto_display }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${{ oportunidad.monto|floatformat:2 }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${{ oportunidad.monto|format_currency_es }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{% if oportunidad.cliente %}{{ oportunidad.cliente.nombre_empresa }}{% else %}N/A{% endif %}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ oportunidad.get_mes_cierre_display }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">

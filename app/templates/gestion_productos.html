@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load app_filters %}
 {% block content %}
 <!DOCTYPE html>
 <html lang="es">
@@ -504,7 +505,7 @@
                                 <span class="text-sm">{{ producto.descripcion }}</span>
                             </td>
                             <td>
-                                <span class="font-semibold">${{ producto.precio|floatformat:2 }}</span>
+                                <span class="font-semibold">${{ producto.precio|format_currency_es }}</span>
                             </td>
                             <td>
                                 <span class="text-xs" style="color: var(--apple-label-tertiary);">{{ producto.fecha_actualizacion|date:"d/m/Y H:i" }}</span>

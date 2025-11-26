@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load app_filters %}
 
 {% block title %}Oportunidades Perdidas - Bitrix24{% endblock %}
 
@@ -69,7 +70,7 @@
                                         <td>{{ opportunity.usuario.get_full_name|default:opportunity.usuario.username }}</td>
                                         <td>
                                             {% if opportunity.monto %}
-                                                ${{ opportunity.monto|floatformat:2 }}
+                                                ${{ opportunity.monto|format_currency_es }}
                                             {% else %}
                                                 <span class="text-muted">-</span>
                                             {% endif %}

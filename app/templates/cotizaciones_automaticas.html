@@ -1078,7 +1078,7 @@
                         <div class="autocomplete-suggestion" data-index="${index}" onclick="selectProduct(${rowNumber}, '${producto.noParte}', '${producto.descripcion.replace(/'/g, "\\'")}', ${producto.precio})">
                             <strong>${producto.noParte}</strong><br>
                             <small>${producto.descripcion}</small><br>
-                            <small style="color: var(--apple-blue);">$${producto.precio.toLocaleString()}</small>
+                            <small style="color: var(--apple-blue);">$${producto.precio.toLocaleString('es-MX')}</small>
                         </div>
                     `).join('');
                     suggestionsContainer.style.display = 'block';

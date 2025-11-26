@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load app_filters %}
 {% block content %}
 <!DOCTYPE html>
 <html lang="es">
@@ -446,10 +447,10 @@
                                 <span class="text-sm">{{ producto.color|default:"-" }}</span>
                             </td>
                             <td>
-                                <span class="font-semibold">${{ producto.precio_unitario|floatformat:2 }}</span>
+                                <span class="font-semibold">${{ producto.precio_unitario|format_currency_es }}</span>
                             </td>
                             <td>
-                                <span class="text-sm">${{ producto.precio_proveedor|floatformat:2 }}</span>
+                                <span class="text-sm">${{ producto.precio_proveedor|format_currency_es }}</span>
                             </td>
                             <td>
                                 <span class="text-sm">{{ producto.marca|default:"-" }}</span>

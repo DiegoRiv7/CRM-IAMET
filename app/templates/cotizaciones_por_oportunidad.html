@@ -1445,7 +1445,7 @@
                                 {{ cotizacion.titulo }}
                             </a>
                             <div class="cotizacion-meta">
-                                <span class="cotizacion-monto-simple">${{ cotizacion.total|floatformat:2 }}</span>
+                                <span class="cotizacion-monto-simple">${{ cotizacion.total|format_currency_es }}</span>
                                 <span class="cotizacion-fecha-simple">{{ cotizacion.fecha_creacion|tijuana_time:"d/m/Y" }}</span>
                             </div>
                         </div>
@@ -1481,7 +1481,7 @@
                             </a>
                             <div class="volumetria-meta">
                                 <span class="volumetria-nodos">{{ volumetria.cantidad_nodos }} nodos</span>
-                                <span class="volumetria-monto-simple">${{ volumetria.total|floatformat:2 }}</span>
+                                <span class="volumetria-monto-simple">${{ volumetria.total|format_currency_es }}</span>
                                 <span class="volumetria-fecha-simple">{{ volumetria.fecha_creacion|date:"d/m/Y" }}</span>
                             </div>
                         </div>

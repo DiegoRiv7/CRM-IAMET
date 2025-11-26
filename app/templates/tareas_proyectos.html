@@ -5092,8 +5092,10 @@ function abrirProyecto(id) {
 }
 
 function abrirOportunidad(oportunidadId) {
-    // Redirigir a la vista de oportunidades con el filtro específico
-    window.location.href = `/app/todos/?oportunidad_id=${oportunidadId}`;
+    // Guardar ID de oportunidad para abrir automáticamente
+    localStorage.setItem('autoOpenOportunidad', oportunidadId);
+    // Redirigir a la vista de oportunidades
+    window.location.href = '/app/todos/';
 }
 
 // --- USER SEARCH & MEMBERS FUNCTIONALITY ---

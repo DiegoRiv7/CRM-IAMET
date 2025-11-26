@@ -1,3 +1,4 @@
+{% load app_filters %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -459,11 +460,11 @@
             <td class="part-number">{{ item.numero_parte }}</td>
             <td class="text-center">{{ item.cantidad }}</td>
             <td class="product-name">{{ item.descripcion }}</td>
-            <td class="text-right">${{ item.precio_cliente|floatformat:2 }}</td>
+            <td class="text-right">${{ item.precio_cliente|format_currency_es }}</td>
             <td class="text-center">{{ item.descuento_cliente|floatformat:1 }}%</td>
-            <td class="text-right">${{ item.precio_final_cliente|floatformat:2 }}</td>
-            <td class="text-right">${{ item.total_proveedor|floatformat:2 }}</td>
-            <td class="text-right">${{ item.ganancia|floatformat:2 }}</td>
+            <td class="text-right">${{ item.precio_final_cliente|format_currency_es }}</td>
+            <td class="text-right">${{ item.total_proveedor|format_currency_es }}</td>
+            <td class="text-right">${{ item.ganancia|format_currency_es }}</td>
           </tr>
           {% empty %}
           <tr>
@@ -481,15 +482,15 @@
       <table class="totals-table">
         <tr>
           <td class="label">Subtotal:</td>
-          <td class="value">${{ volumetria.subtotal|floatformat:2 }}</td>
+          <td class="value">${{ volumetria.subtotal|format_currency_es }}</td>
         </tr>
         <tr>
           <td class="label">IVA (16%):</td>
-          <td class="value">${{ volumetria.iva|floatformat:2 }}</td>
+          <td class="value">${{ volumetria.iva|format_currency_es }}</td>
         </tr>
         <tr class="total-row">
           <td class="label">TOTAL:</td>
-          <td class="value">${{ volumetria.total|floatformat:2 }}</td>
+          <td class="value">${{ volumetria.total|format_currency_es }}</td>
         </tr>
       </table>
     </div>
@@ -504,11 +505,11 @@
         </div>
         <div class="profit-item highlight">
           <div class="label">Ganancia Bruta</div>
-          <div class="value">${{ volumetria.ganancia_total|default:"0"|floatformat:2 }}</div>
+          <div class="value">${{ volumetria.ganancia_total|default:"0"|format_currency_es }}</div>
         </div>
         <div class="profit-item">
           <div class="label">Precio por Nodo</div>
-          <div class="value">${{ volumetria.precio_por_nodo|default:"0"|floatformat:2 }}</div>
+          <div class="value">${{ volumetria.precio_por_nodo|default:"0"|format_currency_es }}</div>
         </div>
       </div>
     </div>
