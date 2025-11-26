@@ -535,7 +535,7 @@ def api_proyectos(request):
                         oportunidades.append({
                             'id': oportunidad.id,
                             'titulo': oportunidad.oportunidad,
-                            'empresa': oportunidad.empresa
+                            'cliente': oportunidad.cliente.nombre if hasattr(oportunidad, 'cliente') and oportunidad.cliente else None
                         })
                 proyectos_data[-1]['oportunidades_ligadas'] = oportunidades
                 print(f"DEBUG: Total oportunidades procesadas: {len(oportunidades)}")
