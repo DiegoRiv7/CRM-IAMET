@@ -517,15 +517,23 @@ def api_proyectos(request):
                 'miembros': proyecto.get_miembros_display(),
                 'privacidad': proyecto.privacidad,
                 'tipo': proyecto.tipo,
-                'mi_rol': proyecto.get_rol_usuario(request.user),
-                'oportunidades_ligadas': [
-                    {
-                        'id': oportunidad.id,
-                        'titulo': oportunidad.oportunidad,
-                        'empresa': oportunidad.empresa
-                    } for oportunidad in proyecto.oportunidades_ligadas.all()
-                ]
+                'mi_rol': proyecto.get_rol_usuario(request.user)
             })
+            
+            # Agregar oportunidades de forma segura
+            try:
+                oportunidades = []
+                if hasattr(proyecto, 'oportunidades_ligadas'):
+                    for oportunidad in proyecto.oportunidades_ligadas.all():
+                        oportunidades.append({
+                            'id': oportunidad.id,
+                            'titulo': oportunidad.oportunidad,
+                            'empresa': oportunidad.empresa
+                        })
+                proyectos_data[-1]['oportunidades_ligadas'] = oportunidades
+            except Exception as opp_error:
+                print(f"Error obteniendo oportunidades para proyecto {proyecto.id}: {opp_error}")
+                proyectos_data[-1]['oportunidades_ligadas'] = []
 
         return JsonResponse({
             'success': True,
