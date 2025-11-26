@@ -155,6 +155,12 @@
       break-inside: avoid;
     }
     
+    /* Primera sección - no forzar salto de página */
+    .first-section-container {
+      page-break-inside: auto;
+      break-inside: auto;
+    }
+    
     /* Evitar saltos de página dentro de las tablas */
     .items-table {
       page-break-inside: auto;
@@ -207,7 +213,7 @@
 
       {% if secciones %}
         {% for seccion in secciones %}
-          <div class="section-container">
+          <div class="{% if forloop.first %}first-section-container{% else %}section-container{% endif %}">
             {% if seccion.titulo %}
             <div class="section-title" style="margin: 20px 0 15px 0; padding: 12px 15px; background: #e0f2f7; border-left: 4px solid #00796b; text-align: center;">
               <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #00796b; text-transform: uppercase; letter-spacing: 0.5px;">{{ seccion.titulo }}</h3>

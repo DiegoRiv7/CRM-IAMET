@@ -154,6 +154,12 @@
       break-inside: avoid;
     }
     
+    /* Primera sección - no forzar salto de página */
+    .first-section-container {
+      page-break-inside: auto;
+      break-inside: auto;
+    }
+    
     /* Evitar saltos de página dentro de las tablas */
     .products-table {
       page-break-inside: auto;
@@ -210,7 +216,7 @@
 
     <div style="margin-top: 20px;">
       {% for seccion in secciones %}
-        <div class="section-container">
+        <div class="{% if forloop.first %}first-section-container{% else %}section-container{% endif %}">
           {% if seccion.titulo %}
           <div class="section-title">
             <h3>{{ seccion.titulo }}</h3>
