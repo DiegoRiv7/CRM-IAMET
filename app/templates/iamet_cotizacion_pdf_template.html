@@ -1,3 +1,4 @@
+{% load app_filters %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -215,11 +216,11 @@
                 <td>{{ detalle.no_parte }}</td>
                 <td class="descripcion">{{ detalle.descripcion|default:"-"|linebreaksbr }}</td>
                 <td>{{ detalle.cantidad }}</td>
-                <td class="text-right">${{ detalle.precio_unitario|floatformat:2 }}</td>
+                <td class="text-right">${{ detalle.precio_unitario|format_currency_es }}</td>
                 {% if cotizacion.descuento_visible %}
                 <td>{{ detalle.descuento_porcentaje|floatformat:2 }}%</td>
                 {% endif %}
-                <td class="text-right">${{ detalle.get_total_item|floatformat:2 }}</td>
+                <td class="text-right">${{ detalle.get_total_item|format_currency_es }}</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -232,15 +233,15 @@
       <table class="totals">
         <tr>
           <td class="label">Subtotal:</td>
-          <td class="value">${{ cotizacion.subtotal|floatformat:2 }}</td>
+          <td class="value">${{ cotizacion.subtotal|format_currency_es }}</td>
         </tr>
         <tr>
           <td class="label">IVA ({{ iva_rate_percentage|floatformat:0 }}%):</td>
-          <td class="value">${{ cotizacion.iva_amount|floatformat:2 }}</td>
+          <td class="value">${{ cotizacion.iva_amount|format_currency_es }}</td>
         </tr>
         <tr class="total">
           <td class="label">Total:</td>
-          <td class="value">${{ cotizacion.total|floatformat:2 }} {{ cotizacion.moneda }}</td>
+          <td class="value">${{ cotizacion.total|format_currency_es }} {{ cotizacion.moneda }}</td>
         </tr>
       </table>
 
