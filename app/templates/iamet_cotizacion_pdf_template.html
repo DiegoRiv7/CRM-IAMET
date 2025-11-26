@@ -142,6 +142,24 @@
       text-align: justify;
       text-justify: inter-word;
     }
+    
+    /* CSS para evitar saltos de página entre títulos y tablas */
+    .section-title {
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+    
+    /* Contenedor de sección completa */
+    .section-container {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    
+    /* Evitar saltos de página dentro de las tablas */
+    .items-table {
+      page-break-inside: auto;
+      break-inside: auto;
+    }
   </style>
 </head>
 <body>
@@ -189,13 +207,14 @@
 
       {% if secciones %}
         {% for seccion in secciones %}
-          {% if seccion.titulo %}
-          <div style="margin: 20px 0 15px 0; padding: 12px 15px; background: #e0f2f7; border-left: 4px solid #00796b; text-align: center;">
-            <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #00796b; text-transform: uppercase; letter-spacing: 0.5px;">{{ seccion.titulo }}</h3>
-          </div>
-          {% endif %}
-          
-          <table class="items-table">
+          <div class="section-container">
+            {% if seccion.titulo %}
+            <div class="section-title" style="margin: 20px 0 15px 0; padding: 12px 15px; background: #e0f2f7; border-left: 4px solid #00796b; text-align: center;">
+              <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #00796b; text-transform: uppercase; letter-spacing: 0.5px;">{{ seccion.titulo }}</h3>
+            </div>
+            {% endif %}
+            
+            <table class="items-table">
             <thead>
               <tr>
                 <th>No. Partida</th>
@@ -225,6 +244,7 @@
               {% endfor %}
             </tbody>
           </table>
+          </div>
         {% endfor %}
       {% else %}
         <p>Esta cotización no tiene productos.</p>

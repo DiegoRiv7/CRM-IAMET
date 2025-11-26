@@ -5092,10 +5092,8 @@ function abrirProyecto(id) {
 }
 
 function abrirOportunidad(oportunidadId) {
-    // Guardar ID de oportunidad para abrir automáticamente
-    localStorage.setItem('autoOpenOportunidad', oportunidadId);
-    // Redirigir a la vista de oportunidades
-    window.location.href = '/app/todos/';
+    // Ir directamente a las cotizaciones de la oportunidad que es donde aparece la información detallada
+    window.location.href = `/app/cotizaciones/oportunidad/${oportunidadId}/`;
 }
 
 // --- USER SEARCH & MEMBERS FUNCTIONALITY ---

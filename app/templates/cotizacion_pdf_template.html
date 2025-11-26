@@ -136,6 +136,8 @@
       padding: 8px;
       background: #f8f9fa;
       border-left: 4px solid #333;
+      page-break-after: avoid;
+      break-after: avoid;
     }
     .section-title h3 {
       margin: 0;
@@ -144,6 +146,18 @@
       color: #333;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+    }
+    
+    /* Contenedor de sección completa */
+    .section-container {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    
+    /* Evitar saltos de página dentro de las tablas */
+    .products-table {
+      page-break-inside: auto;
+      break-inside: auto;
     }
     
     .terms { margin-top: 25px; padding: 15px; background: #f8f9fa; font-size: 12px; }
@@ -196,6 +210,7 @@
 
     <div style="margin-top: 20px;">
       {% for seccion in secciones %}
+        <div class="section-container">
           {% if seccion.titulo %}
           <div class="section-title">
             <h3>{{ seccion.titulo }}</h3>
@@ -231,6 +246,7 @@
               {% endfor %}
             </tbody>
           </table>
+        </div>
       {% empty %}
         <p>Esta cotización no tiene productos.</p>
       {% endfor %}

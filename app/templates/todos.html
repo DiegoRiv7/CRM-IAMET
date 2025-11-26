@@ -3587,34 +3587,5 @@ setTimeout(() => {
         }
     });
 }, 1000);
-
-// Auto-abrir oportunidad desde proyectos
-document.addEventListener('DOMContentLoaded', function() {
-    const autoOpenId = localStorage.getItem('autoOpenOportunidad');
-    if (autoOpenId) {
-        // Limpiar el localStorage
-        localStorage.removeItem('autoOpenOportunidad');
-        
-        // Esperar un momento para que la página se cargue completamente
-        setTimeout(() => {
-            // Buscar la fila de la oportunidad y hacer clic
-            const filaOportunidad = document.querySelector(`tr[data-id="${autoOpenId}"], .opportunity-row[data-id="${autoOpenId}"], [data-opportunity-id="${autoOpenId}"]`);
-            if (filaOportunidad) {
-                filaOportunidad.click();
-                console.log('✅ Auto-opened opportunity:', autoOpenId);
-            } else {
-                // Si no encuentra la fila específica, buscar por ID en cualquier elemento
-                const elementos = document.querySelectorAll('[data-id], [onclick]');
-                elementos.forEach(el => {
-                    if (el.getAttribute('data-id') == autoOpenId || 
-                        (el.getAttribute('onclick') && el.getAttribute('onclick').includes(autoOpenId))) {
-                        el.click();
-                        console.log('✅ Auto-opened opportunity (fallback):', autoOpenId);
-                    }
-                });
-            }
-        }, 500);
-    }
-});
 </script>
 {% endblock %}
