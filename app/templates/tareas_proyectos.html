@@ -698,6 +698,29 @@
         white-space: normal !important;
         word-wrap: break-word;
         line-height: 1.3;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .opportunity-cell:hover {
+        background: rgba(10, 132, 255, 0.1);
+        border-radius: 8px;
+        transform: translateY(-1px);
+    }
+    
+    .opportunity-link {
+        color: var(--apple-blue);
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .opportunity-link:hover {
+        text-decoration: underline;
+    }
+    
+    .opportunity-text {
+        color: var(--apple-label-secondary);
+        font-style: italic;
     }
 
     /* Member Avatars */
@@ -3185,12 +3208,15 @@ function mostrarProyectosTabla(proyectos) {
         
         
         // Generar contenido de oportunidades
-        let oportunidadHtml = '<span style="color: var(--apple-label-secondary); font-style: italic;">Sin oportunidad</span>';
+        let oportunidadHtml = '<span class="opportunity-text">Sin oportunidad</span>';
+        let oportunidadClick = '';
         if (proyecto.oportunidades_ligadas && proyecto.oportunidades_ligadas.length > 0) {
+            const primeraOportunidad = proyecto.oportunidades_ligadas[0];
+            oportunidadClick = `onclick="abrirOportunidad(${primeraOportunidad.id})"`;
             if (proyecto.oportunidades_ligadas.length === 1) {
-                oportunidadHtml = proyecto.oportunidades_ligadas[0].titulo;
+                oportunidadHtml = `<span class="opportunity-link">${primeraOportunidad.titulo}</span>`;
             } else {
-                oportunidadHtml = `${proyecto.oportunidades_ligadas[0].titulo} <span style="color: var(--apple-label-secondary);">+${proyecto.oportunidades_ligadas.length - 1} más</span>`;
+                oportunidadHtml = `<span class="opportunity-link">${primeraOportunidad.titulo}</span> <span style="color: var(--apple-label-secondary);">+${proyecto.oportunidades_ligadas.length - 1} más</span>`;
             }
         }
         
@@ -3200,7 +3226,7 @@ function mostrarProyectosTabla(proyectos) {
             <div class="table-cell members-cell" onclick="mostrarPopupMiembros(event, ${proyecto.id})">${creadorAvatar}${avatarsHtml}${extraCountHtml}</div>
             <div class="table-cell role-cell"><span class="role-badge ${rolClass}">${proyecto.mi_rol}</span></div>
             <div class="table-cell privacy-cell"><span class="privacy-badge ${proyecto.privacidad}">${proyecto.privacidad}</span></div>
-            <div class="table-cell opportunity-cell">${oportunidadHtml}</div>
+            <div class="table-cell opportunity-cell" ${oportunidadClick}>${oportunidadHtml}</div>
         `;
         
         // Asignar datos del proyecto de forma segura
@@ -5063,6 +5089,11 @@ function mostrarPopupAbriendo(nombreProyecto) {
 function abrirProyecto(id) { 
     // Redirigir a la vista detallada del proyecto
     window.location.href = `/app/proyecto/${id}/`; 
+}
+
+function abrirOportunidad(oportunidadId) {
+    // Redirigir a la vista de oportunidades con el filtro específico
+    window.location.href = `/app/todos/?oportunidad_id=${oportunidadId}`;
 }
 
 // --- USER SEARCH & MEMBERS FUNCTIONALITY ---
