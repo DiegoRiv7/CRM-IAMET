@@ -161,6 +161,50 @@
         min-height: 680px; /* Ligeramente más alto para el dropdown */
     }
 
+    /* Estilos para proyectos privados sin acceso */
+    .proyecto-content-privado {
+        position: relative;
+        filter: blur(8px);
+        pointer-events: none;
+        user-select: none;
+    }
+
+    .proyecto-content-privado::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        border-radius: 16px;
+        z-index: 10;
+    }
+
+    .proyecto-content-privado::before {
+        content: '🔒';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 4rem;
+        color: rgba(255, 255, 255, 0.8);
+        z-index: 11;
+        text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        animation: lockPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes lockPulse {
+        0%, 100% { 
+            opacity: 0.8; 
+            transform: translate(-50%, -50%) scale(1);
+        }
+        50% { 
+            opacity: 1; 
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+    }
+
     .tab-content {
         width: 100%;
         margin: 0;
@@ -5737,6 +5781,23 @@
                 </p>
             </div>
             <div class="header-controls">
+                {% if not tiene_acceso %}
+                    {% if puede_solicitar_acceso %}
+                        <button id="btnSolicitarAcceso" class="apple-btn apple-btn-primary" style="margin-right: 1rem;">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="margin-right: 0.5rem;">
+                                <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                            Solicitar Unirse
+                        </button>
+                    {% else %}
+                        <span class="apple-btn apple-btn-secondary" style="margin-right: 1rem; opacity: 0.6; cursor: not-allowed;">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="margin-right: 0.5rem;">
+                                <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                            Solicitud Pendiente
+                        </span>
+                    {% endif %}
+                {% endif %}
                 <a href="/app/tareas-proyectos/" class="btn-back">
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                         <path d="M19 12H5M12 19l-7-7 7-7"/>
@@ -5776,7 +5837,7 @@
         </div>
 
         <!-- Content -->
-        <div class="proyecto-content">
+        <div class="proyecto-content {% if not tiene_acceso %}proyecto-content-privado{% endif %}">
             <!-- Feed Tab -->
             <div class="tab-content active" id="feed-content">
                 <!-- Modal para nuevo comentario -->
@@ -17849,6 +17910,153 @@ setTimeout(() => {
         console.log('📱 Compact grid layout applied');
     }
 }, 2500);
+
+// Sistema de privacidad para proyectos
+{% if not tiene_acceso and puede_solicitar_acceso %}
+document.addEventListener('DOMContentLoaded', function() {
+    const btnSolicitarAcceso = document.getElementById('btnSolicitarAcceso');
+    
+    if (btnSolicitarAcceso) {
+        btnSolicitarAcceso.addEventListener('click', function() {
+            // Crear modal de confirmación
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                z-index: 10000;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            `;
+            
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: linear-gradient(135deg, rgba(45, 45, 45, 0.95), rgba(35, 35, 35, 0.98));
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 16px;
+                padding: 2rem;
+                max-width: 400px;
+                width: 90%;
+                color: #ffffff;
+                text-align: center;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            `;
+            
+            modalContent.innerHTML = \`
+                <h3 style="margin: 0 0 1rem 0; color: var(--apple-label); font-size: 1.5rem;">
+                    🔒 Solicitar Acceso
+                </h3>
+                <p style="margin: 0 0 1.5rem 0; color: var(--apple-label-secondary);">
+                    ¿Deseas solicitar unirte a este proyecto privado?
+                </p>
+                <textarea id="mensajeSolicitud" placeholder="Mensaje opcional..." style="
+                    width: 100%;
+                    height: 80px;
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    border-radius: 8px;
+                    padding: 0.75rem;
+                    color: #ffffff;
+                    margin-bottom: 1.5rem;
+                    resize: vertical;
+                    font-family: inherit;
+                "></textarea>
+                <div style="display: flex; gap: 1rem; justify-content: center;">
+                    <button id="cancelarSolicitud" class="apple-btn apple-btn-secondary" style="padding: 0.75rem 1.5rem;">
+                        Cancelar
+                    </button>
+                    <button id="confirmarSolicitud" class="apple-btn apple-btn-primary" style="padding: 0.75rem 1.5rem;">
+                        Solicitar
+                    </button>
+                </div>
+            \`;
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Evento para cancelar
+            document.getElementById('cancelarSolicitud').addEventListener('click', function() {
+                document.body.removeChild(modal);
+            });
+            
+            // Evento para confirmar solicitud
+            document.getElementById('confirmarSolicitud').addEventListener('click', function() {
+                const mensaje = document.getElementById('mensajeSolicitud').value;
+                
+                // Deshabilitar botón mientras se procesa
+                this.disabled = true;
+                this.textContent = 'Enviando...';
+                
+                fetch(\`/app/api/solicitar-acceso-proyecto/{{ proyecto.id }}/\`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ mensaje: mensaje })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Mostrar mensaje de éxito
+                        modalContent.innerHTML = \`
+                            <div style="text-align: center;">
+                                <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+                                <h3 style="margin: 0 0 1rem 0; color: var(--apple-green);">¡Solicitud Enviada!</h3>
+                                <p style="margin: 0 0 1.5rem 0; color: var(--apple-label-secondary);">
+                                    Tu solicitud ha sido enviada al creador del proyecto. Te notificaremos cuando sea respondida.
+                                </p>
+                                <button id="cerrarModal" class="apple-btn apple-btn-primary" style="padding: 0.75rem 1.5rem;">
+                                    Entendido
+                                </button>
+                            </div>
+                        \`;
+                        
+                        document.getElementById('cerrarModal').addEventListener('click', function() {
+                            window.location.reload(); // Recargar para actualizar el estado
+                        });
+                        
+                    } else {
+                        throw new Error(data.error || 'Error al enviar solicitud');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    modalContent.innerHTML = \`
+                        <div style="text-align: center;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
+                            <h3 style="margin: 0 0 1rem 0; color: var(--apple-red);">Error</h3>
+                            <p style="margin: 0 0 1.5rem 0; color: var(--apple-label-secondary);">
+                                \${error.message}
+                            </p>
+                            <button id="cerrarModal" class="apple-btn apple-btn-secondary" style="padding: 0.75rem 1.5rem;">
+                                Cerrar
+                            </button>
+                        </div>
+                    \`;
+                    
+                    document.getElementById('cerrarModal').addEventListener('click', function() {
+                        document.body.removeChild(modal);
+                    });
+                });
+            });
+            
+            // Cerrar modal al hacer click fuera
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+        });
+    }
+});
+{% endif %}
 
 </script>
 

@@ -2501,3 +2501,63 @@ class HistorialIntercambio(models.Model):
     
     def __str__(self):
         return f"{self.intercambio.año} - {self.get_accion_display()} por {self.usuario.get_full_name()}"
+
+
+class SolicitudAccesoProyecto(models.Model):
+    """Modelo para manejar solicitudes de acceso a proyectos privados"""
+    
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente'),
+        ('aprobada', 'Aprobada'),
+        ('rechazada', 'Rechazada'),
+    ]
+    
+    proyecto = models.ForeignKey(
+        'Proyecto',
+        on_delete=models.CASCADE,
+        related_name='solicitudes_acceso',
+        verbose_name="Proyecto"
+    )
+    usuario_solicitante = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='solicitudes_proyecto',
+        verbose_name="Usuario Solicitante"
+    )
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADO_CHOICES,
+        default='pendiente',
+        verbose_name="Estado"
+    )
+    fecha_solicitud = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de Solicitud"
+    )
+    fecha_respuesta = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Respuesta"
+    )
+    usuario_respuesta = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='respuestas_proyecto',
+        verbose_name="Usuario que Respondió"
+    )
+    mensaje = models.TextField(
+        blank=True,
+        verbose_name="Mensaje",
+        help_text="Mensaje opcional del solicitante"
+    )
+    
+    class Meta:
+        verbose_name = "Solicitud de Acceso a Proyecto"
+        verbose_name_plural = "Solicitudes de Acceso a Proyectos"
+        unique_together = ['proyecto', 'usuario_solicitante']
+        ordering = ['-fecha_solicitud']
+    
+    def __str__(self):
+        return f"{self.usuario_solicitante.get_full_name()} - {self.proyecto.nombre} ({self.estado})"

@@ -2794,6 +2794,82 @@
         font-weight: 400;
     }
 
+    /* Estilos especiales para solicitudes de proyecto */
+    .notification-item.solicitud-proyecto {
+        background: rgba(255, 149, 0, 0.1);
+        border-left: 4px solid #FF9500;
+        border-color: rgba(255, 149, 0, 0.3);
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .notification-item.solicitud-proyecto::before {
+        background: #FF9500;
+        box-shadow: 0 0 0 3px rgba(255, 149, 0, 0.3);
+    }
+
+    .solicitud-mensaje {
+        padding: 0.75rem;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        font-style: italic;
+        color: rgba(255, 255, 255, 0.8);
+        border-left: 3px solid rgba(255, 149, 0, 0.5);
+        margin: 0.5rem 0;
+    }
+
+    .solicitud-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 0.75rem;
+    }
+
+    .btn-aprobar,
+    .btn-rechazar {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    .btn-aprobar {
+        background: linear-gradient(135deg, #30D158, #28C345);
+        color: white;
+        border: 1px solid rgba(48, 209, 88, 0.3);
+        box-shadow: 0 4px 15px rgba(48, 209, 88, 0.2);
+    }
+
+    .btn-aprobar:hover {
+        background: linear-gradient(135deg, #28C345, #30D158);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(48, 209, 88, 0.3);
+    }
+
+    .btn-rechazar {
+        background: linear-gradient(135deg, #FF3B30, #E02D1F);
+        color: white;
+        border: 1px solid rgba(255, 59, 48, 0.3);
+        box-shadow: 0 4px 15px rgba(255, 59, 48, 0.2);
+    }
+
+    .btn-rechazar:hover {
+        background: linear-gradient(135deg, #E02D1F, #FF3B30);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(255, 59, 48, 0.3);
+    }
+
+    .notification-item.processed {
+        opacity: 0.8;
+        background: rgba(48, 209, 88, 0.1);
+        border-left: 4px solid #30D158;
+        pointer-events: none;
+    }
+
     /* Light theme styles for notifications modal - Pink Theme */
     .light-theme .notifications-modal,
     html[data-theme="pink"] .notifications-modal,
@@ -4741,14 +4817,49 @@ window.addEventListener('error', function(e) {
         isLoadingNotifications = true;
         
         try {
-            const response = await fetch('/app/api/obtener-notificaciones/');
-            const data = await response.json();
+            // Cargar notificaciones normales y solicitudes de proyecto en paralelo
+            const [notificationsResponse, solicitudesResponse] = await Promise.all([
+                fetch('/app/api/obtener-notificaciones/'),
+                fetch('/app/api/solicitudes-proyecto/')
+            ]);
             
-            if (data.success) {
-                updateNotificationBadges(data.unread_count);
-                renderNotifications(data.notifications);
-                notificationsCount = data.unread_count;
+            const notificationsData = await notificationsResponse.json();
+            const solicitudesData = await solicitudesResponse.json();
+            
+            // Combinar las notificaciones
+            let allNotifications = [];
+            let totalUnreadCount = 0;
+            
+            if (notificationsData.success) {
+                allNotifications = [...notificationsData.notifications];
+                totalUnreadCount = notificationsData.unread_count || 0;
             }
+            
+            // Agregar solicitudes de proyecto como notificaciones especiales
+            if (solicitudesData.solicitudes && solicitudesData.solicitudes.length > 0) {
+                const solicitudesAsNotifications = solicitudesData.solicitudes.map(solicitud => ({
+                    id: `proyecto_${solicitud.id}`,
+                    tipo: 'solicitud_proyecto',
+                    remitente: solicitud.usuario_nombre,
+                    titulo: `Solicitud de acceso a proyecto`,
+                    mensaje: `${solicitud.usuario_nombre} quiere unirse al proyecto "${solicitud.proyecto_nombre}"`,
+                    fecha: solicitud.fecha_solicitud,
+                    leida: false,
+                    url: null,
+                    proyecto_id: solicitud.proyecto_id,
+                    solicitud_id: solicitud.id,
+                    usuario_username: solicitud.usuario_username,
+                    mensaje_solicitud: solicitud.mensaje
+                }));
+                
+                allNotifications = [...solicitudesAsNotifications, ...allNotifications];
+                totalUnreadCount += solicitudesData.total;
+            }
+            
+            updateNotificationBadges(totalUnreadCount);
+            renderNotifications(allNotifications);
+            notificationsCount = totalUnreadCount;
+            
         } catch (error) {
             console.error('Error loading notifications:', error);
         } finally {
@@ -4793,16 +4904,38 @@ window.addEventListener('error', function(e) {
             return;
         }
         
-        container.innerHTML = notifications.map(notification => `
-            <div class="notification-item ${notification.leida ? '' : 'unread'}" 
-                 data-id="${notification.id}" 
-                 onclick="openNotification(${notification.id}, '${notification.url}')">
-                <div class="notification-sender">${notification.remitente || 'Sistema'}</div>
-                <div class="notification-title">${notification.titulo}</div>
-                <div class="notification-message">${notification.mensaje}</div>
-                <div class="notification-time">${notification.fecha}</div>
-            </div>
-        `).join('');
+        container.innerHTML = notifications.map(notification => {
+            if (notification.tipo === 'solicitud_proyecto') {
+                return `
+                    <div class="notification-item unread solicitud-proyecto" data-id="${notification.id}">
+                        <div class="notification-sender">🔒 ${notification.remitente}</div>
+                        <div class="notification-title">${notification.titulo}</div>
+                        <div class="notification-message">${notification.mensaje}</div>
+                        ${notification.mensaje_solicitud ? `<div class="solicitud-mensaje">"${notification.mensaje_solicitud}"</div>` : ''}
+                        <div class="notification-time">${notification.fecha}</div>
+                        <div class="solicitud-actions">
+                            <button class="btn-aprobar" onclick="responderSolicitud('${notification.solicitud_id}', 'aceptar', '${notification.id}')">
+                                ✅ Aceptar
+                            </button>
+                            <button class="btn-rechazar" onclick="responderSolicitud('${notification.solicitud_id}', 'rechazar', '${notification.id}')">
+                                ❌ Rechazar
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="notification-item ${notification.leida ? '' : 'unread'}" 
+                         data-id="${notification.id}" 
+                         onclick="openNotification('${notification.id}', '${notification.url}')">
+                        <div class="notification-sender">${notification.remitente || 'Sistema'}</div>
+                        <div class="notification-title">${notification.titulo}</div>
+                        <div class="notification-message">${notification.mensaje}</div>
+                        <div class="notification-time">${notification.fecha}</div>
+                    </div>
+                `;
+            }
+        }).join('');
     }
     
     // Función para abrir una notificación
@@ -4848,6 +4981,45 @@ window.addEventListener('error', function(e) {
             }
         } catch (error) {
             console.error('Error marking all as read:', error);
+        }
+    }
+    
+    // Función para responder solicitudes de proyecto
+    window.responderSolicitud = async function(solicitudId, accion, notificationId) {
+        try {
+            const response = await fetch(`/app/api/responder-solicitud-proyecto/${solicitudId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ accion: accion })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Mostrar mensaje de éxito
+                const notificationItem = document.querySelector(`[data-id="${notificationId}"]`);
+                if (notificationItem) {
+                    notificationItem.innerHTML = `
+                        <div class="notification-sender">✅ ${accion === 'aceptar' ? 'Aprobado' : 'Rechazado'}</div>
+                        <div class="notification-title">Solicitud ${accion === 'aceptar' ? 'aceptada' : 'rechazada'}</div>
+                        <div class="notification-message">${data.message}</div>
+                        <div class="notification-time">Ahora mismo</div>
+                    `;
+                    notificationItem.classList.remove('solicitud-proyecto');
+                    notificationItem.classList.add('processed');
+                }
+                
+                // Recargar notificaciones después de un momento
+                setTimeout(loadNotifications, 1500);
+            } else {
+                alert('Error: ' + (data.error || 'No se pudo procesar la solicitud'));
+            }
+        } catch (error) {
+            console.error('Error responding to request:', error);
+            alert('Error al procesar la solicitud');
         }
     }
     

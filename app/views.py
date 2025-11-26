@@ -1281,11 +1281,26 @@ def proyecto_detalle(request, proyecto_id):
         # Obtener el proyecto real de la base de datos
         proyecto = get_object_or_404(Proyecto, id=proyecto_id)
         
-        # Verificar permisos - cualquier usuario autenticado puede ver proyectos públicos
-        # Solo miembros o creador pueden ver proyectos privados
+        # Verificar permisos y establecer nivel de acceso
+        tiene_acceso = True
+        es_miembro = False
+        puede_solicitar_acceso = False
+        
         if proyecto.privacidad == 'privado':
-            if request.user != proyecto.creado_por and request.user not in proyecto.miembros.all():
-                return redirect('tareas_proyectos')
+            # Verificar si es miembro o creador
+            es_miembro = (request.user == proyecto.creado_por or 
+                         request.user in proyecto.miembros.all())
+            
+            if not es_miembro:
+                tiene_acceso = False
+                # Verificar si ya envió una solicitud pendiente
+                from app.models import SolicitudAccesoProyecto
+                solicitud_pendiente = SolicitudAccesoProyecto.objects.filter(
+                    proyecto=proyecto,
+                    usuario_solicitante=request.user,
+                    estado='pendiente'
+                ).exists()
+                puede_solicitar_acceso = not solicitud_pendiente
         
         # Crear datos del proyecto para el template
         proyecto_data = {
@@ -1308,7 +1323,10 @@ def proyecto_detalle(request, proyecto_id):
             'proyecto': proyecto,  # Pasar objeto completo para acceder a métodos
             'user': request.user,
             'page_title': f'Proyecto: {proyecto.nombre}',
-            'usuarios_disponibles': usuarios_disponibles
+            'usuarios_disponibles': usuarios_disponibles,
+            'tiene_acceso': tiene_acceso,
+            'es_miembro': es_miembro,
+            'puede_solicitar_acceso': puede_solicitar_acceso
         }
         
         return render(request, 'proyecto_detalle.html', context)
@@ -11485,6 +11503,148 @@ def estado_usuario_navidad(request):
             'regalo_para': regalo_para_data,
             'monto_sugerido': float(intercambio.monto_sugerido) if intercambio.monto_sugerido else 500,
             'fecha_intercambio': intercambio.fecha_intercambio.strftime('%d de %B') if intercambio.fecha_intercambio else None
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def solicitar_acceso_proyecto(request, proyecto_id):
+    """
+    API para solicitar acceso a un proyecto privado
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+        
+        # Verificar que sea un proyecto privado
+        if proyecto.privacidad != 'privado':
+            return JsonResponse({'error': 'Este proyecto es público'}, status=400)
+        
+        # Verificar que no sea ya miembro
+        if (request.user == proyecto.creado_por or 
+            request.user in proyecto.miembros.all()):
+            return JsonResponse({'error': 'Ya eres miembro de este proyecto'}, status=400)
+        
+        # Verificar si ya tiene una solicitud pendiente
+        from app.models import SolicitudAccesoProyecto
+        if SolicitudAccesoProyecto.objects.filter(
+            proyecto=proyecto,
+            usuario_solicitante=request.user,
+            estado='pendiente'
+        ).exists():
+            return JsonResponse({'error': 'Ya tienes una solicitud pendiente'}, status=400)
+        
+        # Crear la solicitud
+        import json
+        data = json.loads(request.body) if request.body else {}
+        mensaje = data.get('mensaje', '')
+        
+        solicitud = SolicitudAccesoProyecto.objects.create(
+            proyecto=proyecto,
+            usuario_solicitante=request.user,
+            mensaje=mensaje
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Solicitud enviada exitosamente'
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def responder_solicitud_proyecto(request, solicitud_id):
+    """
+    API para aceptar o rechazar una solicitud de acceso a proyecto
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        from app.models import SolicitudAccesoProyecto
+        solicitud = get_object_or_404(SolicitudAccesoProyecto, id=solicitud_id)
+        
+        # Verificar que sea el creador del proyecto o un miembro
+        if (request.user != solicitud.proyecto.creado_por and 
+            request.user not in solicitud.proyecto.miembros.all()):
+            return JsonResponse({'error': 'No tienes permisos para responder esta solicitud'}, status=403)
+        
+        # Verificar que la solicitud esté pendiente
+        if solicitud.estado != 'pendiente':
+            return JsonResponse({'error': 'Esta solicitud ya fue respondida'}, status=400)
+        
+        import json
+        data = json.loads(request.body)
+        accion = data.get('accion')  # 'aceptar' o 'rechazar'
+        
+        if accion == 'aceptar':
+            # Agregar usuario como miembro del proyecto
+            solicitud.proyecto.miembros.add(solicitud.usuario_solicitante)
+            solicitud.estado = 'aprobada'
+            mensaje_respuesta = 'Solicitud aceptada. El usuario ahora es miembro del proyecto.'
+        elif accion == 'rechazar':
+            solicitud.estado = 'rechazada'
+            mensaje_respuesta = 'Solicitud rechazada.'
+        else:
+            return JsonResponse({'error': 'Acción no válida'}, status=400)
+        
+        # Actualizar la solicitud
+        from django.utils import timezone
+        solicitud.fecha_respuesta = timezone.now()
+        solicitud.usuario_respuesta = request.user
+        solicitud.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': mensaje_respuesta
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def obtener_solicitudes_proyecto(request):
+    """
+    API para obtener solicitudes pendientes de proyectos donde el usuario puede responder
+    """
+    try:
+        from app.models import SolicitudAccesoProyecto, Proyecto
+        
+        # Obtener proyectos donde el usuario es creador o miembro
+        proyectos_con_permisos = Proyecto.objects.filter(
+            models.Q(creado_por=request.user) | 
+            models.Q(miembros=request.user),
+            privacidad='privado'
+        ).distinct()
+        
+        # Obtener solicitudes pendientes para esos proyectos
+        solicitudes = SolicitudAccesoProyecto.objects.filter(
+            proyecto__in=proyectos_con_permisos,
+            estado='pendiente'
+        ).select_related('proyecto', 'usuario_solicitante').order_by('-fecha_solicitud')
+        
+        solicitudes_data = []
+        for solicitud in solicitudes:
+            solicitudes_data.append({
+                'id': solicitud.id,
+                'proyecto_nombre': solicitud.proyecto.nombre,
+                'proyecto_id': solicitud.proyecto.id,
+                'usuario_nombre': solicitud.usuario_solicitante.get_full_name(),
+                'usuario_username': solicitud.usuario_solicitante.username,
+                'mensaje': solicitud.mensaje,
+                'fecha_solicitud': solicitud.fecha_solicitud.strftime('%d de %b, %Y a las %H:%M'),
+            })
+        
+        return JsonResponse({
+            'solicitudes': solicitudes_data,
+            'total': len(solicitudes_data)
         })
         
     except Exception as e:

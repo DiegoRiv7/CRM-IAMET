@@ -290,4 +290,9 @@ urlpatterns = [
     
     # Feed de actividad
     path('feed/', views.feed, name='feed'),
+    
+    # API para sistema de privacidad de proyectos
+    path('api/solicitar-acceso-proyecto/<int:proyecto_id>/', views.solicitar_acceso_proyecto, name='solicitar_acceso_proyecto'),
+    path('api/responder-solicitud-proyecto/<int:solicitud_id>/', views.responder_solicitud_proyecto, name='responder_solicitud_proyecto'),
+    path('api/solicitudes-proyecto/', views.obtener_solicitudes_proyecto, name='obtener_solicitudes_proyecto'),
 ]
