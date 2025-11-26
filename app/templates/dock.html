@@ -2870,6 +2870,103 @@
         pointer-events: none;
     }
 
+    /* Estilos específicos para notificaciones de solicitudes de acceso */
+    .notification-item.solicitud-acceso {
+        background: rgba(255, 149, 0, 0.1);
+        border-left: 4px solid #FF9500;
+        border-color: rgba(255, 149, 0, 0.3);
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .notification-item.solicitud-acceso .notification-icon {
+        font-size: 1.5rem;
+        margin-right: 0.75rem;
+    }
+
+    .notification-item.solicitud-acceso .notification-content {
+        flex: 1;
+    }
+
+    .notification-item.solicitud-acceso .notification-title {
+        font-weight: 600;
+        color: #FF9500;
+        margin-bottom: 0.5rem;
+    }
+
+    .notification-item.solicitud-acceso .notification-message {
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: 0.5rem;
+    }
+
+    .notification-item.solicitud-acceso .notification-extra-message {
+        padding: 0.5rem;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        font-style: italic;
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 0.5rem;
+    }
+
+    .notification-item.solicitud-acceso .notification-time {
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.6);
+        margin-bottom: 0.75rem;
+    }
+
+    .notification-item.solicitud-acceso .notification-actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .notification-item.solicitud-acceso .btn-aceptar,
+    .notification-item.solicitud-acceso .btn-rechazar {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+    }
+
+    .notification-item.solicitud-acceso .btn-aceptar {
+        background: #30D158;
+        color: white;
+    }
+
+    .notification-item.solicitud-acceso .btn-aceptar:hover {
+        background: #28B946;
+        transform: scale(1.05);
+    }
+
+    .notification-item.solicitud-acceso .btn-rechazar {
+        background: #FF3B30;
+        color: white;
+    }
+
+    .notification-item.solicitud-acceso .btn-rechazar:hover {
+        background: #D70015;
+        transform: scale(1.05);
+    }
+
+    .no-notifications {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    .no-notifications-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.7;
+    }
+
+    .no-notifications-text {
+        font-size: 1.1rem;
+    }
+
     /* Light theme styles for notifications modal - Pink Theme */
     .light-theme .notifications-modal,
     html[data-theme="pink"] .notifications-modal,
@@ -5865,6 +5962,9 @@ function abrirModalNotificaciones() {
             modal.classList.add('show');
         }, 50);
         console.log('✅ Modal abierto exitosamente');
+        
+        // Cargar notificaciones al abrir el modal
+        cargarNotificacionesSolicitudes();
     } else {
         console.log('❌ Modal NO encontrado');
     }
@@ -5879,6 +5979,137 @@ function cerrarModalNotificaciones() {
         setTimeout(() => modal.style.display = 'none', 300);
         console.log('✅ Modal cerrado');
     }
+}
+
+// Función para cargar notificaciones de solicitudes
+async function cargarNotificacionesSolicitudes() {
+    console.log('📥 Cargando notificaciones de solicitudes...');
+    
+    try {
+        const response = await fetch('/app/api/obtener_solicitudes_proyecto/', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('📋 Solicitudes recibidas:', data);
+            mostrarNotificacionesSolicitudes(data.solicitudes || []);
+            actualizarContadorNotificaciones(data.solicitudes?.length || 0);
+        } else {
+            console.error('❌ Error al cargar solicitudes:', response.status);
+        }
+    } catch (error) {
+        console.error('❌ Error en cargarNotificacionesSolicitudes:', error);
+    }
+}
+
+// Función para mostrar las notificaciones en el modal
+function mostrarNotificacionesSolicitudes(solicitudes) {
+    console.log('🔔 Mostrando notificaciones:', solicitudes.length);
+    
+    const contenedor = document.getElementById('notificationsList') || document.querySelector('.notifications-list');
+    if (!contenedor) {
+        console.error('❌ No se encontró contenedor de notificaciones');
+        return;
+    }
+    
+    if (solicitudes.length === 0) {
+        contenedor.innerHTML = `
+            <div class="no-notifications">
+                <div class="no-notifications-icon">🔔</div>
+                <div class="no-notifications-text">No hay notificaciones pendientes</div>
+            </div>
+        `;
+        return;
+    }
+    
+    const notificacionesHTML = solicitudes.map(solicitud => `
+        <div class="notification-item solicitud-acceso" data-id="${solicitud.id}">
+            <div class="notification-icon">👤</div>
+            <div class="notification-content">
+                <div class="notification-title">Solicitud de Acceso a Proyecto</div>
+                <div class="notification-message">
+                    <strong>${solicitud.usuario_solicitante}</strong> solicita acceso al proyecto 
+                    <strong>"${solicitud.proyecto_nombre}"</strong>
+                </div>
+                ${solicitud.mensaje ? `<div class="notification-extra-message">"${solicitud.mensaje}"</div>` : ''}
+                <div class="notification-time">${solicitud.fecha_solicitud}</div>
+            </div>
+            <div class="notification-actions">
+                <button class="btn-aceptar" onclick="responderSolicitud(${solicitud.id}, 'aprobada')" data-id="${solicitud.id}">
+                    ✓ Aceptar
+                </button>
+                <button class="btn-rechazar" onclick="responderSolicitud(${solicitud.id}, 'rechazada')" data-id="${solicitud.id}">
+                    ✗ Rechazar
+                </button>
+            </div>
+        </div>
+    `).join('');
+    
+    contenedor.innerHTML = notificacionesHTML;
+}
+
+// Función para responder solicitudes (aceptar/rechazar)
+async function responderSolicitud(solicitudId, accion) {
+    console.log(`📝 Respondiendo solicitud ${solicitudId} con acción: ${accion}`);
+    
+    try {
+        const response = await fetch('/app/api/responder_solicitud_proyecto/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            },
+            body: JSON.stringify({
+                solicitud_id: solicitudId,
+                accion: accion
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('✅ Solicitud respondida:', data);
+            
+            // Remover la notificación del DOM
+            const notificationItem = document.querySelector(`.notification-item[data-id="${solicitudId}"]`);
+            if (notificationItem) {
+                notificationItem.style.opacity = '0.5';
+                notificationItem.style.pointerEvents = 'none';
+                setTimeout(() => {
+                    notificationItem.remove();
+                    // Recargar las notificaciones
+                    cargarNotificacionesSolicitudes();
+                }, 300);
+            }
+            
+            alert(`Solicitud ${accion === 'aprobada' ? 'aceptada' : 'rechazada'} exitosamente`);
+        } else {
+            console.error('❌ Error al responder solicitud:', response.status);
+            alert('Error al procesar la solicitud');
+        }
+    } catch (error) {
+        console.error('❌ Error en responderSolicitud:', error);
+        alert('Error de conexión al procesar la solicitud');
+    }
+}
+
+// Función para actualizar contador de notificaciones
+function actualizarContadorNotificaciones(cantidad) {
+    console.log(`🔢 Actualizando contador: ${cantidad}`);
+    
+    const badges = ['notification-badge', 'notification-badge-right', 'notification-badge-top', 'notification-badge-bottom'];
+    
+    badges.forEach(badgeId => {
+        const badge = document.getElementById(badgeId);
+        if (badge) {
+            badge.textContent = cantidad;
+            badge.style.display = cantidad > 0 ? 'block' : 'none';
+        }
+    });
 }
 
 // Configurar botones cuando el DOM esté listo
@@ -5921,14 +6152,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         console.log('✅ Cerrar con fondo configurado');
     }
+    
+    // Cargar notificaciones al iniciar y actualizar contadores
+    cargarNotificacionesSolicitudes();
+    
+    // Actualizar notificaciones cada 30 segundos
+    setInterval(() => {
+        console.log('🔄 Actualizando notificaciones automáticamente...');
+        cargarNotificacionesSolicitudes();
+    }, 30000);
 });
 
 console.log('✅ Script simplificado cargado correctamente');
 </script>
 
-<!-- BOTÓN DE PRUEBA DIRECTO -->
-<div style="position: fixed; top: 10px; right: 10px; z-index: 9999;">
-    <button onclick="abrirModalNotificaciones()" style="background: red; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">
-        🔔 TEST NOTIFICACIONES
-    </button>
-</div>
