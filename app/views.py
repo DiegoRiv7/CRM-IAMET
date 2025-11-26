@@ -484,10 +484,8 @@ def api_proyectos(request):
     
     # Obtener proyectos reales de la base de datos
     try:
-        # Filtrar proyectos donde el usuario es creador o miembro
-        proyectos_query = Proyecto.objects.filter(
-            Q(creado_por=request.user) | Q(miembros=request.user)
-        ).distinct()
+        # Obtener TODOS los proyectos primero para debug
+        proyectos_query = Proyecto.objects.all()
         
         # Filtrar por búsqueda si hay término
         if search:
@@ -519,15 +517,7 @@ def api_proyectos(request):
                 'miembros': proyecto.get_miembros_display(),
                 'privacidad': proyecto.privacidad,
                 'tipo': proyecto.tipo,
-                'mi_rol': proyecto.get_rol_usuario(request.user),
-                'oportunidades': [
-                    {
-                        'id': oportunidad.id,
-                        'titulo': oportunidad.oportunidad,
-                        'empresa': oportunidad.empresa,
-                        'monto': oportunidad.monto_estimado
-                    } for oportunidad in proyecto.oportunidades_ligadas.all()
-                ]
+                'mi_rol': proyecto.get_rol_usuario(request.user)
             })
 
         return JsonResponse({
