@@ -4818,13 +4818,25 @@ window.addEventListener('error', function(e) {
         
         try {
             // Cargar notificaciones normales y solicitudes de proyecto en paralelo
-            const [notificationsResponse, solicitudesResponse] = await Promise.all([
-                fetch('/app/api/obtener-notificaciones/'),
-                fetch('/app/api/solicitudes-proyecto/')
-            ]);
+            let notificationsData = { success: false, notifications: [], unread_count: 0 };
+            let solicitudesData = { solicitudes: [], total: 0 };
             
-            const notificationsData = await notificationsResponse.json();
-            const solicitudesData = await solicitudesResponse.json();
+            try {
+                const [notificationsResponse, solicitudesResponse] = await Promise.all([
+                    fetch('/app/api/obtener-notificaciones/'),
+                    fetch('/app/api/solicitudes-proyecto/')
+                ]);
+                
+                if (notificationsResponse.ok) {
+                    notificationsData = await notificationsResponse.json();
+                }
+                
+                if (solicitudesResponse.ok) {
+                    solicitudesData = await solicitudesResponse.json();
+                }
+            } catch (error) {
+                console.warn('Error loading notifications or requests:', error);
+            }
             
             // Combinar las notificaciones
             let allNotifications = [];

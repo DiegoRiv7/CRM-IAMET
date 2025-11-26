@@ -1293,14 +1293,18 @@ def proyecto_detalle(request, proyecto_id):
             
             if not es_miembro:
                 tiene_acceso = False
-                # Verificar si ya envió una solicitud pendiente
-                from app.models import SolicitudAccesoProyecto
-                solicitud_pendiente = SolicitudAccesoProyecto.objects.filter(
-                    proyecto=proyecto,
-                    usuario_solicitante=request.user,
-                    estado='pendiente'
-                ).exists()
-                puede_solicitar_acceso = not solicitud_pendiente
+                # Verificar si ya envió una solicitud pendiente (con manejo de errores)
+                try:
+                    from app.models import SolicitudAccesoProyecto
+                    solicitud_pendiente = SolicitudAccesoProyecto.objects.filter(
+                        proyecto=proyecto,
+                        usuario_solicitante=request.user,
+                        estado='pendiente'
+                    ).exists()
+                    puede_solicitar_acceso = not solicitud_pendiente
+                except Exception:
+                    # Si la tabla no existe, permitir solicitar acceso
+                    puede_solicitar_acceso = True
         
         # Crear datos del proyecto para el template
         proyecto_data = {
@@ -11518,6 +11522,12 @@ def solicitar_acceso_proyecto(request, proyecto_id):
         return JsonResponse({'error': 'Método no permitido'}, status=405)
     
     try:
+        # Verificar si el modelo existe antes de usar
+        try:
+            from app.models import SolicitudAccesoProyecto
+        except ImportError:
+            return JsonResponse({'error': 'Sistema de solicitudes no disponible. Aplique migraciones.'}, status=503)
+            
         proyecto = get_object_or_404(Proyecto, id=proyecto_id)
         
         # Verificar que sea un proyecto privado
@@ -11567,7 +11577,12 @@ def responder_solicitud_proyecto(request, solicitud_id):
         return JsonResponse({'error': 'Método no permitido'}, status=405)
     
     try:
-        from app.models import SolicitudAccesoProyecto
+        # Verificar si el modelo existe antes de usar
+        try:
+            from app.models import SolicitudAccesoProyecto
+        except ImportError:
+            return JsonResponse({'error': 'Sistema de solicitudes no disponible. Aplique migraciones.'}, status=503)
+            
         solicitud = get_object_or_404(SolicitudAccesoProyecto, id=solicitud_id)
         
         # Verificar que sea el creador del proyecto o un miembro
@@ -11615,7 +11630,11 @@ def obtener_solicitudes_proyecto(request):
     API para obtener solicitudes pendientes de proyectos donde el usuario puede responder
     """
     try:
-        from app.models import SolicitudAccesoProyecto, Proyecto
+        # Verificar si el modelo existe antes de usar
+        try:
+            from app.models import SolicitudAccesoProyecto, Proyecto
+        except ImportError:
+            return JsonResponse({'solicitudes': [], 'total': 0})
         
         # Obtener proyectos donde el usuario es creador o miembro
         proyectos_con_permisos = Proyecto.objects.filter(
