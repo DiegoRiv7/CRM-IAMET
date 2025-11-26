@@ -3172,23 +3172,13 @@ function mostrarProyectosTabla(proyectos) {
         const extraCountHtml = hiddenMembersCount > 0 ? `<div class="member-count">+${hiddenMembersCount}</div>` : '';
         let rolClass = proyecto.mi_rol === 'Jefe de proyecto' ? 'jefe' : 'miembro';
         
-        // Generar contenido de oportunidades (simple)
-        let oportunidadesHtml = '';
-        if (proyecto.oportunidades && proyecto.oportunidades.length > 0) {
-            // Mostrar solo el nombre de la primera oportunidad
-            const oportunidad = proyecto.oportunidades[0];
-            oportunidadesHtml = oportunidad.titulo;
-        } else {
-            oportunidadesHtml = `<span style="color: var(--apple-label-secondary); font-style: italic;">Sin oportunidad</span>`;
-        }
         
         row.innerHTML = `
             <div class="table-cell name-cell" onclick="abrirProyecto(${proyecto.id})">${proyecto.nombre}</div>
             <div class="table-cell activity-cell">${proyecto.fecha_creacion}</div>
-            <div class="table-cell members-cell" onclick="mostrarPopupMiembros(event, ${proyecto.id})" data-proyecto='${JSON.stringify(proyecto)}'>${creadorAvatar}${avatarsHtml}${extraCountHtml}</div>
+            <div class="table-cell members-cell" onclick="mostrarPopupMiembros(event, ${proyecto.id})" data-proyecto='${JSON.stringify(proyecto).replace(/'/g, "&apos;")}'>${creadorAvatar}${avatarsHtml}${extraCountHtml}</div>
             <div class="table-cell role-cell"><span class="role-badge ${rolClass}">${proyecto.mi_rol}</span></div>
             <div class="table-cell privacy-cell"><span class="privacy-badge ${proyecto.privacidad}">${proyecto.privacidad}</span></div>
-            <div class="table-cell opportunity-cell">${oportunidadesHtml}</div>
         `;
         tableBody.appendChild(row);
     });
