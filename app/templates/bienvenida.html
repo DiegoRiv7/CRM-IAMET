@@ -1829,6 +1829,29 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+<!-- DOCK EMERGENCY FIX: Asegurar que dock se muestre -->
+<script>
+console.log('🚨 EMERGENCY DOCK FIX');
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        const docks = document.querySelectorAll('.macos-dock');
+        console.log('🚨 Found docks:', docks.length);
+        docks.forEach(dock => {
+            dock.style.display = 'flex';
+            dock.style.opacity = '1';
+            dock.style.visibility = 'visible';
+            dock.style.position = 'fixed';
+            dock.style.bottom = '20px';
+            dock.style.left = '50%';
+            dock.style.transform = 'translateX(-50%)';
+            dock.style.zIndex = '99999';
+            dock.classList.add('dock-ready');
+            console.log('🚨 Dock forced visible:', dock.id);
+        });
+    }, 100);
+});
+</script>
 </main>
 {% endblock %}
 
