@@ -188,10 +188,11 @@
         left: 50%;
         transform: translate(-50%, -50%);
         font-size: 4rem;
-        color: rgba(255, 255, 255, 0.8);
-        z-index: 11;
-        text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        color: rgba(255, 255, 255, 0.9);
+        z-index: 12;
+        text-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
         animation: lockPulse 2s ease-in-out infinite;
+        filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
     }
 
     @keyframes lockPulse {
@@ -17991,7 +17992,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Deshabilitar botón mientras se procesa
                 this.disabled = true;
-                this.textContent = 'Enviando...';
+                this.style.background = 'linear-gradient(135deg, #8E8E93, #6D6D70)';
+                this.style.cursor = 'not-allowed';
+                this.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="margin-right: 0.5rem;"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>Enviando...';
                 
                 fetch(\`/app/api/solicitar-acceso-proyecto/{{ proyecto.id }}/\`, {
                     method: 'POST',
@@ -18019,7 +18022,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         \`;
                         
                         document.getElementById('cerrarModal').addEventListener('click', function() {
-                            window.location.reload(); // Recargar para actualizar el estado
+                            document.body.removeChild(modal);
+                            // Cambiar botón principal a estado enviado
+                            btnSolicitarAcceso.disabled = true;
+                            btnSolicitarAcceso.style.background = 'linear-gradient(135deg, #8E8E93, #6D6D70)';
+                            btnSolicitarAcceso.style.cursor = 'not-allowed';
+                            btnSolicitarAcceso.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="margin-right: 0.5rem;"><path d="M5 13l4 4L19 7"/></svg>Solicitud Enviada';
                         });
                         
                     } else {

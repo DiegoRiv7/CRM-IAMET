@@ -5037,11 +5037,18 @@ window.addEventListener('error', function(e) {
     
     // Función para abrir el modal de notificaciones
     function openNotificationsModal() {
+        console.log('🔔 Intentando abrir modal de notificaciones...');
         const modal = document.getElementById('notificationsModal');
+        console.log('🔔 Modal encontrado:', modal);
         if (modal) {
             modal.style.display = 'flex';
-            setTimeout(() => modal.classList.add('show'), 10);
+            setTimeout(() => {
+                modal.classList.add('show');
+                console.log('🔔 Modal mostrado con clase show');
+            }, 10);
             loadNotifications(); // Cargar notificaciones al abrir
+        } else {
+            console.error('❌ Modal de notificaciones no encontrado!');
         }
     }
     
@@ -5082,11 +5089,15 @@ window.addEventListener('error', function(e) {
         
         notificationButtons.forEach(buttonId => {
             const button = document.getElementById(buttonId);
+            console.log(`🔔 Configurando botón: ${buttonId}`, button);
             if (button) {
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
+                    console.log(`🔔 Clic en botón de notificaciones: ${buttonId}`);
                     openNotificationsModal();
                 });
+            } else {
+                console.warn(`⚠️ Botón de notificaciones no encontrado: ${buttonId}`);
             }
         });
         
