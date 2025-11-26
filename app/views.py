@@ -523,16 +523,26 @@ def api_proyectos(request):
             # Agregar oportunidades de forma segura
             try:
                 oportunidades = []
+                print(f"DEBUG: Proyecto {proyecto.id} - {proyecto.nombre}")
+                print(f"DEBUG: Tiene oportunidades_ligadas attr: {hasattr(proyecto, 'oportunidades_ligadas')}")
+                
                 if hasattr(proyecto, 'oportunidades_ligadas'):
+                    opp_count = proyecto.oportunidades_ligadas.count()
+                    print(f"DEBUG: Número de oportunidades ligadas: {opp_count}")
+                    
                     for oportunidad in proyecto.oportunidades_ligadas.all():
+                        print(f"DEBUG: Oportunidad encontrada: {oportunidad.oportunidad}")
                         oportunidades.append({
                             'id': oportunidad.id,
                             'titulo': oportunidad.oportunidad,
                             'empresa': oportunidad.empresa
                         })
                 proyectos_data[-1]['oportunidades_ligadas'] = oportunidades
+                print(f"DEBUG: Total oportunidades procesadas: {len(oportunidades)}")
             except Exception as opp_error:
-                print(f"Error obteniendo oportunidades para proyecto {proyecto.id}: {opp_error}")
+                print(f"ERROR obteniendo oportunidades para proyecto {proyecto.id}: {opp_error}")
+                import traceback
+                traceback.print_exc()
                 proyectos_data[-1]['oportunidades_ligadas'] = []
 
         return JsonResponse({
