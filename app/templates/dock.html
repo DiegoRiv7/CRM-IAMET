@@ -5986,7 +5986,7 @@ async function cargarNotificacionesSolicitudes() {
     console.log('📥 Cargando notificaciones de solicitudes...');
     
     try {
-        const response = await fetch('/app/api/obtener_solicitudes_proyecto/', {
+        const response = await fetch('/app/api/solicitudes-proyecto/', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -6040,10 +6040,10 @@ function mostrarNotificacionesSolicitudes(solicitudes) {
                 <div class="notification-time">${solicitud.fecha_solicitud}</div>
             </div>
             <div class="notification-actions">
-                <button class="btn-aceptar" onclick="responderSolicitud(${solicitud.id}, 'aprobada')" data-id="${solicitud.id}">
+                <button class="btn-aceptar" onclick="responderSolicitud(${solicitud.id}, 'aceptar')" data-id="${solicitud.id}">
                     ✓ Aceptar
                 </button>
-                <button class="btn-rechazar" onclick="responderSolicitud(${solicitud.id}, 'rechazada')" data-id="${solicitud.id}">
+                <button class="btn-rechazar" onclick="responderSolicitud(${solicitud.id}, 'rechazar')" data-id="${solicitud.id}">
                     ✗ Rechazar
                 </button>
             </div>
@@ -6058,7 +6058,7 @@ async function responderSolicitud(solicitudId, accion) {
     console.log(`📝 Respondiendo solicitud ${solicitudId} con acción: ${accion}`);
     
     try {
-        const response = await fetch('/app/api/responder_solicitud_proyecto/', {
+        const response = await fetch(`/app/api/responder-solicitud-proyecto/${solicitudId}/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -6086,7 +6086,7 @@ async function responderSolicitud(solicitudId, accion) {
                 }, 300);
             }
             
-            alert(`Solicitud ${accion === 'aprobada' ? 'aceptada' : 'rechazada'} exitosamente`);
+            alert(`Solicitud ${accion === 'aceptar' ? 'aceptada' : 'rechazada'} exitosamente`);
         } else {
             console.error('❌ Error al responder solicitud:', response.status);
             alert('Error al procesar la solicitud');
