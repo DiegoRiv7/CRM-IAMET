@@ -3232,7 +3232,7 @@
     </a>
     
     <!-- Icono de Notificaciones -->
-    <a href="#" class="dock-item" id="notifications-btn">
+    <a href="#" class="dock-item" id="notifications-btn" onclick="if(window.abrirNotificaciones) window.abrirNotificaciones(); return false;">
         <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
         </svg>
@@ -3364,7 +3364,7 @@
     </a>
     
     <!-- Icono de Notificaciones -->
-    <a href="#" class="dock-item" id="notifications-btn-right">
+    <a href="#" class="dock-item" id="notifications-btn-right" onclick="if(window.abrirNotificaciones) window.abrirNotificaciones(); return false;">
         <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
         </svg>
@@ -3506,7 +3506,7 @@
     </a>
     
     <!-- Icono de Notificaciones -->
-    <a href="#" class="dock-item" id="notifications-btn-top">
+    <a href="#" class="dock-item" id="notifications-btn-top" onclick="if(window.abrirNotificaciones) window.abrirNotificaciones(); return false;">
         <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
         </svg>
@@ -3648,7 +3648,7 @@
     </a>
     
     <!-- Icono de Notificaciones -->
-    <a href="#" class="dock-item" id="notifications-btn-bottom">
+    <a href="#" class="dock-item" id="notifications-btn-bottom" onclick="if(window.abrirNotificaciones) window.abrirNotificaciones(); return false;">
         <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
         </svg>
@@ -5078,26 +5078,58 @@ window.addEventListener('error', function(e) {
     }
     
     // Event listeners para los botones de notificaciones
+    // FUNCIÓN GLOBAL PARA NOTIFICACIONES
+    window.abrirNotificaciones = function() {
+        console.log('🔔 ¡Abriendo modal de notificaciones!');
+        const modal = document.getElementById('notificationsModal');
+        console.log('🔔 Modal encontrado:', modal);
+        if (modal) {
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                modal.classList.add('show');
+                console.log('🔔 Modal visible');
+            }, 50);
+            loadNotifications();
+        } else {
+            console.error('❌ Modal notificationsModal no existe!');
+        }
+    };
+
     document.addEventListener('DOMContentLoaded', function() {
-        // Botones de notificaciones en diferentes docks
-        const notificationButtons = [
-            'notifications-btn',
-            'notifications-btn-right',
-            'notifications-btn-top',
-            'notifications-btn-bottom'
-        ];
+        console.log('🚀 === INICIO DEBUG NOTIFICACIONES ===');
+        console.log('🔔 Configurando sistema de notificaciones...');
         
-        notificationButtons.forEach(buttonId => {
-            const button = document.getElementById(buttonId);
-            console.log(`🔔 Configurando botón: ${buttonId}`, button);
-            if (button) {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    console.log(`🔔 Clic en botón de notificaciones: ${buttonId}`);
-                    openNotificationsModal();
-                });
+        // Test básico de JavaScript
+        console.log('✅ JavaScript funcionando correctamente');
+        
+        // Verificar si window.abrirNotificaciones existe
+        console.log('🔍 window.abrirNotificaciones:', window.abrirNotificaciones);
+        
+        // Test de función básica
+        try {
+            if (window.abrirNotificaciones) {
+                console.log('✅ Función abrirNotificaciones disponible');
             } else {
-                console.warn(`⚠️ Botón de notificaciones no encontrado: ${buttonId}`);
+                console.log('❌ Función abrirNotificaciones NO disponible');
+            }
+        } catch (error) {
+            console.log('❌ Error al verificar abrirNotificaciones:', error);
+        }
+        
+        // Configurar onclick directamente en HTML será más confiable
+        const buttons = ['notifications-btn', 'notifications-btn-right', 'notifications-btn-top', 'notifications-btn-bottom'];
+        
+        buttons.forEach(buttonId => {
+            const btn = document.getElementById(buttonId);
+            console.log(`🔔 Botón ${buttonId}:`, btn);
+            if (btn) {
+                btn.onclick = function(e) {
+                    e.preventDefault();
+                    console.log(`🔔 ¡CLIC en ${buttonId}!`);
+                    abrirNotificaciones();
+                    return false;
+                };
+                console.log(`✅ Configurado ${buttonId}`);
             }
         });
         
@@ -5129,7 +5161,6 @@ window.addEventListener('error', function(e) {
         // Verificar notificaciones cada 30 segundos
         setInterval(loadNotifications, 30000);
     });
-})();
 
 // === DOCK POSITION MANAGEMENT (GLOBAL FUNCTIONS) ===
 // Estas funciones deben estar fuera del IIFE para ser accesibles globalmente
