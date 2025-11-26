@@ -1830,25 +1830,26 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<!-- DOCK EMERGENCY FIX: Asegurar que dock se muestre -->
+<!-- DOCK EMERGENCY FIX: Asegurar que solo dock-bottom se muestre -->
 <script>
 console.log('🚨 EMERGENCY DOCK FIX');
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
-        const docks = document.querySelectorAll('.macos-dock');
-        console.log('🚨 Found docks:', docks.length);
-        docks.forEach(dock => {
-            dock.style.display = 'flex';
-            dock.style.opacity = '1';
-            dock.style.visibility = 'visible';
-            dock.style.position = 'fixed';
-            dock.style.bottom = '20px';
-            dock.style.left = '50%';
-            dock.style.transform = 'translateX(-50%)';
-            dock.style.zIndex = '99999';
-            dock.classList.add('dock-ready');
-            console.log('🚨 Dock forced visible:', dock.id);
+        // Ocultar todos los docks primero
+        const allDocks = document.querySelectorAll('.macos-dock');
+        allDocks.forEach(dock => {
+            dock.style.display = 'none';
         });
+        
+        // Mostrar solo dock-bottom
+        const bottomDock = document.getElementById('dock-bottom');
+        if (bottomDock) {
+            bottomDock.style.display = 'flex';
+            bottomDock.style.opacity = '1';
+            bottomDock.style.visibility = 'visible';
+            bottomDock.classList.add('dock-ready');
+            console.log('🚨 Only bottom dock visible');
+        }
     }, 100);
 });
 </script>
