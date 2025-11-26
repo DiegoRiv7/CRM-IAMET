@@ -469,6 +469,8 @@
         border: 1px solid var(--apple-separator);
         overflow: hidden;
         box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+        min-width: 1200px;
+        overflow-x: auto;
     }
 
     .page-title {
@@ -688,6 +690,15 @@
     }
     .name-cell { font-weight: 600; color: var(--apple-blue); cursor: pointer; }
     .name-cell:hover { text-decoration: underline; }
+    
+    /* Opportunity cell specific styling */
+    .opportunity-cell {
+        min-width: 200px;
+        max-width: 250px;
+        white-space: normal !important;
+        word-wrap: break-word;
+        line-height: 1.3;
+    }
 
     /* Member Avatars */
     .members-cell { 
