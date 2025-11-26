@@ -518,7 +518,13 @@ def api_proyectos(request):
                 'privacidad': proyecto.privacidad,
                 'tipo': proyecto.tipo,
                 'mi_rol': proyecto.get_rol_usuario(request.user),
-                'oportunidad_ligada': getattr(proyecto, 'oportunidad_ligada', None)
+                'oportunidades_ligadas': [
+                    {
+                        'id': oportunidad.id,
+                        'titulo': oportunidad.oportunidad,
+                        'empresa': oportunidad.empresa
+                    } for oportunidad in proyecto.oportunidades_ligadas.all()
+                ]
             })
 
         return JsonResponse({

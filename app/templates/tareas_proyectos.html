@@ -3173,10 +3173,14 @@ function mostrarProyectosTabla(proyectos) {
         let rolClass = proyecto.mi_rol === 'Jefe de proyecto' ? 'jefe' : 'miembro';
         
         
-        // Generar contenido de oportunidad
-        let oportunidadHtml = 'Sin oportunidad';
-        if (proyecto.oportunidad_ligada) {
-            oportunidadHtml = proyecto.oportunidad_ligada.titulo || proyecto.oportunidad_ligada.oportunidad || 'Oportunidad ligada';
+        // Generar contenido de oportunidades
+        let oportunidadHtml = '<span style="color: var(--apple-label-secondary); font-style: italic;">Sin oportunidad</span>';
+        if (proyecto.oportunidades_ligadas && proyecto.oportunidades_ligadas.length > 0) {
+            if (proyecto.oportunidades_ligadas.length === 1) {
+                oportunidadHtml = proyecto.oportunidades_ligadas[0].titulo;
+            } else {
+                oportunidadHtml = `${proyecto.oportunidades_ligadas[0].titulo} <span style="color: var(--apple-label-secondary);">+${proyecto.oportunidades_ligadas.length - 1} más</span>`;
+            }
         }
         
         row.innerHTML = `
