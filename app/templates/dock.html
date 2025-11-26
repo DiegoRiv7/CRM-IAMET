@@ -5601,18 +5601,10 @@ function setupCompactDockFunctionality() {
     
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('🔍 DOCK DEBUG: DOM loaded, initializing dock');
-        
+        // Asegurar que todos los docks tengan la clase dock-ready
         const docks = document.querySelectorAll('.macos-dock');
-        console.log('🔍 DOCK DEBUG: Found', docks.length, 'dock elements');
-        
-        docks.forEach((dock, index) => {
-            console.log(`🔍 DOCK DEBUG: Dock ${index}:`, {
-                id: dock.id,
-                visible: dock.offsetHeight > 0,
-                display: window.getComputedStyle(dock).display,
-                opacity: window.getComputedStyle(dock).opacity
-            });
+        docks.forEach(dock => {
+            dock.classList.add('dock-ready');
         });
         
         // Brief disable to prevent immediate hover

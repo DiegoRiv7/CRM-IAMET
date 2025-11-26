@@ -3176,10 +3176,16 @@ function mostrarProyectosTabla(proyectos) {
         row.innerHTML = `
             <div class="table-cell name-cell" onclick="abrirProyecto(${proyecto.id})">${proyecto.nombre}</div>
             <div class="table-cell activity-cell">${proyecto.fecha_creacion}</div>
-            <div class="table-cell members-cell" onclick="mostrarPopupMiembros(event, ${proyecto.id})" data-proyecto='${JSON.stringify(proyecto).replace(/'/g, "&apos;")}'>${creadorAvatar}${avatarsHtml}${extraCountHtml}</div>
+            <div class="table-cell members-cell" onclick="mostrarPopupMiembros(event, ${proyecto.id})">${creadorAvatar}${avatarsHtml}${extraCountHtml}</div>
             <div class="table-cell role-cell"><span class="role-badge ${rolClass}">${proyecto.mi_rol}</span></div>
             <div class="table-cell privacy-cell"><span class="privacy-badge ${proyecto.privacidad}">${proyecto.privacidad}</span></div>
         `;
+        
+        // Asignar datos del proyecto de forma segura
+        const membersCell = row.querySelector('.members-cell');
+        if (membersCell) {
+            membersCell.setAttribute('data-proyecto', JSON.stringify(proyecto));
+        }
         tableBody.appendChild(row);
     });
 }
