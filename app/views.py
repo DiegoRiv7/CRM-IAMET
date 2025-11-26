@@ -517,7 +517,8 @@ def api_proyectos(request):
                 'miembros': proyecto.get_miembros_display(),
                 'privacidad': proyecto.privacidad,
                 'tipo': proyecto.tipo,
-                'mi_rol': proyecto.get_rol_usuario(request.user)
+                'mi_rol': proyecto.get_rol_usuario(request.user),
+                'oportunidad_ligada': getattr(proyecto, 'oportunidad_ligada', None)
             })
 
         return JsonResponse({

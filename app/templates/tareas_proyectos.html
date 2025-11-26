@@ -3173,12 +3173,19 @@ function mostrarProyectosTabla(proyectos) {
         let rolClass = proyecto.mi_rol === 'Jefe de proyecto' ? 'jefe' : 'miembro';
         
         
+        // Generar contenido de oportunidad
+        let oportunidadHtml = 'Sin oportunidad';
+        if (proyecto.oportunidad_ligada) {
+            oportunidadHtml = proyecto.oportunidad_ligada.titulo || proyecto.oportunidad_ligada.oportunidad || 'Oportunidad ligada';
+        }
+        
         row.innerHTML = `
             <div class="table-cell name-cell" onclick="abrirProyecto(${proyecto.id})">${proyecto.nombre}</div>
             <div class="table-cell activity-cell">${proyecto.fecha_creacion}</div>
             <div class="table-cell members-cell" onclick="mostrarPopupMiembros(event, ${proyecto.id})">${creadorAvatar}${avatarsHtml}${extraCountHtml}</div>
             <div class="table-cell role-cell"><span class="role-badge ${rolClass}">${proyecto.mi_rol}</span></div>
             <div class="table-cell privacy-cell"><span class="privacy-badge ${proyecto.privacidad}">${proyecto.privacidad}</span></div>
+            <div class="table-cell opportunity-cell">${oportunidadHtml}</div>
         `;
         
         // Asignar datos del proyecto de forma segura
