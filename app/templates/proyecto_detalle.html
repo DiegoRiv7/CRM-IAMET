@@ -17966,7 +17966,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
             `;
             
-            modalContent.innerHTML = \`
+            modalContent.innerHTML = `
                 <h3 style="margin: 0 0 1rem 0; color: var(--apple-label); font-size: 1.5rem;">
                     🔒 Solicitar Acceso
                 </h3>
@@ -17993,7 +17993,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         Solicitar
                     </button>
                 </div>
-            \`;
+            `;
             
             modal.appendChild(modalContent);
             document.body.appendChild(modal);
@@ -18013,10 +18013,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.style.cursor = 'not-allowed';
                 this.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="margin-right: 0.5rem;"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>Enviando...';
                 
-                console.log('🔒 Enviando solicitud a:', \`/app/api/solicitar-acceso-proyecto/{{ proyecto.id }}/\`);
+                console.log('🔒 Enviando solicitud a:', `/app/api/solicitar-acceso-proyecto/{{ proyecto.id }}/`);
                 console.log('🔒 Mensaje:', mensaje);
                 
-                fetch(\`/app/api/solicitar-acceso-proyecto/{{ proyecto.id }}/\`, {
+                fetch(`/app/api/solicitar-acceso-proyecto/{{ proyecto.id }}/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -18032,7 +18032,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log('🔒 Response data:', data);
                     if (data.success) {
                         // Mostrar mensaje de éxito
-                        modalContent.innerHTML = \`
+                        modalContent.innerHTML = `
                             <div style="text-align: center;">
                                 <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
                                 <h3 style="margin: 0 0 1rem 0; color: var(--apple-green);">¡Solicitud Enviada!</h3>
@@ -18043,7 +18043,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     Entendido
                                 </button>
                             </div>
-                        \`;
+                        `;
                         
                         document.getElementById('cerrarModal').addEventListener('click', function() {
                             document.body.removeChild(modal);
@@ -18061,18 +18061,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 .catch(error => {
                     console.error('🔒 Error en solicitud:', error);
                     console.error('🔒 Error completo:', error.message, error.stack);
-                    modalContent.innerHTML = \`
+                    modalContent.innerHTML = `
                         <div style="text-align: center;">
                             <div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
                             <h3 style="margin: 0 0 1rem 0; color: var(--apple-red);">Error</h3>
                             <p style="margin: 0 0 1.5rem 0; color: var(--apple-label-secondary);">
-                                \${error.message}
+                                ${error.message}
                             </p>
                             <button id="cerrarModal" class="apple-btn apple-btn-secondary" style="padding: 0.75rem 1.5rem;">
                                 Cerrar
                             </button>
                         </div>
-                    \`;
+                    `;
                     
                     document.getElementById('cerrarModal').addEventListener('click', function() {
                         document.body.removeChild(modal);
