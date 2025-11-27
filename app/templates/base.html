@@ -59,10 +59,10 @@
             const theme = localStorage.getItem('theme') || 'dark';
             const html = document.documentElement;
 
-            html.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme');
+            html.classList.remove('dark-theme', 'light-theme', 'pink-theme', 'white-theme', 'coffee-theme', 'perla-theme');
             html.removeAttribute('data-theme');
 
-            if (theme === 'pink' || theme === 'white' || theme === 'coffee') {
+            if (theme === 'pink' || theme === 'white' || theme === 'coffee' || theme === 'perla') {
                 html.classList.add('light-theme');
             } else {
                 html.classList.add('dark-theme');
@@ -157,6 +157,28 @@ html[data-theme="coffee"] {
     --apple-blue-light: #a0724a;
     --apple-blue-dark: #6b4a30;
     --apple-separator: rgba(139, 69, 19, 0.1);
+}
+
+html[data-theme="perla"] {
+    --apple-background: #FFFFFF;
+    --apple-background-secondary: #FAFAFA;
+    --apple-background-tertiary: #F5F5F5;
+    --apple-background-quaternary: #F0F0F0;
+    --apple-label: #000000;
+    --apple-label-secondary: #333333;
+    --apple-label-tertiary: #666666;
+    --apple-label-quaternary: #999999;
+    --apple-blue: #0052D4;
+    --apple-blue-light: #1E7BFF;
+    --apple-blue-dark: #003AA3;
+    --apple-perla-electric: #00D4FF;
+    --apple-gray: #999999;
+    --apple-gray-2: #CCCCCC;
+    --apple-gray-3: #E0E0E0;
+    --apple-gray-4: #EEEEEE;
+    --apple-gray-5: #F5F5F5;
+    --apple-gray-6: #FAFAFA;
+    --apple-separator: rgba(0, 0, 0, 0.1);
 }
         
         /* Estilos generales para el contenido principal */
@@ -297,6 +319,30 @@ html[data-theme="coffee"] {
                 0 8px 32px rgba(139, 69, 19, 0.05),
                 inset 0 1px 0 rgba(255, 255, 255, 0.8);
         }
+
+        /* Perla Theme - Clean white with minimal effects */
+        html[data-theme="perla"] .glass-card,
+        html[data-theme="perla"] body .glass-card {
+            background: #FFFFFF !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border: 1px solid #E0E0E0 !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+        }
+
+        html[data-theme="perla"] .glass-card:hover {
+            background: #F8F8F8 !important;
+            border-color: var(--apple-blue) !important;
+            box-shadow: 0 8px 30px rgba(0, 82, 212, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+            transform: translateY(-2px);
+        }
+
+        /* Perla theme body background */
+        html[data-theme="perla"] body {
+            background: linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 50%, #F5F5F5 100%) !important;
+            background-attachment: fixed;
+            color: var(--apple-label);
+        }
         
         @media (max-width: 768px) {
             .light-theme .glass-card,
@@ -316,6 +362,15 @@ html[data-theme="coffee"] {
                 background: rgba(245, 235, 225, 0.8);
                 backdrop-filter: blur(15px);
                 -webkit-backdrop-filter: blur(15px);
+            }
+            
+            /* Perla theme responsive */
+            html[data-theme="perla"] .glass-card {
+                background: #FFFFFF !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                border: 1px solid #E0E0E0 !important;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
             }
         }
 

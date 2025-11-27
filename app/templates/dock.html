@@ -4949,9 +4949,9 @@ window.addEventListener('error', function(e) {
                 const solicitudesAsNotifications = solicitudesData.solicitudes.map(solicitud => ({
                     id: `proyecto_${solicitud.id}`,
                     tipo: 'solicitud_proyecto',
-                    remitente: solicitud.usuario_nombre,
+                    remitente: solicitud.usuario_nombre || solicitud.usuario_username || 'Usuario desconocido',
                     titulo: `Solicitud de acceso a proyecto`,
-                    mensaje: `${solicitud.usuario_nombre} quiere unirse al proyecto "${solicitud.proyecto_nombre}"`,
+                    mensaje: `${solicitud.usuario_nombre || solicitud.usuario_username || 'Usuario desconocido'} quiere unirse al proyecto "${solicitud.proyecto_nombre}"`,
                     fecha: solicitud.fecha_solicitud,
                     leida: false,
                     url: null,

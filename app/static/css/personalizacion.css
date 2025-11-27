@@ -56,6 +56,47 @@ body {
         0 4px 12px rgba(255, 107, 157, 0.2),
         inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
+
+/* Perla Theme - Clean white personalization styles */
+html[data-theme="perla"] body {
+    background: linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 50%, #F5F5F5 100%);
+    color: #000000;
+}
+
+html[data-theme="perla"] .avatar-preview {
+    background: #FFFFFF;
+    border: 2px solid #E0E0E0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+html[data-theme="perla"] .avatar-preview:hover {
+    border-color: #0052D4;
+    box-shadow: 0 8px 25px rgba(0, 82, 212, 0.2);
+}
+
+html[data-theme="perla"] .avatar-choice {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+html[data-theme="perla"] .avatar-choice.selected,
+html[data-theme="perla"] .avatar-choice:focus {
+    border: 2.5px solid #0052D4;
+    box-shadow: 0 0 0 3px rgba(0, 82, 212, 0.3);
+}
+
+html[data-theme="perla"] .avatar-label {
+    background: #FFFFFF;
+    color: #0052D4;
+    border: 1px solid #E0E0E0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+html[data-theme="perla"] .avatar-label:hover {
+    background: #F8F8F8;
+    border-color: #0052D4;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 82, 212, 0.15);
+}
 .avatar-chooser {
     display: flex;
     flex-direction: column;

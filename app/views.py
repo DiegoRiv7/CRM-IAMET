@@ -11572,6 +11572,10 @@ def responder_solicitud_proyecto(request, solicitud_id):
     """
     API para aceptar o rechazar una solicitud de acceso a proyecto
     """
+    print(f"🔍 DEBUG responder_solicitud_proyecto - Usuario: {request.user.username if request.user.is_authenticated else 'No autenticado'}")
+    print(f"🔍 DEBUG - Solicitud ID: {solicitud_id}")
+    print(f"🔍 DEBUG - Método: {request.method}")
+    
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
     
@@ -11602,10 +11606,18 @@ def responder_solicitud_proyecto(request, solicitud_id):
             return JsonResponse({'error': 'Sistema de solicitudes no disponible. Aplique migraciones.'}, status=503)
             
         solicitud = get_object_or_404(SolicitudAccesoProyecto, id=solicitud_id)
+        print(f"🔍 DEBUG - Solicitud encontrada: {solicitud.proyecto.nombre}")
+        print(f"🔍 DEBUG - Creador proyecto: {solicitud.proyecto.creado_por.username}")
+        print(f"🔍 DEBUG - Usuario actual: {request.user.username}")
         
         # Verificar que sea el creador del proyecto o un miembro
-        if (request.user != solicitud.proyecto.creado_por and 
-            request.user not in solicitud.proyecto.miembros.all()):
+        es_creador = request.user == solicitud.proyecto.creado_por
+        es_miembro = request.user in solicitud.proyecto.miembros.all()
+        print(f"🔍 DEBUG - ¿Es creador?: {es_creador}")
+        print(f"🔍 DEBUG - ¿Es miembro?: {es_miembro}")
+        
+        if not (es_creador or es_miembro):
+            print(f"🔍 DEBUG - NO TIENE PERMISOS - 403")
             return JsonResponse({'error': 'No tienes permisos para responder esta solicitud'}, status=403)
         
         # Verificar que la solicitud esté pendiente
