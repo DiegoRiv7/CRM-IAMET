@@ -1406,9 +1406,50 @@
         background-color: #FFFFFF !important;
     }
 
-    /* Anular interferencias específicas del tema rosa */
+    /* ANULAR COMPLETAMENTE ESTILOS LIGHT-THEME EN TEMA PERLA */
     html[data-theme="perla"].light-theme .apple-card,
-    body.light-theme html[data-theme="perla"] .apple-card {
+    html[data-theme="perla"] .light-theme .apple-card,
+    body.light-theme html[data-theme="perla"] .apple-card,
+    html[data-theme="perla"] .apple-card.light-theme,
+    .light-theme html[data-theme="perla"] .apple-card {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        background-image: none !important;
+        border: 1px solid #E0E0E0 !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+    }
+
+    /* Anular estilos específicos de cards empleado */
+    html[data-theme="perla"].light-theme .apple-card:nth-of-type(1),
+    html[data-theme="perla"].light-theme .apple-card:nth-of-type(2),
+    html[data-theme="perla"] .light-theme .apple-card:nth-of-type(1),
+    html[data-theme="perla"] .light-theme .apple-card:nth-of-type(2),
+    body.light-theme html[data-theme="perla"] .apple-card:nth-of-type(1),
+    body.light-theme html[data-theme="perla"] .apple-card:nth-of-type(2) {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        background-image: none !important;
+        border: 1px solid #E0E0E0 !important;
+    }
+
+    /* Anular hover states también */
+    html[data-theme="perla"].light-theme .apple-card:hover,
+    html[data-theme="perla"] .light-theme .apple-card:hover,
+    body.light-theme html[data-theme="perla"] .apple-card:hover,
+    html[data-theme="perla"].light-theme .apple-card:nth-of-type(1):hover,
+    html[data-theme="perla"].light-theme .apple-card:nth-of-type(2):hover {
+        background: #F8F8F8 !important;
+        background-color: #F8F8F8 !important;
+        background-image: none !important;
+        border-color: #0052D4 !important;
+        box-shadow: 0 8px 30px rgba(0, 82, 212, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    /* Anular estilos de vision card */
+    html[data-theme="perla"].light-theme section:last-of-type .apple-card,
+    html[data-theme="perla"] .light-theme section:last-of-type .apple-card {
         background: #FFFFFF !important;
         background-color: #FFFFFF !important;
         background-image: none !important;

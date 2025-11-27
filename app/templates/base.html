@@ -343,6 +343,58 @@ html[data-theme="perla"] {
             background-attachment: fixed;
             color: var(--apple-label);
         }
+
+        /* FORZAR tema perla - ANULAR COMPLETAMENTE tema rosa */
+        html.light-theme[data-theme="perla"],
+        html.light-theme[data-theme="perla"] body,
+        body.light-theme[data-theme="perla"] {
+            background: linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 50%, #F5F5F5 100%) !important;
+            color: #000000 !important;
+        }
+
+        /* Cards - FUERZA blanco puro para tema perla */
+        html.light-theme[data-theme="perla"] .glass-card,
+        html[data-theme="perla"].light-theme .glass-card,
+        body.light-theme[data-theme="perla"] .glass-card,
+        html[data-theme="perla"] .light-theme .glass-card,
+        html[data-theme="perla"] .pink-theme .glass-card {
+            background: #FFFFFF !important;
+            background-color: #FFFFFF !important;
+            background-image: none !important;
+            border: 1px solid #E0E0E0 !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+
+        html.light-theme[data-theme="perla"] .glass-card:hover,
+        html[data-theme="perla"].light-theme .glass-card:hover,
+        body.light-theme[data-theme="perla"] .glass-card:hover {
+            background: #F8F8F8 !important;
+            background-color: #F8F8F8 !important;
+            background-image: none !important;
+            border-color: #0052D4 !important;
+            box-shadow: 0 8px 30px rgba(0, 82, 212, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        /* Elementos específicos que pueden heredar rosa */
+        html[data-theme="perla"] .apple-card,
+        html[data-theme="perla"] section .apple-card,
+        html[data-theme="perla"] div .apple-card {
+            background: #FFFFFF !important;
+            background-color: #FFFFFF !important;
+            background-image: none !important;
+            border: 1px solid #E0E0E0 !important;
+        }
+
+        html[data-theme="perla"] .apple-card:hover,
+        html[data-theme="perla"] section .apple-card:hover,
+        html[data-theme="perla"] div .apple-card:hover {
+            background: #F8F8F8 !important;
+            background-color: #F8F8F8 !important;
+            background-image: none !important;
+            border-color: #0052D4 !important;
+        }
         
         @media (max-width: 768px) {
             .light-theme .glass-card,

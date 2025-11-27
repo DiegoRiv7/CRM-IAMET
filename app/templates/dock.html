@@ -5990,7 +5990,7 @@ async function cargarNotificacionesSolicitudes() {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                'X-CSRFToken': getCookie('csrftoken')
             }
         });
         
@@ -6091,7 +6091,7 @@ async function responderSolicitud(solicitudId, accion) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                'X-CSRFToken': getCookie('csrftoken')
             },
             body: JSON.stringify({
                 solicitud_id: solicitudId,
