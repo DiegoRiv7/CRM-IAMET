@@ -17928,12 +17928,14 @@ setTimeout(() => {
 {% if not tiene_acceso and puede_solicitar_acceso %}
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔒 Inicializando sistema de privacidad...');
+    console.log('🔒 Variables de template - tiene_acceso:', {{ tiene_acceso|yesno:"true,false" }}, 'puede_solicitar_acceso:', {{ puede_solicitar_acceso|yesno:"true,false" }});
     const btnSolicitarAcceso = document.getElementById('btnSolicitarAcceso');
     console.log('🔒 Botón encontrado:', btnSolicitarAcceso);
     
     if (btnSolicitarAcceso) {
+        console.log('🔒 Configurando event listener para el botón');
         btnSolicitarAcceso.addEventListener('click', function() {
-            console.log('🔒 Clic en botón Solicitar Unirse!');
+            console.log('🔒 ¡Clic detectado en botón Solicitar Unirse!');
             // Crear modal de confirmación
             const modal = document.createElement('div');
             modal.style.cssText = `
@@ -18011,6 +18013,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.style.cursor = 'not-allowed';
                 this.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="margin-right: 0.5rem;"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>Enviando...';
                 
+                console.log('🔒 Enviando solicitud a:', \`/app/api/solicitar-acceso-proyecto/{{ proyecto.id }}/\`);
+                console.log('🔒 Mensaje:', mensaje);
+                
                 fetch(\`/app/api/solicitar-acceso-proyecto/{{ proyecto.id }}/\`, {
                     method: 'POST',
                     headers: {
@@ -18019,8 +18024,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     body: JSON.stringify({ mensaje: mensaje })
                 })
-                .then(response => response.json())
+                .then(response => {
+                    console.log('🔒 Response status:', response.status);
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('🔒 Response data:', data);
                     if (data.success) {
                         // Mostrar mensaje de éxito
                         modalContent.innerHTML = \`
@@ -18050,7 +18059,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
+                    console.error('🔒 Error en solicitud:', error);
+                    console.error('🔒 Error completo:', error.message, error.stack);
                     modalContent.innerHTML = \`
                         <div style="text-align: center;">
                             <div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
@@ -18077,8 +18087,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
+    } else {
+        console.log('🔒 ⚠️ Botón btnSolicitarAcceso NO encontrado en el DOM');
     }
 });
+{% else %}
+console.log('🔒 ℹ️ Script de solicitud no ejecutado. tiene_acceso:', {{ tiene_acceso|yesno:"true,false" }}, 'puede_solicitar_acceso:', {{ puede_solicitar_acceso|yesno:"true,false" }});
 {% endif %}
 
 </script>

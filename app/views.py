@@ -10446,25 +10446,7 @@ def api_tarea_detalle(request, tarea_id):
 
 
 # Funciones de utilidad para notificaciones
-def crear_notificacion(usuario, tipo, titulo, mensaje, url=None, creado_por=None):
-    """
-    Función de utilidad para crear notificaciones
-    """
-    try:
-        from .models import Notificacion
-        notificacion = Notificacion.objects.create(
-            usuario=usuario,
-            tipo=tipo,
-            titulo=titulo,
-            mensaje=mensaje,
-            url=url,
-            creado_por=creado_por
-        )
-        print(f"Notificación creada: {titulo} para {usuario.username}")
-        return notificacion
-    except Exception as e:
-        print(f"Error creando notificación: {e}")
-        return None
+# Función duplicada eliminada - usar la función de la línea 9891
 
 def notificar_nueva_tarea(tarea, creado_por):
     """
@@ -10474,36 +10456,33 @@ def notificar_nueva_tarea(tarea, creado_por):
         # Notificar al responsable de la tarea
         if tarea.asignado_a and tarea.asignado_a != creado_por:
             crear_notificacion(
-                usuario=tarea.asignado_a,
+                usuario_destinatario=tarea.asignado_a,
                 tipo='tarea_nueva',
                 titulo=f'Nueva tarea asignada: {tarea.titulo}',
                 mensaje=f'Se te ha asignado la tarea "{tarea.titulo}" en el proyecto {tarea.proyecto.nombre if tarea.proyecto else "Sin proyecto"}',
-                url=f'/app/proyecto/{tarea.proyecto.id}/' if tarea.proyecto else '/app/tareas/',
-                creado_por=creado_por
+                usuario_remitente=creado_por
             )
         
         # Notificar a todos los participantes
         for participante in tarea.participantes.all():
             if participante != creado_por and participante != tarea.asignado_a:
                 crear_notificacion(
-                    usuario=participante,
+                    usuario_destinatario=participante,
                     tipo='tarea_nueva',
                     titulo=f'Nueva tarea: {tarea.titulo}',
                     mensaje=f'Has sido agregado como participante en la tarea "{tarea.titulo}"',
-                    url=f'/app/proyecto/{tarea.proyecto.id}/' if tarea.proyecto else '/app/tareas/',
-                    creado_por=creado_por
+                    usuario_remitente=creado_por
                 )
         
         # Notificar a todos los observadores
         for observador in tarea.observadores.all():
             if observador != creado_por and observador != tarea.asignado_a:
                 crear_notificacion(
-                    usuario=observador,
+                    usuario_destinatario=observador,
                     tipo='tarea_nueva',
                     titulo=f'Nueva tarea: {tarea.titulo}',
                     mensaje=f'Has sido agregado como observador en la tarea "{tarea.titulo}"',
-                    url=f'/app/proyecto/{tarea.proyecto.id}/' if tarea.proyecto else '/app/tareas/',
-                    creado_por=creado_por
+                    usuario_remitente=creado_por
                 )
                 
     except Exception as e:
