@@ -5997,14 +5997,38 @@ async function cargarNotificacionesSolicitudes() {
         if (response.ok) {
             const data = await response.json();
             console.log('📋 Solicitudes recibidas:', data);
-            mostrarNotificacionesSolicitudes(data.solicitudes || []);
+            
+            // Mostrar mensaje si el sistema no está disponible
+            if (data.message && data.solicitudes.length === 0) {
+                console.log('ℹ️ Sistema de notificaciones:', data.message);
+                mostrarMensajeSistema(data.message);
+            } else {
+                mostrarNotificacionesSolicitudes(data.solicitudes || []);
+            }
+            
             actualizarContadorNotificaciones(data.solicitudes?.length || 0);
         } else {
             console.error('❌ Error al cargar solicitudes:', response.status);
+            mostrarMensajeSistema('Error al cargar notificaciones');
         }
     } catch (error) {
         console.error('❌ Error en cargarNotificacionesSolicitudes:', error);
     }
+}
+
+// Función para mostrar mensaje del sistema en las notificaciones
+function mostrarMensajeSistema(mensaje) {
+    const contenedor = document.getElementById('notificationsList') || document.querySelector('.notifications-list');
+    if (!contenedor) {
+        console.error('❌ No se encontró contenedor de notificaciones');
+        return;
+    }
+    
+    contenedor.innerHTML = `
+        <div class="notification-item sistema-mensaje" style="padding: 20px; text-align: center; color: #666; font-style: italic;">
+            <p><i class="fas fa-info-circle"></i> ${mensaje}</p>
+        </div>
+    `;
 }
 
 // Función para mostrar las notificaciones en el modal

@@ -11525,6 +11525,25 @@ def solicitar_acceso_proyecto(request, proyecto_id):
         # Verificar si el modelo existe antes de usar
         try:
             from app.models import SolicitudAccesoProyecto
+            from django.db import connection
+            
+            # Verificar si la tabla existe en la base de datos
+            with connection.cursor() as cursor:
+                # Consulta compatible con MySQL y SQLite
+                if 'mysql' in connection.vendor:
+                    cursor.execute("""
+                        SELECT table_name FROM information_schema.tables 
+                        WHERE table_schema = DATABASE() AND table_name = 'app_solicitudaccesoproyecto';
+                    """)
+                else:
+                    cursor.execute("""
+                        SELECT name FROM sqlite_master WHERE type='table' AND name='app_solicitudaccesoproyecto';
+                    """)
+                table_exists = cursor.fetchone()
+                
+            if not table_exists:
+                return JsonResponse({'error': 'Sistema de solicitudes no disponible. Tabla no existe en la base de datos.'}, status=503)
+                
         except ImportError:
             return JsonResponse({'error': 'Sistema de solicitudes no disponible. Aplique migraciones.'}, status=503)
             
@@ -11580,6 +11599,25 @@ def responder_solicitud_proyecto(request, solicitud_id):
         # Verificar si el modelo existe antes de usar
         try:
             from app.models import SolicitudAccesoProyecto
+            from django.db import connection
+            
+            # Verificar si la tabla existe en la base de datos
+            with connection.cursor() as cursor:
+                # Consulta compatible con MySQL y SQLite
+                if 'mysql' in connection.vendor:
+                    cursor.execute("""
+                        SELECT table_name FROM information_schema.tables 
+                        WHERE table_schema = DATABASE() AND table_name = 'app_solicitudaccesoproyecto';
+                    """)
+                else:
+                    cursor.execute("""
+                        SELECT name FROM sqlite_master WHERE type='table' AND name='app_solicitudaccesoproyecto';
+                    """)
+                table_exists = cursor.fetchone()
+                
+            if not table_exists:
+                return JsonResponse({'error': 'Sistema de solicitudes no disponible. Tabla no existe en la base de datos.'}, status=503)
+                
         except ImportError:
             return JsonResponse({'error': 'Sistema de solicitudes no disponible. Aplique migraciones.'}, status=503)
             
@@ -11633,8 +11671,35 @@ def obtener_solicitudes_proyecto(request):
         # Verificar si el modelo existe antes de usar
         try:
             from app.models import SolicitudAccesoProyecto, Proyecto
-        except ImportError:
-            return JsonResponse({'solicitudes': [], 'total': 0})
+            from django.db import connection
+            
+            # Verificar si la tabla existe en la base de datos
+            with connection.cursor() as cursor:
+                # Consulta compatible con MySQL y SQLite
+                if 'mysql' in connection.vendor:
+                    cursor.execute("""
+                        SELECT table_name FROM information_schema.tables 
+                        WHERE table_schema = DATABASE() AND table_name = 'app_solicitudaccesoproyecto';
+                    """)
+                else:
+                    cursor.execute("""
+                        SELECT name FROM sqlite_master WHERE type='table' AND name='app_solicitudaccesoproyecto';
+                    """)
+                table_exists = cursor.fetchone()
+                
+            if not table_exists:
+                return JsonResponse({
+                    'solicitudes': [], 
+                    'total': 0,
+                    'message': 'Sistema de solicitudes no disponible'
+                })
+                
+        except (ImportError, Exception) as e:
+            return JsonResponse({
+                'solicitudes': [], 
+                'total': 0,
+                'message': f'Sistema de solicitudes no disponible: {str(e)}'
+            })
         
         # Obtener proyectos donde el usuario es creador o miembro
         proyectos_con_permisos = Proyecto.objects.filter(
