@@ -6027,38 +6027,43 @@ function mostrarNotificacionesSolicitudes(solicitudes) {
         return;
     }
     
-    const notificacionesHTML = solicitudes.map(solicitud => `
-        <div class="notification-item solicitud-acceso" data-id="${solicitud.id}">
-            <div class="notification-icon">👤</div>
-            <div class="notification-content">
-                <div class="notification-title">Solicitud de Acceso a Proyecto</div>
-                <div class="notification-message">
-                    <strong>${solicitud.usuario_solicitante}</strong> solicita acceso al proyecto 
-                    <strong>"${solicitud.proyecto_nombre}"</strong>
-                </div>
-                ${solicitud.mensaje ? `<div class="notification-extra-message">"${solicitud.mensaje}"</div>` : ''}
-                <div class="notification-time">${solicitud.fecha_solicitud}</div>
-            </div>
-            <div class="notification-actions">
-                <button class="btn-aceptar" onclick="responderSolicitud(${solicitud.id}, 'aceptar')" data-id="${solicitud.id}">
-                    ✓ Aceptar
-                </button>
-                <button class="btn-rechazar" onclick="responderSolicitud(${solicitud.id}, 'rechazar')" data-id="${solicitud.id}">
-                    ✗ Rechazar
-                </button>
-            </div>
-        </div>
-    `).join('');
+    const notificacionesHTML = solicitudes.map(function(solicitud) {
+        let mensajeExtra = '';
+        if (solicitud.mensaje) {
+            mensajeExtra = '<div class="notification-extra-message">"' + solicitud.mensaje + '"</div>';
+        }
+        
+        return '<div class="notification-item solicitud-acceso" data-id="' + solicitud.id + '">' +
+            '<div class="notification-icon">👤</div>' +
+            '<div class="notification-content">' +
+                '<div class="notification-title">Solicitud de Acceso a Proyecto</div>' +
+                '<div class="notification-message">' +
+                    '<strong>' + solicitud.usuario_solicitante + '</strong> solicita acceso al proyecto ' +
+                    '<strong>"' + solicitud.proyecto_nombre + '"</strong>' +
+                '</div>' +
+                mensajeExtra +
+                '<div class="notification-time">' + solicitud.fecha_solicitud + '</div>' +
+            '</div>' +
+            '<div class="notification-actions">' +
+                '<button class="btn-aceptar" onclick="responderSolicitud(' + solicitud.id + ', \'aceptar\')" data-id="' + solicitud.id + '">' +
+                    '✓ Aceptar' +
+                '</button>' +
+                '<button class="btn-rechazar" onclick="responderSolicitud(' + solicitud.id + ', \'rechazar\')" data-id="' + solicitud.id + '">' +
+                    '✗ Rechazar' +
+                '</button>' +
+            '</div>' +
+        '</div>';
+    }).join('');
     
     contenedor.innerHTML = notificacionesHTML;
 }
 
 // Función para responder solicitudes (aceptar/rechazar)
 async function responderSolicitud(solicitudId, accion) {
-    console.log(`📝 Respondiendo solicitud ${solicitudId} con acción: ${accion}`);
+    console.log('📝 Respondiendo solicitud ' + solicitudId + ' con acción: ' + accion);
     
     try {
-        const response = await fetch(`/app/api/responder-solicitud-proyecto/${solicitudId}/`, {
+        const response = await fetch('/app/api/responder-solicitud-proyecto/' + solicitudId + '/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -6099,7 +6104,7 @@ async function responderSolicitud(solicitudId, accion) {
 
 // Función para actualizar contador de notificaciones
 function actualizarContadorNotificaciones(cantidad) {
-    console.log(`🔢 Actualizando contador: ${cantidad}`);
+    console.log('🔢 Actualizando contador: ' + cantidad);
     
     const badges = ['notification-badge', 'notification-badge-right', 'notification-badge-top', 'notification-badge-bottom'];
     
@@ -6120,18 +6125,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     buttons.forEach(buttonId => {
         const btn = document.getElementById(buttonId);
-        console.log(`🎯 Configurando ${buttonId}:`, btn);
+        console.log('🎯 Configurando ' + buttonId + ':', btn);
         
         if (btn) {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
-                console.log(`🖱️ CLIC en ${buttonId}!`);
+                console.log('🖱️ CLIC en ' + buttonId + '!');
                 abrirModalNotificaciones();
                 return false;
             });
-            console.log(`✅ ${buttonId} configurado`);
+            console.log('✅ ' + buttonId + ' configurado');
         } else {
-            console.log(`❌ ${buttonId} NO encontrado`);
+            console.log('❌ ' + buttonId + ' NO encontrado');
         }
     });
     
@@ -6157,7 +6162,7 @@ document.addEventListener('DOMContentLoaded', function() {
     cargarNotificacionesSolicitudes();
     
     // Actualizar notificaciones cada 30 segundos
-    setInterval(() => {
+    setInterval(function() {
         console.log('🔄 Actualizando notificaciones automáticamente...');
         cargarNotificacionesSolicitudes();
     }, 30000);
