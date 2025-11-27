@@ -1441,24 +1441,43 @@
         background: linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 30%, #F8F8F8 70%, #F5F5F5 100%);
     }
 
-    /* Cards tema perla - Blanco limpio con sombras grises */
+    /* Cards tema perla - SOLO blanco limpio con sombras grises */
     html[data-theme="perla"] .apple-card {
-        background: linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 100%);
-        border: 1px solid rgba(0, 0, 0, 0.08);
+        background: #FFFFFF !important; /* Blanco puro sin gradientes */
+        border: 1px solid #E0E0E0 !important;
         box-shadow: 
             0 4px 20px rgba(0, 0, 0, 0.08),
-            0 1px 3px rgba(0, 0, 0, 0.12);
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
+            0 1px 3px rgba(0, 0, 0, 0.12) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
     }
 
     html[data-theme="perla"] .apple-card:hover {
-        background: linear-gradient(135deg, #FFFFFF 0%, #F8F8F8 100%);
-        border-color: var(--apple-blue);
+        background: #F8F8F8 !important; /* Gris muy claro en hover */
+        border-color: var(--apple-blue) !important;
         box-shadow: 
             0 8px 30px rgba(0, 82, 212, 0.15),
-            0 2px 8px rgba(0, 0, 0, 0.1);
+            0 2px 8px rgba(0, 0, 0, 0.1) !important;
         transform: translateY(-2px);
+    }
+
+    /* Anular TODOS los estilos de tema rosa/pink que puedan interferir */
+    html[data-theme="perla"] .apple-card,
+    html[data-theme="perla"] .apple-card:nth-of-type(1),
+    html[data-theme="perla"] .apple-card:nth-of-type(2),
+    html[data-theme="perla"] .apple-card:nth-child(odd),
+    html[data-theme="perla"] .apple-card:nth-child(even) {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        background-image: none !important;
+    }
+
+    html[data-theme="perla"] .apple-card:hover,
+    html[data-theme="perla"] .apple-card:nth-of-type(1):hover,
+    html[data-theme="perla"] .apple-card:nth-of-type(2):hover {
+        background: #F8F8F8 !important;
+        background-color: #F8F8F8 !important;
+        background-image: none !important;
     }
 
     /* Tipografía tema perla - Todo en negro */
@@ -1642,6 +1661,72 @@
             border: 1px solid #E0E0E0;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
+    }
+
+    /* ========== ANULAR COMPLETAMENTE CUALQUIER HERENCIA ROSADA ========== */
+    
+    /* Fuerza todos los elementos del tema perla a ser solo blanco/gris/azul */
+    html[data-theme="perla"] * {
+        /* Anular cualquier fondo rosado heredado */
+    }
+
+    /* Cards especificamente - fuerza blanco puro */
+    html[data-theme="perla"] .apple-card,
+    html[data-theme="perla"] section .apple-card,
+    html[data-theme="perla"] div .apple-card,
+    html[data-theme="perla"] .apple-card.text-center {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        background-image: none !important;
+        border: 1px solid #E0E0E0 !important;
+    }
+
+    /* Cards hover - fuerza gris muy claro */
+    html[data-theme="perla"] .apple-card:hover,
+    html[data-theme="perla"] section .apple-card:hover,
+    html[data-theme="perla"] div .apple-card:hover,
+    html[data-theme="perla"] .apple-card.text-center:hover {
+        background: #F8F8F8 !important;
+        background-color: #F8F8F8 !important;
+        background-image: none !important;
+        border-color: var(--apple-blue) !important;
+    }
+
+    /* Anular estilos específicos de light-theme pink que puedan interferir */
+    html[data-theme="perla"].light-theme .apple-card,
+    html[data-theme="perla"] body.light-theme .apple-card,
+    body.light-theme html[data-theme="perla"] .apple-card {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        background-image: none !important;
+        border: 1px solid #E0E0E0 !important;
+    }
+
+    html[data-theme="perla"].light-theme .apple-card:hover,
+    html[data-theme="perla"] body.light-theme .apple-card:hover,
+    body.light-theme html[data-theme="perla"] .apple-card:hover {
+        background: #F8F8F8 !important;
+        background-color: #F8F8F8 !important;
+        background-image: none !important;
+        border-color: var(--apple-blue) !important;
+    }
+
+    /* Asegurar que NO haya interferencia con estilos de pink-theme */
+    html[data-theme="perla"] body,
+    html[data-theme="perla"] html,
+    body[data-theme="perla"],
+    html.light-theme[data-theme="perla"] body {
+        background: linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 50%, #F5F5F5 100%) !important;
+        background-attachment: fixed;
+    }
+
+    /* Fuerza remover cualquier linear-gradient rosa heredado */
+    html[data-theme="perla"] .apple-card:nth-of-type(1),
+    html[data-theme="perla"] .apple-card:nth-of-type(2),
+    html[data-theme="perla"] .apple-card:first-child,
+    html[data-theme="perla"] .apple-card:last-child {
+        background: #FFFFFF !important;
+        background-image: none !important;
     }
 
     /* Responsive adjustments */
