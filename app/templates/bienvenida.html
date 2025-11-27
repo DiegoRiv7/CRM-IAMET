@@ -3,9 +3,29 @@
 {% block title %}Bienvenida{% endblock %}
 {% block content %}
 <script type="text/javascript">
-// Apply theme immediately to prevent flash
+// Apply theme immediately to prevent flash - Enhanced for Perla theme
 (function() {
     try {
+        // Check for new theme system first (perla, etc.)
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            console.log('Loading saved theme:', savedTheme);
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            
+            // Apply theme-specific classes
+            if (savedTheme === 'perla') {
+                document.documentElement.classList.add('light-theme');
+                document.body.classList.add('perla-theme');
+                console.log('Perla theme applied successfully');
+            } else if (savedTheme === 'pink' || savedTheme === 'white' || savedTheme === 'coffee') {
+                document.documentElement.classList.add('light-theme');
+            } else {
+                document.documentElement.classList.add('dark-theme');
+            }
+            return;
+        }
+        
+        // Fallback to old preference system
         const saved = localStorage.getItem('designPreferences');
         if (saved) {
             const preferences = JSON.parse(saved);
@@ -1372,6 +1392,313 @@
 
     .light-theme .birthday-message {
         color: #2F4F4F !important;
+    }
+
+    /* ========================================= */
+    /*             TEMA PERLA                   */
+    /*   Brillante, vibrante, azul eléctrico   */
+    /* ========================================= */
+
+    /* Perla Theme - Bright & Vibrant Electric Blue */
+    html[data-theme="perla"] {
+        /* Fondos principales - Perla brillante */
+        --apple-background: #FFFFFF;
+        --apple-background-secondary: #F8FAFF;
+        --apple-background-tertiary: #F0F4FF;
+        --apple-background-quaternary: #E8F0FF;
+
+        /* Etiquetas - Textos oscuros para contraste */
+        --apple-label: #1A1D29;
+        --apple-label-secondary: #2D3748;
+        --apple-label-tertiary: #4A5568;
+        --apple-label-quaternary: #718096;
+
+        /* Azul eléctrico vibrante */
+        --apple-blue: #0052D4;
+        --apple-blue-light: #1E7BFF;
+        --apple-blue-dark: #003AA3;
+        
+        /* Colores adicionales perla */
+        --apple-perla-electric: #00D4FF;
+        --apple-perla-bright: #0099FF;
+        --apple-perla-glow: #33AAFF;
+        
+        /* Grises adaptados */
+        --apple-gray: #64748B;
+        --apple-gray-2: #94A3B8;
+        --apple-gray-3: #CBD5E1;
+        --apple-gray-4: #E2E8F0;
+        --apple-gray-5: #F1F5F9;
+        --apple-gray-6: #F8FAFC;
+        
+        --apple-separator: rgba(0, 82, 212, 0.15);
+    }
+
+    /* Fondo principal tema perla */
+    html[data-theme="perla"] body {
+        background: radial-gradient(ellipse at top, rgba(0, 212, 255, 0.08) 0%, transparent 60%),
+                    radial-gradient(ellipse at bottom right, rgba(0, 82, 212, 0.05) 0%, transparent 50%),
+                    linear-gradient(180deg, #FFFFFF 0%, #F8FAFF 50%, #F0F4FF 100%) !important;
+        background-attachment: fixed;
+        color: var(--apple-label);
+    }
+
+    html[data-theme="perla"] .apple-bg {
+        background: radial-gradient(ellipse at top left, rgba(0, 212, 255, 0.1) 0%, transparent 60%),
+                    radial-gradient(ellipse at center, rgba(0, 82, 212, 0.06) 0%, transparent 70%),
+                    radial-gradient(ellipse at bottom right, rgba(30, 123, 255, 0.08) 0%, transparent 50%),
+                    linear-gradient(180deg, #FFFFFF 0%, #F8FAFF 30%, #F0F4FF 70%, #E8F0FF 100%);
+    }
+
+    /* Cards tema perla - Efecto cristal brillante */
+    html[data-theme="perla"] .apple-card {
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.95) 0%,
+            rgba(248, 250, 255, 0.9) 30%,
+            rgba(240, 244, 255, 0.85) 70%,
+            rgba(232, 240, 255, 0.8) 100%);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid rgba(0, 82, 212, 0.2);
+        box-shadow: 
+            0 8px 32px rgba(0, 82, 212, 0.15),
+            0 2px 8px rgba(0, 212, 255, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    html[data-theme="perla"] .apple-card:hover {
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.98) 0%,
+            rgba(245, 248, 255, 0.93) 30%,
+            rgba(235, 242, 255, 0.88) 70%,
+            rgba(225, 235, 255, 0.83) 100%);
+        border-color: rgba(0, 82, 212, 0.3);
+        box-shadow: 
+            0 12px 40px rgba(0, 82, 212, 0.2),
+            0 4px 16px rgba(0, 212, 255, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.95);
+        transform: translateY(-3px);
+    }
+
+    /* Tipografía tema perla */
+    html[data-theme="perla"] .apple-title-1 {
+        color: var(--apple-label) !important;
+        text-shadow: 0 2px 4px rgba(0, 82, 212, 0.1);
+    }
+
+    html[data-theme="perla"] .apple-title-2 {
+        color: var(--apple-label) !important;
+    }
+
+    html[data-theme="perla"] .apple-title-3 {
+        color: var(--apple-blue) !important;
+        text-shadow: 0 1px 3px rgba(0, 82, 212, 0.15);
+    }
+
+    html[data-theme="perla"] .apple-headline {
+        color: var(--apple-label) !important;
+    }
+
+    html[data-theme="perla"] .apple-body {
+        color: var(--apple-label-secondary) !important;
+    }
+
+    html[data-theme="perla"] .apple-subheadline {
+        color: var(--apple-label-tertiary) !important;
+    }
+
+    /* Avatar tema perla - Brillo azul eléctrico */
+    html[data-theme="perla"] .apple-avatar,
+    html[data-theme="perla"] .user-avatar-container {
+        border: 3px solid var(--apple-blue) !important;
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.95) 0%,
+            rgba(240, 248, 255, 0.9) 100%);
+        box-shadow: 
+            0 8px 25px rgba(0, 82, 212, 0.25),
+            0 0 20px rgba(0, 212, 255, 0.2),
+            0 0 0 1px rgba(255, 255, 255, 0.8);
+    }
+
+    html[data-theme="perla"] .apple-avatar:hover,
+    html[data-theme="perla"] .user-avatar-container:hover {
+        border-color: var(--apple-perla-electric) !important;
+        box-shadow: 
+            0 12px 35px rgba(0, 82, 212, 0.3),
+            0 0 30px rgba(0, 212, 255, 0.3),
+            0 0 0 1px rgba(255, 255, 255, 0.9);
+        transform: scale(1.05);
+    }
+
+    /* Tabla tema perla - Cristal brillante */
+    html[data-theme="perla"] .apple-table {
+        background: linear-gradient(135deg,
+            rgba(248, 250, 255, 0.95) 0%,
+            rgba(240, 244, 255, 0.9) 50%,
+            rgba(232, 240, 255, 0.85) 100%);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid rgba(0, 82, 212, 0.25);
+        box-shadow: 
+            0 8px 32px rgba(0, 82, 212, 0.15),
+            0 2px 8px rgba(0, 212, 255, 0.1);
+    }
+
+    html[data-theme="perla"] .apple-table thead {
+        background: linear-gradient(135deg,
+            rgba(240, 244, 255, 0.98) 0%,
+            rgba(230, 238, 255, 0.95) 100%);
+        backdrop-filter: blur(15px);
+    }
+
+    html[data-theme="perla"] .apple-table th {
+        color: var(--apple-label) !important;
+        font-weight: 600;
+    }
+
+    html[data-theme="perla"] .apple-table td {
+        color: var(--apple-label) !important;
+    }
+
+    html[data-theme="perla"] .apple-table tbody tr:hover {
+        background: rgba(0, 82, 212, 0.12) !important;
+    }
+
+    /* Barra de búsqueda tema perla */
+    html[data-theme="perla"] .central-search-bar {
+        background: linear-gradient(135deg,
+            rgba(248, 250, 255, 0.95) 0%,
+            rgba(240, 244, 255, 0.9) 50%,
+            rgba(232, 240, 255, 0.85) 100%);
+        border: 1px solid rgba(0, 82, 212, 0.3);
+        box-shadow: 
+            0 8px 25px rgba(0, 82, 212, 0.15),
+            0 2px 8px rgba(0, 212, 255, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    html[data-theme="perla"] .central-search-bar:hover {
+        background: linear-gradient(135deg,
+            rgba(245, 248, 255, 0.98) 0%,
+            rgba(235, 242, 255, 0.93) 50%,
+            rgba(225, 235, 255, 0.88) 100%);
+        border-color: rgba(0, 82, 212, 0.4);
+        box-shadow: 
+            0 12px 35px rgba(0, 82, 212, 0.2),
+            0 4px 12px rgba(0, 212, 255, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.95);
+        transform: translateY(-2px);
+    }
+
+    html[data-theme="perla"] .central-search-icon {
+        color: var(--apple-blue) !important;
+    }
+
+    html[data-theme="perla"] .central-search-text {
+        color: var(--apple-label-secondary) !important;
+    }
+
+    /* Botones flotantes tema perla */
+    html[data-theme="perla"] .floating-top-btn {
+        background: linear-gradient(135deg,
+            rgba(248, 250, 255, 0.95) 0%,
+            rgba(240, 244, 255, 0.9) 100%);
+        border: 1px solid rgba(0, 82, 212, 0.3);
+        box-shadow: 
+            0 8px 25px rgba(0, 82, 212, 0.15),
+            0 2px 8px rgba(0, 212, 255, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    html[data-theme="perla"] .floating-top-btn:hover {
+        background: linear-gradient(135deg,
+            rgba(240, 244, 255, 0.98) 0%,
+            rgba(230, 238, 255, 0.93) 100%);
+        border-color: var(--apple-perla-electric);
+        box-shadow: 
+            0 12px 35px rgba(0, 82, 212, 0.2),
+            0 0 20px rgba(0, 212, 255, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.95);
+        transform: translateY(-3px) scale(1.05);
+    }
+
+    html[data-theme="perla"] .floating-top-btn svg {
+        color: var(--apple-blue) !important;
+    }
+
+    html[data-theme="perla"] .floating-top-btn:hover svg {
+        color: var(--apple-perla-electric) !important;
+        filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.5));
+    }
+
+    /* Logo tema perla */
+    html[data-theme="perla"] .logo-floating {
+        background: linear-gradient(135deg,
+            rgba(248, 250, 255, 0.95) 0%,
+            rgba(240, 244, 255, 0.9) 100%);
+        border: 1px solid rgba(0, 82, 212, 0.3);
+        box-shadow: 
+            0 8px 25px rgba(0, 82, 212, 0.2),
+            0 0 15px rgba(0, 212, 255, 0.15);
+    }
+
+    html[data-theme="perla"] .logo-floating:hover {
+        background: linear-gradient(135deg,
+            rgba(240, 244, 255, 0.98) 0%,
+            rgba(230, 238, 255, 0.93) 100%);
+        box-shadow: 
+            0 12px 35px rgba(0, 82, 212, 0.25),
+            0 0 25px rgba(0, 212, 255, 0.2);
+    }
+
+    html[data-theme="perla"] .brand-name {
+        color: var(--apple-label) !important;
+        text-shadow: 0 2px 4px rgba(0, 82, 212, 0.1);
+    }
+
+    html[data-theme="perla"] .brand-tagline {
+        color: var(--apple-label-secondary) !important;
+    }
+
+    /* Efectos especiales de brillo para perla */
+    @keyframes perlaGlow {
+        0%, 100% {
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+        }
+        50% {
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.4);
+        }
+    }
+
+    html[data-theme="perla"] .apple-card,
+    html[data-theme="perla"] .central-search-bar,
+    html[data-theme="perla"] .floating-top-btn {
+        animation: perlaGlow 4s ease-in-out infinite;
+    }
+
+    /* Barras de progreso tema perla */
+    html[data-theme="perla"] .apple-progress {
+        background: rgba(0, 82, 212, 0.1);
+        border-radius: 6px;
+    }
+
+    html[data-theme="perla"] .apple-progress-fill {
+        background: linear-gradient(90deg, 
+            var(--apple-blue) 0%, 
+            var(--apple-perla-bright) 50%, 
+            var(--apple-perla-electric) 100%);
+        box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    }
+
+    /* Responsive para tema perla */
+    @media (max-width: 768px) {
+        html[data-theme="perla"] .apple-table tr {
+            background: linear-gradient(135deg,
+                rgba(248, 250, 255, 0.98) 0%,
+                rgba(240, 244, 255, 0.93) 100%) !important;
+            border: 1px solid rgba(0, 82, 212, 0.2);
+            box-shadow: 0 4px 16px rgba(0, 82, 212, 0.1);
+        }
     }
 
     /* Responsive adjustments */
