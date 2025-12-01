@@ -5054,7 +5054,7 @@ window.addEventListener('error', function(e) {
             await fetch(`/app/api/marcar-notificacion-leida/${notificationId}/`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
+                    'X-CSRFToken': window.getCookie('csrftoken')
                 }
             });
             
@@ -5080,7 +5080,7 @@ window.addEventListener('error', function(e) {
             const response = await fetch('/app/api/marcar-todas-notificaciones-leidas/', {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
+                    'X-CSRFToken': window.getCookie('csrftoken')
                 }
             });
             
@@ -5100,7 +5100,7 @@ window.addEventListener('error', function(e) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
+                    'X-CSRFToken': window.getCookie('csrftoken')
                 },
                 body: JSON.stringify({ accion: accion })
             });
@@ -5158,8 +5158,8 @@ window.addEventListener('error', function(e) {
         }
     }
     
-    // Función para obtener CSRF token
-    function getCookie(name) {
+    // Función para obtener CSRF token - GLOBAL
+    window.getCookie = function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
             const cookies = document.cookie.split(';');
@@ -5990,7 +5990,7 @@ async function cargarNotificacionesSolicitudes() {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
+                'X-CSRFToken': window.getCookie('csrftoken')
             }
         });
         
@@ -6091,7 +6091,7 @@ async function responderSolicitud(solicitudId, accion) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
+                'X-CSRFToken': window.getCookie('csrftoken')
             },
             body: JSON.stringify({
                 solicitud_id: solicitudId,
