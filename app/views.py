@@ -17,7 +17,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.db import models
-from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio
+from .models import TodoItem, Cliente, Cotizacion, DetalleCotizacion, UserProfile, Contacto, PendingFileUpload, OportunidadProyecto, Volumetria, DetalleVolumetria, CatalogoCableado, OportunidadActividad, OportunidadComentario, OportunidadArchivo, OportunidadEstado, Notificacion, Proyecto, ProyectoComentario, ProyectoArchivo, Tarea, TareaComentario, TareaArchivo, Actividad, CarpetaProyecto, ArchivoProyecto, CompartirArchivo, IntercambioNavidad, ParticipanteIntercambio, HistorialIntercambio, SolicitudAccesoProyecto
 from . import views_exportar
 from .views_tarea_comentarios import api_comentarios_tarea, api_agregar_comentario_tarea, api_editar_comentario_tarea, api_eliminar_comentario_tarea
 from .forms import VentaForm, VentaFilterForm, CotizacionForm, ClienteForm, OportunidadModalForm, NuevaOportunidadForm
@@ -11737,21 +11737,20 @@ def api_eliminar_proyecto_completo(request, proyecto_id):
         return JsonResponse({'error': 'Método no permitido'}, status=405)
     
     try:
+        print(f"🔍 DEBUG: Buscando proyecto con ID: {proyecto_id}")
+        
         # Obtener el proyecto
         proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+        print(f"✅ DEBUG: Proyecto encontrado: {proyecto.nombre}")
         
         # Verificar que el usuario es el creador del proyecto
+        print(f"🔍 DEBUG: Creado por: {proyecto.creado_por}, Usuario actual: {request.user}")
         if proyecto.creado_por != request.user:
             return JsonResponse({'error': 'No tienes permisos para eliminar este proyecto'}, status=403)
         
         # Log para debugging
         print(f"🗑️ Iniciando eliminación del proyecto '{proyecto.nombre}' (ID: {proyecto_id})")
         
-        # Importar aquí para evitar importaciones circulares
-        from .models import (
-            Proyecto, Tarea, CarpetaProyecto, ArchivoProyecto, 
-            ProyectoComentario, SolicitudAccesoProyecto
-        )
         import os
         from django.conf import settings
         
@@ -11822,8 +11821,13 @@ def api_eliminar_proyecto_completo(request, proyecto_id):
         })
         
     except Proyecto.DoesNotExist:
+        print(f"❌ DEBUG: Proyecto con ID {proyecto_id} no encontrado")
         return JsonResponse({'error': 'Proyecto no encontrado'}, status=404)
     except Exception as e:
-        print(f"❌ Error eliminando proyecto: {e}")
+        print(f"❌ DEBUG: Error eliminando proyecto: {e}")
+        print(f"❌ DEBUG: Tipo de error: {type(e)}")
+        import traceback
+        print(f"❌ DEBUG: Traceback completo:")
+        traceback.print_exc()
         return JsonResponse({'error': f'Error interno del servidor: {str(e)}'}, status=500)
 
