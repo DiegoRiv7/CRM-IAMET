@@ -11726,3 +11726,104 @@ def obtener_solicitudes_proyecto(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+
+@login_required
+def api_eliminar_proyecto_completo(request, proyecto_id):
+    """
+    API para eliminar un proyecto completo con todas sus dependencias
+    Elimina: proyecto, tareas, carpetas, archivos, comentarios, etc.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        # Obtener el proyecto
+        proyecto = get_object_or_404(TodoItem, id=proyecto_id)
+        
+        # Verificar que el usuario es el creador del proyecto
+        if proyecto.creado_por != request.user:
+            return JsonResponse({'error': 'No tienes permisos para eliminar este proyecto'}, status=403)
+        
+        # Log para debugging
+        print(f"🗑️ Iniciando eliminación del proyecto '{proyecto.nombre}' (ID: {proyecto_id})")
+        
+        # Importar aquí para evitar importaciones circulares
+        from .models import (
+            TodoItem, TareaProyecto, CarpetaProyecto, ArchivoProyecto, 
+            ComentarioProyecto, SolicitudAccesoProyecto
+        )
+        import os
+        from django.conf import settings
+        
+        # Contador para logging
+        elementos_eliminados = {
+            'tareas': 0,
+            'archivos': 0,
+            'carpetas': 0,
+            'comentarios': 0,
+            'solicitudes': 0,
+            'archivos_fisicos': 0
+        }
+        
+        # 1. Eliminar todas las tareas del proyecto
+        tareas = TareaProyecto.objects.filter(proyecto=proyecto)
+        elementos_eliminados['tareas'] = tareas.count()
+        tareas.delete()
+        print(f"   ✅ {elementos_eliminados['tareas']} tareas eliminadas")
+        
+        # 2. Eliminar archivos físicos y registros
+        archivos = ArchivoProyecto.objects.filter(proyecto=proyecto)
+        elementos_eliminados['archivos'] = archivos.count()
+        
+        for archivo in archivos:
+            # Eliminar archivo físico del servidor
+            try:
+                if archivo.archivo and hasattr(archivo.archivo, 'path'):
+                    archivo_path = archivo.archivo.path
+                    if os.path.exists(archivo_path):
+                        os.remove(archivo_path)
+                        elementos_eliminados['archivos_fisicos'] += 1
+                        print(f"   🗂️ Archivo físico eliminado: {archivo_path}")
+            except Exception as e:
+                print(f"   ⚠️ Error eliminando archivo físico {archivo.nombre}: {e}")
+        
+        archivos.delete()
+        print(f"   ✅ {elementos_eliminados['archivos']} archivos eliminados")
+        
+        # 3. Eliminar carpetas
+        carpetas = CarpetaProyecto.objects.filter(proyecto=proyecto)
+        elementos_eliminados['carpetas'] = carpetas.count()
+        carpetas.delete()
+        print(f"   ✅ {elementos_eliminados['carpetas']} carpetas eliminadas")
+        
+        # 4. Eliminar comentarios
+        comentarios = ComentarioProyecto.objects.filter(proyecto=proyecto)
+        elementos_eliminados['comentarios'] = comentarios.count()
+        comentarios.delete()
+        print(f"   ✅ {elementos_eliminados['comentarios']} comentarios eliminados")
+        
+        # 5. Eliminar solicitudes de acceso
+        solicitudes = SolicitudAccesoProyecto.objects.filter(proyecto=proyecto)
+        elementos_eliminados['solicitudes'] = solicitudes.count()
+        solicitudes.delete()
+        print(f"   ✅ {elementos_eliminados['solicitudes']} solicitudes de acceso eliminadas")
+        
+        # 6. Finalmente, eliminar el proyecto
+        proyecto_nombre = proyecto.nombre
+        proyecto.delete()
+        
+        print(f"🎯 Proyecto '{proyecto_nombre}' eliminado completamente")
+        print(f"📊 Resumen: {elementos_eliminados}")
+        
+        return JsonResponse({
+            'success': True, 
+            'message': f'Proyecto "{proyecto_nombre}" eliminado exitosamente',
+            'elementos_eliminados': elementos_eliminados
+        })
+        
+    except TodoItem.DoesNotExist:
+        return JsonResponse({'error': 'Proyecto no encontrado'}, status=404)
+    except Exception as e:
+        print(f"❌ Error eliminando proyecto: {e}")
+        return JsonResponse({'error': f'Error interno del servidor: {str(e)}'}, status=500)
+

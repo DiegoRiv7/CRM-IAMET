@@ -185,21 +185,6 @@
         z-index: 10;
     }
 
-    .proyecto-content-privado::before {
-        content: '🔒';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 4rem;
-        color: rgba(255, 255, 255, 0.7);
-        z-index: 15;
-        background: rgba(0, 0, 0, 0.4);
-        border-radius: 20px;
-        padding: 1rem;
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-    }
 
 
     .tab-content {
@@ -5499,6 +5484,18 @@
         background: rgba(255,255,255,0.20) !important;
     }
 
+    .config-btn-delete {
+        background: rgba(239, 68, 68, 0.15) !important;
+        border: 1px solid rgba(239, 68, 68, 0.3) !important;
+        color: #ef4444 !important;
+    }
+
+    .config-btn-delete:hover {
+        background: rgba(239, 68, 68, 0.25) !important;
+        border-color: rgba(239, 68, 68, 0.5) !important;
+        color: #ffffff !important;
+    }
+
     /* Títulos */
     .config-title {
         margin: 0;
@@ -5973,6 +5970,32 @@
                 </div>
             </div>
 
+            <!-- Modal de confirmación para eliminar proyecto -->
+            <div class="delete-modal" id="deleteProjectModal">
+                <div class="delete-modal-content">
+                    <div class="delete-modal-icon">
+                        <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                        </svg>
+                    </div>
+                    <h3 class="delete-modal-title">Eliminar Proyecto Completo</h3>
+                    <p class="delete-modal-message">
+                        ⚠️ <strong>Esta acción es irreversible</strong><br><br>
+                        Se eliminará permanentemente:
+                        <br>• El proyecto y toda su configuración
+                        <br>• Todas las tareas y subtareas
+                        <br>• Todas las carpetas y archivos
+                        <br>• Todo el historial de comentarios
+                        <br><br>
+                        ¿Estás completamente seguro de que deseas continuar?
+                    </p>
+                    <div class="delete-modal-actions">
+                        <button class="btn-delete-cancel" onclick="cerrarModalEliminarProyecto()">Cancelar</button>
+                        <button class="btn-delete-confirm" id="btnConfirmDeleteProject">Eliminar Definitivamente</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Modal para Crear Carpeta -->
             <div class="modal-overlay" id="createFolderModal">
                 <div class="modal-content">
@@ -6264,6 +6287,12 @@
                         <div class="config-top-buttons">
                             <button type="submit" form="configForm" class="config-btn config-btn-save">Guardar Cambios</button>
                             <button type="reset" form="configForm" class="config-btn config-btn-cancel">Cancelar</button>
+                            <button type="button" id="btnEliminarProyecto" class="config-btn config-btn-delete">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="margin-right: 0.5rem;">
+                                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                                Eliminar Proyecto
+                            </button>
                         </div>
                     </div>
 
@@ -9850,6 +9879,60 @@ async function confirmarEliminacion() {
         
     } catch (error) {
         console.error('Error eliminando comentario:', error);
+        alert('Error de conexión. Intenta nuevamente.');
+    } finally {
+        btnConfirm.disabled = false;
+        btnConfirm.textContent = originalText;
+    }
+}
+
+// ======== FUNCIONES PARA ELIMINAR PROYECTO ========
+
+// Abrir modal de confirmación para eliminar proyecto
+function abrirModalEliminarProyecto() {
+    const modal = document.getElementById('deleteProjectModal');
+    modal.classList.add('active');
+    
+    // Configurar botón de confirmación
+    const btnConfirm = document.getElementById('btnConfirmDeleteProject');
+    btnConfirm.onclick = confirmarEliminacionProyecto;
+}
+
+// Cerrar modal de eliminar proyecto
+function cerrarModalEliminarProyecto() {
+    const modal = document.getElementById('deleteProjectModal');
+    modal.classList.remove('active');
+}
+
+// Confirmar eliminación del proyecto completo
+async function confirmarEliminacionProyecto() {
+    const btnConfirm = document.getElementById('btnConfirmDeleteProject');
+    const originalText = btnConfirm.textContent;
+    
+    // Mostrar loading
+    btnConfirm.disabled = true;
+    btnConfirm.textContent = 'Eliminando...';
+    
+    try {
+        const response = await fetch(`/app/api/eliminar-proyecto/{{ proyecto.id }}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || window.getCookie('csrftoken')
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Mostrar mensaje de éxito y redirigir
+            alert('Proyecto eliminado exitosamente');
+            window.location.href = '/app/todos/'; // Redirigir a la lista de proyectos
+        } else {
+            alert('Error eliminando proyecto: ' + (data.error || 'Error desconocido'));
+        }
+        
+    } catch (error) {
+        console.error('Error eliminando proyecto:', error);
         alert('Error de conexión. Intenta nuevamente.');
     } finally {
         btnConfirm.disabled = false;
@@ -18078,6 +18161,21 @@ document.addEventListener('DOMContentLoaded', function() {
 {% else %}
 console.log('🔒 ℹ️ Script de solicitud no ejecutado. tiene_acceso:', {{ tiene_acceso|yesno:"true,false" }}, 'puede_solicitar_acceso:', {{ puede_solicitar_acceso|yesno:"true,false" }});
 {% endif %}
+
+// ======== INICIALIZACIÓN BOTÓN ELIMINAR PROYECTO ========
+document.addEventListener('DOMContentLoaded', function() {
+    const btnEliminarProyecto = document.getElementById('btnEliminarProyecto');
+    if (btnEliminarProyecto) {
+        btnEliminarProyecto.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('🗑️ Botón eliminar proyecto clickeado');
+            abrirModalEliminarProyecto();
+        });
+        console.log('✅ Botón eliminar proyecto inicializado');
+    } else {
+        console.log('❌ Botón eliminar proyecto NO encontrado');
+    }
+});
 
 </script>
 
