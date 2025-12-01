@@ -5496,6 +5496,74 @@
         color: white !important;
     }
 
+    /* Modal de éxito para eliminación */
+    .success-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .success-modal.show {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .success-modal-content {
+        background: rgba(28, 28, 30, 0.95);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        border: 1px solid rgba(52, 199, 89, 0.3);
+        border-radius: 20px;
+        padding: 2rem;
+        text-align: center;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 
+            0 20px 60px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transform: scale(0.9) translateY(20px);
+        transition: all 0.3s ease;
+    }
+    
+    .success-modal.show .success-modal-content {
+        transform: scale(1) translateY(0);
+    }
+    
+    .success-modal-icon {
+        margin-bottom: 1rem;
+        color: #34d399;
+        font-size: 3rem;
+    }
+    
+    .success-modal-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0 0 0.5rem 0;
+    }
+    
+    .success-modal-message {
+        color: rgba(255, 255, 255, 0.8);
+        margin: 0 0 1.5rem 0;
+        line-height: 1.5;
+    }
+    
+    .success-modal-redirect {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.875rem;
+        margin: 0;
+    }
+
     /* Títulos */
     .config-title {
         margin: 0;
@@ -5993,6 +6061,22 @@
                         <button class="btn-delete-cancel" onclick="cerrarModalEliminarProyecto()">Cancelar</button>
                         <button class="btn-delete-confirm" id="btnConfirmDeleteProject">Eliminar Definitivamente</button>
                     </div>
+                </div>
+            </div>
+
+            <!-- Modal de éxito para eliminación de proyecto -->
+            <div class="success-modal" id="successModal">
+                <div class="success-modal-content">
+                    <div class="success-modal-icon">
+                        ✅
+                    </div>
+                    <h3 class="success-modal-title">¡Proyecto Eliminado!</h3>
+                    <p class="success-modal-message" id="successMessage">
+                        El proyecto ha sido eliminado exitosamente junto con todos sus datos.
+                    </p>
+                    <p class="success-modal-redirect">
+                        Redirigiendo a Tareas y Proyectos...
+                    </p>
                 </div>
             </div>
 
@@ -9924,9 +10008,11 @@ async function confirmarEliminacionProyecto() {
         const data = await response.json();
         
         if (data.success) {
-            // Mostrar mensaje de éxito y redirigir
-            alert('Proyecto eliminado exitosamente');
-            window.location.href = '/app/todos/'; // Redirigir a la lista de proyectos
+            // Mostrar popup elegante y redirigir
+            mostrarPopupExitoEliminacion(data.message);
+            setTimeout(() => {
+                window.location.href = '/app/tareas-proyectos/'; // Redirigir a tareas-proyectos
+            }, 2000);
         } else {
             alert('Error eliminando proyecto: ' + (data.error || 'Error desconocido'));
         }
@@ -9938,6 +10024,25 @@ async function confirmarEliminacionProyecto() {
         btnConfirm.disabled = false;
         btnConfirm.textContent = originalText;
     }
+}
+
+// Función para mostrar popup elegante de éxito
+function mostrarPopupExitoEliminacion(mensaje) {
+    const modal = document.getElementById('successModal');
+    const messageElement = document.getElementById('successMessage');
+    
+    // Actualizar el mensaje
+    if (messageElement && mensaje) {
+        messageElement.textContent = mensaje;
+    }
+    
+    // Mostrar modal con animación
+    modal.classList.add('show');
+    
+    // Auto-cerrar después de 3 segundos (opcional, ya que redirige)
+    setTimeout(() => {
+        modal.classList.remove('show');
+    }, 3000);
 }
 
 // Cerrar modal al hacer clic fuera
