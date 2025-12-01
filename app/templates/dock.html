@@ -3226,6 +3226,26 @@
     }
 </style>
 
+<!-- CSRF Cookie Function - Available Globally -->
+<script>
+// Función para obtener CSRF token - GLOBAL - EARLY LOAD
+window.getCookie = function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+};
+console.log('🔧 getCookie function loaded globally');
+</script>
+
 <!-- Dock Left -->
 <nav class="macos-dock" id="dock-left">
     <!-- Botones comunes para todos los roles -->
@@ -5158,21 +5178,7 @@ window.addEventListener('error', function(e) {
         }
     }
     
-    // Función para obtener CSRF token - GLOBAL
-    window.getCookie = function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
+    // getCookie ya está definida globalmente al inicio del archivo
     
     // Event listeners para los botones de notificaciones
     // FUNCIÓN GLOBAL PARA NOTIFICACIONES
