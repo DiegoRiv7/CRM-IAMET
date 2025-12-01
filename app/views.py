@@ -11738,7 +11738,7 @@ def api_eliminar_proyecto_completo(request, proyecto_id):
     
     try:
         # Obtener el proyecto
-        proyecto = get_object_or_404(TodoItem, id=proyecto_id)
+        proyecto = get_object_or_404(Proyecto, id=proyecto_id)
         
         # Verificar que el usuario es el creador del proyecto
         if proyecto.creado_por != request.user:
@@ -11749,8 +11749,8 @@ def api_eliminar_proyecto_completo(request, proyecto_id):
         
         # Importar aquí para evitar importaciones circulares
         from .models import (
-            TodoItem, TareaProyecto, CarpetaProyecto, ArchivoProyecto, 
-            ComentarioProyecto, SolicitudAccesoProyecto
+            Proyecto, Tarea, CarpetaProyecto, ArchivoProyecto, 
+            ProyectoComentario, SolicitudAccesoProyecto
         )
         import os
         from django.conf import settings
@@ -11766,7 +11766,7 @@ def api_eliminar_proyecto_completo(request, proyecto_id):
         }
         
         # 1. Eliminar todas las tareas del proyecto
-        tareas = TareaProyecto.objects.filter(proyecto=proyecto)
+        tareas = Tarea.objects.filter(proyecto=proyecto)
         elementos_eliminados['tareas'] = tareas.count()
         tareas.delete()
         print(f"   ✅ {elementos_eliminados['tareas']} tareas eliminadas")
@@ -11797,7 +11797,7 @@ def api_eliminar_proyecto_completo(request, proyecto_id):
         print(f"   ✅ {elementos_eliminados['carpetas']} carpetas eliminadas")
         
         # 4. Eliminar comentarios
-        comentarios = ComentarioProyecto.objects.filter(proyecto=proyecto)
+        comentarios = ProyectoComentario.objects.filter(proyecto=proyecto)
         elementos_eliminados['comentarios'] = comentarios.count()
         comentarios.delete()
         print(f"   ✅ {elementos_eliminados['comentarios']} comentarios eliminados")
@@ -11821,7 +11821,7 @@ def api_eliminar_proyecto_completo(request, proyecto_id):
             'elementos_eliminados': elementos_eliminados
         })
         
-    except TodoItem.DoesNotExist:
+    except Proyecto.DoesNotExist:
         return JsonResponse({'error': 'Proyecto no encontrado'}, status=404)
     except Exception as e:
         print(f"❌ Error eliminando proyecto: {e}")
