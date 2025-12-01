@@ -191,32 +191,16 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        font-size: 5rem;
-        color: #ffffff;
+        font-size: 4rem;
+        color: rgba(255, 255, 255, 0.7);
         z-index: 15;
-        text-shadow: 
-            0 0 50px rgba(255, 255, 255, 0.8),
-            0 0 30px rgba(255, 255, 255, 0.6),
-            0 0 15px rgba(255, 255, 255, 0.4);
-        animation: lockPulse 2s ease-in-out infinite;
-        filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.7));
-        background: rgba(0, 0, 0, 0.3);
+        background: rgba(0, 0, 0, 0.4);
         border-radius: 20px;
         padding: 1rem;
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
     }
 
-    @keyframes lockPulse {
-        0%, 100% { 
-            opacity: 0.8; 
-            transform: translate(-50%, -50%) scale(1);
-        }
-        50% { 
-            opacity: 1; 
-            transform: translate(-50%, -50%) scale(1.1);
-        }
-    }
 
     .tab-content {
         width: 100%;
