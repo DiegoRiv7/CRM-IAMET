@@ -11831,3 +11831,80 @@ def api_eliminar_proyecto_completo(request, proyecto_id):
         traceback.print_exc()
         return JsonResponse({'error': f'Error interno del servidor: {str(e)}'}, status=500)
 
+
+@login_required
+def api_actualizar_tarea_real(request, tarea_id):
+    """
+    API para actualizar una tarea real en la base de datos
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        import json
+        from datetime import datetime
+        
+        # Obtener la tarea de la base de datos
+        tarea = get_object_or_404(Tarea, id=tarea_id)
+        
+        # Verificar permisos - solo el creador o asignado puede editar
+        if tarea.creado_por != request.user and tarea.asignado_a != request.user and not request.user.is_superuser:
+            return JsonResponse({'error': 'Sin permisos para editar esta tarea'}, status=403)
+        
+        # Obtener datos del request
+        data = json.loads(request.body)
+        
+        # Actualizar campos si están presentes en la petición
+        if 'nombre' in data or 'titulo' in data:
+            nuevo_titulo = data.get('nombre') or data.get('titulo')
+            if nuevo_titulo and nuevo_titulo.strip():
+                tarea.titulo = nuevo_titulo.strip()
+        
+        if 'descripcion' in data:
+            tarea.descripcion = data.get('descripcion', '') or ''
+        
+        if 'prioridad' in data:
+            prioridad = data.get('prioridad')
+            if prioridad in ['baja', 'media', 'alta']:
+                tarea.prioridad = prioridad
+        
+        if 'fecha_limite' in data:
+            fecha_limite_str = data.get('fecha_limite')
+            if fecha_limite_str:
+                try:
+                    # Intentar parsear la fecha
+                    from django.utils import timezone
+                    from datetime import datetime
+                    fecha_obj = datetime.fromisoformat(fecha_limite_str.replace('Z', '+00:00'))
+                    tarea.fecha_limite = timezone.make_aware(fecha_obj) if timezone.is_naive(fecha_obj) else fecha_obj
+                except (ValueError, TypeError):
+                    pass  # Ignorar fechas inválidas
+            else:
+                tarea.fecha_limite = None
+        
+        # Guardar cambios
+        tarea.save()
+        
+        # Log para debugging
+        print(f"✅ Tarea {tarea_id} actualizada: {tarea.titulo}")
+        
+        # Devolver datos actualizados
+        return JsonResponse({
+            'success': True,
+            'message': 'Tarea actualizada exitosamente',
+            'tarea': {
+                'id': tarea.id,
+                'titulo': tarea.titulo,
+                'descripcion': tarea.descripcion,
+                'prioridad': tarea.prioridad,
+                'fecha_limite': tarea.fecha_limite.isoformat() if tarea.fecha_limite else None,
+                'estado': tarea.estado
+            }
+        })
+        
+    except Tarea.DoesNotExist:
+        return JsonResponse({'error': 'Tarea no encontrada'}, status=404)
+    except Exception as e:
+        print(f"❌ Error actualizando tarea {tarea_id}: {e}")
+        return JsonResponse({'error': f'Error interno del servidor: {str(e)}'}, status=500)
+

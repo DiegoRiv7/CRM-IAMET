@@ -6758,7 +6758,7 @@ async function saveEdit(field, newValue) {
                 updateData.prioridad = newValue;
             }
             
-            response = await fetch(`/app/api/tareas/actualizar/`, {
+            response = await fetch(`/app/api/tarea/${currentTaskId}/actualizar/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -6766,23 +6766,6 @@ async function saveEdit(field, newValue) {
                 },
                 body: JSON.stringify(updateData)
             });
-            
-            // Si falla, intentar el endpoint específico de crear/actualizar tarea
-            if (!response.ok && response.status === 403) {
-                // Si no tenemos permisos, intentar con el endpoint de crear tarea que puede permitir updates
-                response = await fetch(`/app/api/crear-tarea/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                    },
-                    body: JSON.stringify({
-                        ...updateData,
-                        action: 'update',
-                        id: currentTaskId
-                    })
-                });
-            }
         }
         
         if (!response.ok) {
