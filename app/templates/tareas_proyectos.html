@@ -1076,6 +1076,347 @@
     }
 
     /* ==========================================
+       MODERN EDITABLE FIELDS DESIGN
+       ========================================== */
+    
+    /* Base styling for editable fields */
+    .editable-field {
+        position: relative;
+        cursor: pointer;
+        padding: 0.75rem;
+        border-radius: 8px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid transparent;
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(10px);
+    }
+    
+    /* Hover state with subtle glow */
+    .editable-field:hover {
+        background: rgba(59, 130, 246, 0.08) !important;
+        border: 1px solid rgba(59, 130, 246, 0.2) !important;
+        box-shadow: 
+            0 0 0 1px rgba(59, 130, 246, 0.1),
+            0 4px 12px rgba(59, 130, 246, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        transform: translateY(-1px);
+    }
+    
+    /* Active/editing state */
+    .editable-field.editing {
+        background: rgba(59, 130, 246, 0.12) !important;
+        border: 1px solid rgba(59, 130, 246, 0.4) !important;
+        box-shadow: 
+            0 0 0 2px rgba(59, 130, 246, 0.2),
+            0 8px 25px rgba(59, 130, 246, 0.2);
+        transform: none;
+    }
+    
+    /* Subtle edit indicator that appears on hover */
+    .editable-field::after {
+        content: '';
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        width: 12px;
+        height: 12px;
+        background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+        border-radius: 50%;
+        opacity: 0;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.4);
+    }
+    
+    .editable-field:hover::after {
+        opacity: 0.8;
+        transform: scale(1.1);
+    }
+    
+    /* Specific field styling */
+    #task-detail-descripcion {
+        min-height: 80px;
+        line-height: 1.6;
+    }
+    
+    #task-detail-prioridad,
+    #task-detail-fecha-limite {
+        display: inline-block;
+        min-width: 120px;
+    }
+    
+    /* Edit mode input styling */
+    .edit-input {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border: 1px solid rgba(59, 130, 246, 0.5) !important;
+        border-radius: 6px !important;
+        color: #E0E7FF !important;
+        padding: 0.5rem !important;
+        font-family: inherit !important;
+        font-size: inherit !important;
+        width: 100% !important;
+        box-shadow: 
+            0 0 0 2px rgba(59, 130, 246, 0.2),
+            inset 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    .edit-input:focus {
+        outline: none !important;
+        border-color: rgba(59, 130, 246, 0.8) !important;
+        box-shadow: 
+            0 0 0 3px rgba(59, 130, 246, 0.3),
+            inset 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .edit-input::placeholder {
+        color: rgba(224, 231, 255, 0.5) !important;
+    }
+    
+    /* Edit controls */
+    .edit-controls {
+        margin-top: 0.75rem;
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+    }
+    
+    .edit-btn {
+        padding: 0.375rem 0.875rem;
+        border-radius: 6px;
+        border: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(10px);
+    }
+    
+    .edit-btn.save {
+        background: linear-gradient(135deg, #10B981, #059669);
+        color: white;
+        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+    }
+    
+    .edit-btn.save:hover {
+        background: linear-gradient(135deg, #059669, #047857);
+        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    .edit-btn.cancel {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(224, 231, 255, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .edit-btn.cancel:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: rgba(224, 231, 255, 1);
+        transform: translateY(-1px);
+    }
+    
+    /* ==========================================
+       MODERN COMMENTS SECTION DESIGN
+       ========================================== */
+    
+    /* Comments textarea styling */
+    #comentario-textarea {
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-radius: 12px !important;
+        color: rgba(224, 231, 255, 0.9) !important;
+        padding: 1rem !important;
+        font-family: inherit !important;
+        font-size: 0.875rem !important;
+        line-height: 1.6 !important;
+        resize: vertical !important;
+        min-height: 80px !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        backdrop-filter: blur(10px) !important;
+    }
+    
+    #comentario-textarea:focus {
+        outline: none !important;
+        border-color: rgba(59, 130, 246, 0.5) !important;
+        background: rgba(255, 255, 255, 0.12) !important;
+        box-shadow: 
+            0 0 0 3px rgba(59, 130, 246, 0.2),
+            0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    #comentario-textarea::placeholder {
+        color: rgba(156, 163, 175, 0.6) !important;
+    }
+    
+    /* Comments send button */
+    #enviar-comentario {
+        background: linear-gradient(135deg, #3B82F6, #1D4ED8) !important;
+        border: none !important;
+        border-radius: 8px !important;
+        color: white !important;
+        padding: 0.75rem 1.5rem !important;
+        font-weight: 600 !important;
+        font-size: 0.875rem !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3) !important;
+        backdrop-filter: blur(10px) !important;
+    }
+    
+    #enviar-comentario:hover {
+        background: linear-gradient(135deg, #1D4ED8, #1E40AF) !important;
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4) !important;
+        transform: translateY(-2px) !important;
+    }
+    
+    #enviar-comentario:active {
+        transform: translateY(0) !important;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3) !important;
+    }
+    
+    /* Comments container styling */
+    #activity-feed {
+        max-height: 400px;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(59, 130, 246, 0.3) transparent;
+    }
+    
+    #activity-feed::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    #activity-feed::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    
+    #activity-feed::-webkit-scrollbar-thumb {
+        background: rgba(59, 130, 246, 0.3);
+        border-radius: 3px;
+    }
+    
+    #activity-feed::-webkit-scrollbar-thumb:hover {
+        background: rgba(59, 130, 246, 0.5);
+    }
+    
+    /* Individual comment styling */
+    .comment-item {
+        background: rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 12px !important;
+        padding: 1rem !important;
+        backdrop-filter: blur(10px) !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .comment-item:hover {
+        background: rgba(255, 255, 255, 0.06) !important;
+        border-color: rgba(255, 255, 255, 0.12) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+        transform: translateY(-1px) !important;
+    }
+    
+    /* ==========================================
+       MODERN TASK BUTTONS & ACTIONS
+       ========================================== */
+    
+    /* Completar button styling */
+    .task-complete-btn {
+        background: linear-gradient(135deg, #10B981, #059669) !important;
+        border: none !important;
+        border-radius: 10px !important;
+        color: white !important;
+        padding: 0.625rem 1.25rem !important;
+        font-weight: 600 !important;
+        font-size: 0.875rem !important;
+        cursor: pointer !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 0 3px 6px rgba(16, 185, 129, 0.3) !important;
+        backdrop-filter: blur(10px) !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+    }
+    
+    .task-complete-btn:hover {
+        background: linear-gradient(135deg, #059669, #047857) !important;
+        box-shadow: 0 6px 12px rgba(16, 185, 129, 0.4) !important;
+        transform: translateY(-2px) !important;
+    }
+    
+    .task-complete-btn:active {
+        transform: translateY(0) !important;
+        box-shadow: 0 3px 6px rgba(16, 185, 129, 0.3) !important;
+    }
+    
+    /* Timer button styling */
+    .timer-btn {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 10px !important;
+        color: rgba(224, 231, 255, 0.9) !important;
+        padding: 0.625rem 1.25rem !important;
+        font-weight: 500 !important;
+        font-size: 0.875rem !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+        backdrop-filter: blur(10px) !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+    }
+    
+    .timer-btn:hover {
+        background: rgba(255, 255, 255, 0.15) !important;
+        border-color: rgba(255, 255, 255, 0.3) !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .timer-btn.active {
+        background: rgba(34, 197, 94, 0.2) !important;
+        border-color: rgba(34, 197, 94, 0.4) !important;
+        color: rgba(74, 222, 128, 1) !important;
+    }
+    
+    /* Status badges modern styling */
+    .status-badge {
+        border-radius: 8px !important;
+        padding: 0.375rem 0.75rem !important;
+        font-size: 0.75rem !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .status-badge:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    }
+    
+    /* Priority badges modern styling */
+    .priority-badge {
+        border-radius: 8px !important;
+        padding: 0.375rem 0.75rem !important;
+        font-size: 0.75rem !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .priority-badge:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    /* ==========================================
        POWER TASK MODAL - EDITOR AVANZADO
        ========================================== */
     
@@ -2486,46 +2827,19 @@
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <!-- Título -->
                     <div style="display: flex; align-items: center; gap: 0.5rem; max-width: 80%;">
-                        <h1 id="task-detail-titulo" style="
+                        <h1 id="task-detail-titulo" class="editable-field" style="
                             font-size: 1.875rem; 
                             font-weight: 800; 
                             color: #E0E7FF; 
                             line-height: 1.2; 
                             margin: 0;
-                            cursor: pointer;
-                            padding: 0.25rem;
-                            border-radius: 4px;
-                            transition: background 0.2s ease;
                         " onclick="makeEditable('title')" title="Click para editar"></h1>
-                        <button id="edit-title-btn" style="
-                            background: rgba(10, 132, 255, 0.1);
-                            border: 1px solid rgba(10, 132, 255, 0.3);
-                            color: #0A84FF;
-                            border-radius: 4px;
-                            padding: 0.25rem 0.5rem;
-                            font-size: 0.75rem;
-                            cursor: pointer;
-                            opacity: 0.7;
-                            transition: opacity 0.2s ease;
-                        " onclick="makeEditable('title')" title="Editar título">✏️</button>
                     </div>
                     
                     <!-- Botón de Acción Rápida -->
                     <div style="display: flex; gap: 0.5rem;">
-                        <button onclick="TareasProyectos.completarTarea()" style="
-                            padding: 0.375rem 0.75rem; 
-                            border-radius: 0.5rem; 
-                            background-color: #3B82F6; 
-                            color: white; 
-                            font-size: 0.875rem; 
-                            font-weight: 600; 
-                            display: flex; 
-                            align-items: center; 
-                            border: none; 
-                            cursor: pointer;
-                            transition: all 0.2s;
-                        " onmouseover="this.style.backgroundColor='#2563EB'; this.style.boxShadow='0 0 15px rgba(59, 130, 246, 0.5)'" onmouseout="this.style.backgroundColor='#3B82F6'; this.style.boxShadow='none'">
-                            <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <button onclick="TareasProyectos.completarTarea()" class="task-complete-btn" title="Completar Tarea">
+                            <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                             </svg>
                             Completar
@@ -2538,27 +2852,10 @@
             <section style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h2 style="font-size: 0.875rem; font-weight: 600; text-transform: uppercase; color: #9CA3AF; letter-spacing: 0.1em; margin: 0;">Descripción</h2>
-                    <button id="edit-description-btn" style="
-                        background: rgba(10, 132, 255, 0.1);
-                        border: 1px solid rgba(10, 132, 255, 0.3);
-                        color: #0A84FF;
-                        border-radius: 4px;
-                        padding: 0.25rem 0.5rem;
-                        font-size: 0.75rem;
-                        cursor: pointer;
-                        opacity: 0.7;
-                        transition: opacity 0.2s ease;
-                    " onclick="makeEditable('description')" title="Editar descripción">✏️</button>
                 </div>
-                <div id="task-detail-descripcion" style="
-                    padding: 0.5rem; 
+                <div id="task-detail-descripcion" class="editable-field" style="
                     margin-left: -0.5rem; 
                     color: rgba(224, 231, 255, 0.9); 
-                    line-height: 1.625; 
-                    min-height: 50px;
-                    border-radius: 0.375rem;
-                    cursor: pointer;
-                    transition: background 0.2s ease;
                 " onclick="makeEditable('description')" title="Click para editar"></div>
             </section>
             
@@ -2704,19 +3001,8 @@ Puedes usar @username para mencionar a otros usuarios"></textarea>
                     <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <h3 style="font-size: 0.875rem; font-weight: 600; color: #9CA3AF; text-transform: uppercase; margin: 0;">Prioridad</h3>
-                            <button id="edit-priority-btn" style="
-                                background: rgba(10, 132, 255, 0.1);
-                                border: 1px solid rgba(10, 132, 255, 0.3);
-                                color: #0A84FF;
-                                border-radius: 4px;
-                                padding: 0.25rem 0.5rem;
-                                font-size: 0.75rem;
-                                cursor: pointer;
-                                opacity: 0.7;
-                                transition: opacity 0.2s ease;
-                            " onclick="makeEditable('priority')" title="Editar prioridad">✏️</button>
                         </div>
-                        <div id="task-detail-prioridad" style="cursor: pointer;" onclick="makeEditable('priority')" title="Click para editar">
+                        <div id="task-detail-prioridad" class="editable-field" onclick="makeEditable('priority')" title="Click para editar">
                             <!-- Se llenará dinámicamente -->
                         </div>
                     </div>
@@ -2730,18 +3016,7 @@ Puedes usar @username para mencionar a otros usuarios"></textarea>
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <dt style="color: #9CA3AF;">Fecha Límite</dt>
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <dd id="task-detail-fecha-limite" style="font-weight: 500; color: #E0E7FF; margin: 0; cursor: pointer; padding: 0.25rem; border-radius: 4px; transition: background 0.2s ease;" onclick="makeEditable('dueDate')" title="Click para editar"></dd>
-                            <button id="edit-duedate-btn" style="
-                                background: rgba(10, 132, 255, 0.1);
-                                border: 1px solid rgba(10, 132, 255, 0.3);
-                                color: #0A84FF;
-                                border-radius: 4px;
-                                padding: 0.125rem 0.25rem;
-                                font-size: 0.625rem;
-                                cursor: pointer;
-                                opacity: 0.7;
-                                transition: opacity 0.2s ease;
-                            " onclick="makeEditable('dueDate')" title="Editar fecha límite">✏️</button>
+                            <dd id="task-detail-fecha-limite" class="editable-field" style="font-weight: 500; color: #E0E7FF; margin: 0;" onclick="makeEditable('dueDate')" title="Click para editar"></dd>
                         </div>
                     </div>
                     <div style="display: flex; justify-content: space-between;">
@@ -2863,46 +3138,24 @@ Puedes usar @username para mencionar a otros usuarios"></textarea>
                 <h3 style="font-size: 0.875rem; font-weight: 600; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Control de Tiempo</h3>
                 <div id="task-controls" style="display: flex; flex-direction: column; gap: 0.75rem;">
                     <!-- Botón INICIAR -->
-                    <button id="btn-start-task" onclick="TareasProyectos.toggleTaskRunning()" style="
+                    <button id="btn-start-task" onclick="TareasProyectos.toggleTaskRunning()" class="timer-btn" style="
                         width: 100%; 
-                        padding: 0.5rem 1rem; 
-                        font-size: 0.875rem; 
-                        font-weight: 600; 
-                        border-radius: 0.5rem; 
-                        color: white; 
-                        background-color: #16a34a; 
-                        border: none; 
-                        cursor: pointer;
-                        transition: all 0.2s; 
-                        box-shadow: 0 2px 4px rgba(22, 163, 74, 0.3);
-                        display: flex; 
-                        align-items: center; 
-                        justify-content: center; 
-                        gap: 0.5rem;
-                    " onmouseover="this.style.backgroundColor='#15803d'; this.style.boxShadow='0 0 15px rgba(22, 163, 74, 0.5)'" onmouseout="this.style.backgroundColor='#16a34a'; this.style.boxShadow='0 2px 4px rgba(22, 163, 74, 0.3)'">
+                        justify-content: center;
+                    ">
                         <svg xmlns="http://www.w3.org/2000/svg" style="width: 1.25rem; height: 1.25rem;" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
                         </svg>
                         <span>Iniciar Tarea</span>
                     </button>
                     <!-- Botón PAUSAR (Alternativo al de Iniciar) -->
-                    <button id="btn-pause-task" onclick="TareasProyectos.toggleTaskRunning()" style="
+                    <button id="btn-pause-task" onclick="TareasProyectos.toggleTaskRunning()" class="timer-btn" style="
                         width: 100%; 
-                        padding: 0.5rem 1rem; 
-                        font-size: 0.875rem; 
-                        font-weight: 600; 
-                        border-radius: 0.5rem; 
-                        color: white; 
-                        background-color: #dc2626; 
-                        border: none; 
-                        cursor: pointer;
-                        transition: all 0.2s; 
-                        box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
+                        justify-content: center;
                         display: none; 
-                        align-items: center; 
-                        justify-content: center; 
-                        gap: 0.5rem;
-                    " onmouseover="this.style.backgroundColor='#b91c1c'; this.style.boxShadow='0 0 15px rgba(220, 38, 38, 0.5)'" onmouseout="this.style.backgroundColor='#dc2626'; this.style.boxShadow='0 2px 4px rgba(220, 38, 38, 0.3)'">
+                        background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+                        border-color: rgba(220, 38, 38, 0.5) !important;
+                        color: white !important;
+                    ">
                         <svg xmlns="http://www.w3.org/2000/svg" style="width: 1.25rem; height: 1.25rem;" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
                         </svg>
@@ -6561,6 +6814,9 @@ function makeEditable(field) {
     const element = elements[field];
     if (!element) return;
     
+    // Add editing class for visual feedback
+    element.classList.add('editing');
+    
     currentEditingElement = { element, field };
     originalValue = field === 'priority' ? element.getAttribute('data-priority-value') || 'normal' : element.textContent;
     
@@ -6576,31 +6832,45 @@ function makeEditable(field) {
     }
 }
 
+// Crear controles de edición modernos
+function createEditControls(saveCallback) {
+    const controls = document.createElement('div');
+    controls.className = 'edit-controls';
+    
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'edit-btn save';
+    saveBtn.textContent = 'Guardar';
+    saveBtn.onclick = saveCallback;
+    
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'edit-btn cancel';
+    cancelBtn.textContent = 'Cancelar';
+    cancelBtn.onclick = cancelEdit;
+    
+    controls.appendChild(saveBtn);
+    controls.appendChild(cancelBtn);
+    
+    return controls;
+}
+
 function createTitleEditor(element) {
     const input = document.createElement('input');
     input.type = 'text';
     input.value = originalValue;
+    input.className = 'edit-input';
     input.style.cssText = `
-        font-size: 1.875rem;
-        font-weight: 800;
-        color: #E0E7FF;
-        background: rgba(255, 255, 255, 0.1);
-        border: 2px solid #0A84FF;
-        border-radius: 4px;
-        padding: 0.25rem 0.5rem;
-        width: 100%;
-        outline: none;
+        font-size: 1.875rem !important;
+        font-weight: 800 !important;
+        margin-bottom: 0.5rem !important;
     `;
     
     element.style.display = 'none';
     element.parentNode.insertBefore(input, element.nextSibling);
+    
+    const controls = createEditControls(() => saveEdit('title', input.value));
+    element.parentNode.insertBefore(controls, input.nextSibling);
+    
     input.focus();
-    
-    const saveBtn = createSaveButton(() => saveEdit('title', input.value));
-    const cancelBtn = createCancelButton();
-    element.parentNode.appendChild(saveBtn);
-    element.parentNode.appendChild(cancelBtn);
-    
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') saveEdit('title', input.value);
         if (e.key === 'Escape') cancelEdit();
@@ -6610,33 +6880,26 @@ function createTitleEditor(element) {
 function createDescriptionEditor(element) {
     const textarea = document.createElement('textarea');
     textarea.value = originalValue;
+    textarea.className = 'edit-input';
     textarea.style.cssText = `
-        color: rgba(224, 231, 255, 0.9);
-        background: rgba(255, 255, 255, 0.1);
-        border: 2px solid #0A84FF;
-        border-radius: 4px;
-        padding: 0.5rem;
-        width: 100%;
-        min-height: 100px;
-        resize: vertical;
-        outline: none;
-        font-family: inherit;
-        line-height: 1.625;
+        min-height: 100px !important;
+        resize: vertical !important;
+        line-height: 1.625 !important;
     `;
     
     element.style.display = 'none';
     element.parentNode.appendChild(textarea);
-    textarea.focus();
     
-    const saveBtn = createSaveButton(() => saveEdit('description', textarea.value));
-    const cancelBtn = createCancelButton();
-    element.parentNode.appendChild(saveBtn);
-    element.parentNode.appendChild(cancelBtn);
+    const controls = createEditControls(() => saveEdit('description', textarea.value));
+    element.parentNode.appendChild(controls);
+    
+    textarea.focus();
 }
 
 function createDateEditor(element) {
     const input = document.createElement('input');
     input.type = 'datetime-local';
+    input.className = 'edit-input';
     
     // Convertir fecha actual a formato datetime-local
     if (originalValue && originalValue !== 'Sin fecha límite') {
@@ -6650,50 +6913,34 @@ function createDateEditor(element) {
         }
     }
     
-    input.style.cssText = `
-        background: rgba(255, 255, 255, 0.1);
-        border: 2px solid #0A84FF;
-        border-radius: 4px;
-        padding: 0.25rem 0.5rem;
-        color: #E0E7FF;
-        outline: none;
-    `;
-    
     element.style.display = 'none';
     element.parentNode.appendChild(input);
-    input.focus();
     
-    const saveBtn = createSaveButton(() => saveEdit('dueDate', input.value));
-    const cancelBtn = createCancelButton();
-    element.parentNode.appendChild(saveBtn);
-    element.parentNode.appendChild(cancelBtn);
+    const controls = createEditControls(() => saveEdit('dueDate', input.value));
+    element.parentNode.appendChild(controls);
+    
+    input.focus();
 }
 
 function createPriorityEditor(element) {
     const select = document.createElement('select');
+    select.className = 'edit-input';
     select.innerHTML = `
         <option value="normal" ${originalValue === 'normal' ? 'selected' : ''}>Normal</option>
         <option value="alta" ${originalValue === 'alta' ? 'selected' : ''}>Alta</option>
     `;
     
     select.style.cssText = `
-        background: rgba(255, 255, 255, 0.1);
-        border: 2px solid #0A84FF;
-        border-radius: 4px;
-        padding: 0.5rem;
-        color: #E0E7FF;
-        outline: none;
-        width: 150px;
+        width: 150px !important;
     `;
     
     element.style.display = 'none';
     element.parentNode.appendChild(select);
-    select.focus();
     
-    const saveBtn = createSaveButton(() => saveEdit('priority', select.value));
-    const cancelBtn = createCancelButton();
-    element.parentNode.appendChild(saveBtn);
-    element.parentNode.appendChild(cancelBtn);
+    const controls = createEditControls(() => saveEdit('priority', select.value));
+    element.parentNode.appendChild(controls);
+    
+    select.focus();
 }
 
 function createSaveButton(saveCallback) {
@@ -6842,12 +7089,17 @@ function cancelEdit() {
     
     const { element } = currentEditingElement;
     
+    // Remover clase editing
+    element.classList.remove('editing');
+    
     // Remover elementos de edición
     const parent = element.parentNode;
     const inputs = parent.querySelectorAll('input, textarea, select');
+    const editControls = parent.querySelectorAll('.edit-controls');
     const buttons = parent.querySelectorAll('button[title="Guardar"], button[title="Cancelar"]');
     
     inputs.forEach(input => input.remove());
+    editControls.forEach(controls => controls.remove());
     buttons.forEach(btn => btn.remove());
     
     // Mostrar elemento original
