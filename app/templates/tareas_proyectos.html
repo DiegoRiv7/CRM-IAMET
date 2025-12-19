@@ -1076,60 +1076,46 @@
     }
 
     /* ==========================================
-       MODERN EDITABLE FIELDS DESIGN
+       CLEAN EDITABLE FIELDS DESIGN
        ========================================== */
     
     /* Base styling for editable fields */
     .editable-field {
         position: relative;
         cursor: pointer;
-        padding: 0.75rem;
-        border-radius: 8px;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        transition: all 0.2s ease;
         border: 1px solid transparent;
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(10px);
+        background: transparent;
     }
     
-    /* Hover state with subtle glow */
+    /* Hover state - minimal and clean */
     .editable-field:hover {
-        background: rgba(59, 130, 246, 0.08) !important;
-        border: 1px solid rgba(59, 130, 246, 0.2) !important;
-        box-shadow: 
-            0 0 0 1px rgba(59, 130, 246, 0.1),
-            0 4px 12px rgba(59, 130, 246, 0.15),
-            inset 0 1px 0 rgba(255, 255, 255, 0.05);
-        transform: translateY(-1px);
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
     
     /* Active/editing state */
     .editable-field.editing {
-        background: rgba(59, 130, 246, 0.12) !important;
-        border: 1px solid rgba(59, 130, 246, 0.4) !important;
-        box-shadow: 
-            0 0 0 2px rgba(59, 130, 246, 0.2),
-            0 8px 25px rgba(59, 130, 246, 0.2);
-        transform: none;
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid rgba(59, 130, 246, 0.3) !important;
     }
     
-    /* Subtle edit indicator that appears on hover */
+    /* Very subtle edit indicator */
     .editable-field::after {
-        content: '';
+        content: '✎';
         position: absolute;
-        top: 0.5rem;
+        top: 0.25rem;
         right: 0.5rem;
-        width: 12px;
-        height: 12px;
-        background: linear-gradient(135deg, #3B82F6, #1D4ED8);
-        border-radius: 50%;
+        font-size: 0.75rem;
         opacity: 0;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.4);
+        transition: opacity 0.2s ease;
+        color: rgba(156, 163, 175, 0.6);
     }
     
     .editable-field:hover::after {
-        opacity: 0.8;
-        transform: scale(1.1);
+        opacity: 0.7;
     }
     
     /* Specific field styling */
@@ -1144,276 +1130,205 @@
         min-width: 120px;
     }
     
-    /* Edit mode input styling */
+    /* Edit mode input styling - simplified */
     .edit-input {
-        background: rgba(255, 255, 255, 0.1) !important;
-        border: 1px solid rgba(59, 130, 246, 0.5) !important;
-        border-radius: 6px !important;
+        background: rgba(26, 31, 39, 0.8) !important;
+        border: 1px solid rgba(75, 85, 99, 0.5) !important;
+        border-radius: 4px !important;
         color: #E0E7FF !important;
         padding: 0.5rem !important;
         font-family: inherit !important;
         font-size: inherit !important;
         width: 100% !important;
-        box-shadow: 
-            0 0 0 2px rgba(59, 130, 246, 0.2),
-            inset 0 1px 2px rgba(0, 0, 0, 0.1) !important;
-        transition: all 0.2s ease !important;
+        transition: border-color 0.2s ease !important;
     }
     
     .edit-input:focus {
         outline: none !important;
-        border-color: rgba(59, 130, 246, 0.8) !important;
-        box-shadow: 
-            0 0 0 3px rgba(59, 130, 246, 0.3),
-            inset 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+        border-color: rgba(59, 130, 246, 0.6) !important;
     }
     
     .edit-input::placeholder {
-        color: rgba(224, 231, 255, 0.5) !important;
+        color: rgba(156, 163, 175, 0.6) !important;
     }
     
-    /* Edit controls */
+    /* Edit controls - minimal */
     .edit-controls {
-        margin-top: 0.75rem;
+        margin-top: 0.5rem;
         display: flex;
         gap: 0.5rem;
         justify-content: flex-end;
     }
     
     .edit-btn {
-        padding: 0.375rem 0.875rem;
-        border-radius: 6px;
-        border: none;
+        padding: 0.25rem 0.75rem;
+        border-radius: 4px;
         font-size: 0.875rem;
         font-weight: 500;
         cursor: pointer;
         transition: all 0.2s ease;
-        backdrop-filter: blur(10px);
     }
     
     .edit-btn.save {
-        background: linear-gradient(135deg, #10B981, #059669);
+        background: #059669;
         color: white;
-        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+        border: none;
     }
     
     .edit-btn.save:hover {
-        background: linear-gradient(135deg, #059669, #047857);
-        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
-        transform: translateY(-1px);
+        background: #047857;
     }
     
     .edit-btn.cancel {
-        background: rgba(255, 255, 255, 0.1);
-        color: rgba(224, 231, 255, 0.8);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: transparent;
+        color: rgba(156, 163, 175, 0.8);
+        border: 1px solid rgba(75, 85, 99, 0.3);
     }
     
     .edit-btn.cancel:hover {
-        background: rgba(255, 255, 255, 0.15);
-        color: rgba(224, 231, 255, 1);
-        transform: translateY(-1px);
+        background: rgba(255, 255, 255, 0.05);
+        color: rgba(156, 163, 175, 1);
     }
     
     /* ==========================================
-       MODERN COMMENTS SECTION DESIGN
+       CLEAN COMMENTS SECTION DESIGN
        ========================================== */
     
-    /* Comments textarea styling */
+    /* Comments textarea styling - minimal */
     #comentario-textarea {
-        background: rgba(255, 255, 255, 0.08) !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        border-radius: 12px !important;
+        background: rgba(26, 31, 39, 0.6) !important;
+        border: 1px solid rgba(75, 85, 99, 0.3) !important;
+        border-radius: 6px !important;
         color: rgba(224, 231, 255, 0.9) !important;
-        padding: 1rem !important;
+        padding: 0.75rem !important;
         font-family: inherit !important;
         font-size: 0.875rem !important;
-        line-height: 1.6 !important;
+        line-height: 1.5 !important;
         resize: vertical !important;
-        min-height: 80px !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        backdrop-filter: blur(10px) !important;
+        min-height: 70px !important;
+        transition: border-color 0.2s ease !important;
     }
     
     #comentario-textarea:focus {
         outline: none !important;
         border-color: rgba(59, 130, 246, 0.5) !important;
-        background: rgba(255, 255, 255, 0.12) !important;
-        box-shadow: 
-            0 0 0 3px rgba(59, 130, 246, 0.2),
-            0 4px 12px rgba(0, 0, 0, 0.1) !important;
     }
     
     #comentario-textarea::placeholder {
         color: rgba(156, 163, 175, 0.6) !important;
     }
     
-    /* Comments send button */
+    /* Comments send button - simplified */
     #enviar-comentario {
-        background: linear-gradient(135deg, #3B82F6, #1D4ED8) !important;
+        background: #3B82F6 !important;
         border: none !important;
-        border-radius: 8px !important;
+        border-radius: 6px !important;
         color: white !important;
-        padding: 0.75rem 1.5rem !important;
-        font-weight: 600 !important;
+        padding: 0.5rem 1rem !important;
+        font-weight: 500 !important;
         font-size: 0.875rem !important;
         cursor: pointer !important;
-        transition: all 0.3s ease !important;
-        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3) !important;
-        backdrop-filter: blur(10px) !important;
+        transition: background-color 0.2s ease !important;
     }
     
     #enviar-comentario:hover {
-        background: linear-gradient(135deg, #1D4ED8, #1E40AF) !important;
-        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4) !important;
-        transform: translateY(-2px) !important;
+        background: #2563EB !important;
     }
     
-    #enviar-comentario:active {
-        transform: translateY(0) !important;
-        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3) !important;
-    }
-    
-    /* Comments container styling */
+    /* Comments container styling - clean */
     #activity-feed {
-        max-height: 400px;
+        max-height: 350px;
         overflow-y: auto;
-        padding-right: 0.5rem;
-        scrollbar-width: thin;
-        scrollbar-color: rgba(59, 130, 246, 0.3) transparent;
+        margin-top: 0.5rem;
     }
     
-    #activity-feed::-webkit-scrollbar {
-        width: 6px;
-    }
-    
-    #activity-feed::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    
-    #activity-feed::-webkit-scrollbar-thumb {
-        background: rgba(59, 130, 246, 0.3);
-        border-radius: 3px;
-    }
-    
-    #activity-feed::-webkit-scrollbar-thumb:hover {
-        background: rgba(59, 130, 246, 0.5);
-    }
-    
-    /* Individual comment styling */
+    /* Individual comment styling - minimal */
     .comment-item {
-        background: rgba(255, 255, 255, 0.04) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        border-radius: 12px !important;
-        padding: 1rem !important;
-        backdrop-filter: blur(10px) !important;
-        transition: all 0.3s ease !important;
+        background: rgba(255, 255, 255, 0.02) !important;
+        border: 1px solid rgba(75, 85, 99, 0.2) !important;
+        border-radius: 6px !important;
+        padding: 0.75rem !important;
+        margin-bottom: 0.75rem !important;
+        transition: background-color 0.2s ease !important;
     }
     
     .comment-item:hover {
-        background: rgba(255, 255, 255, 0.06) !important;
-        border-color: rgba(255, 255, 255, 0.12) !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-        transform: translateY(-1px) !important;
+        background: rgba(255, 255, 255, 0.04) !important;
     }
     
     /* ==========================================
-       MODERN TASK BUTTONS & ACTIONS
+       CLEAN TASK BUTTONS & ACTIONS
        ========================================== */
     
-    /* Completar button styling */
+    /* Completar button styling - simplified */
     .task-complete-btn {
-        background: linear-gradient(135deg, #10B981, #059669) !important;
+        background: #10B981 !important;
         border: none !important;
-        border-radius: 10px !important;
+        border-radius: 6px !important;
         color: white !important;
-        padding: 0.625rem 1.25rem !important;
-        font-weight: 600 !important;
+        padding: 0.5rem 1rem !important;
+        font-weight: 500 !important;
         font-size: 0.875rem !important;
         cursor: pointer !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        box-shadow: 0 3px 6px rgba(16, 185, 129, 0.3) !important;
-        backdrop-filter: blur(10px) !important;
+        transition: background-color 0.2s ease !important;
         display: flex !important;
         align-items: center !important;
         gap: 0.5rem !important;
     }
     
     .task-complete-btn:hover {
-        background: linear-gradient(135deg, #059669, #047857) !important;
-        box-shadow: 0 6px 12px rgba(16, 185, 129, 0.4) !important;
-        transform: translateY(-2px) !important;
+        background: #059669 !important;
     }
     
-    .task-complete-btn:active {
-        transform: translateY(0) !important;
-        box-shadow: 0 3px 6px rgba(16, 185, 129, 0.3) !important;
-    }
-    
-    /* Timer button styling */
+    /* Timer button styling - simplified */
     .timer-btn {
-        background: rgba(255, 255, 255, 0.1) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-radius: 10px !important;
+        background: rgba(75, 85, 99, 0.3) !important;
+        border: 1px solid rgba(75, 85, 99, 0.5) !important;
+        border-radius: 6px !important;
         color: rgba(224, 231, 255, 0.9) !important;
-        padding: 0.625rem 1.25rem !important;
+        padding: 0.5rem 1rem !important;
         font-weight: 500 !important;
         font-size: 0.875rem !important;
         cursor: pointer !important;
-        transition: all 0.3s ease !important;
-        backdrop-filter: blur(10px) !important;
+        transition: all 0.2s ease !important;
         display: flex !important;
         align-items: center !important;
         gap: 0.5rem !important;
     }
     
     .timer-btn:hover {
-        background: rgba(255, 255, 255, 0.15) !important;
-        border-color: rgba(255, 255, 255, 0.3) !important;
-        transform: translateY(-1px) !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+        background: rgba(75, 85, 99, 0.4) !important;
+        border-color: rgba(75, 85, 99, 0.7) !important;
     }
     
     .timer-btn.active {
         background: rgba(34, 197, 94, 0.2) !important;
-        border-color: rgba(34, 197, 94, 0.4) !important;
+        border-color: rgba(34, 197, 94, 0.5) !important;
         color: rgba(74, 222, 128, 1) !important;
     }
     
-    /* Status badges modern styling */
+    /* Status badges - clean styling */
     .status-badge {
-        border-radius: 8px !important;
-        padding: 0.375rem 0.75rem !important;
+        border-radius: 4px !important;
+        padding: 0.25rem 0.5rem !important;
         font-size: 0.75rem !important;
-        font-weight: 600 !important;
+        font-weight: 500 !important;
         text-transform: uppercase !important;
         letter-spacing: 0.05em !important;
-        backdrop-filter: blur(10px) !important;
         border: 1px solid !important;
-        transition: all 0.3s ease !important;
+        transition: opacity 0.2s ease !important;
     }
     
-    .status-badge:hover {
-        transform: translateY(-1px) !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-    }
-    
-    /* Priority badges modern styling */
+    /* Priority badges - clean styling */
     .priority-badge {
-        border-radius: 8px !important;
-        padding: 0.375rem 0.75rem !important;
+        border-radius: 4px !important;
+        padding: 0.25rem 0.5rem !important;
         font-size: 0.75rem !important;
-        font-weight: 600 !important;
+        font-weight: 500 !important;
         text-transform: uppercase !important;
         letter-spacing: 0.05em !important;
-        backdrop-filter: blur(10px) !important;
         border: 1px solid !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    .priority-badge:hover {
-        transform: translateY(-1px) !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+        transition: opacity 0.2s ease !important;
     }
 
     /* ==========================================
@@ -2781,13 +2696,11 @@
     </div>
 </div>
 
-<!-- Modal para ver detalles de tarea - Glassmorphism Design -->
-<div class="modal-overlay" id="modal-detalle-tarea" style="background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">
-    <!-- Contenedor Principal (Vista de Tarea - Cristal principal) -->
+<!-- Modal para ver detalles de tarea - Clean Design -->
+<div class="modal-overlay" id="modal-detalle-tarea" style="background: rgba(0, 0, 0, 0.5);">
+    <!-- Contenedor Principal (Vista de Tarea - Clean design) -->
     <div class="task-view-container" style="
-        background-color: rgba(26, 31, 39, 0.65); 
-        backdrop-filter: blur(30px) saturate(120%); 
-        -webkit-backdrop-filter: blur(30px) saturate(120%);
+        background-color: rgba(26, 31, 39, 0.95);
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
         max-width: 1200px;
         width: 90vw;
@@ -2860,7 +2773,7 @@
             </section>
             
             <!-- Feed de Comentarios -->
-            <section style="display: flex; flex-direction: column; gap: 1.5rem; padding-top: 1rem;">
+            <section style="display: flex; flex-direction: column; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid rgba(75, 85, 99, 0.2);">
                 <h2 style="font-size: 0.875rem; font-weight: 600; text-transform: uppercase; color: #9CA3AF; letter-spacing: 0.1em; margin: 0;">Comentarios</h2>
                 
                 <!-- Área de Entrada de Comentarios -->
