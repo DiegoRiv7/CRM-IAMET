@@ -2578,7 +2578,7 @@
                 <button type="submit" class="btn-primary">Crear Proyecto</button>
             </div>
         </form>
-    </div>
+      </div>
 </div>
 
 <!-- Modal para crear tarea independiente - Diseño Avanzado -->
@@ -2696,70 +2696,162 @@
     </div>
 </div>
 
-<!-- Modal para ver detalles de tarea - Clean Design -->
-<div class="modal-overlay" id="modal-detalle-tarea" style="background: rgba(0, 0, 0, 0.5);">
-    <!-- Contenedor Principal (Vista de Tarea - Clean design) -->
-    <div class="task-view-container" style="
-        background-color: rgba(26, 31, 39, 0.95);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
-        max-width: 1200px;
+<!-- Modal para ver detalles de tarea - Nuevo Diseño -->
+<div class="modal-overlay" id="modal-detalle-tarea" 
+     style="
+        position: fixed; 
+        top: 0; 
+        left: 0; 
+        width: 100vw; 
+        height: 100vh; 
+        background: rgba(0, 0, 0, 0.5); 
+        display: none; 
+        align-items: center; 
+        justify-content: center; 
+        z-index: 10000;
+        padding: 1rem;
+     ">
+    <div style="
+        background: #0f172a;
         width: 90vw;
+        max-width: 1400px;
         height: 90vh;
-        display: flex;
-        border: 1px solid rgba(45, 55, 72, 0.4);
-        border-radius: 12px;
+        border-radius: 1.5rem;
+        border: 1px solid #334155;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1.5rem;
+        padding: 1.5rem;
+        color: #e2e8f0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
         overflow: hidden;
-        color: #E0E7FF;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     ">
 
-        <!-- Columna Izquierda (Contenido y Comentarios - 2/3) -->
-        <div id="main-content-area" class="flex-1" style="padding: 2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 2rem;">
+        <!-- Columna Principal -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem; overflow-y: auto; padding-right: 0.5rem;">
             
-            <!-- Encabezado y Título Principal -->
-            <header style="display: flex; flex-direction: column; gap: 1rem;">
-                <button onclick="TareasProyectos.cerrarModalDetalleTarea()" style="
-                    display: flex; 
-                    align-items: center; 
-                    font-size: 0.875rem; 
-                    font-weight: 600; 
-                    color: #9CA3AF; 
-                    background: none; 
-                    border: none; 
-                    cursor: pointer;
-                    transition: color 0.2s;
-                    padding: 0;
-                    align-self: flex-start;
-                " onmouseover="this.style.color='#5B9EFF'" onmouseout="this.style.color='#9CA3AF'">
-                    <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    Volver
-                </button>
-                
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <!-- Título -->
-                    <div style="display: flex; align-items: center; gap: 0.5rem; max-width: 80%;">
-                        <h1 id="task-detail-titulo" class="editable-field" style="
-                            font-size: 1.875rem; 
-                            font-weight: 800; 
-                            color: #E0E7FF; 
-                            line-height: 1.2; 
-                            margin: 0;
-                        " onclick="makeEditable('title')" title="Click para editar"></h1>
-                    </div>
-                    
-                    <!-- Botón de Acción Rápida -->
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button onclick="TareasProyectos.completarTarea()" class="task-complete-btn" title="Completar Tarea">
-                            <svg xmlns="http://www.w3.org/2000/svg" style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                            Completar
-                        </button>
-                    </div>
-                </div>
-            </header>
+          <!-- Detalles de la Tarea -->
+          <div style="
+            background: #1e293b;
+            border-radius: 1rem;
+            border: 1px solid #334155;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+          ">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+              <div>
+                <span id="task-detail-proyecto-nombre" style="
+                  font-size: 0.75rem; 
+                  font-weight: 700; 
+                  color: #6366f1; 
+                  text-transform: uppercase; 
+                  letter-spacing: 0.1em;
+                  margin-bottom: 0.25rem;
+                  display: block;
+                "></span>
+                <h1 id="task-detail-titulo" style="
+                  font-size: 2rem; 
+                  font-weight: 700; 
+                  color: white; 
+                  margin: 0;
+                  line-height: 1.2;
+                " onclick="makeEditable('title')" title="Click para editar"></h1>
+              </div>
+              <button onclick="TareasProyectos.cerrarModalDetalleTarea()" style="
+                padding: 0.5rem; 
+                background: none; 
+                border: none; 
+                color: #64748b; 
+                cursor: pointer;
+                border-radius: 50%;
+                transition: all 0.2s;
+              " onmouseover="this.style.background='#334155'; this.style.color='#e2e8f0';" onmouseout="this.style.background='none'; this.style.color='#64748b';">
+                <!-- MoreVertical Icon -->
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="12" cy="19" r="2"/>
+                </svg>
+              </button>
+            </div>
+
+            <div style="display: flex; flex-wrap: gap: 0.75rem; margin-bottom: 1.5rem;">
+              <div id="task-detail-prioridad-badge" style="
+                display: flex; 
+                align-items: center; 
+                gap: 0.5rem; 
+                background: rgba(239, 68, 68, 0.1); 
+                color: #f87171; 
+                padding: 0.375rem 0.75rem; 
+                border-radius: 0.5rem; 
+                font-size: 0.875rem; 
+                font-weight: 600;
+                border: 1px solid rgba(239, 68, 68, 0.2);
+              ">
+                <!-- AlertCircle Icon -->
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <span>Prioridad <span id="task-detail-prioridad-text">Alta</span></span>
+              </div>
+              <div id="task-detail-fecha-badge" style="
+                display: flex; 
+                align-items: center; 
+                gap: 0.5rem; 
+                background: rgba(71, 85, 105, 0.5); 
+                color: #cbd5e1; 
+                padding: 0.375rem 0.75rem; 
+                border-radius: 0.5rem; 
+                font-size: 0.875rem; 
+                font-weight: 500;
+                border: 1px solid #475569;
+              ">
+                <!-- Calendar Icon -->
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <span>Vence: <span id="task-detail-fecha-limite-text">--</span></span>
+              </div>
+              <div id="task-detail-creador-badge" style="
+                display: flex; 
+                align-items: center; 
+                gap: 0.5rem; 
+                background: rgba(99, 102, 241, 0.1); 
+                color: #a78bfa; 
+                padding: 0.375rem 0.75rem; 
+                border-radius: 0.5rem; 
+                font-size: 0.875rem; 
+                font-weight: 500;
+                border: 1px solid rgba(99, 102, 241, 0.2);
+              ">
+                <!-- User Icon -->
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span id="task-detail-creador-text">--</span>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 0;">
+              <h3 style="
+                font-size: 0.625rem; 
+                font-weight: 700; 
+                color: #64748b; 
+                text-transform: uppercase; 
+                letter-spacing: 0.2em; 
+                margin-bottom: 0.75rem;
+              ">Descripción</h3>
+              <div id="task-detail-descripcion" style="
+                color: #cbd5e1; 
+                line-height: 1.6; 
+                background: rgba(30, 41, 59, 0.3); 
+                padding: 1rem; 
+                border-radius: 0.75rem; 
+                border: 1px solid rgba(30, 41, 59, 0.5);
+                min-height: 2rem;
+              " onclick="makeEditable('description')" title="Click para editar">
+              </div>
+            </div>
+          </div>
 
             <!-- Descripción -->
             <section style="display: flex; flex-direction: column; gap: 0.75rem;">
@@ -3443,19 +3535,23 @@ Object.assign(TareasProyectos, {
             const tarea = await response.json();
             console.log('Tarea data received:', tarea);
             
-            // Rellenar elementos básicos
+            // Rellenar elementos básicos con nuevo diseño
             TareasProyectos.setElementText('task-detail-titulo', tarea.titulo);
             TareasProyectos.setElementText('task-detail-descripcion', tarea.descripcion || 'Sin descripción disponible');
-            TareasProyectos.setElementText('task-detail-proyecto', tarea.proyecto_nombre || 'Sin proyecto');
-            TareasProyectos.setElementText('task-detail-fecha-limite', tarea.fecha_limite ? TareasProyectos.formatearFechaCompleta(tarea.fecha_limite) : 'Sin fecha límite');
-            TareasProyectos.setElementText('task-detail-fecha-creacion', TareasProyectos.formatearFechaCompleta(tarea.fecha_creacion));
             
-            // Rellenar información del creador con avatar
-            if (tarea.creado_por_data) {
-                TareasProyectos.setElementText('task-detail-creado-por', tarea.creado_por_data.nombre);
-            } else {
-                TareasProyectos.setElementText('task-detail-creado-por', tarea.creado_por);
-            }
+            // Configurar proyecto en el nuevo badge superior
+            TareasProyectos.setElementText('task-detail-proyecto-nombre', tarea.proyecto_nombre || '');
+            
+            // Configurar fecha en el badge
+            TareasProyectos.setElementText('task-detail-fecha-limite-text', 
+                tarea.fecha_limite ? formatearFechaSimple(tarea.fecha_limite) : '--');
+            
+            // Configurar creador en el badge
+            let creadorNombre = tarea.creado_por_data ? tarea.creado_por_data.nombre : tarea.creado_por;
+            TareasProyectos.setElementText('task-detail-creador-text', creadorNombre || '--');
+            
+            // Configurar prioridad con colores dinámicos
+            TareasProyectos.configurarPrioridadBadge(tarea.prioridad);
             
             // Configurar responsable con avatar
             TareasProyectos.setupResponsableWithData(tarea.responsable_data);
@@ -3557,6 +3653,42 @@ Object.assign(TareasProyectos, {
         };
         
         return fecha.toLocaleDateString('es-ES', opciones);
+    },
+    
+    // Configurar badge de prioridad con colores dinámicos
+    configurarPrioridadBadge(prioridad) {
+        const badge = document.getElementById('task-detail-prioridad-badge');
+        const textElement = document.getElementById('task-detail-prioridad-text');
+        
+        if (!badge || !textElement) return;
+        
+        textElement.textContent = prioridad ? prioridad.charAt(0).toUpperCase() + prioridad.slice(1) : 'Media';
+        
+        // Configurar colores según prioridad
+        const colors = {
+            'alta': {
+                bg: 'rgba(239, 68, 68, 0.1)',
+                color: '#f87171',
+                border: '1px solid rgba(239, 68, 68, 0.2)'
+            },
+            'media': {
+                bg: 'rgba(245, 158, 11, 0.1)',
+                color: '#fbbf24',
+                border: '1px solid rgba(245, 158, 11, 0.2)'
+            },
+            'baja': {
+                bg: 'rgba(34, 197, 94, 0.1)',
+                color: '#4ade80',
+                border: '1px solid rgba(34, 197, 94, 0.2)'
+            }
+        };
+        
+        const prioridadLower = prioridad ? prioridad.toLowerCase() : 'media';
+        const style = colors[prioridadLower] || colors['media'];
+        
+        badge.style.background = style.bg;
+        badge.style.color = style.color;
+        badge.style.border = style.border;
     },
 
     // Función auxiliar para establecer texto en elementos
@@ -4057,11 +4189,17 @@ Object.assign(TareasProyectos, {
                 
                 this.isTaskRunning = data.tarea.trabajando_actualmente;
                 
+                const btnFinish = document.getElementById('btn-finish-task');
+                
                 if (this.isTaskRunning) {
                     // TAREA INICIADA/REANUDADA
                     btnStart.style.display = 'none';
-                    btnStart.querySelector('span').textContent = 'Iniciar Tarea'; // Reset text
                     btnPause.style.display = 'flex';
+                    btnPause.style.gridColumn = ''; // Reset grid column
+                    if (btnFinish) {
+                        btnFinish.style.display = 'flex';
+                        btnFinish.style.gridColumn = ''; // Reset grid column
+                    }
                     
                     // Primero obtener el tiempo acumulado correcto desde el servidor
                     this.refreshTaskDataAndStartTimer();
@@ -4071,8 +4209,9 @@ Object.assign(TareasProyectos, {
                 } else {
                     // TAREA PAUSADA
                     btnStart.style.display = 'flex';
-                    btnStart.querySelector('span').textContent = 'Reanudar Tarea';
+                    btnStart.style.gridColumn = 'span 2'; // Que ocupe toda la fila cuando está pausado
                     btnPause.style.display = 'none';
+                    if (btnFinish) btnFinish.style.display = 'none';
                     
                     // Detener cronómetro pero mostrar tiempo pausado
                     if (this.timerInterval) {
@@ -4225,6 +4364,8 @@ Object.assign(TareasProyectos, {
     // Función para actualizar el cronómetro visual
     updateTimerDisplay() {
         const timerElement = document.getElementById('timer-display');
+        const animationElement = document.getElementById('timer-animation');
+        
         if (!timerElement || !this.startTime) return;
 
         const currentTime = Date.now();
@@ -4235,82 +4376,132 @@ Object.assign(TareasProyectos, {
         const seconds = elapsed % 60;
         
         timerElement.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        // Activar animación y cambiar color cuando está corriendo
+        if (this.isTaskRunning) {
+            timerElement.style.color = '#10b981'; // Verde cuando está corriendo
+            if (animationElement) {
+                animationElement.style.opacity = '1';
+            }
+        } else {
+            timerElement.style.color = '#64748b'; // Gris cuando está pausado
+            if (animationElement) {
+                animationElement.style.opacity = '0';
+            }
+        }
+        
+        // También actualizar el cronómetro en el modal viejo si existe (compatibilidad)
+        const oldTimerDisplay = document.getElementById('task-timer-display');
+        if (oldTimerDisplay) {
+            const timeText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            const timerText = oldTimerDisplay.querySelector('.timer-text');
+            if (timerText) {
+                timerText.textContent = timeText;
+            }
+        }
     },
 
     // Función para mostrar cronómetro pausado
     showPausedTimer(segundosTotal) {
-        const taskControls = document.getElementById('task-controls');
-        if (!taskControls) return;
-        
-        let timerDisplay = document.getElementById('task-timer-display');
-        if (!timerDisplay) {
-            timerDisplay = document.createElement('div');
-            timerDisplay.id = 'task-timer-display';
-            taskControls.appendChild(timerDisplay);
-        }
-        
         const hours = Math.floor(segundosTotal / 3600);
         const minutes = Math.floor((segundosTotal % 3600) / 60);
         const seconds = segundosTotal % 60;
         const timeText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         
-        timerDisplay.style.cssText = `
-            background: rgba(28, 28, 30, 0.8);
-            border: 1px solid rgba(220, 38, 38, 0.3);
-            border-radius: 12px;
-            padding: 12px 16px;
-            margin-top: 12px;
-            text-align: center;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-        `;
+        // Actualizar el display principal del nuevo modal
+        const timerElement = document.getElementById('timer-display');
+        if (timerElement) {
+            timerElement.textContent = timeText;
+            timerElement.style.color = '#f59e0b'; // Amarillo/naranja para pausado
+        }
         
-        timerDisplay.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #FF9F40;">
-                <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-                <span style="font-weight: 600; font-size: 1.1rem;">${timeText}</span>
-                <span style="font-size: 0.8rem; opacity: 0.7;">(Pausado)</span>
-            </div>
-        `;
+        // Actualizar animación si existe
+        const animationElement = document.getElementById('timer-animation');
+        if (animationElement) {
+            animationElement.style.opacity = '0'; // Sin animación cuando está pausado
+        }
         
-        timerDisplay.style.display = 'block';
+        // Compatibilidad con modal viejo
+        const taskControls = document.getElementById('task-controls');
+        if (taskControls) {
+            let timerDisplay = document.getElementById('task-timer-display');
+            if (!timerDisplay) {
+                timerDisplay = document.createElement('div');
+                timerDisplay.id = 'task-timer-display';
+                taskControls.appendChild(timerDisplay);
+            }
+            
+            timerDisplay.style.cssText = `
+                background: rgba(28, 28, 30, 0.8);
+                border: 1px solid rgba(245, 158, 11, 0.3);
+                border-radius: 12px;
+                padding: 12px 16px;
+                margin-top: 12px;
+                text-align: center;
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            `;
+            
+            timerDisplay.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #f59e0b;">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="timer-text" style="font-weight: 600; font-size: 1.1rem;">${timeText}</span>
+                    <span style="font-size: 0.8rem; opacity: 0.7;">(Pausado)</span>
+                </div>
+            `;
+            
+            timerDisplay.style.display = 'block';
+        }
     },
 
     // Función para mostrar cronómetro de tarea completada
     showCompletedTaskTimer(segundosTotal) {
-        const taskControls = document.getElementById('task-controls');
-        if (!taskControls) return;
-        
-        let timerDisplay = document.getElementById('task-timer-display');
-        if (!timerDisplay) {
-            timerDisplay = document.createElement('div');
-            timerDisplay.id = 'task-timer-display';
-            taskControls.appendChild(timerDisplay);
-        }
-        
         const hours = Math.floor(segundosTotal / 3600);
         const minutes = Math.floor((segundosTotal % 3600) / 60);
         const seconds = segundosTotal % 60;
         const timeText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         
-        timerDisplay.style.cssText = `
-            background: rgba(28, 28, 30, 0.8);
-            border: 1px solid rgba(48, 209, 88, 0.3);
-            border-radius: 12px;
-            padding: 12px 16px;
-            margin-top: 12px;
-            text-align: center;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-        `;
+        // Actualizar el display principal del nuevo modal
+        const timerElement = document.getElementById('timer-display');
+        if (timerElement) {
+            timerElement.textContent = timeText;
+            timerElement.style.color = '#10b981'; // Verde para completada
+        }
         
-        timerDisplay.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #30D158;">
-                <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+        // Actualizar animación si existe
+        const animationElement = document.getElementById('timer-animation');
+        if (animationElement) {
+            animationElement.style.opacity = '0'; // Sin animación para tareas completadas
+        }
+        
+        // Compatibilidad con modal viejo
+        const taskControls = document.getElementById('task-controls');
+        if (taskControls) {
+            let timerDisplay = document.getElementById('task-timer-display');
+            if (!timerDisplay) {
+                timerDisplay = document.createElement('div');
+                timerDisplay.id = 'task-timer-display';
+                taskControls.appendChild(timerDisplay);
+            }
+            
+            timerDisplay.style.cssText = `
+                background: rgba(28, 28, 30, 0.8);
+                border: 1px solid rgba(16, 185, 129, 0.3);
+                border-radius: 12px;
+                padding: 12px 16px;
+                margin-top: 12px;
+                text-align: center;
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            `;
+            
+            timerDisplay.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #10b981;">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                 </svg>
                 <span style="font-weight: 600; font-size: 1.1rem;">${timeText}</span>
