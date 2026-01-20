@@ -2050,6 +2050,25 @@ grid-template-columns: repeat(3, 1fr);
 .form-actions {
 flex-direction: column;
 }
+
+/* FORZAR VISIBILIDAD DEL DOCK EN PERSONALIZACIÓN - SIEMPRE VISIBLE */
+.macos-dock {
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: flex !important;
+}
+
+#dock-left, #dock-right, #dock-top, #dock-bottom {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* Anular cualquier regla que pueda ocultar el dock */
+body .macos-dock {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
 }
 </style>
 </head>

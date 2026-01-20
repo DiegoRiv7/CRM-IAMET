@@ -1,4 +1,4 @@
-l{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Calendario de Actividades{% endblock %}
@@ -65,7 +65,7 @@ l{% extends 'base.html' %}
         box-shadow: 0 24px 50px rgba(0, 0, 0, 0.4);
     }
 
-    /* FullCalendar Customization - Maximum Quality */
+    /* FullCalendar Customization */
     .fc {
         --fc-border-color: var(--apple-separator);
         --fc-daygrid-event-dot-width: 12px;
@@ -83,29 +83,6 @@ l{% extends 'base.html' %}
         --fc-page-bg-color: transparent;
         --fc-neutral-bg-color: transparent;
         font-family: var(--apple-font-family);
-        /* Maximum quality text rendering */
-        font-rendering: geometricPrecision;
-        -webkit-font-smoothing: subpixel-antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        text-rendering: geometricPrecision;
-        /* Force hardware acceleration and high quality */
-        -webkit-transform: translateZ(0);
-        transform: translateZ(0);
-        -webkit-backface-visibility: hidden;
-        backface-visibility: hidden;
-        /* High DPI optimizations */
-        -webkit-font-feature-settings: "kern" 1, "liga" 1, "dlig" 1;
-        font-feature-settings: "kern" 1, "liga" 1, "dlig" 1;
-        /* Maximum sharpness */
-        image-rendering: -webkit-optimize-contrast;
-        image-rendering: crisp-edges;
-        /* High resolution display */
-        max-width: 100%;
-        width: 100%;
-        box-sizing: border-box;
-        /* Improve font rendering */
-        -webkit-text-stroke: 0.01em transparent;
-        text-stroke: 0.01em transparent;
     }
 
     .fc .fc-toolbar-title {
@@ -113,10 +90,6 @@ l{% extends 'base.html' %}
         font-weight: 700;
         font-size: 2.5rem;
         letter-spacing: -0.02em;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-        -webkit-font-smoothing: subpixel-antialiased;
-        font-rendering: geometricPrecision;
-        text-rendering: geometricPrecision;
     }
 
     .fc .fc-col-header-cell-cushion {
@@ -126,9 +99,6 @@ l{% extends 'base.html' %}
         font-size: 1rem;
         letter-spacing: 0.05em;
         padding: 14px 10px;
-        text-shadow: none;
-        font-rendering: geometricPrecision;
-        text-rendering: geometricPrecision;
     }
 
     .fc .fc-daygrid-day-number {
@@ -136,18 +106,12 @@ l{% extends 'base.html' %}
         font-size: 1.1rem;
         font-weight: 600;
         padding: 12px;
-        text-shadow: none;
-        font-rendering: geometricPrecision;
-        text-rendering: geometricPrecision;
     }
 
     .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
         color: var(--apple-blue-light);
         font-weight: 700;
         font-size: 1.2rem;
-        text-shadow: none;
-        font-rendering: geometricPrecision;
-        text-rendering: geometricPrecision;
     }
 
     .fc .fc-daygrid-event {
@@ -160,54 +124,17 @@ l{% extends 'base.html' %}
         border: none;
         margin: 1px 0;
         line-height: 1.3;
-        /* High DPI enhancements */
-        -webkit-transform: translateZ(0);
-        transform: translateZ(0);
-        font-rendering: geometricPrecision;
-        text-rendering: geometricPrecision;
-    }
-
-    .fc .fc-daygrid-event:hover {
-        transform: scale(1.02) translateY(-1px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        z-index: 1000;
-    }
-
-    .fc .fc-daygrid-day-frame {
-        min-height: 120px;
-        position: relative;
-        /* Enhanced rendering */
-        -webkit-transform: translateZ(0);
-        transform: translateZ(0);
     }
 
     .fc .fc-daygrid-day {
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid var(--apple-separator);
         transition: all 0.2s ease;
-        /* High DPI enhancements */
-        -webkit-transform: translateZ(0);
-        transform: translateZ(0);
     }
 
     .fc .fc-daygrid-day:hover {
         background: rgba(0, 122, 255, 0.05);
         border-color: rgba(0, 122, 255, 0.2);
-    }
-
-    .fc .fc-daygrid-day.fc-day-today {
-        background: rgba(0, 122, 255, 0.08);
-        border-color: rgba(0, 122, 255, 0.3);
-    }
-
-    .fc .fc-toolbar {
-        margin-bottom: 2rem;
-        padding: 0 1rem;
-    }
-
-    .fc .fc-toolbar-chunk {
-        display: flex;
-        align-items: center;
     }
 
     .fc .fc-button {
@@ -218,57 +145,9 @@ l{% extends 'base.html' %}
         transition: all 0.2s ease;
         text-transform: none;
         letter-spacing: 0.01em;
-        /* Enhanced rendering */
-        -webkit-transform: translateZ(0);
-        transform: translateZ(0);
-        font-rendering: geometricPrecision;
-        text-rendering: geometricPrecision;
     }
 
-    .fc .fc-button:hover {
-        transform: translateY(-1px);
-    }
-
-    .fc .fc-button-primary {
-        background: var(--apple-blue);
-        border-color: var(--apple-blue);
-    }
-
-    .fc .fc-button-primary:hover {
-        background: var(--apple-blue-light);
-        border-color: var(--apple-blue-light);
-    }
-
-    /* Enhanced event rendering */
-    .fc .fc-event-title {
-        font-weight: 500;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .fc .fc-event-time {
-        font-weight: 400;
-        font-size: 12px;
-        opacity: 0.9;
-    }
-
-    /* Better spacing and layout */
-    .fc .fc-daygrid-body {
-        width: 100%;
-    }
-
-    .fc .fc-scrollgrid {
-        border-collapse: separate;
-        border-spacing: 0;
-    }
-
-    .fc .fc-scrollgrid td,
-    .fc .fc-scrollgrid th {
-        border: 1px solid var(--apple-separator);
-    }
-
-    /* Modal Styles - iPadOS Inspired */
+    /* Modal Styles */
     .modal-overlay {
         position: fixed;
         inset: 0;
@@ -290,22 +169,20 @@ l{% extends 'base.html' %}
     }
 
     .modal-content {
-        background: rgba(44, 44, 46, 0.85);
+        background: rgba(44, 44, 46, 0.95);
         backdrop-filter: blur(30px) saturate(200%);
         -webkit-backdrop-filter: blur(30px) saturate(200%);
         border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: 20px;
         width: 95%;
-        max-width: 1000px;
-        /* Increased max-width */
+        max-width: 1100px;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         transform: scale(0.95) translateY(20px);
         opacity: 0;
         transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         display: flex;
         flex-direction: column;
-        max-height: 80vh;
-        /* Adjusted max-height */
+        max-height: 85vh;
     }
 
     .modal-overlay.show .modal-content {
@@ -317,57 +194,157 @@ l{% extends 'base.html' %}
         padding: 20px 24px;
         border-bottom: 1px solid var(--apple-separator);
         flex-shrink: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
     .modal-header h2 {
         font-size: 1.4rem;
         font-weight: 600;
         color: var(--apple-label);
+        margin: 0;
     }
 
     .modal-close-btn {
-        display: none;
-        /* Hidden for a cleaner look, modal is closed by clicking overlay or cancel button */
+        background: none;
+        border: none;
+        color: var(--apple-gray-2);
+        font-size: 2rem;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0;
+        transition: color 0.2s;
     }
 
+    .modal-close-btn:hover {
+        color: var(--apple-label);
+    }
+
+    /* Modal Layout */
     .modal-body {
+        padding: 0;
+        overflow: hidden;
+        flex: 1;
+    }
+
+    .modal-layout-grid {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        height: 100%;
+    }
+
+    .modal-form-section {
         padding: 24px;
         overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
+        border-right: 1px solid var(--apple-separator);
+        max-height: 600px;
     }
 
-    .modal-body label {
+    .modal-agenda-section {
+        padding: 24px;
+        background: rgba(0, 0, 0, 0.2);
+        overflow-y: auto;
+        max-height: 600px;
+    }
+
+    .agenda-header {
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--apple-separator);
+    }
+
+    /* Form Elements */
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
         font-weight: 500;
         color: var(--apple-gray-2);
         font-size: 0.85rem;
-        margin-bottom: 8px;
         text-transform: uppercase;
     }
 
-    .modal-body input[type="text"],
-    .modal-body input[type="datetime-local"],
-    .modal-body textarea,
-    .modal-body select {
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
         background-color: var(--apple-background-tertiary);
         border: 1px solid var(--apple-separator);
         border-radius: 10px;
         color: var(--apple-label);
         font-size: 1rem;
-        padding: 14px;
+        padding: 12px;
         width: 100%;
         box-sizing: border-box;
         transition: all 0.2s ease;
-        margin-bottom: 15px;
-        /* Add margin-bottom to form elements */
     }
 
-    .modal-body input[type="text"]:focus,
-    .modal-body input[type="datetime-local"]:focus,
-    .modal-body textarea:focus,
-    .modal-body select:focus {
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
         border-color: var(--apple-blue);
-        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.4);
         outline: none;
+        box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
+    }
+
+    /* Agenda Items */
+    .agenda-event-item {
+        display: flex;
+        gap: 12px;
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        transition: all 0.2s ease;
+    }
+
+    .agenda-event-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+        transform: translateX(2px);
+    }
+
+    .agenda-time {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        color: var(--apple-gray-2);
+        min-width: 50px;
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        padding-right: 10px;
+    }
+
+    .agenda-details {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .agenda-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--apple-label);
+        margin-bottom: 2px;
+    }
+
+    .agenda-type {
+        font-size: 0.75rem;
+        color: var(--apple-gray);
+        text-transform: capitalize;
+    }
+
+    .empty-agenda {
+        text-align: center;
+        padding: 30px;
+        color: var(--apple-gray-2);
+        border: 2px dashed rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        margin-top: 20px;
     }
 
     .modal-footer {
@@ -382,121 +359,56 @@ l{% extends 'base.html' %}
         flex-shrink: 0;
     }
 
-    .modal-footer button {
-        font-size: 1rem;
-        font-weight: 600;
-        padding: 12px 24px;
-        border-radius: 10px;
-        border: none;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
     .btn-primary {
         background-color: var(--apple-blue);
         color: white;
-    }
-
-    .btn-primary:hover {
-        background-color: var(--apple-blue-light);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
     }
 
     .btn-secondary {
         background-color: var(--apple-background-quaternary);
         color: var(--apple-label);
-    }
-
-    .btn-secondary:hover {
-        background-color: var(--apple-gray-4);
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
     }
 
     .btn-danger {
         background-color: #FF3B30;
         color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
     }
 
-    .btn-danger:hover {
-        background-color: #ff6347;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 10px rgba(255, 59, 48, 0.3);
-    }
-
-    /* Select2 Customization */
+    /* Select2 Dark Mode Fixes */
     .select2-container--default .select2-selection--multiple {
         background-color: var(--apple-background-tertiary) !important;
-        border: 1px solid var(--apple-separator) !important;
-        border-radius: 10px !important;
-        padding: 8px 12px !important;
-    }
-
-    .select2-container--default .select2-selection--multiple .select2-selection__choice {
-        background-color: var(--apple-blue) !important;
-        border: none !important;
-        color: white !important;
-        border-radius: 6px !important;
-        padding: 4px 8px !important;
+        border-color: var(--apple-separator) !important;
     }
 
     .select2-dropdown {
         background-color: var(--apple-background-secondary) !important;
-        border: 1px solid var(--apple-separator) !important;
-        border-radius: 10px !important;
+        border-color: var(--apple-separator) !important;
     }
 
-    .select2-user-result,
-    .select2-user-selection {
-        display: flex;
-        align-items: center;
+    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+        background-color: var(--apple-blue) !important;
     }
 
-    .select2-user-avatar {
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        margin-right: 8px;
+    .select2-container--default .select2-results__option[aria-selected=true] {
+        background-color: rgba(0, 122, 255, 0.2) !important;
     }
 
-    .form-group {
-        margin-bottom: 20px;
-        /* Add margin-bottom to form groups */
-    }
-
-    #calendar-sidebar {
-        height: calc(100vh - 4rem);
-        overflow-y: auto;
-    }
-
-    #user-filter-container .user-filter-item {
-        display: flex;
-        align-items: center;
-        padding: 8px 0;
-        border-bottom: 1px solid var(--apple-separator);
-    }
-
-    #user-filter-container .user-filter-item:last-child {
-        border-bottom: none;
-    }
-
-    #user-filter-container .user-filter-item input[type="checkbox"] {
-        margin-right: 12px;
-    }
-
-    #user-filter-container .user-filter-item label {
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-    }
-
-    #user-filter-container .user-avatar {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        margin-right: 8px;
-        object-fit: cover;
-    }
-
+    /* Filters */
     .filter-item {
         display: flex;
         align-items: center;
@@ -504,18 +416,23 @@ l{% extends 'base.html' %}
         border-bottom: 1px solid var(--apple-separator);
     }
 
-    .filter-item:last-child {
-        border-bottom: none;
-    }
-
-    .filter-item input[type="checkbox"] {
-        margin-right: 12px;
-    }
-
     .filter-item label {
+        margin-left: 10px;
+        cursor: pointer;
+    }
+
+    .user-filter-item {
         display: flex;
         align-items: center;
-        cursor: pointer;
+        padding: 8px 0;
+        margin-bottom: 4px;
+    }
+
+    .user-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        margin-right: 10px;
     }
 </style>
 {% endblock %}
@@ -523,15 +440,12 @@ l{% extends 'base.html' %}
 {% block content %}
 <div class="apple-bg"></div>
 <main class="flex flex-row items-start justify-start min-h-screen p-2 md:p-4">
-    <aside id="calendar-sidebar" class="w-64 p-4 apple-card mr-4">
+    <aside id="calendar-sidebar" class="w-64 p-4 apple-card mr-4 apple-fade-in">
         <h3 class="text-lg font-bold mb-4">Calendarios</h3>
-        <div id="user-filter-container">
-            <!-- User filters will be dynamically inserted here -->
-        </div>
+        <div id="user-filter-container"></div>
         <button id="add-calendar-btn"
             class="mt-4 text-sm font-medium text-blue-500 hover:text-blue-400 flex items-center gap-2"
-            onclick="openUserSearchModal()"
-            style="color: var(--apple-blue); background: none; border: none; padding: 0; cursor: pointer;">
+            onclick="openUserSearchModal()" style="background:none; border:none; cursor:pointer;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
@@ -541,7 +455,7 @@ l{% extends 'base.html' %}
             Agregar Calendario
         </button>
 
-        <h3 class="text-lg font-bold mt-6 mb-4">Tipos de Actividad</h3>
+        <h3 class="text-lg font-bold mt-6 mb-4">Filtros</h3>
         <div id="activity-type-filter-container">
             <div class="filter-item">
                 <input type="checkbox" id="type-llamada" value="llamada" checked onchange="filterCalendarEvents()">
@@ -565,6 +479,7 @@ l{% extends 'base.html' %}
             </div>
         </div>
     </aside>
+
     <section class="flex-grow mx-auto apple-fade-in" style="animation-delay:0.2s; width: calc(100vw - 18rem);">
         <div class="apple-card p-6 md:p-8" style="width: 100%; height: auto;">
             <div id='calendar' style="height: 85vh; width: 100%; font-size: 16px;"></div>
@@ -572,7 +487,7 @@ l{% extends 'base.html' %}
     </section>
 </main>
 
-<!-- Modal para Ver/Crear/Editar Actividad -->
+<!-- Modal Nuevo Diseño -->
 <div id="event-modal" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
@@ -580,91 +495,109 @@ l{% extends 'base.html' %}
             <button class="modal-close-btn" onclick="closeModal()">&times;</button>
         </div>
         <div class="modal-body">
-            <form id="event-form">
-                {% csrf_token %}
-                <input type="hidden" id="event-id">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
+            <div class="modal-layout-grid">
+                <!-- Columna Izquierda: Formulario -->
+                <div class="modal-form-section">
+                    <form id="event-form">
+                        {% csrf_token %}
+                        <input type="hidden" id="event-id">
+
                         <div class="form-group">
                             <label for="event-title">Título</label>
-                            <input type="text" id="event-title" required>
+                            <input type="text" id="event-title" placeholder="Ej: Reunión con cliente..." required>
                         </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label for="event-tipo-actividad">Tipo</label>
+                                <select id="event-tipo-actividad">
+                                    <option value="llamada">Llamada</option>
+                                    <option value="reunion">Reunión</option>
+                                    <option value="tarea">Tarea</option>
+                                    <option value="email">Email</option>
+                                    <option value="otro">Otro</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="event-color">Color</label>
+                                <select id="event-color">
+                                    <option value="#007AFF" style="background-color: #007AFF; color: white;">Azul
+                                    </option>
+                                    <option value="#34C759" style="background-color: #34C759; color: white;">Verde
+                                    </option>
+                                    <option value="#FF9500" style="background-color: #FF9500; color: white;">Naranja
+                                    </option>
+                                    <option value="#FF3B30" style="background-color: #FF3B30; color: white;">Rojo
+                                    </option>
+                                    <option value="#AF52DE" style="background-color: #AF52DE; color: white;">Morado
+                                    </option>
+                                    <option value="#5856D6" style="background-color: #5856D6; color: white;">Índigo
+                                    </option>
+                                    <option value="#FF2D55" style="background-color: #FF2D55; color: white;">Rosa
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label for="event-start">Inicio</label>
+                                <input type="datetime-local" id="event-start" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="event-end">Fin</label>
+                                <input type="datetime-local" id="event-end" required>
+                            </div>
+                        </div>
+
                         <div class="form-group">
                             <label for="event-description">Descripción</label>
-                            <textarea id="event-description"></textarea>
+                            <textarea id="event-description" rows="3" placeholder="Detalles adicionales..."></textarea>
                         </div>
-                        <div class="form-group">
-                            <label for="event-start">Inicio</label>
-                            <input type="datetime-local" id="event-start" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="event-end">Fin</label>
-                            <input type="datetime-local" id="event-end" required>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="form-group">
-                            <label for="event-tipo-actividad">Tipo de Actividad</label>
-                            <select id="event-tipo-actividad">
-                                <option value="llamada">Llamada</option>
-                                <option value="reunion">Reunión</option>
-                                <option value="tarea">Tarea</option>
-                                <option value="email">Email</option>
-                                <option value="otro">Otro</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="event-color">Color</label>
-                            <select id="event-color">
-                                <option value="#007AFF" style="background-color: #007AFF; color: white;">Azul</option>
-                                <option value="#34C759" style="background-color: #34C759; color: white;">Verde</option>
-                                <option value="#FF9500" style="background-color: #FF9500; color: white;">Naranja
-                                </option>
-                                <option value="#FF3B30" style="background-color: #FF3B30; color: white;">Rojo</option>
-                                <option value="#AF52DE" style="background-color: #AF52DE; color: white;">Morado</option>
-                                <option value="#5856D6" style="background-color: #5856D6; color: white;">Índigo</option>
-                                <option value="#FF2D55" style="background-color: #FF2D55; color: white;">Rosa</option>
-                            </select>
-                        </div>
+
                         <div class="form-group">
                             <label for="event-participants">Participantes</label>
-                            <select id="event-participants" multiple="multiple" style="width: 100%;">
-                                <!-- Options will be loaded dynamically -->
-                            </select>
+                            <select id="event-participants" multiple="multiple" style="width: 100%;"></select>
                         </div>
+
                         <div class="form-group">
                             <label for="event-opportunity">Oportunidad Relacionada</label>
-                            <select id="event-opportunity" style="width: 100%;">
-                                <option value="">-- Seleccionar Oportunidad --</option>
-                                <!-- Options will be loaded dynamically -->
-                            </select>
+                            <select id="event-opportunity" style="width: 100%;"></select>
                         </div>
+                    </form>
+                </div>
+
+                <!-- Columna Derecha: Agenda del Día -->
+                <div class="modal-agenda-section">
+                    <div class="agenda-header">
+                        <h3 class="text-lg font-bold text-white mb-1" id="agenda-date-title">Agenda</h3>
+                        <p class="text-sm text-gray-400" id="agenda-subtitle">Resumen del día</p>
+                    </div>
+                    <div id="day-agenda-container" class="space-y-3">
+                        <!-- Items de agenda se inyectan acá -->
                     </div>
                 </div>
-            </form>
+            </div>
         </div>
         <div class="modal-footer">
-            <button id="delete-event-btn" class="btn-danger" onclick="deleteEvent()">Eliminar</button>
-            <button id="save-event-btn" class="btn-primary" onclick="saveEvent()">Guardar</button>
+            <button id="delete-event-btn" class="btn-danger" onclick="deleteEvent()"
+                style="display:none;">Eliminar</button>
             <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+            <button id="save-event-btn" class="btn-primary" onclick="saveEvent()">Guardar</button>
         </div>
     </div>
 </div>
 
-<!-- Modal para Buscar Usuario -->
+<!-- Modal Buscar Usuario -->
 <div id="user-search-modal" class="modal-overlay">
-    <div class="modal-content" style="max-width: 500px; height: auto; max-height: 90vh;">
+    <div class="modal-content" style="max-width: 400px; max-height: 400px;">
         <div class="modal-header">
             <h2>Buscar Calendario</h2>
             <button class="modal-close-btn" onclick="closeUserSearchModal()">&times;</button>
         </div>
-        <div class="modal-body" style="overflow: visible;"> <!-- Overflow visible for Select2 dropdown -->
-            <p style="color: var(--apple-gray); margin-bottom: 20px;">Busca y selecciona un usuario para ver su
-                calendario.</p>
-            <div class="form-group">
-                <label for="user-search-select">Usuario</label>
-                <select id="user-search-select" style="width: 100%;"></select>
-            </div>
+        <div class="modal-body" style="padding: 24px; overflow: visible;">
+            <p class="text-gray-400 mb-4">Busca un usuario para ver su disponibilidad.</p>
+            <select id="user-search-select" style="width: 100%;"></select>
         </div>
         <div class="modal-footer">
             <button class="btn-secondary" onclick="closeUserSearchModal()">Cancelar</button>
@@ -676,47 +609,23 @@ l{% extends 'base.html' %}
 {% endblock %}
 
 {% block extra_js %}
-<!-- Select2 JS (depends on jQuery) -->
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<!-- FullCalendar JS -->
 <script src='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/6.1.11/index.global.min.js'></script>
-<!-- Moment.js for date formatting (optional, but useful) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 
 <script>
+    // Formatting Functions
     function formatUser(user) {
-        if (!user.id) {
-            return user.text;
-        }
-        var $user = $(
-            '<span class="select2-user-result">' +
-            '<img class="select2-user-avatar" src="' + (user.avatar_url || '/static/images/apple-touch-icon.png') + '" />' +
-            user.text +
-            '</span>'
-        );
-        return $user;
-    };
-
-    function formatUserSelection(user) {
-        if (!user.id) {
-            return user.text;
-        }
-        var $user = $(
-            '<span class="select2-user-selection">' +
-            '<img class="select2-user-avatar" src="' + (user.avatar_url || '/static/images/apple-touch-icon.png') + '" />' +
-            user.text +
-            '</span>'
-        );
-        return $user;
+        if (!user.id) return user.text;
+        return $('<span style="display:flex;align-items:center;"><img style="width:20px;height:20px;border-radius:50%;margin-right:8px;" src="' + (user.avatar_url || '/static/images/apple-touch-icon.png') + '" />' + user.text + '</span>');
     }
 
     let calendar;
-    let currentEvent = null; // To store the event being edited/viewed
-    let allEvents = []; // To store all events fetched from the server
-
+    let currentEvent = null;
+    let allEvents = [];
     let currentUser = {
-        id: parseInt("{{ user.id }}"), // Ensure ID is parsed as integer
-        text: "{{ user.get_full_name|default:user.username|escapejs }}", // Escape for JS string
+        id: parseInt("{{ user.id }}"),
+        text: "{{ user.get_full_name|default:user.username|escapejs }}",
         avatar_url: "{% if user.userprofile.avatar %}{{ user.userprofile.avatar.url|escapejs }}{% else %}/static/images/apple-touch-icon.png{% endif %}"
     };
 
@@ -726,60 +635,23 @@ l{% extends 'base.html' %}
 
         calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
-            locale: 'es', // Set locale to Spanish
+            locale: 'es',
             height: '90vh',
-            aspectRatio: 4.0,
-            contentHeight: 'auto',
-            expandRows: true,
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',
                 right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
             },
-            buttonText: {
-                today: 'Hoy',
-                month: 'Mes',
-                week: 'Semana',
-                day: 'Día',
-                list: 'Lista'
-            },
-            editable: true, // Allow dragging and resizing events
-            selectable: true, // Allow selecting dates to create events
-            eventStartEditable: true,
-            eventDurationEditable: true,
-            eventMaxStack: 3,
-            dayMaxEventRows: true,
-            eventDisplay: 'block',
-            displayEventTime: true,
-            displayEventEnd: true,
-            eventTimeFormat: {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            },
-            weekNumbers: false,
-            weekText: 'S',
-            weekNumberCalculation: 'ISO',
-            navLinks: false,
-            nowIndicator: true,
-            // Enhanced rendering options for high resolution
-            handleWindowResize: true,
-            windowResizeDelay: 100,
-            progressiveEventRendering: false,
-            // Maximize width usage
-            allDaySlot: true,
-            slotEventOverlap: false,
+            buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día', list: 'Lista' },
+            editable: true,
+            selectable: true,
             dayMaxEvents: true,
-            moreLinkClick: 'popover',
             events: function (fetchInfo, successCallback, failureCallback) {
                 fetch('/app/api/actividades/', {
                     method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    }
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
                 })
-                    .then(response => response.json())
+                    .then(r => r.json())
                     .then(data => {
                         allEvents = data.map(event => ({
                             id: event.id,
@@ -788,207 +660,126 @@ l{% extends 'base.html' %}
                             end: event.end,
                             description: event.description,
                             color: event.color,
-                            participants: event.participants, // Array of user objects
-                            opportunity: event.opportunity, // Opportunity object
-                            creado_por: event.creado_por, // User object
+                            participants: event.participants,
+                            opportunity: event.opportunity,
+                            creado_por: event.creado_por,
                             tipo_actividad: event.tipo_actividad
                         }));
                         successCallback(allEvents);
                     })
-                    .catch(error => {
-                        console.error('Error fetching events:', error);
-                        failureCallback(error);
-                    });
+                    .catch(e => { console.error(e); failureCallback(e); });
             },
-            dateClick: function (info) {
-                openModalForCreation(info.dateStr);
-            },
-            eventClick: function (info) {
-                openModalForEdit(info.event);
-            },
-            eventDrop: function (info) {
-                updateEventDates(info.event);
-            },
-            eventResize: function (info) {
-                updateEventDates(info.event);
-            }
+            dateClick: function (info) { openModalForCreation(info.dateStr); },
+            eventClick: function (info) { openModalForEdit(info.event); },
+            eventDrop: function (info) { updateEventDates(info.event); },
+            eventResize: function (info) { updateEventDates(info.event); }
         });
         calendar.render();
 
-        // Initialize Select2 for participants and opportunity
+        // Select2 Inits
         $('#event-participants').select2({
-            placeholder: "Selecciona participantes",
+            placeholder: "Participantes",
             allowClear: true,
-            ajax: {
-                url: '/app/api/users/', // API endpoint to fetch users
-                dataType: 'json',
-                delay: 250,
-                processResults: function (data) {
-                    return {
-                        results: data.map(user => ({
-                            id: user.id,
-                            text: user.text,
-                            avatar_url: user.avatar_url
-                        }))
-                    };
-                },
-                cache: true
-            },
-            templateResult: formatUser,
-            templateSelection: formatUserSelection
-        });
-
-        $('#event-opportunity').select2({
-            placeholder: "Selecciona una oportunidad",
-            allowClear: true,
-            ajax: {
-                url: '/app/api/oportunidades/', // API endpoint to fetch opportunities
-                dataType: 'json',
-                delay: 250,
-                processResults: function (data) {
-                    return {
-                        results: data.map(opp => ({
-                            id: opp.id,
-                            text: opp.title
-                        }))
-                    };
-                },
-                cache: true
-            }
-        });
-
-
-
-        // Initialize User Search Select2
-        $('#user-search-select').select2({
-            placeholder: "Buscar usuario...",
-            allowClear: true,
-            dropdownParent: $('#user-search-modal'), // Important for Select2 inside modal
             ajax: {
                 url: '/app/api/users/',
                 dataType: 'json',
                 delay: 250,
-                processResults: function (data) {
-                    return {
-                        results: data.map(user => ({
-                            id: user.id,
-                            text: user.text,
-                            avatar_url: user.avatar_url
-                        }))
-                    };
-                },
+                processResults: data => ({ results: data.map(u => ({ id: u.id, text: u.text, avatar_url: u.avatar_url })) }),
                 cache: true
             },
             templateResult: formatUser,
-            templateSelection: formatUserSelection
+            templateSelection: formatUser
         });
 
-        // Initialize sidebar with current user ONLY
+        $('#event-opportunity').select2({
+            placeholder: "Oportunidad",
+            allowClear: true,
+            ajax: {
+                url: '/app/api/oportunidades/',
+                dataType: 'json',
+                delay: 250,
+                processResults: data => ({ results: data.map(o => ({ id: o.id, text: o.title })) }),
+                cache: true
+            }
+        });
+
+        $('#user-search-select').select2({
+            placeholder: "Buscar usuario...",
+            dropdownParent: $('#user-search-modal'),
+            ajax: {
+                url: '/app/api/users/',
+                dataType: 'json',
+                delay: 250,
+                processResults: data => ({ results: data.map(u => ({ id: u.id, text: u.text, avatar_url: u.avatar_url })) }),
+                cache: true
+            },
+            templateResult: formatUser,
+            templateSelection: formatUser
+        });
+
         renderCurrentUser();
     });
 
+    // Helper Functions
     function renderCurrentUser() {
-        const userFilterContainer = document.getElementById('user-filter-container');
-        // Ensure container is empty or just has what we need
-        userFilterContainer.innerHTML = '';
-
-        addUserToSidebar(currentUser, true);
+        document.getElementById('user-filter-container').innerHTML = '';
+        addUserToSidebar(currentUser);
     }
 
-    function addUserToSidebar(user, isChecked = true) {
+    function addUserToSidebar(user) {
+        if (document.getElementById(`user-${user.id}`)) return;
+
         const container = document.getElementById('user-filter-container');
-
-        // Check if already exists
-        if (document.getElementById(`user-${user.id}`)) {
-            return;
-        }
-
         const div = document.createElement('div');
         div.className = 'user-filter-item apple-fade-in';
-        div.id = `filter-item-${user.id}`;
         div.innerHTML = `
-                <input type="checkbox" id="user-${user.id}" value="${user.id}" ${isChecked ? 'checked' : ''} onchange="filterCalendarEvents()">
-                <label for="user-${user.id}">
-                    <img src="${user.avatar_url || '/static/images/apple-touch-icon.png'}" class="user-avatar">
-                    ${user.text}
-                </label>
-            `;
+            <input type="checkbox" id="user-${user.id}" value="${user.id}" checked onchange="filterCalendarEvents()">
+            <label for="user-${user.id}"><img src="${user.avatar_url}" class="user-avatar">${user.text}</label>
+        `;
         container.appendChild(div);
-
-        // Re-run filter
         filterCalendarEvents();
     }
 
-    function openUserSearchModal() {
-        document.getElementById('user-search-modal').classList.add('show');
-    }
-
-    function closeUserSearchModal() {
-        document.getElementById('user-search-modal').classList.remove('show');
-        $('#user-search-select').val(null).trigger('change');
-    }
-
-    function addUserFromSearch() {
-        const selectedData = $('#user-search-select').select2('data');
-        if (selectedData && selectedData.length > 0) {
-            const user = selectedData[0];
-            // Adapt format if needed, depending on what Select2 returns vs what we need
-            const userObj = {
-                id: user.id,
-                text: user.text,
-                avatar_url: user.element ? $(user.element).data('avatar') : (user.avatar_url || '/static/images/apple-touch-icon.png')
-            };
-
-            addUserToSidebar(userObj, true);
-            closeUserSearchModal();
-        }
-    }
-
     function filterCalendarEvents() {
-        const selectedUserIds = Array.from(document.querySelectorAll('#user-filter-container input[type="checkbox"]:checked')).map(cb => cb.value);
-        const selectedActivityTypes = Array.from(document.querySelectorAll('#activity-type-filter-container input[type="checkbox"]:checked')).map(cb => cb.value);
+        const users = Array.from(document.querySelectorAll('#user-filter-container input:checked')).map(cb => cb.value);
+        const types = Array.from(document.querySelectorAll('#activity-type-filter-container input:checked')).map(cb => cb.value);
 
-        const filteredEvents = allEvents.filter(event => {
-            const createdById = event.creado_por ? String(event.creado_por.id) : null;
-            const participantIds = event.participants ? event.participants.map(p => String(p.id)) : [];
-            const userMatch = selectedUserIds.includes(createdById) || participantIds.some(id => selectedUserIds.includes(id));
-
-            const activityTypeMatch = selectedActivityTypes.includes(event.tipo_actividad);
-
-            return userMatch && activityTypeMatch;
+        const filtered = allEvents.filter(e => {
+            const pid = e.creado_por ? String(e.creado_por.id) : null;
+            const parts = e.participants ? e.participants.map(p => String(p.id)) : [];
+            const userMatch = users.includes(pid) || parts.some(id => users.includes(id));
+            const typeMatch = types.includes(e.tipo_actividad);
+            return userMatch && typeMatch;
         });
+
         calendar.removeAllEvents();
-        calendar.addEventSource(filteredEvents);
+        calendar.addEventSource(filtered);
     }
 
-    function openModal() {
-        document.getElementById('event-modal').classList.add('show');
-    }
-
+    // Modal Logic
+    function openModal() { document.getElementById('event-modal').classList.add('show'); }
     function closeModal() {
         document.getElementById('event-modal').classList.remove('show');
         document.getElementById('event-form').reset();
-        $('#event-participants').val(null).trigger('change'); // Clear Select2
-        $('#event-opportunity').val(null).trigger('change'); // Clear Select2
+        $('#event-participants').val(null).trigger('change');
+        $('#event-opportunity').val(null).trigger('change');
         currentEvent = null;
-        document.getElementById('delete-event-btn').style.display = 'none';
     }
 
     function openModalForCreation(dateStr) {
-        document.getElementById('modal-title').innerText = 'Crear Nueva Actividad';
+        document.getElementById('modal-title').innerText = 'Nueva Actividad';
         document.getElementById('event-id').value = '';
         document.getElementById('event-start').value = moment(dateStr).format('YYYY-MM-DDTHH:mm');
         document.getElementById('event-end').value = moment(dateStr).add(1, 'hour').format('YYYY-MM-DDTHH:mm');
         document.getElementById('delete-event-btn').style.display = 'none';
 
-        // Pre-select the current user as a participant
-        const participantSelect = $('#event-participants');
-        participantSelect.empty(); // Clear existing options
+        // Add current user
         if (currentUser.id) {
-            participantSelect.append(new Option(currentUser.text, currentUser.id, true, true));
-            participantSelect.trigger('change');
+            let opt = new Option(currentUser.text, currentUser.id, true, true);
+            $('#event-participants').append(opt).trigger('change');
         }
 
+        updateDayAgenda(dateStr);
         openModal();
     }
 
@@ -1003,35 +794,83 @@ l{% extends 'base.html' %}
         document.getElementById('event-color').value = event.backgroundColor || '#007AFF';
         document.getElementById('event-tipo-actividad').value = event.extendedProps.tipo_actividad || 'llamada';
 
-        // Set participants
-        if (event.extendedProps.participants && event.extendedProps.participants.length > 0) {
-            const participantSelect = $('#event-participants');
-            participantSelect.empty(); // Clear existing options
+        // Participants
+        $('#event-participants').empty();
+        if (event.extendedProps.participants) {
             event.extendedProps.participants.forEach(p => {
-                // Check if option already exists, if not, add it
-                if (!participantSelect.find('option[value="' + p.id + '"]').length) {
-                    participantSelect.append(new Option(p.text, p.id, true, true));
-                }
+                $('#event-participants').append(new Option(p.text, p.id, true, true));
             });
-            participantSelect.trigger('change'); // Notify Select2 of changes
-        } else {
-            $('#event-participants').val(null).trigger('change');
         }
+        $('#event-participants').trigger('change');
 
-        // Set opportunity
+        // Opportunity
+        $('#event-opportunity').empty();
         if (event.extendedProps.opportunity) {
-            const opportunitySelect = $('#event-opportunity');
-            opportunitySelect.empty();
-            opportunitySelect.append(new Option(event.extendedProps.opportunity.text, event.extendedProps.opportunity.id, true, true));
-            opportunitySelect.trigger('change');
-        } else {
-            $('#event-opportunity').val(null).trigger('change');
+            let opp = event.extendedProps.opportunity;
+            $('#event-opportunity').append(new Option(opp.title || opp.text, opp.id, true, true)).trigger('change');
         }
 
+        updateDayAgenda(event.start);
         document.getElementById('delete-event-btn').style.display = 'block';
         openModal();
     }
 
+    // New Agenda Logic
+    function updateDayAgenda(dateStr) {
+        const container = document.getElementById('day-agenda-container');
+        const title = document.getElementById('agenda-date-title');
+        const subtitle = document.getElementById('agenda-subtitle');
+
+        const dateObj = new Date(dateStr);
+        // Correct timezone issue roughly
+        const d = new Date(dateObj.getTime() + dateObj.getTimezoneOffset() * 60000);
+
+        title.innerText = d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+        title.style.textTransform = 'capitalize';
+
+        const dayStart = new Date(dateStr).setHours(0, 0, 0, 0);
+        const dayEnd = new Date(dateStr).setHours(23, 59, 59, 999);
+
+        const events = allEvents.filter(e => {
+            let start = new Date(e.start).getTime();
+            return start >= dayStart && start <= dayEnd;
+        }).sort((a, b) => new Date(a.start) - new Date(b.start));
+
+        subtitle.innerText = `${events.length} actividades`;
+        container.innerHTML = '';
+
+        if (events.length === 0) {
+            container.innerHTML = `<div class="empty-agenda"><p>Sin actividades</p></div>`;
+            return;
+        }
+
+        events.forEach(e => {
+            let start = new Date(e.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            let end = new Date(e.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            let div = document.createElement('div');
+            div.className = 'agenda-event-item';
+            div.style.borderLeft = `3px solid ${e.color}`;
+            div.innerHTML = `
+                <div class="agenda-time"><span>${start}</span><span style="opacity:0.6">${end}</span></div>
+                <div class="agenda-details"><div class="agenda-title">${e.title}</div><div class="agenda-type">${e.tipo_actividad}</div></div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    // User Search Modal
+    function openUserSearchModal() { document.getElementById('user-search-modal').classList.add('show'); }
+    function closeUserSearchModal() { document.getElementById('user-search-modal').classList.remove('show'); $('#user-search-select').val(null).trigger('change'); }
+    function addUserFromSearch() {
+        let data = $('#user-search-select').select2('data');
+        if (data && data.length > 0) {
+            let u = data[0];
+            addUserToSidebar({ id: u.id, text: u.text, avatar_url: u.avatar_url || '/static/images/apple-touch-icon.png' });
+            closeUserSearchModal();
+        }
+    }
+
+    // CRUD Ops (Simplified)
     function collectEventData() {
         return {
             id: document.getElementById('event-id').value || null,
@@ -1041,72 +880,42 @@ l{% extends 'base.html' %}
             end: document.getElementById('event-end').value,
             color: document.getElementById('event-color').value,
             tipo_actividad: document.getElementById('event-tipo-actividad').value,
-            participants: $('#event-participants').val(), // Array of selected user IDs
-            opportunity: $('#event-opportunity').val() // Selected opportunity ID
+            participants: $('#event-participants').val(),
+            opportunity: $('#event-opportunity').val()
         };
     }
 
     function saveEvent() {
-        const eventData = collectEventData();
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        const method = eventData.id ? 'PUT' : 'POST';
-        const url = eventData.id ? `/app/api/actividades/${eventData.id}/` : '/app/api/actividades/';
+        let data = collectEventData();
+        let csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        let method = data.id ? 'PUT' : 'POST';
+        let url = data.id ? `/app/api/actividades/${data.id}/` : '/app/api/actividades/';
 
         fetch(url, {
             method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify(eventData)
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.id) {
-                    calendar.refetchEvents(); // Refresh events
-                    closeModal();
-                } else {
-                    alert('Error al guardar la actividad: ' + JSON.stringify(data));
-                }
-            })
-            .catch(error => {
-                console.error('Error saving event:', error);
-                alert('Error al guardar la actividad.');
-            });
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            body: JSON.stringify(data)
+        }).then(r => r.json()).then(d => {
+            if (d.id) { calendar.refetchEvents(); closeModal(); }
+            else alert('Error: ' + JSON.stringify(d));
+        });
     }
 
     function deleteEvent() {
-        if (!currentEvent || !confirm('¿Estás seguro de que quieres eliminar esta actividad?')) {
-            return;
-        }
-
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
+        if (!confirm('¿Eliminar?')) return;
+        let csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
         fetch(`/app/api/actividades/${currentEvent.id}/`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRFToken': csrfToken
-            }
-        })
-            .then(response => {
-                if (response.ok) {
-                    currentEvent.remove(); // Remove from calendar
-                    closeModal();
-                } else {
-                    alert('Error al eliminar la actividad.');
-                }
-            })
-            .catch(error => {
-                console.error('Error deleting event:', error);
-                alert('Error al eliminar la actividad.');
-            });
+            method: 'DELETE', headers: { 'X-CSRFToken': csrf }
+        }).then(r => {
+            if (r.ok) { currentEvent.remove(); closeModal(); }
+            else alert('Error al eliminar');
+        });
     }
 
     function updateEventDates(event) {
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        const eventData = {
-            id: event.id,
-            title: event.title,
+        let csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        let data = {
+            id: event.id, title: event.title,
             start: moment(event.start).format('YYYY-MM-DDTHH:mm'),
             end: moment(event.end).format('YYYY-MM-DDTHH:mm'),
             description: event.extendedProps.description,
@@ -1115,27 +924,10 @@ l{% extends 'base.html' %}
             participants: event.extendedProps.participants ? event.extendedProps.participants.map(p => p.id) : [],
             opportunity: event.extendedProps.opportunity ? event.extendedProps.opportunity.id : null
         };
-
         fetch(`/app/api/actividades/${event.id}/`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify(eventData)
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (!data.id) {
-                    alert('Error al actualizar la actividad.');
-                    event.revert(); // Revert the event's dates if update fails
-                }
-            })
-            .catch(error => {
-                console.error('Error updating event dates:', error);
-                alert('Error al actualizar la actividad.');
-                event.revert(); // Revert the event's dates if update fails
-            });
+            method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            body: JSON.stringify(data)
+        }).then(r => r.json()).then(d => { if (!d.id) event.revert(); });
     }
 </script>
 {% endblock %}

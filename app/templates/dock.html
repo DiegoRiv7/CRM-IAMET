@@ -4126,6 +4126,42 @@ window.applyThemeImmediate = function(theme) {
         
         document.body.style.background = '#f5e6d3';
         document.body.style.backgroundAttachment = 'fixed';
+        
+    } else if (theme === 'perla') {
+        // Para el tema perla
+        document.documentElement.classList.add('light-theme');
+        document.documentElement.setAttribute('data-theme', 'perla');
+        document.body.setAttribute('data-theme', 'perla');
+        document.body.classList.add('light-theme');
+        
+        // Aplicar colores específicos del tema perla - Clean white with electric blue accents
+        document.documentElement.style.setProperty('--apple-background', 'linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 50%, #F5F5F5 100%)');
+        document.documentElement.style.setProperty('--apple-background-secondary', 'rgba(255, 255, 255, 0.95)');
+        document.documentElement.style.setProperty('--apple-background-tertiary', 'rgba(250, 250, 250, 0.9)');
+        document.documentElement.style.setProperty('--apple-background-quaternary', '#F5F5F5');
+        document.documentElement.style.setProperty('--apple-label', '#111827');
+        document.documentElement.style.setProperty('--apple-label-secondary', '#374151');
+        document.documentElement.style.setProperty('--apple-label-tertiary', '#6B7280');
+        document.documentElement.style.setProperty('--apple-blue', '#0052D4');
+        document.documentElement.style.setProperty('--apple-blue-light', '#4AA3FF');
+        document.documentElement.style.setProperty('--apple-blue-dark', '#003D9F');
+        document.documentElement.style.setProperty('--apple-pink-gradient', 'linear-gradient(135deg, #0052D4 0%, #4AA3FF 50%, #00D4FF 100%)');
+        document.documentElement.style.setProperty('--apple-pink-light', '#4AA3FF');
+        document.documentElement.style.setProperty('--apple-pink-medium', '#0052D4');
+        document.documentElement.style.setProperty('--apple-pink-dark', '#003D9F');
+        document.documentElement.style.setProperty('--apple-separator', 'rgba(0, 82, 212, 0.2)');
+        document.documentElement.style.setProperty('--apple-perla-electric', '#00D4FF');
+        
+        // Clean grays for perla
+        document.documentElement.style.setProperty('--apple-gray', '#6B7280');
+        document.documentElement.style.setProperty('--apple-gray-2', '#9CA3AF');
+        document.documentElement.style.setProperty('--apple-gray-3', '#D1D5DB');
+        document.documentElement.style.setProperty('--apple-gray-4', '#E5E7EB');
+        document.documentElement.style.setProperty('--apple-gray-5', '#F3F4F6');
+        document.documentElement.style.setProperty('--apple-gray-6', '#F9FAFB');
+        
+        document.body.style.background = 'linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 50%, #F5F5F5 100%)';
+        document.body.style.backgroundAttachment = 'fixed';
     }
     
     // Save theme preference with enhanced preservation mechanism
@@ -4167,7 +4203,7 @@ window.applyThemeImmediate = function(theme) {
     // Actualizar el estado del botón de tema si existe
     const themeToggle = document.getElementById('theme-toggle');
     if (themeToggle) {
-        const isDarkMode = theme !== 'pink' && theme !== 'light';
+        const isDarkMode = theme !== 'pink' && theme !== 'light' && theme !== 'white' && theme !== 'coffee' && theme !== 'perla';
         themeToggle.classList.toggle('active', isDarkMode);
         
         if (isDarkMode) {
@@ -4191,7 +4227,8 @@ window.applyThemeImmediate = function(theme) {
             'pink': 'Tema Rosa',
             'blue': 'Tema Azul',
             'white': 'Tema Blanco',
-            'coffee': 'Tema Café'
+            'coffee': 'Tema Café',
+            'perla': 'Tema Perla'
         };
         showNotification(`Tema cambiado a: ${themeNames[theme] || theme}`, 'success');
     }
