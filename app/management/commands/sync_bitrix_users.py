@@ -35,6 +35,7 @@ class Command(BaseCommand):
             {"ID": "134", "NAME": "Aaron Casillas", "EMAIL": "aaron.casillas@iamet.mx"},
             {"ID": "152", "NAME": "Arceli Bihouet", "EMAIL": "ventas3@iamet.mx"},
             {"ID": "156", "NAME": "Zebra IAMET", "EMAIL": "zebra@iamet.mx"},
+            {"ID": "262", "NAME": "Rubén Hernández", "EMAIL": "ruben.hernandez@iamet.mx"},
         ]
 
         bitrix_users = bitrix_users_data
