@@ -2578,25 +2578,6 @@
         font-weight: 500;
     }
 
-    .card-menu-btn {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: transparent;
-        border: none;
-        color: rgba(255, 255, 255, 0.4);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .card-menu-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
-    }
-
     /* Card Stats */
     .card-stats {
         display: grid;
@@ -2722,6 +2703,15 @@
         color: white;
         font-size: 0.8rem;
         font-weight: 600;
+        border: 2px solid rgba(30, 30, 34, 1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-owner-avatar-img {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
         border: 2px solid rgba(30, 30, 34, 1);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
@@ -3450,13 +3440,6 @@
                                     <p class="card-client">{% if item.cliente %}{{ item.cliente.nombre_empresa }}{% else %}Sin cliente{% endif %}</p>
                                 </div>
                             </div>
-                            <button class="card-menu-btn" onclick="event.stopPropagation();">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="1"></circle>
-                                    <circle cx="12" cy="5" r="1"></circle>
-                                    <circle cx="12" cy="19" r="1"></circle>
-                                </svg>
-                            </button>
                         </div>
                     </div>
 
@@ -3520,9 +3503,16 @@
                             </div>
 
                             <!-- Owner Avatar -->
+                            {% if item.usuario.userprofile.get_avatar_url %}
+                            <img class="card-owner-avatar-img"
+                                 src="{{ item.usuario.userprofile.get_avatar_url }}"
+                                 alt="{{ item.usuario.first_name }} {{ item.usuario.last_name }}"
+                                 title="{{ item.usuario.first_name }} {{ item.usuario.last_name }}">
+                            {% else %}
                             <div class="card-owner-avatar" title="{{ item.usuario.first_name }} {{ item.usuario.last_name }}">
                                 {{ item.usuario.first_name|slice:":1" }}{{ item.usuario.last_name|slice:":1" }}
                             </div>
+                            {% endif %}
                         </div>
 
                         <!-- CTA Button -->
@@ -3624,12 +3614,7 @@
                                 </td>
                                 <td data-label="Contacto">
                                     {% if item.contacto %}
-                                    <div class="table-contact-info">
-                                        <div class="table-contact-avatar">
-                                            {{ item.contacto.nombre|slice:":1" }}
-                                        </div>
-                                        <span class="table-contact-name">{{ item.contacto }}</span>
-                                    </div>
+                                    <span class="table-contact-name">{{ item.contacto }}</span>
                                     {% else %}
                                     <span style="color: rgba(255,255,255,0.4); font-style: italic;">Sin contacto</span>
                                     {% endif %}
