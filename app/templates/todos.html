@@ -2465,15 +2465,14 @@
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 1.5rem;
-        border-radius: 24px;
+        padding: 1.25rem;
+        border-radius: 20px;
         transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         cursor: pointer;
         overflow: hidden;
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
-        min-height: 340px;
+        min-height: 280px;
     }
 
     .opportunity-card:hover {
@@ -2502,56 +2501,21 @@
 
     /* Card Header */
     .card-header {
-        margin-bottom: 1rem;
-    }
-
-    .card-header-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 0.75rem;
-    }
-
-    .card-icon-title {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .card-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 14px;
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--apple-blue);
-        transition: all 0.3s ease;
-    }
-
-    .opportunity-card:hover .card-icon {
-        color: #5AC8FA;
-        background: linear-gradient(135deg, rgba(10, 132, 255, 0.2) 0%, rgba(10, 132, 255, 0.1) 100%);
-    }
-
-    .card-title-group {
-        flex: 1;
-        min-width: 0;
+        flex-shrink: 0;
     }
 
     .card-title {
-        font-size: 1.1rem;
+        font-size: 1.05rem;
         font-weight: 700;
         color: white;
-        margin: 0 0 0.25rem 0;
-        line-height: 1.3;
+        margin: 0 0 0.4rem 0;
+        line-height: 1.35;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
         transition: color 0.3s ease;
+        min-height: 2.7em;
     }
 
     .opportunity-card:hover .card-title {
@@ -2559,17 +2523,21 @@
     }
 
     .card-client {
-        font-size: 0.9rem;
-        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.55);
         font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
-    /* Card Stats */
+    /* Card Stats - Centered */
     .card-stats {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 0.75rem;
-        margin-bottom: 1.25rem;
+        flex: 1;
+        align-content: center;
     }
 
     .stat-box {
@@ -2614,14 +2582,15 @@
     /* Card Footer */
     .card-footer {
         margin-top: auto;
+        flex-shrink: 0;
     }
 
     .card-footer-info {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 1rem;
-        padding: 0 0.25rem;
+        margin-bottom: 0.75rem;
+        padding: 0;
     }
 
     .card-probability-stage {
@@ -2702,16 +2671,16 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
 
-    /* Card CTA Button */
+    /* Card CTA Button - Subtle style */
     .card-cta-btn {
         width: 100%;
-        padding: 0.9rem 1.25rem;
-        border-radius: 14px;
-        background: linear-gradient(135deg, var(--apple-blue) 0%, #0066CC 100%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: white;
+        padding: 0.8rem 1rem;
+        border-radius: 12px;
+        background: rgba(10, 132, 255, 0.15);
+        border: 1px solid rgba(10, 132, 255, 0.3);
+        color: var(--apple-blue);
         font-weight: 600;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         cursor: pointer;
         transition: all 0.3s ease;
         display: flex;
@@ -2719,14 +2688,12 @@
         justify-content: center;
         gap: 0.5rem;
         text-decoration: none;
-        box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
     }
 
     .card-cta-btn:hover {
-        background: linear-gradient(135deg, #1A8FFF 0%, #0077ED 100%);
-        transform: scale(1.02);
-        box-shadow: 0 6px 20px rgba(10, 132, 255, 0.4);
-        color: white;
+        background: rgba(10, 132, 255, 0.25);
+        border-color: rgba(10, 132, 255, 0.5);
+        color: #5AC8FA;
     }
 
     .card-cta-btn:active {
@@ -2734,33 +2701,34 @@
     }
 
     .card-cta-btn svg {
-        width: 16px;
-        height: 16px;
-        opacity: 0.9;
+        width: 15px;
+        height: 15px;
+        opacity: 0.8;
     }
 
     .card-cta-btn .chevron {
-        opacity: 0.6;
+        opacity: 0.5;
         transition: transform 0.3s ease;
     }
 
     .card-cta-btn:hover .chevron {
         transform: translateX(3px);
+        opacity: 0.8;
     }
 
     /* ========== SUMMARY WIDGET CARD ========== */
     .summary-widget-card {
         position: relative;
         background: linear-gradient(135deg, var(--apple-blue) 0%, #0066CC 50%, #4B0082 100%);
-        border-radius: 24px;
-        padding: 1.75rem;
+        border-radius: 20px;
+        padding: 1.25rem;
         overflow: hidden;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        min-height: 340px;
+        min-height: 280px;
         border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 8px 32px rgba(10, 132, 255, 0.3);
+        box-shadow: 0 8px 32px rgba(10, 132, 255, 0.2);
     }
 
     .summary-widget-card::before {
@@ -2885,16 +2853,16 @@
     /* ========== NEW OPPORTUNITY CARD ========== */
     .new-opportunity-card {
         border: 2px dashed rgba(255, 255, 255, 0.15);
-        border-radius: 24px;
+        border-radius: 20px;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        min-height: 340px;
+        min-height: 280px;
         cursor: pointer;
         transition: all 0.3s ease;
         text-decoration: none;
-        gap: 1rem;
+        gap: 0.75rem;
         background: transparent;
     }
 
@@ -3126,7 +3094,15 @@
 
     .light-theme .card-cta-btn,
     body[data-theme="pink"] .card-cta-btn {
-        background: linear-gradient(135deg, #FF6B9D 0%, #E55A87 100%) !important;
+        background: rgba(255, 107, 157, 0.15) !important;
+        border-color: rgba(255, 107, 157, 0.3) !important;
+        color: #FF6B9D !important;
+    }
+
+    .light-theme .card-cta-btn:hover,
+    body[data-theme="pink"] .card-cta-btn:hover {
+        background: rgba(255, 107, 157, 0.25) !important;
+        border-color: rgba(255, 107, 157, 0.5) !important;
     }
 
     .light-theme .summary-widget-card,
@@ -3441,20 +3417,8 @@
 
                     <!-- Card Header -->
                     <div class="card-header">
-                        <div class="card-header-top">
-                            <div class="card-icon-title">
-                                <div class="card-icon">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-                                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-                                    </svg>
-                                </div>
-                                <div class="card-title-group">
-                                    <h3 class="card-title">{{ item.oportunidad }}</h3>
-                                    <p class="card-client">{% if item.cliente %}{{ item.cliente.nombre_empresa }}{% else %}Sin cliente{% endif %}</p>
-                                </div>
-                            </div>
-                        </div>
+                        <h3 class="card-title">{{ item.oportunidad }}</h3>
+                        <p class="card-client">{% if item.cliente %}{{ item.cliente.nombre_empresa }}{% else %}Sin cliente{% endif %}</p>
                     </div>
 
                     <!-- Card Stats -->
