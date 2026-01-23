@@ -62,28 +62,51 @@
         gap: 1rem;
     }
 
-    /* Search Widget */
-    .search-widget-container {
-        position: relative;
+    /* Search Bar - Always Visible */
+    .search-bar-container {
         display: flex;
         align-items: center;
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 0 14px;
+        height: 44px;
+        min-width: 180px;
+        transition: all 0.3s ease;
     }
-    .search-icon-container {
-        width: 44px; height: 44px; border-radius: 50%;
+
+    .search-bar-container:hover {
         background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        display: flex; align-items: center; justify-content: center;
-        cursor: pointer !important; transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        pointer-events: auto !important;
+        border-color: rgba(255, 255, 255, 0.15);
     }
-    
-    .search-icon-container * {
-        pointer-events: none !important;
-        cursor: pointer !important;
+
+    .search-bar-container:focus-within {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: var(--apple-blue);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
     }
-    .search-icon-container:hover { background: rgba(255, 255, 255, 0.15); transform: scale(1.05); }
+
+    .search-bar-icon {
+        color: rgba(255, 255, 255, 0.5);
+        flex-shrink: 0;
+        margin-right: 10px;
+    }
+
+    .search-bar-input {
+        background: transparent;
+        border: none;
+        outline: none;
+        color: var(--apple-label);
+        font-size: 0.95rem;
+        width: 100%;
+        height: 100%;
+    }
+
+    .search-bar-input::placeholder {
+        color: rgba(255, 255, 255, 0.4);
+    }
     
     /* Filter Widget - Enhanced Apple Design */
     .filter-icon-container {
@@ -155,43 +178,6 @@
         transform: rotate(180deg);
     }
     
-    .search-input {
-        position: absolute;
-        right: 22px;
-        width: 0;
-        height: 44px;
-        padding: 0;
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 22px;
-        color: transparent;
-        font-size: 1rem;
-        opacity: 0;
-        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        pointer-events: none;
-        outline: none;
-    }
-    .search-input::placeholder {
-        color: transparent;
-        transition: color 0.2s ease 0.2s;
-    }
-
-    .search-widget-container.expanded .search-input {
-        width: 280px !important;
-        opacity: 1 !important;
-        pointer-events: auto !important;
-        padding: 0 20px !important;
-        color: var(--apple-label) !important;
-    }
-    .search-widget-container.expanded .search-input::placeholder {
-        color: var(--apple-label-secondary) !important;
-    }
-
-    .search-widget-container.expanded .search-icon-container {
-        transform: translateX(-320px);
-    }
 
     /* Buttons */
     .create-btn {
@@ -3199,6 +3185,33 @@
         color: #FF6B9D !important;
     }
 
+    .light-theme .search-bar-container,
+    body[data-theme="pink"] .search-bar-container {
+        background: rgba(255, 107, 157, 0.1) !important;
+        border-color: rgba(255, 107, 157, 0.3) !important;
+    }
+
+    .light-theme .search-bar-container:focus-within,
+    body[data-theme="pink"] .search-bar-container:focus-within {
+        border-color: #FF6B9D !important;
+        box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.15) !important;
+    }
+
+    .light-theme .search-bar-icon,
+    body[data-theme="pink"] .search-bar-icon {
+        color: #6B4C6D !important;
+    }
+
+    .light-theme .search-bar-input,
+    body[data-theme="pink"] .search-bar-input {
+        color: #2D1B2E !important;
+    }
+
+    .light-theme .search-bar-input::placeholder,
+    body[data-theme="pink"] .search-bar-input::placeholder {
+        color: #6B4C6D !important;
+    }
+
 </style>
 
 <div class="todos-container">
@@ -3236,11 +3249,9 @@
                     </button>
                 </div>
 
-                <div class="search-widget-container" id="search-widget">
-                    <input type="text" id="searchOportunidad" placeholder="Buscar oportunidad..." class="search-input" value="{{ search_query }}">
-                    <div class="search-icon-container" id="search-icon">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    </div>
+                <div class="search-bar-container" id="search-bar">
+                    <svg class="search-bar-icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input type="text" id="searchOportunidad" placeholder="Buscar..." class="search-bar-input" value="{{ search_query }}">
                 </div>
             </div>
             {% else %}
@@ -3423,6 +3434,9 @@
                      data-monto="{{ item.monto }}"
                      data-area="{{ item.area }}"
                      data-usuario-id="{{ item.usuario.id }}"
+                     data-etapa="{{ item.etapa_corta|default:''|lower }}"
+                     data-etapa-completa="{{ item.etapa_completa|default:''|lower }}"
+                     data-fecha-actualizacion="{{ item.fecha_actualizacion|date:'Y-m' }}"
                      onclick="window.location.href='{% url 'cotizaciones_por_oportunidad' item.id %}'">
 
                     <!-- Card Header -->
@@ -4038,14 +4052,36 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ========== CALCULATE PIPELINE TOTAL ==========
+    // ========== CALCULATE PIPELINE TOTAL (WON OPPORTUNITIES) ==========
     function calculatePipelineTotal() {
         const cards = document.querySelectorAll('.opportunity-card[data-monto]');
-        let total = 0;
+        let totalGanado = 0;
+
+        // Get current month in format YYYY-MM
+        const now = new Date();
+        const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+
+        // Keywords that indicate a won/closed opportunity
+        const wonKeywords = ['ganado', 'ganada', 'cerrado ganado', 'cerrada ganada', 'won', 'closed won', 'cerrado', 'cerrada'];
 
         cards.forEach(card => {
             const monto = parseFloat(card.dataset.monto) || 0;
-            total += monto;
+            const etapa = (card.dataset.etapa || '').toLowerCase();
+            const etapaCompleta = (card.dataset.etapaCompleta || '').toLowerCase();
+            const fechaActualizacion = card.dataset.fechaActualizacion || '';
+
+            // Check if the opportunity is won
+            const isWon = wonKeywords.some(keyword =>
+                etapa.includes(keyword) || etapaCompleta.includes(keyword)
+            );
+
+            // Check if it was updated in the current month
+            const isCurrentMonth = fechaActualizacion === currentMonth;
+
+            // Only count if won AND updated this month
+            if (isWon && isCurrentMonth) {
+                totalGanado += monto;
+            }
         });
 
         // Update the summary widget
@@ -4055,18 +4091,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (totalElement) {
             // Format as currency
-            if (total >= 1000000) {
-                totalElement.textContent = '$' + (total / 1000000).toFixed(2) + 'M';
-            } else if (total >= 1000) {
-                totalElement.textContent = '$' + (total / 1000).toFixed(1) + 'k';
+            if (totalGanado >= 1000000) {
+                totalElement.textContent = '$' + (totalGanado / 1000000).toFixed(2) + 'M';
+            } else if (totalGanado >= 1000) {
+                totalElement.textContent = '$' + (totalGanado / 1000).toFixed(1) + 'k';
             } else {
-                totalElement.textContent = '$' + total.toFixed(2);
+                totalElement.textContent = '$' + totalGanado.toFixed(0);
             }
         }
 
-        // Calculate progress (assuming a monthly goal - you can adjust this)
-        const monthlyGoal = 1000000; // $1M goal - adjust as needed
-        const progress = Math.min((total / monthlyGoal) * 100, 100);
+        // Monthly goal: $300,000
+        const monthlyGoal = 300000;
+        const progress = Math.min((totalGanado / monthlyGoal) * 100, 100);
 
         if (progressPercent) {
             progressPercent.textContent = Math.round(progress) + '%';
@@ -4110,139 +4146,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Los filtros básicos ya funcionan con la función applyFilters() existente
-    
-    // ROBUST SEARCH APPROACH - Multiple selectors and event delegation
-    console.log('🔍 Starting search initialization...');
-    
-    function initializeSearch() {
-        // Try multiple ways to select the search elements
-        const searchWidget = document.getElementById('search-widget') || document.querySelector('.search-widget-container');
-        const searchIcon = document.getElementById('search-icon') || document.querySelector('.search-icon-container');
-        const searchInput = document.getElementById('searchOportunidad') || document.querySelector('.search-input');
-        
-        console.log('🔍 Search elements found:', {
-            widget: !!searchWidget,
-            icon: !!searchIcon, 
-            input: !!searchInput,
-            widgetClasses: searchWidget ? searchWidget.className : 'null',
-            iconClasses: searchIcon ? searchIcon.className : 'null'
-        });
-        
-        function handleSearchClick(e) {
-            console.log('🔍 SEARCH CLICK DETECTED!', e.target);
-            e.preventDefault();
-            e.stopPropagation();
-            
-            if (searchWidget && searchInput) {
-                const isExpanded = searchWidget.classList.contains('expanded');
-                console.log('🔍 Is expanded:', isExpanded);
-                
-                if (!isExpanded) {
-                    console.log('🔍 Expanding search widget...');
-                    searchWidget.classList.add('expanded');
-                    console.log('🔍 Widget classes after expand:', searchWidget.className);
-                    setTimeout(() => {
-                        searchInput.focus();
-                        console.log('🔍 Input focused');
-                    }, 150);
-                } else {
-                    console.log('🔍 Performing search...');
-                    performSearch();
-                }
-            } else {
-                console.error('🔍 Missing search elements:', { widget: !!searchWidget, input: !!searchInput });
+
+    // ========== SIMPLE SEARCH (Always visible bar) ==========
+    const searchInput = document.getElementById('searchOportunidad');
+    if (searchInput) {
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                performSearch();
             }
-        }
-        
-        // Add event listeners to multiple possible elements
-        if (searchIcon) {
-            console.log('🔍 Adding click events to search icon');
-            
-            // Method 1: Direct onclick
-            searchIcon.onclick = handleSearchClick;
-            
-            // Method 2: addEventListener
-            searchIcon.addEventListener('click', handleSearchClick);
-            
-            // Method 3: Event delegation for SVG clicks
-            searchIcon.addEventListener('click', function(e) {
-                console.log('🔍 Icon container clicked, target:', e.target.tagName);
-                handleSearchClick(e);
-            }, true); // Use capture phase
-        }
-        
-        // Also try to add to any SVG inside the icon container
-        const svgIcon = searchIcon ? searchIcon.querySelector('svg') : null;
-        if (svgIcon) {
-            console.log('🔍 Adding click event to SVG element');
-            svgIcon.onclick = handleSearchClick;
-            svgIcon.addEventListener('click', handleSearchClick);
-        }
-        
-        // Event delegation on the widget container
-        if (searchWidget) {
-            searchWidget.addEventListener('click', function(e) {
-                if (e.target.closest('.search-icon-container') || e.target.closest('#search-icon')) {
-                    console.log('🔍 Widget container delegation click');
-                    handleSearchClick(e);
-                }
-            });
-        }
-        
-        if (searchInput) {
-            searchInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    performSearch();
-                }
-            });
-        }
-        
-        return !!(searchWidget && searchIcon && searchInput);
+        });
     }
-    
-    // Try immediate initialization
-    setTimeout(() => {
-        if (!initializeSearch()) {
-            console.log('🔍 First attempt failed, retrying in 200ms...');
-            setTimeout(() => {
-                if (!initializeSearch()) {
-                    console.log('🔍 Using fallback approach...');
-                    // FALLBACK: Add event to ANY element that looks like a search icon
-                    const allPossibleIcons = document.querySelectorAll('.search-icon-container, #search-icon, [class*="search"], svg[viewBox="0 0 24 24"]');
-                    console.log('🔍 Found possible icons:', allPossibleIcons.length);
-                    
-                    allPossibleIcons.forEach((icon, index) => {
-                        console.log(`🔍 Adding fallback event to icon ${index}:`, icon);
-                        icon.addEventListener('click', function(e) {
-                            console.log('🔍 FALLBACK CLICK DETECTED!', e.target);
-                            e.preventDefault();
-                            e.stopPropagation();
-                            
-                            const widget = document.querySelector('.search-widget-container, #search-widget');
-                            const input = document.querySelector('.search-input, #searchOportunidad');
-                            
-                            if (widget && input) {
-                                const isExpanded = widget.classList.contains('expanded');
-                                if (!isExpanded) {
-                                    widget.classList.add('expanded');
-                                    setTimeout(() => input.focus(), 150);
-                                }
-                            }
-                        });
-                    });
-                }
-            }, 200);
-        }
-    }, 50);
 
     function performSearch() {
-        const searchInput = document.getElementById('searchOportunidad') || document.querySelector('.search-input');
-        if (!searchInput) {
-            console.error('🔍 Search input not found for performSearch');
-            return;
-        }
-        
+        const searchInput = document.getElementById('searchOportunidad');
+        if (!searchInput) return;
+
         const searchValue = searchInput.value.trim();
         const url = new URL(window.location);
         if (searchValue === '') {
@@ -4254,15 +4173,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         window.location.href = url.toString();
     }
-
-
-    // Close on ANY outside click
-    document.addEventListener('click', (e) => {
-        const widget = document.getElementById('search-widget');
-        if (widget && !widget.contains(e.target)) {
-            widget.classList.remove('expanded');
-        }
-    });
 });
 
 
@@ -4603,39 +4513,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// MANUAL BACKUP - If all else fails, force the search functionality
-console.log('🔄 Setting up manual backup search...');
-setTimeout(() => {
-    // Find ANY search-like elements and make them work
-    const manualSearchIcons = document.querySelectorAll('.search-icon-container, #search-icon');
-    console.log('🔄 Manual backup found icons:', manualSearchIcons.length);
-    
-    manualSearchIcons.forEach((icon, index) => {
-        if (icon && !icon.hasAttribute('data-manual-click-added')) {
-            console.log(`🔄 Adding manual click to icon ${index}`);
-            icon.setAttribute('data-manual-click-added', 'true');
-            
-            icon.addEventListener('click', function(e) {
-                console.log('🔄 MANUAL BACKUP CLICK!');
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const widget = document.querySelector('#search-widget, .search-widget-container');
-                const input = document.querySelector('#searchOportunidad, .search-input');
-                
-                if (widget && input) {
-                    console.log('🔄 Manual: Expanding search');
-                    widget.classList.add('expanded');
-                    setTimeout(() => {
-                        input.focus();
-                        console.log('🔄 Manual: Input focused');
-                    }, 100);
-                } else {
-                    console.log('🔄 Manual: Elements not found', {widget: !!widget, input: !!input});
-                }
-            });
-        }
-    });
-}, 1000);
 </script>
 {% endblock %}
