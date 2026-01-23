@@ -2419,6 +2419,796 @@
         font-weight: normal;
     }
 
+    /* ========== VIEW SWITCHER ========== */
+    .view-switcher {
+        display: flex;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 22px;
+        padding: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+    }
+
+    .view-switcher-btn {
+        padding: 8px 12px;
+        border-radius: 18px;
+        background: transparent;
+        border: none;
+        color: rgba(255, 255, 255, 0.5);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .view-switcher-btn:hover {
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .view-switcher-btn.active {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .view-switcher-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* ========== CARDS GRID VIEW ========== */
+    .cards-grid-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 1.5rem;
+        padding: 1rem 0;
+    }
+
+    @media (max-width: 768px) {
+        .cards-grid-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* ========== OPPORTUNITY CARD ========== */
+    .opportunity-card {
+        position: relative;
+        background: rgba(40, 40, 45, 0.6);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 1.5rem;
+        border-radius: 24px;
+        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        cursor: pointer;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 340px;
+    }
+
+    .opportunity-card:hover {
+        background: rgba(50, 50, 55, 0.7);
+        transform: translateY(-4px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .opportunity-card::before {
+        content: '';
+        position: absolute;
+        top: -100px;
+        right: -100px;
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(circle, rgba(10, 132, 255, 0.1) 0%, transparent 70%);
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        pointer-events: none;
+    }
+
+    .opportunity-card:hover::before {
+        opacity: 1;
+    }
+
+    /* Card Header */
+    .card-header {
+        margin-bottom: 1rem;
+    }
+
+    .card-header-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+    }
+
+    .card-icon-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .card-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--apple-blue);
+        transition: all 0.3s ease;
+    }
+
+    .opportunity-card:hover .card-icon {
+        color: #5AC8FA;
+        background: linear-gradient(135deg, rgba(10, 132, 255, 0.2) 0%, rgba(10, 132, 255, 0.1) 100%);
+    }
+
+    .card-title-group {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .card-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: white;
+        margin: 0 0 0.25rem 0;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        transition: color 0.3s ease;
+    }
+
+    .opportunity-card:hover .card-title {
+        color: #E5F0FF;
+    }
+
+    .card-client {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.6);
+        font-weight: 500;
+    }
+
+    .card-menu-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: transparent;
+        border: none;
+        color: rgba(255, 255, 255, 0.4);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .card-menu-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+
+    /* Card Stats */
+    .card-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .stat-box {
+        background: rgba(0, 0, 0, 0.25);
+        border-radius: 16px;
+        padding: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: border-color 0.3s ease;
+    }
+
+    .opportunity-card:hover .stat-box {
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .stat-label {
+        font-size: 0.65rem;
+        color: rgba(255, 255, 255, 0.5);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.35rem;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .stat-label svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    .stat-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: white;
+    }
+
+    .stat-value.small {
+        font-size: 1rem;
+    }
+
+    /* Card Footer */
+    .card-footer {
+        margin-top: auto;
+    }
+
+    .card-footer-info {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        padding: 0 0.25rem;
+    }
+
+    .card-probability-stage {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    /* Health Ring */
+    .health-ring {
+        position: relative;
+        width: 44px;
+        height: 44px;
+    }
+
+    .health-ring svg {
+        transform: rotate(-90deg);
+    }
+
+    .health-ring-bg {
+        stroke: rgba(255, 255, 255, 0.1);
+    }
+
+    .health-ring-fill {
+        transition: stroke-dashoffset 0.8s ease-out;
+    }
+
+    .health-ring-percent {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 0.6rem;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    .stage-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stage-label {
+        font-size: 0.65rem;
+        color: rgba(255, 255, 255, 0.5);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stage-value {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: white;
+    }
+
+    .card-owner-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-purple) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border: 2px solid rgba(30, 30, 34, 1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Card CTA Button */
+    .card-cta-btn {
+        width: 100%;
+        padding: 0.9rem 1.25rem;
+        border-radius: 14px;
+        background: linear-gradient(135deg, var(--apple-blue) 0%, #0066CC 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
+    }
+
+    .card-cta-btn:hover {
+        background: linear-gradient(135deg, #1A8FFF 0%, #0077ED 100%);
+        transform: scale(1.02);
+        box-shadow: 0 6px 20px rgba(10, 132, 255, 0.4);
+        color: white;
+    }
+
+    .card-cta-btn:active {
+        transform: scale(0.98);
+    }
+
+    .card-cta-btn svg {
+        width: 16px;
+        height: 16px;
+        opacity: 0.9;
+    }
+
+    .card-cta-btn .chevron {
+        opacity: 0.6;
+        transition: transform 0.3s ease;
+    }
+
+    .card-cta-btn:hover .chevron {
+        transform: translateX(3px);
+    }
+
+    /* ========== SUMMARY WIDGET CARD ========== */
+    .summary-widget-card {
+        position: relative;
+        background: linear-gradient(135deg, var(--apple-blue) 0%, #0066CC 50%, #4B0082 100%);
+        border-radius: 24px;
+        padding: 1.75rem;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 340px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(10, 132, 255, 0.3);
+    }
+
+    .summary-widget-card::before {
+        content: '';
+        position: absolute;
+        top: -80px;
+        right: -80px;
+        width: 250px;
+        height: 250px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 60%);
+        pointer-events: none;
+    }
+
+    .summary-widget-card::after {
+        content: '';
+        position: absolute;
+        bottom: -60px;
+        left: -60px;
+        width: 180px;
+        height: 180px;
+        background: radial-gradient(circle, rgba(0, 0, 0, 0.2) 0%, transparent 60%);
+        pointer-events: none;
+    }
+
+    .summary-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0.75rem;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 1.5rem;
+        width: fit-content;
+        backdrop-filter: blur(10px);
+    }
+
+    .summary-badge svg {
+        width: 14px;
+        height: 14px;
+        color: #FFD60A;
+        fill: #FFD60A;
+    }
+
+    .summary-badge span {
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: white;
+    }
+
+    .summary-amount {
+        position: relative;
+        z-index: 1;
+    }
+
+    .summary-amount h2 {
+        font-size: 2.75rem;
+        font-weight: 700;
+        color: white;
+        margin: 0 0 0.35rem 0;
+        letter-spacing: -1px;
+    }
+
+    .summary-amount p {
+        font-size: 0.95rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin: 0;
+        font-weight: 500;
+    }
+
+    .summary-progress {
+        position: relative;
+        z-index: 1;
+        margin-top: auto;
+    }
+
+    .progress-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    .progress-bar-container {
+        height: 10px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 5px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        position: relative;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #5AC8FA 0%, #64D2FF 100%);
+        border-radius: 5px;
+        box-shadow: 0 0 20px rgba(90, 200, 250, 0.5);
+        position: relative;
+    }
+
+    .progress-bar-fill::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(200%); }
+    }
+
+    /* ========== NEW OPPORTUNITY CARD ========== */
+    .new-opportunity-card {
+        border: 2px dashed rgba(255, 255, 255, 0.15);
+        border-radius: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 340px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        gap: 1rem;
+        background: transparent;
+    }
+
+    .new-opportunity-card:hover {
+        border-color: var(--apple-blue);
+        background: rgba(10, 132, 255, 0.05);
+    }
+
+    .new-opportunity-card:hover .new-card-icon {
+        transform: scale(1.1);
+        background: var(--apple-blue);
+        color: white;
+    }
+
+    .new-card-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .new-card-icon svg {
+        width: 32px;
+        height: 32px;
+        color: rgba(255, 255, 255, 0.5);
+        transition: color 0.3s ease;
+    }
+
+    .new-opportunity-card:hover .new-card-icon svg {
+        color: white;
+    }
+
+    .new-card-text {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.5);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: color 0.3s ease;
+    }
+
+    .new-opportunity-card:hover .new-card-text {
+        color: var(--apple-blue);
+    }
+
+    /* ========== ENHANCED TABLE VIEW ========== */
+    .enhanced-table-container {
+        background: rgba(28, 28, 30, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    }
+
+    .enhanced-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .enhanced-table thead {
+        background: rgba(0, 0, 0, 0.2);
+    }
+
+    .enhanced-table th {
+        padding: 1rem 1.25rem;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.6);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .enhanced-table td {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 0.9rem;
+        color: white;
+    }
+
+    .enhanced-table tbody tr {
+        transition: background 0.2s ease;
+    }
+
+    .enhanced-table tbody tr:hover {
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .enhanced-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .table-opp-title {
+        font-weight: 600;
+        color: white;
+        transition: color 0.2s ease;
+    }
+
+    .table-opp-title:hover {
+        color: var(--apple-blue);
+    }
+
+    .table-tag {
+        display: inline-block;
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.7);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .table-stage-badge {
+        display: inline-block;
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .table-amount {
+        font-family: 'SF Mono', 'Monaco', monospace;
+        font-weight: 600;
+    }
+
+    .table-probability {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .table-prob-bar {
+        width: 60px;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .table-prob-fill {
+        height: 100%;
+        border-radius: 3px;
+    }
+
+    .table-prob-text {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .table-contact-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .table-contact-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-purple) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.7rem;
+        font-weight: 600;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .table-contact-name {
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    /* View visibility controls */
+    .view-grid { display: none; }
+    .view-table { display: block; }
+
+    .view-mode-grid .view-grid { display: grid; }
+    .view-mode-grid .view-table { display: none; }
+
+    .view-mode-table .view-grid { display: none; }
+    .view-mode-table .view-table { display: block; }
+
+    /* Pink theme adjustments for cards */
+    .light-theme .opportunity-card,
+    body[data-theme="pink"] .opportunity-card {
+        background: rgba(255, 240, 245, 0.9) !important;
+        border-color: rgba(255, 107, 157, 0.3) !important;
+    }
+
+    .light-theme .opportunity-card:hover,
+    body[data-theme="pink"] .opportunity-card:hover {
+        background: rgba(255, 248, 250, 0.95) !important;
+        box-shadow: 0 20px 40px rgba(255, 107, 157, 0.2) !important;
+    }
+
+    .light-theme .card-title,
+    body[data-theme="pink"] .card-title {
+        color: #2D1B2E !important;
+    }
+
+    .light-theme .card-client,
+    body[data-theme="pink"] .card-client {
+        color: #6B4C6D !important;
+    }
+
+    .light-theme .stat-box,
+    body[data-theme="pink"] .stat-box {
+        background: rgba(255, 107, 157, 0.1) !important;
+    }
+
+    .light-theme .stat-value,
+    body[data-theme="pink"] .stat-value {
+        color: #2D1B2E !important;
+    }
+
+    .light-theme .card-cta-btn,
+    body[data-theme="pink"] .card-cta-btn {
+        background: linear-gradient(135deg, #FF6B9D 0%, #E55A87 100%) !important;
+    }
+
+    .light-theme .summary-widget-card,
+    body[data-theme="pink"] .summary-widget-card {
+        background: linear-gradient(135deg, #FF6B9D 0%, #E55A87 50%, #D63384 100%) !important;
+    }
+
+    .light-theme .enhanced-table-container,
+    body[data-theme="pink"] .enhanced-table-container {
+        background: rgba(255, 240, 245, 0.9) !important;
+        border-color: rgba(255, 107, 157, 0.3) !important;
+    }
+
+    .light-theme .enhanced-table th,
+    .light-theme .enhanced-table td,
+    body[data-theme="pink"] .enhanced-table th,
+    body[data-theme="pink"] .enhanced-table td {
+        color: #2D1B2E !important;
+    }
+
+    .light-theme .view-switcher,
+    body[data-theme="pink"] .view-switcher {
+        background: rgba(255, 107, 157, 0.1) !important;
+        border-color: rgba(255, 107, 157, 0.3) !important;
+    }
+
+    .light-theme .view-switcher-btn,
+    body[data-theme="pink"] .view-switcher-btn {
+        color: #6B4C6D !important;
+    }
+
+    .light-theme .view-switcher-btn.active,
+    body[data-theme="pink"] .view-switcher-btn.active {
+        background: rgba(255, 107, 157, 0.3) !important;
+        color: #2D1B2E !important;
+    }
+
+    .light-theme .new-opportunity-card,
+    body[data-theme="pink"] .new-opportunity-card {
+        border-color: rgba(255, 107, 157, 0.3) !important;
+    }
+
+    .light-theme .new-opportunity-card:hover,
+    body[data-theme="pink"] .new-opportunity-card:hover {
+        border-color: #FF6B9D !important;
+        background: rgba(255, 107, 157, 0.1) !important;
+    }
+
+    .light-theme .new-card-text,
+    body[data-theme="pink"] .new-card-text {
+        color: #6B4C6D !important;
+    }
+
+    .light-theme .new-opportunity-card:hover .new-card-text,
+    body[data-theme="pink"] .new-opportunity-card:hover .new-card-text {
+        color: #FF6B9D !important;
+    }
+
 </style>
 
 <div class="todos-container">
@@ -2434,14 +3224,34 @@
             </div>
             {% if not reporte_activo %}
             <div class="header-controls">
+                <!-- View Switcher -->
+                <div class="view-switcher">
+                    <button class="view-switcher-btn active" id="view-grid-btn" title="Vista Cuadrícula">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                    </button>
+                    <button class="view-switcher-btn" id="view-table-btn" title="Vista Tabla">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="8" y1="6" x2="21" y2="6"></line>
+                            <line x1="8" y1="12" x2="21" y2="12"></line>
+                            <line x1="8" y1="18" x2="21" y2="18"></line>
+                            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+
                 <div class="search-widget-container" id="search-widget">
                     <input type="text" id="searchOportunidad" placeholder="Buscar oportunidad..." class="search-input" value="{{ search_query }}">
                     <div class="search-icon-container" id="search-icon">
                         <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
                 </div>
-                <a href="{% url 'crear_cotizacion' %}" class="create-btn">+ Nueva Cotización</a>
-                <a href="{% url 'nueva_oportunidad' %}" class="create-btn secondary">+ Nueva Oportunidad</a>
             </div>
             {% else %}
                         <div class="compact-filters-container">
@@ -2589,74 +3399,252 @@
             {% endif %}
         </div>
 
+        <!-- Content Views Container -->
+        <div id="views-container" class="view-mode-grid">
 
+            <!-- ========== GRID VIEW (CARDS) ========== -->
+            <div class="cards-grid-container view-grid">
 
-        <div class="data-table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Oportunidad</th>
-                        <th>Cliente</th>
-                        <th>Tipo</th>
-                        <th>Etapa</th>
-                        <th>Monto</th>
-                        <th>Probabilidad</th>
-                        <th>Mes Cierre</th>
-                        <th>Contacto</th>
-                    </tr>
-                </thead>
-                <tbody id="tablaOportunidades">
-                    {% for item in items %}
-                    <tr data-area="{{ item.area }}" data-usuario-id="{{ item.usuario.id }}">
-                        <td data-label="Oportunidad">
-                            <a href="{% url 'cotizaciones_por_oportunidad' item.id %}" class="font-semibold text-blue-400 hover:underline">
-                                {{ item.oportunidad }}
-                            </a>
-                        </td>
-                        <td data-label="Cliente">{% if item.cliente %}{{ item.cliente.nombre_empresa }}{% else %}N/A{% endif %}</td>
-                        <td data-label="Tipo">
-                            <span class="tipo-negociacion-badge {% if item.tipo_negociacion == 'runrate' %}tipo-runrate{% else %}tipo-proyecto{% endif %}">
-                                {{ item.get_tipo_negociacion_display }}
-                            </span>
-                        </td>
-                        <td data-label="Etapa">
-                            <span class="etapa-badge" 
-                                  style="background-color: {{ item.etapa_color|default:'#CCCCCC' }}33; border: 1px solid {{ item.etapa_color|default:'#CCCCCC' }}; color: {{ item.etapa_color|default:'#666666' }};"
-                                  title="{{ item.etapa_completa|default:'Etapa no definida' }}"
-                                  onclick="toggleEtapaExpanded(this)">
-                                {{ item.etapa_corta|default:'N/A' }}
-                            </span>
-                        </td>
-                        <td data-label="Monto">${{ item.monto|format_currency_es }}</td>
-                        <td data-label="Probabilidad">
-                            <div class="flex items-center gap-3">
-                                <div class="probability-bar-bg">
-                                    <div class="probability-bar-fill" style="width: {{ item.probabilidad_cierre }}%;
-                                        {% if item.probabilidad_cierre <= 50 %} background: #FF453A;
-                                        {% elif item.probabilidad_cierre <= 69 %} background: #FFD60A;
-                                        {% else %} background: #32D74B;
-                                        {% endif %}">
-                                    </div>
+                <!-- Summary Widget Card -->
+                <div class="summary-widget-card">
+                    <div class="summary-badge">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        <span>Objetivo Mensual</span>
+                    </div>
+                    <div class="summary-amount">
+                        <h2 id="totalPipelineAmount">$0</h2>
+                        <p>Acumulado en Pipeline</p>
+                    </div>
+                    <div class="summary-progress">
+                        <div class="progress-header">
+                            <span>Progreso de Meta</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" id="progressBarFill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Opportunity Cards -->
+                {% for item in items %}
+                <div class="opportunity-card"
+                     data-opp-id="{{ item.id }}"
+                     data-monto="{{ item.monto }}"
+                     data-area="{{ item.area }}"
+                     data-usuario-id="{{ item.usuario.id }}"
+                     onclick="window.location.href='{% url 'cotizaciones_por_oportunidad' item.id %}'">
+
+                    <!-- Card Header -->
+                    <div class="card-header">
+                        <div class="card-header-top">
+                            <div class="card-icon-title">
+                                <div class="card-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                                    </svg>
                                 </div>
-                                <span class="text-sm font-medium">{{ item.probabilidad_cierre }}%</span>
+                                <div class="card-title-group">
+                                    <h3 class="card-title">{{ item.oportunidad }}</h3>
+                                    <p class="card-client">{% if item.cliente %}{{ item.cliente.nombre_empresa }}{% else %}Sin cliente{% endif %}</p>
+                                </div>
                             </div>
-                        </td>
-                        <td data-label="Mes Cierre">{{ item.get_mes_cierre_display }}</td>
-                        <td data-label="Contacto">
-                            {% if item.contacto %}
-                                {{ item.contacto }}
-                            {% else %}
-                                <span style="color: #888; font-style: italic;">Sin contacto asignado</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="8" class="text-center py-10 text-gray-400">No hay oportunidades registradas.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            <button class="card-menu-btn" onclick="event.stopPropagation();">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="1"></circle>
+                                    <circle cx="12" cy="5" r="1"></circle>
+                                    <circle cx="12" cy="19" r="1"></circle>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Card Stats -->
+                    <div class="card-stats">
+                        <div class="stat-box">
+                            <p class="stat-label">Valor Total</p>
+                            <p class="stat-value">${{ item.monto|format_currency_es }}</p>
+                        </div>
+                        <div class="stat-box">
+                            <p class="stat-label">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                Mes de Cierre
+                            </p>
+                            <p class="stat-value small">{{ item.get_mes_cierre_display }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Card Footer -->
+                    <div class="card-footer">
+                        <div class="card-footer-info">
+                            <div class="card-probability-stage">
+                                <!-- Health Ring -->
+                                <div class="health-ring">
+                                    {% with prob=item.probabilidad_cierre %}
+                                    {% if prob > 70 %}
+                                        {% with color="#32D74B" %}
+                                        <svg width="44" height="44" viewBox="0 0 44 44">
+                                            <circle class="health-ring-bg" cx="22" cy="22" r="18" stroke-width="3" fill="none"/>
+                                            <circle class="health-ring-fill" cx="22" cy="22" r="18" stroke="{{ color }}" stroke-width="3" fill="none"
+                                                    stroke-dasharray="113.1" stroke-dashoffset="{{ 113.1|add:0 }}" stroke-linecap="round"
+                                                    style="stroke-dashoffset: calc(113.1 - (113.1 * {{ prob }} / 100)); filter: drop-shadow(0 0 6px {{ color }});"/>
+                                        </svg>
+                                        {% endwith %}
+                                    {% elif prob > 50 %}
+                                        {% with color="#FFD60A" %}
+                                        <svg width="44" height="44" viewBox="0 0 44 44">
+                                            <circle class="health-ring-bg" cx="22" cy="22" r="18" stroke-width="3" fill="none"/>
+                                            <circle class="health-ring-fill" cx="22" cy="22" r="18" stroke="{{ color }}" stroke-width="3" fill="none"
+                                                    stroke-dasharray="113.1" stroke-dashoffset="{{ 113.1|add:0 }}" stroke-linecap="round"
+                                                    style="stroke-dashoffset: calc(113.1 - (113.1 * {{ prob }} / 100)); filter: drop-shadow(0 0 6px {{ color }});"/>
+                                        </svg>
+                                        {% endwith %}
+                                    {% else %}
+                                        {% with color="#FF453A" %}
+                                        <svg width="44" height="44" viewBox="0 0 44 44">
+                                            <circle class="health-ring-bg" cx="22" cy="22" r="18" stroke-width="3" fill="none"/>
+                                            <circle class="health-ring-fill" cx="22" cy="22" r="18" stroke="{{ color }}" stroke-width="3" fill="none"
+                                                    stroke-dasharray="113.1" stroke-dashoffset="{{ 113.1|add:0 }}" stroke-linecap="round"
+                                                    style="stroke-dashoffset: calc(113.1 - (113.1 * {{ prob }} / 100)); filter: drop-shadow(0 0 6px {{ color }});"/>
+                                        </svg>
+                                        {% endwith %}
+                                    {% endif %}
+                                    {% endwith %}
+                                    <span class="health-ring-percent">{{ item.probabilidad_cierre }}%</span>
+                                </div>
+                                <div class="stage-info">
+                                    <span class="stage-label">Etapa</span>
+                                    <span class="stage-value">{{ item.etapa_corta|default:'N/A' }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Owner Avatar -->
+                            <div class="card-owner-avatar" title="{{ item.usuario.first_name }} {{ item.usuario.last_name }}">
+                                {{ item.usuario.first_name|slice:":1" }}{{ item.usuario.last_name|slice:":1" }}
+                            </div>
+                        </div>
+
+                        <!-- CTA Button -->
+                        <a href="{% url 'crear_cotizacion_with_opportunity' item.id %}" class="card-cta-btn" onclick="event.stopPropagation();">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="12" y1="18" x2="12" y2="12"></line>
+                                <line x1="9" y1="15" x2="15" y2="15"></line>
+                            </svg>
+                            <span>Crear Cotización</span>
+                            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                <!-- Empty State Card -->
+                <div class="opportunity-card" style="justify-content: center; align-items: center; text-align: center;">
+                    <p style="color: rgba(255,255,255,0.5); font-size: 1rem;">No hay oportunidades registradas.</p>
+                </div>
+                {% endfor %}
+
+                <!-- New Opportunity Card -->
+                <a href="{% url 'nueva_oportunidad' %}" class="new-opportunity-card">
+                    <div class="new-card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </div>
+                    <span class="new-card-text">Nueva Oportunidad</span>
+                </a>
+            </div>
+
+            <!-- ========== TABLE VIEW ========== -->
+            <div class="view-table">
+                <div class="enhanced-table-container">
+                    <table class="enhanced-table">
+                        <thead>
+                            <tr>
+                                <th>Oportunidad</th>
+                                <th>Cliente</th>
+                                <th>Tipo</th>
+                                <th>Etapa</th>
+                                <th style="text-align: right;">Monto</th>
+                                <th style="text-align: center;">Probabilidad</th>
+                                <th>Mes Cierre</th>
+                                <th>Contacto</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaOportunidades">
+                            {% for item in items %}
+                            <tr data-area="{{ item.area }}" data-usuario-id="{{ item.usuario.id }}">
+                                <td data-label="Oportunidad">
+                                    <a href="{% url 'cotizaciones_por_oportunidad' item.id %}" class="table-opp-title">
+                                        {{ item.oportunidad }}
+                                    </a>
+                                </td>
+                                <td data-label="Cliente">{% if item.cliente %}{{ item.cliente.nombre_empresa }}{% else %}N/A{% endif %}</td>
+                                <td data-label="Tipo">
+                                    <span class="table-tag">
+                                        {{ item.get_tipo_negociacion_display }}
+                                    </span>
+                                </td>
+                                <td data-label="Etapa">
+                                    <span class="table-stage-badge"
+                                          style="background-color: {{ item.etapa_color|default:'#CCCCCC' }}22; border: 1px solid {{ item.etapa_color|default:'#CCCCCC' }}55; color: {{ item.etapa_color|default:'#888888' }};">
+                                        {{ item.etapa_corta|default:'N/A' }}
+                                    </span>
+                                </td>
+                                <td data-label="Monto" style="text-align: right;">
+                                    <span class="table-amount">${{ item.monto|format_currency_es }}</span>
+                                </td>
+                                <td data-label="Probabilidad">
+                                    <div class="table-probability">
+                                        <div class="table-prob-bar">
+                                            <div class="table-prob-fill" style="width: {{ item.probabilidad_cierre }}%;
+                                                {% if item.probabilidad_cierre <= 50 %} background: #FF453A;
+                                                {% elif item.probabilidad_cierre <= 69 %} background: #FFD60A;
+                                                {% else %} background: #32D74B;
+                                                {% endif %}">
+                                            </div>
+                                        </div>
+                                        <span class="table-prob-text">{{ item.probabilidad_cierre }}%</span>
+                                    </div>
+                                </td>
+                                <td data-label="Mes Cierre">
+                                    <span style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.5;">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                                        </svg>
+                                        {{ item.get_mes_cierre_display }}
+                                    </span>
+                                </td>
+                                <td data-label="Contacto">
+                                    {% if item.contacto %}
+                                    <div class="table-contact-info">
+                                        <div class="table-contact-avatar">
+                                            {{ item.contacto.nombre|slice:":1" }}
+                                        </div>
+                                        <span class="table-contact-name">{{ item.contacto }}</span>
+                                    </div>
+                                    {% else %}
+                                    <span style="color: rgba(255,255,255,0.4); font-style: italic;">Sin contacto</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" style="text-align: center; padding: 3rem; color: rgba(255,255,255,0.5);">No hay oportunidades registradas.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
         
         {% if page_obj and page_obj.has_other_pages %}
@@ -3029,7 +4017,84 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Inicializar búsqueda de cliente
     initClienteSearch();
-    
+
+    // ========== VIEW SWITCHER FUNCTIONALITY ==========
+    const viewsContainer = document.getElementById('views-container');
+    const gridBtn = document.getElementById('view-grid-btn');
+    const tableBtn = document.getElementById('view-table-btn');
+
+    // Load saved view preference
+    const savedView = localStorage.getItem('todosViewMode') || 'grid';
+    if (viewsContainer) {
+        viewsContainer.className = 'view-mode-' + savedView;
+        if (savedView === 'table') {
+            gridBtn && gridBtn.classList.remove('active');
+            tableBtn && tableBtn.classList.add('active');
+        }
+    }
+
+    // Grid view button click
+    if (gridBtn) {
+        gridBtn.addEventListener('click', function() {
+            viewsContainer.className = 'view-mode-grid';
+            gridBtn.classList.add('active');
+            tableBtn.classList.remove('active');
+            localStorage.setItem('todosViewMode', 'grid');
+        });
+    }
+
+    // Table view button click
+    if (tableBtn) {
+        tableBtn.addEventListener('click', function() {
+            viewsContainer.className = 'view-mode-table';
+            tableBtn.classList.add('active');
+            gridBtn.classList.remove('active');
+            localStorage.setItem('todosViewMode', 'table');
+        });
+    }
+
+    // ========== CALCULATE PIPELINE TOTAL ==========
+    function calculatePipelineTotal() {
+        const cards = document.querySelectorAll('.opportunity-card[data-monto]');
+        let total = 0;
+
+        cards.forEach(card => {
+            const monto = parseFloat(card.dataset.monto) || 0;
+            total += monto;
+        });
+
+        // Update the summary widget
+        const totalElement = document.getElementById('totalPipelineAmount');
+        const progressPercent = document.getElementById('progressPercent');
+        const progressBar = document.getElementById('progressBarFill');
+
+        if (totalElement) {
+            // Format as currency
+            if (total >= 1000000) {
+                totalElement.textContent = '$' + (total / 1000000).toFixed(2) + 'M';
+            } else if (total >= 1000) {
+                totalElement.textContent = '$' + (total / 1000).toFixed(1) + 'k';
+            } else {
+                totalElement.textContent = '$' + total.toFixed(2);
+            }
+        }
+
+        // Calculate progress (assuming a monthly goal - you can adjust this)
+        const monthlyGoal = 1000000; // $1M goal - adjust as needed
+        const progress = Math.min((total / monthlyGoal) * 100, 100);
+
+        if (progressPercent) {
+            progressPercent.textContent = Math.round(progress) + '%';
+        }
+
+        if (progressBar) {
+            progressBar.style.width = progress + '%';
+        }
+    }
+
+    // Calculate on page load
+    calculatePipelineTotal();
+
     // Handle filter icon click - PREVENT DOUBLE RELOAD
     const filterIcon = document.getElementById('filter-icon');
     let isNavigating = false;
