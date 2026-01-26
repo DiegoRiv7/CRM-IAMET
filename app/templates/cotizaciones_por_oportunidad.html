@@ -3,10 +3,7 @@
 {% load app_filters %}
 
 <script>
-    // FIX: Pre-define la variable 'designBtn' para prevenir un error fatal en el script de dock.html
     const designBtn = document.createElement('div');
-
-    // PRIORITY: Activar modo cotizaciones INMEDIATAMENTE para evitar flash del dock
     (function() {
         const style = document.createElement('style');
         style.textContent = `
@@ -14,7 +11,8 @@
             body.cotizaciones-mode #dock-left,
             body.cotizaciones-mode #dock-right,
             body.cotizaciones-mode #dock-top,
-            body.cotizaciones-mode #dock-bottom {
+            body.cotizaciones-mode #dock-bottom,
+            body.cotizaciones-mode #floating-menu {
                 display: none !important;
                 visibility: hidden !important;
                 opacity: 0 !important;
@@ -22,7 +20,6 @@
             }
         `;
         document.head.appendChild(style);
-
         function activarModoCotizaciones() {
             if (document.body) {
                 document.body.classList.add('cotizaciones-mode');
@@ -41,38 +38,28 @@
     })();
 </script>
 
-<style>
-    .macos-dock,
-    #design-panel,
-    #position-controls,
-    .dock-activation-zone {
-        display: none !important;
-        visibility: hidden !important;
-        pointer-events: none !important;
-    }
-</style>
-
 {% block title %}{{ oportunidad.oportunidad }}{% endblock %}
 
 {% block content %}
-
 <style>
     :root {
-        --modal-bg: rgba(18, 18, 22, 0.98);
-        --card-bg: rgba(30, 30, 36, 0.95);
-        --card-border: rgba(255, 255, 255, 0.08);
+        --bg-modal: #121214;
+        --bg-card: rgba(255, 255, 255, 0.03);
+        --border-color: rgba(255, 255, 255, 0.05);
+        --border-light: rgba(255, 255, 255, 0.1);
         --text-primary: #ffffff;
-        --text-secondary: rgba(255, 255, 255, 0.6);
-        --text-tertiary: rgba(255, 255, 255, 0.4);
-        --accent-blue: #0A84FF;
-        --accent-green: #30D158;
-        --accent-orange: #FF9F0A;
-        --accent-red: #FF453A;
-        --accent-purple: #BF5AF2;
-        --accent-yellow: #FFD60A;
-        --stage-inactive: rgba(255, 255, 255, 0.1);
-        --stage-active: var(--accent-blue);
-        --stage-completed: var(--accent-green);
+        --text-secondary: rgba(255, 255, 255, 0.7);
+        --text-muted: rgba(255, 255, 255, 0.4);
+        --text-label: #6b7280;
+        --cyan-500: #06b6d4;
+        --cyan-400: #22d3ee;
+        --rose-500: #f43f5e;
+        --rose-400: #fb7185;
+        --blue-500: #3b82f6;
+        --blue-600: #2563eb;
+        --emerald-400: #34d399;
+        --purple-400: #a78bfa;
+        --purple-500: #8b5cf6;
     }
 
     * {
@@ -80,2048 +67,928 @@
     }
 
     body {
-        background: #0a0a0c;
-        color: var(--text-primary);
-        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+        background: #000000;
         margin: 0;
         padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
         -webkit-font-smoothing: antialiased;
         overflow: hidden;
     }
 
-    /* Modal Container */
-    .opportunity-modal {
+    /* Modal Backdrop */
+    .modal-backdrop {
         position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: var(--modal-bg);
+        inset: 0;
+        z-index: 50;
         display: flex;
-        flex-direction: column;
-        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(12px);
     }
 
-    /* Modal Header with Pipeline */
+    /* Modal Container */
+    .modal-container {
+        position: relative;
+        background: var(--bg-modal);
+        width: 100%;
+        max-width: 1100px;
+        max-height: 90vh;
+        border-radius: 2.5rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        border: 1px solid var(--border-light);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* Header */
     .modal-header {
-        padding: 1.5rem 2rem;
-        border-bottom: 1px solid var(--card-border);
+        padding: 2rem 2rem 0.5rem 2rem;
+        background: linear-gradient(to bottom, rgba(255,255,255,0.05), transparent);
         flex-shrink: 0;
     }
 
     .header-top {
         display: flex;
-        align-items: center;
         justify-content: space-between;
-        margin-bottom: 1.5rem;
+        align-items: flex-start;
     }
 
-    .back-button {
+    .header-left {
         display: flex;
-        align-items: center;
+        flex-direction: column;
         gap: 0.5rem;
-        color: var(--accent-blue);
-        text-decoration: none;
-        font-size: 0.9rem;
-        font-weight: 500;
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
-        background: rgba(10, 132, 255, 0.1);
-        border: 1px solid rgba(10, 132, 255, 0.2);
-        transition: background 0.2s ease, transform 0.2s ease;
     }
 
-    .back-button:hover {
-        background: rgba(10, 132, 255, 0.2);
-        transform: translateX(-2px);
-    }
-
-    .header-actions {
-        display: flex;
-        gap: 0.75rem;
-    }
-
-    .action-btn {
-        padding: 0.6rem 1.2rem;
-        border-radius: 10px;
-        font-weight: 600;
-        font-size: 0.85rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-decoration: none;
+    /* Type Badge */
+    .type-badge {
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
-        border: none;
-    }
-
-    .action-btn-primary {
-        background: var(--accent-blue);
-        color: white;
-    }
-
-    .action-btn-primary:hover {
-        filter: brightness(1.1);
-        transform: translateY(-1px);
-    }
-
-    .action-btn-secondary {
-        background: rgba(255, 255, 255, 0.08);
-        color: var(--text-primary);
-        border: 1px solid var(--card-border);
-    }
-
-    .action-btn-secondary:hover {
-        background: rgba(255, 255, 255, 0.12);
-    }
-
-    .action-btn-orange {
-        background: linear-gradient(135deg, var(--accent-orange) 0%, #F7931E 100%);
-        color: white;
-    }
-
-    .action-btn-purple {
-        background: linear-gradient(135deg, var(--accent-purple) 0%, #7C3AED 100%);
-        color: white;
-    }
-
-    /* Pipeline Type Badge */
-    .pipeline-type {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin-bottom: 1rem;
-    }
-
-    .pipeline-badge {
-        padding: 0.4rem 1rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
+        gap: 0.4rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.625rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.1em;
+        width: fit-content;
     }
 
-    .pipeline-badge.runrate {
-        background: rgba(10, 132, 255, 0.15);
-        color: var(--accent-blue);
-        border: 1px solid rgba(10, 132, 255, 0.3);
+    .type-badge.runrate {
+        background: rgba(6, 182, 212, 0.1);
+        color: var(--cyan-400);
+        border: 1px solid rgba(6, 182, 212, 0.2);
     }
 
-    .pipeline-badge.proyecto {
-        background: rgba(48, 209, 88, 0.15);
-        color: var(--accent-green);
-        border: 1px solid rgba(48, 209, 88, 0.3);
+    .type-badge.proyecto {
+        background: rgba(244, 63, 94, 0.1);
+        color: var(--rose-400);
+        border: 1px solid rgba(244, 63, 94, 0.2);
     }
 
-    .opportunity-title {
-        font-size: 1.75rem;
+    .type-badge svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    .modal-title {
+        font-size: 2.25rem;
         font-weight: 700;
         color: var(--text-primary);
-        margin: 0 0 0.25rem 0;
+        margin: 0;
+        letter-spacing: -0.02em;
         line-height: 1.2;
     }
 
-    .opportunity-client {
-        font-size: 1rem;
-        color: var(--text-secondary);
-        margin: 0;
+    .close-btn {
+        padding: 0.5rem;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.05);
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
-    /* Pipeline Stages */
+    .close-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+    }
+
+    /* Pipeline Container */
+    .pipeline-wrapper {
+        padding: 0 2rem;
+        margin: 1rem 0 1.5rem 0;
+        flex-shrink: 0;
+    }
+
     .pipeline-container {
-        margin-top: 1.5rem;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 1rem;
+        padding: 0.5rem;
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+    }
+
+    .pipeline-scroll {
+        overflow-x: auto;
+        padding: 0.5rem 0;
+    }
+
+    .pipeline-scroll::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .pipeline-scroll::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+    }
+
+    .pipeline-scroll::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
     }
 
     .pipeline-stages {
         display: flex;
         align-items: center;
-        gap: 0;
-        position: relative;
-        padding: 0.5rem 0;
+        gap: 0.5rem;
+        min-width: max-content;
+        padding: 0 0.5rem;
     }
 
-    .pipeline-stage {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        position: relative;
-        cursor: pointer;
-        padding: 0.5rem;
-        border-radius: 8px;
-        transition: background 0.2s ease;
-    }
-
-    .pipeline-stage:hover {
-        background: rgba(255, 255, 255, 0.05);
-    }
-
-    .stage-indicator {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
+    .stage-item {
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-size: 0.75rem;
+    }
+
+    .stage-btn {
+        position: relative;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.625rem;
         font-weight: 700;
-        position: relative;
-        z-index: 2;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border: 1px solid var(--border-color);
+        cursor: pointer;
         transition: all 0.3s ease;
-    }
-
-    .stage-indicator.inactive {
-        background: var(--stage-inactive);
-        color: var(--text-tertiary);
-    }
-
-    .stage-indicator.active {
-        background: var(--stage-active);
-        color: white;
-        box-shadow: 0 0 20px rgba(10, 132, 255, 0.5);
-    }
-
-    .stage-indicator.completed {
-        background: var(--stage-completed);
-        color: white;
-    }
-
-    .stage-name {
-        font-size: 0.7rem;
-        color: var(--text-tertiary);
-        margin-top: 0.5rem;
-        text-align: center;
-        max-width: 80px;
-        line-height: 1.2;
-        transition: color 0.2s ease;
-    }
-
-    .pipeline-stage.active .stage-name,
-    .pipeline-stage.completed .stage-name {
-        color: var(--text-secondary);
-    }
-
-    .pipeline-stage.active .stage-name {
-        color: var(--accent-blue);
-        font-weight: 600;
-    }
-
-    /* Connection line */
-    .stage-connector {
-        position: absolute;
-        top: calc(0.5rem + 16px);
-        left: calc(50% + 20px);
-        right: calc(-50% + 20px);
-        height: 2px;
-        background: var(--stage-inactive);
-        z-index: 1;
-    }
-
-    .stage-connector.completed {
-        background: var(--stage-completed);
-    }
-
-    .pipeline-stage:last-child .stage-connector {
-        display: none;
-    }
-
-    /* Modal Body */
-    .modal-body {
-        flex: 1;
-        display: flex;
-        overflow: hidden;
-        padding: 1.5rem 2rem;
-        gap: 1.5rem;
-    }
-
-    /* Main Content */
-    .main-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-        overflow-y: auto;
-        padding-right: 0.5rem;
-    }
-
-    /* Cards */
-    .detail-card {
-        background: var(--card-bg);
-        border: 1px solid var(--card-border);
-        border-radius: 16px;
-        overflow: hidden;
-    }
-
-    .card-header {
-        padding: 1rem 1.25rem;
-        border-bottom: 1px solid var(--card-border);
+        white-space: nowrap;
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        gap: 0.375rem;
+        background: transparent;
+        color: var(--text-muted);
     }
 
-    .card-title {
-        font-size: 0.85rem;
-        font-weight: 600;
+    .stage-btn:hover {
+        transform: scale(1.05);
+        border-color: rgba(255, 255, 255, 0.2);
         color: var(--text-secondary);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin: 0;
     }
 
-    .card-count {
+    .stage-btn.completed {
         background: rgba(255, 255, 255, 0.1);
-        padding: 0.2rem 0.6rem;
-        border-radius: 10px;
-        font-size: 0.75rem;
-        font-weight: 600;
         color: var(--text-secondary);
+        border-color: rgba(255, 255, 255, 0.05);
     }
 
-    .card-body {
-        padding: 1rem 1.25rem;
-    }
-
-    /* Opportunity Info Grid */
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1rem;
-    }
-
-    .info-item {
-        padding: 0.75rem;
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .info-label {
-        font-size: 0.75rem;
-        color: var(--text-tertiary);
-        margin-bottom: 0.35rem;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-    }
-
-    .info-value {
-        font-size: 0.95rem;
-        font-weight: 500;
+    .stage-btn.completed:hover {
+        background: rgba(255, 255, 255, 0.15);
         color: var(--text-primary);
     }
 
-    .info-value.highlight {
-        color: var(--accent-green);
-        font-weight: 700;
+    .stage-btn.active.runrate {
+        background: var(--cyan-500);
+        color: white;
+        border-color: transparent;
+        box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+        z-index: 10;
+        ring: 2px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* Quotation List */
-    .quotation-list {
+    .stage-btn.active.proyecto {
+        background: var(--rose-500);
+        color: white;
+        border-color: transparent;
+        box-shadow: 0 0 20px rgba(244, 63, 94, 0.3);
+        z-index: 10;
+    }
+
+    .stage-connector {
+        width: 0.75rem;
+        height: 2px;
+        border-radius: 9999px;
+        background: var(--border-color);
+        margin: 0 0.125rem;
+    }
+
+    .stage-connector.completed {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .check-icon {
+        width: 10px;
+        height: 10px;
+    }
+
+    .check-icon.runrate {
+        color: var(--cyan-400);
+    }
+
+    .check-icon.proyecto {
+        color: var(--rose-400);
+    }
+
+    /* Content Area */
+    .modal-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0 2rem 2rem 2rem;
+    }
+
+    .modal-content::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .modal-content::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+    }
+
+    /* Grid Layout */
+    .content-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1.5rem;
+    }
+
+    .col-left {
+        grid-column: span 2;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .col-right {
+        grid-column: span 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    /* Cards */
+    .card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 1.5rem;
+        padding: 1.5rem;
+    }
+
+    .card-gradient {
+        background: linear-gradient(135deg, rgba(55, 65, 81, 0.3), rgba(17, 24, 39, 0.3));
+        border: 1px solid var(--border-light);
+    }
+
+    /* Info Grid */
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .info-label {
+        font-size: 0.625rem;
+        font-weight: 700;
+        color: var(--text-label);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .info-value {
+        font-size: 1.875rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: -0.02em;
+    }
+
+    .info-value.medium {
+        font-size: 1.25rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+
+    .info-value.large {
+        font-size: 1.125rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+
+    /* Cotizaciones Section */
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .btn-new {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.375rem 0.75rem;
+        background: var(--blue-600);
+        color: white;
+        font-size: 0.625rem;
+        font-weight: 700;
+        border-radius: 9999px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-new:hover {
+        background: var(--blue-500);
+        transform: translateY(-1px);
+    }
+
+    .btn-new svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    /* Quote Card */
+    .quote-list {
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
     }
 
-    .quotation-item {
+    .quote-card {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        justify-content: space-between;
         padding: 1rem;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        cursor: pointer;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border-light);
+        border-radius: 0.75rem;
         transition: all 0.2s ease;
     }
 
-    .quotation-item:hover {
-        background: rgba(255, 255, 255, 0.06);
-        border-color: rgba(10, 132, 255, 0.3);
-        transform: translateY(-1px);
+    .quote-card:hover {
+        background: rgba(255, 255, 255, 0.08);
     }
 
-    .quotation-badge {
-        background: var(--accent-blue);
-        color: white;
-        font-size: 0.7rem;
-        font-weight: 700;
-        padding: 0.35rem 0.75rem;
-        border-radius: 8px;
-        white-space: nowrap;
-    }
-
-    .quotation-info {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .quotation-title {
-        font-size: 0.95rem;
-        font-weight: 500;
-        color: var(--text-primary);
-        margin-bottom: 0.25rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .quotation-meta {
+    .quote-left {
         display: flex;
+        align-items: center;
         gap: 1rem;
-        font-size: 0.8rem;
     }
 
-    .quotation-amount {
-        color: var(--accent-green);
-        font-weight: 600;
-    }
-
-    .quotation-date {
-        color: var(--text-tertiary);
-    }
-
-    .quotation-actions {
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    .icon-btn {
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
-        border: 1px solid var(--card-border);
-        background: rgba(255, 255, 255, 0.05);
-        color: var(--text-secondary);
-        cursor: pointer;
+    .quote-badge {
+        width: 2.5rem;
+        height: 2.5rem;
+        background: rgba(59, 130, 246, 0.2);
+        border-radius: 0.5rem;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.9rem;
+        color: #60a5fa;
+        font-weight: 700;
+        font-size: 0.75rem;
+        letter-spacing: -0.02em;
+    }
+
+    .quote-info {
+        cursor: pointer;
+    }
+
+    .quote-title {
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        transition: color 0.2s ease;
+    }
+
+    .quote-info:hover .quote-title {
+        color: #60a5fa;
+        text-decoration: underline;
+        text-underline-offset: 4px;
+    }
+
+    .quote-version {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-weight: 400;
+        margin-left: 0.25rem;
+    }
+
+    .quote-meta {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 0.125rem;
+    }
+
+    .quote-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .action-btn {
+        padding: 0.5rem;
+        background: transparent;
+        border: none;
+        border-radius: 0.5rem;
+        color: var(--text-muted);
+        cursor: pointer;
         transition: all 0.2s ease;
-        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
-    .icon-btn:hover {
-        transform: scale(1.1);
+    .action-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
     }
 
-    .icon-btn.edit:hover {
-        background: var(--accent-orange);
+    .action-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* Probability Card */
+    .probability-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--emerald-400);
+        margin-bottom: 0.5rem;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 6px;
+        background: rgba(55, 65, 81, 1);
+        border-radius: 9999px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--emerald-400);
+        border-radius: 9999px;
+        transition: width 0.5s ease;
+    }
+
+    /* Stakeholder Card */
+    .stakeholder-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .stakeholder-section:last-child {
+        margin-bottom: 0;
+    }
+
+    .stakeholder-label {
+        font-size: 0.625rem;
+        font-weight: 700;
+        color: var(--text-label);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 1rem;
+    }
+
+    .stakeholder-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .avatar {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 9999px;
+        border: 1px solid var(--border-light);
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.875rem;
         color: white;
-        border-color: transparent;
     }
 
-    .icon-btn.download:hover {
-        background: var(--accent-blue);
-        color: white;
-        border-color: transparent;
+    .avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
 
-    .icon-btn.delete:hover {
-        background: var(--accent-red);
-        color: white;
-        border-color: transparent;
+    .avatar.purple {
+        background: rgba(139, 92, 246, 0.1);
+        color: var(--purple-400);
+        border-color: rgba(139, 92, 246, 0.2);
+    }
+
+    .avatar.gradient-1 { background: linear-gradient(135deg, #667eea, #764ba2); }
+    .avatar.gradient-2 { background: linear-gradient(135deg, #f093fb, #f5576c); }
+    .avatar.gradient-3 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+    .avatar.gradient-4 { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+    .avatar.gradient-5 { background: linear-gradient(135deg, #fa709a, #fee140); }
+
+    .stakeholder-details h4 {
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .stakeholder-details p {
+        font-size: 0.625rem;
+        color: var(--text-muted);
+        margin: 0.125rem 0 0 0;
+    }
+
+    .stakeholder-details .company {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-weight: 500;
+        margin-top: 0.25rem;
+    }
+
+    .divider {
+        height: 1px;
+        background: var(--border-color);
+        margin: 1.5rem 0;
     }
 
     /* Empty State */
     .empty-state {
         text-align: center;
         padding: 2rem;
-        color: var(--text-tertiary);
+        color: var(--text-muted);
     }
 
-    .empty-state-icon {
-        font-size: 2.5rem;
-        margin-bottom: 0.75rem;
+    .empty-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
         opacity: 0.5;
     }
 
-    .empty-state-text {
-        font-size: 0.9rem;
-    }
-
-    /* Sidebar */
-    .sidebar {
-        width: 320px;
-        flex-shrink: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-
-    /* Seller/User Card */
-    .user-card {
-        background: var(--card-bg);
-        border: 1px solid var(--card-border);
-        border-radius: 16px;
-        padding: 1.5rem;
-        text-align: center;
-    }
-
-    .user-avatar {
-        width: 72px;
-        height: 72px;
-        border-radius: 50%;
-        margin: 0 auto 1rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: white;
-        overflow: hidden;
-    }
-
-    .user-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .user-avatar.gradient-1 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-    .user-avatar.gradient-2 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-    .user-avatar.gradient-3 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-    .user-avatar.gradient-4 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-    .user-avatar.gradient-5 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-
-    .user-role {
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: var(--text-tertiary);
-        margin-bottom: 0.5rem;
-    }
-
-    .user-name {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin: 0;
-    }
-
-    /* Client Card */
-    .client-info {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .client-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.5rem 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .client-row:last-child {
-        border-bottom: none;
-    }
-
-    .client-label {
-        font-size: 0.8rem;
-        color: var(--text-tertiary);
-    }
-
-    .client-value {
-        font-size: 0.9rem;
-        color: var(--text-primary);
-        font-weight: 500;
-        text-align: right;
-    }
-
-    /* Timeline Panel */
-    .timeline-card {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-
-    .timeline-content {
-        flex: 1;
-        overflow-y: auto;
-        padding: 1rem 1.25rem;
-    }
-
-    /* Timeline Items */
-    .timeline-item {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        margin-bottom: 1rem;
-        position: relative;
-        align-items: flex-start;
-    }
-
-    .timeline-item.align-right {
-        align-items: flex-end;
-    }
-
-    .timeline-item-inner {
-        width: 100%;
-        display: flex;
-        align-items: flex-end;
-        gap: 0.75rem;
-    }
-
-    .timeline-item.align-right .timeline-item-inner {
-        justify-content: flex-end;
-    }
-
-    .timeline-icon {
-        width: 32px;
-        height: 32px;
-        font-size: 0.8rem;
-        order: 1;
-        align-self: flex-start;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        color: white;
-    }
-
-    .timeline-content-item {
-        width: 75%;
-        border-radius: 16px;
-        padding: 0.75rem 1rem;
-        order: 2;
-        position: relative;
-        background: rgba(48, 209, 88, 0.08);
-        border: 1px solid rgba(48, 209, 88, 0.2);
-        backdrop-filter: blur(10px);
-    }
-
-    .timeline-item.align-right .timeline-item-inner .timeline-icon {
-        order: 2;
-    }
-
-    .timeline-item.align-right .timeline-item-inner .timeline-content-item {
-        order: 1;
-        background: rgba(10, 132, 255, 0.08);
-        border-color: rgba(10, 132, 255, 0.2);
-    }
-
-    .timeline-item[data-tipo="comentario"] .timeline-icon {
-        display: none;
-    }
-
-    .cotizacion-icon { background: var(--accent-purple); }
-    .volumetria-icon { background: var(--accent-orange); }
-    .creacion-icon { background: var(--accent-green); }
-    .comentario-icon { background: var(--accent-blue); }
-    .cambio-estado-icon { background: var(--accent-yellow); color: #000; }
-    .sistema-icon { background: #8E8E93; }
-
-    .timeline-header-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 0.25rem;
-    }
-
-    .timeline-title-item {
-        font-weight: 600;
-        color: var(--text-secondary);
-        font-size: 0.8rem;
-    }
-
-    .timeline-time {
-        font-size: 0.75rem;
-        color: var(--text-tertiary);
-        margin-left: 1rem;
-        flex-shrink: 0;
-    }
-
-    .timeline-text {
-        color: var(--text-primary);
-        font-size: 0.9rem;
-        line-height: 1.5;
-    }
-
-    .activity-link {
-        font-size: 0.85rem;
-        text-decoration: none;
-        font-weight: 500;
-        color: var(--accent-blue);
-        transition: all 0.2s ease;
-    }
-
-    .activity-link:hover {
-        text-decoration: underline;
-    }
-
-    /* Comment Input */
-    .comment-input-container {
-        padding: 1rem 1.25rem;
-        border-top: 1px solid var(--card-border);
-        background: rgba(0, 0, 0, 0.3);
-    }
-
-    .comment-input-wrapper {
-        display: flex;
-        gap: 0.75rem;
-        align-items: center;
-    }
-
-    .attach-btn {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        border: none;
-        background: transparent;
-        color: var(--accent-blue);
-        cursor: pointer;
-        font-size: 1.5rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-    }
-
-    .attach-btn:hover {
-        background: rgba(10, 132, 255, 0.1);
-    }
-
-    .attach-btn.open {
-        transform: rotate(45deg);
-    }
-
-    .comment-textarea {
-        flex: 1;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid var(--card-border);
-        border-radius: 20px;
-        padding: 0.6rem 1rem;
-        color: var(--text-primary);
-        font-size: 0.9rem;
-        resize: none;
-        height: 40px;
-        font-family: inherit;
-        transition: border-color 0.2s ease;
-    }
-
-    .comment-textarea:focus {
-        outline: none;
-        border-color: var(--accent-blue);
-    }
-
-    .send-btn {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        border: none;
-        background: var(--accent-blue);
-        color: white;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-    }
-
-    .send-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .send-btn:not(:disabled):hover {
-        filter: brightness(1.1);
-        transform: scale(1.05);
-    }
-
-    /* Attach Menu */
-    .attach-menu-container {
-        position: relative;
-    }
-
-    .attach-menu {
-        position: absolute;
-        bottom: calc(100% + 10px);
-        left: 0;
-        background: #48484A;
-        border-radius: 12px;
-        padding: 0.5rem;
-        display: flex;
-        gap: 0.75rem;
-        opacity: 0;
-        transform: translateY(10px);
-        transition: all 0.2s ease-out;
-        pointer-events: none;
-    }
-
-    .attach-menu.open {
-        opacity: 1;
-        transform: translateY(0);
-        pointer-events: auto;
-    }
-
-    .menu-option-btn {
-        background: none;
-        border: none;
-        color: var(--text-secondary);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.3rem;
-        cursor: pointer;
-        padding: 0.5rem;
-        border-radius: 8px;
-        transition: background 0.2s ease;
-        font-family: inherit;
-        font-size: 0.7rem;
-        width: 60px;
-    }
-
-    .menu-option-btn:hover {
-        color: var(--text-primary);
-        background: rgba(255, 255, 255, 0.1);
-    }
-
-    .menu-icon {
-        font-size: 1.5rem;
-    }
-
-    /* Attached Files */
-    .attached-files {
-        margin-bottom: 0.75rem;
-    }
-
-    .attached-file {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 8px;
-        padding: 0.75rem;
-        margin-bottom: 0.5rem;
-        border: 1px solid var(--card-border);
-    }
-
-    .attached-file-info {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .attached-file-icon {
-        font-size: 1.2rem;
-    }
-
-    .attached-file-name {
-        font-size: 0.9rem;
-        color: var(--text-primary);
-    }
-
-    .attached-file-size {
-        font-size: 0.8rem;
-        color: var(--text-tertiary);
-    }
-
-    .attached-file-remove {
-        background: var(--accent-red);
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 20px;
-        height: 20px;
-        font-size: 0.7rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    /* Comment Attachments */
-    .comment-attachments {
-        margin-top: 0.75rem;
-        padding-top: 0.75rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .attachment-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        background: rgba(0, 0, 0, 0.1);
-        border: 1px solid transparent;
-        border-radius: 8px;
-        padding: 0.5rem;
-        margin-bottom: 0.5rem;
-        transition: all 0.2s ease;
-    }
-
-    .attachment-item:hover {
-        border-color: var(--accent-blue);
-    }
-
-    .attachment-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1rem;
-        flex-shrink: 0;
-        background: rgba(255, 255, 255, 0.1);
-        color: var(--text-primary);
-    }
-
-    .attachment-icon.imagen { background: linear-gradient(135deg, #FF6B6B, #FF8E8E); color: white; }
-    .attachment-icon.documento { background: linear-gradient(135deg, var(--accent-blue), #4A9EFF); color: white; }
-
-    .attachment-info { flex: 1; min-width: 0; }
-
-    .attachment-name {
-        font-size: 0.85rem;
-        font-weight: 500;
-        color: var(--text-primary);
-        margin-bottom: 0.25rem;
-        text-decoration: none;
-        display: block;
-    }
-
-    .attachment-name:hover {
-        color: var(--accent-blue);
-    }
-
-    .attachment-meta {
-        font-size: 0.75rem;
-        color: var(--text-tertiary);
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    .attachment-download {
-        width: 32px;
-        height: 32px;
-        border-radius: 6px;
-        border: none;
-        background: var(--accent-blue);
-        color: white;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.9rem;
-        flex-shrink: 0;
-    }
-
-    .attachment-download:hover {
-        filter: brightness(1.1);
-        transform: scale(1.05);
-    }
-
-    /* Comment Edit */
-    .comment-edit-form {
-        margin-top: 0.5rem;
-    }
-
-    .comment-edit-input {
-        width: 100%;
-        background: rgba(0, 0, 0, 0.3);
-        border: 1px solid var(--card-border);
-        border-radius: 12px;
-        padding: 0.75rem;
-        color: var(--text-primary);
-        font-size: 0.9rem;
-        resize: vertical;
-        min-height: 60px;
-        margin-bottom: 0.5rem;
-        font-family: inherit;
-    }
-
-    .comment-edit-input:focus {
-        outline: none;
-        border-color: var(--accent-blue);
-    }
-
-    .comment-edit-actions {
-        display: flex;
-        gap: 0.5rem;
-        justify-content: flex-end;
-    }
-
-    .comment-edit-btn {
-        padding: 0.4rem 1rem;
-        border-radius: 8px;
-        border: none;
-        font-size: 0.8rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-weight: 500;
-    }
-
-    .comment-edit-btn.save { background: var(--accent-blue); color: white; }
-    .comment-edit-btn.cancel { background: rgba(255, 255, 255, 0.1); color: var(--text-primary); }
-    .comment-edit-btn.delete { background: var(--accent-red); color: white; margin-right: auto; }
-
-    /* Reply UI */
-    .reply-ui-container {
-        padding-left: 40px;
-        margin-top: 4px;
-        height: 30px;
-    }
-
-    .timeline-item.align-right .reply-ui-container {
-        padding-left: 0;
-        padding-right: 40px;
-        text-align: right;
-    }
-
-    .comment-reply-btn {
-        padding: 0.4rem 1rem;
-        border-radius: 8px;
-        border: none;
-        font-size: 0.8rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-weight: 500;
-        background: var(--accent-blue);
-        color: white;
-    }
-
-    /* Timeline search */
-    .timeline-search {
-        padding: 0.5rem 1.25rem;
-        border-bottom: 1px solid var(--card-border);
-    }
-
-    .search-input-wrapper {
-        position: relative;
-        display: flex;
-        align-items: center;
-    }
-
-    .search-icon {
-        position: absolute;
-        left: 12px;
-        width: 16px;
-        height: 16px;
-        color: var(--text-tertiary);
-        pointer-events: none;
-    }
-
-    .timeline-search-input {
-        width: 100%;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid var(--card-border);
-        border-radius: 10px;
-        padding: 0.5rem 1rem 0.5rem 2.5rem;
-        color: var(--text-primary);
-        font-size: 0.9rem;
-        font-family: inherit;
-    }
-
-    .timeline-search-input:focus {
-        outline: none;
-        border-color: var(--accent-blue);
-    }
-
-    /* Editable Content Items */
-    .timeline-content-item.editable:not(.editing):hover,
-    .timeline-content-item.replyable:not(.replying):hover {
-        cursor: pointer;
-        transform: translateY(-1px);
-    }
-
-    .timeline-content-item.editing {
-        border-color: var(--accent-blue);
-    }
-
-    /* Edit mode styles */
-    .edit-mode { display: none !important; }
-    .view-mode { display: block; }
-    body.editing-opportunity .edit-mode { display: block !important; }
-    body.editing-opportunity .view-mode { display: none !important; }
-    body.editing-opportunity .edit-actions { display: flex !important; }
-
-    .info-edit {
-        width: 100%;
-        background: rgba(0, 0, 0, 0.3);
-        border: 1px solid var(--card-border);
-        border-radius: 8px;
-        padding: 0.5rem;
-        color: var(--text-primary);
-        font-size: 0.9rem;
-        font-family: inherit;
-    }
-
-    .info-edit:focus {
-        outline: none;
-        border-color: var(--accent-blue);
-    }
-
-    .edit-btn {
-        background: none;
-        border: none;
-        color: var(--text-tertiary);
-        cursor: pointer;
-        padding: 0.3rem;
-        border-radius: 6px;
-        transition: all 0.2s ease;
-    }
-
-    .edit-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: var(--accent-blue);
-    }
-
-    /* Confirm Modal */
-    .confirm-modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.6);
-        backdrop-filter: blur(10px);
-        z-index: 10001;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        opacity: 0;
-        transition: opacity 0.2s ease-in-out;
-    }
-
-    .confirm-modal-overlay.show {
-        opacity: 1;
-        pointer-events: auto;
-    }
-
-    .confirm-modal {
-        background: var(--card-bg);
-        border-radius: 16px;
-        padding: 1.5rem;
-        width: 100%;
-        max-width: 400px;
-        text-align: center;
-        border: 1px solid var(--card-border);
-        transform: scale(0.95);
-        transition: transform 0.2s ease-in-out;
-    }
-
-    .confirm-modal-overlay.show .confirm-modal {
-        transform: scale(1);
-    }
-
-    .confirm-modal-title {
-        font-size: 1.2rem;
-        font-weight: 600;
-        margin: 0 0 0.5rem 0;
-        color: var(--text-primary);
-    }
-
-    .confirm-modal-text {
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-        margin: 0 0 1.5rem 0;
-        line-height: 1.5;
-    }
-
-    .confirm-modal-actions {
-        display: flex;
-        gap: 0.75rem;
-        justify-content: center;
-    }
-
-    /* Volumetria specific */
-    .volumetria-badge {
-        background: var(--accent-orange);
-    }
-
-    /* Drag over state */
-    .timeline-card.dragover {
-        border: 2px dashed var(--accent-blue);
-        background: rgba(10, 132, 255, 0.1);
+    .empty-text {
+        font-size: 0.875rem;
     }
 
     /* Responsive */
-    @media (max-width: 1200px) {
-        .sidebar {
-            width: 280px;
+    @media (max-width: 900px) {
+        .content-grid {
+            grid-template-columns: 1fr;
         }
-        .info-grid {
-            grid-template-columns: repeat(2, 1fr);
+        .col-left, .col-right {
+            grid-column: span 1;
         }
-    }
-
-    @media (max-width: 992px) {
-        .modal-body {
-            flex-direction: column;
+        .modal-container {
+            border-radius: 1.5rem;
+            max-height: 95vh;
+        }
+        .modal-backdrop {
             padding: 1rem;
         }
-        .sidebar {
-            width: 100%;
-            flex-direction: row;
-            flex-wrap: wrap;
-        }
-        .sidebar > * {
-            flex: 1;
-            min-width: 200px;
-        }
-        .pipeline-stages {
-            overflow-x: auto;
-            padding-bottom: 0.5rem;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .header-top {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
-        }
-        .header-actions {
-            flex-wrap: wrap;
+        .modal-title {
+            font-size: 1.75rem;
         }
         .info-grid {
             grid-template-columns: 1fr;
         }
-        .stage-name {
-            font-size: 0.6rem;
-        }
     }
 </style>
 
-<div class="opportunity-modal">
-    <!-- Header with Pipeline -->
-    <div class="modal-header">
-        <div class="header-top">
-            <a href="{% url 'todos' %}" class="back-button">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M19 12H5M12 19l-7-7 7-7"/>
-                </svg>
-                Volver a Oportunidades
-            </a>
-            <div class="header-actions">
-                <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="action-btn action-btn-primary">
-                    + Nueva Cotización
-                </a>
-                {% if proyecto_ligado %}
-                <a href="{% url 'proyecto_detalle' proyecto_ligado.id %}" class="action-btn action-btn-purple">
-                    🔗 Ir al Proyecto
-                </a>
-                {% else %}
-                <a href="#" class="action-btn action-btn-purple" onclick="mostrarMensajeProyecto(); return false;">
-                    🏗️ Crear Proyecto
-                </a>
-                {% endif %}
-                <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="action-btn action-btn-orange">
-                    📊 Nueva Volumetría
-                </a>
-            </div>
-        </div>
-
-        <div class="pipeline-type">
-            <span class="pipeline-badge {% if oportunidad.tipo_negociacion == 'runrate' %}runrate{% else %}proyecto{% endif %}">
-                {{ oportunidad.get_tipo_negociacion_display }}
-            </span>
-        </div>
-
-        <h1 class="opportunity-title">{{ oportunidad.oportunidad }}</h1>
-        <p class="opportunity-client">{{ oportunidad.cliente.nombre_empresa|default:"Sin cliente" }}</p>
-
-        <!-- Pipeline Stages -->
-        <div class="pipeline-container">
-            <div class="pipeline-stages" id="pipelineStages">
-                <!-- Stages will be populated by JavaScript based on tipo_negociacion -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Body -->
-    <div class="modal-body">
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Opportunity Details -->
-            <div class="detail-card">
-                <div class="card-header">
-                    <h3 class="card-title">Información de la Oportunidad</h3>
-                    <button class="edit-btn" onclick="toggleEditMode()" title="Editar información">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+<div class="modal-backdrop">
+    <div class="modal-container">
+        <!-- Header -->
+        <div class="modal-header">
+            <div class="header-top">
+                <div class="header-left">
+                    <!-- Type Badge -->
+                    <div class="type-badge {% if oportunidad.tipo_negociacion == 'runrate' %}runrate{% else %}proyecto{% endif %}">
+                        {% if oportunidad.tipo_negociacion == 'runrate' %}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
                         </svg>
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div class="info-grid" id="opportunity-info">
-                        <div class="info-item">
-                            <div class="info-label">Monto</div>
-                            <div class="info-value highlight view-mode" data-field="monto">${{ oportunidad.monto }}</div>
-                            <input type="number" class="info-edit edit-mode" data-field="monto" value="{{ oportunidad.monto }}" style="display: none;" step="0.01">
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">Probabilidad</div>
-                            <div class="info-value view-mode" data-field="probabilidad">{{ oportunidad.probabilidad_cierre }}%</div>
-                            <input type="number" class="info-edit edit-mode" data-field="probabilidad" value="{{ oportunidad.probabilidad_cierre }}" style="display: none;" min="0" max="100">
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">Mes Cierre</div>
-                            <div class="info-value view-mode" data-field="mes_cierre">{{ oportunidad.get_mes_cierre_display }}</div>
-                            <select class="info-edit edit-mode" data-field="mes_cierre" style="display: none;">
-                                <option value="enero" {% if oportunidad.mes_cierre == 'enero' %}selected{% endif %}>Enero</option>
-                                <option value="febrero" {% if oportunidad.mes_cierre == 'febrero' %}selected{% endif %}>Febrero</option>
-                                <option value="marzo" {% if oportunidad.mes_cierre == 'marzo' %}selected{% endif %}>Marzo</option>
-                                <option value="abril" {% if oportunidad.mes_cierre == 'abril' %}selected{% endif %}>Abril</option>
-                                <option value="mayo" {% if oportunidad.mes_cierre == 'mayo' %}selected{% endif %}>Mayo</option>
-                                <option value="junio" {% if oportunidad.mes_cierre == 'junio' %}selected{% endif %}>Junio</option>
-                                <option value="julio" {% if oportunidad.mes_cierre == 'julio' %}selected{% endif %}>Julio</option>
-                                <option value="agosto" {% if oportunidad.mes_cierre == 'agosto' %}selected{% endif %}>Agosto</option>
-                                <option value="septiembre" {% if oportunidad.mes_cierre == 'septiembre' %}selected{% endif %}>Septiembre</option>
-                                <option value="octubre" {% if oportunidad.mes_cierre == 'octubre' %}selected{% endif %}>Octubre</option>
-                                <option value="noviembre" {% if oportunidad.mes_cierre == 'noviembre' %}selected{% endif %}>Noviembre</option>
-                                <option value="diciembre" {% if oportunidad.mes_cierre == 'diciembre' %}selected{% endif %}>Diciembre</option>
-                            </select>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">Producto</div>
-                            <div class="info-value view-mode" data-field="producto">{{ oportunidad.get_producto_display }}</div>
-                            <select class="info-edit edit-mode" data-field="producto" style="display: none;">
-                                <option value="ZEBRA" {% if oportunidad.producto == 'ZEBRA' %}selected{% endif %}>ZEBRA</option>
-                                <option value="PANDUIT" {% if oportunidad.producto == 'PANDUIT' %}selected{% endif %}>PANDUIT</option>
-                                <option value="APC" {% if oportunidad.producto == 'APC' %}selected{% endif %}>APC</option>
-                                <option value="AVIGILION" {% if oportunidad.producto == 'AVIGILION' %}selected{% endif %}>AVIGILION</option>
-                                <option value="GENETEC" {% if oportunidad.producto == 'GENETEC' %}selected{% endif %}>GENETEC</option>
-                                <option value="AXIS" {% if oportunidad.producto == 'AXIS' %}selected{% endif %}>AXIS</option>
-                                <option value="SOFTWARE" {% if oportunidad.producto == 'SOFTWARE' %}selected{% endif %}>SOFTWARE</option>
-                                <option value="RUNRATE" {% if oportunidad.producto == 'RUNRATE' %}selected{% endif %}>RUNRATE</option>
-                                <option value="PÓLIZA" {% if oportunidad.producto == 'PÓLIZA' %}selected{% endif %}>PÓLIZA</option>
-                                <option value="CISCO" {% if oportunidad.producto == 'CISCO' %}selected{% endif %}>CISCO</option>
-                                <option value="SERVICIO" {% if oportunidad.producto == 'SERVICIO' %}selected{% endif %}>Servicio</option>
-                            </select>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">Área</div>
-                            <div class="info-value view-mode" data-field="area">{{ oportunidad.get_area_display }}</div>
-                            <select class="info-edit edit-mode" data-field="area" style="display: none;">
-                                <option value="SISTEMAS" {% if oportunidad.area == 'SISTEMAS' %}selected{% endif %}>Sistemas</option>
-                                <option value="Recursos Humanos" {% if oportunidad.area == 'Recursos Humanos' %}selected{% endif %}>Recursos Humanos</option>
-                                <option value="Compras" {% if oportunidad.area == 'Compras' %}selected{% endif %}>Compras</option>
-                                <option value="Seguridad" {% if oportunidad.area == 'Seguridad' %}selected{% endif %}>Seguridad</option>
-                                <option value="Mantenimiento" {% if oportunidad.area == 'Mantenimiento' %}selected{% endif %}>Mantenimiento</option>
-                                <option value="Almacén" {% if oportunidad.area == 'Almacén' %}selected{% endif %}>Almacén</option>
-                            </select>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">Contacto</div>
-                            <div class="info-value view-mode" data-field="contacto">{{ oportunidad.contacto|default:"Sin contacto" }}</div>
-                            <input type="text" class="info-edit edit-mode" data-field="contacto" value="{{ oportunidad.contacto|default:'' }}" style="display: none;" placeholder="Nombre del contacto">
-                        </div>
-
-                        <!-- Edit Buttons -->
-                        <div class="edit-actions edit-mode" style="display: none; grid-column: 1 / -1; margin-top: 1rem; gap: 0.5rem; justify-content: flex-end;">
-                            <button class="action-btn action-btn-secondary" onclick="cancelEdit()">Cancelar</button>
-                            <button class="action-btn action-btn-primary" onclick="saveOpportunity()">Guardar</button>
-                        </div>
+                        {% else %}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                            <polyline points="2 17 12 22 22 17"/>
+                            <polyline points="2 12 12 17 22 12"/>
+                        </svg>
+                        {% endif %}
+                        <span>Venta {{ oportunidad.get_tipo_negociacion_display }}</span>
                     </div>
+                    <!-- Title -->
+                    <h1 class="modal-title">{{ oportunidad.oportunidad }}</h1>
                 </div>
+                <!-- Close Button -->
+                <a href="{% url 'todos' %}" class="close-btn" title="Cerrar">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </a>
             </div>
-
-            <!-- Quotations -->
-            <div class="detail-card">
-                <div class="card-header">
-                    <h3 class="card-title">Cotizaciones</h3>
-                    <span class="card-count">{{ cotizaciones.count }}</span>
-                </div>
-                <div class="card-body">
-                    <div class="quotation-list">
-                        {% for cotizacion in cotizaciones %}
-                        <div class="quotation-item" onclick="window.open('{% url 'view_cotizacion_pdf' cotizacion.id %}', '_blank')">
-                            <div class="quotation-badge">COT-{{ cotizacion.id|stringformat:"03d" }}</div>
-                            <div class="quotation-info">
-                                <div class="quotation-title">{{ cotizacion.titulo }}</div>
-                                <div class="quotation-meta">
-                                    <span class="quotation-amount">${{ cotizacion.total|format_currency_es }}</span>
-                                    <span class="quotation-date">{{ cotizacion.fecha_creacion|tijuana_time:"d/m/Y" }}</span>
-                                </div>
-                            </div>
-                            <div class="quotation-actions" onclick="event.stopPropagation()">
-                                <a href="{% url 'editar_cotizacion' cotizacion.id %}" class="icon-btn edit" title="Editar">
-                                    ✏️
-                                </a>
-                                <a href="{% url 'generate_cotizacion_pdf' cotizacion.id %}" class="icon-btn download" title="Descargar">
-                                    ⬇️
-                                </a>
-                            </div>
-                        </div>
-                        {% empty %}
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📄</div>
-                            <div class="empty-state-text">Sin cotizaciones aún</div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Volumetries -->
-            {% if volumetrias %}
-            <div class="detail-card">
-                <div class="card-header">
-                    <h3 class="card-title">Volumetrías</h3>
-                    <span class="card-count">{{ volumetrias.count }}</span>
-                </div>
-                <div class="card-body">
-                    <div class="quotation-list">
-                        {% for volumetria in volumetrias %}
-                        <div class="quotation-item" onclick="window.open('{% url 'view_volumetria_pdf' volumetria.id %}', '_blank')">
-                            <div class="quotation-badge volumetria-badge">VOL-{{ volumetria.id|stringformat:"03d" }}</div>
-                            <div class="quotation-info">
-                                <div class="quotation-title">{{ volumetria.titulo }}</div>
-                                <div class="quotation-meta">
-                                    <span style="color: var(--accent-orange);">{{ volumetria.cantidad_nodos }} nodos</span>
-                                    <span class="quotation-amount">${{ volumetria.total|format_currency_es }}</span>
-                                    <span class="quotation-date">{{ volumetria.fecha_creacion|date:"d/m/Y" }}</span>
-                                </div>
-                            </div>
-                            <div class="quotation-actions" onclick="event.stopPropagation()">
-                                <a href="{% url 'download_volumetria_pdf' volumetria.id %}" class="icon-btn download" title="Descargar">
-                                    ⬇️
-                                </a>
-                                <button onclick="eliminarVolumetria({{ volumetria.id }}, '{{ volumetria.titulo|escapejs }}')" class="icon-btn delete" title="Eliminar">
-                                    🗑️
-                                </button>
-                            </div>
-                        </div>
-                        {% empty %}
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📊</div>
-                            <div class="empty-state-text">Sin volumetrías aún</div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-            {% endif %}
         </div>
 
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <!-- Seller Card -->
-            <div class="user-card">
-                <div class="user-avatar gradient-{{ oportunidad.usuario.id|default:1|add:0|divisibleby:5|yesno:'5,1' }}{% cycle '1' '2' '3' '4' '5' %}">
-                    {% if oportunidad.usuario.userprofile.avatar %}
-                    <img src="{{ oportunidad.usuario.userprofile.get_avatar_url }}" alt="{{ oportunidad.usuario.get_full_name }}">
-                    {% else %}
-                    {{ oportunidad.usuario.first_name|slice:":1"|upper }}{{ oportunidad.usuario.last_name|slice:":1"|upper }}
+        <!-- Pipeline -->
+        <div class="pipeline-wrapper">
+            <div class="pipeline-container">
+                <div class="pipeline-scroll" id="pipelineScroll">
+                    <div class="pipeline-stages" id="pipelineStages">
+                        <!-- Stages rendered by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="modal-content">
+            <div class="content-grid">
+                <!-- Left Column -->
+                <div class="col-left">
+                    <!-- Info Card -->
+                    <div class="card">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">Monto de Oportunidad</span>
+                                <span class="info-value">${{ oportunidad.monto|floatformat:0 }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Fecha de Cierre</span>
+                                <span class="info-value medium">{{ oportunidad.get_mes_cierre_display|title }} 2025</span>
+                            </div>
+                            <div class="info-item" style="margin-top: 0.5rem;">
+                                <span class="info-label">Producto</span>
+                                <span class="info-value large">{{ oportunidad.get_producto_display|default:"N/A" }}</span>
+                            </div>
+                            <div class="info-item" style="margin-top: 0.5rem;">
+                                <span class="info-label">Área</span>
+                                <span class="info-value large">{{ oportunidad.get_area_display|default:"N/A" }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cotizaciones Card -->
+                    <div class="card">
+                        <div class="section-header">
+                            <h3 class="section-title">Cotizaciones</h3>
+                            <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="btn-new">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                                Nueva
+                            </a>
+                        </div>
+                        <div class="quote-list">
+                            {% for cotizacion in cotizaciones %}
+                            <div class="quote-card">
+                                <div class="quote-left">
+                                    <div class="quote-badge">#{{ cotizacion.id|stringformat:"03d" }}</div>
+                                    <div class="quote-info" onclick="window.open('{% url 'view_cotizacion_pdf' cotizacion.id %}', '_blank')">
+                                        <div class="quote-title">
+                                            COT-{{ cotizacion.fecha_creacion|date:"Y" }}-{{ cotizacion.id|stringformat:"03d" }}
+                                            <span class="quote-version">(v1.0)</span>
+                                        </div>
+                                        <div class="quote-meta">
+                                            {{ cotizacion.fecha_creacion|tijuana_time:"d M Y" }} • ${{ cotizacion.total|floatformat:0 }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="quote-actions">
+                                    <a href="{% url 'editar_cotizacion' cotizacion.id %}" class="action-btn" title="Editar Cotización">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </a>
+                                    <a href="{% url 'generate_cotizacion_pdf' cotizacion.id %}" class="action-btn" title="Descargar PDF">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                            <polyline points="7 10 12 15 17 10"/>
+                                            <line x1="12" y1="15" x2="12" y2="3"/>
+                                        </svg>
+                                    </a>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="empty-state">
+                                <div class="empty-icon">📄</div>
+                                <div class="empty-text">Sin cotizaciones aún</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Volumetrias Card (if any) -->
+                    {% if volumetrias.count > 0 %}
+                    <div class="card">
+                        <div class="section-header">
+                            <h3 class="section-title">Volumetrías</h3>
+                            <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="btn-new" style="background: #f97316;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                                Nueva
+                            </a>
+                        </div>
+                        <div class="quote-list">
+                            {% for volumetria in volumetrias %}
+                            <div class="quote-card">
+                                <div class="quote-left">
+                                    <div class="quote-badge" style="background: rgba(249, 115, 22, 0.2); color: #fb923c;">#{{ volumetria.id|stringformat:"03d" }}</div>
+                                    <div class="quote-info" onclick="window.open('{% url 'view_volumetria_pdf' volumetria.id %}', '_blank')">
+                                        <div class="quote-title">{{ volumetria.titulo }}</div>
+                                        <div class="quote-meta">
+                                            {{ volumetria.cantidad_nodos }} nodos • ${{ volumetria.total|floatformat:0 }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="quote-actions">
+                                    <a href="{% url 'download_volumetria_pdf' volumetria.id %}" class="action-btn" title="Descargar PDF">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                            <polyline points="7 10 12 15 17 10"/>
+                                            <line x1="12" y1="15" x2="12" y2="3"/>
+                                        </svg>
+                                    </a>
+                                    <button onclick="eliminarVolumetria({{ volumetria.id }}, '{{ volumetria.titulo|escapejs }}')" class="action-btn" title="Eliminar" style="color: #f87171;">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
                     {% endif %}
                 </div>
-                <div class="user-role">Vendedor</div>
-                <h4 class="user-name">{{ oportunidad.usuario.get_full_name|default:oportunidad.usuario.username }}</h4>
-            </div>
 
-            <!-- Client Card -->
-            <div class="detail-card">
-                <div class="card-header">
-                    <h3 class="card-title">Cliente</h3>
-                </div>
-                <div class="card-body">
-                    <div class="client-info">
-                        <div class="client-row">
-                            <span class="client-label">Empresa</span>
-                            <span class="client-value">{{ oportunidad.cliente.nombre_empresa|default:"Sin cliente" }}</span>
-                        </div>
-                        <div class="client-row">
-                            <span class="client-label">Contacto</span>
-                            <span class="client-value">{{ oportunidad.contacto|default:"Sin contacto" }}</span>
-                        </div>
-                        <div class="client-row">
-                            <span class="client-label">Etapa Actual</span>
-                            <span class="client-value" id="currentStageText" style="color: {{ oportunidad.etapa_color|default:'#0A84FF' }};">
-                                {{ oportunidad.etapa_corta|default:'N/A' }}
-                            </span>
+                <!-- Right Column -->
+                <div class="col-right">
+                    <!-- Probability Card -->
+                    <div class="card card-gradient">
+                        <span class="info-label">Probabilidad de Cierre</span>
+                        <div class="probability-value">{{ oportunidad.probabilidad_cierre }}%</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ oportunidad.probabilidad_cierre }}%;"></div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Timeline Card -->
-            <div class="detail-card timeline-card">
-                <div class="card-header">
-                    <h3 class="card-title">Timeline</h3>
-                </div>
-                <div class="timeline-search">
-                    <div class="search-input-wrapper">
-                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="M21 21l-4.35-4.35"/>
-                        </svg>
-                        <input type="text" id="timelineSearch" class="timeline-search-input" placeholder="Buscar en timeline...">
-                    </div>
-                </div>
-                <div class="timeline-content" id="timelineItems">
-                    <!-- Timeline items loaded dynamically -->
-                </div>
-                <div class="comment-input-container" id="commentSection">
-                    <input type="file" id="fileInput" multiple style="display: none;">
-                    <div class="attached-files" id="attachedFiles" style="display: none;"></div>
-                    <div class="comment-input-wrapper">
-                        <div class="attach-menu-container">
-                            <button class="attach-btn" id="openMenuBtn" title="Adjuntar">+</button>
-                            <div class="attach-menu" id="commentMenu">
-                                <button class="menu-option-btn" id="activityBtn">
-                                    <span class="menu-icon">⚡️</span>
-                                    <span>Actividad</span>
-                                </button>
-                                <button class="menu-option-btn" id="fileBtn">
-                                    <span class="menu-icon">📄</span>
-                                    <span>Archivo</span>
-                                </button>
-                                <button class="menu-option-btn" id="photoBtn">
-                                    <span class="menu-icon">📸</span>
-                                    <span>Foto</span>
-                                </button>
+                    <!-- Stakeholders Card -->
+                    <div class="card">
+                        <!-- Vendedor -->
+                        <div class="stakeholder-section">
+                            <div class="stakeholder-label">Vendedor</div>
+                            <div class="stakeholder-info">
+                                <div class="avatar gradient-{% cycle '1' '2' '3' '4' '5' %}">
+                                    {% if oportunidad.usuario.userprofile.avatar %}
+                                    <img src="{{ oportunidad.usuario.userprofile.get_avatar_url }}" alt="{{ oportunidad.usuario.get_full_name }}">
+                                    {% else %}
+                                    {{ oportunidad.usuario.first_name|slice:":1"|upper }}{{ oportunidad.usuario.last_name|slice:":1"|upper }}
+                                    {% endif %}
+                                </div>
+                                <div class="stakeholder-details">
+                                    <h4>{{ oportunidad.usuario.get_full_name|default:oportunidad.usuario.username }}</h4>
+                                    <p>Sales Manager</p>
+                                </div>
                             </div>
                         </div>
-                        <textarea class="comment-textarea" id="nuevoComentario" placeholder="Escribe un comentario..." rows="1"></textarea>
-                        <button class="send-btn" id="btnComentar" disabled>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                            </svg>
-                        </button>
+
+                        <div class="divider"></div>
+
+                        <!-- Cliente -->
+                        <div class="stakeholder-section">
+                            <div class="stakeholder-label">Cliente</div>
+                            <div class="stakeholder-info">
+                                <div class="avatar purple">
+                                    {% if oportunidad.contacto %}
+                                    {{ oportunidad.contacto|slice:":1"|upper }}
+                                    {% else %}
+                                    C
+                                    {% endif %}
+                                </div>
+                                <div class="stakeholder-details">
+                                    <h4>{{ oportunidad.contacto|default:"No asignado" }}</h4>
+                                    <p class="company">{{ oportunidad.cliente.nombre_empresa|default:"Sin empresa" }}</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- Confirm Modal -->
-<div class="confirm-modal-overlay" id="confirmModalOverlay">
-    <div class="confirm-modal">
-        <h3 class="confirm-modal-title">Confirmar Eliminación</h3>
-        <p class="confirm-modal-text" id="confirmModalText"></p>
-        <div class="confirm-modal-actions">
-            <button class="action-btn action-btn-secondary" id="confirmCancelBtn">Cancelar</button>
-            <button class="action-btn" style="background: var(--accent-red);" id="confirmOkBtn">Eliminar</button>
         </div>
     </div>
 </div>
 
 <script>
-    const OPORTUNIDAD_ID = parseInt("{{ oportunidad.id }}".replace(/[,\s]/g, ''));
-    const CURRENT_USER_ID = null;
+    const OPORTUNIDAD_ID = {{ oportunidad.id }};
     const TIPO_NEGOCIACION = "{{ oportunidad.tipo_negociacion|default:'runrate' }}";
-    const ETAPA_ACTUAL = "{{ oportunidad.etapa_corta|default:'' }}";
-    const ETAPA_COLOR = "{{ oportunidad.etapa_color|default:'#0A84FF' }}";
+    const ETAPA_ACTUAL = "{{ oportunidad.etapa_corta|default:'' }}".toLowerCase();
+    const ETAPA_COMPLETA = "{{ oportunidad.etapa_completa|default:'' }}".toLowerCase();
 
-    // Pipeline stages configuration
-    const PIPELINE_STAGES = {
-        runrate: [
-            { id: 'nuevo', name: 'Nuevo', short: 'NEW' },
-            { id: 'contacto', name: 'Contacto Inicial', short: 'CON' },
-            { id: 'propuesta', name: 'Propuesta', short: 'PRO' },
-            { id: 'negociacion', name: 'Negociación', short: 'NEG' },
-            { id: 'cierre', name: 'Cierre', short: 'CIE' },
-            { id: 'ganado', name: 'Ganado', short: 'GAN' }
-        ],
-        proyecto: [
-            { id: 'calificacion', name: 'Calificación', short: 'CAL' },
-            { id: 'analisis', name: 'Análisis', short: 'ANA' },
-            { id: 'propuesta', name: 'Propuesta', short: 'PRO' },
-            { id: 'poc', name: 'POC/Demo', short: 'POC' },
-            { id: 'negociacion', name: 'Negociación', short: 'NEG' },
-            { id: 'cierre', name: 'Cierre', short: 'CIE' },
-            { id: 'ganado', name: 'Ganado', short: 'GAN' }
-        ]
-    };
+    // Pipeline stages from Bitrix
+    const STAGES_RUNRATE = [
+        "Solicitud", "Cotizando", "Cotización Enviada", "Seguimiento",
+        "Vendido sin PO", "Vendido con PO", "Vendido en Tránsito", "Facturado",
+        "Programado", "Entregado", "Esperando Pago", "Sin Respuesta", "Cerrado"
+    ];
 
-    // Render pipeline stages
+    const STAGES_PROJECT = [
+        "Oportunidad", "Levantamiento", "Cotizando", "Cotización Enviada", "En Seguimiento",
+        "Vendido sin PO", "Vendido con PO", "Comprando", "Materiales en Almacén",
+        "En Ejecución", "Proyecto Entregado", "Facturado", "Perdido", "Cerrado"
+    ];
+
     function renderPipeline() {
         const container = document.getElementById('pipelineStages');
-        const stages = PIPELINE_STAGES[TIPO_NEGOCIACION] || PIPELINE_STAGES.runrate;
-        const currentStageIndex = findCurrentStageIndex(stages);
+        const stages = TIPO_NEGOCIACION === 'runrate' ? STAGES_RUNRATE : STAGES_PROJECT;
+        const typeClass = TIPO_NEGOCIACION === 'runrate' ? 'runrate' : 'proyecto';
 
-        container.innerHTML = stages.map((stage, index) => {
-            let stateClass = 'inactive';
-            let connectorClass = '';
-
-            if (index < currentStageIndex) {
-                stateClass = 'completed';
-                connectorClass = 'completed';
-            } else if (index === currentStageIndex) {
-                stateClass = 'active';
-            }
-
-            return `
-                <div class="pipeline-stage ${stateClass}" data-stage-id="${stage.id}" onclick="updateStage('${stage.id}')">
-                    <div class="stage-indicator ${stateClass}">${index + 1}</div>
-                    <div class="stage-name">${stage.name}</div>
-                    ${index < stages.length - 1 ? `<div class="stage-connector ${connectorClass}"></div>` : ''}
-                </div>
-            `;
-        }).join('');
-    }
-
-    function findCurrentStageIndex(stages) {
-        const currentStageLower = ETAPA_ACTUAL.toLowerCase();
+        // Find current stage index
+        let currentIndex = -1;
         for (let i = 0; i < stages.length; i++) {
-            if (stages[i].name.toLowerCase().includes(currentStageLower) ||
-                currentStageLower.includes(stages[i].id) ||
-                currentStageLower.includes(stages[i].name.toLowerCase())) {
-                return i;
+            const stageLower = stages[i].toLowerCase();
+            if (stageLower === ETAPA_ACTUAL ||
+                stageLower === ETAPA_COMPLETA ||
+                ETAPA_ACTUAL.includes(stageLower) ||
+                ETAPA_COMPLETA.includes(stageLower) ||
+                stageLower.includes(ETAPA_ACTUAL)) {
+                currentIndex = i;
+                break;
             }
         }
-        // Check for "ganado" or "cerrado"
-        if (currentStageLower.includes('ganado') || currentStageLower.includes('cerrado')) {
-            return stages.length - 1;
-        }
-        return 0;
-    }
 
-    function updateStage(stageId) {
-        // TODO: Implement stage update via API
-        console.log('Update stage to:', stageId);
-    }
+        // Default to first if not found
+        if (currentIndex === -1) currentIndex = 0;
 
-    // Variables globales para archivos
-    let attachedFiles = [];
+        let html = '';
+        stages.forEach((stage, index) => {
+            const isActive = index === currentIndex;
+            const isCompleted = index < currentIndex;
 
-    // Comment system initialization
-    function initCommentSystem() {
-        const commentInput = document.getElementById('nuevoComentario');
-        const btnComentar = document.getElementById('btnComentar');
-        const fileInput = document.getElementById('fileInput');
-        const openMenuBtn = document.getElementById('openMenuBtn');
-        const commentMenu = document.getElementById('commentMenu');
-        const activityBtn = document.getElementById('activityBtn');
-        const fileBtn = document.getElementById('fileBtn');
-        const photoBtn = document.getElementById('photoBtn');
+            html += `<div class="stage-item">`;
+            html += `<button class="stage-btn ${isActive ? 'active ' + typeClass : ''} ${isCompleted ? 'completed' : ''}" data-stage="${stage}">`;
 
-        // Auto-resize textarea
-        commentInput.addEventListener('input', function() {
-            this.style.height = '40px';
-            const scrollHeight = this.scrollHeight;
-            this.style.height = Math.min(scrollHeight, 120) + 'px';
-        });
-
-        const updateButtonState = () => {
-            const hasText = commentInput.value.trim().length > 0;
-            const hasFiles = attachedFiles.length > 0;
-            btnComentar.disabled = !(hasText || hasFiles);
-        };
-
-        commentInput.addEventListener('input', updateButtonState);
-
-        openMenuBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            openMenuBtn.classList.toggle('open');
-            commentMenu.classList.toggle('open');
-        });
-
-        activityBtn.addEventListener('click', () => {
-            alert('Función de agregar actividad próximamente disponible.');
-            commentMenu.classList.remove('open');
-            openMenuBtn.classList.remove('open');
-        });
-
-        fileBtn.addEventListener('click', () => {
-            fileInput.accept = ".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.gif,.webp";
-            fileInput.click();
-            commentMenu.classList.remove('open');
-            openMenuBtn.classList.remove('open');
-        });
-
-        photoBtn.addEventListener('click', () => {
-            fileInput.accept = "image/*";
-            fileInput.click();
-            commentMenu.classList.remove('open');
-            openMenuBtn.classList.remove('open');
-        });
-
-        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
-
-        // Drag & Drop
-        const timelineCard = document.querySelector('.timeline-card');
-
-        timelineCard.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            timelineCard.classList.add('dragover');
-        });
-
-        timelineCard.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            if (!timelineCard.contains(e.relatedTarget)) {
-                timelineCard.classList.remove('dragover');
-            }
-        });
-
-        timelineCard.addEventListener('drop', (e) => {
-            e.preventDefault();
-            timelineCard.classList.remove('dragover');
-            handleFiles(e.dataTransfer.files);
-        });
-
-        btnComentar.addEventListener('click', agregarComentario);
-        updateButtonState();
-    }
-
-    function handleFiles(files) {
-        Array.from(files).forEach(file => {
-            const allowedTypes = [
-                'application/pdf',
-                'application/msword',
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'application/vnd.ms-excel',
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'text/csv',
-                'image/png',
-                'image/jpeg',
-                'image/jpg',
-                'image/gif',
-                'image/webp'
-            ];
-
-            if (!allowedTypes.includes(file.type)) {
-                alert(`Tipo de archivo no permitido: ${file.name}`);
-                return;
+            if (isCompleted) {
+                html += `<svg class="check-icon ${typeClass}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>`;
             }
 
-            if (file.size > 10 * 1024 * 1024) {
-                alert(`Archivo muy grande (máximo 10MB): ${file.name}`);
-                return;
+            html += `${stage}</button>`;
+
+            if (index < stages.length - 1) {
+                html += `<div class="stage-connector ${isCompleted ? 'completed' : ''}"></div>`;
             }
 
-            attachedFiles.push(file);
+            html += `</div>`;
         });
 
-        renderAttachedFiles();
-        document.getElementById('btnComentar').disabled = false;
-    }
+        container.innerHTML = html;
 
-    function renderAttachedFiles() {
-        const container = document.getElementById('attachedFiles');
-        container.innerHTML = '';
-
-        attachedFiles.forEach((file, index) => {
-            const fileElement = document.createElement('div');
-            fileElement.className = 'attached-file';
-
-            const icon = getFileIcon(file.type);
-            const size = formatFileSize(file.size);
-
-            fileElement.innerHTML = `
-                <div class="attached-file-info">
-                    <div class="attached-file-icon">${icon}</div>
-                    <div>
-                        <div class="attached-file-name">${file.name}</div>
-                        <div class="attached-file-size">${size}</div>
-                    </div>
-                </div>
-                <button class="attached-file-remove" onclick="removeFile(${index})">×</button>
-            `;
-
-            container.appendChild(fileElement);
-        });
-        container.style.display = attachedFiles.length > 0 ? 'block' : 'none';
-    }
-
-    function removeFile(index) {
-        attachedFiles.splice(index, 1);
-        renderAttachedFiles();
-        document.getElementById('btnComentar').disabled = attachedFiles.length === 0 && document.getElementById('nuevoComentario').value.trim().length === 0;
-    }
-
-    function getFileIcon(type) {
-        if (type.includes('pdf')) return '📄';
-        if (type.includes('word')) return '📝';
-        if (type.includes('excel') || type.includes('csv')) return '📊';
-        if (type.includes('image')) return '🖼️';
-        return '📎';
-    }
-
-    function formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-
-    let isSubmitting = false;
-
-    async function agregarComentario() {
-        const comentario = document.getElementById('nuevoComentario').value.trim();
-        const btnComentar = document.getElementById('btnComentar');
-
-        if (!comentario && attachedFiles.length === 0) return;
-        if (isSubmitting) return;
-
-        isSubmitting = true;
-        btnComentar.disabled = true;
-        btnComentar.innerHTML = '⏳';
-
-        try {
-            const formData = new FormData();
-            formData.append('contenido', comentario);
-            attachedFiles.forEach((file, index) => {
-                formData.append(`archivo_${index}`, file);
-            });
-
-            const response = await fetch(`/app/api/agregar-comentario-oportunidad/${OPORTUNIDAD_ID}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: formData
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                document.getElementById('nuevoComentario').value = '';
-                attachedFiles = [];
-                renderAttachedFiles();
-                await loadTimeline();
-            } else {
-                alert('Error al guardar comentario: ' + (data.error || 'Error desconocido'));
+        // Auto-scroll to active stage
+        setTimeout(() => {
+            const activeBtn = container.querySelector('.stage-btn.active');
+            if (activeBtn) {
+                activeBtn.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                    inline: 'center'
+                });
             }
-
-        } catch (error) {
-            console.error('Error al enviar comentario:', error);
-            alert('Error al enviar comentario. Por favor, intenta de nuevo.');
-        } finally {
-            isSubmitting = false;
-            btnComentar.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
-            document.getElementById('nuevoComentario').style.height = '40px';
-            document.getElementById('btnComentar').disabled = true;
-        }
-    }
-
-    function renderTimelineItem(activity) {
-        if (!activity || !activity.tipo) return '';
-
-        let icon = '';
-        let title = activity.titulo || '';
-        let content = activity.descripcion || 'Sin descripción';
-        let linkHtml = '';
-        let activityClass = '';
-        let alignmentClass = 'align-left';
-        let editableClass = '';
-        let clickHandler = '';
-
-        switch (activity.tipo) {
-            case 'creacion':
-                icon = '🎉';
-                activityClass = 'creacion-icon';
-                title = 'Oportunidad Creada';
-                content = `Creada por <strong>${activity.usuario || 'Usuario desconocido'}</strong>. <span style="color: var(--text-tertiary);">${activity.descripcion || ''}</span>`;
-                break;
-            case 'cambio_estado':
-                icon = '🔄';
-                activityClass = 'cambio-estado-icon';
-                title = 'Cambio de Estado';
-                try {
-                    let estadoAnterior = activity.estado_anterior ? activity.estado_anterior.replace(/_/g, ' ') : 'un estado anterior';
-                    let estadoNuevo = activity.estado_nuevo ? activity.estado_nuevo.replace(/_/g, ' ') : 'un nuevo estado';
-                    content = `<strong>${activity.usuario}</strong> cambió el estado de <em>${estadoAnterior}</em> a <strong>${estadoNuevo}</strong>.`;
-                } catch (error) {
-                    content = `Error al mostrar cambio de estado: ${activity.descripcion || ''}`;
-                }
-                break;
-            case 'comentario':
-                icon = '💬';
-                activityClass = 'comentario-icon';
-                const usuario = activity.usuario || 'Usuario desconocido';
-                const comentarioId = activity.comentario_id;
-
-                if (activity.usuario_id && activity.usuario_id === CURRENT_USER_ID) {
-                    editableClass = 'editable';
-                    clickHandler = `onclick="editarComentario(event, ${comentarioId})"`;
-                } else {
-                    editableClass = 'replyable';
-                    clickHandler = `onclick="showReplyUI(event, ${activity.id}, '${usuario}')"`;
-                }
-
-                title = `<strong>${usuario}</strong> comentó:`;
-
-                const attachmentsHtml = activity.archivos && activity.archivos.length > 0 ? `
-                    <div class="comment-attachments">
-                        ${activity.archivos.map(archivo => `
-                            <div class="attachment-item">
-                                <div class="attachment-icon ${archivo.tipo}">${getAttachmentIcon(archivo.tipo)}</div>
-                                <div class="attachment-info">
-                                    <a href="/app/api/vista-previa-archivo-oportunidad/${archivo.id}/" target="_blank" rel="noopener noreferrer" class="attachment-name" title="${archivo.nombre}">${archivo.nombre}</a>
-                                    <div class="attachment-meta"><span>${archivo.tamaño}</span> • <span>${archivo.fecha}</span></div>
-                                </div>
-                                <button class="attachment-download" onclick="descargarArchivo(${archivo.id})" title="Descargar archivo">⬇️</button>
-                            </div>
-                        `).join('')}
-                    </div>
-                ` : '';
-
-                content = `
-                    <div class="comment-content" id="comment-content-${comentarioId}">
-                        <div class="comment-text" id="comment-text-${comentarioId}">
-                            ${activity.contenido || activity.descripcion || ''}
-                        </div>
-                        <div class="comment-edit-form" id="comment-edit-form-${comentarioId}" style="display: none;">
-                            <textarea class="comment-edit-input">${activity.contenido || ''}</textarea>
-                            <div class="comment-edit-actions">
-                                <button class="comment-edit-btn delete" onclick="eliminarComentario(event, ${comentarioId}, '${usuario}')">Eliminar</button>
-                                <button class="comment-edit-btn cancel" onclick="cancelarEdicionComentario(event, ${comentarioId})">Cancelar</button>
-                                <button class="comment-edit-btn save" onclick="guardarEdicionComentario(event, ${comentarioId})">Guardar</button>
-                            </div>
-                        </div>
-                    </div>
-                    ${attachmentsHtml}
-                `;
-                break;
-            case 'cotizacion':
-                icon = '📄';
-                activityClass = 'cotizacion-icon';
-                title = 'Nueva Cotización';
-                content = `<strong>${activity.usuario}</strong> creó la cotización <em>${activity.titulo}</em>.`;
-                linkHtml = `<div style="margin-top: 0.5rem;"><a href="${activity.url}" target="_blank" class="activity-link">Ver cotización →</a></div>`;
-                break;
-            case 'volumetria':
-                icon = '📊';
-                activityClass = 'volumetria-icon';
-                title = 'Nueva Volumetría';
-                content = `<strong>${activity.usuario}</strong> creó la volumetría <em>${activity.titulo}</em>.`;
-                linkHtml = `<div style="margin-top: 0.5rem;"><a href="${activity.url}" target="_blank" class="activity-link" style="color: var(--accent-orange);">Ver volumetría →</a></div>`;
-                break;
-            default:
-                icon = '⚙️';
-                activityClass = 'sistema-icon';
-                title = 'Actividad del Sistema';
-                break;
-        }
-
-        return `
-            <div class="timeline-item ${alignmentClass}" data-tipo="${activity.tipo}" id="timeline-item-${activity.id}">
-                <div class="timeline-item-inner">
-                    <div class="timeline-icon ${activityClass}">${icon}</div>
-                    <div class="timeline-content-item ${editableClass}" ${clickHandler}>
-                        <div class="timeline-header-item">
-                            <div class="timeline-title-item">${title}</div>
-                            <div class="timeline-time">${activity.fecha}</div>
-                        </div>
-                        <div class="timeline-text">
-                            ${content}
-                            ${linkHtml}
-                        </div>
-                    </div>
-                </div>
-                <div class="reply-ui-container" id="reply-ui-container-${activity.id}"></div>
-            </div>
-        `;
-    }
-
-    function initTimelineSearch() {
-        const searchInput = document.getElementById('timelineSearch');
-        if (!searchInput) return;
-
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase().trim();
-            const timelineItems = document.querySelectorAll('#timelineItems .timeline-item');
-            let visibleCount = 0;
-
-            timelineItems.forEach(item => {
-                const itemText = item.textContent.toLowerCase();
-                if (itemText.includes(searchTerm)) {
-                    item.style.display = 'flex';
-                    visibleCount++;
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-
-            let noResultsMessage = document.getElementById('noSearchResultsMessage');
-            if (visibleCount === 0 && searchTerm.length > 0) {
-                if (!noResultsMessage) {
-                    const container = document.getElementById('timelineItems');
-                    noResultsMessage = document.createElement('div');
-                    noResultsMessage.id = 'noSearchResultsMessage';
-                    noResultsMessage.className = 'empty-state';
-                    container.appendChild(noResultsMessage);
-                }
-                noResultsMessage.innerHTML = `<div class="empty-state-icon">🧐</div><div class="empty-state-text">No se encontraron resultados para "<strong>${this.value}</strong>"</div>`;
-                noResultsMessage.style.display = 'block';
-            } else {
-                if (noResultsMessage) {
-                    noResultsMessage.style.display = 'none';
-                }
-            }
-        });
-    }
-
-    async function loadTimeline() {
-        const timelineItemsContainer = document.getElementById('timelineItems');
-        if (!timelineItemsContainer) return;
-
-        if (!OPORTUNIDAD_ID) {
-            timelineItemsContainer.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">❌</div>
-                    <div class="empty-state-text">Error: No se pudo identificar la oportunidad.</div>
-                </div>
-            `;
-            return;
-        }
-
-        const noResultsMessage = document.getElementById('noSearchResultsMessage');
-        if (noResultsMessage) noResultsMessage.remove();
-
-        timelineItemsContainer.innerHTML = `
-            <div class="empty-state" id="loadingTimelineMessage">
-                <div class="empty-state-icon">⏳</div>
-                <div class="empty-state-text">Cargando actividades...</div>
-            </div>
-        `;
-
-        try {
-            const response = await fetch(`/app/api/timeline-oportunidad/${OPORTUNIDAD_ID}/`);
-
-            if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-
-            const data = await response.json();
-
-            timelineItemsContainer.innerHTML = '';
-
-            if (data && data.success && Array.isArray(data.timeline)) {
-                if (data.timeline.length > 0) {
-                    data.timeline.forEach(activity => {
-                        try {
-                            const renderedItem = renderTimelineItem(activity);
-                            if (renderedItem) {
-                                timelineItemsContainer.insertAdjacentHTML('beforeend', renderedItem);
-                            }
-                        } catch (renderError) {
-                            console.error('Error al renderizar un ítem del timeline:', renderError);
-                        }
-                    });
-                } else {
-                    timelineItemsContainer.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📭</div>
-                            <div class="empty-state-text">No hay actividades registradas.</div>
-                        </div>
-                    `;
-                }
-            } else {
-                throw new Error('Formato de respuesta inesperado del servidor');
-            }
-        } catch (error) {
-            console.error('Error al cargar el timeline:', error);
-            timelineItemsContainer.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">⚠️</div>
-                    <div class="empty-state-text">Error al cargar el timeline. <button onclick="loadTimeline()" style="color: var(--accent-blue); background: none; border: none; cursor: pointer;">Reintentar</button></div>
-                </div>
-            `;
-        }
-    }
-
-    function descargarArchivo(archivoId) {
-        window.open(`/app/api/descargar-archivo-oportunidad/${archivoId}/`, '_blank');
+        }, 100);
     }
 
     function eliminarVolumetria(volumetriaId, titulo) {
@@ -2145,21 +1012,6 @@
         }
     }
 
-    // Close dropdowns on click outside
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.attach-menu-container')) {
-            const commentMenu = document.getElementById('commentMenu');
-            const openMenuBtn = document.getElementById('openMenuBtn');
-            if (commentMenu && commentMenu.classList.contains('open')) {
-                commentMenu.classList.remove('open');
-                openMenuBtn.classList.remove('open');
-            }
-        }
-        if (currentlyReplying && !currentlyReplying.contains(e.target)) {
-            closeReplyUI();
-        }
-    });
-
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -2175,270 +1027,9 @@
         return cookieValue;
     }
 
-    // Comment edit/reply functions
-    let currentlyEditing = null;
-    let currentlyReplying = null;
-    let resolveConfirm;
-
-    function showConfirm(message) {
-        const overlay = document.getElementById('confirmModalOverlay');
-        const text = document.getElementById('confirmModalText');
-        text.textContent = message;
-        overlay.style.display = 'flex';
-        setTimeout(() => overlay.classList.add('show'), 10);
-        return new Promise(resolve => {
-            resolveConfirm = resolve;
-        });
-    }
-
-    function hideConfirm() {
-        const overlay = document.getElementById('confirmModalOverlay');
-        overlay.classList.remove('show');
-        setTimeout(() => {
-            overlay.style.display = 'none';
-        }, 200);
-    }
-
-    function editarComentario(event, comentarioId) {
-        event.stopPropagation();
-        if (currentlyReplying) closeReplyUI();
-        if (currentlyEditing) {
-            cancelarEdicionComentario(null, currentlyEditing);
-        }
-        currentlyEditing = comentarioId;
-
-        const editForm = document.getElementById(`comment-edit-form-${comentarioId}`);
-        const contentItem = editForm.closest('.timeline-content-item');
-        const textElement = document.getElementById(`comment-text-${comentarioId}`);
-
-        if (textElement && editForm && contentItem) {
-            contentItem.classList.add('editing');
-            textElement.style.display = 'none';
-            editForm.style.display = 'block';
-            const textarea = editForm.querySelector('textarea');
-            textarea.focus();
-            textarea.style.height = 'auto';
-            textarea.style.height = textarea.scrollHeight + 'px';
-        }
-    }
-
-    function cancelarEdicionComentario(event, comentarioId) {
-        if(event) event.stopPropagation();
-        currentlyEditing = null;
-
-        const editForm = document.getElementById(`comment-edit-form-${comentarioId}`);
-        const contentItem = editForm.closest('.timeline-content-item');
-        const textElement = document.getElementById(`comment-text-${comentarioId}`);
-        if (textElement && editForm && contentItem) {
-            contentItem.classList.remove('editing');
-            textElement.style.display = 'block';
-            editForm.style.display = 'none';
-        }
-    }
-
-    async function guardarEdicionComentario(event, comentarioId) {
-        event.stopPropagation();
-        const editForm = document.getElementById(`comment-edit-form-${comentarioId}`);
-        const newContent = editForm.querySelector('textarea').value.trim();
-        if (!newContent) {
-            alert('El comentario no puede estar vacío.');
-            return;
-        }
-        try {
-            const formData = new FormData();
-            formData.append('contenido', newContent);
-
-            const response = await fetch(`/app/api/editar-comentario-oportunidad/${comentarioId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: formData
-            });
-            const data = await response.json();
-            if (data.success) {
-                await loadTimeline();
-            } else {
-                alert('Error al guardar el comentario: ' + data.error);
-            }
-        } catch (error) {
-            console.error('Error al guardar:', error);
-            alert('Ocurrió un error de red al guardar el comentario.');
-        }
-    }
-
-    async function eliminarComentario(event, comentarioId, usuario) {
-        event.stopPropagation();
-        const confirmed = await showConfirm(`¿Estás seguro de que quieres eliminar este comentario de ${usuario}? Esta acción no se puede deshacer.`);
-        if (!confirmed) return;
-
-        try {
-            const response = await fetch(`/app/api/eliminar-comentario-oportunidad/${comentarioId}/`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
-            });
-            const data = await response.json();
-            if (data.success) {
-                await loadTimeline();
-            } else {
-                alert('Error al eliminar el comentario: ' + data.error);
-            }
-        } catch (error) {
-            console.error('Error al eliminar:', error);
-            alert('Ocurrió un error de red al eliminar el comentario.');
-        }
-    }
-
-    function showReplyUI(event, activityId, username) {
-        event.stopPropagation();
-        if (currentlyEditing) cancelarEdicionComentario(null, currentlyEditing);
-        closeReplyUI();
-
-        const container = document.getElementById(`reply-ui-container-${activityId}`);
-        if (!container) return;
-
-        const replyButton = document.createElement('button');
-        replyButton.className = 'comment-reply-btn';
-        replyButton.innerHTML = `Responder`;
-        replyButton.onclick = (e) => {
-            e.stopPropagation();
-            replyToComment(username);
-            closeReplyUI();
-        };
-
-        container.appendChild(replyButton);
-        currentlyReplying = container;
-    }
-
-    function closeReplyUI() {
-        if (currentlyReplying) {
-            currentlyReplying.innerHTML = '';
-            currentlyReplying = null;
-        }
-    }
-
-    function replyToComment(username) {
-        const commentInput = document.getElementById('nuevoComentario');
-        commentInput.value = `@${username} `;
-        commentInput.focus();
-    }
-
-    function getAttachmentIcon(tipo) {
-        switch(tipo) {
-            case 'imagen': return '🖼️';
-            case 'documento': return '📄';
-            case 'cotizacion': return '📋';
-            case 'contrato': return '📝';
-            case 'presentacion': return '📊';
-            default: return '📎';
-        }
-    }
-
-    function mostrarMensajeProyecto() {
-        alert('Función de Crear Proyecto próximamente disponible');
-        return false;
-    }
-
-    // Edit mode functions
-    let originalValues = {};
-    let isEditing = false;
-
-    function toggleEditMode() {
-        isEditing ? cancelEdit() : startEdit();
-    }
-
-    function startEdit() {
-        isEditing = true;
-        document.body.classList.add('editing-opportunity');
-        originalValues = {};
-        document.querySelectorAll('.view-mode[data-field]').forEach(el => {
-            originalValues[el.getAttribute('data-field')] = el.textContent.trim();
-        });
-        loadClientesForEdit();
-    }
-
-    function cancelEdit() {
-        isEditing = false;
-        document.body.classList.remove('editing-opportunity');
-    }
-
-    async function saveOpportunity() {
-        const formData = new FormData();
-        document.querySelectorAll('.edit-mode[data-field]').forEach(el => {
-            formData.append(el.getAttribute('data-field'), el.value);
-        });
-
-        try {
-            const response = await fetch(`/app/api/editar-oportunidad/{{ oportunidad.id }}/`, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
-            });
-            const data = await response.json();
-            if (data.success) {
-                for (const [field, newValue] of Object.entries(data.updated_values)) {
-                    const viewElement = document.querySelector(`.view-mode[data-field="${field}"]`);
-                    if (viewElement) {
-                        viewElement.textContent = newValue;
-                    }
-                }
-                isEditing = false;
-                document.body.classList.remove('editing-opportunity');
-                alert('Información de la oportunidad actualizada correctamente');
-            } else {
-                alert('Error al actualizar la información: ' + data.error);
-            }
-        } catch (error) {
-            alert('Error de conexión al guardar los cambios');
-        }
-    }
-
-    async function loadClientesForEdit() {
-        try {
-            const response = await fetch('/app/api/clientes/');
-            const clientes = await response.json();
-            const clienteSelect = document.querySelector('.edit-mode[data-field="cliente"]');
-            if (clienteSelect) {
-                clienteSelect.innerHTML = '<option value="">Seleccionar cliente</option>';
-                clientes.forEach(cliente => {
-                    const option = document.createElement('option');
-                    option.value = cliente.id;
-                    option.textContent = cliente.nombre_empresa;
-                    if (cliente.nombre_empresa === originalValues.cliente) {
-                        option.selected = true;
-                    }
-                    clienteSelect.appendChild(option);
-                });
-            }
-        } catch (error) {
-            console.error('Error cargando clientes:', error);
-        }
-    }
-
     // Initialize
     document.addEventListener('DOMContentLoaded', function() {
         renderPipeline();
-        initCommentSystem();
-        initTimelineSearch();
-        loadTimeline();
-
-        document.getElementById('confirmOkBtn').addEventListener('click', () => {
-            if (resolveConfirm) resolveConfirm(true);
-            hideConfirm();
-        });
-        document.getElementById('confirmCancelBtn').addEventListener('click', () => {
-            if (resolveConfirm) resolveConfirm(false);
-            hideConfirm();
-        });
-
-        const dockMenu = document.getElementById('floating-menu');
-        if (dockMenu) {
-            dockMenu.style.display = 'none';
-        }
     });
 </script>
 
@@ -2447,26 +1038,12 @@
     function activarModoCotizaciones() {
         document.body.classList.add('cotizaciones-mode');
     }
-
     if (document.body) {
         activarModoCotizaciones();
     } else {
         document.addEventListener('DOMContentLoaded', activarModoCotizaciones);
     }
-
-    window.addEventListener('pageshow', function() {
-        activarModoCotizaciones();
-    });
-
-    document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) {
-            activarModoCotizaciones();
-        }
-    });
+    window.addEventListener('pageshow', activarModoCotizaciones);
 })();
-
-window.addEventListener('pagehide', function() {
-    document.body.classList.remove('cotizaciones-mode');
-});
 </script>
 {% endblock %}
