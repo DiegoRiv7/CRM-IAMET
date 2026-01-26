@@ -2,718 +2,111 @@
 {% load static %}
 {% load app_filters %}
 
-<script>
-    const designBtn = document.createElement('div');
-    (function() {
-        const style = document.createElement('style');
-        style.textContent = `
-            body.cotizaciones-mode .macos-dock,
-            body.cotizaciones-mode #dock-left,
-            body.cotizaciones-mode #dock-right,
-            body.cotizaciones-mode #dock-top,
-            body.cotizaciones-mode #dock-bottom,
-            body.cotizaciones-mode #floating-menu {
-                display: none !important;
-                visibility: hidden !important;
-                opacity: 0 !important;
-                pointer-events: none !important;
-            }
-        `;
-        document.head.appendChild(style);
-        function activarModoCotizaciones() {
-            if (document.body) {
-                document.body.classList.add('cotizaciones-mode');
-            }
-        }
-        activarModoCotizaciones();
-        if (!document.body) {
-            const observer = new MutationObserver(function() {
-                if (document.body) {
-                    activarModoCotizaciones();
-                    observer.disconnect();
-                }
-            });
-            observer.observe(document.documentElement, { childList: true });
-        }
-    })();
-</script>
-
 {% block title %}{{ oportunidad.oportunidad }}{% endblock %}
 
 {% block content %}
 <style>
-    :root {
-        --bg-modal: #121214;
-        --bg-card: rgba(255, 255, 255, 0.03);
-        --border-color: rgba(255, 255, 255, 0.05);
-        --border-light: rgba(255, 255, 255, 0.1);
-        --text-primary: #ffffff;
-        --text-secondary: rgba(255, 255, 255, 0.7);
-        --text-muted: rgba(255, 255, 255, 0.4);
-        --text-label: #6b7280;
-        --cyan-500: #06b6d4;
-        --cyan-400: #22d3ee;
-        --rose-500: #f43f5e;
-        --rose-400: #fb7185;
-        --blue-500: #3b82f6;
-        --blue-600: #2563eb;
-        --emerald-400: #34d399;
-        --purple-400: #a78bfa;
-        --purple-500: #8b5cf6;
-    }
-
-    * {
-        box-sizing: border-box;
-    }
-
-    body {
-        background: #000000;
-        margin: 0;
-        padding: 0;
-        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
-        -webkit-font-smoothing: antialiased;
-        overflow: hidden;
-    }
-
-    /* Modal Backdrop */
-    .modal-backdrop {
-        position: fixed;
-        inset: 0;
-        z-index: 50;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 2rem;
-        background: rgba(0, 0, 0, 0.6);
-        backdrop-filter: blur(12px);
-    }
-
-    /* Modal Container */
-    .modal-container {
-        position: relative;
-        background: var(--bg-modal);
-        width: 100%;
-        max-width: 1100px;
-        max-height: 90vh;
-        border-radius: 2.5rem;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        border: 1px solid var(--border-light);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-
-    /* Header */
-    .modal-header {
-        padding: 2rem 2rem 0.5rem 2rem;
-        background: linear-gradient(to bottom, rgba(255,255,255,0.05), transparent);
-        flex-shrink: 0;
-    }
-
-    .header-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-    }
-
-    .header-left {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    /* Type Badge */
-    .type-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        padding: 0.35rem 0.75rem;
-        border-radius: 9999px;
-        font-size: 0.625rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        width: fit-content;
-    }
-
-    .type-badge.runrate {
-        background: rgba(6, 182, 212, 0.1);
-        color: var(--cyan-400);
-        border: 1px solid rgba(6, 182, 212, 0.2);
-    }
-
-    .type-badge.proyecto {
-        background: rgba(244, 63, 94, 0.1);
-        color: var(--rose-400);
-        border: 1px solid rgba(244, 63, 94, 0.2);
-    }
-
-    .type-badge svg {
-        width: 12px;
-        height: 12px;
-    }
-
-    .modal-title {
-        font-size: 2.25rem;
-        font-weight: 700;
-        color: var(--text-primary);
-        margin: 0;
-        letter-spacing: -0.02em;
-        line-height: 1.2;
-    }
-
-    .close-btn {
-        padding: 0.5rem;
-        border-radius: 9999px;
-        background: rgba(255, 255, 255, 0.05);
-        border: none;
-        color: var(--text-muted);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .close-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: var(--text-primary);
-    }
-
-    /* Pipeline Container */
-    .pipeline-wrapper {
-        padding: 0 2rem;
-        margin: 1rem 0 1.5rem 0;
-        flex-shrink: 0;
-    }
-
-    .pipeline-container {
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 1rem;
-        padding: 0.5rem;
-        border: 1px solid var(--border-color);
-        overflow: hidden;
-    }
-
-    .pipeline-scroll {
-        overflow-x: auto;
-        padding: 0.5rem 0;
-    }
-
-    .pipeline-scroll::-webkit-scrollbar {
-        height: 6px;
-    }
-
-    .pipeline-scroll::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-    }
-
-    .pipeline-scroll::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.2);
-    }
-
-    .pipeline-stages {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        min-width: max-content;
-        padding: 0 0.5rem;
-    }
-
-    .stage-item {
-        display: flex;
-        align-items: center;
-    }
-
-    .stage-btn {
-        position: relative;
-        padding: 0.5rem 1rem;
-        border-radius: 9999px;
-        font-size: 0.625rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        border: 1px solid var(--border-color);
-        cursor: pointer;
-        transition: all 0.3s ease;
-        white-space: nowrap;
-        display: flex;
-        align-items: center;
-        gap: 0.375rem;
-        background: transparent;
-        color: var(--text-muted);
-    }
-
-    .stage-btn:hover {
-        transform: scale(1.05);
-        border-color: rgba(255, 255, 255, 0.2);
-        color: var(--text-secondary);
-    }
-
-    .stage-btn.completed {
-        background: rgba(255, 255, 255, 0.1);
-        color: var(--text-secondary);
-        border-color: rgba(255, 255, 255, 0.05);
-    }
-
-    .stage-btn.completed:hover {
-        background: rgba(255, 255, 255, 0.15);
-        color: var(--text-primary);
-    }
-
-    .stage-btn.active.runrate {
-        background: var(--cyan-500);
-        color: white;
-        border-color: transparent;
-        box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
-        z-index: 10;
-        ring: 2px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .stage-btn.active.proyecto {
-        background: var(--rose-500);
-        color: white;
-        border-color: transparent;
-        box-shadow: 0 0 20px rgba(244, 63, 94, 0.3);
-        z-index: 10;
-    }
-
-    .stage-connector {
-        width: 0.75rem;
-        height: 2px;
-        border-radius: 9999px;
-        background: var(--border-color);
-        margin: 0 0.125rem;
-    }
-
-    .stage-connector.completed {
-        background: rgba(255, 255, 255, 0.2);
-    }
-
-    .check-icon {
-        width: 10px;
-        height: 10px;
-    }
-
-    .check-icon.runrate {
-        color: var(--cyan-400);
-    }
-
-    .check-icon.proyecto {
-        color: var(--rose-400);
-    }
-
-    /* Content Area */
-    .modal-content {
-        flex: 1;
-        overflow-y: auto;
-        padding: 0 2rem 2rem 2rem;
-    }
-
-    .modal-content::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .modal-content::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-    }
-
-    /* Grid Layout */
-    .content-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 1.5rem;
-    }
-
-    .col-left {
-        grid-column: span 2;
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-
-    .col-right {
-        grid-column: span 1;
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-
-    /* Cards */
-    .card {
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: 1.5rem;
-        padding: 1.5rem;
-    }
-
-    .card-gradient {
-        background: linear-gradient(135deg, rgba(55, 65, 81, 0.3), rgba(17, 24, 39, 0.3));
-        border: 1px solid var(--border-light);
-    }
-
-    /* Info Grid */
-    .info-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1.5rem;
-    }
-
-    .info-item {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-    }
-
-    .info-label {
-        font-size: 0.625rem;
-        font-weight: 700;
-        color: var(--text-label);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .info-value {
-        font-size: 1.875rem;
-        font-weight: 700;
-        color: var(--text-primary);
-        letter-spacing: -0.02em;
-    }
-
-    .info-value.medium {
-        font-size: 1.25rem;
-        font-weight: 500;
-        color: var(--text-secondary);
-    }
-
-    .info-value.large {
-        font-size: 1.125rem;
-        font-weight: 500;
-        color: var(--text-secondary);
-    }
-
-    /* Cotizaciones Section */
-    .section-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-    }
-
-    .section-title {
-        font-size: 0.875rem;
-        font-weight: 700;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .btn-new {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.375rem 0.75rem;
-        background: var(--blue-600);
-        color: white;
-        font-size: 0.625rem;
-        font-weight: 700;
-        border-radius: 9999px;
-        border: none;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-decoration: none;
-        box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
-    }
-
-    .btn-new:hover {
-        background: var(--blue-500);
-        transform: translateY(-1px);
-    }
-
-    .btn-new svg {
-        width: 12px;
-        height: 12px;
-    }
-
-    /* Quote Card */
-    .quote-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .quote-card {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 1rem;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid var(--border-light);
-        border-radius: 0.75rem;
-        transition: all 0.2s ease;
-    }
-
-    .quote-card:hover {
-        background: rgba(255, 255, 255, 0.08);
-    }
-
-    .quote-left {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .quote-badge {
-        width: 2.5rem;
-        height: 2.5rem;
-        background: rgba(59, 130, 246, 0.2);
-        border-radius: 0.5rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #60a5fa;
-        font-weight: 700;
-        font-size: 0.75rem;
-        letter-spacing: -0.02em;
-    }
-
-    .quote-info {
-        cursor: pointer;
-    }
-
-    .quote-title {
-        font-size: 0.875rem;
-        font-weight: 700;
-        color: var(--text-primary);
-        transition: color 0.2s ease;
-    }
-
-    .quote-info:hover .quote-title {
-        color: #60a5fa;
-        text-decoration: underline;
-        text-underline-offset: 4px;
-    }
-
-    .quote-version {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        font-weight: 400;
-        margin-left: 0.25rem;
-    }
-
-    .quote-meta {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        margin-top: 0.125rem;
-    }
-
-    .quote-actions {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .action-btn {
-        padding: 0.5rem;
-        background: transparent;
-        border: none;
-        border-radius: 0.5rem;
-        color: var(--text-muted);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .action-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: var(--text-primary);
-    }
-
-    .action-btn svg {
-        width: 16px;
-        height: 16px;
-    }
-
-    /* Probability Card */
-    .probability-value {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: var(--emerald-400);
-        margin-bottom: 0.5rem;
-    }
-
-    .progress-bar {
-        width: 100%;
-        height: 6px;
-        background: rgba(55, 65, 81, 1);
-        border-radius: 9999px;
-        overflow: hidden;
-    }
-
-    .progress-fill {
-        height: 100%;
-        background: var(--emerald-400);
-        border-radius: 9999px;
-        transition: width 0.5s ease;
-    }
-
-    /* Stakeholder Card */
-    .stakeholder-section {
-        margin-bottom: 1.5rem;
-    }
-
-    .stakeholder-section:last-child {
-        margin-bottom: 0;
-    }
-
-    .stakeholder-label {
-        font-size: 0.625rem;
-        font-weight: 700;
-        color: var(--text-label);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 1rem;
-    }
-
-    .stakeholder-info {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .avatar {
-        width: 2.5rem;
-        height: 2.5rem;
-        border-radius: 9999px;
-        border: 1px solid var(--border-light);
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        font-size: 0.875rem;
-        color: white;
-    }
-
-    .avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .avatar.purple {
-        background: rgba(139, 92, 246, 0.1);
-        color: var(--purple-400);
-        border-color: rgba(139, 92, 246, 0.2);
-    }
-
-    .avatar.gradient-1 { background: linear-gradient(135deg, #667eea, #764ba2); }
-    .avatar.gradient-2 { background: linear-gradient(135deg, #f093fb, #f5576c); }
-    .avatar.gradient-3 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
-    .avatar.gradient-4 { background: linear-gradient(135deg, #43e97b, #38f9d7); }
-    .avatar.gradient-5 { background: linear-gradient(135deg, #fa709a, #fee140); }
-
-    .stakeholder-details h4 {
-        font-size: 0.875rem;
-        font-weight: 700;
-        color: var(--text-primary);
-        margin: 0;
-    }
-
-    .stakeholder-details p {
-        font-size: 0.625rem;
-        color: var(--text-muted);
-        margin: 0.125rem 0 0 0;
-    }
-
-    .stakeholder-details .company {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        font-weight: 500;
-        margin-top: 0.25rem;
-    }
-
-    .divider {
-        height: 1px;
-        background: var(--border-color);
-        margin: 1.5rem 0;
-    }
-
-    /* Empty State */
-    .empty-state {
-        text-align: center;
-        padding: 2rem;
-        color: var(--text-muted);
-    }
-
-    .empty-icon {
-        font-size: 2rem;
-        margin-bottom: 0.5rem;
-        opacity: 0.5;
-    }
-
-    .empty-text {
-        font-size: 0.875rem;
-    }
-
-    /* Responsive */
-    @media (max-width: 900px) {
-        .content-grid {
-            grid-template-columns: 1fr;
-        }
-        .col-left, .col-right {
-            grid-column: span 1;
-        }
-        .modal-container {
-            border-radius: 1.5rem;
-            max-height: 95vh;
-        }
-        .modal-backdrop {
-            padding: 1rem;
-        }
-        .modal-title {
-            font-size: 1.75rem;
-        }
-        .info-grid {
-            grid-template-columns: 1fr;
-        }
-    }
+*{box-sizing:border-box}
+body{background:#000;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+.modal-backdrop{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:2rem;background:rgba(0,0,0,.6);backdrop-filter:blur(12px)}
+.modal-container{position:relative;background:#121214;width:100%;max-width:1100px;max-height:90vh;border-radius:2.5rem;box-shadow:0 25px 50px -12px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;overflow:hidden;animation:popIn .2s ease-out}
+@keyframes popIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.modal-header{padding:2rem 2rem .5rem;background:linear-gradient(to bottom,rgba(255,255,255,.05),transparent);flex-shrink:0}
+.header-top{display:flex;justify-content:space-between;align-items:flex-start}
+.header-left{display:flex;flex-direction:column;gap:.5rem}
+.type-badge{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .75rem;border-radius:9999px;font-size:.625rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;width:fit-content}
+.type-badge.runrate{background:rgba(6,182,212,.1);color:#22d3ee;border:1px solid rgba(6,182,212,.2)}
+.type-badge.proyecto{background:rgba(244,63,94,.1);color:#fb7185;border:1px solid rgba(244,63,94,.2)}
+.type-badge svg{width:12px;height:12px}
+.modal-title{font-size:2.25rem;font-weight:700;color:#fff;margin:0;letter-spacing:-.02em;line-height:1.2}
+.close-btn{padding:.5rem;border-radius:9999px;background:rgba(255,255,255,.05);border:none;color:rgba(255,255,255,.4);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.close-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+.pipeline-wrapper{padding:0 2rem;margin:1rem 0 1.5rem;flex-shrink:0}
+.pipeline-container{background:rgba(0,0,0,.2);border-radius:1rem;padding:.5rem;border:1px solid rgba(255,255,255,.05);overflow:hidden}
+.pipeline-scroll{overflow-x:auto;padding:.5rem 0;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent}
+.pipeline-scroll::-webkit-scrollbar{height:6px}
+.pipeline-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:20px}
+.pipeline-stages{display:flex;align-items:center;gap:.5rem;min-width:max-content;padding:0 .5rem}
+.stage-item{display:flex;align-items:center}
+.stage-btn{position:relative;padding:.5rem 1rem;border-radius:9999px;font-size:.625rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border:1px solid rgba(255,255,255,.05);cursor:pointer;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:.375rem;background:transparent;color:rgba(255,255,255,.4)}
+.stage-btn:hover{transform:scale(1.05);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.7)}
+.stage-btn.completed{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.05)}
+.stage-btn.active{color:#fff;border-color:transparent;box-shadow:0 0 20px var(--stage-glow);z-index:10}
+.stage-connector{width:.75rem;height:2px;border-radius:9999px;background:rgba(255,255,255,.05);margin:0 .125rem}
+.stage-connector.completed{background:rgba(255,255,255,.2)}
+.check-icon{width:10px;height:10px}
+.modal-content{flex:1;overflow-y:auto;padding:0 2rem 2rem;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent}
+.modal-content::-webkit-scrollbar{width:6px}
+.modal-content::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:20px}
+.content-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem}
+.col-left{grid-column:span 2;display:flex;flex-direction:column;gap:1.5rem}
+.col-right{grid-column:span 1;display:flex;flex-direction:column;gap:1.5rem}
+.card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:1.5rem;padding:1.5rem}
+.card-gradient{background:linear-gradient(135deg,rgba(55,65,81,.3),rgba(17,24,39,.3));border:1px solid rgba(255,255,255,.1)}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.info-item{display:flex;flex-direction:column;gap:.25rem}
+.info-label{font-size:.625rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em}
+.info-value{font-size:1.875rem;font-weight:700;color:#fff;letter-spacing:-.02em}
+.info-value.medium{font-size:1.25rem;font-weight:500;color:rgba(255,255,255,.7)}
+.info-value.large{font-size:1.125rem;font-weight:500;color:rgba(255,255,255,.7)}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
+.section-title{font-size:.875rem;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.05em}
+.btn-new{display:flex;align-items:center;gap:.5rem;padding:.375rem .75rem;background:#2563eb;color:#fff;font-size:.625rem;font-weight:700;border-radius:9999px;border:none;cursor:pointer;transition:all .2s;text-decoration:none;box-shadow:0 4px 6px rgba(37,99,235,.2)}
+.btn-new:hover{background:#3b82f6;transform:translateY(-1px)}
+.btn-new svg{width:12px;height:12px}
+.quote-list{display:flex;flex-direction:column;gap:.75rem}
+.quote-card{display:flex;align-items:center;justify-content:space-between;padding:1rem;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:.75rem;transition:all .2s}
+.quote-card:hover{background:rgba(255,255,255,.08)}
+.quote-left{display:flex;align-items:center;gap:1rem}
+.quote-badge{width:2.5rem;height:2.5rem;background:rgba(59,130,246,.2);border-radius:.5rem;display:flex;align-items:center;justify-content:center;color:#60a5fa;font-weight:700;font-size:.75rem}
+.quote-info{cursor:pointer}
+.quote-title{font-size:.875rem;font-weight:700;color:#fff;transition:color .2s}
+.quote-info:hover .quote-title{color:#60a5fa;text-decoration:underline;text-underline-offset:4px}
+.quote-version{font-size:.75rem;color:rgba(255,255,255,.4);font-weight:400;margin-left:.25rem}
+.quote-meta{font-size:.75rem;color:rgba(255,255,255,.4);margin-top:.125rem}
+.quote-actions{display:flex;align-items:center;gap:.5rem}
+.action-btn{padding:.5rem;background:0 0;border:none;border-radius:.5rem;color:rgba(255,255,255,.4);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.action-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+.action-btn svg{width:16px;height:16px}
+.probability-value{font-size:2.5rem;font-weight:700;color:#34d399;margin-bottom:.5rem}
+.progress-bar{width:100%;height:6px;background:#374151;border-radius:9999px;overflow:hidden}
+.progress-fill{height:100%;background:#34d399;border-radius:9999px;transition:width .5s}
+.stakeholder-section{margin-bottom:1.5rem}
+.stakeholder-section:last-child{margin-bottom:0}
+.stakeholder-label{font-size:.625rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:1rem}
+.stakeholder-info{display:flex;align-items:center;gap:.75rem}
+.avatar{width:2.5rem;height:2.5rem;border-radius:9999px;border:1px solid rgba(255,255,255,.1);overflow:hidden;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.875rem;color:#fff}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.avatar.purple{background:rgba(139,92,246,.15);color:#a78bfa;border-color:rgba(139,92,246,.3)}
+.avatar.gradient{background:linear-gradient(135deg,#667eea,#764ba2)}
+.stakeholder-details h4{font-size:.875rem;font-weight:700;color:#fff;margin:0}
+.stakeholder-details p{font-size:.625rem;color:rgba(255,255,255,.4);margin:.125rem 0 0}
+.stakeholder-details .company{font-size:.75rem;color:rgba(255,255,255,.4);font-weight:500;margin-top:.25rem}
+.divider{height:1px;background:rgba(255,255,255,.05);margin:1.5rem 0}
+.empty-state{text-align:center;padding:2rem;color:rgba(255,255,255,.4)}
+.empty-icon{font-size:2rem;margin-bottom:.5rem;opacity:.5}
+.empty-text{font-size:.875rem}
+@media(max-width:900px){.content-grid{grid-template-columns:1fr}.col-left,.col-right{grid-column:span 1}.modal-container{border-radius:1.5rem;max-height:95vh}.modal-backdrop{padding:1rem}.modal-title{font-size:1.75rem}.info-grid{grid-template-columns:1fr}}
 </style>
 
-<div class="modal-backdrop">
+<div class="modal-backdrop" onclick="if(event.target===this)window.location.href='{% url 'todos' %}'">
     <div class="modal-container">
         <!-- Header -->
         <div class="modal-header">
             <div class="header-top">
                 <div class="header-left">
-                    <!-- Type Badge -->
                     <div class="type-badge {% if oportunidad.tipo_negociacion == 'runrate' %}runrate{% else %}proyecto{% endif %}">
                         {% if oportunidad.tipo_negociacion == 'runrate' %}
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                        </svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                         {% else %}
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
-                            <polyline points="2 17 12 22 22 17"/>
-                            <polyline points="2 12 12 17 22 12"/>
-                        </svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
                         {% endif %}
                         <span>Venta {{ oportunidad.get_tipo_negociacion_display }}</span>
                     </div>
-                    <!-- Title -->
                     <h1 class="modal-title">{{ oportunidad.oportunidad }}</h1>
                 </div>
-                <!-- Close Button -->
                 <a href="{% url 'todos' %}" class="close-btn" title="Cerrar">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </a>
             </div>
         </div>
@@ -722,9 +115,7 @@
         <div class="pipeline-wrapper">
             <div class="pipeline-container">
                 <div class="pipeline-scroll" id="pipelineScroll">
-                    <div class="pipeline-stages" id="pipelineStages">
-                        <!-- Stages rendered by JS -->
-                    </div>
+                    <div class="pipeline-stages" id="pipelineStages"></div>
                 </div>
             </div>
         </div>
@@ -732,7 +123,6 @@
         <!-- Content -->
         <div class="modal-content">
             <div class="content-grid">
-                <!-- Left Column -->
                 <div class="col-left">
                     <!-- Info Card -->
                     <div class="card">
@@ -745,26 +135,23 @@
                                 <span class="info-label">Fecha de Cierre</span>
                                 <span class="info-value medium">{{ oportunidad.get_mes_cierre_display|title }} 2025</span>
                             </div>
-                            <div class="info-item" style="margin-top: 0.5rem;">
+                            <div class="info-item" style="margin-top:.5rem">
                                 <span class="info-label">Producto</span>
                                 <span class="info-value large">{{ oportunidad.get_producto_display|default:"N/A" }}</span>
                             </div>
-                            <div class="info-item" style="margin-top: 0.5rem;">
+                            <div class="info-item" style="margin-top:.5rem">
                                 <span class="info-label">Área</span>
                                 <span class="info-value large">{{ oportunidad.get_area_display|default:"N/A" }}</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Cotizaciones Card -->
+                    <!-- Cotizaciones -->
                     <div class="card">
                         <div class="section-header">
                             <h3 class="section-title">Cotizaciones</h3>
                             <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="btn-new">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="12" y1="5" x2="12" y2="19"/>
-                                    <line x1="5" y1="12" x2="19" y2="12"/>
-                                </svg>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                                 Nueva
                             </a>
                         </div>
@@ -773,51 +160,28 @@
                             <div class="quote-card">
                                 <div class="quote-left">
                                     <div class="quote-badge">#{{ cotizacion.id|stringformat:"03d" }}</div>
-                                    <div class="quote-info" onclick="window.open('{% url 'view_cotizacion_pdf' cotizacion.id %}', '_blank')">
-                                        <div class="quote-title">
-                                            COT-{{ cotizacion.fecha_creacion|date:"Y" }}-{{ cotizacion.id|stringformat:"03d" }}
-                                            <span class="quote-version">(v1.0)</span>
-                                        </div>
-                                        <div class="quote-meta">
-                                            {{ cotizacion.fecha_creacion|tijuana_time:"d M Y" }} • ${{ cotizacion.total|floatformat:0 }}
-                                        </div>
+                                    <div class="quote-info" onclick="window.open('{% url 'view_cotizacion_pdf' cotizacion.id %}','_blank')">
+                                        <div class="quote-title">COT-{{ cotizacion.fecha_creacion|date:"Y" }}-{{ cotizacion.id|stringformat:"03d" }}<span class="quote-version">(v1.0)</span></div>
+                                        <div class="quote-meta">{{ cotizacion.fecha_creacion|tijuana_time:"d M Y" }} • ${{ cotizacion.total|floatformat:0 }}</div>
                                     </div>
                                 </div>
                                 <div class="quote-actions">
-                                    <a href="{% url 'editar_cotizacion' cotizacion.id %}" class="action-btn" title="Editar Cotización">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                        </svg>
-                                    </a>
-                                    <a href="{% url 'generate_cotizacion_pdf' cotizacion.id %}" class="action-btn" title="Descargar PDF">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                            <polyline points="7 10 12 15 17 10"/>
-                                            <line x1="12" y1="15" x2="12" y2="3"/>
-                                        </svg>
-                                    </a>
+                                    <a href="{% url 'editar_cotizacion' cotizacion.id %}" class="action-btn" title="Editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></a>
+                                    <a href="{% url 'generate_cotizacion_pdf' cotizacion.id %}" class="action-btn" title="Descargar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
                                 </div>
                             </div>
                             {% empty %}
-                            <div class="empty-state">
-                                <div class="empty-icon">📄</div>
-                                <div class="empty-text">Sin cotizaciones aún</div>
-                            </div>
+                            <div class="empty-state"><div class="empty-icon">📄</div><div class="empty-text">Sin cotizaciones aún</div></div>
                             {% endfor %}
                         </div>
                     </div>
 
-                    <!-- Volumetrias Card (if any) -->
                     {% if volumetrias.count > 0 %}
                     <div class="card">
                         <div class="section-header">
                             <h3 class="section-title">Volumetrías</h3>
-                            <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="btn-new" style="background: #f97316;">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="12" y1="5" x2="12" y2="19"/>
-                                    <line x1="5" y1="12" x2="19" y2="12"/>
-                                </svg>
+                            <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="btn-new" style="background:#f97316">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                                 Nueva
                             </a>
                         </div>
@@ -825,28 +189,15 @@
                             {% for volumetria in volumetrias %}
                             <div class="quote-card">
                                 <div class="quote-left">
-                                    <div class="quote-badge" style="background: rgba(249, 115, 22, 0.2); color: #fb923c;">#{{ volumetria.id|stringformat:"03d" }}</div>
-                                    <div class="quote-info" onclick="window.open('{% url 'view_volumetria_pdf' volumetria.id %}', '_blank')">
+                                    <div class="quote-badge" style="background:rgba(249,115,22,.2);color:#fb923c">#{{ volumetria.id|stringformat:"03d" }}</div>
+                                    <div class="quote-info" onclick="window.open('{% url 'view_volumetria_pdf' volumetria.id %}','_blank')">
                                         <div class="quote-title">{{ volumetria.titulo }}</div>
-                                        <div class="quote-meta">
-                                            {{ volumetria.cantidad_nodos }} nodos • ${{ volumetria.total|floatformat:0 }}
-                                        </div>
+                                        <div class="quote-meta">{{ volumetria.cantidad_nodos }} nodos • ${{ volumetria.total|floatformat:0 }}</div>
                                     </div>
                                 </div>
                                 <div class="quote-actions">
-                                    <a href="{% url 'download_volumetria_pdf' volumetria.id %}" class="action-btn" title="Descargar PDF">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                            <polyline points="7 10 12 15 17 10"/>
-                                            <line x1="12" y1="15" x2="12" y2="3"/>
-                                        </svg>
-                                    </a>
-                                    <button onclick="eliminarVolumetria({{ volumetria.id }}, '{{ volumetria.titulo|escapejs }}')" class="action-btn" title="Eliminar" style="color: #f87171;">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <polyline points="3 6 5 6 21 6"/>
-                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                                        </svg>
-                                    </button>
+                                    <a href="{% url 'download_volumetria_pdf' volumetria.id %}" class="action-btn" title="Descargar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
+                                    <button onclick="if(confirm('¿Eliminar volumetría?'))fetch('/app/api/eliminar-volumetria/{{ volumetria.id }}/',{method:'DELETE',headers:{'X-CSRFToken':'{{ csrf_token }}'}}).then(r=>r.json()).then(d=>{if(d.success)location.reload();else alert(d.error)})" class="action-btn" title="Eliminar" style="color:#f87171"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
                                 </div>
                             </div>
                             {% endfor %}
@@ -855,26 +206,22 @@
                     {% endif %}
                 </div>
 
-                <!-- Right Column -->
                 <div class="col-right">
-                    <!-- Probability Card -->
+                    <!-- Probability -->
                     <div class="card card-gradient">
                         <span class="info-label">Probabilidad de Cierre</span>
                         <div class="probability-value">{{ oportunidad.probabilidad_cierre }}%</div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: {{ oportunidad.probabilidad_cierre }}%;"></div>
-                        </div>
+                        <div class="progress-bar"><div class="progress-fill" style="width:{{ oportunidad.probabilidad_cierre }}%"></div></div>
                     </div>
 
-                    <!-- Stakeholders Card -->
+                    <!-- Stakeholders -->
                     <div class="card">
-                        <!-- Vendedor -->
                         <div class="stakeholder-section">
                             <div class="stakeholder-label">Vendedor</div>
                             <div class="stakeholder-info">
-                                <div class="avatar gradient-{% cycle '1' '2' '3' '4' '5' %}">
+                                <div class="avatar gradient">
                                     {% if oportunidad.usuario.userprofile.avatar %}
-                                    <img src="{{ oportunidad.usuario.userprofile.get_avatar_url }}" alt="{{ oportunidad.usuario.get_full_name }}">
+                                    <img src="{{ oportunidad.usuario.userprofile.get_avatar_url }}" alt="">
                                     {% else %}
                                     {{ oportunidad.usuario.first_name|slice:":1"|upper }}{{ oportunidad.usuario.last_name|slice:":1"|upper }}
                                     {% endif %}
@@ -885,20 +232,11 @@
                                 </div>
                             </div>
                         </div>
-
                         <div class="divider"></div>
-
-                        <!-- Cliente -->
                         <div class="stakeholder-section">
                             <div class="stakeholder-label">Cliente</div>
                             <div class="stakeholder-info">
-                                <div class="avatar purple">
-                                    {% if oportunidad.contacto %}
-                                    {{ oportunidad.contacto|slice:":1"|upper }}
-                                    {% else %}
-                                    C
-                                    {% endif %}
-                                </div>
+                                <div class="avatar purple">{{ oportunidad.cliente.nombre_empresa|slice:":1"|upper|default:"C" }}</div>
                                 <div class="stakeholder-details">
                                     <h4>{{ oportunidad.contacto|default:"No asignado" }}</h4>
                                     <p class="company">{{ oportunidad.cliente.nombre_empresa|default:"Sin empresa" }}</p>
@@ -913,137 +251,94 @@
 </div>
 
 <script>
-    const OPORTUNIDAD_ID = {{ oportunidad.id }};
-    const TIPO_NEGOCIACION = "{{ oportunidad.tipo_negociacion|default:'runrate' }}";
-    const ETAPA_ACTUAL = "{{ oportunidad.etapa_corta|default:'' }}".toLowerCase();
-    const ETAPA_COMPLETA = "{{ oportunidad.etapa_completa|default:'' }}".toLowerCase();
+(function(){
+    const TIPO = "{{ oportunidad.tipo_negociacion|default:'runrate' }}";
+    const ETAPA_ACTUAL = "{{ oportunidad.etapa_corta|default:'' }}";
+    const ETAPA_COLOR = "{{ oportunidad.etapa_color|default:'#22d3ee' }}";
 
-    // Pipeline stages from Bitrix
-    const STAGES_RUNRATE = [
-        "Solicitud", "Cotizando", "Cotización Enviada", "Seguimiento",
-        "Vendido sin PO", "Vendido con PO", "Vendido en Tránsito", "Facturado",
-        "Programado", "Entregado", "Esperando Pago", "Sin Respuesta", "Cerrado"
+    // Etapas reales de Bitrix
+    const RUNRATE = [
+        {name:"Solicitud",color:"#FFFFFF"},
+        {name:"Cotizando",color:"#FFEB3B"},
+        {name:"Enviada",color:"#2196F3"},
+        {name:"Seguimiento",color:"#FF9800"},
+        {name:"Vendido s/PO",color:"#9C27B0"},
+        {name:"Vendido c/PO",color:"#9C27B0"},
+        {name:"En Tránsito",color:"#673AB7"},
+        {name:"Facturado",color:"#00BCD4"},
+        {name:"Programado",color:"#03DAC6"},
+        {name:"Entregado",color:"#4CAF50"},
+        {name:"Esperando Pago",color:"#8BC34A"},
+        {name:"Ganado",color:"#4CAF50"},
+        {name:"Perdido",color:"#F44336"}
     ];
 
-    const STAGES_PROJECT = [
-        "Oportunidad", "Levantamiento", "Cotizando", "Cotización Enviada", "En Seguimiento",
-        "Vendido sin PO", "Vendido con PO", "Comprando", "Materiales en Almacén",
-        "En Ejecución", "Proyecto Entregado", "Facturado", "Perdido", "Cerrado"
+    const PROYECTO = [
+        {name:"Oportunidad",color:"#FFFFFF"},
+        {name:"Levantamiento",color:"#FF5C5A"},
+        {name:"Base Cotización",color:"#55D0E0"},
+        {name:"Cotizando",color:"#2fc6f6"},
+        {name:"Enviada",color:"#2FC6F6"},
+        {name:"Seguimiento",color:"#39A8EF"},
+        {name:"Vendido s/PO",color:"#FF00FF"},
+        {name:"Vendido c/PO",color:"#FF00FF"},
+        {name:"Comprando",color:"#2FC6F6"},
+        {name:"En Tránsito",color:"#2FC6F6"},
+        {name:"Ejecutando",color:"#FFFF00"},
+        {name:"Entregado",color:"#2FC6F6"},
+        {name:"Facturado",color:"#55D0E0"},
+        {name:"Perdido",color:"#FF0000"},
+        {name:"Cerrado",color:"#7BD500"}
     ];
 
-    function renderPipeline() {
-        const container = document.getElementById('pipelineStages');
-        const stages = TIPO_NEGOCIACION === 'runrate' ? STAGES_RUNRATE : STAGES_PROJECT;
-        const typeClass = TIPO_NEGOCIACION === 'runrate' ? 'runrate' : 'proyecto';
+    const stages = TIPO === 'proyecto' ? PROYECTO : RUNRATE;
+    const isProyecto = TIPO === 'proyecto';
+    const baseColor = isProyecto ? '#f43f5e' : '#06b6d4';
+    const checkColor = isProyecto ? '#fb7185' : '#22d3ee';
 
-        // Find current stage index
-        let currentIndex = -1;
-        for (let i = 0; i < stages.length; i++) {
-            const stageLower = stages[i].toLowerCase();
-            if (stageLower === ETAPA_ACTUAL ||
-                stageLower === ETAPA_COMPLETA ||
-                ETAPA_ACTUAL.includes(stageLower) ||
-                ETAPA_COMPLETA.includes(stageLower) ||
-                stageLower.includes(ETAPA_ACTUAL)) {
-                currentIndex = i;
-                break;
-            }
-        }
-
-        // Default to first if not found
-        if (currentIndex === -1) currentIndex = 0;
-
-        let html = '';
-        stages.forEach((stage, index) => {
-            const isActive = index === currentIndex;
-            const isCompleted = index < currentIndex;
-
-            html += `<div class="stage-item">`;
-            html += `<button class="stage-btn ${isActive ? 'active ' + typeClass : ''} ${isCompleted ? 'completed' : ''}" data-stage="${stage}">`;
-
-            if (isCompleted) {
-                html += `<svg class="check-icon ${typeClass}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                    <polyline points="20 6 9 17 4 12"/>
-                </svg>`;
-            }
-
-            html += `${stage}</button>`;
-
-            if (index < stages.length - 1) {
-                html += `<div class="stage-connector ${isCompleted ? 'completed' : ''}"></div>`;
-            }
-
-            html += `</div>`;
-        });
-
-        container.innerHTML = html;
-
-        // Auto-scroll to active stage
-        setTimeout(() => {
-            const activeBtn = container.querySelector('.stage-btn.active');
-            if (activeBtn) {
-                activeBtn.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest',
-                    inline: 'center'
-                });
-            }
-        }, 100);
-    }
-
-    function eliminarVolumetria(volumetriaId, titulo) {
-        if (confirm(`¿Estás seguro de que quieres eliminar la volumetría "${titulo}"?`)) {
-            fetch(`/app/api/eliminar-volumetria/${volumetriaId}/`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
-            }).then(response => response.json())
-              .then(data => {
-                  if (data.success) {
-                      location.reload();
-                  } else {
-                      alert('Error al eliminar la volumetría: ' + (data.error || 'Error desconocido'));
-                  }
-              }).catch(error => {
-                  alert('Error al eliminar la volumetría');
-                  console.error('Error:', error);
-              });
+    // Encontrar índice actual
+    let currentIdx = -1;
+    const etapaLower = ETAPA_ACTUAL.toLowerCase();
+    for(let i=0;i<stages.length;i++){
+        const stageLower = stages[i].name.toLowerCase();
+        if(stageLower === etapaLower || etapaLower.includes(stageLower) || stageLower.includes(etapaLower)){
+            currentIdx = i;
+            break;
         }
     }
+    if(currentIdx===-1) currentIdx=0;
 
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
+    // Renderizar pipeline
+    const container = document.getElementById('pipelineStages');
+    let html = '';
+
+    stages.forEach((stage,i)=>{
+        const isActive = i === currentIdx;
+        const isCompleted = i < currentIdx;
+        const stageColor = isActive ? (ETAPA_COLOR || stage.color) : stage.color;
+
+        html += '<div class="stage-item">';
+        html += `<button class="stage-btn${isActive?' active':''}${isCompleted?' completed':''}" style="${isActive?'background:'+stageColor+';--stage-glow:'+stageColor+'40':''}">`
+
+        if(isCompleted){
+            html += `<svg class="check-icon" style="color:${checkColor}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
         }
-        return cookieValue;
-    }
 
-    // Initialize
-    document.addEventListener('DOMContentLoaded', function() {
-        renderPipeline();
+        html += stage.name + '</button>';
+
+        if(i < stages.length-1){
+            html += `<div class="stage-connector${isCompleted?' completed':''}"></div>`;
+        }
+        html += '</div>';
     });
-</script>
 
-<script>
-(function() {
-    function activarModoCotizaciones() {
-        document.body.classList.add('cotizaciones-mode');
-    }
-    if (document.body) {
-        activarModoCotizaciones();
-    } else {
-        document.addEventListener('DOMContentLoaded', activarModoCotizaciones);
-    }
-    window.addEventListener('pageshow', activarModoCotizaciones);
+    container.innerHTML = html;
+
+    // Auto-scroll a etapa activa
+    setTimeout(()=>{
+        const active = container.querySelector('.stage-btn.active');
+        if(active) active.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+    },100);
 })();
 </script>
 {% endblock %}
