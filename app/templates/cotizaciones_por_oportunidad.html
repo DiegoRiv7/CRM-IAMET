@@ -3,13 +3,11 @@
 {% load app_filters %}
 
 <script>
-    // FIX: Pre-define la variable 'designBtn' para prevenir un error fatal en el script de dock.html,
-    // que estaba bloqueando la ejecución de todo el JavaScript de la página.
+    // FIX: Pre-define la variable 'designBtn' para prevenir un error fatal en el script de dock.html
     const designBtn = document.createElement('div');
-    
+
     // PRIORITY: Activar modo cotizaciones INMEDIATAMENTE para evitar flash del dock
     (function() {
-        // Crear el estilo para ocultar el dock inmediatamente
         const style = document.createElement('style');
         style.textContent = `
             body.cotizaciones-mode .macos-dock,
@@ -24,19 +22,13 @@
             }
         `;
         document.head.appendChild(style);
-        
-        // Aplicar la clase cotizaciones-mode inmediatamente
+
         function activarModoCotizaciones() {
             if (document.body) {
                 document.body.classList.add('cotizaciones-mode');
-                console.log('🚀 Clase cotizaciones-mode aplicada TEMPRANO');
             }
         }
-        
-        // Intentar aplicar inmediatamente
         activarModoCotizaciones();
-        
-        // Si no hay body todavía, aplicar tan pronto como esté disponible
         if (!document.body) {
             const observer = new MutationObserver(function() {
                 if (document.body) {
@@ -50,7 +42,6 @@
 </script>
 
 <style>
-    /* Ocultar el sistema de dock y edición en esta página para maximizar espacio */
     .macos-dock,
     #design-panel,
     #position-controls,
@@ -65,436 +56,603 @@
 
 {% block content %}
 
-
-<!-- CRM AVANZADO SOLO PARA SUPERUSUARIOS -->
 <style>
     :root {
-        /* Apple Color System - Dark Mode */
-        --apple-blue: #0A84FF;
-        --apple-green: #30D158;
-        --apple-orange: #FF9F0A;
-        --apple-red: #FF453A;
-        --apple-purple: #BF5AF2;
-        --apple-yellow: #FFD60A;
-        --apple-gray: #8E8E93;
-        --apple-gray-light: #3A3A3C;
-        --apple-background: #1D1D1F; /* Dark background for the page */
-        --apple-background-secondary: #2C2C2E; /* Card background */
-        --apple-background-tertiary: #3A3A3C; /* Input fields, etc. */
-        --apple-label: #FFFFFF; /* Primary text */
-        --apple-label-secondary: #EBEBF599; /* Secondary text */
-        --apple-separator: #38383A; /* Borders */
-        --apple-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif;
+        --modal-bg: rgba(18, 18, 22, 0.98);
+        --card-bg: rgba(30, 30, 36, 0.95);
+        --card-border: rgba(255, 255, 255, 0.08);
+        --text-primary: #ffffff;
+        --text-secondary: rgba(255, 255, 255, 0.6);
+        --text-tertiary: rgba(255, 255, 255, 0.4);
+        --accent-blue: #0A84FF;
+        --accent-green: #30D158;
+        --accent-orange: #FF9F0A;
+        --accent-red: #FF453A;
+        --accent-purple: #BF5AF2;
+        --accent-yellow: #FFD60A;
+        --stage-inactive: rgba(255, 255, 255, 0.1);
+        --stage-active: var(--accent-blue);
+        --stage-completed: var(--accent-green);
     }
 
-    body {
-        background: var(--apple-background);
-        color: var(--apple-label);
-        font-family: var(--apple-font-family);
-        margin: 0;
-        padding: 0;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        overflow: hidden; /* Evita el scroll de la página completa */
-    }
-
-    /* iPad-like Layout */
-    .crm-container {
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
-        padding: 1.5rem;
+    * {
         box-sizing: border-box;
     }
 
-    .crm-header {
-        background: transparent;
-        border-bottom: none;
-        padding: 0 0 1.5rem 0;
+    body {
+        background: #0a0a0c;
+        color: var(--text-primary);
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+        margin: 0;
+        padding: 0;
+        -webkit-font-smoothing: antialiased;
+        overflow: hidden;
+    }
+
+    /* Modal Container */
+    .opportunity-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--modal-bg);
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        flex-direction: column;
+        z-index: 1000;
+    }
+
+    /* Modal Header with Pipeline */
+    .modal-header {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid var(--card-border);
         flex-shrink: 0;
     }
 
-    .crm-title-container {
+    .header-top {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
     }
 
-    .crm-title {
-        font-size: 2rem;
-        font-weight: 700;
-        color: var(--apple-label);
-        margin: 0;
+    .back-button {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--accent-blue);
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        background: rgba(10, 132, 255, 0.1);
+        border: 1px solid rgba(10, 132, 255, 0.2);
+        transition: background 0.2s ease, transform 0.2s ease;
     }
-    
-    .crm-actions {
+
+    .back-button:hover {
+        background: rgba(10, 132, 255, 0.2);
+        transform: translateX(-2px);
+    }
+
+    .header-actions {
         display: flex;
         gap: 0.75rem;
     }
 
-    .crm-main {
-        display: flex;
-        flex: 1;
-        gap: 1.5rem;
-        overflow: hidden;
+    .action-btn {
+        padding: 0.6rem 1.2rem;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: none;
     }
 
-    /* Floating Panels - Colores más oscuros */
-    .crm-info-panel,
-    .crm-timeline-panel {
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
+    .action-btn-primary {
+        background: var(--accent-blue);
+        color: white;
+    }
+
+    .action-btn-primary:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
+    }
+
+    .action-btn-secondary {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-primary);
+        border: 1px solid var(--card-border);
+    }
+
+    .action-btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.12);
+    }
+
+    .action-btn-orange {
+        background: linear-gradient(135deg, var(--accent-orange) 0%, #F7931E 100%);
+        color: white;
+    }
+
+    .action-btn-purple {
+        background: linear-gradient(135deg, var(--accent-purple) 0%, #7C3AED 100%);
+        color: white;
+    }
+
+    /* Pipeline Type Badge */
+    .pipeline-type {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .pipeline-badge {
+        padding: 0.4rem 1rem;
         border-radius: 20px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 
-                    0 8px 32px rgba(0, 0, 0, 0.2),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        overflow: hidden;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .pipeline-badge.runrate {
+        background: rgba(10, 132, 255, 0.15);
+        color: var(--accent-blue);
+        border: 1px solid rgba(10, 132, 255, 0.3);
+    }
+
+    .pipeline-badge.proyecto {
+        background: rgba(48, 209, 88, 0.15);
+        color: var(--accent-green);
+        border: 1px solid rgba(48, 209, 88, 0.3);
+    }
+
+    .opportunity-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0 0 0.25rem 0;
+        line-height: 1.2;
+    }
+
+    .opportunity-client {
+        font-size: 1rem;
+        color: var(--text-secondary);
+        margin: 0;
+    }
+
+    /* Pipeline Stages */
+    .pipeline-container {
+        margin-top: 1.5rem;
+    }
+
+    .pipeline-stages {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        position: relative;
+        padding: 0.5rem 0;
+    }
+
+    .pipeline-stage {
+        flex: 1;
         display: flex;
         flex-direction: column;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .crm-info-panel {
-        width: 35%;
-        min-width: 350px;
-        overflow-y: auto;
-        padding: 0;
-    }
-
-    .crm-timeline-panel {
-        flex: 1;
-    }
-
-    /* Info Section Styling - Colores más oscuros */
-    .info-section {
-        padding: 1.5rem 2rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        align-items: center;
         position: relative;
-    }
-    .info-section::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
-    }
-    .info-section:last-child {
-        border-bottom: none;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 8px;
+        transition: background 0.2s ease;
     }
 
-    .section-title {
-        font-size: 0.8rem;
+    .pipeline-stage:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .stage-indicator {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+        position: relative;
+        z-index: 2;
+        transition: all 0.3s ease;
+    }
+
+    .stage-indicator.inactive {
+        background: var(--stage-inactive);
+        color: var(--text-tertiary);
+    }
+
+    .stage-indicator.active {
+        background: var(--stage-active);
+        color: white;
+        box-shadow: 0 0 20px rgba(10, 132, 255, 0.5);
+    }
+
+    .stage-indicator.completed {
+        background: var(--stage-completed);
+        color: white;
+    }
+
+    .stage-name {
+        font-size: 0.7rem;
+        color: var(--text-tertiary);
+        margin-top: 0.5rem;
+        text-align: center;
+        max-width: 80px;
+        line-height: 1.2;
+        transition: color 0.2s ease;
+    }
+
+    .pipeline-stage.active .stage-name,
+    .pipeline-stage.completed .stage-name {
+        color: var(--text-secondary);
+    }
+
+    .pipeline-stage.active .stage-name {
+        color: var(--accent-blue);
         font-weight: 600;
-        text-transform: uppercase;
-        color: var(--apple-label-secondary);
-        margin-bottom: 1.5rem;
-        letter-spacing: 0.5px;
+    }
+
+    /* Connection line */
+    .stage-connector {
+        position: absolute;
+        top: calc(0.5rem + 16px);
+        left: calc(50% + 20px);
+        right: calc(-50% + 20px);
+        height: 2px;
+        background: var(--stage-inactive);
+        z-index: 1;
+    }
+
+    .stage-connector.completed {
+        background: var(--stage-completed);
+    }
+
+    .pipeline-stage:last-child .stage-connector {
+        display: none;
+    }
+
+    /* Modal Body */
+    .modal-body {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+        padding: 1.5rem 2rem;
+        gap: 1.5rem;
+    }
+
+    /* Main Content */
+    .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+
+    /* Cards */
+    .detail-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    .card-header {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--card-border);
         display: flex;
         align-items: center;
         justify-content: space-between;
     }
 
+    .card-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0;
+    }
+
+    .card-count {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.2rem 0.6rem;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+
+    .card-body {
+        padding: 1rem 1.25rem;
+    }
+
+    /* Opportunity Info Grid */
     .info-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1.25rem;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
     }
 
     .info-item {
-        margin-bottom: 0;
+        padding: 0.75rem;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     .info-label {
-        font-size: 0.85rem;
-        color: var(--apple-label-secondary);
+        font-size: 0.75rem;
+        color: var(--text-tertiary);
         margin-bottom: 0.35rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
     }
 
     .info-value {
-        font-size: 1rem;
+        font-size: 0.95rem;
         font-weight: 500;
-        color: var(--apple-label);
+        color: var(--text-primary);
     }
 
-    /* Header elements */
-    .estado-selector-header {
-        position: relative;
+    .info-value.highlight {
+        color: var(--accent-green);
+        font-weight: 700;
     }
-    
-    .estado-current-header {
+
+    /* Quotation List */
+    .quotation-list {
         display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        background: var(--apple-background-tertiary);
-        border: 1px solid transparent;
-        border-radius: 12px;
-        padding: 0.5rem 1rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-size: 0.9rem;
-        min-width: 120px;
-    }
-    .estado-current-header:hover {
-        border-color: var(--apple-blue);
-        background: var(--apple-background-secondary);
-    }
-    
-    .estado-dot-header {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--apple-blue);
-        flex-shrink: 0;
+        flex-direction: column;
+        gap: 0.75rem;
     }
 
-    .estado-arrow {
-        margin-left: auto;
-        font-size: 0.8rem;
-        color: var(--apple-label-secondary);
-        transition: transform 0.3s ease;
-    }
-
-    .estado-dropdown-header {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: var(--apple-background-secondary);
-        border: 1px solid var(--apple-separator);
-        border-radius: 12px;
-        max-height: 250px;
-        overflow-y: auto;
-        z-index: 1000;
-        display: none;
-        box-shadow: 0 12px 32px rgba(0,0,0,0.1);
-        backdrop-filter: blur(20px);
-        margin-top: 4px;
-    }
-    
-    .estado-option-header {
+    .quotation-item {
         display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.6rem 0.75rem;
-        cursor: pointer;
-        transition: background 0.2s ease;
-        border-bottom: 1px solid var(--apple-separator);
-        font-size: 0.9rem;
-    }
-    
-    .estado-option-header:hover {
-        background: var(--apple-background-tertiary);
-    }
-    
-    .estado-option-header:last-child {
-        border-bottom: none;
-    }
-
-    /* Timeline Panel */
-    .timeline-header {
-        background: transparent;
-        border-bottom: 1px solid var(--apple-separator);
-        padding: 1rem 1.5rem;
-        display: flex;
-        justify-content: space-between;
         align-items: center;
         gap: 1rem;
-    }
-    
-    .timeline-title {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: var(--apple-label);
-        flex-shrink: 0;
-    }
-    
-    .timeline-search {
-        position: relative;
-        display: flex;
-        align-items: center;
-        width: 100%;
-        max-width: 350px;
-    }
-
-    .timeline-search .search-icon {
-        position: absolute;
-        left: 12px;
-        width: 16px;
-        height: 16px;
-        color: var(--apple-label-secondary);
-        pointer-events: none;
-    }
-
-    #timelineSearch {
-        background: var(--apple-background-tertiary);
-        border: 1px solid var(--apple-separator);
-        border-radius: 10px;
-        padding: 0.5rem 1rem 0.5rem 2.25rem; /* Left padding for icon */
-        color: var(--apple-label);
-        font-family: var(--apple-font-family);
-        font-size: 0.9rem;
-        width: 100%;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        cursor: pointer;
         transition: all 0.2s ease;
     }
 
-    #timelineSearch:focus {
-        outline: none;
-        border-color: var(--apple-blue);
-        background: var(--apple-background-secondary);
-        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
+    .quotation-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(10, 132, 255, 0.3);
+        transform: translateY(-1px);
+    }
+
+    .quotation-badge {
+        background: var(--accent-blue);
+        color: white;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.35rem 0.75rem;
+        border-radius: 8px;
+        white-space: nowrap;
+    }
+
+    .quotation-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .quotation-title {
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .quotation-meta {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.8rem;
+    }
+
+    .quotation-amount {
+        color: var(--accent-green);
+        font-weight: 600;
+    }
+
+    .quotation-date {
+        color: var(--text-tertiary);
+    }
+
+    .quotation-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .icon-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        border: 1px solid var(--card-border);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-secondary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .icon-btn:hover {
+        transform: scale(1.1);
+    }
+
+    .icon-btn.edit:hover {
+        background: var(--accent-orange);
+        color: white;
+        border-color: transparent;
+    }
+
+    .icon-btn.download:hover {
+        background: var(--accent-blue);
+        color: white;
+        border-color: transparent;
+    }
+
+    .icon-btn.delete:hover {
+        background: var(--accent-red);
+        color: white;
+        border-color: transparent;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-tertiary);
+    }
+
+    .empty-state-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+        opacity: 0.5;
+    }
+
+    .empty-state-text {
+        font-size: 0.9rem;
+    }
+
+    /* Sidebar */
+    .sidebar {
+        width: 320px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    /* Seller/User Card */
+    .user-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .user-avatar {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        margin: 0 auto 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: white;
+        overflow: hidden;
+    }
+
+    .user-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .user-avatar.gradient-1 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .user-avatar.gradient-2 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .user-avatar.gradient-3 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .user-avatar.gradient-4 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+    .user-avatar.gradient-5 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+
+    .user-role {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-tertiary);
+        margin-bottom: 0.5rem;
+    }
+
+    .user-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    /* Client Card */
+    .client-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .client-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .client-row:last-child {
+        border-bottom: none;
+    }
+
+    .client-label {
+        font-size: 0.8rem;
+        color: var(--text-tertiary);
+    }
+
+    .client-value {
+        font-size: 0.9rem;
+        color: var(--text-primary);
+        font-weight: 500;
+        text-align: right;
+    }
+
+    /* Timeline Panel */
+    .timeline-card {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
     }
 
     .timeline-content {
         flex: 1;
         overflow-y: auto;
-        padding: 1.5rem;
-        background: rgba(22, 22, 24, 0.8);
-        position: relative;
-    }
-    .timeline-content::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
+        padding: 1rem 1.25rem;
     }
 
-    /* iMessage-style Timeline */
-    .new-comment {
-        padding: 1rem 1.5rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(22, 22, 24, 0.9);
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
-        border-radius: 0 0 20px 20px;
-        margin-bottom: 0;
-        transition: all 0.2s ease-in-out;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    }
-    .crm-timeline-panel.dragover {
-        border: 2px dashed var(--apple-blue);
-        background: rgba(10, 132, 255, 0.1);
-        border-radius: 12px;
-        box-shadow: 0 0 15px rgba(10, 132, 255, 0.3);
-        transform: scale(1.01);
-    }
-    
-    .comment-header {
-        display: none; /* No longer needed in this layout */
-    }
-
-    .comment-input {
-        width: 100%;
-        background: var(--apple-background-tertiary);
-        border: 1px solid var(--apple-separator);
-        border-radius: 18px;
-        padding: 0.5rem 1rem;
-        height: 36px;
-        box-sizing: border-box;
-        color: var(--apple-label);
-        font-size: 0.9rem;
-        resize: vertical;
-        font-family: var(--apple-font-family);
-        transition: all 0.2s ease;
-    }
-    
-    .comment-input:focus {
-        outline: none;
-        border-color: var(--apple-blue);
-        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
-    }
-    
-    .comment-actions-container {
-        display: flex; 
-        gap: 0.75rem; 
-        align-items: center;
-    }
-
-    .plus-button-container {
-        position: relative;
-    }
-
-    .action-button-small {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        border: none;
-        background: transparent;
-        color: var(--apple-blue);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        flex-shrink: 0;
-    }
-
-    .action-button-small:hover {
-        background: var(--apple-background-tertiary);
-    }
-
-    #openMenuBtn.open {
-        transform: rotate(45deg);
-    }
-
-    .comment-menu {
-        position: absolute;
-        bottom: calc(100% + 10px);
-        left: 0;
-        background: #48484A;
-        border-radius: 12px;
-        padding: 0.5rem;
-        display: flex;
-        gap: 0.75rem;
-        opacity: 0;
-        transform: translateY(10px);
-        transition: all 0.2s ease-out;
-        pointer-events: none;
-    }
-
-    .comment-menu.open {
-        opacity: 1;
-        transform: translateY(0);
-        pointer-events: auto;
-    }
-
-    .menu-option-btn {
-        background: none;
-        border: none;
-        color: var(--apple-label-secondary);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.3rem;
-        cursor: pointer;
-        padding: 0.5rem;
-        border-radius: 8px;
-        transition: background 0.2s ease;
-        font-family: var(--apple-font-family);
-        font-size: 0.7rem;
-        width: 60px;
-    }
-    .menu-option-btn:hover {
-        color: var(--apple-label);
-        background: rgba(255,255,255,0.1);
-    }
-    .menu-icon { font-size: 1.5rem; }
-
+    /* Timeline Items */
     .timeline-item {
         display: flex;
-        flex-direction: column; /* Changed for reply UI */
-        gap: 4px; /* Space between bubble and reply button */
+        flex-direction: column;
+        gap: 4px;
         margin-bottom: 1rem;
         position: relative;
-        align-items: flex-start; /* Default alignment */
+        align-items: flex-start;
     }
 
     .timeline-item.align-right {
@@ -512,14 +670,11 @@
         justify-content: flex-end;
     }
 
-    .timeline-item::before {
-        display: none; /* Remove vertical line */
-    }
     .timeline-icon {
         width: 32px;
         height: 32px;
         font-size: 0.8rem;
-        order: 1; /* Default order */
+        order: 1;
         align-self: flex-start;
         border-radius: 50%;
         display: flex;
@@ -528,84 +683,38 @@
         flex-shrink: 0;
         color: white;
     }
+
     .timeline-content-item {
         width: 75%;
-        border-radius: 20px;
-        padding: 0.75rem 1.25rem;
+        border-radius: 16px;
+        padding: 0.75rem 1rem;
         order: 2;
         position: relative;
-        
-        /* Efecto Liquid Glass Mejorado (Green Tint) */
-        background: linear-gradient(145deg, rgba(48, 209, 88, 0.12) 0%, rgba(48, 209, 88, 0.04) 30%, rgba(32, 174, 76, 0.08) 70%, rgba(48, 209, 88, 0.02) 100%),
-                    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(0, 0, 0, 0.05) 100%),
-                    rgba(42, 46, 50, 0.9);
-        backdrop-filter: blur(30px) saturate(1.5);
-        -webkit-backdrop-filter: blur(30px) saturate(1.5);
-        border: 1px solid rgba(255, 255, 255, 0.25);
-        box-shadow: 
-            0 8px 32px rgba(48, 209, 88, 0.1),
-            0 4px 16px rgba(0, 0, 0, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.3),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.1);
-    }
-    .timeline-content-item.editable:not(.editing):hover,
-    .timeline-content-item.replyable:not(.replying):hover {
-        background: linear-gradient(145deg, rgba(48, 209, 88, 0.18) 0%, rgba(48, 209, 88, 0.08) 30%, rgba(32, 174, 76, 0.12) 70%, rgba(48, 209, 88, 0.04) 100%),
-                    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 50%, rgba(0, 0, 0, 0.08) 100%),
-                    rgba(50, 54, 58, 0.95);
-        cursor: pointer;
-        transform: translateY(-1px);
-        box-shadow: 
-            0 12px 40px rgba(48, 209, 88, 0.15),
-            0 6px 20px rgba(0, 0, 0, 0.25),
-            inset 0 1px 0 rgba(255, 255, 255, 0.4),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.15);
-    }
-    .timeline-content-item.editing {
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: rgba(48, 209, 88, 0.08);
+        border: 1px solid rgba(48, 209, 88, 0.2);
+        backdrop-filter: blur(10px);
     }
 
-    /* Bubble alignment */
     .timeline-item.align-right .timeline-item-inner .timeline-icon {
         order: 2;
     }
+
     .timeline-item.align-right .timeline-item-inner .timeline-content-item {
         order: 1;
-        /* Efecto Liquid Glass Mejorado (Blue Tint) */
-        background: linear-gradient(145deg, rgba(10, 132, 255, 0.12) 0%, rgba(10, 132, 255, 0.04) 30%, rgba(0, 112, 235, 0.08) 70%, rgba(10, 132, 255, 0.02) 100%),
-                    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(0, 0, 0, 0.05) 100%),
-                    rgba(42, 46, 50, 0.9);
-        box-shadow: 
-            0 8px 32px rgba(10, 132, 255, 0.1),
-            0 4px 16px rgba(0, 0, 0, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.3),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.1);
-    }
-    .timeline-item.align-right .timeline-content-item.editable:not(.editing):hover,
-    .timeline-item.align-right .timeline-content-item.replyable:not(.replying):hover {
-        background: linear-gradient(145deg, rgba(10, 132, 255, 0.18) 0%, rgba(10, 132, 255, 0.08) 30%, rgba(0, 112, 235, 0.12) 70%, rgba(10, 132, 255, 0.04) 100%),
-                    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 50%, rgba(0, 0, 0, 0.08) 100%),
-                    rgba(50, 54, 58, 0.95);
-        transform: translateY(-1px);
-        box-shadow: 
-            0 12px 40px rgba(10, 132, 255, 0.15),
-            0 6px 20px rgba(0, 0, 0, 0.25),
-            inset 0 1px 0 rgba(255, 255, 255, 0.4),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+        background: rgba(10, 132, 255, 0.08);
+        border-color: rgba(10, 132, 255, 0.2);
     }
 
-    /* Hide icon for comments to make it cleaner */
     .timeline-item[data-tipo="comentario"] .timeline-icon {
         display: none;
     }
 
-    /* Iconos específicos por tipo de actividad */
-    .cotizacion-icon { background: var(--apple-purple); }
-    .volumetria-icon { background: var(--apple-orange); }
-    .creacion-icon { background: var(--apple-green); }
-    .comentario-icon { background: var(--apple-blue); }
-    .cambio-estado-icon { background: var(--apple-yellow); color: var(--apple-label); }
-    .sistema-icon { background: var(--apple-gray); }
+    .cotizacion-icon { background: var(--accent-purple); }
+    .volumetria-icon { background: var(--accent-orange); }
+    .creacion-icon { background: var(--accent-green); }
+    .comentario-icon { background: var(--accent-blue); }
+    .cambio-estado-icon { background: var(--accent-yellow); color: #000; }
+    .sistema-icon { background: #8E8E93; }
 
     .timeline-header-item {
         display: flex;
@@ -616,122 +725,239 @@
 
     .timeline-title-item {
         font-weight: 600;
-        color: var(--apple-label-secondary);
+        color: var(--text-secondary);
         font-size: 0.8rem;
     }
 
     .timeline-time {
         font-size: 0.75rem;
-        color: var(--apple-label-secondary);
+        color: var(--text-tertiary);
         margin-left: 1rem;
         flex-shrink: 0;
     }
 
     .timeline-text {
-        color: var(--apple-label);
+        color: var(--text-primary);
         font-size: 0.9rem;
         line-height: 1.5;
-        word-wrap: break-word;
-    }
-    
-    .activity-meta {
-        color: var(--apple-label-secondary);
-        font-size: 0.85rem;
-        font-weight: 500;
-    }
-
-    .activity-actions {
-        margin-top: 0.75rem;
     }
 
     .activity-link {
         font-size: 0.85rem;
         text-decoration: none;
         font-weight: 500;
+        color: var(--accent-blue);
         transition: all 0.2s ease;
     }
-    .cotizacion-link { color: var(--apple-blue); }
-    .cotizacion-link:hover { text-decoration: underline; }
-    .volumetria-link { color: var(--apple-orange); }
-    .volumetria-link:hover { text-decoration: underline; }
 
-    /* COMENTARIOS EN TIMELINE */
-    .comment-content {
-        background: transparent;
-        border-radius: 0;
-        padding: 0;
-        margin-top: 0;
-        border-left: none;
-        font-style: normal;
+    .activity-link:hover {
+        text-decoration: underline;
     }
-    
-    .comment-edit-form, .comment-reply-form {
-        margin-top: 0.5rem;
+
+    /* Comment Input */
+    .comment-input-container {
+        padding: 1rem 1.25rem;
+        border-top: 1px solid var(--card-border);
+        background: rgba(0, 0, 0, 0.3);
     }
-    .comment-edit-input {
-        width: 100%;
-        background: var(--apple-background);
-        border: 1px solid var(--apple-separator);
-        border-radius: 12px;
-        padding: 0.75rem;
-        color: var(--apple-label);
-        font-size: 0.9rem;
-        resize: vertical;
-        min-height: 60px;
-        margin-bottom: 0.5rem;
-        font-family: var(--apple-font-family);
+
+    .comment-input-wrapper {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
     }
-    .comment-edit-input:focus {
-        outline: none;
-        border-color: var(--apple-blue);
-        box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2);
-    }
-    .comment-edit-actions, .comment-reply-actions {
-        display: flex; 
-        gap: 0.5rem; 
-        justify-content: flex-end;
-        padding-top: 0.5rem;
-    }
-    .comment-edit-btn, .comment-reply-btn {
-        padding: 0.4rem 1rem;
-        border-radius: 8px;
+
+    .attach-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
         border: none;
-        font-size: 0.8rem;
+        background: transparent;
+        color: var(--accent-blue);
         cursor: pointer;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         transition: all 0.2s ease;
-        font-weight: 500;
-    }
-    .comment-edit-btn.save, .comment-reply-btn.reply { background: var(--apple-blue); color: white; }
-    .comment-edit-btn.cancel, .comment-reply-btn.cancel { background: var(--apple-separator); color: var(--apple-label); }
-    .comment-edit-btn.delete { background: var(--apple-red); color: white; margin-right: auto; } /* Push to the left */
-
-    /* Reply UI */
-    .reply-ui-container {
-        padding-left: 40px; /* Align with bubble */
-        margin-top: 4px;
-        height: 30px;
-    }
-    .timeline-item.align-right .reply-ui-container {
-        padding-left: 0;
-        padding-right: 40px;
-        text-align: right;
     }
 
-    /* ARCHIVOS ADJUNTOS EN COMENTARIOS */
-    .comment-attachments { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.15); }
-    .timeline-item.align-right .comment-attachments { border-top-color: rgba(255,255,255,0.3); }
+    .attach-btn:hover {
+        background: rgba(10, 132, 255, 0.1);
+    }
+
+    .attach-btn.open {
+        transform: rotate(45deg);
+    }
+
+    .comment-textarea {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--card-border);
+        border-radius: 20px;
+        padding: 0.6rem 1rem;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        resize: none;
+        height: 40px;
+        font-family: inherit;
+        transition: border-color 0.2s ease;
+    }
+
+    .comment-textarea:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+    }
+
+    .send-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: none;
+        background: var(--accent-blue);
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    .send-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .send-btn:not(:disabled):hover {
+        filter: brightness(1.1);
+        transform: scale(1.05);
+    }
+
+    /* Attach Menu */
+    .attach-menu-container {
+        position: relative;
+    }
+
+    .attach-menu {
+        position: absolute;
+        bottom: calc(100% + 10px);
+        left: 0;
+        background: #48484A;
+        border-radius: 12px;
+        padding: 0.5rem;
+        display: flex;
+        gap: 0.75rem;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.2s ease-out;
+        pointer-events: none;
+    }
+
+    .attach-menu.open {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+
+    .menu-option-btn {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.3rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 8px;
+        transition: background 0.2s ease;
+        font-family: inherit;
+        font-size: 0.7rem;
+        width: 60px;
+    }
+
+    .menu-option-btn:hover {
+        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .menu-icon {
+        font-size: 1.5rem;
+    }
+
+    /* Attached Files */
+    .attached-files {
+        margin-bottom: 0.75rem;
+    }
+
+    .attached-file {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        border: 1px solid var(--card-border);
+    }
+
+    .attached-file-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .attached-file-icon {
+        font-size: 1.2rem;
+    }
+
+    .attached-file-name {
+        font-size: 0.9rem;
+        color: var(--text-primary);
+    }
+
+    .attached-file-size {
+        font-size: 0.8rem;
+        color: var(--text-tertiary);
+    }
+
+    .attached-file-remove {
+        background: var(--accent-red);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        font-size: 0.7rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Comment Attachments */
+    .comment-attachments {
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
     .attachment-item {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        background: rgba(0,0,0,0.1);
+        background: rgba(0, 0, 0, 0.1);
         border: 1px solid transparent;
         border-radius: 8px;
         padding: 0.5rem;
         margin-bottom: 0.5rem;
         transition: all 0.2s ease;
     }
-    .attachment-item:hover { border-color: var(--apple-blue); background: var(--apple-background-secondary); }
+
+    .attachment-item:hover {
+        border-color: var(--accent-blue);
+    }
+
     .attachment-icon {
         width: 32px;
         height: 32px;
@@ -741,31 +967,41 @@
         justify-content: center;
         font-size: 1rem;
         flex-shrink: 0;
-        background: var(--apple-background-tertiary);
-        color: var(--apple-label);
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
     }
+
     .attachment-icon.imagen { background: linear-gradient(135deg, #FF6B6B, #FF8E8E); color: white; }
-    .attachment-icon.documento { background: linear-gradient(135deg, var(--apple-blue), #4A9EFF); color: white; }
-    .attachment-icon.otro { background: linear-gradient(135deg, var(--apple-gray), #A8A8A8); color: white; }
+    .attachment-icon.documento { background: linear-gradient(135deg, var(--accent-blue), #4A9EFF); color: white; }
+
     .attachment-info { flex: 1; min-width: 0; }
+
     .attachment-name {
         font-size: 0.85rem;
         font-weight: 500;
-        color: var(--apple-label);
+        color: var(--text-primary);
         margin-bottom: 0.25rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        text-decoration: none;
+        display: block;
     }
-    .timeline-item.align-right .attachment-name { color: white; }
-    .attachment-meta { font-size: 0.75rem; color: var(--apple-label-secondary); display: flex; gap: 0.5rem; }
-    .timeline-item.align-right .attachment-meta { color: rgba(255,255,255,0.7); }
+
+    .attachment-name:hover {
+        color: var(--accent-blue);
+    }
+
+    .attachment-meta {
+        font-size: 0.75rem;
+        color: var(--text-tertiary);
+        display: flex;
+        gap: 0.5rem;
+    }
+
     .attachment-download {
         width: 32px;
         height: 32px;
         border-radius: 6px;
         border: none;
-        background: var(--apple-blue);
+        background: var(--accent-blue);
         color: white;
         cursor: pointer;
         transition: all 0.2s ease;
@@ -775,197 +1011,201 @@
         font-size: 0.9rem;
         flex-shrink: 0;
     }
-    .attachment-download:hover { filter: brightness(1.1); transform: scale(1.05); }
-    .attachments-header { font-size: 0.8rem; font-weight: 600; color: var(--apple-label-secondary); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.25rem; }
 
-    /* BOTONES */
-    .apple-button {
-        border-radius: 12px;
-        padding: 0.6rem 1.2rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        border: 1px solid transparent;
-        height: 36px;
-        box-sizing: border-box;
+    .attachment-download:hover {
+        filter: brightness(1.1);
+        transform: scale(1.05);
     }
-    .apple-button:hover { transform: translateY(-1px); }
-    .apple-button { background: var(--apple-blue); color: white; }
-    .apple-button:hover { filter: brightness(1.1); }
-    .apple-button-secondary {
-        background: var(--apple-background-secondary);
-        color: var(--apple-label);
-        border-color: var(--apple-separator);
-    }
-    .apple-button-secondary:hover {
-        background: var(--apple-background-tertiary);
-        border-color: var(--apple-separator);
-        filter: none;
-    }
-    .apple-button-volumetria { background: linear-gradient(135deg, var(--apple-orange) 0%, #F7931E 100%); color: white; }
-    .apple-button-proyecto { background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); color: white; }
-    .apple-button-proyecto:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2); }
 
-    /* Botón de edición */
-    .edit-opportunity-btn {
-        background: none;
-        border: none;
-        color: var(--apple-label-secondary);
-        cursor: pointer;
-        padding: 0.3rem;
-        border-radius: 6px;
-        margin-left: 0.5rem;
-        transition: all 0.2s ease;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
+    /* Comment Edit */
+    .comment-edit-form {
+        margin-top: 0.5rem;
     }
-    .edit-opportunity-btn:hover { background: var(--apple-background-tertiary); color: var(--apple-blue); transform: scale(1.1); }
 
-    /* Campos de edición */
-    .info-edit {
-        background: var(--apple-background-tertiary);
-        border: 1px solid var(--apple-separator);
-        border-radius: 8px;
-        padding: 0.5rem;
-        font-size: 0.9rem;
-        color: var(--apple-label);
+    .comment-edit-input {
         width: 100%;
-        transition: border-color 0.2s ease;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 0.75rem;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        resize: vertical;
+        min-height: 60px;
+        margin-bottom: 0.5rem;
+        font-family: inherit;
     }
-    .info-edit:focus { outline: none; border-color: var(--apple-blue); box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1); }
+
+    .comment-edit-input:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+    }
+
+    .comment-edit-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+    }
+
+    .comment-edit-btn {
+        padding: 0.4rem 1rem;
+        border-radius: 8px;
+        border: none;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-weight: 500;
+    }
+
+    .comment-edit-btn.save { background: var(--accent-blue); color: white; }
+    .comment-edit-btn.cancel { background: rgba(255, 255, 255, 0.1); color: var(--text-primary); }
+    .comment-edit-btn.delete { background: var(--accent-red); color: white; margin-right: auto; }
+
+    /* Reply UI */
+    .reply-ui-container {
+        padding-left: 40px;
+        margin-top: 4px;
+        height: 30px;
+    }
+
+    .timeline-item.align-right .reply-ui-container {
+        padding-left: 0;
+        padding-right: 40px;
+        text-align: right;
+    }
+
+    .comment-reply-btn {
+        padding: 0.4rem 1rem;
+        border-radius: 8px;
+        border: none;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-weight: 500;
+        background: var(--accent-blue);
+        color: white;
+    }
+
+    /* Timeline search */
+    .timeline-search {
+        padding: 0.5rem 1.25rem;
+        border-bottom: 1px solid var(--card-border);
+    }
+
+    .search-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 12px;
+        width: 16px;
+        height: 16px;
+        color: var(--text-tertiary);
+        pointer-events: none;
+    }
+
+    .timeline-search-input {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--card-border);
+        border-radius: 10px;
+        padding: 0.5rem 1rem 0.5rem 2.5rem;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        font-family: inherit;
+    }
+
+    .timeline-search-input:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+    }
+
+    /* Editable Content Items */
+    .timeline-content-item.editable:not(.editing):hover,
+    .timeline-content-item.replyable:not(.replying):hover {
+        cursor: pointer;
+        transform: translateY(-1px);
+    }
+
+    .timeline-content-item.editing {
+        border-color: var(--accent-blue);
+    }
+
+    /* Edit mode styles */
     .edit-mode { display: none !important; }
     .view-mode { display: block; }
     body.editing-opportunity .edit-mode { display: block !important; }
     body.editing-opportunity .view-mode { display: none !important; }
     body.editing-opportunity .edit-actions { display: flex !important; }
-    .apple-button-small { padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 8px; }
 
-    /* LISTAS SIMPLIFICADAS */
-    .cotizaciones-lista,
-    .volumetrias-lista {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-    .cotizacion-item-simple,
-    .volumetria-item-simple {
-        background: var(--apple-background-tertiary);
-        border: 1px solid transparent;
-        border-radius: 12px;
-        padding: 0.75rem 1rem;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-    .cotizacion-item-simple:hover,
-    .volumetria-item-simple:hover {
-        border-color: var(--apple-separator);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-    }
-    .cotizacion-numero { background: var(--apple-blue); color: white; font-size: 0.7rem; font-weight: 600; padding: 0.25rem 0.5rem; border-radius: 6px; min-width: fit-content; }
-    .cotizacion-info-simple { flex: 1; min-width: 0; }
-    .cotizacion-nombre-link { color: var(--apple-label); text-decoration: none; font-weight: 500; font-size: 0.9rem; display: block; margin-bottom: 0.25rem; }
-    .cotizacion-nombre-link:hover { color: var(--apple-blue); }
-    .cotizacion-meta { display: flex; gap: 0.75rem; font-size: 0.8rem; color: var(--apple-label-secondary); }
-    .cotizacion-monto-simple { color: var(--apple-green); font-weight: 600; }
-    .cotizacion-acciones-simple { display: flex; gap: 0.25rem; }
-    .volumetria-item-simple:hover { border-color: var(--apple-separator); }
-    .volumetria-numero { background: var(--apple-orange); color: white; font-size: 0.7rem; font-weight: 600; padding: 0.25rem 0.5rem; border-radius: 6px; min-width: fit-content; }
-    .volumetria-info-simple { flex: 1; min-width: 0; }
-    .volumetria-nombre-link { color: var(--apple-label); text-decoration: none; font-weight: 500; font-size: 0.9rem; display: block; margin-bottom: 0.25rem; }
-    .volumetria-nombre-link:hover { color: var(--apple-orange); }
-    .volumetria-meta { display: flex; gap: 0.75rem; font-size: 0.8rem; color: var(--apple-label-secondary); }
-    .volumetria-monto-simple { color: var(--apple-green); font-weight: 600; }
-    .volumetria-nodos { color: var(--apple-orange); font-weight: 500; }
-    .volumetria-acciones-simple { display: flex; gap: 0.25rem; }
-
-    /* BOTONES DE ACCIÓN SIMPLES */
-    .accion-btn {
-        width: 32px;
-        height: 32px;
+    .info-edit {
+        width: 100%;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--card-border);
         border-radius: 8px;
-        border: none;
+        padding: 0.5rem;
+        color: var(--text-primary);
         font-size: 0.9rem;
+        font-family: inherit;
+    }
+
+    .info-edit:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+    }
+
+    .edit-btn {
+        background: none;
+        border: none;
+        color: var(--text-tertiary);
         cursor: pointer;
+        padding: 0.3rem;
+        border-radius: 6px;
         transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none;
-        background: var(--apple-background-secondary);
-        color: var(--apple-label-secondary);
-        border: 1px solid var(--apple-separator);
     }
-    .accion-btn:hover { transform: scale(1.1); background: var(--apple-background-tertiary); }
-    .accion-btn.edit:hover { background: var(--apple-orange); color: white; border-color: transparent; }
-    .accion-btn.download:hover { background: var(--apple-blue); color: white; border-color: transparent; }
-    .accion-btn.delete:hover { background: var(--apple-red); color: white; border-color: transparent; }
 
-    /* MENSAJES SIN ITEMS SIMPLIFICADOS */
-    .no-items-message-simple { text-align: center; padding: 2rem; color: var(--apple-label-secondary); }
-    .no-items-message-simple .no-items-icon { font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.5; }
-    .no-items-message-simple .no-items-text { font-size: 1rem; }
-
-    /* DRAG & DROP STYLES */
-    .drop-zone { display: none; }
-    .attached-files { margin-top: 0.75rem; }
-    .attached-file {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: var(--apple-background-tertiary);
-        border-radius: 8px;
-        padding: 0.75rem;
-        margin-bottom: 0.5rem;
-        border: 1px solid var(--apple-separator);
+    .edit-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--accent-blue);
     }
-    .attached-file-info { display: flex; align-items: center; gap: 0.75rem; }
-    .attached-file-icon { font-size: 1.2rem; }
-    .attached-file-name { font-size: 0.9rem; color: var(--apple-label); }
-    .attached-file-size { font-size: 0.8rem; color: var(--apple-label-secondary); }
-    .attached-file-remove { background: var(--apple-red); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 0.7rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .file-counter { font-size: 0.8rem; color: var(--apple-label-secondary); margin-left: 0.5rem; }
-    
-    /* Custom Confirmation Modal */
+
+    /* Confirm Modal */
     .confirm-modal-overlay {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0,0,0,0.6);
+        background: rgba(0, 0, 0, 0.6);
         backdrop-filter: blur(10px);
-        z-index: 10001; /* Higher than other elements */
-        display: none; /* Hidden by default */
+        z-index: 10001;
+        display: none;
         align-items: center;
         justify-content: center;
         opacity: 0;
         transition: opacity 0.2s ease-in-out;
     }
+
     .confirm-modal-overlay.show {
         opacity: 1;
         pointer-events: auto;
     }
 
     .confirm-modal {
-        background: var(--apple-background-secondary);
+        background: var(--card-bg);
         border-radius: 16px;
         padding: 1.5rem;
         width: 100%;
         max-width: 400px;
         text-align: center;
-        border: 1px solid var(--apple-separator);
+        border: 1px solid var(--card-border);
         transform: scale(0.95);
         transition: transform 0.2s ease-in-out;
     }
+
     .confirm-modal-overlay.show .confirm-modal {
         transform: scale(1);
     }
@@ -974,12 +1214,12 @@
         font-size: 1.2rem;
         font-weight: 600;
         margin: 0 0 0.5rem 0;
-        color: var(--apple-label);
+        color: var(--text-primary);
     }
 
     .confirm-modal-text {
         font-size: 0.9rem;
-        color: var(--apple-label-secondary);
+        color: var(--text-secondary);
         margin: 0 0 1.5rem 0;
         line-height: 1.5;
     }
@@ -989,662 +1229,466 @@
         gap: 0.75rem;
         justify-content: center;
     }
-    #confirmOkBtn {
-        background: var(--apple-red);
+
+    /* Volumetria specific */
+    .volumetria-badge {
+        background: var(--accent-orange);
     }
 
-    /* RESPONSIVE */
+    /* Drag over state */
+    .timeline-card.dragover {
+        border: 2px dashed var(--accent-blue);
+        background: rgba(10, 132, 255, 0.1);
+    }
+
+    /* Responsive */
     @media (max-width: 1200px) {
-        .crm-info-panel {
-            width: 40%;
-            min-width: 320px;
+        .sidebar {
+            width: 280px;
+        }
+        .info-grid {
+            grid-template-columns: repeat(2, 1fr);
         }
     }
+
     @media (max-width: 992px) {
-        .crm-container {
-            padding: 1rem;
-            height: auto;
-        }
-        .crm-main {
+        .modal-body {
             flex-direction: column;
+            padding: 1rem;
         }
-        .crm-info-panel,
-        .crm-timeline-panel {
+        .sidebar {
             width: 100%;
-            max-height: none;
+            flex-direction: row;
+            flex-wrap: wrap;
         }
-        .crm-info-panel {
-            height: auto;
-            max-height: 60vh; /* Allow scrolling on smaller screens */
+        .sidebar > * {
+            flex: 1;
+            min-width: 200px;
+        }
+        .pipeline-stages {
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
         }
     }
+
     @media (max-width: 768px) {
-        .crm-header {
+        .header-top {
             flex-direction: column;
             align-items: flex-start;
             gap: 1rem;
         }
-        .crm-title {
-            font-size: 1.75rem;
+        .header-actions {
+            flex-wrap: wrap;
         }
         .info-grid {
             grid-template-columns: 1fr;
         }
-        .estado-current-header {
-            font-size: 0.85rem;
-            padding: 0.4rem 0.6rem;
+        .stage-name {
+            font-size: 0.6rem;
         }
     }
-
-    /* Pink theme for cotizaciones_por_oportunidad.html */
-    .light-theme body {
-        background: linear-gradient(135deg, #FFF5F8 0%, #FFE8EF 30%, #FFD1DC 60%, #FFC0CB 100%) !important;
-    }
-
-    .light-theme .crm-container {
-        background: transparent;
-    }
-
-    .light-theme .crm-title {
-        color: #E55A87 !important;
-    }
-
-    .light-theme .crm-info-panel,
-    .light-theme .crm-timeline-panel {
-        background: linear-gradient(135deg, rgba(255, 245, 248, 0.95) 0%, rgba(255, 232, 239, 0.9) 25%, rgba(255, 218, 230, 0.85) 50%, rgba(255, 200, 213, 0.8) 75%, rgba(255, 182, 193, 0.75) 100%) !important;
-        border: 1px solid rgba(255, 107, 157, 0.3);
-        box-shadow: 0 20px 60px rgba(255, 107, 157, 0.2), 0 8px 32px rgba(255, 107, 157, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    }
-
-    .light-theme .new-comment,
-    body[data-theme="pink"] .new-comment,
-    html[data-theme="pink"] body .new-comment,
-    html.light-theme[data-theme="pink"] body .new-comment {
-        background: linear-gradient(135deg,
-            rgba(255, 208, 220, 0.6) 0%,
-            rgba(255, 192, 203, 0.55) 50%,
-            rgba(255, 182, 193, 0.5) 100%) !important;
-        border-top-color: rgba(255, 107, 157, 0.3) !important;
-    }
-
-    .light-theme .comment-input {
-        background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.9) 0%,
-            rgba(255, 248, 250, 0.85) 100%) !important;
-        border-color: rgba(255, 107, 157, 0.3);
-        color: #2D1B2E !important;
-    }
-
-    .light-theme .comment-input:focus {
-        border-color: #FF6B9D !important;
-    }
-
-    .light-theme .apple-button {
-        background: #FF6B9D !important;
-    }
-
-    /* Estilos para el timeline en modo rosado */
-    .light-theme .timeline-content,
-    body[data-theme="pink"] .timeline-content,
-    html[data-theme="pink"] body .timeline-content,
-    html.light-theme[data-theme="pink"] body .timeline-content {
-        background: linear-gradient(135deg,
-            rgba(255, 208, 220, 0.6) 0%,
-            rgba(255, 192, 203, 0.55) 50%,
-            rgba(255, 182, 193, 0.5) 100%) !important;
-    }
-
-    /* Comentarios del creador (align-right) - fondo blanco con texto negro */
-    .light-theme .timeline-item.align-right .timeline-content-item,
-    body[data-theme="pink"] .timeline-item.align-right .timeline-content-item,
-    html[data-theme="pink"] body .timeline-item.align-right .timeline-content-item,
-    html.light-theme[data-theme="pink"] body .timeline-item.align-right .timeline-content-item {
-        background: linear-gradient(145deg, 
-            rgba(255, 255, 255, 0.95) 0%, 
-            rgba(248, 248, 248, 0.9) 100%) !important;
-        color: #2D1B2E !important;
-        border: 1px solid rgba(255, 107, 157, 0.3) !important;
-    }
-
-    .light-theme .timeline-item.align-right .timeline-content-item:hover,
-    body[data-theme="pink"] .timeline-item.align-right .timeline-content-item:hover,
-    html[data-theme="pink"] body .timeline-item.align-right .timeline-content-item:hover,
-    html.light-theme[data-theme="pink"] body .timeline-item.align-right .timeline-content-item:hover {
-        background: linear-gradient(145deg, 
-            rgba(255, 255, 255, 0.98) 0%, 
-            rgba(245, 245, 245, 0.95) 100%) !important;
-        border-color: rgba(255, 107, 157, 0.5) !important;
-    }
-
-    /* Todos los elementos de texto dentro de comentarios del creador */
-    .light-theme .timeline-item.align-right .timeline-title-item,
-    .light-theme .timeline-item.align-right .timeline-time,
-    .light-theme .timeline-item.align-right .timeline-text,
-    .light-theme .timeline-item.align-right .comment-text,
-    body[data-theme="pink"] .timeline-item.align-right .timeline-title-item,
-    body[data-theme="pink"] .timeline-item.align-right .timeline-time,
-    body[data-theme="pink"] .timeline-item.align-right .timeline-text,
-    body[data-theme="pink"] .timeline-item.align-right .comment-text,
-    html[data-theme="pink"] body .timeline-item.align-right .timeline-title-item,
-    html[data-theme="pink"] body .timeline-item.align-right .timeline-time,
-    html[data-theme="pink"] body .timeline-item.align-right .timeline-text,
-    html[data-theme="pink"] body .timeline-item.align-right .comment-text,
-    html.light-theme[data-theme="pink"] body .timeline-item.align-right .timeline-title-item,
-    html.light-theme[data-theme="pink"] body .timeline-item.align-right .timeline-time,
-    html.light-theme[data-theme="pink"] body .timeline-item.align-right .timeline-text,
-    html.light-theme[data-theme="pink"] body .timeline-item.align-right .comment-text {
-        color: #2D1B2E !important;
-    }
-
-    /* Comentarios de otros usuarios - fondo blanco */
-    .light-theme .timeline-item:not(.align-right) .timeline-content-item,
-    body[data-theme="pink"] .timeline-item:not(.align-right) .timeline-content-item,
-    html[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-content-item,
-    html.light-theme[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-content-item {
-        background: linear-gradient(145deg, 
-            rgba(255, 255, 255, 0.95) 0%, 
-            rgba(248, 248, 248, 0.9) 100%) !important;
-        color: #2D1B2E !important;
-        border: 1px solid rgba(255, 107, 157, 0.3) !important;
-    }
-
-    .light-theme .timeline-item:not(.align-right) .timeline-content-item:hover,
-    body[data-theme="pink"] .timeline-item:not(.align-right) .timeline-content-item:hover,
-    html[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-content-item:hover,
-    html.light-theme[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-content-item:hover {
-        background: linear-gradient(145deg, 
-            rgba(255, 255, 255, 0.98) 0%, 
-            rgba(245, 245, 245, 0.95) 100%) !important;
-        border-color: rgba(255, 107, 157, 0.5) !important;
-    }
-
-    /* Todos los elementos de texto dentro de comentarios de otros usuarios */
-    .light-theme .timeline-item:not(.align-right) .timeline-title-item,
-    .light-theme .timeline-item:not(.align-right) .timeline-time,
-    .light-theme .timeline-item:not(.align-right) .timeline-text,
-    .light-theme .timeline-item:not(.align-right) .comment-text,
-    body[data-theme="pink"] .timeline-item:not(.align-right) .timeline-title-item,
-    body[data-theme="pink"] .timeline-item:not(.align-right) .timeline-time,
-    body[data-theme="pink"] .timeline-item:not(.align-right) .timeline-text,
-    body[data-theme="pink"] .timeline-item:not(.align-right) .comment-text,
-    html[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-title-item,
-    html[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-time,
-    html[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-text,
-    html[data-theme="pink"] body .timeline-item:not(.align-right) .comment-text,
-    html.light-theme[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-title-item,
-    html.light-theme[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-time,
-    html.light-theme[data-theme="pink"] body .timeline-item:not(.align-right) .timeline-text,
-    html.light-theme[data-theme="pink"] body .timeline-item:not(.align-right) .comment-text {
-        color: #2D1B2E !important;
-    }
-
-    /* Estilos para badges de tipo de negociación */
-    .tipo-negociacion-badge {
-        display: inline-block;
-        padding: 4px 8px;
-        border-radius: 12px;
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .tipo-runrate {
-        background: rgba(0, 122, 255, 0.1);
-        color: #007AFF;
-        border: 1px solid rgba(0, 122, 255, 0.2);
-    }
-
-    .tipo-proyecto {
-        background: rgba(50, 215, 75, 0.1);
-        color: #32D74B;
-        border: 1px solid rgba(50, 215, 75, 0.2);
-    }
-
-    /* Tema claro */
-    .light-theme .tipo-runrate {
-        background: rgba(0, 122, 255, 0.15);
-        color: #0066CC;
-    }
-
-    .light-theme .tipo-proyecto {
-        background: rgba(40, 167, 69, 0.15);
-        color: #28A745;
-    }
-
-    /* Estilos para badges de etapas */
-    .etapa-badge {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 16px;
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        max-width: 140px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        user-select: none;
-        min-width: 80px;
-    }
-
-    .etapa-badge:hover {
-        transform: scale(1.05);
-        opacity: 0.8;
-    }
-    .etapa-badge.expanded {
-        max-width: none;
-        white-space: normal;
-        text-transform: none;
-        letter-spacing: normal;
-        font-size: 12px;
-        padding: 6px 12px;
-    }
-    /* Badge no expandible - cursor normal */
-    .etapa-badge.no-expand {
-        cursor: default !important;
-    }
-    .etapa-badge.no-expand:hover {
-        transform: none !important;
-        opacity: 1 !important;
-    }
-    /* Badge expandible - cursor pointer con indicador */
-    .etapa-badge.expandable {
-        cursor: pointer !important;
-        position: relative;
-    }
-
 </style>
 
-<div class="crm-container">
-    <!-- HEADER -->
-    <div class="crm-header">
-        <div class="crm-title-container">
-            <h1 class="crm-title">{{ oportunidad.oportunidad }}</h1>
-            <div class="estado-selector-header">
-                <div class="estado-current-header" onclick="toggleEstadoDropdownHeader()">
-                    <div class="estado-dot-header" id="estadoDotHeader"></div>
-                    <span id="estadoTextHeader">{{ oportunidad.estado_crm|title }}</span>
-                    <span class="estado-arrow">▼</span>
-                </div>
-                <div class="estado-dropdown-header" id="estadoDropdownHeader">
-                    <div class="estado-option-header" onclick="cambiarEstadoHeader('nueva', '#007AFF')">
-                        <div class="estado-dot-header" style="background: #007AFF;"></div>
-                        <span>Nueva</span>
-                    </div>
-                    <div class="estado-option-header" onclick="cambiarEstadoHeader('contacto_inicial', '#32D74B')">
-                        <div class="estado-dot-header" style="background: #32D74B;"></div>
-                        <span>Contacto Inicial</span>
-                    </div>
-                    <div class="estado-option-header" onclick="cambiarEstadoHeader('cotizacion_enviada', '#FFD60A')">
-                        <div class="estado-dot-header" style="background: #FFD60A;"></div>
-                        <span>Cotización Enviada</span>
-                    </div>
-                    <div class="estado-option-header" onclick="cambiarEstadoHeader('negociacion', '#FF9F0A')">
-                        <div class="estado-dot-header" style="background: #FF9F0A;"></div>
-                        <span>En Negociación</span>
-                    </div>
-                    <div class="estado-option-header" onclick="cambiarEstadoHeader('vendida', '#32D74B')">
-                        <div class="estado-dot-header" style="background: #32D74B;"></div>
-                        <span>Vendida</span>
-                    </div>
-                    <div class="estado-option-header" onclick="cambiarEstadoHeader('perdida', '#FF453A')">
-                        <div class="estado-dot-header" style="background: #FF453A;"></div>
-                        <span>Perdida</span>
-                    </div>
-                </div>
+<div class="opportunity-modal">
+    <!-- Header with Pipeline -->
+    <div class="modal-header">
+        <div class="header-top">
+            <a href="{% url 'todos' %}" class="back-button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Volver a Oportunidades
+            </a>
+            <div class="header-actions">
+                <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="action-btn action-btn-primary">
+                    + Nueva Cotización
+                </a>
+                {% if proyecto_ligado %}
+                <a href="{% url 'proyecto_detalle' proyecto_ligado.id %}" class="action-btn action-btn-purple">
+                    🔗 Ir al Proyecto
+                </a>
+                {% else %}
+                <a href="#" class="action-btn action-btn-purple" onclick="mostrarMensajeProyecto(); return false;">
+                    🏗️ Crear Proyecto
+                </a>
+                {% endif %}
+                <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="action-btn action-btn-orange">
+                    📊 Nueva Volumetría
+                </a>
             </div>
         </div>
-        <div class="crm-actions">
-            <a href="{% url 'todos' %}" class="apple-button apple-button-secondary">← Volver</a>
-            <a href="{% url 'crear_cotizacion_with_opportunity' oportunidad.id %}" class="apple-button">+ Nueva Cotización</a>
-            {% if proyecto_ligado %}
-                <a href="{% url 'proyecto_detalle' proyecto_ligado.id %}" class="apple-button apple-button-proyecto">🔗 Ir al Proyecto</a>
-            {% else %}
-                <a href="#" class="apple-button apple-button-proyecto" onclick="mostrarMensajeProyecto()">🏗️ Crear Proyecto</a>
-            {% endif %}
-            <a href="{% url 'crear_volumetria_with_opportunity' oportunidad.id %}" class="apple-button apple-button-volumetria">📊 Nueva Volumetría</a>
+
+        <div class="pipeline-type">
+            <span class="pipeline-badge {% if oportunidad.tipo_negociacion == 'runrate' %}runrate{% else %}proyecto{% endif %}">
+                {{ oportunidad.get_tipo_negociacion_display }}
+            </span>
+        </div>
+
+        <h1 class="opportunity-title">{{ oportunidad.oportunidad }}</h1>
+        <p class="opportunity-client">{{ oportunidad.cliente.nombre_empresa|default:"Sin cliente" }}</p>
+
+        <!-- Pipeline Stages -->
+        <div class="pipeline-container">
+            <div class="pipeline-stages" id="pipelineStages">
+                <!-- Stages will be populated by JavaScript based on tipo_negociacion -->
+            </div>
         </div>
     </div>
 
-    <!-- MAIN CONTENT -->
-    <div class="crm-main">
-        <!-- COLUMNA IZQUIERDA - INFORMACIÓN -->
-        <div class="crm-info-panel">
-            <!-- INFORMACIÓN BÁSICA -->
-            <div class="info-section">
-                <div class="section-title">
-                    Información de la Oportunidad
-                    <button class="edit-opportunity-btn" onclick="toggleEditMode()" title="Editar información">
+    <!-- Body -->
+    <div class="modal-body">
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Opportunity Details -->
+            <div class="detail-card">
+                <div class="card-header">
+                    <h3 class="card-title">Información de la Oportunidad</h3>
+                    <button class="edit-btn" onclick="toggleEditMode()" title="Editar información">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                         </svg>
                     </button>
                 </div>
-                <div class="info-grid" id="opportunity-info">
-                    <div class="info-item">
-                        <div class="info-label">Cliente</div>
-                        <div class="info-value view-mode" data-field="cliente">{{ oportunidad.cliente.nombre_empresa|default:"Sin cliente" }}</div>
-                        <select class="info-edit edit-mode" data-field="cliente" style="display: none;">
-                            <option value="">Seleccionar cliente</option>
-                            <!-- Se llenará dinámicamente -->
-                        </select>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Contacto</div>
-                        <div class="info-value view-mode" data-field="contacto">{{ oportunidad.contacto|default:"Sin contacto" }}</div>
-                        <input type="text" class="info-edit edit-mode" data-field="contacto" value="{{ oportunidad.contacto|default:'' }}" style="display: none;" placeholder="Nombre del contacto">
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Vendedor</div>
-                        <div class="info-value" style="color: var(--apple-label-tertiary);">{{ oportunidad.usuario.get_full_name|default:oportunidad.usuario.username }}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Área</div>
-                        <div class="info-value view-mode" data-field="area">{{ oportunidad.get_area_display }}</div>
-                        <select class="info-edit edit-mode" data-field="area" style="display: none;">
-                            <option value="SISTEMAS" {% if oportunidad.area == 'SISTEMAS' %}selected{% endif %}>Sistemas</option>
-                            <option value="Recursos Humanos" {% if oportunidad.area == 'Recursos Humanos' %}selected{% endif %}>Recursos Humanos</option>
-                            <option value="Compras" {% if oportunidad.area == 'Compras' %}selected{% endif %}>Compras</option>
-                            <option value="Seguridad" {% if oportunidad.area == 'Seguridad' %}selected{% endif %}>Seguridad</option>
-                            <option value="Mantenimiento" {% if oportunidad.area == 'Mantenimiento' %}selected{% endif %}>Mantenimiento</option>
-                            <option value="Almacén" {% if oportunidad.area == 'Almacén' %}selected{% endif %}>Almacén</option>
-                        </select>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Tipo</div>
-                        <div class="info-value view-mode" data-field="tipo_negociacion">
-                            <span class="tipo-negociacion-badge {% if oportunidad.tipo_negociacion == 'runrate' %}tipo-runrate{% else %}tipo-proyecto{% endif %}">
-                                {{ oportunidad.get_tipo_negociacion_display }}
-                            </span>
+                <div class="card-body">
+                    <div class="info-grid" id="opportunity-info">
+                        <div class="info-item">
+                            <div class="info-label">Monto</div>
+                            <div class="info-value highlight view-mode" data-field="monto">${{ oportunidad.monto }}</div>
+                            <input type="number" class="info-edit edit-mode" data-field="monto" value="{{ oportunidad.monto }}" style="display: none;" step="0.01">
                         </div>
-                        <select class="info-edit edit-mode" data-field="tipo_negociacion" style="display: none;">
-                            <option value="runrate" {% if oportunidad.tipo_negociacion == 'runrate' %}selected{% endif %}>Runrate</option>
-                            <option value="proyecto" {% if oportunidad.tipo_negociacion == 'proyecto' %}selected{% endif %}>Proyecto</option>
-                        </select>
+                        <div class="info-item">
+                            <div class="info-label">Probabilidad</div>
+                            <div class="info-value view-mode" data-field="probabilidad">{{ oportunidad.probabilidad_cierre }}%</div>
+                            <input type="number" class="info-edit edit-mode" data-field="probabilidad" value="{{ oportunidad.probabilidad_cierre }}" style="display: none;" min="0" max="100">
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Mes Cierre</div>
+                            <div class="info-value view-mode" data-field="mes_cierre">{{ oportunidad.get_mes_cierre_display }}</div>
+                            <select class="info-edit edit-mode" data-field="mes_cierre" style="display: none;">
+                                <option value="enero" {% if oportunidad.mes_cierre == 'enero' %}selected{% endif %}>Enero</option>
+                                <option value="febrero" {% if oportunidad.mes_cierre == 'febrero' %}selected{% endif %}>Febrero</option>
+                                <option value="marzo" {% if oportunidad.mes_cierre == 'marzo' %}selected{% endif %}>Marzo</option>
+                                <option value="abril" {% if oportunidad.mes_cierre == 'abril' %}selected{% endif %}>Abril</option>
+                                <option value="mayo" {% if oportunidad.mes_cierre == 'mayo' %}selected{% endif %}>Mayo</option>
+                                <option value="junio" {% if oportunidad.mes_cierre == 'junio' %}selected{% endif %}>Junio</option>
+                                <option value="julio" {% if oportunidad.mes_cierre == 'julio' %}selected{% endif %}>Julio</option>
+                                <option value="agosto" {% if oportunidad.mes_cierre == 'agosto' %}selected{% endif %}>Agosto</option>
+                                <option value="septiembre" {% if oportunidad.mes_cierre == 'septiembre' %}selected{% endif %}>Septiembre</option>
+                                <option value="octubre" {% if oportunidad.mes_cierre == 'octubre' %}selected{% endif %}>Octubre</option>
+                                <option value="noviembre" {% if oportunidad.mes_cierre == 'noviembre' %}selected{% endif %}>Noviembre</option>
+                                <option value="diciembre" {% if oportunidad.mes_cierre == 'diciembre' %}selected{% endif %}>Diciembre</option>
+                            </select>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Producto</div>
+                            <div class="info-value view-mode" data-field="producto">{{ oportunidad.get_producto_display }}</div>
+                            <select class="info-edit edit-mode" data-field="producto" style="display: none;">
+                                <option value="ZEBRA" {% if oportunidad.producto == 'ZEBRA' %}selected{% endif %}>ZEBRA</option>
+                                <option value="PANDUIT" {% if oportunidad.producto == 'PANDUIT' %}selected{% endif %}>PANDUIT</option>
+                                <option value="APC" {% if oportunidad.producto == 'APC' %}selected{% endif %}>APC</option>
+                                <option value="AVIGILION" {% if oportunidad.producto == 'AVIGILION' %}selected{% endif %}>AVIGILION</option>
+                                <option value="GENETEC" {% if oportunidad.producto == 'GENETEC' %}selected{% endif %}>GENETEC</option>
+                                <option value="AXIS" {% if oportunidad.producto == 'AXIS' %}selected{% endif %}>AXIS</option>
+                                <option value="SOFTWARE" {% if oportunidad.producto == 'SOFTWARE' %}selected{% endif %}>SOFTWARE</option>
+                                <option value="RUNRATE" {% if oportunidad.producto == 'RUNRATE' %}selected{% endif %}>RUNRATE</option>
+                                <option value="PÓLIZA" {% if oportunidad.producto == 'PÓLIZA' %}selected{% endif %}>PÓLIZA</option>
+                                <option value="CISCO" {% if oportunidad.producto == 'CISCO' %}selected{% endif %}>CISCO</option>
+                                <option value="SERVICIO" {% if oportunidad.producto == 'SERVICIO' %}selected{% endif %}>Servicio</option>
+                            </select>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Área</div>
+                            <div class="info-value view-mode" data-field="area">{{ oportunidad.get_area_display }}</div>
+                            <select class="info-edit edit-mode" data-field="area" style="display: none;">
+                                <option value="SISTEMAS" {% if oportunidad.area == 'SISTEMAS' %}selected{% endif %}>Sistemas</option>
+                                <option value="Recursos Humanos" {% if oportunidad.area == 'Recursos Humanos' %}selected{% endif %}>Recursos Humanos</option>
+                                <option value="Compras" {% if oportunidad.area == 'Compras' %}selected{% endif %}>Compras</option>
+                                <option value="Seguridad" {% if oportunidad.area == 'Seguridad' %}selected{% endif %}>Seguridad</option>
+                                <option value="Mantenimiento" {% if oportunidad.area == 'Mantenimiento' %}selected{% endif %}>Mantenimiento</option>
+                                <option value="Almacén" {% if oportunidad.area == 'Almacén' %}selected{% endif %}>Almacén</option>
+                            </select>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Contacto</div>
+                            <div class="info-value view-mode" data-field="contacto">{{ oportunidad.contacto|default:"Sin contacto" }}</div>
+                            <input type="text" class="info-edit edit-mode" data-field="contacto" value="{{ oportunidad.contacto|default:'' }}" style="display: none;" placeholder="Nombre del contacto">
+                        </div>
+
+                        <!-- Edit Buttons -->
+                        <div class="edit-actions edit-mode" style="display: none; grid-column: 1 / -1; margin-top: 1rem; gap: 0.5rem; justify-content: flex-end;">
+                            <button class="action-btn action-btn-secondary" onclick="cancelEdit()">Cancelar</button>
+                            <button class="action-btn action-btn-primary" onclick="saveOpportunity()">Guardar</button>
+                        </div>
                     </div>
-                    <div class="info-item">
-                        <div class="info-label">Etapa</div>
-                        <div class="info-value view-mode" data-field="etapa">
-                            <span class="etapa-badge" 
-                                  style="background-color: {{ oportunidad.etapa_color|default:'#CCCCCC' }}33; border: 1px solid {{ oportunidad.etapa_color|default:'#CCCCCC' }}; color: {{ oportunidad.etapa_color|default:'#666666' }};"
-                                  title="{{ oportunidad.etapa_completa|default:'Etapa no definida' }}"
-                                  onclick="toggleEtapaExpanded(this)">
+                </div>
+            </div>
+
+            <!-- Quotations -->
+            <div class="detail-card">
+                <div class="card-header">
+                    <h3 class="card-title">Cotizaciones</h3>
+                    <span class="card-count">{{ cotizaciones.count }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="quotation-list">
+                        {% for cotizacion in cotizaciones %}
+                        <div class="quotation-item" onclick="window.open('{% url 'view_cotizacion_pdf' cotizacion.id %}', '_blank')">
+                            <div class="quotation-badge">COT-{{ cotizacion.id|stringformat:"03d" }}</div>
+                            <div class="quotation-info">
+                                <div class="quotation-title">{{ cotizacion.titulo }}</div>
+                                <div class="quotation-meta">
+                                    <span class="quotation-amount">${{ cotizacion.total|format_currency_es }}</span>
+                                    <span class="quotation-date">{{ cotizacion.fecha_creacion|tijuana_time:"d/m/Y" }}</span>
+                                </div>
+                            </div>
+                            <div class="quotation-actions" onclick="event.stopPropagation()">
+                                <a href="{% url 'editar_cotizacion' cotizacion.id %}" class="icon-btn edit" title="Editar">
+                                    ✏️
+                                </a>
+                                <a href="{% url 'generate_cotizacion_pdf' cotizacion.id %}" class="icon-btn download" title="Descargar">
+                                    ⬇️
+                                </a>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📄</div>
+                            <div class="empty-state-text">Sin cotizaciones aún</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Volumetries -->
+            {% if volumetrias %}
+            <div class="detail-card">
+                <div class="card-header">
+                    <h3 class="card-title">Volumetrías</h3>
+                    <span class="card-count">{{ volumetrias.count }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="quotation-list">
+                        {% for volumetria in volumetrias %}
+                        <div class="quotation-item" onclick="window.open('{% url 'view_volumetria_pdf' volumetria.id %}', '_blank')">
+                            <div class="quotation-badge volumetria-badge">VOL-{{ volumetria.id|stringformat:"03d" }}</div>
+                            <div class="quotation-info">
+                                <div class="quotation-title">{{ volumetria.titulo }}</div>
+                                <div class="quotation-meta">
+                                    <span style="color: var(--accent-orange);">{{ volumetria.cantidad_nodos }} nodos</span>
+                                    <span class="quotation-amount">${{ volumetria.total|format_currency_es }}</span>
+                                    <span class="quotation-date">{{ volumetria.fecha_creacion|date:"d/m/Y" }}</span>
+                                </div>
+                            </div>
+                            <div class="quotation-actions" onclick="event.stopPropagation()">
+                                <a href="{% url 'download_volumetria_pdf' volumetria.id %}" class="icon-btn download" title="Descargar">
+                                    ⬇️
+                                </a>
+                                <button onclick="eliminarVolumetria({{ volumetria.id }}, '{{ volumetria.titulo|escapejs }}')" class="icon-btn delete" title="Eliminar">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <div class="empty-state-text">Sin volumetrías aún</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Seller Card -->
+            <div class="user-card">
+                <div class="user-avatar gradient-{{ oportunidad.usuario.id|default:1|add:0|divisibleby:5|yesno:'5,1' }}{% cycle '1' '2' '3' '4' '5' %}">
+                    {% if oportunidad.usuario.userprofile.avatar %}
+                    <img src="{{ oportunidad.usuario.userprofile.get_avatar_url }}" alt="{{ oportunidad.usuario.get_full_name }}">
+                    {% else %}
+                    {{ oportunidad.usuario.first_name|slice:":1"|upper }}{{ oportunidad.usuario.last_name|slice:":1"|upper }}
+                    {% endif %}
+                </div>
+                <div class="user-role">Vendedor</div>
+                <h4 class="user-name">{{ oportunidad.usuario.get_full_name|default:oportunidad.usuario.username }}</h4>
+            </div>
+
+            <!-- Client Card -->
+            <div class="detail-card">
+                <div class="card-header">
+                    <h3 class="card-title">Cliente</h3>
+                </div>
+                <div class="card-body">
+                    <div class="client-info">
+                        <div class="client-row">
+                            <span class="client-label">Empresa</span>
+                            <span class="client-value">{{ oportunidad.cliente.nombre_empresa|default:"Sin cliente" }}</span>
+                        </div>
+                        <div class="client-row">
+                            <span class="client-label">Contacto</span>
+                            <span class="client-value">{{ oportunidad.contacto|default:"Sin contacto" }}</span>
+                        </div>
+                        <div class="client-row">
+                            <span class="client-label">Etapa Actual</span>
+                            <span class="client-value" id="currentStageText" style="color: {{ oportunidad.etapa_color|default:'#0A84FF' }};">
                                 {{ oportunidad.etapa_corta|default:'N/A' }}
                             </span>
                         </div>
                     </div>
-                    <div class="info-item">
-                        <div class="info-label">Producto</div>
-                        <div class="info-value view-mode" data-field="producto">{{ oportunidad.get_producto_display }}</div>
-                        <select class="info-edit edit-mode" data-field="producto" style="display: none;">
-                            <option value="ZEBRA" {% if oportunidad.producto == 'ZEBRA' %}selected{% endif %}>ZEBRA</option>
-                            <option value="PANDUIT" {% if oportunidad.producto == 'PANDUIT' %}selected{% endif %}>PANDUIT</option>
-                            <option value="APC" {% if oportunidad.producto == 'APC' %}selected{% endif %}>APC</option>
-                            <option value="AVIGILION" {% if oportunidad.producto == 'AVIGILION' %}selected{% endif %}>AVIGILION</option>
-                            <option value="GENETEC" {% if oportunidad.producto == 'GENETEC' %}selected{% endif %}>GENETEC</option>
-                            <option value="AXIS" {% if oportunidad.producto == 'AXIS' %}selected{% endif %}>AXIS</option>
-                            <option value="SOFTWARE" {% if oportunidad.producto == 'SOFTWARE' %}selected{% endif %}>SOFTWARE</option>
-                            <option value="RUNRATE" {% if oportunidad.producto == 'RUNRATE' %}selected{% endif %}>RUNRATE</option>
-                            <option value="PÓLIZA" {% if oportunidad.producto == 'PÓLIZA' %}selected{% endif %}>PÓLIZA</option>
-                            <option value="CISCO" {% if oportunidad.producto == 'CISCO' %}selected{% endif %}>CISCO</option>
-                            <option value="SERVICIO" {% if oportunidad.producto == 'SERVICIO' %}selected{% endif %}>Servicio</option>
-                        </select>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Monto</div>
-                        <div class="info-value view-mode" data-field="monto" style="color: var(--apple-green); font-weight: 600;">${{ oportunidad.monto }}</div>
-                        <input type="number" class="info-edit edit-mode" data-field="monto" value="{{ oportunidad.monto }}" style="display: none;" placeholder="0" step="0.01">
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Probabilidad</div>
-                        <div class="info-value view-mode" data-field="probabilidad">{{ oportunidad.probabilidad_cierre }}%</div>
-                        <input type="number" class="info-edit edit-mode" data-field="probabilidad" value="{{ oportunidad.probabilidad_cierre }}" style="display: none;" placeholder="0" min="0" max="100">
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Mes Cierre</div>
-                        <div class="info-value view-mode" data-field="mes_cierre">{{ oportunidad.get_mes_cierre_display }}</div>
-                        <select class="info-edit edit-mode" data-field="mes_cierre" style="display: none;">
-                            <option value="enero" {% if oportunidad.mes_cierre == 'enero' %}selected{% endif %}>Enero</option>
-                            <option value="febrero" {% if oportunidad.mes_cierre == 'febrero' %}selected{% endif %}>Febrero</option>
-                            <option value="marzo" {% if oportunidad.mes_cierre == 'marzo' %}selected{% endif %}>Marzo</option>
-                            <option value="abril" {% if oportunidad.mes_cierre == 'abril' %}selected{% endif %}>Abril</option>
-                            <option value="mayo" {% if oportunidad.mes_cierre == 'mayo' %}selected{% endif %}>Mayo</option>
-                            <option value="junio" {% if oportunidad.mes_cierre == 'junio' %}selected{% endif %}>Junio</option>
-                            <option value="julio" {% if oportunidad.mes_cierre == 'julio' %}selected{% endif %}>Julio</option>
-                            <option value="agosto" {% if oportunidad.mes_cierre == 'agosto' %}selected{% endif %}>Agosto</option>
-                            <option value="septiembre" {% if oportunidad.mes_cierre == 'septiembre' %}selected{% endif %}>Septiembre</option>
-                            <option value="octubre" {% if oportunidad.mes_cierre == 'octubre' %}selected{% endif %}>Octubre</option>
-                            <option value="noviembre" {% if oportunidad.mes_cierre == 'noviembre' %}selected{% endif %}>Noviembre</option>
-                            <option value="diciembre" {% if oportunidad.mes_cierre == 'diciembre' %}selected{% endif %}>Diciembre</option>
-                        </select>
-                    </div>
-                    
-                    <!-- Botones de edición -->
-                    <div class="edit-actions edit-mode" style="display: none; grid-column: 1 / -1; margin-top: 1rem; gap: 0.5rem; justify-content: flex-end;">
-                        <button class="apple-button apple-button-secondary apple-button-small" onclick="cancelEdit()">Cancelar</button>
-                        <button class="apple-button apple-button-small" onclick="saveOpportunity()">Guardar</button>
-                    </div>
                 </div>
             </div>
 
-
-            <!-- COTIZACIONES -->
-            <div class="info-section">
-                <div class="section-title">Cotizaciones ({{ cotizaciones.count }})</div>
-                <div class="cotizaciones-lista">
-                    {% for cotizacion in cotizaciones %}
-                    <div class="cotizacion-item-simple">
-                        <div class="cotizacion-numero">COT-{{ cotizacion.id|stringformat:"03d" }}</div>
-                        <div class="cotizacion-info-simple">
-                            <a href="{% url 'view_cotizacion_pdf' cotizacion.id %}" target="_blank" class="cotizacion-nombre-link">
-                                {{ cotizacion.titulo }}
-                            </a>
-                            <div class="cotizacion-meta">
-                                <span class="cotizacion-monto-simple">${{ cotizacion.total|format_currency_es }}</span>
-                                <span class="cotizacion-fecha-simple">{{ cotizacion.fecha_creacion|tijuana_time:"d/m/Y" }}</span>
-                            </div>
-                        </div>
-                        <div class="cotizacion-acciones-simple">
-                            <a href="{% url 'editar_cotizacion' cotizacion.id %}" class="accion-btn edit" title="Editar">
-                                ✏️
-                            </a>
-                            <a href="{% url 'generate_cotizacion_pdf' cotizacion.id %}" class="accion-btn download" title="Descargar">
-                                ⬇️
-                            </a>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <div class="no-items-message-simple">
-                        <div class="no-items-icon">📄</div>
-                        <div class="no-items-text">Sin cotizaciones aún</div>
-                    </div>
-                    {% endfor %}
+            <!-- Timeline Card -->
+            <div class="detail-card timeline-card">
+                <div class="card-header">
+                    <h3 class="card-title">Timeline</h3>
                 </div>
-            </div>
-
-            <!-- VOLUMETRÍAS -->
-            {% if volumetrias %}
-            <div class="info-section">
-                <div class="section-title">Volumetrías ({{ volumetrias.count }})</div>
-                <div class="volumetrias-lista">
-                    {% for volumetria in volumetrias %}
-                    <div class="volumetria-item-simple">
-                        <div class="volumetria-numero">VOL-{{ volumetria.id|stringformat:"03d" }}</div>
-                        <div class="volumetria-info-simple">
-                            <a href="{% url 'view_volumetria_pdf' volumetria.id %}" target="_blank" class="volumetria-nombre-link">
-                                {{ volumetria.titulo }}
-                            </a>
-                            <div class="volumetria-meta">
-                                <span class="volumetria-nodos">{{ volumetria.cantidad_nodos }} nodos</span>
-                                <span class="volumetria-monto-simple">${{ volumetria.total|format_currency_es }}</span>
-                                <span class="volumetria-fecha-simple">{{ volumetria.fecha_creacion|date:"d/m/Y" }}</span>
-                            </div>
-                        </div>
-                        <div class="volumetria-acciones-simple">
-                            <a href="{% url 'download_volumetria_pdf' volumetria.id %}" class="accion-btn download" title="Descargar">
-                                ⬇️
-                            </a>
-                            <button onclick="eliminarVolumetria({{ volumetria.id }}, '{{ volumetria.titulo|escapejs }}')" class="accion-btn delete" title="Eliminar">
-                                🗑️
-                            </button>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <div class="no-items-message-simple">
-                        <div class="no-items-icon">📊</div>
-                        <div class="no-items-text">Sin volumetrías aún</div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- COLUMNA DERECHA - TIMELINE -->
-        <div class="crm-timeline-panel">
-            <div class="timeline-header">
-                <div class="timeline-title">Timeline de Actividades</div>
                 <div class="timeline-search">
-                    <svg class="search-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    <input type="text" id="timelineSearch" placeholder="Buscar en timeline...">
-                </div>
-            </div>
-            
-            <div class="timeline-content">
-                <!-- TIMELINE ITEMS -->
-                <div id="timelineItems">
-                    <!-- Contenido cargado dinámicamente por JavaScript -->
-                </div>
-            </div>
-            <!-- NUEVO COMENTARIO -->
-            <div class="new-comment" id="commentSection">
-                <input type="file" id="fileInput" multiple style="display: none;">
-                
-                <div class="attached-files" id="attachedFiles" style="display: none;"></div>
-                
-                <div class="comment-actions-container">
-                    <div class="plus-button-container">
-                        <button class="action-button-small" id="openMenuBtn" title="Adjuntar">+</button>
-                        <div class="comment-menu" id="commentMenu">
-                            <button class="menu-option-btn" id="activityBtn">
-                                <span class="menu-icon">⚡️</span>
-                                <span class="menu-text">Actividad</span>
-                            </button>
-                            <button class="menu-option-btn" id="fileBtn">
-                                <span class="menu-icon">📄</span>
-                                <span class="menu-text">Archivo</span>
-                            </button>
-                            <button class="menu-option-btn" id="photoBtn">
-                                <span class="menu-icon">📸</span>
-                                <span class="menu-text">Foto</span>
-                            </button>
-                        </div>
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="M21 21l-4.35-4.35"/>
+                        </svg>
+                        <input type="text" id="timelineSearch" class="timeline-search-input" placeholder="Buscar en timeline...">
                     </div>
-                    <textarea class="comment-input" id="nuevoComentario" placeholder="Escribe un comentario..." rows="1"></textarea>
-                    <button class="apple-button" id="btnComentar" disabled>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                    </button>
+                </div>
+                <div class="timeline-content" id="timelineItems">
+                    <!-- Timeline items loaded dynamically -->
+                </div>
+                <div class="comment-input-container" id="commentSection">
+                    <input type="file" id="fileInput" multiple style="display: none;">
+                    <div class="attached-files" id="attachedFiles" style="display: none;"></div>
+                    <div class="comment-input-wrapper">
+                        <div class="attach-menu-container">
+                            <button class="attach-btn" id="openMenuBtn" title="Adjuntar">+</button>
+                            <div class="attach-menu" id="commentMenu">
+                                <button class="menu-option-btn" id="activityBtn">
+                                    <span class="menu-icon">⚡️</span>
+                                    <span>Actividad</span>
+                                </button>
+                                <button class="menu-option-btn" id="fileBtn">
+                                    <span class="menu-icon">📄</span>
+                                    <span>Archivo</span>
+                                </button>
+                                <button class="menu-option-btn" id="photoBtn">
+                                    <span class="menu-icon">📸</span>
+                                    <span>Foto</span>
+                                </button>
+                            </div>
+                        </div>
+                        <textarea class="comment-textarea" id="nuevoComentario" placeholder="Escribe un comentario..." rows="1"></textarea>
+                        <button class="send-btn" id="btnComentar" disabled>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Custom Confirmation Modal -->
+<!-- Confirm Modal -->
 <div class="confirm-modal-overlay" id="confirmModalOverlay">
     <div class="confirm-modal">
         <h3 class="confirm-modal-title">Confirmar Eliminación</h3>
         <p class="confirm-modal-text" id="confirmModalText"></p>
         <div class="confirm-modal-actions">
-            <button class="apple-button apple-button-secondary" id="confirmCancelBtn">Cancelar</button>
-            <button class="apple-button" id="confirmOkBtn">Eliminar</button>
+            <button class="action-btn action-btn-secondary" id="confirmCancelBtn">Cancelar</button>
+            <button class="action-btn" style="background: var(--accent-red);" id="confirmOkBtn">Eliminar</button>
         </div>
     </div>
 </div>
 
 <script>
     const OPORTUNIDAD_ID = parseInt("{{ oportunidad.id }}".replace(/[,\s]/g, ''));
-    
     const CURRENT_USER_ID = null;
-    
-    // Control de estados en header
-    function toggleEstadoDropdownHeader() {
-        const dropdown = document.getElementById('estadoDropdownHeader');
-        const arrow = document.querySelector('.estado-arrow');
-        
-        if (dropdown.style.display === 'block') {
-            dropdown.style.display = 'none';
-            arrow.style.transform = 'rotate(0deg)';
-        } else {
-            dropdown.style.display = 'block';
-            arrow.style.transform = 'rotate(180deg)';
-        }
+    const TIPO_NEGOCIACION = "{{ oportunidad.tipo_negociacion|default:'runrate' }}";
+    const ETAPA_ACTUAL = "{{ oportunidad.etapa_corta|default:'' }}";
+    const ETAPA_COLOR = "{{ oportunidad.etapa_color|default:'#0A84FF' }}";
+
+    // Pipeline stages configuration
+    const PIPELINE_STAGES = {
+        runrate: [
+            { id: 'nuevo', name: 'Nuevo', short: 'NEW' },
+            { id: 'contacto', name: 'Contacto Inicial', short: 'CON' },
+            { id: 'propuesta', name: 'Propuesta', short: 'PRO' },
+            { id: 'negociacion', name: 'Negociación', short: 'NEG' },
+            { id: 'cierre', name: 'Cierre', short: 'CIE' },
+            { id: 'ganado', name: 'Ganado', short: 'GAN' }
+        ],
+        proyecto: [
+            { id: 'calificacion', name: 'Calificación', short: 'CAL' },
+            { id: 'analisis', name: 'Análisis', short: 'ANA' },
+            { id: 'propuesta', name: 'Propuesta', short: 'PRO' },
+            { id: 'poc', name: 'POC/Demo', short: 'POC' },
+            { id: 'negociacion', name: 'Negociación', short: 'NEG' },
+            { id: 'cierre', name: 'Cierre', short: 'CIE' },
+            { id: 'ganado', name: 'Ganado', short: 'GAN' }
+        ]
+    };
+
+    // Render pipeline stages
+    function renderPipeline() {
+        const container = document.getElementById('pipelineStages');
+        const stages = PIPELINE_STAGES[TIPO_NEGOCIACION] || PIPELINE_STAGES.runrate;
+        const currentStageIndex = findCurrentStageIndex(stages);
+
+        container.innerHTML = stages.map((stage, index) => {
+            let stateClass = 'inactive';
+            let connectorClass = '';
+
+            if (index < currentStageIndex) {
+                stateClass = 'completed';
+                connectorClass = 'completed';
+            } else if (index === currentStageIndex) {
+                stateClass = 'active';
+            }
+
+            return `
+                <div class="pipeline-stage ${stateClass}" data-stage-id="${stage.id}" onclick="updateStage('${stage.id}')">
+                    <div class="stage-indicator ${stateClass}">${index + 1}</div>
+                    <div class="stage-name">${stage.name}</div>
+                    ${index < stages.length - 1 ? `<div class="stage-connector ${connectorClass}"></div>` : ''}
+                </div>
+            `;
+        }).join('');
     }
 
-    function cambiarEstadoHeader(estado, color) {
-        const estadoDot = document.getElementById('estadoDotHeader');
-        const estadoText = document.getElementById('estadoTextHeader');
-        const dropdown = document.getElementById('estadoDropdownHeader');
-        const arrow = document.querySelector('.estado-arrow');
-        
-        estadoDot.style.background = color;
-        estadoText.textContent = estado.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-        dropdown.style.display = 'none';
-        arrow.style.transform = 'rotate(0deg)';
-        
-        const oportunidadId = OPORTUNIDAD_ID;
-        fetch(`/app/api/cambiar-estado-oportunidad/${oportunidadId}/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({
-                estado: estado
-            })
-        }).then(response => response.json())
-          .then(data => {
-              if (data.success) {
-                  console.log('Estado actualizado exitosamente');
-                  
-                  // Agregar item al timeline en tiempo real
-                  if (data.timeline_item) {
-                      const timelineContainer = document.getElementById('timelineItems');
-                      const newItemHtml = renderTimelineItem(data.timeline_item);
-                      
-                      if (newItemHtml && timelineContainer) {
-                          // Agregar al inicio del timeline (más reciente primero)
-                          timelineContainer.insertAdjacentHTML('afterbegin', newItemHtml);
-                          console.log('📊 Item agregado al timeline en tiempo real');
-                      }
-                  }
-              } else {
-                  console.error('Error al cambiar estado:', data.error);
-                  // Revertir cambio visual si falló
-                  location.reload();
-              }
-          })
-          .catch(error => {
-              console.error('Error de red al cambiar estado:', error);
-              // Revertir cambio visual si falló
-              location.reload();
-          });
+    function findCurrentStageIndex(stages) {
+        const currentStageLower = ETAPA_ACTUAL.toLowerCase();
+        for (let i = 0; i < stages.length; i++) {
+            if (stages[i].name.toLowerCase().includes(currentStageLower) ||
+                currentStageLower.includes(stages[i].id) ||
+                currentStageLower.includes(stages[i].name.toLowerCase())) {
+                return i;
+            }
+        }
+        // Check for "ganado" or "cerrado"
+        if (currentStageLower.includes('ganado') || currentStageLower.includes('cerrado')) {
+            return stages.length - 1;
+        }
+        return 0;
+    }
+
+    function updateStage(stageId) {
+        // TODO: Implement stage update via API
+        console.log('Update stage to:', stageId);
     }
 
     // Variables globales para archivos
     let attachedFiles = [];
-    
-    // Inicialización de comentarios y drag & drop
+
+    // Comment system initialization
     function initCommentSystem() {
         const commentInput = document.getElementById('nuevoComentario');
         const btnComentar = document.getElementById('btnComentar');
         const fileInput = document.getElementById('fileInput');
-        const commentSection = document.getElementById('commentSection');
         const openMenuBtn = document.getElementById('openMenuBtn');
         const commentMenu = document.getElementById('commentMenu');
         const activityBtn = document.getElementById('activityBtn');
@@ -1653,22 +1697,19 @@
 
         // Auto-resize textarea
         commentInput.addEventListener('input', function() {
-            this.style.height = '36px';
+            this.style.height = '40px';
             const scrollHeight = this.scrollHeight;
-            this.style.height = scrollHeight + 'px';
+            this.style.height = Math.min(scrollHeight, 120) + 'px';
         });
 
-        // Habilitar botón cuando hay texto o archivos
         const updateButtonState = () => {
             const hasText = commentInput.value.trim().length > 0;
             const hasFiles = attachedFiles.length > 0;
             btnComentar.disabled = !(hasText || hasFiles);
-            btnComentar.style.opacity = btnComentar.disabled ? '0.5' : '1';
-            btnComentar.style.cursor = btnComentar.disabled ? 'not-allowed' : 'pointer';
         };
+
         commentInput.addEventListener('input', updateButtonState);
-        
-        // Menu de opciones
+
         openMenuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             openMenuBtn.classList.toggle('open');
@@ -1695,38 +1736,33 @@
             openMenuBtn.classList.remove('open');
         });
 
-        // Manejar selección de archivos
         fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
-        
-        // Drag & Drop en todo el cuadro del timeline
-        const timelinePanel = document.querySelector('.crm-timeline-panel');
-        
-        timelinePanel.addEventListener('dragover', (e) => {
+
+        // Drag & Drop
+        const timelineCard = document.querySelector('.timeline-card');
+
+        timelineCard.addEventListener('dragover', (e) => {
             e.preventDefault();
-            timelinePanel.classList.add('dragover');
+            timelineCard.classList.add('dragover');
         });
-        
-        timelinePanel.addEventListener('dragleave', (e) => {
+
+        timelineCard.addEventListener('dragleave', (e) => {
             e.preventDefault();
-            // Solo quitar la clase si realmente salimos del panel
-            if (!timelinePanel.contains(e.relatedTarget)) {
-                timelinePanel.classList.remove('dragover');
+            if (!timelineCard.contains(e.relatedTarget)) {
+                timelineCard.classList.remove('dragover');
             }
         });
-        
-        timelinePanel.addEventListener('drop', (e) => {
+
+        timelineCard.addEventListener('drop', (e) => {
             e.preventDefault();
-            timelinePanel.classList.remove('dragover');
+            timelineCard.classList.remove('dragover');
             handleFiles(e.dataTransfer.files);
         });
-        
-        // Botón comentar
+
         btnComentar.addEventListener('click', agregarComentario);
-        
         updateButtonState();
     }
-    
-    // Manejar archivos seleccionados/arrastrados
+
     function handleFiles(files) {
         Array.from(files).forEach(file => {
             const allowedTypes = [
@@ -1742,36 +1778,35 @@
                 'image/gif',
                 'image/webp'
             ];
-            
+
             if (!allowedTypes.includes(file.type)) {
                 alert(`Tipo de archivo no permitido: ${file.name}`);
                 return;
             }
-            
+
             if (file.size > 10 * 1024 * 1024) {
                 alert(`Archivo muy grande (máximo 10MB): ${file.name}`);
                 return;
             }
-            
+
             attachedFiles.push(file);
         });
-        
+
         renderAttachedFiles();
         document.getElementById('btnComentar').disabled = false;
     }
-    
-    // Renderizar archivos adjuntos
+
     function renderAttachedFiles() {
         const container = document.getElementById('attachedFiles');
         container.innerHTML = '';
-        
+
         attachedFiles.forEach((file, index) => {
             const fileElement = document.createElement('div');
             fileElement.className = 'attached-file';
-            
+
             const icon = getFileIcon(file.type);
             const size = formatFileSize(file.size);
-            
+
             fileElement.innerHTML = `
                 <div class="attached-file-info">
                     <div class="attached-file-icon">${icon}</div>
@@ -1782,20 +1817,18 @@
                 </div>
                 <button class="attached-file-remove" onclick="removeFile(${index})">×</button>
             `;
-            
+
             container.appendChild(fileElement);
         });
         container.style.display = attachedFiles.length > 0 ? 'block' : 'none';
     }
-    
-    // Remover archivo
+
     function removeFile(index) {
         attachedFiles.splice(index, 1);
         renderAttachedFiles();
         document.getElementById('btnComentar').disabled = attachedFiles.length === 0 && document.getElementById('nuevoComentario').value.trim().length === 0;
     }
-    
-    // Obtener icono por tipo de archivo
+
     function getFileIcon(type) {
         if (type.includes('pdf')) return '📄';
         if (type.includes('word')) return '📝';
@@ -1803,8 +1836,7 @@
         if (type.includes('image')) return '🖼️';
         return '📎';
     }
-    
-    // Formatear tamaño de archivo
+
     function formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -1812,29 +1844,27 @@
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
-    
-    // Variable para prevenir múltiples submissions
+
     let isSubmitting = false;
-    
-    // Función principal para agregar comentario
+
     async function agregarComentario() {
         const comentario = document.getElementById('nuevoComentario').value.trim();
         const btnComentar = document.getElementById('btnComentar');
-        
+
         if (!comentario && attachedFiles.length === 0) return;
         if (isSubmitting) return;
-        
+
         isSubmitting = true;
         btnComentar.disabled = true;
         btnComentar.innerHTML = '⏳';
-        
+
         try {
             const formData = new FormData();
             formData.append('contenido', comentario);
             attachedFiles.forEach((file, index) => {
                 formData.append(`archivo_${index}`, file);
             });
-            
+
             const response = await fetch(`/app/api/agregar-comentario-oportunidad/${OPORTUNIDAD_ID}/`, {
                 method: 'POST',
                 headers: {
@@ -1842,9 +1872,9 @@
                 },
                 body: formData
             });
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
                 document.getElementById('nuevoComentario').value = '';
                 attachedFiles = [];
@@ -1853,23 +1883,21 @@
             } else {
                 alert('Error al guardar comentario: ' + (data.error || 'Error desconocido'));
             }
-            
+
         } catch (error) {
             console.error('Error al enviar comentario:', error);
             alert('Error al enviar comentario. Por favor, intenta de nuevo.');
         } finally {
             isSubmitting = false;
-            btnComentar.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
-            document.getElementById('nuevoComentario').style.height = 'auto';
+            btnComentar.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
+            document.getElementById('nuevoComentario').style.height = '40px';
             document.getElementById('btnComentar').disabled = true;
         }
     }
 
     function renderTimelineItem(activity) {
-        if (!activity || !activity.tipo) {
-            return '';
-        }
-        
+        if (!activity || !activity.tipo) return '';
+
         let icon = '';
         let title = activity.titulo || '';
         let content = activity.descripcion || 'Sin descripción';
@@ -1879,15 +1907,12 @@
         let editableClass = '';
         let clickHandler = '';
 
-        // ALIGNMENT: Align right if the activity user is the opportunity owner
-        
-
         switch (activity.tipo) {
             case 'creacion':
                 icon = '🎉';
                 activityClass = 'creacion-icon';
                 title = 'Oportunidad Creada';
-                content = `Creada por <strong>${activity.usuario || 'Usuario desconocido'}</strong>. <span class="activity-meta">${activity.descripcion || ''}</span>`;
+                content = `Creada por <strong>${activity.usuario || 'Usuario desconocido'}</strong>. <span style="color: var(--text-tertiary);">${activity.descripcion || ''}</span>`;
                 break;
             case 'cambio_estado':
                 icon = '🔄';
@@ -1906,19 +1931,17 @@
                 activityClass = 'comentario-icon';
                 const usuario = activity.usuario || 'Usuario desconocido';
                 const comentarioId = activity.comentario_id;
-                
-                // PERMISSIONS: A comment is editable only if the author is the current user
+
                 if (activity.usuario_id && activity.usuario_id === CURRENT_USER_ID) {
                     editableClass = 'editable';
                     clickHandler = `onclick="editarComentario(event, ${comentarioId})"`;
                 } else {
-                    // For other users' comments, allow replying
                     editableClass = 'replyable';
                     clickHandler = `onclick="showReplyUI(event, ${activity.id}, '${usuario}')"`;
                 }
-                
+
                 title = `<strong>${usuario}</strong> comentó:`;
-                
+
                 const attachmentsHtml = activity.archivos && activity.archivos.length > 0 ? `
                     <div class="comment-attachments">
                         ${activity.archivos.map(archivo => `
@@ -1956,14 +1979,14 @@
                 activityClass = 'cotizacion-icon';
                 title = 'Nueva Cotización';
                 content = `<strong>${activity.usuario}</strong> creó la cotización <em>${activity.titulo}</em>.`;
-                linkHtml = `<div class="activity-actions"><a href="${activity.url}" target="_blank" class="activity-link cotizacion-link">Ver cotización →</a></div>`;
+                linkHtml = `<div style="margin-top: 0.5rem;"><a href="${activity.url}" target="_blank" class="activity-link">Ver cotización →</a></div>`;
                 break;
             case 'volumetria':
                 icon = '📊';
                 activityClass = 'volumetria-icon';
                 title = 'Nueva Volumetría';
                 content = `<strong>${activity.usuario}</strong> creó la volumetría <em>${activity.titulo}</em>.`;
-                linkHtml = `<div class="activity-actions"><a href="${activity.url}" target="_blank" class="activity-link volumetria-link">Ver volumetría →</a></div>`;
+                linkHtml = `<div style="margin-top: 0.5rem;"><a href="${activity.url}" target="_blank" class="activity-link" style="color: var(--accent-orange);">Ver volumetría →</a></div>`;
                 break;
             default:
                 icon = '⚙️';
@@ -2010,17 +2033,17 @@
                     item.style.display = 'none';
                 }
             });
-            
+
             let noResultsMessage = document.getElementById('noSearchResultsMessage');
             if (visibleCount === 0 && searchTerm.length > 0) {
                 if (!noResultsMessage) {
                     const container = document.getElementById('timelineItems');
                     noResultsMessage = document.createElement('div');
                     noResultsMessage.id = 'noSearchResultsMessage';
-                    noResultsMessage.className = 'no-items-message-simple';
+                    noResultsMessage.className = 'empty-state';
                     container.appendChild(noResultsMessage);
                 }
-                noResultsMessage.innerHTML = `<div class="no-items-icon">🧐</div><div class="no-items-text">No se encontraron resultados para "<strong>${this.value}</strong>"</div>`;
+                noResultsMessage.innerHTML = `<div class="empty-state-icon">🧐</div><div class="empty-state-text">No se encontraron resultados para "<strong>${this.value}</strong>"</div>`;
                 noResultsMessage.style.display = 'block';
             } else {
                 if (noResultsMessage) {
@@ -2032,18 +2055,13 @@
 
     async function loadTimeline() {
         const timelineItemsContainer = document.getElementById('timelineItems');
-        if (!timelineItemsContainer) {
-            console.error('No se encontró el contenedor del timeline');
-            return;
-        }
+        if (!timelineItemsContainer) return;
 
-        const oportunidadId = typeof OPORTUNIDAD_ID !== 'undefined' ? OPORTUNIDAD_ID : null;
-        if (!oportunidadId) {
-            console.error('No se encontró el ID de la oportunidad');
+        if (!OPORTUNIDAD_ID) {
             timelineItemsContainer.innerHTML = `
-                <div class="no-items-message-simple">
-                    <div class="no-items-icon">❌</div>
-                    <div class="no-items-text">Error: No se pudo identificar la oportunidad.</div>
+                <div class="empty-state">
+                    <div class="empty-state-icon">❌</div>
+                    <div class="empty-state-text">Error: No se pudo identificar la oportunidad.</div>
                 </div>
             `;
             return;
@@ -2052,27 +2070,20 @@
         const noResultsMessage = document.getElementById('noSearchResultsMessage');
         if (noResultsMessage) noResultsMessage.remove();
 
-        // Mostrar mensaje de carga
         timelineItemsContainer.innerHTML = `
-            <div class="no-items-message-simple" id="loadingTimelineMessage">
-                <div class="no-items-icon">⏳</div>
-                <div class="no-items-text">Cargando actividades del timeline...</div>
+            <div class="empty-state" id="loadingTimelineMessage">
+                <div class="empty-state-icon">⏳</div>
+                <div class="empty-state-text">Cargando actividades...</div>
             </div>
         `;
 
         try {
-            const response = await fetch(`/app/api/timeline-oportunidad/${oportunidadId}/`);
-            
-            if (!response.ok) {
-                throw new Error(`Error HTTP: ${response.status}`);
-            }
-            
-            const data = await response.json().catch(error => {
-                console.error('Error al analizar la respuesta JSON:', error);
-                throw new Error('La respuesta del servidor no es un JSON válido');
-            });
-            
-            // Limpiar el contenedor
+            const response = await fetch(`/app/api/timeline-oportunidad/${OPORTUNIDAD_ID}/`);
+
+            if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+
+            const data = await response.json();
+
             timelineItemsContainer.innerHTML = '';
 
             if (data && data.success && Array.isArray(data.timeline)) {
@@ -2088,37 +2099,31 @@
                         }
                     });
                 } else {
-                    // No hay actividades
                     timelineItemsContainer.innerHTML = `
-                        <div class="no-items-message-simple">
-                            <div class="no-items-icon">📭</div>
-                            <div class="no-items-text">No hay actividades registradas para esta oportunidad.</div>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <div class="empty-state-text">No hay actividades registradas.</div>
                         </div>
                     `;
                 }
             } else {
-                // Respuesta inesperada del servidor
-                console.error('Formato de respuesta inesperado:', data);
                 throw new Error('Formato de respuesta inesperado del servidor');
             }
         } catch (error) {
             console.error('Error al cargar el timeline:', error);
             timelineItemsContainer.innerHTML = `
-                <div class="no-items-message-simple">
-                    <div class="no-items-icon">⚠️</div>
-                    <div class="no-items-text">Error al cargar el timeline. <button onclick="loadTimeline()" class="text-blue-400 hover:underline">Reintentar</button></div>
-                    <div class="text-xs text-red-400 mt-2">${error.message || 'Error desconocido'}</div>
+                <div class="empty-state">
+                    <div class="empty-state-icon">⚠️</div>
+                    <div class="empty-state-text">Error al cargar el timeline. <button onclick="loadTimeline()" style="color: var(--accent-blue); background: none; border: none; cursor: pointer;">Reintentar</button></div>
                 </div>
             `;
         }
     }
 
-    // Función para descargar archivos
     function descargarArchivo(archivoId) {
         window.open(`/app/api/descargar-archivo-oportunidad/${archivoId}/`, '_blank');
     }
 
-    // Función para eliminar volumetrías
     function eliminarVolumetria(volumetriaId, titulo) {
         if (confirm(`¿Estás seguro de que quieres eliminar la volumetría "${titulo}"?`)) {
             fetch(`/app/api/eliminar-volumetria/${volumetriaId}/`, {
@@ -2140,18 +2145,9 @@
         }
     }
 
-    // Cerrar dropdown al hacer click fuera
+    // Close dropdowns on click outside
     document.addEventListener('click', function(e) {
-        if (!e.target.closest('.estado-selector-header')) {
-            const dropdown = document.getElementById('estadoDropdownHeader');
-            const arrow = document.querySelector('.estado-arrow');
-            if (dropdown) {
-                dropdown.style.display = 'none';
-                if (arrow) arrow.style.transform = 'rotate(0deg)';
-            }
-        }
-        // Cerrar menu de comentario
-        if (!e.target.closest('.plus-button-container')) {
+        if (!e.target.closest('.attach-menu-container')) {
             const commentMenu = document.getElementById('commentMenu');
             const openMenuBtn = document.getElementById('openMenuBtn');
             if (commentMenu && commentMenu.classList.contains('open')) {
@@ -2159,13 +2155,11 @@
                 openMenuBtn.classList.remove('open');
             }
         }
-        // Cerrar UI de respuesta
         if (currentlyReplying && !currentlyReplying.contains(e.target)) {
             closeReplyUI();
         }
     });
 
-    // Función para obtener CSRF token
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -2181,7 +2175,7 @@
         return cookieValue;
     }
 
-    // Funciones para editar/responder comentarios
+    // Comment edit/reply functions
     let currentlyEditing = null;
     let currentlyReplying = null;
     let resolveConfirm;
@@ -2216,7 +2210,7 @@
         const editForm = document.getElementById(`comment-edit-form-${comentarioId}`);
         const contentItem = editForm.closest('.timeline-content-item');
         const textElement = document.getElementById(`comment-text-${comentarioId}`);
-        
+
         if (textElement && editForm && contentItem) {
             contentItem.classList.add('editing');
             textElement.style.display = 'none';
@@ -2300,13 +2294,13 @@
     function showReplyUI(event, activityId, username) {
         event.stopPropagation();
         if (currentlyEditing) cancelarEdicionComentario(null, currentlyEditing);
-        closeReplyUI(); // Close any existing reply UI
+        closeReplyUI();
 
         const container = document.getElementById(`reply-ui-container-${activityId}`);
         if (!container) return;
 
         const replyButton = document.createElement('button');
-        replyButton.className = 'comment-reply-btn reply'; // Re-using styles
+        replyButton.className = 'comment-reply-btn';
         replyButton.innerHTML = `Responder`;
         replyButton.onclick = (e) => {
             e.stopPropagation();
@@ -2331,7 +2325,6 @@
         commentInput.focus();
     }
 
-    // Función para obtener icono de archivo según tipo
     function getAttachmentIcon(tipo) {
         switch(tipo) {
             case 'imagen': return '🖼️';
@@ -2343,22 +2336,19 @@
         }
     }
 
-    // Función para mostrar mensaje de proyecto
     function mostrarMensajeProyecto() {
         alert('Función de Crear Proyecto próximamente disponible');
         return false;
     }
 
-    // Variables globales para edición
+    // Edit mode functions
     let originalValues = {};
     let isEditing = false;
 
-    // Función para alternar modo de edición
     function toggleEditMode() {
         isEditing ? cancelEdit() : startEdit();
     }
 
-    // Iniciar edición
     function startEdit() {
         isEditing = true;
         document.body.classList.add('editing-opportunity');
@@ -2369,13 +2359,11 @@
         loadClientesForEdit();
     }
 
-    // Cancelar edición
     function cancelEdit() {
         isEditing = false;
         document.body.classList.remove('editing-opportunity');
     }
 
-    // Guardar cambios
     async function saveOpportunity() {
         const formData = new FormData();
         document.querySelectorAll('.edit-mode[data-field]').forEach(el => {
@@ -2395,64 +2383,49 @@
                 for (const [field, newValue] of Object.entries(data.updated_values)) {
                     const viewElement = document.querySelector(`.view-mode[data-field="${field}"]`);
                     if (viewElement) {
-                        if (field === 'tipo_negociacion') {
-                            // Manejo especial para el badge de tipo de negociación
-                            const badge = viewElement.querySelector('.tipo-negociacion-badge');
-                            if (badge) {
-                                badge.textContent = newValue;
-                                // Actualizar las clases CSS basado en el valor
-                                const selectValue = document.querySelector('.edit-mode[data-field="tipo_negociacion"]').value;
-                                badge.className = `tipo-negociacion-badge ${selectValue === 'runrate' ? 'tipo-runrate' : 'tipo-proyecto'}`;
-                            }
-                        } else {
-                            viewElement.textContent = newValue;
-                        }
+                        viewElement.textContent = newValue;
                     }
                 }
                 isEditing = false;
                 document.body.classList.remove('editing-opportunity');
-                showNotification('Información de la oportunidad actualizada correctamente', 'success');
+                alert('Información de la oportunidad actualizada correctamente');
             } else {
-                showNotification('Error al actualizar la información: ' + data.error, 'error');
+                alert('Error al actualizar la información: ' + data.error);
             }
         } catch (error) {
-            showNotification('Error de conexión al guardar los cambios', 'error');
+            alert('Error de conexión al guardar los cambios');
         }
     }
 
-    // Cargar clientes para el select
     async function loadClientesForEdit() {
         try {
             const response = await fetch('/app/api/clientes/');
             const clientes = await response.json();
             const clienteSelect = document.querySelector('.edit-mode[data-field="cliente"]');
-            clienteSelect.innerHTML = '<option value="">Seleccionar cliente</option>';
-            clientes.forEach(cliente => {
-                const option = document.createElement('option');
-                option.value = cliente.id;
-                option.textContent = cliente.nombre_empresa;
-                if (cliente.nombre_empresa === originalValues.cliente) {
-                    option.selected = true;
-                }
-                clienteSelect.appendChild(option);
-            });
+            if (clienteSelect) {
+                clienteSelect.innerHTML = '<option value="">Seleccionar cliente</option>';
+                clientes.forEach(cliente => {
+                    const option = document.createElement('option');
+                    option.value = cliente.id;
+                    option.textContent = cliente.nombre_empresa;
+                    if (cliente.nombre_empresa === originalValues.cliente) {
+                        option.selected = true;
+                    }
+                    clienteSelect.appendChild(option);
+                });
+            }
         } catch (error) {
             console.error('Error cargando clientes:', error);
         }
     }
 
-    // Función para mostrar notificaciones
-    function showNotification(message, type = 'info') {
-        alert(message);
-    }
-
-    // Inicializar componentes
+    // Initialize
     document.addEventListener('DOMContentLoaded', function() {
+        renderPipeline();
         initCommentSystem();
         initTimelineSearch();
         loadTimeline();
 
-        // Listeners para el modal de confirmación
         document.getElementById('confirmOkBtn').addEventListener('click', () => {
             if (resolveConfirm) resolveConfirm(true);
             hideConfirm();
@@ -2462,7 +2435,6 @@
             hideConfirm();
         });
 
-        // Ocultar el dock en esta página para más espacio
         const dockMenu = document.getElementById('floating-menu');
         if (dockMenu) {
             dockMenu.style.display = 'none';
@@ -2470,86 +2442,22 @@
     });
 </script>
 
-<!-- Funciones para expansión de etapas -->
 <script>
-function toggleEtapaExpanded(element) {
-    const originalText = element.getAttribute('data-original-text') || element.textContent.trim();
-    const fullText = element.getAttribute('title') || originalText;
-    
-    // Solo expandir si el texto completo es diferente del texto corto
-    if (originalText === fullText) {
-        console.log('🎯 Etapa completa ya cabe, no expandir:', originalText);
-        return; // No hacer nada si ya está completo
-    }
-    
-    const isExpanded = element.classList.contains('expanded');
-    
-    if (!isExpanded) {
-        console.log('🎯 Expandiendo etapa:', originalText, '->', fullText);
-        element.classList.add('expanded');
-        element.textContent = fullText;
-    } else {
-        console.log('🎯 Contrayendo etapa:', fullText, '->', originalText);
-        element.classList.remove('expanded');
-        element.textContent = originalText;
-    }
-}
-
-// Configurar expansibilidad al cargar la página
-document.addEventListener('DOMContentLoaded', function() {
-    const etapaBadges = document.querySelectorAll('.etapa-badge');
-    etapaBadges.forEach(badge => {
-        const originalText = badge.textContent.trim();
-        const fullText = badge.getAttribute('title') || originalText;
-        
-        // Guardar texto original si no existe
-        if (!badge.getAttribute('data-original-text')) {
-            badge.setAttribute('data-original-text', originalText);
-        }
-        
-        // Determinar si es expandible
-        const isExpandable = originalText !== fullText && fullText.length > originalText.length;
-        
-        if (isExpandable) {
-            console.log('🎯 Badge expandible:', originalText, '->', fullText);
-            badge.classList.add('expandable');
-            badge.classList.remove('no-expand');
-        } else {
-            console.log('🎯 Badge NO expandible:', originalText);
-            badge.classList.add('no-expand');
-            badge.classList.remove('expandable');
-            // Remover el onclick si no es expandible
-            badge.removeAttribute('onclick');
-        }
-    });
-});
-</script>
-
-
-
-<script>
-// Activar modo cotizaciones INMEDIATAMENTE para ocultar dock
 (function() {
-    // Aplicar la clase tan pronto como sea posible
     function activarModoCotizaciones() {
         document.body.classList.add('cotizaciones-mode');
-        console.log('✅ Clase cotizaciones-mode agregada al body - dock oculto');
     }
-    
-    // Aplicar inmediatamente si es posible
+
     if (document.body) {
         activarModoCotizaciones();
     } else {
-        // Si no existe el body aún, esperar al DOMContentLoaded
         document.addEventListener('DOMContentLoaded', activarModoCotizaciones);
     }
-    
-    // También aplicar cuando la página se muestre (para manejar navegación hacia atrás)
+
     window.addEventListener('pageshow', function() {
         activarModoCotizaciones();
     });
-    
-    // Aplicar cuando la página se hace visible nuevamente
+
     document.addEventListener('visibilitychange', function() {
         if (!document.hidden) {
             activarModoCotizaciones();
@@ -2557,7 +2465,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 })();
 
-// Remover clase solo cuando realmente navegamos fuera (no en el beforeunload)
 window.addEventListener('pagehide', function() {
     document.body.classList.remove('cotizaciones-mode');
 });
